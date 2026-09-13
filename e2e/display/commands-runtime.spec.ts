@@ -531,7 +531,12 @@ test('dump-console-log snapshots the browser console buffer and the hub stores i
   );
 
   // Put a marker into the page's console ring buffer (installed on mount by
-  // ScreenRotator via installConsoleBuffer).
+  // ScreenRotator via installConsoleBuffer). openDisplay's visibility wait
+  // resolves when the module paints, which can beat the effect that wraps
+  // console — on a cold worker the marker then lands in the native console,
+  // the buffer stays empty, and the upload posts zero entries. A wrapped
+  // console.log is never "[native code]", minified or not, so wait for that.
+  await page.waitForFunction(() => !console.log.toString().includes('[native code]'));
   await page.evaluate(() => console.log('E2E_CONSOLE_MARKER'));
 
   // dump-console-log has no public enqueue route — the diagnostics endpoint
