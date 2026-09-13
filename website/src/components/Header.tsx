@@ -8,12 +8,13 @@ import {
   PopoverPanel,
 } from '@headlessui/react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Menu, ChevronUp, Github } from 'lucide-react';
+import { Menu, ChevronUp } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Container } from '@/components/Container';
 import { Logo } from '@/components/Logo';
 import { DiscordIcon } from '@/components/DiscordIcon';
+import { GithubIcon } from '@/components/GithubIcon';
 import { DISCORD_INVITE_URL, siteNavLinks } from '@/lib/site-navigation';
 
 function MobileNavLink({
@@ -79,7 +80,7 @@ export function Header() {
               rel="noopener noreferrer"
               aria-label="GitHub"
             >
-              <Github className="h-5 w-5" />
+              <GithubIcon className="h-5 w-5" />
             </Link>
             <Button
               href="/docs/getting-started"
@@ -137,7 +138,7 @@ export function Header() {
                               href="https://github.com/home-screens/home-screens"
                               variant="outline"
                             >
-                              <Github className="h-4 w-4" />
+                              <GithubIcon className="h-4 w-4" />
                               GitHub
                             </Button>
                             <Button href={DISCORD_INVITE_URL} variant="outline">

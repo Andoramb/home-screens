@@ -2,13 +2,13 @@ import Link from 'next/link';
 import {
   ArrowLeft,
   ArrowRight,
-  Github,
   Hash,
   Sparkles,
   TrendingUp,
   Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { GithubIcon } from '@/components/GithubIcon';
 import type { ReactNode } from 'react';
 import { Reveal } from '@/components/Reveal';
 import { Badge } from '@/components/ui/badge';
@@ -113,7 +113,7 @@ export function Changelog({
                 href="https://github.com/home-screens/home-screens/releases"
                 variant="outline"
               >
-                <Github className="h-4 w-4" />
+                <GithubIcon className="h-4 w-4" />
                 All releases on GitHub
               </Button>
               <Button href="/docs/getting-started">Try Home Screens</Button>

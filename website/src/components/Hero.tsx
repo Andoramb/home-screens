@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Container } from '@/components/Container';
 import { DashboardShowcase } from '@/components/DashboardShowcase';
-import { Github } from 'lucide-react';
+import { GithubIcon } from '@/components/GithubIcon';
 import { Reveal } from '@/components/Reveal';
 import { MODULE_COUNT } from '@/lib/stats';
 
@@ -61,7 +61,7 @@ export function Hero({ version }: { version: string }) {
                 href="https://github.com/home-screens/home-screens"
                 variant="outline"
               >
-                <Github className="h-4 w-4" />
+                <GithubIcon className="h-4 w-4" />
                 GitHub
               </Button>
             </div>

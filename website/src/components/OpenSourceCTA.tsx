@@ -1,4 +1,4 @@
-import { Github } from 'lucide-react';
+import { GithubIcon } from '@/components/GithubIcon';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Container } from '@/components/Container';
@@ -30,7 +30,7 @@ export function OpenSourceCTA({ version }: { version: string }) {
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
             <Button href="https://github.com/home-screens/home-screens">
-              <Github className="h-4 w-4" />
+              <GithubIcon className="h-4 w-4" />
               View on GitHub
             </Button>
             <Button href={DISCORD_INVITE_URL} variant="outline">
