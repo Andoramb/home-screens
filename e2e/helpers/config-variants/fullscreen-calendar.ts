@@ -479,6 +479,114 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     expect: async (mod) => { await expect(mod.locator('[data-day-badge]')).toHaveText('RULE BADGE'); },
   },
   {
+    // Specific-days matching: a rule pinned to today's day-of-month badges
+    // only today's cell in the month grid.
+    type: 'fullscreen-calendar', name: 'day-rules-specific-days', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { dayOfMonth: new Date().getDate() }, badgeText: 'MATCH DAY', badgeColor: '#f97316' }],
+    },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-day-badge]', { hasText: 'MATCH DAY' })).toBeVisible();
+    },
+  },
+  {
+    // A picture background resolves to a scrim + cover image on the cell.
+    type: 'fullscreen-calendar', name: 'day-rules-art', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg' }],
+    },
+    expect: async (mod) => {
+      await expect(mod.locator('[style*="starter-day-art"]').first()).toBeVisible();
+    },
+  },
+  {
+    // Last-day matching: the month grid always shows the current month's
+    // final day, so the rule's badge lands on that cell.
+    type: 'fullscreen-calendar', name: 'day-rules-last-day', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { lastDayOfMonth: true }, badgeText: 'LAST DAY', badgeColor: '#f97316' }],
+    },
+    expect: async (mod) => {
+      // The grid applies decor to out-month padding cells too, so the last
+      // day of the trailing month badges alongside the current month's.
+      await expect(mod.locator('[data-day-badge]', { hasText: 'LAST DAY' }).first()).toBeVisible();
+    },
+  },
+  {
+    // Nth-weekday matching covers both ends of the union: the first Monday
+    // and the last Sunday of the current month both badge in the month grid.
+    type: 'fullscreen-calendar', name: 'day-rules-nth-weekday', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [
+        { id: 'd1', match: { weekdayOfMonth: { week: 1, weekday: 1 } }, badgeText: 'FIRST MON' },
+        { id: 'd2', match: { weekdayOfMonth: { week: 'last', weekday: 0 } }, badgeText: 'LAST SUN' },
+      ],
+    },
+    expect: async (mod) => {
+      // Padding cells badge too (see day-rules-last-day), hence .first().
+      await expect(mod.locator('[data-day-badge]', { hasText: 'FIRST MON' }).first()).toBeVisible();
+      await expect(mod.locator('[data-day-badge]', { hasText: 'LAST SUN' }).first()).toBeVisible();
+    },
+  },
+  {
+    // Art dimming is the art layer's element opacity (per-pixel: opaque
+    // art fades, transparent pixels leave the cell untouched), so dim 0.7
+    // renders the layer at opacity 0.3.
+    type: 'fullscreen-calendar', name: 'day-rules-art-dim', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundDim: 0.7 }],
+    },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-day-art]').first()).toHaveCSS('opacity', '0.3');
+    },
+  },
+  {
+    // Art sits under the day's content. At full strength (dim 0) the digit
+    // and event pills still paint on top: hiding them changes the cell's
+    // pixels, which it could not if the art covered them. The layer's
+    // negative z-index only stays inside the cell because the cell isolates.
+    type: 'fullscreen-calendar', name: 'day-rules-art-under-content', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundDim: 0 }],
+    },
+    expect: async (mod) => {
+      const art = mod.locator('[data-day-art]').first();
+      const cell = art.locator('..');
+      await expect(art).toHaveCSS('z-index', '-1');
+      await expect(art).toHaveCSS('opacity', '1');
+      await expect(cell).toHaveCSS('isolation', 'isolate');
+      const withContent = await cell.screenshot();
+      await cell.evaluate((el) => {
+        for (const child of Array.from(el.children)) {
+          if (!child.hasAttribute('data-day-art')) (child as HTMLElement).style.visibility = 'hidden';
+        }
+      });
+      const artOnly = await cell.screenshot();
+      expect(withContent.equals(artOnly), 'the digit and events paint over the art').toBe(false);
+    },
+  },
+  {
+    // A hand-edited rule with both a color and art: the color stays the
+    // cell's own background and the art rides the layer above it, at any
+    // dim value, since the per-pixel dimming never darkens the cell itself.
+    type: 'fullscreen-calendar', name: 'day-rules-art-color', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/sprinkles.svg', background: '#3b82f6', backgroundDim: 0.5 }],
+    },
+    expect: async (mod) => {
+      const cell = mod.locator('[data-day-art]').first().locator('..');
+      await expect(cell).toHaveCSS('background-color', 'rgb(59, 130, 246)');
+      await expect(mod.locator('[data-day-art]').first()).toHaveCSS('opacity', '0.5');
+    },
+  },
+  {
     // A Font Awesome pick stores a `fa:<style>:<name>` token instead of a
     // glyph. Both rule icons and day badges have to render it as the icon
     // font's <i>, not print the token as text.

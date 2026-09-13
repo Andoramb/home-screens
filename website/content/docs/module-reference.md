@@ -551,9 +551,15 @@ The **Calendar** and **Full-Screen Calendar** modules share two small rules engi
 | `id` | string | Stable identifier for the rule |
 | `match` | object | Which days the rule applies to (see below) |
 | `background` | string | A color, or `auto` to tint the day from its own events' colors |
+| `backgroundImage` | string | A picture painted on the day, under its number and events: a built-in path such as `/starter-day-art/birthday.svg`, or the serve URL of a picture in the media library's `calendar-art` folder |
+| `backgroundDim` | number | 0–0.9, how far the picture fades; default 0.4 |
 | `opacity` | number | 0.1–1, applied to the day |
 | `borderColor` | string | Outline color for the day |
 | `badgeIcon`, `badgeText`, `badgeColor` | string | A small marker drawn on the day |
+
+**Specific days** narrows a rule to fixed dates: a day of every month (payday on the 15th), a fixed date each year (October 31), every day of one month, the last day of the month (any month, or just one), or the nth weekday of the month, 1st through 5th or the last, so "the 4th Thursday of November" works. Days that don't exist in a month never match: the 31st simply skips shorter months. A rule's other choices (a badge, an outline, a background) then apply to exactly those days.
+
+A day rule's background can also be a **picture**: pick from the art that ships with Home Screens (birthdays, Halloween, Christmas, and other quiet patterns) or add your own image or SVG under **Your pictures**. The picture is painted on the day cell exactly as it otherwise renders, above the cell's own fill and under the day's number and events, everywhere the calendar draws days. **Art dimming** fades the picture itself: transparent parts of a PNG leave the cell untouched, so the cell keeps its normal look with the art laid in.
 
 **Matching an event**: every field you set has to hold (they combine with AND), and a rule with an empty match applies to everything:
 
@@ -573,6 +579,10 @@ The **Calendar** and **Full-Screen Calendar** modules share two small rules engi
 |---|---|---|
 | `when` | string | `today`, `past`, or `future` |
 | `daysOfWeek` | array | Day numbers where 0 is Sunday; empty or unset means every day |
+| `months` | array | Month numbers where 0 is January; empty or unset means every month. On its own it matches every day of those months |
+| `dayOfMonth` | number | 1 to 31. Months without that day never match; combine with `months` for a fixed date each year |
+| `lastDayOfMonth` | boolean | The final day of the month, whatever its length |
+| `weekdayOfMonth` | object | `{ "week": 1..5 or "last", "weekday": 0..6 }`, so the last Friday is `{ "week": "last", "weekday": 5 }` |
 | `withEvents` | string | `any` (at least one event), `none` (an empty day), or `matching` (has an event matching `eventMatch`) |
 | `eventMatch` | object | An event match, used when `withEvents` is `matching` |
 

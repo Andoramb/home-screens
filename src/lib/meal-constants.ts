@@ -149,6 +149,25 @@ export function getLocalizedDayNames(
   return result;
 }
 
+/**
+ * Month names for a locale, index 0 = January, from the same formatter the
+ * wall uses (standalone form, so languages that decline month names in
+ * dates still get the dictionary word). Editors that offer a month choice
+ * read this instead of carrying twelve strings per locale.
+ */
+export function getLocalizedMonthNames(
+  locale: string = DEFAULT_LOCALE,
+  format: 'short' | 'full' = 'full',
+): string[] {
+  const pattern = format === 'short' ? 'LLL' : 'LLLL';
+  const result: string[] = new Array(12);
+  for (let month = 0; month < 12; month++) {
+    // Mid-month at local noon keeps the anchor clear of any date boundary.
+    result[month] = formatDateSync(new Date(2024, month, 15, 12), pattern, { locale });
+  }
+  return result;
+}
+
 /** Get ordered day indices based on week start */
 export function getOrderedDays(weekStartDay: 'sunday' | 'monday'): number[] {
   if (weekStartDay === 'monday') return [1, 2, 3, 4, 5, 6, 0];

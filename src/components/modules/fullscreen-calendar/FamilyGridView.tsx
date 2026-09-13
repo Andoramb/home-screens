@@ -17,6 +17,7 @@ import { eventSurface } from '@/lib/calendar-event-surface';
 import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
 import { eventGlyph, eventOpacity, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { DayWeatherBadge } from './WeatherInline';
 import { eventAriaLabel } from './list-view-bits';
 import { useContainerHeight } from './shared-time-grid';
@@ -263,6 +264,7 @@ function PersonRowCells({ row, cells, count, days, today, now, ctx, cellPad, chi
         const day = days[dayIdx];
         const isToday = isSameDay(day, today);
         const isPast = day < today && !isToday;
+        const decor = decorByDay[dayIdx];
         // Fit chips by height (fitChips): an overflowing cell gives the "+N"
         // line room by dropping chips from the bottom, except that the first
         // event always shows and, when nothing else fits, the "+N" rides the
@@ -294,8 +296,9 @@ function PersonRowCells({ row, cells, count, days, today, now, ctx, cellPad, chi
               opacity: isPast && config.dimPastEvents ? 'var(--cal-past-opacity)' : 1,
               overflow: 'hidden',
               minWidth: 0,
-            } as React.CSSProperties, decorByDay[dayIdx])}
+            } as React.CSSProperties, decor)}
           >
+            {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
             {visible.map(({ ev, segment }) => (
               <EventChip key={ev.id} event={ev} segment={segment} now={now} ctx={ctx} wrapTitles={wrapTitles} failingSourceIds={failingSourceIds} />
             ))}

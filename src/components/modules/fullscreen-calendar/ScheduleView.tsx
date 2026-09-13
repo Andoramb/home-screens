@@ -12,6 +12,7 @@ import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
 import { EVENT_BLOCK_BASE_ZINDEX } from '@/lib/fullscreen-overlap';
 import { eventGlyph, eventOpacity, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { computeTimedEventLayout, eventHoursOnDay } from '@/lib/calendar-event-layout';
 import { DayWeatherBadge } from './WeatherInline';
 import type { CalendarEvent, CalendarScale, CalendarViewProps } from './view-support';
@@ -203,6 +204,7 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
               const isWeekend = isWeekendDay(day);
               const isPast = day < today && !isToday;
               const { dayEvents, overlapLayout, hiddenStarts, hourSpans } = dayLayouts[dayIdx];
+              const decor = decorByDay[dayIdx];
 
               return (
                 <div
@@ -214,8 +216,9 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
                     borderLeft: '1px solid var(--cal-border-subtle)',
                     background: dayCellFill(isToday, showTodayBg, isWeekend, config),
                     opacity: isPast && config.dimPastEvents ? 'var(--cal-past-opacity)' : 1,
-                  } as React.CSSProperties, decorByDay[dayIdx])}
+                  } as React.CSSProperties, decor)}
                 >
+                  {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
                   {/* Hour lines */}
                   <HourLines totalHours={totalHours} hourHeight={hourHeight} hourStart={hourStart} dimOffHours={{ businessStart, businessEnd }} />
 

@@ -2,7 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 import Markdoc, { type Node, type Schema, renderers } from '@markdoc/markdoc'
-import yaml from 'js-yaml'
+import * as yaml from 'js-yaml'
 import React from 'react'
 
 import * as markdocConfig from '@/markdoc/config'

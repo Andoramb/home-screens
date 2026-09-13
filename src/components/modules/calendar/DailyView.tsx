@@ -8,6 +8,7 @@ import {
 } from '@/lib/calendar-utils';
 import { dayDecorFor, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { SectionHeader } from '../shared/SectionHeader';
 import { TEXT_OPACITY, ink } from '@/lib/constants';
 import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
@@ -135,6 +136,7 @@ export function DailyView({ events, config, style, today, now, accentColor, even
         const decor = dayDecorFor(config, date, dayEvents, { today, now, timezone: eventStyle.timezone, isDark: true });
         return (
           <div key={date.toISOString()} className="flex-1 flex flex-col min-w-0 rounded" style={mergeCellDecor({}, decor)}>
+            {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
             <div className="text-center mb-2 pb-1.5" style={{ borderBottom: `1px solid ${ink(0.1)}` }}>
               <SectionHeader active={isToday}>
                 {isToday ? tCore('today') : formatDateSync(date, 'EEE', { locale })}

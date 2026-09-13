@@ -1,11 +1,14 @@
-import { Check, X, Minus, Github, Cloud, Sparkles } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Check, X, Minus, Cloud, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Container } from '@/components/Container';
+import { GithubIcon } from '@/components/GithubIcon';
 import { Reveal } from '@/components/Reveal';
 import { MODULE_COUNT, WEATHER_PROVIDER_COUNT } from '@/lib/stats';
+import type { ComponentPropsWithoutRef, ComponentType } from 'react';
+
+type IconComponent = ComponentType<ComponentPropsWithoutRef<'svg'>>;
 
 type Cell =
   | { kind: 'yes'; label?: string }
@@ -228,7 +231,7 @@ const positioning = [
 
 const tradeoffs = [
   {
-    icon: Github,
+    icon: GithubIcon,
     title: 'Pick MagicMirror if…',
     items: [
       'You want the largest community module catalog of any smart-mirror project.',
@@ -515,7 +518,7 @@ export function VsComparison() {
                 href="https://github.com/home-screens/home-screens"
                 variant="outline"
               >
-                <Github className="h-4 w-4" />
+                <GithubIcon className="h-4 w-4" />
                 View on GitHub
               </Button>
             </div>
@@ -531,7 +534,7 @@ function TradeoffCard({
   delay,
 }: {
   tradeoff: {
-    icon: LucideIcon;
+    icon: IconComponent;
     title: string;
     items: string[];
   };

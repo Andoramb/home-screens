@@ -27,9 +27,26 @@ import {
   SLOT_WINDOWS,
   SLOT_META,
   getLocalizedDayNames,
+  getLocalizedMonthNames,
 } from '@/lib/meal-constants';
 import { preloadDateLocale } from '@/i18n/formatters';
 import type { SavedMeal, PlannedMeal, MealSlotType } from '@/types/config';
+
+// ── getLocalizedMonthNames ──
+
+describe('getLocalizedMonthNames', () => {
+  it('returns 12 entries indexed 0=January, in the requested locale', async () => {
+    await preloadDateLocale('en-US');
+    await preloadDateLocale('de-DE');
+    const en = getLocalizedMonthNames('en-US');
+    expect(en).toHaveLength(12);
+    expect(en[0]).toBe('January');
+    expect(en[11]).toBe('December');
+    expect(getLocalizedMonthNames('en-US', 'short')[8]).toBe('Sep');
+    const de = getLocalizedMonthNames('de-DE');
+    expect(de[2]).toBe('März');
+  });
+});
 
 // ── getLocalizedDayNames ──
 
