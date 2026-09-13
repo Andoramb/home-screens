@@ -393,7 +393,12 @@ export default function RainMapModule({
         />
 
         {showTimestamp && (
-          <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10 font-mono">
+          // The chip sets no font of its own on purpose: it inherits the
+          // module's Style font through ModuleWrapper. (It used to carry
+          // font-mono, which pinned it to whatever mono face the viewing
+          // device happened to have — the Pi and the editor preview
+          // rendered different fonts for the same module.)
+          <div className="absolute top-2 left-2 bg-black/60 text-white text-xs px-2 py-1 rounded z-10">
             {formatFrameTime(currentFrame.time, t, locale)}
           </div>
         )}
