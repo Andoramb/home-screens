@@ -5,7 +5,7 @@
  * for gathering the input (reading config, journalctl, plugins, etc.).
  */
 
-import archiver from 'archiver';
+import { ZipArchive } from 'archiver';
 import { Readable } from 'stream';
 import type { ScreenConfiguration } from '@/types/config';
 import type { DisplayStatus } from '@/lib/display-commands';
@@ -88,7 +88,7 @@ ${input.meta.truncated?.length ? `## Truncated\n\n${input.meta.truncated.map((t)
 }
 
 export function composeDiagnosticsBundle(input: BundleInput): Readable {
-  const archive = archiver('zip', { zlib: { level: 9 } });
+  const archive = new ZipArchive({ zlib: { level: 9 } });
 
   // Archiver emits `error` for unrecoverable failures (back-pressure,
   // underlying stream death). Without a handler Node treats it as an
