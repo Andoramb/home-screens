@@ -326,12 +326,12 @@ export function eventOpacity(ev: Pick<CalendarEvent, 'opacity'>, base: number | 
 }
 
 /**
- * Day-rule look merged over a cell's own inline style: colors replace
- * via the longhands (a gradient auto tint takes the image slot), art
- * anchors a DayArtLayer the views render over the cell background (it is
- * deliberately absent from the background stack — a scrim layer there
+ * Day-rule look merged over a cell's own inline style. A background (plain
+ * color or gradient auto tint) takes the whole `background` slot; art
+ * anchors a DayArtLayer the views render inside the cell (it is
+ * deliberately absent from the background stack: a scrim layer there
  * always covers the full box, which would dim the cell through the art's
- * transparent pixels), opacity multiplies, the border joins any existing
+ * transparent pixels); opacity multiplies; the border joins any existing
  * box shadow as an inset ring. Returns `base` untouched when the decor
  * sets nothing (identity stays cheap to compare).
  */
@@ -339,22 +339,27 @@ export function mergeCellDecor(base: CSSProperties, decor: DayDecor): CSSPropert
   if (decor.background == null && decor.backgroundImage == null && decor.opacity == null && decor.borderColor == null) return base;
   const out: CSSProperties = { ...base };
   if (decor.background) {
+    // One slot, the shorthand, never a mix. React diffs style keys one at a
+    // time, and writing the `background` shorthand clears every longhand:
+    // a style carrying both the base shorthand and a rule `backgroundColor`
+    // lost the rule color whenever the base changed (today moving on at
+    // midnight, Shade weekends toggled), because the shorthand was re-sent
+    // and the untouched longhand was not. The views pass shorthand bases
+    // for the same reason.
+    delete out.backgroundColor;
     delete out.backgroundImage;
-    if (decor.background.includes('gradient')) {
-      // An auto tint with several colors is itself a background image; it
-      // must cover whatever base color the cell had (shorthand parity).
-      delete out.background;
-      delete out.backgroundColor;
-      out.backgroundImage = decor.background;
-    } else {
-      out.backgroundColor = decor.background;
-    }
+    out.background = decor.background;
   }
   if (decor.backgroundImage) {
-    // The art layer (see components/modules/shared/DayArtLayer.tsx) is
-    // absolutely positioned inside this cell; a cell the view did not
-    // already position needs to become its anchor.
+    // The art layer (see components/modules/shared/DayArtLayer.tsx) is an
+    // absolutely positioned child at z-index -1, so it paints above the
+    // cell's own background and below every in-flow child: digits, event
+    // pills, and faded events that form their own stacking context. A
+    // negative z-index only stays inside the cell when the cell is itself a
+    // stacking context; `isolation` makes it one without touching layout,
+    // and the cell also has to be the layer's positioned anchor.
     if (out.position == null) out.position = 'relative';
+    out.isolation = 'isolate';
   }
   if (decor.opacity != null) {
     const current = typeof base.opacity === 'number' ? base.opacity : 1;

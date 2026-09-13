@@ -21,9 +21,14 @@ export interface DirectoryInfo {
  * a request when the URL carries no `file` param; otherwise returns the
  * DELETE response for the caller to branch on.
  */
+/** The library-relative path a serve URL points at (its `file=` param,
+ *  decoded), or null for anything that is not a library serve URL. */
+export function libraryFileFromServeUrl(serveUrl: string): string | null {
+  return new URL(serveUrl, 'http://localhost').searchParams.get('file') || null;
+}
+
 export async function deleteLibraryImage(imageUrl: string): Promise<Response | null> {
-  const url = new URL(imageUrl, 'http://localhost');
-  const file = url.searchParams.get('file') || '';
+  const file = libraryFileFromServeUrl(imageUrl);
   if (!file) return null;
 
   // Split the library-relative path into directory and basename, which is

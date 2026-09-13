@@ -6,30 +6,11 @@ import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withMediaTokenAuth } from '@/lib/api-utils';
 import { parseRangeHeader } from '@/lib/http-range';
 import { toWebStream } from '@/lib/web-stream';
+import { IMAGE_MIME_BY_EXT, VIDEO_MIME_BY_EXT } from '@/lib/library-files';
 
 export const dynamic = 'force-dynamic';
 
 const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
-
-const MIME_TYPES: Record<string, string> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  // JPEG spellings some cameras and sites produce; all are image/jpeg.
-  '.jfif': 'image/jpeg',
-  '.pjpeg': 'image/jpeg',
-  '.pjp': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-};
-
-const VIDEO_MIME_TYPES: Record<string, string> = {
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-};
 
 /** Validate and resolve a relative path within BGS, preventing directory traversal */
 function safePath(relativePath: string): string | null {
@@ -108,14 +89,14 @@ export const GET = withMediaTokenAuth(async (request: NextRequest) => {
   }
 
   const ext = path.extname(filePath).toLowerCase();
-  const videoType = VIDEO_MIME_TYPES[ext];
+  const videoType = VIDEO_MIME_BY_EXT[ext];
   if (videoType) {
     return serveVideo(request, filePath, videoType);
   }
 
   try {
     const buffer = await fs.readFile(filePath);
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+    const contentType = IMAGE_MIME_BY_EXT[ext] || 'application/octet-stream';
     const headers: Record<string, string> = {
       'Content-Type': contentType,
       'Cache-Control': 'public, max-age=86400',

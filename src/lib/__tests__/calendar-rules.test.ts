@@ -327,6 +327,9 @@ describe('mergeCellDecor', () => {
     expect(out.backgroundImage).toBeUndefined();
     expect(out.backgroundSize).toBeUndefined();
     expect(out.position).toBe('relative');
+    // The layer sits at z-index -1, which only stays inside the cell when
+    // the cell is its own stacking context.
+    expect(out.isolation).toBe('isolate');
   });
 
   it('an art decor never overrides a position the view already set', () => {
@@ -334,34 +337,46 @@ describe('mergeCellDecor', () => {
     expect(out.position).toBe('sticky');
   });
 
-  it('a color decor replaces the base color', () => {
+  it('a color decor takes the background shorthand and drops the base longhands', () => {
     const out = mergeCellDecor(base, { background: '#00ff00', badges: [] });
-    expect(out.backgroundColor).toBe('#00ff00');
+    expect(out.background).toBe('#00ff00');
+    expect(out.backgroundColor).toBeUndefined();
     expect(out.backgroundImage).toBeUndefined();
   });
 
-  it('a gradient decor (auto tint) takes the image slot and clears the base color', () => {
-    const out = mergeCellDecor(base, { background: 'linear-gradient(180deg, rgba(1,2,3,0.2))', badges: [] });
-    expect(out.backgroundImage).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
-    expect(out.backgroundColor).toBeUndefined();
+  it('a color decor over a shorthand base never leaves both keys in one style', () => {
+    // React re-sends only changed keys: with `background: <base>` and
+    // `backgroundColor: <rule>` side by side, a base change cleared the
+    // rule color. The merged style must hold exactly one background key.
+    const out = mergeCellDecor({ background: 'var(--cal-today-fill)' } as CSSProperties, { background: '#00ff00', badges: [] });
+    expect(out.background).toBe('#00ff00');
+    expect('backgroundColor' in out).toBe(false);
+    expect('backgroundImage' in out).toBe(false);
   });
 
-  it('a gradient decor also clears a shorthand background base', () => {
+  it('a gradient decor (auto tint) takes the same shorthand slot and clears the base longhands', () => {
+    const out = mergeCellDecor(base, { background: 'linear-gradient(180deg, rgba(1,2,3,0.2))', badges: [] });
+    expect(out.background).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
+    expect(out.backgroundColor).toBeUndefined();
+    expect(out.backgroundImage).toBeUndefined();
+  });
+
+  it('a gradient decor replaces a shorthand background base', () => {
     const out = mergeCellDecor({ background: 'blue' } as CSSProperties, { background: 'linear-gradient(180deg, rgba(1,2,3,0.2))', badges: [] });
-    expect(out.background).toBeUndefined();
-    expect(out.backgroundImage).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
+    expect(out.background).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
   });
 
   it('a gradient decor composes with art: the gradient stays the cell background, art just anchors', () => {
     const out = mergeCellDecor({ background: 'blue' } as CSSProperties, { background: 'linear-gradient(180deg, rgba(1,2,3,0.2))', backgroundImage: '/a.svg', badges: [] });
-    expect(out.backgroundImage).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
-    expect(out.background).toBeUndefined();
+    expect(out.background).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
+    expect(out.backgroundImage).toBeUndefined();
     expect(out.position).toBe('relative');
+    expect(out.isolation).toBe('isolate');
   });
 
   it('a plain color decor resolves alongside art: the cell is colored, art overlays it', () => {
     const out = mergeCellDecor(base, { background: '#00ff00', backgroundImage: '/a.svg', badges: [] });
-    expect(out.backgroundColor).toBe('#00ff00');
+    expect(out.background).toBe('#00ff00');
     expect(out.backgroundImage).toBeUndefined();
     expect(out.position).toBe('relative');
   });

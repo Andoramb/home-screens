@@ -5,12 +5,11 @@ import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
+import { IMAGE_FILE_RE } from '@/lib/library-files';
 
 export const dynamic = 'force-dynamic';
 
 const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
-
-const IMAGE_RE = /\.(jpe?g|jfif|pjpeg|pjp|png|webp|gif|avif)$/i;
 
 /** Validate and resolve a relative path within BGS, preventing directory traversal */
 function safePath(relativePath: string): string | null {
@@ -23,7 +22,7 @@ function safePath(relativePath: string): string | null {
 async function countImages(dirPath: string): Promise<number> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.filter((e) => e.isFile() && IMAGE_RE.test(e.name)).length;
+    return entries.filter((e) => e.isFile() && IMAGE_FILE_RE.test(e.name)).length;
   } catch {
     return 0;
   }

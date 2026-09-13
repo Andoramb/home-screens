@@ -4,7 +4,7 @@ import path from 'path';
 import { STARTER_DAY_ART, STARTER_DAY_ART_DIR, starterDayArtPath } from '../starter-day-art';
 
 /** The day art that ships with Home Screens. Every catalog entry must have
- *  its committed file and every committed file its entry — the picker's
+ *  its committed file and every committed file its entry, so the picker's
  *  thumbnails are the same files the wall renders, so they can't drift. */
 describe('starter day art', () => {
   const dir = path.join(process.cwd(), STARTER_DAY_ART_DIR);

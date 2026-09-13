@@ -48,6 +48,8 @@ describe('GET /api/backgrounds/directories', () => {
           { name: 'a.jpg', isFile: () => true, isDirectory: () => false },
           { name: 'b.png', isFile: () => true, isDirectory: () => false },
           { name: 'c.jfif', isFile: () => true, isDirectory: () => false },
+          // Day art: counted like every other format the upload gate accepts.
+          { name: 'd.svg', isFile: () => true, isDirectory: () => false },
           { name: 'notes.txt', isFile: () => true, isDirectory: () => false },
         ];
       }
@@ -60,7 +62,7 @@ describe('GET /api/backgrounds/directories', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     // jfif is a JPEG spelling and counts as an image.
-    expect(body.directories[0]).toEqual({ name: 'All Photos', path: '', imageCount: 3 });
+    expect(body.directories[0]).toEqual({ name: 'All Photos', path: '', imageCount: 4 });
     expect(mockFs.mkdir).toHaveBeenCalled();
   });
 });

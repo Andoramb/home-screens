@@ -263,16 +263,21 @@ function GridBannerView({ events, config, style, today, now, accentColor, t, loc
               const dayEvents = eventsByDay.get(date.getTime()) ?? [];
               const hasBirthday = dayEvents.some((ev) => ev.kind === 'birthday');
               const decor = dayDecorFor(config, date, dayEvents, { today, now, timezone: eventStyle.timezone, isDark: true });
+              const cellFill = isToday
+                ? withAlpha(accentColor, '1f')
+                : grid.kind === 'rolling' && isWeekendDay(date) ? ink(0.05) : ink(0.02);
 
               return (
                 <div
                   key={date.toISOString()}
                   className="flex flex-col p-0.5 overflow-hidden rounded"
                   style={mergeCellDecor({
-                    backgroundColor: isToday
-                      ? withAlpha(accentColor, '1f')
-                      : grid.kind === 'rolling' && isWeekendDay(date) ? ink(0.05) : ink(0.02),
-                    ...(marksMonthStart ? { backgroundImage: `linear-gradient(to right, ${withAlpha(accentColor, '33')}, transparent)` } : {}),
+                    // Shorthand on purpose: mergeCellDecor writes the
+                    // `background` shorthand for a rule color, and a style
+                    // must never carry both that and a longhand.
+                    background: marksMonthStart
+                      ? `linear-gradient(to right, ${withAlpha(accentColor, '33')}, transparent) ${cellFill}`
+                      : cellFill,
                     opacity: isMuted ? TEXT_OPACITY.tertiary : 1,
                   }, decor)}
                 >
@@ -451,7 +456,7 @@ function GridModernView({ events, config, style, today, now, accentColor, t, loc
                   key={date.toISOString()}
                   className="flex flex-col p-0.5 overflow-hidden rounded"
                   style={mergeCellDecor({
-                    backgroundColor: isToday ? todayCellTint : `rgba(255, 255, 255, ${isWeekend ? 0.065 : 0.045})`,
+                    background: isToday ? todayCellTint : `rgba(255, 255, 255, ${isWeekend ? 0.065 : 0.045})`,
                     ...(cellShadow ? { boxShadow: cellShadow } : {}),
                   }, decor)}
                 >

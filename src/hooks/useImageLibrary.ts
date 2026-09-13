@@ -45,7 +45,9 @@ interface UseImageLibraryReturn {
   deletingImage: string | null;
 
   // Actions
-  handleUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
+  /** Uploads every picked file into the selected folder and resolves with
+   *  the serve URLs that landed, so a picker can select what it just added. */
+  handleUpload: (e: React.ChangeEvent<HTMLInputElement>) => Promise<string[]>;
   handleDeleteImage: (imageUrl: string) => Promise<void>;
   handleCreateFolder: () => Promise<void>;
   handleDeleteFolder: () => Promise<void>;
@@ -133,13 +135,14 @@ export function useImageLibrary({ initialDirectory }: UseImageLibraryOptions): U
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
-    if (!fileList || fileList.length === 0) return;
+    if (!fileList || fileList.length === 0) return [];
 
     setUploading(true);
     setError(null);
     const total = fileList.length;
     let hadError = false;
     let hadSuccess = false;
+    const uploaded: string[] = [];
 
     for (let i = 0; i < total; i++) {
       setUploadProgress(`Uploading ${i + 1} of ${total}...`);
@@ -158,6 +161,9 @@ export function useImageLibrary({ initialDirectory }: UseImageLibraryOptions): U
           hadError = true;
         } else {
           hadSuccess = true;
+          const data = (await res.json().catch(() => null)) as { path?: string; paths?: string[] } | null;
+          if (data?.path) uploaded.push(data.path);
+          else if (data?.paths) uploaded.push(...data.paths);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : t('errors.uploadFailed'));
@@ -177,6 +183,7 @@ export function useImageLibrary({ initialDirectory }: UseImageLibraryOptions): U
       // they'd show the pre-upload library for up to a full TTL.
       displayCache.invalidateByPrefix('/api/backgrounds');
     }
+    return uploaded;
   }, [selectedDir, fetchImages, fetchDirectories, t]);
 
   const handleDeleteImage = useCallback(async (imageUrl: string) => {

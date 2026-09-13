@@ -79,7 +79,7 @@ export function WeekView({ events, config, style, today, now, accentColor, event
             <div
               key={date.toISOString()}
               className="flex flex-col p-0.5 overflow-hidden rounded"
-              style={mergeCellDecor({ backgroundColor: ink(0.03) }, decor)}
+              style={mergeCellDecor({ background: ink(0.03) }, decor)}
             >
               {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
               <DayCellEvents events={dayEvents} eventStyle={eventStyle} maxPerCell={clampGridMaxEventsPerCell(config.gridMaxEventsPerCell, 'week')} textColor={style.textColor} accentColor={accentColor} t={t} locale={locale} gapClass="gap-0.5" />

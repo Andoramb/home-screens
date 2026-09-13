@@ -3,7 +3,7 @@
 /**
  * The Specific days choice owns the whole date question, so the plain
  * Days-of-week button row hides under it, and entering it clears any picked
- * weekdays — the dropdown stays one clean choice, like it already does for
+ * weekdays, so the dropdown stays one clean choice, like it already does for
  * `when`. (The engine still AND-combines hand-edited configs; this is
  * editor-only behavior.)
  */

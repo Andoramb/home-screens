@@ -342,11 +342,6 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'editor|choreChartModal.choreForm.ticketsLabel',
     // "Halloween" is the same word in this language.
     'editor|configSections.calendarRules.artNames.halloween',
-    // Month names that are spelled the same in German.
-    'editor|configSections.calendarRules.months.april',
-    'editor|configSections.calendarRules.months.august',
-    'editor|configSections.calendarRules.months.september',
-    'editor|configSections.calendarRules.months.november',
     'editor|configSections.countdown.namePlaceholder',
     'editor|configSections.display-control.layoutPad',
     'editor|configSections.financial.symbolLabel',

@@ -55,7 +55,7 @@ describe('two day rules with picture backgrounds', () => {
     const card2 = cards[1];
 
     // Card 2: Background -> Picture. In an empty-match card the selects run
-    // Which days, Events on day, Background — the Background one is last.
+    // Which days, Events on day, Background. The Background one is last.
     const selects = card2.querySelectorAll('select');
     await act(async () => {
       fireEvent.change(selects[selects.length - 1], { target: { value: 'picture' } });

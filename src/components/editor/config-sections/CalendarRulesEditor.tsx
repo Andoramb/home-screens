@@ -8,7 +8,8 @@ import LabeledInput from '@/components/ui/LabeledInput';
 import LabeledSelect from '@/components/ui/LabeledSelect';
 import Slider from '@/components/ui/Slider';
 import Toggle from '@/components/ui/Toggle';
-import { useTranslate } from '@/i18n';
+import { useFormattingLocale, useTranslate } from '@/i18n';
+import { getLocalizedMonthNames } from '@/lib/meal-constants';
 import { starterDayArtPath } from '@/lib/starter-day-art';
 import type {
   CalendarDayRule,
@@ -34,9 +35,7 @@ const DEFAULT_BADGE_COLOR = '#f97316';
 const DEFAULT_DAY_BG = '#fef3c7';
 
 type DayWhich = 'any' | 'today' | 'past' | 'future' | 'specific';
-type SpecificPattern = 'monthly-day' | 'yearly-day' | 'last-day' | 'nth-weekday';
-
-const MONTH_KEYS = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'] as const;
+type SpecificPattern = 'monthly-day' | 'yearly-day' | 'whole-month' | 'last-day' | 'nth-weekday';
 const ORDINAL_OPTIONS = [
   { value: '1', key: 'ordFirst' }, { value: '2', key: 'ordSecond' }, { value: '3', key: 'ordThird' },
   { value: '4', key: 'ordFourth' }, { value: '5', key: 'ordFifth' }, { value: 'last', key: 'ordLast' },
@@ -273,6 +272,12 @@ function EventRuleFields({ rule, availableSources, onChange }: {
   );
 }
 
+/** Any of the date-pattern fields the Specific days choice owns. */
+function hasSpecificFields(match: CalendarDayRule['match']): boolean {
+  return match.dayOfMonth != null || match.lastDayOfMonth === true
+    || match.weekdayOfMonth != null || (match.months?.length ?? 0) > 0;
+}
+
 type DayBgMode = 'none' | 'auto' | 'color' | 'picture';
 function bgModeOf(background: string | undefined): DayBgMode {
   if (!background) return 'none';
@@ -286,6 +291,7 @@ function DayRuleFields({ rule, availableSources, onChange }: {
 }) {
   const t = useTranslate('editor');
   const tCore = useTranslate('core');
+  const formattingLocale = useFormattingLocale();
   const patch = (p: Partial<CalendarDayRule>) => onChange({ ...rule, ...p });
   const match = rule.match ?? {};
   const patchMatch = (p: Partial<CalendarDayRule['match']>) => {
@@ -298,6 +304,11 @@ function DayRuleFields({ rule, availableSources, onChange }: {
     if (!next.lastDayOfMonth) delete next.lastDayOfMonth;
     if (!next.weekdayOfMonth) delete next.weekdayOfMonth;
     if (!next.months || next.months.length === 0) delete next.months;
+    // The Which days select is one choice, and Specific days is it: a
+    // `when` that a hand-edited or imported rule still carries alongside a
+    // date pattern is invisible here yet ANDs on the wall, so the first
+    // edit settles it in the select's favor.
+    if (hasSpecificFields(next)) delete next.when;
     patch({ match: next });
   };
   const days = match.daysOfWeek ?? [];
@@ -305,18 +316,23 @@ function DayRuleFields({ rule, availableSources, onChange }: {
     tCore('days.sunday'), tCore('days.monday'), tCore('days.tuesday'), tCore('days.wednesday'),
     tCore('days.thursday'), tCore('days.friday'), tCore('days.saturday'),
   ];
-  const specificSet = match.dayOfMonth != null || match.lastDayOfMonth === true
-    || match.weekdayOfMonth != null || (match.months?.length ?? 0) > 0;
+  const monthLabels = getLocalizedMonthNames(formattingLocale);
+  const specificSet = hasSpecificFields(match);
   const whichDays: DayWhich = specificSet ? 'specific' : (match.when ?? 'any');
+  // Every legal combination of the date fields maps to one pattern, so a
+  // rule written by hand renders as what the wall does with it.
   const pattern: SpecificPattern = match.weekdayOfMonth
     ? 'nth-weekday'
     : match.lastDayOfMonth
       ? 'last-day'
-      : match.dayOfMonth != null && (match.months?.length ?? 0) > 0
-        ? 'yearly-day'
-        : 'monthly-day';
+      : match.dayOfMonth != null
+        ? ((match.months?.length ?? 0) > 0 ? 'yearly-day' : 'monthly-day')
+        : 'whole-month';
   const monthValue = match.months?.length ? String(match.months[0]) : '';
   const bgMode: DayBgMode = rule.backgroundImage ? 'picture' : bgModeOf(rule.background);
+  // A plain color under a picture stays the cell fill on the wall, so it
+  // stays editable here even though the Background select reads Picture.
+  const showColor = bgMode === 'color' || (bgMode === 'picture' && rule.background != null && rule.background !== 'auto');
   const hasBadge = rule.badgeIcon != null || rule.badgeText != null || rule.badgeColor != null;
   const matchesEveryDay = Object.keys(match).length === 0;
 
@@ -365,6 +381,8 @@ function DayRuleFields({ rule, availableSources, onChange }: {
                 patchMatch({ ...cleared, dayOfMonth: match.dayOfMonth ?? 1 });
               } else if (v === 'yearly-day') {
                 patchMatch({ ...cleared, dayOfMonth: match.dayOfMonth ?? 1, months: match.months?.length ? match.months : [new Date().getMonth()] });
+              } else if (v === 'whole-month') {
+                patchMatch({ ...cleared, months: match.months?.length ? match.months : [new Date().getMonth()] });
               } else if (v === 'last-day') {
                 patchMatch({ ...cleared, lastDayOfMonth: true, months: match.months });
               } else {
@@ -374,19 +392,21 @@ function DayRuleFields({ rule, availableSources, onChange }: {
             options={[
               { value: 'monthly-day', label: t(`${KEY}.patternMonthlyDay`) },
               { value: 'yearly-day', label: t(`${KEY}.patternYearlyDay`) },
+              { value: 'whole-month', label: t(`${KEY}.patternWholeMonth`) },
               { value: 'last-day', label: t(`${KEY}.patternLastDay`) },
               { value: 'nth-weekday', label: t(`${KEY}.patternNthWeekday`) },
             ]}
           />
-          {(pattern === 'yearly-day' || pattern === 'last-day' || pattern === 'nth-weekday') && (
+          {pattern !== 'monthly-day' && (
             <LabeledSelect
               label={t(`${KEY}.month`)}
               value={monthValue}
               onChange={(v) => patchMatch({ months: v === '' ? undefined : [Number(v)] })}
               options={[
-                // Yearly needs a real month; the other patterns allow "every month".
-                ...(pattern === 'yearly-day' ? [] : [{ value: '', label: t(`${KEY}.everyMonth`) }]),
-                ...MONTH_KEYS.map((m, i) => ({ value: String(i), label: t(`${KEY}.months.${m}`) })),
+                // Yearly and whole-month are nothing without a month; the
+                // other patterns allow "every month".
+                ...(pattern === 'yearly-day' || pattern === 'whole-month' ? [] : [{ value: '', label: t(`${KEY}.everyMonth`) }]),
+                ...monthLabels.map((label, i) => ({ value: String(i), label })),
               ]}
             />
           )}
@@ -426,8 +446,10 @@ function DayRuleFields({ rule, availableSources, onChange }: {
         </>
       )}
       {/* Specific days owns the whole date question, so the plain weekday
-          row hides under it (the nth-weekday pattern picks its own weekday). */}
-      {whichDays !== 'specific' && (
+          row hides under it (the nth-weekday pattern picks its own weekday),
+          unless a hand-edited rule still carries picks: those AND on the
+          wall, so they stay visible until unpicked. */}
+      {(whichDays !== 'specific' || days.length > 0) && (
       <div className="flex flex-col gap-1">
         <span className="text-xs text-hs-text-muted">{t(`${KEY}.daysOfWeek`)}</span>
         <div className="flex gap-1">
@@ -504,7 +526,7 @@ function DayRuleFields({ rule, availableSources, onChange }: {
           />
         </>
       )}
-      {bgMode === 'color' && (
+      {showColor && (
         <ColorPicker label={t(`${KEY}.color`)} value={rule.background ?? DEFAULT_DAY_BG} onChange={(v) => patch({ background: v })} />
       )}
       <Slider

@@ -18,6 +18,45 @@ export function libraryRoot(): string {
   return path.join(process.cwd(), BACKGROUNDS_DIR);
 }
 
+/**
+ * Every image and video format the library knows, keyed by extension. The
+ * upload gate, the folder counts, the listing filter and the served
+ * content-type all derive from these two tables, so adding a format here is
+ * the whole change (svg once landed in three of the four and folder counts
+ * disagreed with folder listings).
+ */
+export const IMAGE_MIME_BY_EXT: Readonly<Record<string, string>> = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  // JPEG spellings some cameras and sites produce; all are image/jpeg.
+  '.jfif': 'image/jpeg',
+  '.pjpeg': 'image/jpeg',
+  '.pjp': 'image/jpeg',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.gif': 'image/gif',
+  '.avif': 'image/avif',
+  '.svg': 'image/svg+xml',
+};
+
+export const VIDEO_MIME_BY_EXT: Readonly<Record<string, string>> = {
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+};
+
+function extensionPattern(table: Readonly<Record<string, string>>): RegExp {
+  return new RegExp(`\\.(${Object.keys(table).map((ext) => ext.slice(1)).join('|')})$`, 'i');
+}
+
+/** Filename tests for library entries (case-insensitive, extension only). */
+export const IMAGE_FILE_RE = extensionPattern(IMAGE_MIME_BY_EXT);
+export const VIDEO_FILE_RE = extensionPattern(VIDEO_MIME_BY_EXT);
+
+/** MIME types uploads may declare, one per distinct format. */
+export const IMAGE_MIME_TYPES: readonly string[] = [...new Set(Object.values(IMAGE_MIME_BY_EXT))];
+export const VIDEO_MIME_TYPES: readonly string[] = [...new Set(Object.values(VIDEO_MIME_BY_EXT))];
+
 /** Size caps shared by uploads and imports. */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB per image file
 export const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB per video file

@@ -546,9 +546,35 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     },
   },
   {
+    // Art sits under the day's content. At full strength (dim 0) the digit
+    // and event pills still paint on top: hiding them changes the cell's
+    // pixels, which it could not if the art covered them. The layer's
+    // negative z-index only stays inside the cell because the cell isolates.
+    type: 'fullscreen-calendar', name: 'day-rules-art-under-content', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundDim: 0 }],
+    },
+    expect: async (mod) => {
+      const art = mod.locator('[data-day-art]').first();
+      const cell = art.locator('..');
+      await expect(art).toHaveCSS('z-index', '-1');
+      await expect(art).toHaveCSS('opacity', '1');
+      await expect(cell).toHaveCSS('isolation', 'isolate');
+      const withContent = await cell.screenshot();
+      await cell.evaluate((el) => {
+        for (const child of Array.from(el.children)) {
+          if (!child.hasAttribute('data-day-art')) (child as HTMLElement).style.visibility = 'hidden';
+        }
+      });
+      const artOnly = await cell.screenshot();
+      expect(withContent.equals(artOnly), 'the digit and events paint over the art').toBe(false);
+    },
+  },
+  {
     // A hand-edited rule with both a color and art: the color stays the
     // cell's own background and the art rides the layer above it, at any
-    // dim value — the per-pixel dimming never darkens the cell itself.
+    // dim value, since the per-pixel dimming never darkens the cell itself.
     type: 'fullscreen-calendar', name: 'day-rules-art-color', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
     config: {
       view: 'month-grid',

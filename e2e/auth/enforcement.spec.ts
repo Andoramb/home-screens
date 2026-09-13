@@ -1,5 +1,9 @@
 import { test, expect } from '../fixtures';
 import { writeSandboxFile } from '../helpers/sandbox';
+import { baseConfig, makeScreen } from '../helpers/config-fixtures';
+import { putConfig, todayCalendarEvents } from '../helpers/api';
+import { buildModuleInstance, matrixSettings } from '../helpers/module-fixtures';
+import { stubModuleData } from '../helpers/stubs';
 import type { APIRequestContext } from '@playwright/test';
 
 // Enforcement, not UI: the editor's security-settings spec drives the panels;
@@ -136,6 +140,49 @@ test('display routes require the display token when auth is enabled', async ({ p
   expect(postWithToken.status()).not.toBe(401);
 
   await anon.dispose();
+});
+
+test('uploaded day art reaches the wall through the display token', async ({ page, playwright, baseURL }) => {
+  // Auth is enabled with PASSWORD by the serial tests above and no IP bypass
+  // is set, so the kiosk page holds only its display token. A picture from
+  // the media library sits behind the token-gated serve route: as a plain CSS
+  // background it would 401 silently, so the art layer has to fetch it like
+  // every other API-served image and paint the blob.
+  const admin = await playwright.request.newContext({ baseURL });
+  expect((await admin.post('/api/auth/login', { data: { password: PASSWORD } })).ok()).toBe(true);
+  const upload = await admin.post('/api/backgrounds', {
+    multipart: {
+      directory: 'calendar-art',
+      file: { name: 'party.svg', mimeType: 'image/svg+xml', buffer: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"><rect width="8" height="8" fill="#0f1931"/></svg>') },
+    },
+  });
+  expect(upload.status()).toBe(201);
+  const { path: serveUrl } = (await upload.json()) as { path: string };
+  expect(serveUrl).toContain('/api/backgrounds/serve?file=');
+
+  const today = new Date();
+  const cal = buildModuleInstance('fullscreen-calendar', {
+    view: 'month-grid',
+    dayRules: [{ id: 'd1', match: { months: [today.getMonth()], dayOfMonth: today.getDate() }, backgroundImage: serveUrl, backgroundDim: 0 }],
+  });
+  cal.id = 'cal';
+  // A calendar source and a stubbed feed, else the module shows its
+  // "no calendars picked" state instead of the grid.
+  await putConfig(admin, baseConfig({ screens: [makeScreen('s1', 'S1', [cal])], settings: matrixSettings() }));
+  await stubModuleData(page, { overrides: { calendar: todayCalendarEvents() } });
+
+  try {
+    await page.goto('/display');
+    const art = page.locator('[data-module-id="cal"] [data-day-art]').first();
+    await expect(art).toBeVisible();
+    // The blob is the proof the bytes came back through displayFetch; the raw
+    // serve URL in CSS is exactly the request the wall cannot authenticate.
+    await expect(art).toHaveCSS('background-image', /^url\("blob:/);
+  } finally {
+    // Hand the serial flow back the sandbox default screen it asserts on.
+    await putConfig(admin, baseConfig());
+    await admin.dispose();
+  }
 });
 
 test('IP bypassAuth lets an allowlisted IP skip display auth while the editor still needs login', async ({ page, playwright, baseURL }) => {
