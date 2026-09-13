@@ -409,6 +409,7 @@
         "location": "Locatie & taal",
         "data": "Back-ups & gegevens",
         "integrations": "API-sleutels",
+        "media": "Afbeeldingen & video's",
         "meals": "Maaltijden",
         "network": "Netwerk",
         "security": "Beveiliging",
@@ -1058,6 +1059,9 @@
       "powerSectionTitle": "Wanneer uitgeschakeld",
       "panelPowerOffLabel": "Ook de stroom van het scherm uitzetten",
       "panelPowerOffHelp": "Voor Raspberry Pi-displays. Het scherm gaat helemaal op zwart en heeft een paar seconden nodig om terug te komen als iemand het wekt. Laat dit uit als je scherm niet vanzelf weer aangaat."
+    },
+    "mediaPage": {
+      "description": "Alles wat naar deze hub is geüpload, op één plek. Bestanden die nog ergens worden gebruikt, kunnen niet worden verwijderd."
     },
     "integrationsPage": {
       "description": "Sleutels en logins die extra inhoud vrijgeven: agenda’s, foto’s, verkeer, nieuws. Ze blijven op dit apparaat en gaan nergens heen.",

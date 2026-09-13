@@ -409,6 +409,7 @@
         "location": "Ubicación e idioma",
         "data": "Copias y datos",
         "integrations": "Claves de API",
+        "media": "Imágenes y vídeos",
         "meals": "Comidas",
         "network": "Red",
         "security": "Seguridad",
@@ -1058,6 +1059,9 @@
       "powerSectionTitle": "Mientras está apagado",
       "panelPowerOffLabel": "Cortar también la alimentación de la pantalla",
       "panelPowerOffHelp": "Para displays con Raspberry Pi. La pantalla se queda completamente a oscuras y tarda unos segundos en volver cuando alguien la despierta. Déjalo desactivado si tu pantalla no vuelve a encenderse sola."
+    },
+    "mediaPage": {
+      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos que algo sigue usando no se pueden eliminar."
     },
     "integrationsPage": {
       "description": "Claves y accesos que desbloquean contenido extra: calendarios, fotos, tráfico, noticias. Se guardan en este dispositivo y no se envían a ningún sitio.",

@@ -409,6 +409,7 @@
         "location": "Standort & Sprache",
         "data": "Backups & Daten",
         "integrations": "API-Schlüssel",
+        "media": "Bilder & Videos",
         "meals": "Mahlzeiten",
         "network": "Netzwerk",
         "security": "Sicherheit",
@@ -1058,6 +1059,9 @@
       "powerSectionTitle": "Wenn ausgeschaltet",
       "panelPowerOffLabel": "Auch den Bildschirm vom Strom trennen",
       "panelPowerOffHelp": "Für Raspberry-Pi-Displays. Der Bildschirm wird komplett dunkel und braucht ein paar Sekunden, bis er nach dem Aufwecken wieder da ist. Lass das aus, wenn dein Bildschirm nicht von selbst wieder angeht."
+    },
+    "mediaPage": {
+      "description": "Alles, was auf diesem Hub hochgeladen wurde, an einem Ort. Dateien, die noch irgendwo verwendet werden, können nicht gelöscht werden."
     },
     "integrationsPage": {
       "description": "Schlüssel und Anmeldungen, die zusätzliche Inhalte freischalten: Kalender, Fotos, Verkehr, Nachrichten. Sie bleiben auf diesem Gerät und werden nirgendwohin gesendet.",

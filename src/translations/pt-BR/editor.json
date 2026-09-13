@@ -409,6 +409,7 @@
         "location": "Localização e idioma",
         "data": "Backups e dados",
         "integrations": "Chaves de API",
+        "media": "Fotos e vídeos",
         "meals": "Refeições",
         "network": "Rede",
         "security": "Segurança",
@@ -1058,6 +1059,9 @@
       "powerSectionTitle": "Enquanto está desligada",
       "panelPowerOffLabel": "Desligar também a energia da tela",
       "panelPowerOffHelp": "Para telas com Raspberry Pi. A tela fica totalmente escura e leva alguns segundos para voltar quando alguém a acorda. Deixe isso desligado se a sua tela não volta a ligar sozinha."
+    },
+    "mediaPage": {
+      "description": "Tudo o que foi enviado para este hub, em um só lugar. Arquivos que algo ainda usa não podem ser excluídos."
     },
     "integrationsPage": {
       "description": "Chaves e acessos que liberam conteúdo extra: calendários, fotos, trânsito, notícias. Ficam neste aparelho e não são enviados a lugar nenhum.",

@@ -36,6 +36,7 @@ export const DEFAULT_PAGE_IDS = [
   'meals',
   'phone',
   'integrations',
+  'media',
   'automation',
   'security',
   'network',

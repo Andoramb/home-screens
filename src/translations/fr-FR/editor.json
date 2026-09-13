@@ -409,6 +409,7 @@
         "location": "Lieu et langue",
         "data": "Sauvegardes et données",
         "integrations": "Clés API",
+        "media": "Photos et vidéos",
         "meals": "Repas",
         "network": "Réseau",
         "security": "Sécurité",
@@ -1058,6 +1059,9 @@
       "powerSectionTitle": "Quand il est éteint",
       "panelPowerOffLabel": "Couper aussi l'alimentation de l'écran",
       "panelPowerOffHelp": "Pour les affichages Raspberry Pi. L'écran devient complètement noir et met quelques secondes à revenir quand quelqu'un le réveille. Laissez ceci désactivé si votre écran ne se rallume pas tout seul."
+    },
+    "mediaPage": {
+      "description": "Tout ce qui a été envoyé sur ce hub, au même endroit. Les fichiers encore utilisés quelque part ne peuvent pas être supprimés."
     },
     "integrationsPage": {
       "description": "Clés et identifiants qui débloquent du contenu supplémentaire : agendas, photos, trafic, actualités. Ils restent sur cet appareil et ne sont envoyés nulle part.",

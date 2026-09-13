@@ -409,6 +409,7 @@
         "location": "Placering og sprog",
         "data": "Sikkerhedskopier",
         "integrations": "API-nøgler",
+        "media": "Billeder & video",
         "meals": "Måltider",
         "network": "Netværk",
         "security": "Sikkerhed",
@@ -1058,6 +1059,9 @@
       "powerSectionTitle": "Når det er slukket",
       "panelPowerOffLabel": "Sluk også for strømmen til skærmen",
       "panelPowerOffHelp": "Til Raspberry Pi-displays. Skærmen bliver helt mørk og bruger et par sekunder på at komme tilbage, når nogen vækker den. Lad dette være slået fra, hvis din skærm ikke tænder igen af sig selv."
+    },
+    "mediaPage": {
+      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som stadig bruges et sted, kan ikke slettes."
     },
     "integrationsPage": {
       "description": "Nøgler og logins, der låser op for ekstra indhold: kalendere, billeder, trafik, nyheder. De bliver på denne enhed og sendes ingen steder hen.",

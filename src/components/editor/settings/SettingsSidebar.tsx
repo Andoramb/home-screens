@@ -11,6 +11,7 @@ import {
   Calendar,
   CloudSun,
   Database,
+  Images,
   KeyRound,
   LayoutGrid,
   MapPin,
@@ -145,6 +146,9 @@ const PAGE_META: Record<DefaultPageId, { labelKey: string; icon: LucideIcon; gro
   // content sources (photos, todo lists, traffic), so users hunting for
   // "why is my photo module empty" find them next to the feature pages.
   integrations: { labelKey: 'integrations', icon: KeyRound, group: 'content' },
+  // The shared media library — everything uploaded to this hub — sits with
+  // the feature pages that consume it (photos, backgrounds, videos).
+  media: { labelKey: 'media', icon: Images, group: 'content' },
   automation: { labelKey: 'automation', icon: Zap, group: 'automation' },
   security: { labelKey: 'security', icon: Shield, group: 'admin' },
   network: { labelKey: 'network', icon: Wifi, group: 'admin' },
