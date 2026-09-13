@@ -9807,6 +9807,15 @@
       ]
     },
     {
+      "path": "/api/backgrounds/inventory",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "session"
+        }
+      ]
+    },
+    {
       "path": "/api/backgrounds/rotate",
       "methods": [
         {
