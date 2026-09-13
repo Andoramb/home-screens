@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "Ingen",
-      "deleteTitle": "Slet baggrund",
-      "deleteMessage": "Vil du slette \"{filename}\"?",
-      "deleteConfirmLabel": "Slet",
-      "deleteAriaLabel": "Slet",
       "uploadButton": "Upload baggrund",
       "uploadingButton": "Uploader…",
       "uploadFailed": "Upload mislykkedes",

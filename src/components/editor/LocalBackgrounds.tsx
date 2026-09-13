@@ -4,7 +4,6 @@ import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
-import { useConfirmStore } from '@/stores/confirm-store';
 import Button from '@/components/ui/Button';
 import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
 import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
@@ -66,7 +65,6 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const [localBackgrounds, setLocalBackgrounds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { config, selectedDisplayId, updateScreen } = useEditorStore();
 
@@ -113,39 +111,6 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
     }
     setIsLoading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const filenameFromPath = (bg: string) => {
-    const url = new URL(bg, 'http://localhost');
-    return url.searchParams.get('file') || bg.split('/').pop() || bg;
-  };
-
-  const handleDelete = async (bg: string) => {
-    const filename = filenameFromPath(bg);
-    const confirmed = await useConfirmStore.getState().confirm({
-      title: t('settings.localBackgrounds.deleteTitle'),
-      message: t('settings.localBackgrounds.deleteMessage', { filename }),
-      confirmLabel: t('settings.localBackgrounds.deleteConfirmLabel'),
-      variant: 'danger',
-    });
-    if (!confirmed) return;
-    setDeleting(bg);
-    try {
-      const res = await editorFetch('/api/backgrounds', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file: filename }),
-      });
-      if (res.ok) {
-        setLocalBackgrounds((prev) => prev.filter((b) => b !== bg));
-        if (currentScreen?.backgroundImage === bg) {
-          updateScreen(selectedScreenId, { backgroundImage: '' });
-        }
-      }
-    } catch (err) {
-      log.debug('Failed to delete background:', err);
-    }
-    setDeleting(null);
   };
 
   if (!currentScreen || !config) return null;
@@ -262,7 +227,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
       <p className="mt-3 text-[10px] text-hs-text-faint">{t('backgroundPicker.yourPicturesHeading')}</p>
       <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
         {localBackgrounds.map((bg) => (
-          <div key={bg} className="relative group">
+          <div key={bg}>
             <button
               onClick={() => pick(bg)}
               className={`${tileAspect} w-full rounded border overflow-hidden ${
@@ -270,14 +235,6 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
               }`}
             >
               <img src={bg} alt="" className="w-full h-full object-cover" />
-            </button>
-            <button
-              onClick={() => handleDelete(bg)}
-              disabled={deleting === bg}
-              className="absolute top-0.5 right-0.5 w-5 h-5 rounded-full bg-black/70 text-hs-text-secondary hover:bg-hs-danger hover:text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-              title={t('settings.localBackgrounds.deleteAriaLabel')}
-            >
-              {deleting === bg ? '...' : '×'}
             </button>
           </div>
         ))}

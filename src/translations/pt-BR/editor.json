@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "Nenhum",
-      "deleteTitle": "Excluir plano de fundo",
-      "deleteMessage": "Excluir \"{filename}\"?",
-      "deleteConfirmLabel": "Excluir",
-      "deleteAriaLabel": "Excluir",
       "uploadButton": "Enviar plano de fundo",
       "uploadingButton": "Enviando…",
       "uploadFailed": "Falha no envio",

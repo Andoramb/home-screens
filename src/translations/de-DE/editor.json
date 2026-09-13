@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "Kein Hintergrund",
-      "deleteTitle": "Hintergrund löschen",
-      "deleteMessage": "„{filename}“ löschen?",
-      "deleteConfirmLabel": "Löschen",
-      "deleteAriaLabel": "Löschen",
       "uploadButton": "Hintergrund hochladen",
       "uploadingButton": "Lädt hoch …",
       "uploadFailed": "Upload fehlgeschlagen",

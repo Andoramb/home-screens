@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "Geen",
-      "deleteTitle": "Achtergrond verwijderen",
-      "deleteMessage": "\"{filename}\" verwijderen?",
-      "deleteConfirmLabel": "Verwijderen",
-      "deleteAriaLabel": "Verwijderen",
       "uploadButton": "Achtergrond uploaden",
       "uploadingButton": "Uploaden…",
       "uploadFailed": "Uploaden mislukt",

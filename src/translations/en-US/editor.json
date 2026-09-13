@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "None",
-      "deleteTitle": "Delete background",
-      "deleteMessage": "Delete \"{filename}\"?",
-      "deleteConfirmLabel": "Delete",
-      "deleteAriaLabel": "Delete",
       "uploadButton": "Upload Background",
       "uploadingButton": "Uploading…",
       "uploadFailed": "Upload failed",

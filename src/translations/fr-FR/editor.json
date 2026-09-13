@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "Aucun",
-      "deleteTitle": "Supprimer l'arrière-plan",
-      "deleteMessage": "Supprimer « {filename} » ?",
-      "deleteConfirmLabel": "Supprimer",
-      "deleteAriaLabel": "Supprimer",
       "uploadButton": "Téléverser un arrière-plan",
       "uploadingButton": "Téléversement…",
       "uploadFailed": "Échec du téléversement",

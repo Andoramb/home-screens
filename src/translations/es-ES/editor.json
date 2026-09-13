@@ -1795,10 +1795,6 @@
     },
     "localBackgrounds": {
       "none": "Ninguno",
-      "deleteTitle": "Eliminar fondo",
-      "deleteMessage": "¿Eliminar «{filename}»?",
-      "deleteConfirmLabel": "Eliminar",
-      "deleteAriaLabel": "Eliminar",
       "uploadButton": "Subir fondo",
       "uploadingButton": "Subiendo…",
       "uploadFailed": "Error al subir",
