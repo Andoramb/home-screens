@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { STARTER_DAY_ART } from '@/lib/starter-day-art';
 import { useTranslate } from '@/i18n';
-import { useConfirmStore } from '@/stores/confirm-store';
 
 /**
  * Picture picker for day-look rules: the art that ships with Home Screens,
@@ -69,34 +68,6 @@ export default function DayArtPicker({ value, onChange }: {
     }
   };
 
-  const remove = async (url: string) => {
-    const file = fileFromServeUrl(url);
-    if (!file) return;
-    // Shared media-library file: confirm first, like every other delete.
-    const confirmed = await useConfirmStore.getState().confirm({
-      title: t(`${KEY}.artDeleteTitle`),
-      message: t(`${KEY}.artDeleteMessage`, { filename: file }),
-      confirmLabel: t(`${KEY}.artDeleteConfirm`),
-      variant: 'danger',
-    });
-    if (!confirmed) return;
-    try {
-      const res = await editorFetch('/api/backgrounds', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file, directory: CALENDAR_ART_DIR }),
-      });
-      if (!res.ok) {
-        setError(t(`${KEY}.artDeleteFailed`));
-        return;
-      }
-      setYours((prev) => prev.filter((u) => u !== url));
-      if (value === url) onChange(undefined);
-    } catch {
-      setError(t(`${KEY}.artDeleteFailed`));
-    }
-  };
-
   const tabClass = (on: boolean) =>
     `flex-1 rounded-full px-2 py-0.5 text-[11px] font-semibold border ${on ? 'border-hs-accent bg-hs-accent/20 text-hs-text-body' : 'border-hs-border-strong text-hs-text-muted hover:text-hs-text-body'}`;
 
@@ -145,7 +116,6 @@ export default function DayArtPicker({ value, onChange }: {
                   {fileFromServeUrl(url) ?? ''}
                 </span>
               </button>
-              <button type="button" aria-label={t(`${KEY}.artDelete`)} onClick={() => void remove(url)} className="px-1 text-xs text-hs-text-muted hover:text-hs-danger">✕</button>
             </div>
           ))}
           <button
