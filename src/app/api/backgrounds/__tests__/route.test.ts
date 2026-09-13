@@ -15,12 +15,23 @@ vi.mock('@/lib/auth', () => ({
   getMediaTokenSecret: vi.fn(async () => authState.mediaSecret),
 }));
 
+// Hoisted config holder (the inventory-route.test.ts convention): each test
+// re-imports the route after vi.resetModules(), which re-runs this factory
+// into a fresh registry — the DELETE in-use scan reads configState.config at
+// call time, so per-test seeding survives that.
+const configState = vi.hoisted(() => ({ config: {} as unknown }));
+
+vi.mock('@/lib/config', () => ({
+  readConfig: vi.fn(async () => configState.config),
+}));
+
 let tmpDir: string;
 let origCwd: () => string;
 let bgsDir: string;
 
 beforeEach(async () => {
   authState.mediaSecret = null;
+  configState.config = {};
   tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'bg-route-test-'));
   origCwd = process.cwd;
   process.cwd = () => tmpDir;
@@ -800,5 +811,184 @@ describe('DELETE /api/backgrounds', () => {
       makeDeleteRequest({ file: 'nope.jpg', directory: 'empty' }),
     );
     expect(res.status).toBe(404);
+  });
+});
+
+// ─── DELETE endpoint: files the config still uses ───────────────
+
+describe('DELETE /api/backgrounds in-use protection', () => {
+  /** Seed nature/a.png and hand back its absolute path. */
+  async function seedNaturePng() {
+    const natureDir = path.join(bgsDir, 'nature');
+    await fs.mkdir(natureDir, { recursive: true });
+    const abs = path.join(natureDir, 'a.png');
+    await fs.writeFile(abs, 'img');
+    return abs;
+  }
+
+  it('refuses a file the config references via a serve URL', async () => {
+    configState.config = {
+      screens: [
+        {
+          id: 's1',
+          name: 'Home',
+          backgroundImage: '/api/backgrounds/serve?file=nature%2Fa.png',
+        },
+      ],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = await seedNaturePng();
+
+    const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('in use');
+    expect(Array.isArray(json.usage)).toBe(true);
+    expect(json.usage.length).toBeGreaterThan(0);
+    expect(json.usage[0].kind).toBe('screen');
+
+    // The file survives the refusal.
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('refuses a file the config references via a bare path', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', backgroundImage: 'nature/a.png' }],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = await seedNaturePng();
+
+    const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('in use');
+    expect(json.usage.length).toBe(1);
+
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('reports every reference: two uses yield two usage entries', async () => {
+    configState.config = {
+      screens: [
+        { id: 's1', name: 'Home', backgroundImage: 'nature/a.png' },
+        {
+          id: 's2',
+          name: 'Away',
+          backgroundImage: '/api/backgrounds/serve?file=nature%2Fa.png',
+        },
+      ],
+    };
+    const { DELETE } = await getHandlers();
+    await seedNaturePng();
+
+    const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.usage).toHaveLength(2);
+    expect(new Set(json.usage.map((u: { configPath: string }) => u.configPath)).size).toBe(2);
+  });
+
+  it('deletes an unreferenced file even when the config references others', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', backgroundImage: 'nature/a.png' }],
+    };
+    const { DELETE } = await getHandlers();
+    await seedNaturePng();
+    await fs.writeFile(path.join(bgsDir, 'unused.jpg'), 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'unused.jpg' }));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json.deleted).toBe('unused.jpg');
+    await expect(fs.access(path.join(bgsDir, 'unused.jpg'))).rejects.toThrow();
+  });
+
+  it('refuses a hand-placed spaced filename referenced as a bare path', async () => {
+    // The scanner reads bare paths containing spaces as prose, so a defensive
+    // quoted-boundary check must catch this one.
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', backgroundImage: 'my photo.jpg' }],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = path.join(bgsDir, 'my photo.jpg');
+    await fs.writeFile(abs, 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'my photo.jpg' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('in use');
+    // The scanner cannot see this reference, so the refusal carries no usage
+    // detail — the empty array is the backstop's signature.
+    expect(json.usage).toEqual([]);
+
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('refuses a spaced filename in a serve URL the scanner regex misses', async () => {
+    // Isolates the percent-encoded backstop: the URL lacks the /api prefix,
+    // so SERVE_RE does not match it, and the bare-path gate normalizes the
+    // whole string (not the filename) — the scanner finds nothing and only
+    // the `file=my%20photo.jpg` substring check can refuse. The 409 with an
+    // empty usage array is that check's signature.
+    configState.config = {
+      screens: [
+        {
+          id: 's1',
+          name: 'Home',
+          backgroundImage: 'backgrounds/serve?file=my%20photo.jpg',
+        },
+      ],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = path.join(bgsDir, 'my photo.jpg');
+    await fs.writeFile(abs, 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'my photo.jpg' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('in use');
+    expect(json.usage).toEqual([]);
+
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('refuses a hand-placed spaced filename referenced via an encoded serve URL', async () => {
+    configState.config = {
+      screens: [
+        {
+          id: 's1',
+          name: 'Home',
+          backgroundImage: '/api/backgrounds/serve?file=my%20photo.jpg',
+        },
+      ],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = path.join(bgsDir, 'my photo.jpg');
+    await fs.writeFile(abs, 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'my photo.jpg' }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.error).toBe('in use');
+
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('does not mistake a substring: root a.jpg deletes while nature/a.jpg is used', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', backgroundImage: 'nature/a.jpg' }],
+    };
+    const { DELETE } = await getHandlers();
+    const natureDir = path.join(bgsDir, 'nature');
+    await fs.mkdir(natureDir);
+    await fs.writeFile(path.join(natureDir, 'a.jpg'), 'img');
+    await fs.writeFile(path.join(bgsDir, 'a.jpg'), 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'a.jpg' }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).deleted).toBe('a.jpg');
+    await expect(fs.access(path.join(bgsDir, 'a.jpg'))).rejects.toThrow();
+    // The referenced sibling is untouched.
+    await expect(fs.access(path.join(natureDir, 'a.jpg'))).resolves.toBeUndefined();
   });
 });

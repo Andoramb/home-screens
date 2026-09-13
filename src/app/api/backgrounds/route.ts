@@ -11,6 +11,8 @@ import {
   MAX_VIDEO_BYTES,
 } from '@/lib/library-files';
 import { mintMediaToken } from '@/lib/media-token';
+import { readConfig } from '@/lib/config';
+import { scanMediaUsage } from '@/lib/media-usage';
 import type { MediaListItem } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -197,6 +199,35 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     await fs.access(filePath);
   } catch {
     return NextResponse.json({ error: 'File not found' }, { status: 404 });
+  }
+
+  // Refuse to delete a file the config still references somewhere: a stale
+  // page or a quick edit must never be able to remove a picture or video
+  // something still shows. The readConfig() read is serialized with editor
+  // config saves through the shared data-transaction coordinator (PUT
+  // /api/config takes the same queue), so the residual race is only the
+  // sub-millisecond disk timing between the read's lock release and the
+  // unlink — wrapping the unlink would not improve it.
+  const config = await readConfig();
+  const usage = scanMediaUsage(config, new Set([relativePath])).get(relativePath);
+  if (usage) {
+    return NextResponse.json({ error: 'in use', usage }, { status: 409 });
+  }
+  // Deliberately conservative backstop for hand-placed spaced filenames: the
+  // scanner reads bare paths containing spaces as prose, so one can slip past
+  // the scan above. Refuse when the serialized config contains the path as a
+  // complete quoted JSON string (the quote boundaries are what keep a longer
+  // path like nature/a.jpg from matching a.jpg) or in its percent-encoded
+  // serve form (spaces %20, slashes %2F) — the latter's real coverage is
+  // serve URLs malformed enough that the scanner's regex misses them (a
+  // missing /api prefix, an absolute-origin prefix). These checks only ever
+  // add refusals, never permissions.
+  const serialized = JSON.stringify(config);
+  if (
+    serialized.includes(`"${relativePath}"`) ||
+    serialized.includes(`file=${encodeURIComponent(relativePath)}`)
+  ) {
+    return NextResponse.json({ error: 'in use', usage: [] }, { status: 409 });
   }
 
   await fs.unlink(filePath);
