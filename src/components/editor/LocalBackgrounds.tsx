@@ -242,7 +242,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
       {uploadError && (
         <p className="text-xs text-hs-danger">{uploadError}</p>
       )}
-      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} data-file-input="" className="hidden" />
       <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="w-full">
         {isLoading ? t('settings.localBackgrounds.uploadingButton') : t('settings.localBackgrounds.uploadButton')}
       </Button>

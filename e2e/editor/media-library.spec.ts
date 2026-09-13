@@ -90,7 +90,7 @@ test.describe('background picker', () => {
     // Upload stays: push one picture through the picker's own input.
     const upload = page.getByRole('button', { name: 'Upload Background' });
     await expect(upload).toBeVisible();
-    await upload.locator('xpath=preceding-sibling::input[1]').setInputFiles({
+    await page.locator('[data-file-input]').setInputFiles({
       name: 'e2e-picker.png',
       mimeType: 'image/png',
       buffer: PNG_1X1,

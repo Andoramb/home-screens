@@ -411,7 +411,7 @@ export default function MediaLibraryPage() {
                   className="flex aspect-[4/3] w-full items-center justify-center rounded-t-[9px] bg-[linear-gradient(135deg,#1a2233,#10141d)]"
                   aria-hidden="true"
                 >
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-8 w-8 text-hs-text-primary opacity-85">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-[34px] w-[34px] text-hs-text-primary opacity-85">
                     <path d="M8 5.5v13l11-6.5z" />
                   </svg>
                 </div>
@@ -426,9 +426,8 @@ export default function MediaLibraryPage() {
               <div className="flex flex-col gap-px px-2 py-1.5">
                 <span className="truncate text-[11.5px] font-semibold text-hs-text-body">{name}</span>
                 <span className="truncate text-[10.5px] text-hs-text-muted">
-                  {item.width != null && item.height != null
-                    ? `${item.width}×${item.height} · ${formatBytes(item.bytes)}`
-                    : formatBytes(item.bytes)}
+                  {item.width != null && item.height != null && `${item.width}×${item.height} · `}
+                  <span className="font-semibold">{formatBytes(item.bytes)}</span>
                 </span>
               </div>
               <input
