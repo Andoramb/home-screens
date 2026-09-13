@@ -7,6 +7,7 @@ import {
 } from '@/lib/calendar-utils';
 import { dayDecorFor, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { SectionHeader } from '../shared/SectionHeader';
 import { TEXT_OPACITY, ink } from '@/lib/constants';
 import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
@@ -88,6 +89,7 @@ export function AgendaView({ events, config, style, today, now, accentColor, eve
         const decor = dayDecorFor(config, date, dayEvents, { today, now, timezone, isDark: true });
         return (
         <div key={date.toISOString()} style={mergeCellDecor({ borderRadius: decor.background || decor.backgroundImage || decor.borderColor ? 6 : undefined }, decor)}>
+          {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
           {boundary === 'month' && (
             <div className="mb-2">
               <p className="font-semibold" style={{ fontSize: '0.9em', color: accentColor }}>

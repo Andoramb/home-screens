@@ -533,16 +533,31 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     },
   },
   {
-    // Art dimming writes the scrim alpha into the cell's inline style. The
-    // browser re-serializes CSSOM values with spaced rgba() args, so the
-    // selector matches the serialized form, not the emitted source text.
+    // Art dimming is the art layer's element opacity (per-pixel: opaque
+    // art fades, transparent pixels leave the cell untouched), so dim 0.7
+    // renders the layer at opacity 0.3.
     type: 'fullscreen-calendar', name: 'day-rules-art-dim', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
     config: {
       view: 'month-grid',
       dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundDim: 0.7 }],
     },
     expect: async (mod) => {
-      await expect(mod.locator('[style*="rgba(0, 0, 0, 0.7)"]').first()).toBeVisible();
+      await expect(mod.locator('[data-day-art]').first()).toHaveCSS('opacity', '0.3');
+    },
+  },
+  {
+    // A hand-edited rule with both a color and art: the color stays the
+    // cell's own background and the art rides the layer above it, at any
+    // dim value — the per-pixel dimming never darkens the cell itself.
+    type: 'fullscreen-calendar', name: 'day-rules-art-color', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/sprinkles.svg', background: '#3b82f6', backgroundDim: 0.5 }],
+    },
+    expect: async (mod) => {
+      const cell = mod.locator('[data-day-art]').first().locator('..');
+      await expect(cell).toHaveCSS('background-color', 'rgb(59, 130, 246)');
+      await expect(mod.locator('[data-day-art]').first()).toHaveCSS('opacity', '0.5');
     },
   },
   {

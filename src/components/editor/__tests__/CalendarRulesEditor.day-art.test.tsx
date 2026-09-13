@@ -18,8 +18,12 @@ vi.mock('@/lib/editor-fetch', () => ({
   editorFetch: vi.fn(async () => ({ ok: true, json: async () => [] })),
 }));
 
-function Harness({ initial }: { initial: CalendarDayRule[] }) {
+function Harness({ initial, stateRef }: {
+  initial: CalendarDayRule[];
+  stateRef?: { current: CalendarDayRule[] | undefined };
+}) {
   const [dayRules, setDayRules] = useState<CalendarDayRule[] | undefined>(initial);
+  if (stateRef) stateRef.current = dayRules;
   return (
     <I18nProvider locale="en-US" blob={{}}>
       <CalendarRulesEditor
@@ -73,5 +77,27 @@ describe('two day rules with picture backgrounds', () => {
     expect(card2.querySelector('[data-art-option="halloween"]')?.getAttribute('aria-pressed')).toBe('false');
     expect(cards[0].querySelector('[data-art-option="halloween"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(cards[0].querySelector('[data-art-option="birthday"]')?.getAttribute('aria-pressed')).toBe('false');
+  });
+});
+
+describe('picture mode owns the whole background choice', () => {
+  afterEach(cleanup);
+
+  const backgroundSelect = (card: Element) => {
+    const selects = card.querySelectorAll('select');
+    return selects[selects.length - 1];
+  };
+
+  it('entering picture mode clears a plain color and the art carries the look alone', async () => {
+    const stateRef: { current: CalendarDayRule[] | undefined } = { current: undefined };
+    const { container } = render(
+      <Harness initial={[{ id: 'r1', match: {}, background: '#ff0000' }]} stateRef={stateRef} />,
+    );
+    const card = container.querySelector('[data-rule-card]')!;
+    await act(async () => {
+      fireEvent.change(backgroundSelect(card), { target: { value: 'picture' } });
+    });
+    expect(stateRef.current?.[0].background).toBeUndefined();
+    expect(stateRef.current?.[0].backgroundImage).toBe('/starter-day-art/celebrate.svg');
   });
 });

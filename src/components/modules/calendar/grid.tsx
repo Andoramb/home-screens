@@ -11,6 +11,7 @@ import { viewDayWindow } from '@/lib/calendar-legend';
 import { pickGridTimeColor, pickPillTextColor, pickTintedTextColor } from '@/lib/calendar-color';
 import { dayDecorFor, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { TEXT_OPACITY, ink } from '@/lib/constants';
 import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
 import type { TranslateFn } from '@/i18n';
@@ -275,6 +276,7 @@ function GridBannerView({ events, config, style, today, now, accentColor, t, loc
                     opacity: isMuted ? TEXT_OPACITY.tertiary : 1,
                   }, decor)}
                 >
+                  {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
                   {/* Digits at 0.65em to match the week grid; height 1.35em
                       keeps the previous badge's pixel height. The height is
                       NOT scaled: a length in `em` resolves against the
@@ -453,6 +455,7 @@ function GridModernView({ events, config, style, today, now, accentColor, t, loc
                     ...(cellShadow ? { boxShadow: cellShadow } : {}),
                   }, decor)}
                 >
+                  {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
                   {/* The row is a bare div with no font-size of its own, so
                       its 1.4em resolves against the cell and has to be scaled
                       by hand to keep making room for the digits. The badge

@@ -318,17 +318,20 @@ describe('resolveDayDecor: art', () => {
 describe('mergeCellDecor', () => {
   const base: CSSProperties = { backgroundColor: 'red' };
 
-  it('art becomes a scrim + cover image; the base color stays under it', () => {
+  it('art leaves the background stack alone and anchors a layer element instead', () => {
     const out = mergeCellDecor(base, { backgroundImage: '/art.svg', backgroundDim: 0.5, badges: [] });
-    expect(out.backgroundImage).toBe('linear-gradient(rgba(0,0,0,0.5),rgba(0,0,0,0.5)), url("/art.svg")');
-    expect(out.backgroundSize).toBe('cover');
-    expect(out.backgroundPosition).toBe('center');
+    // Art paints as a DayArtLayer child the views render, so the cell keeps
+    // its own background exactly as a decor-free cell renders; the style only
+    // gains the anchor that layer positions against.
     expect(out.backgroundColor).toBe('red');
+    expect(out.backgroundImage).toBeUndefined();
+    expect(out.backgroundSize).toBeUndefined();
+    expect(out.position).toBe('relative');
   });
 
-  it('dim defaults to 0.4', () => {
-    const out = mergeCellDecor(base, { backgroundImage: '/a.svg', badges: [] });
-    expect(out.backgroundImage).toBe('linear-gradient(rgba(0,0,0,0.4),rgba(0,0,0,0.4)), url("/a.svg")');
+  it('an art decor never overrides a position the view already set', () => {
+    const out = mergeCellDecor({ ...base, position: 'sticky' } as CSSProperties, { backgroundImage: '/a.svg', badges: [] });
+    expect(out.position).toBe('sticky');
   });
 
   it('a color decor replaces the base color', () => {
@@ -349,18 +352,18 @@ describe('mergeCellDecor', () => {
     expect(out.backgroundImage).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
   });
 
-  it('art wins the image slot over a gradient tint; a shorthand base survives under it', () => {
+  it('a gradient decor composes with art: the gradient stays the cell background, art just anchors', () => {
     const out = mergeCellDecor({ background: 'blue' } as CSSProperties, { background: 'linear-gradient(180deg, rgba(1,2,3,0.2))', backgroundImage: '/a.svg', badges: [] });
-    expect(out.backgroundImage).toContain('url("/a.svg")');
-    expect(out.backgroundImage).not.toContain('180deg');
-    expect(out.backgroundColor).toBeUndefined();
-    expect(out.background).toBe('blue');
+    expect(out.backgroundImage).toBe('linear-gradient(180deg, rgba(1,2,3,0.2))');
+    expect(out.background).toBeUndefined();
+    expect(out.position).toBe('relative');
   });
 
-  it('a plain color decor resolves alongside art and sits under it', () => {
+  it('a plain color decor resolves alongside art: the cell is colored, art overlays it', () => {
     const out = mergeCellDecor(base, { background: '#00ff00', backgroundImage: '/a.svg', badges: [] });
     expect(out.backgroundColor).toBe('#00ff00');
-    expect(out.backgroundImage).toContain('url("/a.svg")');
+    expect(out.backgroundImage).toBeUndefined();
+    expect(out.position).toBe('relative');
   });
 
   it('identity when decor sets nothing', () => {

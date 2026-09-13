@@ -328,26 +328,17 @@ export function eventOpacity(ev: Pick<CalendarEvent, 'opacity'>, base: number | 
 /**
  * Day-rule look merged over a cell's own inline style: colors replace
  * via the longhands (a gradient auto tint takes the image slot), art
- * composes as a scrim + cover image over the cell color, opacity
- * multiplies, the border joins any existing box shadow as an inset ring.
- * Returns `base` untouched when the decor sets nothing (identity stays
- * cheap to compare).
+ * anchors a DayArtLayer the views render over the cell background (it is
+ * deliberately absent from the background stack — a scrim layer there
+ * always covers the full box, which would dim the cell through the art's
+ * transparent pixels), opacity multiplies, the border joins any existing
+ * box shadow as an inset ring. Returns `base` untouched when the decor
+ * sets nothing (identity stays cheap to compare).
  */
 export function mergeCellDecor(base: CSSProperties, decor: DayDecor): CSSProperties {
   if (decor.background == null && decor.backgroundImage == null && decor.opacity == null && decor.borderColor == null) return base;
   const out: CSSProperties = { ...base };
-  if (decor.backgroundImage) {
-    // Art covers the cell with a dimming scrim painted over it (the first
-    // background layer renders on top); the scrim keeps event text
-    // readable over any art.
-    const dim = decor.backgroundDim ?? 0.4;
-    out.backgroundImage = `linear-gradient(rgba(0,0,0,${dim}),rgba(0,0,0,${dim})), url("${decor.backgroundImage}")`;
-    out.backgroundSize = 'cover';
-    out.backgroundPosition = 'center';
-    if (decor.background && !decor.background.includes('gradient')) {
-      out.backgroundColor = decor.background;
-    }
-  } else if (decor.background) {
+  if (decor.background) {
     delete out.backgroundImage;
     if (decor.background.includes('gradient')) {
       // An auto tint with several colors is itself a background image; it
@@ -358,6 +349,12 @@ export function mergeCellDecor(base: CSSProperties, decor: DayDecor): CSSPropert
     } else {
       out.backgroundColor = decor.background;
     }
+  }
+  if (decor.backgroundImage) {
+    // The art layer (see components/modules/shared/DayArtLayer.tsx) is
+    // absolutely positioned inside this cell; a cell the view did not
+    // already position needs to become its anchor.
+    if (out.position == null) out.position = 'relative';
   }
   if (decor.opacity != null) {
     const current = typeof base.opacity === 'number' ? base.opacity : 1;
