@@ -70,6 +70,18 @@ The background picker's Local tab shows the top level of your library only. Phot
 
 ---
 
+## Managing your library
+
+Every picture and video you upload lands in one shared library, and **Settings > Pictures & videos** shows all of it: thumbnails with each picture's resolution and every file's size, folder filters, and a switch between images and videos.
+
+Files that something still uses can't be deleted. If a screen background, a calendar day picture, or a slideshow still points at a file, it wears an **In use** badge (hover the badge to see where it's used), and delete leaves it alone. Cleaning up can never break a screen.
+
+To add files, open the upload panel and drop in as many pictures or videos as you like, choosing which folder they land in. The built-in starter pictures for calendar day looks are not part of this library — they ship with Home Screens and refresh on upgrades.
+
+Deleting happens here. The background picker's own delete button is gone — pickers pick and upload, the library page manages — and the delete buttons that remain elsewhere, inside a module's media browser or on the phone's Photos tab, answer to the same rule: files still in use stay put.
+
+---
+
 ## Unsplash integration
 
 Unsplash provides access to a library of high-quality, freely usable photographs. A free API key is required.
