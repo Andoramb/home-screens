@@ -641,3 +641,51 @@ describe('setPluginSettings — 32KB cap', () => {
     expect(await getPluginSettings('foo')).toEqual({});
   });
 });
+
+describe('getInstalledPlugins cache invalidation', () => {
+  // The module-level installedCache used to key on mtimeMs alone. Two writes
+  // can land in the same clock tick (back-to-back fs.writeFile does here), so
+  // a file rewritten in place looked unchanged and a stale read was served —
+  // which is also how one test's seeded manifest leaked into the next. The
+  // cache must key on path + mtime + size; this test asserts the correctness
+  // contract (fresh contents after a same-path rewrite) rather than trying to
+  // reproduce the timing race itself.
+  const origCwd = process.cwd();
+  let tmpCwd: string;
+  let installedPath: string;
+
+  beforeEach(async () => {
+    tmpCwd = await fs.mkdtemp(path.join(os.tmpdir(), 'hs-installed-cache-cwd-'));
+    await fs.mkdir(path.join(tmpCwd, 'data', 'plugins'), { recursive: true });
+    process.chdir(tmpCwd);
+    installedPath = path.join(tmpCwd, 'data', 'plugins', 'installed.json');
+  });
+
+  afterEach(async () => {
+    process.chdir(origCwd);
+    await fs.rm(tmpCwd, { recursive: true, force: true });
+  });
+
+  it('re-reads when the file is rewritten in place with different content', async () => {
+    await fs.writeFile(installedPath, JSON.stringify({
+      schemaVersion: 1,
+      plugins: [
+        { id: 'first', version: '1.0.0', installedAt: '2026-01-01', enabled: true, moduleType: 'first' },
+      ],
+    }));
+    const first = await getInstalledPlugins();
+    expect(first.plugins.map((p) => p.id)).toEqual(['first']);
+
+    // Same path, same tick, different length: an mtime-only cache serves the
+    // stale entry here.
+    await fs.writeFile(installedPath, JSON.stringify({
+      schemaVersion: 1,
+      plugins: [
+        { id: 'second-a', version: '2.0.0', installedAt: '2026-01-02', enabled: true, moduleType: 'second-a' },
+        { id: 'second-b', version: '0.1.0', installedAt: '2026-01-02', enabled: false, moduleType: 'second-b' },
+      ],
+    }));
+    const second = await getInstalledPlugins();
+    expect(second.plugins.map((p) => p.id)).toEqual(['second-a', 'second-b']);
+  });
+});
