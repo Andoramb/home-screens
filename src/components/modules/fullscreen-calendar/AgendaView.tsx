@@ -16,6 +16,7 @@ import { eventSurface } from '@/lib/calendar-event-surface';
 import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
 import { eventGlyph, eventOpacity, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import type { CalendarEvent, CalendarViewProps } from './view-support';
 import { DayWeatherBadge, EventWeatherLine } from './WeatherInline';
 import { CountdownPill, EventProgressBar, WeekSeparator, MonthSeparator, eventAriaLabel } from './list-view-bits';
@@ -80,8 +81,9 @@ export function AgendaView({ events, timezone, config, scale, today, now, timeFo
         background: dayFill,
         paddingLeft: dayFill ? scale.bu * 0.8 : undefined,
         paddingRight: dayFill ? scale.bu * 0.8 : undefined,
-        borderRadius: dayFill || decor.background || decor.borderColor ? scale.bu * 0.5 : undefined,
+        borderRadius: dayFill || decor.background || decor.backgroundImage || decor.borderColor ? scale.bu * 0.5 : undefined,
       }, decor)}>
+        {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
         {boundary === 'month' && (
           <MonthSeparator monthStart={date} scale={scale} fontSize={fontSize} locale={locale} />
         )}

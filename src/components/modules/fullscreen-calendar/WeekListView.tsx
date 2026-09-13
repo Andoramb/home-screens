@@ -18,6 +18,7 @@ import { eventSurface } from '@/lib/calendar-event-surface';
 import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
 import { eventGlyph, eventOpacity, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { CountdownPill, EventProgressBar, eventAriaLabel } from './list-view-bits';
 import { DEFAULT_TIME_FORMAT } from '@/types/config';
 import { getMealSlotLabelKey, toISODate } from '@/lib/meal-constants';
@@ -73,9 +74,10 @@ export function WeekListView({ events, timezone, config, scale, today, now, time
           paddingLeft: isToday && showTodayMarker ? scale.bu * 1.2 : dayFill ? scale.bu * 0.8 : undefined,
           paddingRight: dayFill ? scale.bu * 0.8 : undefined,
           marginLeft: isToday && showTodayMarker ? -scale.bu * 1.5 : undefined,
-          borderRadius: dayFill || decor.background || decor.borderColor ? scale.bu * 0.5 : undefined,
+          borderRadius: dayFill || decor.background || decor.backgroundImage || decor.borderColor ? scale.bu * 0.5 : undefined,
         }, decor)}
       >
+        {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
         {/* Day header */}
         <div style={{
           fontFamily: "var(--font-dm-serif), 'DM Serif Display', Georgia, serif",

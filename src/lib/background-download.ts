@@ -6,10 +6,10 @@ import { fetchWithTimeout } from '@/lib/api-utils';
 const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
 
 /**
- * Image formats a browser can render, mapped to the extension we save them
- * under. Matches MIME_TYPES in /api/backgrounds/serve, which derives the
- * response content-type from the saved extension — save a TIFF as .jpg and
- * the display gets JPEG headers over TIFF bytes and shows a broken image.
+ * Raster formats a browser can render, mapped to the extension we save them
+ * under. Every entry is also in IMAGE_MIME_BY_EXT (lib/library-files), which
+ * the serve route reads the response content-type from: save a TIFF as .jpg
+ * and the display gets JPEG headers over TIFF bytes and shows a broken image.
  */
 const WEB_IMAGE_EXTENSIONS: Record<string, string> = {
   'image/jpeg': '.jpg',

@@ -10,6 +10,7 @@ import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
 import { dayCellFill, dayDecorFor, resolveTodayHighlight } from './view-support';
 import { eventBg } from '@/lib/calendar-event-surface';
 import { mergeCellDecor } from '@/lib/calendar-rules';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import type { CalendarViewProps } from './view-support';
 import { useContainerHeight } from './shared-time-grid';
 import { GridCellBody } from './grid-view-bits';
@@ -146,6 +147,7 @@ export function MonthGridView({ events, timezone, config, scale, today, now }: C
                       : undefined),
                 }, decor)}
               >
+                {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
                 <GridCellBody
                   day={day}
                   dayEvents={dayEvents}

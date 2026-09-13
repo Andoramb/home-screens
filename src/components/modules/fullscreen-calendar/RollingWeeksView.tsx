@@ -7,6 +7,7 @@ import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
 import { dayCellFill, dayDecorFor, resolveTodayHighlight } from './view-support';
 import { eventBg } from '@/lib/calendar-event-surface';
 import { mergeCellDecor } from '@/lib/calendar-rules';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { GridCellBody } from './grid-view-bits';
 import { rollingRangeTitle } from './view-traits';
 import { useContainerHeight } from './shared-time-grid';
@@ -103,6 +104,7 @@ export function RollingWeeksView({ events, timezone, config, scale, today, now }
                     : undefined),
               }, decor)}
             >
+              {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
               <GridCellBody
                 day={day}
                 dayEvents={dayEvents}

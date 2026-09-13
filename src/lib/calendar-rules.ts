@@ -43,6 +43,8 @@ export interface DayBadge {
 
 export interface DayDecor {
   background?: string;
+  backgroundImage?: string;
+  backgroundDim?: number;
   opacity?: number;
   borderColor?: string;
   badges: DayBadge[];
@@ -166,6 +168,28 @@ export function matchesDay(
   if (match.daysOfWeek && match.daysOfWeek.length > 0 && !match.daysOfWeek.includes(day.getDay())) {
     return false;
   }
+  if (match.months && match.months.length > 0 && !match.months.includes(day.getMonth())) {
+    return false;
+  }
+  if (match.dayOfMonth != null && day.getDate() !== match.dayOfMonth) return false;
+  // Month-end test: the numeric constructor normalizes overflow, so the next
+  // day landing on the 1st means this was the last.
+  if (match.lastDayOfMonth === true) {
+    const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 1);
+    if (next.getDate() !== 1) return false;
+  }
+  if (match.weekdayOfMonth) {
+    const { week, weekday } = match.weekdayOfMonth;
+    if (day.getDay() !== weekday) return false;
+    // Last occurrence: adding a week stays in the month unless this is the
+    // final one.
+    if (week === 'last') {
+      const next = new Date(day.getFullYear(), day.getMonth(), day.getDate() + 7);
+      if (next.getMonth() === day.getMonth()) return false;
+    } else if (Math.ceil(day.getDate() / 7) !== week) {
+      return false;
+    }
+  }
   if (match.withEvents === 'any' && dayEvents.length === 0) return false;
   if (match.withEvents === 'none' && dayEvents.length > 0) return false;
   if (match.withEvents === 'matching' && !dayEvents.some((ev) => matchesEvent(match.eventMatch, ev, ctx))) {
@@ -212,6 +236,8 @@ export function resolveDayDecor(
 ): DayDecor {
   if (!rules || rules.length === 0) return NO_DECOR;
   let background: string | undefined;
+  let backgroundImage: string | undefined;
+  let backgroundDim: number | undefined;
   let opacity: number | undefined;
   let borderColor: string | undefined;
   const badges: DayBadge[] = [];
@@ -222,14 +248,19 @@ export function resolveDayDecor(
         ? autoDayTint(dayEvents, opts.autoTintAlpha ?? 0.18)
         : rule.background;
     }
+    if (backgroundImage == null && rule.backgroundImage) {
+      backgroundImage = rule.backgroundImage;
+      const dim = rule.backgroundDim;
+      backgroundDim = dim == null || !Number.isFinite(dim) ? 0.4 : Math.min(1, Math.max(0, dim));
+    }
     if (opacity == null && rule.opacity != null) opacity = clampOpacity(rule.opacity);
     if (borderColor == null && rule.borderColor) borderColor = rule.borderColor;
     const icon = rule.badgeIcon?.trim();
     const text = rule.badgeText?.trim();
     if (icon || text) badges.push({ icon: icon || undefined, text: text || undefined, color: rule.badgeColor || undefined });
   }
-  if (background == null && opacity == null && borderColor == null && badges.length === 0) return NO_DECOR;
-  return { background, opacity, borderColor, badges };
+  if (background == null && backgroundImage == null && opacity == null && borderColor == null && badges.length === 0) return NO_DECOR;
+  return { background, backgroundImage, backgroundDim, opacity, borderColor, badges };
 }
 
 /**
@@ -295,19 +326,40 @@ export function eventOpacity(ev: Pick<CalendarEvent, 'opacity'>, base: number | 
 }
 
 /**
- * Day-rule look merged over a cell's own inline style: background
- * replaces (both shorthand and the longhand color/image), opacity
- * multiplies, the border joins any existing box shadow as an inset ring.
- * Returns `base` untouched when the decor sets nothing (identity stays
- * cheap to compare).
+ * Day-rule look merged over a cell's own inline style. A background (plain
+ * color or gradient auto tint) takes the whole `background` slot; art
+ * anchors a DayArtLayer the views render inside the cell (it is
+ * deliberately absent from the background stack: a scrim layer there
+ * always covers the full box, which would dim the cell through the art's
+ * transparent pixels); opacity multiplies; the border joins any existing
+ * box shadow as an inset ring. Returns `base` untouched when the decor
+ * sets nothing (identity stays cheap to compare).
  */
 export function mergeCellDecor(base: CSSProperties, decor: DayDecor): CSSProperties {
-  if (decor.background == null && decor.opacity == null && decor.borderColor == null) return base;
+  if (decor.background == null && decor.backgroundImage == null && decor.opacity == null && decor.borderColor == null) return base;
   const out: CSSProperties = { ...base };
   if (decor.background) {
+    // One slot, the shorthand, never a mix. React diffs style keys one at a
+    // time, and writing the `background` shorthand clears every longhand:
+    // a style carrying both the base shorthand and a rule `backgroundColor`
+    // lost the rule color whenever the base changed (today moving on at
+    // midnight, Shade weekends toggled), because the shorthand was re-sent
+    // and the untouched longhand was not. The views pass shorthand bases
+    // for the same reason.
     delete out.backgroundColor;
     delete out.backgroundImage;
     out.background = decor.background;
+  }
+  if (decor.backgroundImage) {
+    // The art layer (see components/modules/shared/DayArtLayer.tsx) is an
+    // absolutely positioned child at z-index -1, so it paints above the
+    // cell's own background and below every in-flow child: digits, event
+    // pills, and faded events that form their own stacking context. A
+    // negative z-index only stays inside the cell when the cell is itself a
+    // stacking context; `isolation` makes it one without touching layout,
+    // and the cell also has to be the layer's positioned anchor.
+    if (out.position == null) out.position = 'relative';
+    out.isolation = 'isolate';
   }
   if (decor.opacity != null) {
     const current = typeof base.opacity === 'number' ? base.opacity : 1;

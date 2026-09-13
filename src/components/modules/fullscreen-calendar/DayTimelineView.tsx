@@ -12,6 +12,7 @@ import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
 import { EVENT_BLOCK_BASE_ZINDEX } from '@/lib/fullscreen-overlap';
 import { eventGlyph, eventOpacity, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { computeTimedEventLayout, eventHoursOnDay } from '@/lib/calendar-event-layout';
 import type { CalendarScale, CalendarViewProps } from './view-support';
 import { DEFAULT_TIME_FORMAT } from '@/types/config';
@@ -139,6 +140,7 @@ export function DayTimelineView({ events, timezone, config, scale, today, now, t
 
   return (
     <div style={mergeCellDecor({ display: 'flex', flexDirection: 'column', height: '100%' }, decor)}>
+      {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
       {decor.badges.length > 0 && (
         <div style={{ padding: `${scale.bu * 0.6}px ${scale.bu * 1.5}px 0`, fontSize, flexShrink: 0 }}>
           <DayBadges badges={decor.badges} />

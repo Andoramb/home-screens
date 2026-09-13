@@ -11,6 +11,7 @@ import { viewDayWindow } from '@/lib/calendar-legend';
 import { pickGridTimeColor, pickPillTextColor, pickTintedTextColor } from '@/lib/calendar-color';
 import { dayDecorFor, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
+import { DayArtLayer } from '../shared/DayArtLayer';
 import { TEXT_OPACITY, ink } from '@/lib/constants';
 import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
 import type { TranslateFn } from '@/i18n';
@@ -262,19 +263,25 @@ function GridBannerView({ events, config, style, today, now, accentColor, t, loc
               const dayEvents = eventsByDay.get(date.getTime()) ?? [];
               const hasBirthday = dayEvents.some((ev) => ev.kind === 'birthday');
               const decor = dayDecorFor(config, date, dayEvents, { today, now, timezone: eventStyle.timezone, isDark: true });
+              const cellFill = isToday
+                ? withAlpha(accentColor, '1f')
+                : grid.kind === 'rolling' && isWeekendDay(date) ? ink(0.05) : ink(0.02);
 
               return (
                 <div
                   key={date.toISOString()}
                   className="flex flex-col p-0.5 overflow-hidden rounded"
                   style={mergeCellDecor({
-                    backgroundColor: isToday
-                      ? withAlpha(accentColor, '1f')
-                      : grid.kind === 'rolling' && isWeekendDay(date) ? ink(0.05) : ink(0.02),
-                    ...(marksMonthStart ? { backgroundImage: `linear-gradient(to right, ${withAlpha(accentColor, '33')}, transparent)` } : {}),
+                    // Shorthand on purpose: mergeCellDecor writes the
+                    // `background` shorthand for a rule color, and a style
+                    // must never carry both that and a longhand.
+                    background: marksMonthStart
+                      ? `linear-gradient(to right, ${withAlpha(accentColor, '33')}, transparent) ${cellFill}`
+                      : cellFill,
                     opacity: isMuted ? TEXT_OPACITY.tertiary : 1,
                   }, decor)}
                 >
+                  {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
                   {/* Digits at 0.65em to match the week grid; height 1.35em
                       keeps the previous badge's pixel height. The height is
                       NOT scaled: a length in `em` resolves against the
@@ -449,10 +456,11 @@ function GridModernView({ events, config, style, today, now, accentColor, t, loc
                   key={date.toISOString()}
                   className="flex flex-col p-0.5 overflow-hidden rounded"
                   style={mergeCellDecor({
-                    backgroundColor: isToday ? todayCellTint : `rgba(255, 255, 255, ${isWeekend ? 0.065 : 0.045})`,
+                    background: isToday ? todayCellTint : `rgba(255, 255, 255, ${isWeekend ? 0.065 : 0.045})`,
                     ...(cellShadow ? { boxShadow: cellShadow } : {}),
                   }, decor)}
                 >
+                  {decor.backgroundImage != null && <DayArtLayer decor={decor} />}
                   {/* The row is a bare div with no font-size of its own, so
                       its 1.4em resolves against the cell and has to be scaled
                       by hand to keep making room for the digits. The badge

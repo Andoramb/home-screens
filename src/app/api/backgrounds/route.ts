@@ -7,8 +7,12 @@ import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
 import {
   safeLibraryPath,
   writeLibraryFile,
+  IMAGE_FILE_RE,
+  IMAGE_MIME_TYPES,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
+  VIDEO_FILE_RE,
+  VIDEO_MIME_TYPES,
 } from '@/lib/library-files';
 import { mintMediaToken } from '@/lib/media-token';
 import type { MediaListItem } from '@/types/config';
@@ -22,9 +26,6 @@ function serveUrl(filename: string, directory?: string) {
   const filePath = directory ? `${directory}/${filename}` : filename;
   return `/api/backgrounds/serve?file=${encodeURIComponent(filePath)}`;
 }
-
-const IMAGE_RE = /\.(jpe?g|png|webp|gif|avif)$/i;
-const VIDEO_RE = /\.(mp4|webm|mov)$/i;
 
 export const GET = withDisplayAuth(async (request: NextRequest) => {
   const directory = request.nextUrl.searchParams.get('directory') || '';
@@ -43,8 +44,8 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     if (!resolved) {
       return NextResponse.json({ error: 'Invalid file' }, { status: 400 });
     }
-    const isVideo = VIDEO_RE.test(file);
-    const isImage = IMAGE_RE.test(file);
+    const isVideo = VIDEO_FILE_RE.test(file);
+    const isImage = IMAGE_FILE_RE.test(file);
     const matchesMedia = media === 'videos' ? isVideo : media === 'photos' ? isImage : isVideo || isImage;
     if (!matchesMedia) return NextResponse.json([]);
     try {
@@ -89,16 +90,16 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   // No media param → legacy string[] of image URLs, exactly as before videos existed.
   if (!media) {
     const paths = files
-      .filter((name) => IMAGE_RE.test(name))
+      .filter((name) => IMAGE_FILE_RE.test(name))
       .map((name) => serveUrl(name, directory || undefined));
     return NextResponse.json(paths);
   }
 
   const items: MediaListItem[] = [];
   for (const name of files) {
-    if (IMAGE_RE.test(name) && media !== 'videos') {
+    if (IMAGE_FILE_RE.test(name) && media !== 'videos') {
       items.push({ url: serveUrl(name, directory || undefined), type: 'image' });
-    } else if (VIDEO_RE.test(name) && media !== 'photos') {
+    } else if (VIDEO_FILE_RE.test(name) && media !== 'photos') {
       // Bind the token to the same `file` value the serve route reads back.
       const filePath = directory ? `${directory}/${name}` : name;
       const token = await mintMediaToken(filePath);
@@ -108,9 +109,6 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   }
   return NextResponse.json(items);
 }, 'Failed to list backgrounds');
-
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
-const ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
 
 export const POST = withAuth(async (request: NextRequest) => {
   // Reject oversized uploads before parsing: a genuinely oversized multipart
@@ -145,8 +143,8 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   // Validate all files first
   for (const file of files) {
-    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
-    if (!isVideo && !ALLOWED_TYPES.includes(file.type)) {
+    const isVideo = VIDEO_MIME_TYPES.includes(file.type);
+    if (!isVideo && !IMAGE_MIME_TYPES.includes(file.type)) {
       return NextResponse.json({ error: `Invalid file type: ${file.name}` }, { status: 400 });
     }
     const maxSize = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
@@ -166,7 +164,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     // Stream to disk in chunks. formData() above already holds the one
     // unavoidable in-memory copy; buffering again via arrayBuffer() would
     // peak at 2-3x the file size, enough to OOM a Pi hub on a 200 MB video.
-    const isVideo = ALLOWED_VIDEO_TYPES.includes(file.type);
+    const isVideo = VIDEO_MIME_TYPES.includes(file.type);
     await writeLibraryFile(filePath, file.stream(), isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES);
     uploadedPaths.push(serveUrl(safeName, directory || undefined));
   }
