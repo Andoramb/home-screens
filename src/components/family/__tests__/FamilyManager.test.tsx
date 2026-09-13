@@ -8,6 +8,7 @@ import remote from '@/translations/en-US/remote.json';
 import { I18nProvider } from '@/i18n/provider';
 import type { ReactNode } from 'react';
 import type { ChoreDefinition } from '@/types/config';
+import type { Timetable } from '@/types/timetables';
 import type { FamilySnapshot } from '@/hooks/useFamilyData';
 
 const state = vi.hoisted(() => ({
@@ -81,6 +82,32 @@ describe('FamilyManager safety', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Remove Alex?' }));
     expect(screen.getByRole('alertdialog').textContent).toContain('Alex is assigned to 2 chores.');
     expect(screen.getByRole('alertdialog').textContent).toContain('Chores with no one left are deleted.');
+  });
+
+  it('marks who has a timetable beside their chore count and says it goes with them', () => {
+    state.snapshot = { members: [person('alex', 'Alex'), person('sam', 'Sam')], revision: 'r1' };
+    const chore: ChoreDefinition = {
+      id: 'dishes', name: 'dishes', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [], timeOfDay: 'anytime', rotation: 'fixed', assigneeIds: ['alex'],
+    };
+    const week: Timetable = { memberId: 'alex', schoolId: 'school', weeks: { A: {} } };
+    render(<FamilyManager chores={[chore]} timetables={[week]} />);
+    expect(screen.getByText('1 chore · Has a timetable')).toBeTruthy();
+    expect(screen.getByText('0 chores')).toBeTruthy();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Sam?' }));
+    expect(screen.getByRole('alertdialog').textContent).not.toContain('timetable');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove Alex?' }));
+    const confirmation = screen.getByRole('alertdialog').textContent;
+    expect(confirmation).toContain('Alex is assigned to 1 chore.');
+    expect(confirmation).toContain('Alex has a school timetable, and it is removed as well.');
+    expect(confirmation).toContain('This cannot be undone.');
+  });
+
+  it('shows the timetable on its own before any chore counts are known', () => {
+    render(<FamilyManager timetables={[{ memberId: 'alex', schoolId: 'school', weeks: { A: {} } }]} />);
+    expect(screen.getByText('Has a timetable')).toBeTruthy();
   });
 
   it('edits a migrated Lucide avatar through the curated picker without showing its stored identifier', async () => {

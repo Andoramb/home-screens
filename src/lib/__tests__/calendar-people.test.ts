@@ -22,6 +22,25 @@ describe('initialsOf', () => {
     expect(initialsOf('Mary Ann Smith')).toBe('MA');
     expect(initialsOf('  ')).toBe('?');
   });
+
+  it('steps over an emoji in front of a name and takes the letter', () => {
+    // A dot is there to tell five people apart, so a star in place of a letter
+    // is the one thing it must not draw.
+    expect(initialsOf('🌟 Mia')).toBe('M');
+    expect(initialsOf('🌟Mia')).toBe('M');
+    expect(initialsOf('⭐ Mary Ann')).toBe('MA');
+    expect(initialsOf('Mia 🌟')).toBe('M');
+  });
+
+  it('falls back to a question mark for a name with no letters at all', () => {
+    expect(initialsOf('🌟')).toBe('?');
+    expect(initialsOf('🌟 ✨')).toBe('?');
+  });
+
+  it('keeps letters that are not Latin', () => {
+    expect(initialsOf('Åse')).toBe('Å');
+    expect(initialsOf('Ærø Bo')).toBe('ÆB');
+  });
 });
 
 describe('buildPersonRows with people configured', () => {

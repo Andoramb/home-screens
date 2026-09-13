@@ -126,7 +126,13 @@ export function lookupKey(
   // Plural-form object — pick the right branch based on `count`.
   if (typeof cursor === 'object') {
     if (vars && typeof vars.count === 'number' && isPluralFormObject(cursor)) {
-      const cat = pluralCategory(locale, vars.count);
+      // An explicit `zero` branch wins at nought, before the CLDR category.
+      // None of the seven shipped locales has a plural rule for 0, so every
+      // one of them answers `other`, and a string written to say "Import"
+      // rather than "Import 0 timetables" would never be reached.
+      const cat = vars.count === 0 && typeof cursor.zero === 'string'
+        ? 'zero'
+        : pluralCategory(locale, vars.count);
       const branch = cursor[cat] ?? cursor.other;
       if (typeof branch === 'string') return interpolate(branch, vars);
     }

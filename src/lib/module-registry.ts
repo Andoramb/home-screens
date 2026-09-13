@@ -7,7 +7,7 @@ import {
   Moon, Sunrise, Image, QrCode, BarChart3, Car, Trophy, Wind,
   ListChecks, CloudRain, CalendarRange, Trash2, Medal, Sparkles, CloudSunRain,
   Calendar, Globe, UtensilsCrossed, ClipboardList, Columns3, LayoutGrid,
-  Star, Shapes, Video,
+  Star, Shapes, Video, School,
 } from 'lucide-react';
 import { DEFAULT_ACCENT_COLOR } from './meal-constants';
 import { FETCH_KEY_REGISTRY } from './fetch-keys';
@@ -86,6 +86,20 @@ export interface ModuleDefinition {
    * the card from `style` themselves, so they keep the section.
    */
   cardless?: boolean;
+  /**
+   * True for modules that render one ModuleWrapper card per item instead of
+   * one card for the whole module, so what looks like several cards on the
+   * wall is a single module box holding a grid of them.
+   *
+   * Style still reaches such a module: every card is handed the same
+   * ModuleStyle, so the Style section and the Card Title control both stay
+   * (this is not `cardless`, which means no card at all). What changes is the
+   * editor: the canvas normally repaints the module's own radius and shadow on
+   * the outer positioned box, because its drag surface clips them. For a
+   * module drawing its own inner cards that repaint is a frame the display
+   * never draws, so the editor skips it and the preview matches the wall.
+   */
+  itemCards?: boolean;
   /**
    * True for modules that size their type off their measured box
    * (`useScaledFontSize` / `useFitFontSize`), where `Style > Font size` is a
@@ -1091,6 +1105,22 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
     },
     defaultSize: { w: 500, h: 650 },
     defaultStyle: { fontSize: 24 },
+  },
+  {
+    type: 'timetable',
+    autoSizesText: true,
+    itemCards: true,
+    label: 'School Timetable',
+    icon: School,
+    category: 'Personal',
+    defaultConfig: {
+      memberIds: [],
+      layout: 'side-by-side',
+      detail: 'some',
+      showStartTimes: true,
+      nextWeekFromFriday: true,
+    },
+    defaultSize: { w: 1000, h: 880 },
   },
 
   // -- Media & Display --

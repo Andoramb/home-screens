@@ -30,12 +30,27 @@ export interface PersonRow {
 
 export const EVERYONE_ROW_ID = '__everyone__';
 
+/**
+ * The first letter or number in a word, so a name written with an emoji or a
+ * symbol in front of it still gives up its letter.
+ *
+ * A dot is meant to read as the person at a glance, and a household that
+ * writes "* Mia" wants the M: one star among five dots tells nobody apart.
+ */
+function firstLetter(word: string): string {
+  for (const character of word) {
+    if (/[\p{L}\p{N}]/u.test(character)) return character.toLocaleUpperCase();
+  }
+  return '';
+}
+
 /** "Ella" -> "E", "Mary Ann" -> "MA", "ella" -> "E". Empty names get "?". */
 export function initialsOf(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
+  // Words that carry no letter at all drop out before the one-or-two rule, so
+  // an emoji standing on its own in front of a name does not eat a slot.
+  const words = name.trim().split(/\s+/).map(firstLetter).filter(Boolean);
   if (words.length === 0) return '?';
-  const picked = words.length === 1 ? [words[0]] : [words[0], words[1]];
-  return picked.map((w) => Array.from(w)[0]?.toLocaleUpperCase() ?? '').join('');
+  return words.slice(0, 2).join('');
 }
 
 /** A source id that no configured person owns. Holidays are never a person's. */

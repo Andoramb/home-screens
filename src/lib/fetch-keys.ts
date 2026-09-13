@@ -187,6 +187,10 @@ export function todoListsUrl(): string {
   return '/api/todo/lists';
 }
 
+export function timetablesUrl(): string {
+  return '/api/timetables';
+}
+
 /** Registry of URL builders + TTLs for prefetching.
  *  TTLs are aligned with the corresponding server-side cache durations
  *  so the client doesn't consider data fresh when the server has newer data,
@@ -226,6 +230,10 @@ export const FETCH_KEY_REGISTRY: Record<string, {
   // display surfaces within ~5s; the same-device tap is instant via the PATCH
   // response.
   todo:                      { buildUrl: todoListsUrl, ttlMs: 5_000 },
+  // Timetables change about twice a school year, so the poll only has to be
+  // quick enough that an edit in the editor reaches the wall while somebody is
+  // still standing in front of it.
+  timetable:                 { buildUrl: timetablesUrl, ttlMs: 60_000 },      // server: no cache
 };
 
 /** Allow plugins to register their own fetch key entries for prefetching. */

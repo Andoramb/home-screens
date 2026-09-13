@@ -580,13 +580,49 @@ Display access on purpose, touch kiosks post `step-done` when a kid taps Done. E
 
 ---
 
+## School timetables
+
+The school week of each child, edited from the timetables window in the editor and drawn by the School Timetable module. Like chores and meals this is family data: it lives in `data/timetables.json`, not in the display config. One document holds every school's bell schedule, the subject list everyone shares, and one week per person, keyed by the `memberId` of a person in `/api/family`. See [School timetable](/docs/school-timetable).
+
+### GET /api/timetables
+
+Returns the whole document and the revision a save has to quote back: `{ "data": { "schools": [...], "subjects": [...], "timetables": [...] }, "revision": "..." }`. Display access, so the wall and the editor read the same thing. A household that has never saved gets an empty document carrying the default subject catalogue for its language; nothing is written until the first real save.
+
+### PUT /api/timetables
+
+Replaces the whole document. Requires a valid session. Send `{ "data": { ... }, "revision": "..." }` with the revision the edit started from, capped at 2 MB.
+
+Every member ID is checked against the family roster inside the same locked section as the write, so somebody cannot be removed between the check and the file landing. Validation is all-or-nothing, and the store caps a household at 16 schools, 16 slots per school, 64 subjects, 64 timetables and 64 special days per school.
+
+**Response:** the saved `{ "data": ..., "revision": ... }`, so the editor reconciles in one step. A save that started from an older copy comes back `409` with the same two fields alongside the error, which is what lets the editor say somebody else changed this and offer to reload it.
+
+### GET /api/timetables/holidays
+
+School and public holidays from openholidaysapi.org, for the wall and for the editor's region picker. Display access.
+
+- `?region=DE-NW` answers with `{ "regions": { "DE-NW": { region, year, schoolHolidays, publicHolidays, ok, fetchedAt } } }` for the school year running now; add `&year=2026` for the one starting September 2026. Every row carries its names in every language the source has, so one cached answer serves a household in any language.
+- Several regions can be asked about at once, repeated (`?region=DE-NW&region=LU`) or comma-separated (`?region=DE-NW,LU`), because holidays belong to the school and one wall can show schools in several places. The answer is always that map, keyed by the normalized region code, whether one region was asked for or sixteen, so nothing branches on the count. Sixteen is the cap, the most schools one timetables document can hold; more than that comes back `400`.
+- `?country=DE` answers with `{ country, subdivisions, regionCategory, hasSchoolHolidays, fetchedAt }`: the regions to choose from, what that country calls one of them in every language the source carries it in (`Bundesland`, `comunidad autónoma`), and whether the country has school holidays at all, so the editor can say so instead of showing an empty picker. A region wins when both are asked for.
+
+A failed lookup is not an error here: that region's saved copy from `data/school-holidays.json` comes back with `ok: false` and a `messageKey` the caller phrases, so an offline display keeps showing the right thing. Coverage is partial and it moves, so read it from the answer rather than from a list: as this is written, only Germany, France and the Netherlands have school holiday dates, Spain has subdivisions and no dates, and the United States, Denmark and Brazil have neither. The upstream API answers an unknown country or region with an empty list rather than an error, so every code is validated here before a URL is built.
+
+### POST /api/timetables/import/check
+
+Reads a pasted Google Sheets link and previews it. Session required. Send `{ "url": "https://docs.google.com/spreadsheets/d/..." }`.
+
+Nothing is written: applying an import is an ordinary `PUT /api/timetables`. The reply lists the tabs (up to 16) with the week read out of each one, which subject codes are new, and which family member each tab's name looks like it belongs to, or `{ "ok": false, "messageKey": "..." }` when the sheet cannot be read at all. A tab that will not download is reported on its own rather than failing the whole check.
+
+The server builds every URL it fetches from the ID in the pasted text and addresses a tab by `gid`, never by name, so a link cannot send the hub anywhere else and a renamed tab cannot quietly import the wrong child's week.
+
+---
+
 ## Backups
 
 Take and restore a full household backup, the same thing **Settings > Backups & data** does, and read or clear the backup reminder.
 
 ### GET/POST /api/backup
 
-Full household backup bundle, exports `config`, `family`, `chores`, `choreCompletions`, `meals`, `rewards`, `routines`, and `todos` as a single JSON file with a `_type: "home-screens-backup"` envelope and a `_version` marker (currently `2`). POST accepts the same shape (plus a legacy config-only format) to restore everything at once. Session required.
+Full household backup bundle, exports `config`, `family`, `chores`, `choreCompletions`, `meals`, `rewards`, `routines`, `todos`, and `timetables` as a single JSON file with a `_type: "home-screens-backup"` envelope and a `_version` marker (currently `2`). POST accepts the same shape (plus a legacy config-only format) to restore everything at once. Session required.
 
 GET never returns credentials. A bundle can carry an optional `credentials` section, but only `POST /api/backup/credentials` produces one. This is what **Settings > Backups & data > Save a copy** uses, and it is distinct from the upgrade-time config-only snapshots under `/api/system/backups`.
 

@@ -23,8 +23,11 @@ export const AUTOSIZED_MODULES: ModuleType[] = getAllModuleDefinitions()
  * - `fill`: skip "the largest type is a real fraction of the card". Grid
  *   layouts break the assumption behind it, which is that the card height is
  *   the right denominator.
- * - `growth`: the module is meant to render the same size in any box, so the
- *   matrix asserts the opposite property (that it does NOT grow) instead.
+ * - `growth`: the ratio between the two boxes is not the module's own. Either
+ *   it renders the same size in any box by design, or the small box's largest
+ *   type is a pixel floor the module holds small print to rather than a size it
+ *   chose. Either way the matrix asserts the opposite property (that the
+ *   largest type does NOT double) instead.
  */
 export interface AutoSizeExemption {
   fill?: string;
@@ -47,5 +50,18 @@ export const AUTOSIZE_EXEMPTIONS: Partial<Record<string, AutoSizeExemption>> = {
     // of forty-two, not type lost in a void. It still has to grow with its box,
     // and does (2.67x across the pair).
     fill: 'a 6x7 grid: the cell, not the card, is what its type is sized against',
+  },
+  timetable: {
+    // The same shape as multi-month, one card further in: two week cards side
+    // by side, each a five-day grid of eight bell rows. The largest type is a
+    // name over one of those grids (22.9px in the 900px box, 2.5%), so the
+    // module's height is the wrong denominator for it.
+    fill: 'week grids side by side: the cell, not the card, is what their type is sized against',
+    // This used to carry a `growth` exemption too, because the small box
+    // measured a pixel floor rather than type the card had chosen: a card that
+    // asked for less than the floor was rescued up to it, so the floor was the
+    // largest thing on screen over a card drawing 6px. A card now declines a
+    // size it cannot hold instead of being rescued, so the pair measures the
+    // card's own answer at both ends and the type really does follow the box.
   },
 };

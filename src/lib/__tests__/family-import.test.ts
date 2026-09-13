@@ -312,4 +312,24 @@ describe('family restore final state', () => {
     expect(await fs.readdir(path.join(root, 'data'))).not.toContain('family-transaction.json');
   });
 
+  it('drops a retained timetable whose person is missing instead of stopping the restore', async () => {
+    const kept = { memberId: 'b', schoolId: 'school', weeks: { A: {} } };
+    const orphan = { memberId: 'a', schoolId: 'school', weeks: { A: {} } };
+    await put('timetables.json', { schools: [{ id: 'school' }], subjects: [], timetables: [kept, orphan] });
+    const plan = await restore({ family: { members: [member('b')], migrated: true } });
+    expect((await read('timetables.json')).timetables).toEqual([kept]);
+    expect(JSON.parse(plan.evidence!.contents).timetableRepairs).toEqual({
+      policy: 'drop-timetables-whose-person-is-missing',
+      records: [{ before: orphan, removedMemberId: 'a' }],
+    });
+  });
+
+  it('leaves timetables saved in some other shape alone', async () => {
+    const saved = { schools: [], subjects: [], timetables: 'every day' };
+    await put('timetables.json', saved);
+    const plan = await restore({ family: { members: [member('b')], migrated: true } });
+    expect(await read('timetables.json')).toEqual(saved);
+    expect(plan.evidence).toBeUndefined();
+  });
+
 });

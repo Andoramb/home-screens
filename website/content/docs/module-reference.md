@@ -3,7 +3,7 @@ title: Module Reference
 nextjs:
   metadata:
     title: Module Reference
-    description: Every configuration option for all 44 built-in Home Screens modules, clocks, weather, calendars, sports, news, chore charts, meal planners, and more.
+    description: Every configuration option for all 45 built-in Home Screens modules, clocks, weather, calendars, sports, news, chore charts, meal planners, and more.
     alternates:
       canonical: /docs/module-reference
 ---
@@ -135,6 +135,8 @@ Configure sources in **Settings > Calendar**: see [Calendar setup](/docs/calenda
 **Colored event style:** In `colored` mode, timed events drop the dot and pill and render their start time plus title in the calendar's own color, the time prefix is constant-width and zero-padded (e.g. `08:05 AM`) and follows the household **Time format** setting. All-day events render as solid calendar-color pills with white or near-black text depending on the color's brightness. Day cells list all-day events first, then timed events by start time, in both styles.
 
 **Grid themes:** The multi-week and month views share one grid and one theme. `banner` is the original look. The three newer themes share a cleaner grid, a month heading at the top, small day numbers with a filled badge on today, a ring around today's cell, and multi-day events drawn as one connected bar, and differ in how events render: `clean` shows a short colored time next to a bold title, `minimal` drops times so full titles always fit (best at 6+ weeks or across the room), and `vivid` fills every event with its calendar color for maximum pop. In the month view the days before and after the month are dimmed; in the multi-week view the days already passed this week are dimmed and each new month is marked on its first day. Calendar modules start on `banner`; switch the theme under the View Mode picker. The rolling weeks view (`viewMode: "rolling"`, 1–8 weeks via `weeksToShow`) uses the same themes; its top-left cell is always today, weekend cells are shaded under every theme (banner included), and each new month is marked on its first day.
+
+{% /module %}
 
 {% module type="countdown" %}
 Counts down to one or more future events with visual progress rings.
@@ -359,6 +361,53 @@ Each chore has a `rotation` field that controls how the `assigneeIds` list is re
 - **schedule**: Per-day assignment via a `schedule` map of `memberId → number[]` (days-of-week, 0 = Sunday through 6 = Saturday). Lets you say "Alice on Mon/Wed, Bob on Tue/Thu, everyone on Fri–Sun" without creating separate chores. The editor and the remote both render a weekly grid UI for editing the schedule, and any day not covered by the schedule simply has no one assigned. A chore in schedule mode also shows a small **(schedule)** label in the board when resolved to a single assignee, so you can tell it apart from a fixed one-person chore at a glance.
 
 Chore ticket values can be any non-negative integer, `0` is allowed and is useful for tracking routines that do not earn rewards.
+{% /module %}
+
+{% module type="timetable" %}
+One week card per child: the school week as a grid, the day that is on now widened and lit, and the rest of the week beside it. Nothing about a person is stored here, a card is drawn from the family roster in `data/family.json` and the week in `data/timetables.json`, joined by member ID. See [School timetable](/docs/school-timetable) for the parent-facing walkthrough.
+
+{% fields /%}
+
+**Timetables are shared household data**, not module options. `config.memberIds` only says whose cards this module draws; the weeks themselves, the schools they hang off and the subject list they paint from live in `data/timetables.json` and are edited in the timetables window (**Edit timetables** in the module's settings panel). Every timetable module on every display therefore shows the same weeks, and a member ID with no timetable is skipped rather than drawn empty.
+
+A school owns the bell schedule (numbered periods and named breaks in `HH:MM`), the optional after-school care times, the A/B week cycle, whose holidays it follows and its own dated exceptions, so siblings at one school are typed in once. Subjects are shared by every timetable: one has a short code for narrow cells, a full name, a colour, an icon name and an optional `bring` note. A household that has never saved gets the default subject catalogue for its language to paint with; nothing is written until the first save.
+
+**Detail levels:**
+
+- **less**: short subject codes everywhere, full names in the focus column only, no rooms. Meant for three or more cards side by side.
+- **some**: full subject names in every column, the room on focus-column lessons, and the going-home time under the last lesson of the focus day.
+- **more**: rooms on every lesson, a late-start line, the week letter on lessons that differ between A and B (with a footer note naming them), an after-school care row, and a footer line collecting what to pack that day.
+
+The period gutter carries start times while `showStartTimes` is on, as a `start–end` range at the **more** level and the start alone below it.
+
+`layout` is never chosen for you. A module never rearranges itself by box aspect, so five cards in a wide box stay side by side and narrow themselves instead. Within that, the card derives its own afternoon fold, focus-column width and narrow-cell rules from its measured box.
+
+**Which day is lit:** today, when school is open and the week is not over. Once the last lesson of the school week has finished, the card turns to next week unless `nextWeekFromFriday` is `false`. At the weekend it shows next week with Monday to the front. A day closed by a school holiday, a public holiday or one of the school's own special days is marked closed, and a holiday running right now sends the card straight to the week school starts again.
+
+**Holidays** belong to the school, not to the module. `TimetableSchool.holidayRegion` holds an OpenHolidays region code such as `DE-NW`, or a bare country code such as `LU` for the countries that publish one set of dates and no regions. It sits on the school because a school is in a place: one setting shared by every card on a wall can only ever be right about one of a household's schools. The module dedupes the regions of the schools it is drawing, asks `GET /api/timetables/holidays?region=A,B` about all of them in one request, and closes each card's days from its own school's answer. A wall where no school names a region makes no holiday request at all, and with `holidayRegion` unset a card loses the closed days and the back-to-school line and nothing else.
+
+The control is `SchoolHolidaysEditor`, in the timetables window under **Schools & times**, between the A/B week control and `specialDays`. It resolves the country from `settings.calendar.holidayCountry` first, then from the saved location through `/api/geocode`, then from the region part of `GlobalSettings.locale`, and asks the route what that country has. Whether a country has subdivisions and whether it has school holiday dates are read as two independent answers, which is what gives the row its six states:
+
+- **list**: subdivisions with school holiday dates behind them, offered as a `<select>`. A country with dates but no subdivisions lands here too, with its own code as the single option.
+- **public-only**: subdivisions but `hasSchoolHolidays` false. The same `<select>`, with a sentence saying only public holidays close a day.
+- **no-holidays**: neither subdivisions nor dates. No control at all, and a sentence pointing at **Days that are different**, because there is no code anybody could type that would ever answer. A region saved earlier brings the `<select>` back for the one job of setting it to None.
+- **failed**: the lookup did not answer. A free-text box for the code, committed on blur.
+- **no-country**: nothing resolved to ask about. The same box, with a sentence naming Settings > Calendar.
+- **resolving**: the same box, disabled and silent, since a message replaced half a second later reads as a fault.
+
+The word the sentences use for a subdivision comes from `regionCategory` on the country answer and is localized ("Bundesland", "comunidad autónoma"), falling back to a plain "Region". Coverage is live data, so any list of countries is only as of its date: as this is written, Germany, France and the Netherlands have school holiday dates, Spain has subdivisions and no dates, and the United States, Denmark and Brazil have neither. US school closures are set district by district with no national source, so that one is not a gap an upstream fix will close. Answers are cached in `data/school-holidays.json`, and a failed lookup falls back to the saved copy so an offline display keeps showing the right thing.
+
+**A and B weeks** are a property of the school (`weekCycle`), read off the ISO week number: odd weeks take the letter you pick, even weeks the other. A person's `weeks.B` exists only when their two weeks really differ. Dated exceptions a single school knows about (a carnival Monday off, a morning ending after period 3) are its `specialDays`.
+
+**Importing** reads a Google Sheet: `POST /api/timetables/import/check` previews it without saving anything, and applying the import is an ordinary save of the whole document. The server builds every URL it fetches from the sheet ID in the pasted link and addresses a tab by `gid`, never by name. Days go across the top, one row per lesson, times down the left; rows named as a break become breaks and `Math / A107` carries the room. A tab is matched to a family member by name, on the whole name or at least the first name turning up among the tab's words, and two people matching equally well suggests nobody rather than guessing. A code no subject matches leaves that period empty rather than guessing at one. A sample sheet is served at `/samples/timetable-example.csv`.
+
+**Importing a file** reaches the same screen through `POST /api/timetables/import/file`, which reads CSV text instead of fetching anything. The browser reads the picked file and posts its text, so the file itself never leaves the machine and nothing is written anywhere; the reading is server-side because it needs the household's subject list and the family roster, and both live there. `readTimetableFiles` matches a file to a person by the same name rule, applied to the filename with its extension dropped, so `Taylor.csv` is Taylor's week, and the filename stands in for `gid` since there is no tab. One post carries at most sixteen files and 2 MB of text. A file import records no `source`: there is no link to go back to, so there is nothing to sync against, and a file replacing a week that used to follow a sheet takes that week off the sheet rather than leaving a link that no longer describes it.
+
+**Keeping a week in sync** hangs off the `source` a sheet import records on the timetable: the link, when it was read, and the bookkeeping a re-read needs. `TimetableSource` carries `sync` (follow this sheet, re-reading it hourly), `tab` (the tab the import took, so a re-read goes to the same one rather than guessing), `codes` (the subject the household said each of the sheet's own codes means, saved folded so a re-read finds it however the sheet spells it that day), `lastCheckedAt` (when the sheet was last looked at, whatever the answer) and `lastError` (why the last look failed, as one of the import message keys, absent when it worked). There is no scheduler to hang the hourly check on, deliberately: the app is a single `node server.js` process. The check rides the read the walls already make instead, so `timetableRead` starts it from the display-authed `GET /api/timetables` and does not wait for it, the answer that route serves is always what is on disk, and a new week arrives on a later poll. A timetable is due when `sync` is on and `lastCheckedAt` is at least an hour old (`SYNC_INTERVAL_MS`); one round runs at a time for the whole process however many walls are polling, with a five-minute stall guard so a hung fetch cannot wedge the check off for the life of the process. `POST /api/timetables/sync` with a `memberId` is the forced check the timetables window offers for one person: it skips both the due test and that guard, and it waits for the answer, because somebody pressed it to find out. A household with no wall up and no editor open polls nothing and so checks nothing.
+
+Three rules govern the write-back. A failed check never replaces a week: only `lastCheckedAt` and `lastError` are written and the saved week stands, and a sheet that answers but holds no readable week counts as a failure rather than as an empty week. A hand edit takes the week off the sheet: `stopFollowingEditedWeek` compares the person's weeks either side of every edit and clears `sync`, rather than asking the component that made the edit, so a new way of editing a week cannot forget the rule; the window names whose week it let off, and the switch puts it back. Only `weeks.A` is replaced, because that is all an import writes, so a `B` week built by hand is never the sheet's to touch. The write-back also checks that the saved `source.url` is still the one the answer came from, so a link corrected while a fetch was in the air does not have the old sheet's week written onto it.
+
+The store caps a household at 16 schools, 16 slots per school, 64 subjects, 64 timetables and 64 special days per school, and saves are revision-checked: a save that started from an older copy is refused with the saved document attached.
 {% /module %}
 
 {% module type="text" %}

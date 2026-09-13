@@ -56,6 +56,16 @@ const STUBS: Record<string, { glob: string; file: string }> = {
   // OneDrive photo listing (photo modules with source 'onedrive'); this
   // source always answers the typed MediaListItem[] shape.
   onedrive:     { glob: '**/api/onedrive/photos*', file: 'onedrive' },
+  // School and public holidays for the timetable module, one German region's
+  // school year, keyed by region the way the route answers. The glob is narrow
+  // on purpose: `**/api/timetables*` would
+  // swallow the timetable store itself, which is an app-host request that has
+  // to reach the sandbox server. The module only asks for this once a region
+  // is set on a school, and the route's handler is the one thing in the
+  // timetable that talks to the internet, so a spec that renders a region
+  // without this stub would make a real upstream call from Node, invisible to
+  // `externalHits`, which only sees what the browser asked for.
+  'timetable-holidays': { glob: '**/api/timetables/holidays*', file: 'school-holidays-de-nw' },
 };
 
 type Override =

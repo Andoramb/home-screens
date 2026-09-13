@@ -5045,6 +5045,79 @@
       ]
     },
     {
+      "type": "timetable",
+      "label": "School Timetable",
+      "category": "Personal",
+      "anchor": "school-timetable",
+      "configInterface": "TimetableConfig",
+      "defaultSize": {
+        "w": 1000,
+        "h": 880
+      },
+      "fillsCanvas": false,
+      "fields": [
+        {
+          "name": "memberIds",
+          "optional": false,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Whose school week to show. Cards follow the order Settings > Family lists people in, and anyone without a timetable yet is left out",
+          "default": []
+        },
+        {
+          "name": "layout",
+          "optional": false,
+          "type": {
+            "kind": "string",
+            "text": "TimetableLayout",
+            "values": [
+              "side-by-side",
+              "stacked"
+            ]
+          },
+          "description": "Week cards side by side across the screen, or stacked one above the other. The module keeps the arrangement you pick and never swaps it to fit the box",
+          "default": "side-by-side"
+        },
+        {
+          "name": "detail",
+          "optional": false,
+          "type": {
+            "kind": "string",
+            "text": "TimetableDetail",
+            "values": [
+              "less",
+              "some",
+              "more"
+            ]
+          },
+          "description": "How much each lesson shows: `less` keeps short subject codes, `some` adds full names and rooms, `more` adds start and end times, the A or B week letter and a packing line",
+          "default": "some"
+        },
+        {
+          "name": "showStartTimes",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Show the time each period starts beside its number. Omitted = shown",
+          "default": true
+        },
+        {
+          "name": "nextWeekFromFriday",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Once the last lesson of the school week is over, show next week instead of an empty weekend. Omitted = on",
+          "default": true
+        }
+      ]
+    },
+    {
       "type": "text",
       "label": "Text",
       "category": "Media & Display",
@@ -7958,6 +8031,7 @@
               "icon",
               "shape",
               "chore-chart",
+              "timetable",
               "fullscreen-calendar",
               "fullscreen-chore-chart",
               "fullscreen-meal-planner",
@@ -8777,6 +8851,7 @@
         "icon",
         "shape",
         "chore-chart",
+        "timetable",
         "fullscreen-calendar",
         "fullscreen-chore-chart",
         "fullscreen-meal-planner",
@@ -10799,6 +10874,55 @@
         {
           "method": "POST",
           "access": "display"
+        }
+      ]
+    },
+    {
+      "path": "/api/timetables",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "display"
+        },
+        {
+          "method": "PUT",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/timetables/holidays",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "display"
+        }
+      ]
+    },
+    {
+      "path": "/api/timetables/import/check",
+      "methods": [
+        {
+          "method": "POST",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/timetables/import/file",
+      "methods": [
+        {
+          "method": "POST",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/timetables/sync",
+      "methods": [
+        {
+          "method": "POST",
+          "access": "session"
         }
       ]
     },

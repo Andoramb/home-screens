@@ -186,6 +186,160 @@ export function formatDateSync(
 }
 
 /**
+ * The date the probe below is read on. Which date it is does not matter, since
+ * the day is found by name among the formatted parts rather than by looking
+ * for its digits; a day past the twelfth simply keeps the two apart for
+ * anyone printing the parts while working on this.
+ */
+const DAY_PROBE = new Date(Date.UTC(2024, 10, 12));
+
+const DAY_PATTERN_CACHE = new Map<string, string>();
+
+/**
+ * The date-fns pattern that writes a day of the month the way `locale` does.
+ *
+ * Some languages write the day as an ordinal with a point after the number
+ * ("Montag, 2. November", "mandag 2. november") and others write the bare
+ * number ("Monday, November 2", "lundi 2 novembre"). Rather than keep a list
+ * of which language does which, this asks Intl how the locale spells a day
+ * beside a month and copies the point when there is one, so a locale nobody
+ * here speaks still comes out right.
+ *
+ * Returns a fragment to compose into a larger pattern: `d` or `d.`.
+ */
+export function dayOfMonthPattern(locale: string): string {
+  const cached = DAY_PATTERN_CACHE.get(locale);
+  if (cached) return cached;
+  const pattern = probeDayOfMonthPattern(locale);
+  DAY_PATTERN_CACHE.set(locale, pattern);
+  return pattern;
+}
+
+function probeDayOfMonthPattern(locale: string): string {
+  try {
+    const parts = new Intl.DateTimeFormat(locale, {
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+    }).formatToParts(DAY_PROBE);
+    const dayAt = parts.findIndex((part) => part.type === 'day');
+    const after = dayAt < 0 ? undefined : parts[dayAt + 1];
+    return after?.type === 'literal' && after.value.startsWith('.') ? 'd.' : 'd';
+  } catch {
+    // An unusable tag: the bare number is the safe reading in any language.
+    return 'd';
+  }
+}
+
+const DAY_MONTH_PATTERN_CACHE = new Map<string, string>();
+const FULL_DATE_PATTERN_CACHE = new Map<string, string>();
+
+/**
+ * Literal text, safe to drop into a date-fns pattern.
+ *
+ * Every letter is a potential token to date-fns, and the separators Intl hands
+ * back are full of them: Spanish writes "2 de noviembre", where an unquoted
+ * "de" would format as a day of the month followed by a local day of week.
+ * Single quotes escape a run, and a literal quote doubles.
+ */
+function quoteLiteral(text: string): string {
+  if (text === '') return '';
+  // Only letters mean anything to date-fns, so a space or a comma is carried
+  // through as it is. Quoting those too worked but read as `MMMM' 'd`, which is
+  // noise in a pattern somebody may have to debug.
+  if (!/[a-zA-Z]/.test(text)) return text.replace(/'/g, "''");
+  return `'${text.replace(/'/g, "''")}'`;
+}
+
+/**
+ * Build a date-fns pattern by asking Intl how `locale` lays these fields out,
+ * and copying its order, separators and connecting words across.
+ *
+ * This is the whole reason neither of the two patterns below is composed by
+ * hand. Which half leads is the language's business (English puts the month
+ * first, German the day), and so is the punctuation: English and Spanish put a
+ * comma after the weekday and French does not, Spanish and Portuguese join the
+ * day to the month with "de". Picking any of that ourselves got some locale
+ * wrong, and the one it got wrong was the default.
+ */
+function patternFromParts(
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+  monthToken: string,
+  fallback: string,
+): string {
+  try {
+    const parts = new Intl.DateTimeFormat(locale, { ...options, timeZone: 'UTC' }).formatToParts(DAY_PROBE);
+    if (!parts.some((part) => part.type === 'day') || !parts.some((part) => part.type === 'month')) {
+      return fallback;
+    }
+    // The day token carries the locale's trailing point when it has one, which
+    // Intl reports as the start of the following literal rather than as the day.
+    const dayToken = dayOfMonthPattern(locale);
+    let out = '';
+    for (const part of parts) {
+      if (part.type === 'weekday') out += 'EEEE';
+      else if (part.type === 'month') out += monthToken;
+      else if (part.type === 'day') out += dayToken;
+      else if (part.type === 'literal') {
+        const literal = dayToken.endsWith('.') && part.value.startsWith('.') ? part.value.slice(1) : part.value;
+        out += quoteLiteral(literal);
+      }
+    }
+    return out === '' ? fallback : out;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * The date-fns pattern that writes a day *and its month* the way `locale` does.
+ *
+ * `dayOfMonthPattern` above settles the trailing point and nothing else, so a
+ * caller composing `${dayOfMonthPattern(locale)} MMMM` is choosing day-first for
+ * every language - right for most of the ones we ship and wrong for English,
+ * which renders "Monday, 2 November" that way.
+ *
+ * `month` picks the long or the short month name, and it changes more than the
+ * name: Spanish writes "2 de noviembre" but "2 nov", so the connector is probed
+ * at the width being asked for. Returns a fragment such as `MMMM d`, `d. MMMM`
+ * or `d 'de' MMMM`.
+ */
+export function dayMonthPattern(locale: string, month: 'long' | 'short' = 'long'): string {
+  const token = month === 'long' ? 'MMMM' : 'MMM';
+  const key = `${locale}\u0000${token}`;
+  const cached = DAY_MONTH_PATTERN_CACHE.get(key);
+  if (cached) return cached;
+  const pattern = patternFromParts(
+    locale,
+    { day: 'numeric', month },
+    token,
+    `${dayOfMonthPattern(locale)} ${token}`,
+  );
+  DAY_MONTH_PATTERN_CACHE.set(key, pattern);
+  return pattern;
+}
+
+/**
+ * The same, with the weekday in front: a whole "Monday, November 2" or
+ * "Montag, 2. November", separators and connecting words included.
+ */
+export function fullDatePattern(locale: string, month: 'long' | 'short' = 'long'): string {
+  const token = month === 'long' ? 'MMMM' : 'MMM';
+  const key = `${locale}\u0000${token}`;
+  const cached = FULL_DATE_PATTERN_CACHE.get(key);
+  if (cached) return cached;
+  const pattern = patternFromParts(
+    locale,
+    { weekday: 'long', day: 'numeric', month },
+    token,
+    `EEEE, ${dayMonthPattern(locale, month)}`,
+  );
+  FULL_DATE_PATTERN_CACHE.set(key, pattern);
+  return pattern;
+}
+
+/**
  * Locale-aware number formatting. Forwards every Intl.NumberFormatOptions
  * field through, so callers can do `{ style: 'currency', currency: 'EUR' }`
  * etc. without the helper getting in the way.
@@ -239,6 +393,9 @@ export function formatRelativeTime(
 
 /** @internal — for tests. Reset the date-fns locale cache. */
 export function __resetFormatterLocaleCacheForTests(): void {
+  DAY_PATTERN_CACHE.clear();
+  DAY_MONTH_PATTERN_CACHE.clear();
+  FULL_DATE_PATTERN_CACHE.clear();
   LOCALE_CACHE.clear();
   LOCALE_PENDING.clear();
   SYNC_CACHE_MISS_WARNINGS.clear();

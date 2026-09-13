@@ -5,7 +5,7 @@
  */
 
 export { I18nProvider, useTranslate, useLocale, useFormattingLocale, translate } from './provider';
-export { formatDate, formatDateSync, formatNumber, formatRelativeTime, preloadDateLocale } from './formatters';
+export { dayMonthPattern, dayOfMonthPattern, formatDate, fullDatePattern, formatDateSync, formatNumber, formatRelativeTime, preloadDateLocale } from './formatters';
 export { LOCALES, FALLBACK_LOCALE, DEFAULT_LOCALE, isRegisteredLocale } from './manifest';
 export { pluralCategory } from './plural';
 export { resolveLocaleChain, lookupKey, tOrFallback } from './fallback';

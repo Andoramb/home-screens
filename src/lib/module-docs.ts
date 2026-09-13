@@ -1,6 +1,7 @@
 import type { BuiltinModuleType, ModuleType } from '@/types/config';
 
-const DOCS_BASE = 'https://homescreens.dev/docs/module-reference';
+const DOCS_ROOT = 'https://homescreens.dev/docs';
+const DOCS_BASE = `${DOCS_ROOT}/module-reference`;
 
 /**
  * Module type → its heading anchor on the docs' Module Reference page.
@@ -45,6 +46,7 @@ export const MODULE_DOCS_ANCHOR: Record<BuiltinModuleType, string> = {
   affirmations: 'affirmations',
   'meal-planner': 'meal-planner',
   'chore-chart': 'chore-chart',
+  timetable: 'school-timetable',
   text: 'text',
   image: 'image',
   video: 'video',
@@ -58,10 +60,28 @@ export const MODULE_DOCS_ANCHOR: Record<BuiltinModuleType, string> = {
 };
 
 /**
- * Deep link to a module's section of the docs, or null for a plugin (whose
- * documentation lives with the plugin, not on the Module Reference page).
+ * Module type → a page of its own, for the few modules that have one.
+ *
+ * The Module Reference is a settings-by-settings list. Four modules are family
+ * features with a walkthrough page written for a parent, which is the better
+ * place to land somebody who has just asked "what is this?"; the reference
+ * section for each of them is still reachable from that page.
+ */
+export const MODULE_DOCS_PAGE: Partial<Record<BuiltinModuleType, string>> = {
+  timetable: `${DOCS_ROOT}/school-timetable`,
+  todo: `${DOCS_ROOT}/lists`,
+  'chore-chart': `${DOCS_ROOT}/chores`,
+  'meal-planner': `${DOCS_ROOT}/meals`,
+};
+
+/**
+ * Deep link to a module's own page where it has one, otherwise to its section
+ * of the Module Reference, or null for a plugin (whose documentation lives
+ * with the plugin, not on the Module Reference page).
  */
 export function moduleDocsUrl(type: ModuleType): string | null {
+  const page = (MODULE_DOCS_PAGE as Record<string, string | undefined>)[type];
+  if (page) return page;
   const anchor = (MODULE_DOCS_ANCHOR as Record<string, string | undefined>)[type];
   return anchor ? `${DOCS_BASE}#${anchor}` : null;
 }

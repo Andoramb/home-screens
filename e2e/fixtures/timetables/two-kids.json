@@ -1,0 +1,74 @@
+{
+  "schools": [
+    {
+      "id": "gar", "name": "Gymnasium am Rhein",
+      "slots": [
+        {"kind":"period","n":1,"start":"07:50","end":"08:35"},
+        {"kind":"period","n":2,"start":"08:40","end":"09:25"},
+        {"kind":"break","label":"Pause","start":"09:25","end":"09:45"},
+        {"kind":"period","n":3,"start":"09:45","end":"10:30"},
+        {"kind":"period","n":4,"start":"10:35","end":"11:20"},
+        {"kind":"break","label":"Pause","start":"11:20","end":"11:40"},
+        {"kind":"period","n":5,"start":"11:40","end":"12:25"},
+        {"kind":"period","n":6,"start":"12:30","end":"13:15"}
+      ],
+      "weekCycle": {"mode":"parity","oddWeek":"A"},
+      "specialDays": []
+    },
+    {
+      "id": "ggs", "name": "GGS Lindenweg",
+      "slots": [
+        {"kind":"period","n":1,"start":"08:15","end":"09:00"},
+        {"kind":"period","n":2,"start":"09:00","end":"09:40"},
+        {"kind":"break","label":"Hofpause","start":"09:40","end":"10:00"},
+        {"kind":"period","n":3,"start":"10:15","end":"11:00"},
+        {"kind":"period","n":4,"start":"11:00","end":"11:45"},
+        {"kind":"period","n":5,"start":"12:00","end":"12:45"}
+      ],
+      "weekCycle": {"mode":"off"},
+      "care": {"name":"OGS","until":{"mon":"16:00","tue":"16:00","wed":"16:00","thu":"16:00","fri":"15:00"}},
+      "specialDays": []
+    }
+  ],
+  "subjects": [
+    {"id":"deu","code":"Deu","name":"Deutsch","color":"#f26363","icon":"book"},
+    {"id":"ma","code":"Ma","name":"Mathe","color":"#4f8ef7","icon":"triangle"},
+    {"id":"eng","code":"Eng","name":"Englisch","color":"#f2c94c","icon":"speech"},
+    {"id":"ku","code":"Ku","name":"Kunst","color":"#ee6fd8","icon":"palette","bring":"Malsachen"},
+    {"id":"sp","code":"Sp","name":"Sport","color":"#8fdc4e","icon":"ball","bring":"Sportzeug"},
+    {"id":"su","code":"SU","name":"Sachunterricht","color":"#2fc48d","icon":"magnifier"}
+  ],
+  "timetables": [
+    {
+      "memberId": "leon", "schoolId": "gar", "className": "7c", "usualRoom": "112",
+      "weeks": {
+        "A": {
+          "mon": { "1": {"subjectId":"ma"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"deu"}, "4": {"subjectId":"deu"}, "5": {"subjectId":"eng"} },
+          "tue": { "1": {"subjectId":"eng"}, "2": {"subjectId":"eng"}, "3": {"subjectId":"ku","room":"Ku 2"}, "4": {"subjectId":"ku","room":"Ku 2"}, "6": {"lunch":true} },
+          "wed": { "1": {"subjectId":"deu"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"sp","room":"Halle"}, "4": {"subjectId":"sp","room":"Halle"} },
+          "thu": { "2": {"subjectId":"eng"}, "3": {"subjectId":"deu"}, "4": {"subjectId":"ma"}, "5": {"subjectId":"eng"} },
+          "fri": { "1": {"subjectId":"ma"}, "2": {"subjectId":"deu"}, "3": {"subjectId":"eng"}, "4": {"subjectId":"ku","room":"Ku 2"} }
+        },
+        "B": {
+          "mon": { "1": {"subjectId":"ma"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"deu"}, "4": {"subjectId":"deu"}, "5": {"subjectId":"eng"} },
+          "tue": { "1": {"subjectId":"eng"}, "2": {"subjectId":"eng"}, "3": {"subjectId":"ku","room":"Ku 2"}, "4": {"subjectId":"ku","room":"Ku 2"}, "6": {"lunch":true} },
+          "wed": { "1": {"subjectId":"deu"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"sp","room":"Halle"}, "4": {"subjectId":"sp","room":"Halle"} },
+          "thu": { "2": {"subjectId":"eng"}, "3": {"subjectId":"sp","room":"Halle"}, "4": {"subjectId":"sp","room":"Halle"}, "5": {"subjectId":"eng"} },
+          "fri": { "1": {"subjectId":"ma"}, "2": {"subjectId":"deu"}, "3": {"subjectId":"eng"}, "4": {"subjectId":"ku","room":"Ku 2"} }
+        }
+      }
+    },
+    {
+      "memberId": "mia", "schoolId": "ggs", "className": "4b", "icons": true,
+      "weeks": {
+        "A": {
+          "mon": { "1": {"subjectId":"deu"}, "2": {"subjectId":"deu"}, "3": {"subjectId":"ma"}, "4": {"subjectId":"su"}, "5": {"subjectId":"sp","room":"Halle"} },
+          "tue": { "1": {"subjectId":"ma"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"su"}, "4": {"subjectId":"deu"}, "5": {"subjectId":"ku","room":"Ku 2"} },
+          "wed": { "1": {"subjectId":"deu"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"su"}, "4": {"subjectId":"eng"} },
+          "thu": { "1": {"subjectId":"deu"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"sp","room":"Halle"}, "4": {"subjectId":"su"} },
+          "fri": { "1": {"subjectId":"deu"}, "2": {"subjectId":"ma"}, "3": {"subjectId":"eng"}, "4": {"subjectId":"ku","room":"Ku 2"} }
+        }
+      }
+    }
+  ]
+}

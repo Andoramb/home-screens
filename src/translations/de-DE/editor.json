@@ -285,6 +285,7 @@
       "affirmations": "Affirmationen",
       "meal-planner": "Essensplaner",
       "chore-chart": "Aufgabentafel",
+      "timetable": "Stundenplan",
       "text": "Text",
       "image": "Bild",
       "video": "Video",
@@ -331,6 +332,7 @@
       "affirmations": "Ein netter Gedanke für den Start in den Tag",
       "meal-planner": "Was es diese Woche zum Abendessen gibt",
       "chore-chart": "Wer heute was zu tun hat",
+      "timetable": "Die Schulwoche der Kinder, die du auswählst",
       "text": "Beliebiger Text, gestaltet wie du magst",
       "image": "Ein Bild, das du selbst aussuchst",
       "video": "Ein Video in Dauerschleife, aus einer Datei oder von YouTube",
@@ -377,6 +379,7 @@
       "affirmations": "affirmation ermutigung positiv freundlich motivation kinder",
       "meal-planner": "essen abendessen essensplan speiseplan rezepte einkaufsliste",
       "chore-chart": "kinder aufgaben haushalt putzplan sterne pflichten familie muell",
+      "timetable": "schule stundenplan unterricht faecher fächer klasse woche kinder",
       "text": "text worte beschriftung ueberschrift überschrift titel nachricht",
       "image": "bild foto logo grafik",
       "video": "video film clip youtube schleife",
@@ -2153,7 +2156,7 @@
       }
     },
     "familyPage": {
-      "description": "Füge deinen Haushalt einmal hinzu. Namen, Farben und Emojis begleiten jede Person in Aufgaben, Belohnungen und Kalendern."
+      "description": "Füge deinen Haushalt einmal hinzu. Namen, Farben und Emojis begleiten jede Person in Aufgaben, Belohnungen, Kalendern und Stundenplänen."
     }
   },
   "backgroundPicker": {
@@ -2446,6 +2449,292 @@
       "searchPlaceholder": "Mahlzeiten suchen…",
       "noMealsFound": "Keine Mahlzeiten gefunden",
       "prepTimeShort": "{minutes} Min"
+    }
+  },
+  "timetableModal": {
+    "title": "Stundenpläne",
+    "autosaveHint": "Änderungen werden sofort gespeichert",
+    "done": "Fertig",
+    "loadError": "Die Stundenpläne konnten nicht geladen werden. Schließe das Fenster und öffne es noch einmal.",
+    "saveConflict": "Jemand anderes hat die Stundenpläne gespeichert, während dieses Fenster offen war, deshalb haben wir seine geladen. Deine letzte Änderung ist nicht gespeichert: mach sie noch einmal.",
+    "schoolFirst": "{name} braucht zuerst eine Schule: die Uhrzeiten der Stunden kommen von der Schule. Leg sie hier an, dann bringen wir dich zurück zur Woche.",
+    "schoolForMember": "Leg die Schule an, auf die {name} geht. Wir bringen dich zurück zur Woche und tragen dort die neue Schule ein.",
+    "tabs": {
+      "timetables": "Stundenpläne",
+      "schools": "Schulen & Zeiten",
+      "subjects": "Fächer"
+    },
+    "empty": {
+      "timetablesTitle": "Noch hat niemand eine Schulwoche",
+      "timetablesBody": "Wähle links ein Kind aus, um anzufangen. Namen und Farben kommen aus Familie; hier steht nur, wer einen Stundenplan hat.",
+      "timetablesPick": "Wähle links ein Kind aus, um seine Woche zu sehen.",
+      "schoolsTitle": "Zuerst die Schule anlegen",
+      "schoolsBody": "Alle an einer Schule teilen sich ihre Zeiten, deshalb stehen die Zeiten einmal hier und die Woche jedes Kindes hängt daran."
+    },
+    "rail": {
+      "withTimetable": "Stundenpläne",
+      "without": "In deiner Familie, noch kein Stundenplan",
+      "none": "Kein Stundenplan",
+      "add": "+ Hinzufügen",
+      "footer": "Namen und Farben kommen aus Familie. Zum Anlegen oder Umbenennen bitte {link}.",
+      "footerLink": "Familie öffnen"
+    },
+    "fromFamily": "aus Familie",
+    "school": "Schule",
+    "addSchoolLink": "+ Schule anlegen",
+    "class": "Klasse",
+    "weeks": "Wochen",
+    "weeksSame": "Jede Woche gleich",
+    "weeksAB": "A und B",
+    "showing": "Bearbeitete Woche",
+    "showIcons": "Symbole der Fächer zeigen",
+    "paintWith": "Malen mit",
+    "clear": "Löschen",
+    "addSubject": "+ Fach",
+    "noSubjects": "Noch keine Fächer, also gibt es nichts zum Malen. Leg das erste an.",
+    "lunchBrush": "Mittagspause",
+    "grid": {
+      "hint": "Wähle ein Fach und klicke oder ziehe über die Woche.",
+      "cellAria": "{day}, {number}. Stunde",
+      "otherWeek": "{letter}-Woche: {lesson}",
+      "otherWeekKey": "Die kleine Zeile unter einer Stunde zeigt, was in dieser Stunde in der {letter}-Woche ist."
+    },
+    "schools": {
+      "title": "Klingelzeiten",
+      "addSchool": "Schule hinzufügen",
+      "nameLabel": "Name der Schule",
+      "nameKept": "Eine Schule braucht einen Namen, darum haben wir {name} behalten.",
+      "startFrom": "Beginnen mit",
+      "startFromHelp": "Jede Stunde und jede Uhrzeit lässt sich danach noch ändern, und alle an dieser Schule teilen sie sich.",
+      "templates": {
+        "long-45": "Kurze Stunden (45 Min.), langer Tag",
+        "short-45": "Kurze Stunden (45 Min.), kürzerer Tag",
+        "hour": "Stunden zu 60 Minuten",
+        "blank": "Nichts davon, wir tragen unsere eigenen ein"
+      },
+      "summary": {
+        "one": "{count} Stunde · {start} bis {end}",
+        "other": "{count} Stunden · {start} bis {end}"
+      },
+      "noTimesYet": "Noch keine Zeiten",
+      "careSummary": "{name} bis {time}",
+      "period": "{number}. Stunde",
+      "start": "Beginn",
+      "end": "Ende",
+      "addPeriod": "+ Stunde",
+      "addBreak": "+ Pause",
+      "breakName": "Name der Pause",
+      "breakDefault": "Pause",
+      "minutes": {
+        "one": "{count} Min.",
+        "other": "{count} Min."
+      },
+      "removePeriod": "Diese Stunde entfernen",
+      "removeBreak": "Diese Pause entfernen",
+      "careTitle": "Nachmittagsbetreuung",
+      "careName": "Wie heißt sie?",
+      "careDefault": "Betreuung",
+      "careUntil": "Bis",
+      "careHelp": "Lass einen Tag leer, wenn es an dem Tag keine Betreuung gibt.",
+      "sharedNote": "Diese Zeiten gelten für {names}.",
+      "endsBeforeStart": "Das muss später enden als es anfängt.",
+      "outOfOrder": "Das fängt an, bevor die Zeile darüber endet.",
+      "timeNeeded": "Trag beide Zeiten ein, zum Beispiel 08:15.",
+      "holidays": "Schulferien",
+      "holidaysNone": "Keine",
+      "holidaysHelp": "{area}: Wähle aus, wonach sich die Ferien deiner Schule richten. Bleibt es bei Keine, werden Ferien nicht beachtet.",
+      "holidayNoCountry": "Lege dein Land unter Einstellungen > Kalender fest, dann gibt es eine Liste mit Gegenden. Oder schreib ein Kürzel wie DE-NW hinein.",
+      "holidayPublicOnly": "{area}: Wähle aus, wo deine Schule ist. Für dein Land gibt es keine Schulferientermine, deshalb kommen nur die gesetzlichen Feiertage als freie Tage an.",
+      "holidayNoneForCountry": "Für dein Land haben wir keine Ferientermine. Freie Tage kannst du trotzdem selbst unten unter \"{section}\" eintragen.",
+      "holidayRegionWord": "Gegend",
+      "holidayListFailed": "Wir konnten die Ferienliste gerade nicht erreichen. Versuch es in einem Moment noch einmal.",
+      "holidayMessages": {
+        "schoolHolidaysStale": "Das sind die Termine, die wir zuletzt gespeichert haben. Gerade konnten wir nicht nach neuen schauen.",
+        "schoolHolidaysUnavailable": "Wir haben keine Ferientermine für diese Gegend bekommen. Versuch es später noch einmal."
+      },
+      "holidayRegionPlaceholder": "Kürzel der Gegend, zum Beispiel {example}",
+      "remove": "{name} entfernen",
+      "removeBlocked": "Diese Schule wird noch von {names} genutzt. Wechsle zuerst auf eine andere Schule, dann kann sie weg.",
+      "removeConfirm": {
+        "title": "Diese Schule entfernen?",
+        "message": "Die Zeiten und besonderen Tage von {name} gehen mit.",
+        "confirmLabel": "Schule entfernen"
+      }
+    },
+    "weekCycle": {
+      "title": "A- und B-Wochen",
+      "off": "Aus",
+      "oddIsA": "Ungerade Kalenderwochen sind A",
+      "evenIsA": "Gerade Kalenderwochen sind A",
+      "help": "Die Wochen werden ab Jahresanfang gezählt. Diese Woche (KW {number}) ist die {thisLetter}-Woche. Nächste Woche ist die {nextLetter}-Woche.",
+      "turnedOff": "Die A- und B-Wochen sind aus, darum ist die zweite Woche von {names} weg."
+    },
+    "specialDays": {
+      "title": "Tage, die anders sind",
+      "add": "+ Tag hinzufügen",
+      "date": "Datum",
+      "name": "Wie heißt der Tag?",
+      "nameDefault": "Besonderer Tag",
+      "what": "Was passiert",
+      "dayOff": "Schulfrei",
+      "endsAfter": "Schluss nach der {number}. Stunde",
+      "remove": "Diesen Tag entfernen",
+      "help": "Hier stehen die Tage, die nur deine Schule kennt. Schulferien und Feiertage kommen von allein, sobald oben eine Gegend ausgewählt ist."
+    },
+    "subjects": {
+      "color": "Farbe",
+      "icon": "Symbol",
+      "short": "Kürzel",
+      "name": "Fach",
+      "bring": "Mitnehmen",
+      "usedBy": "Bei wem",
+      "usedByNames": "Bei {names}",
+      "usedByCount": {
+        "one": "{count} Person",
+        "other": "{count} Personen"
+      },
+      "nothing": "Nichts",
+      "add": "+ Fach hinzufügen",
+      "newCode": "Neu",
+      "newName": "Neues Fach",
+      "note": "Die Farben kommen von den üblichen Heftfarben.",
+      "footerNote": "Ändere eine Farbe oder ein Mitnehmen einmal, und die Karte von jedem Kind zieht mit.",
+      "remove": "{name} entfernen",
+      "removeConfirm": {
+        "title": "Fach entfernen",
+        "message": "„{name}“ entfernen? Es verschwindet aus jedem Stundenplan, der es benutzt.",
+        "confirmLabel": "Entfernen"
+      }
+    },
+    "import": {
+      "open": "Aus einer Tabelle importieren",
+      "title": "Aus einer Tabelle importieren",
+      "subtitle": "Aus einem Google Sheet oder einer Datei auf diesem Computer",
+      "back": "Zurück",
+      "linkLabel": "Link zur Tabelle",
+      "linkHelp": "Drücke in Google Sheets auf Teilen, stelle ein, dass alle mit dem Link zusehen können, und füge den Link hier ein. Veröffentlichen musst du nichts. Ein Tab, der wie jemand aus deiner Familie heißt, wird dieser Person zugeordnet; jeden anderen Tab ordnest du selbst zu.",
+      "sample": "Beispieltabelle herunterladen",
+      "sampleHelp": "{link} und den Aufbau ansehen: die Tage oben nebeneinander, eine Zeile pro Stunde und die Zeiten links.",
+      "check": "Prüfen",
+      "checking": "Wird geprüft …",
+      "found": {
+        "one": "{count} Blatt in „{title}“ gefunden",
+        "other": "{count} Blätter in „{title}“ gefunden"
+      },
+      "foundInFile": {
+        "one": "{count} Stundenplan in der gewählten Datei gefunden",
+        "other": "{count} Stundenpläne in den gewählten Dateien gefunden"
+      },
+      "unlistedTitle": "Diese Tabelle wollte ihre Tabs nicht auflisten",
+      "unlistedHelp": "Füge stattdessen den Link zum eigenen Tab jeder Person ein. Klicke in Google Sheets unten auf den Tab und kopiere dann den Link aus der Adresszeile: er endet auf #gid= und eine Zahl.",
+      "linkFor": "Link zum Tab von {name}",
+      "mapTo": "Für wen ist dieses Blatt?",
+      "skip": "Dieses Blatt überspringen",
+      "tabSummary": {
+        "one": "{count} Stunde, {firstDay} bis {lastDay}",
+        "other": "{count} Stunden, {firstDay} bis {lastDay}"
+      },
+      "tabSummaryOneDay": {
+        "one": "{count} Stunde am {firstDay}",
+        "other": "{count} Stunden am {firstDay}"
+      },
+      "notInFamily": "Wähle aus, für wen dieser Tab ist, oder {link}, wenn die Person noch nicht dabei ist.",
+      "addPerson": "füge {name} auf der Familienseite hinzu",
+      "unknownCode": {
+        "one": "{count} Kürzel aus der Tabelle fehlt bei deinen Fächern: „{codes}“",
+        "other": "{count} Kürzel aus der Tabelle fehlen bei deinen Fächern: „{codes}“"
+      },
+      "unknownHelp": "Das sieht nach {subject} aus, deshalb wird es dorthin gelegt und nicht als zweites Fach angelegt. Wähle ein anderes oder lege es neu an.",
+      "unknownHelpMaybe": "Das könnte {subject} sein. Wähle das, wähle etwas anderes, oder leg es neu an.",
+      "sync": "Mit der Tabelle abgleichen",
+      "syncHelp": "Schaut jede Stunde in die Tabelle und bringt die Wand auf den neuesten Stand. Ein Stundenplan ändert sich etwa zweimal im Jahr, einmal importieren reicht meistens.",
+      "cancel": "Abbrechen",
+      "apply": {
+        "zero": "Importieren",
+        "one": "{count} Stundenplan importieren",
+        "other": "{count} Stundenpläne importieren"
+      },
+      "working": "Wird importiert …",
+      "footerNote": "Ein Import füllt Stundenpläne für Personen, die schon in Familie sind. Er legt niemanden neu an.",
+      "errors": {
+        "linkNotUnderstood": "Das sieht nicht nach einem Google-Sheets-Link aus. Kopiere den Link aus der Adresszeile der Tabelle.",
+        "sheetNotFound": "Wir konnten diese Tabelle nicht finden. Prüfe den Link.",
+        "sheetNotShared": "Gib die Tabelle frei, damit jeder mit dem Link sie ansehen kann.",
+        "tabNotFound": "Dieses Blatt ist nicht mehr in der Tabelle. Schau in der Tabelle nach und versuch es noch einmal.",
+        "sheetUnreachable": "Google hat nicht geantwortet. Versuch es in einer Minute noch einmal.",
+        "sheetTooBig": "Diese Tabelle ist zu groß zum Einlesen. Nimm eine Tabelle, in der nur der Stundenplan steht."
+      },
+      "orFile": "Oder wähle eine Datei von diesem Computer",
+      "chooseFile": "Datei auswählen",
+      "fileHelp": "Eine CSV-Datei aus Excel, Numbers oder Google Sheets. Benenne die Datei nach der Person, zu der sie gehört, zum Beispiel Lena.csv, dann wird sie gleich zugeordnet. Die Datei wird nirgendwohin hochgeladen.",
+      "reading": "Wird gelesen …",
+      "shapeTitle": "So sollte die Tabelle aussehen",
+      "shapeIntro": "Die Tage oben nebeneinander, eine Zeile pro Stunde und die Zeiten links. Was nicht erkannt wird, bleibt weg, statt geraten zu werden.",
+      "shapePeriod": "Stunde",
+      "shapeTime": "Zeit",
+      "shapeBreak": "Pause",
+      "ruleTabs": "Ein Blatt pro Person, benannt nach ihr.",
+      "ruleRoom": "Der Raum kommt hinter das Fach, zum Beispiel Mathe / A107.",
+      "ruleBreak": "Eine Zeile, die Pause oder Mittag heißt, wird zur Pause.",
+      "ruleEmpty": "Eine leere Zelle ist eine Freistunde.",
+      "ruleCodes": "Nimm die Namen, die ihr für die Fächer schon benutzt. Alles Neue wird deinen Fächern zugeordnet oder neu angelegt.",
+      "pickSubject": "Fach auswählen",
+      "addAsNew": "Als neues Fach anlegen",
+      "needCodes": {
+        "one": "Der Import wartet noch auf {codes}. Wähle oben das Fach, das gemeint ist, oder leg es neu an.",
+        "other": "Der Import wartet noch auf {codes}. Wähle oben zu jedem das passende Fach, oder leg sie neu an."
+      },
+      "school": "Zu welcher Schule diese Wochen gehören",
+      "schoolHelp": "Zeiten und Pausen kommen von dieser Schule. Wer schon einen Stundenplan hat, bleibt an seiner Schule.",
+      "needSchool": "Leg zuerst eine Schule an, im Tab Schulen & Zeiten. Die Uhrzeiten der Stunden kommen von der Schule.",
+      "tooManyPeriods": {
+        "one": "{school} hat nur Zeiten für {count} Stunde am Tag, und für {names} sind es mehr.",
+        "other": "{school} hat nur Zeiten für {count} Stunden am Tag, und für {names} sind es mehr."
+      },
+      "tooManyPeriodsHelp": "Die zusätzlichen Stunden werden nicht angezeigt. Ergänze zuerst die fehlenden Zeiten der Schule oder wähle oben die richtige Schule."
+    },
+    "cell": {
+      "edit": "Raum und Kurs für {subject}",
+      "room": "Raum",
+      "roomPlaceholder": "Wo die Stunde ist",
+      "course": "Kurs",
+      "coursePlaceholder": "Nur wenn sich einzelne Stunden unterscheiden",
+      "courseHint": "Ein kurzes Kürzel für den Kurs, in dem die Stunde läuft, wie LK oder GK. Es steht in der Ecke der Stunde.",
+      "copyToSubject": "Überall bei {subject} übernehmen, beide Wochen",
+      "copyNeedsValue": "Gib zuerst einen Raum oder einen Kurs ein.",
+      "done": "Fertig"
+    },
+    "source": {
+      "heading": "Aus einer Tabelle",
+      "readOn": "Gelesen am {date}",
+      "inSync": "Aktuell",
+      "notFollowing": "Folgt der Tabelle nicht",
+      "couldNotCheck": "Konnte nicht nachsehen",
+      "checking": "Wird nachgesehen …",
+      "lastChecked": "Zuletzt nachgesehen {when}. Der nächste Blick kommt innerhalb einer Stunde.",
+      "neverChecked": "Noch nicht nachgesehen. Der erste Blick kommt innerhalb einer Stunde.",
+      "failed": "Beim letzten Blick, {when}, konnten wir die Tabelle nicht lesen. Auf der Wand steht weiter die Woche, die wir schon hatten.",
+      "yoursNow": "Diese Woche gehört jetzt dir. Sie ändert sich nur noch, wenn du neu importierst.",
+      "checkNow": "Jetzt nachsehen",
+      "tryNow": "Jetzt versuchen",
+      "checkedChanged": "Die Tabelle hatte eine neue Woche. Sie ist jetzt drin.",
+      "checkedSame": "Gerade nachgesehen. Die Tabelle hat sich nicht geändert.",
+      "importAgain": "Noch einmal importieren",
+      "openSheet": "Tabelle öffnen",
+      "sync": "Mit der Tabelle abgleichen",
+      "syncOnHelp": "Schaut jede Stunde in die Tabelle und bringt die Wand auf den neuesten Stand. Ersetzt wird nur diese Woche.",
+      "syncOffHelp": "Wenn du das einschaltest, wird diese Woche durch die aus der Tabelle ersetzt.",
+      "syncFailingHelp": "Bleibt an. Wir versuchen es jede Stunde weiter.",
+      "stopped": "{name} folgt der Tabelle nicht mehr. Du hast diese Woche selbst geändert, deshalb haben wir den stündlichen Blick ausgeschaltet, statt deine Eingaben zu überschreiben.",
+      "stoppedAck": "Alles klar",
+      "undo": "Rückgängig"
+    },
+    "closeAnyway": "Ohne Speichern schließen",
+    "removeTimetable": {
+      "title": "Diesen Stundenplan entfernen?",
+      "message": "Bei {name} bleibt alles andere. Nur die Schulwoche geht weg.",
+      "confirmLabel": "Stundenplan entfernen",
+      "action": "Stundenplan von {name} entfernen"
     }
   },
   "propertyPanel": {
@@ -3763,6 +4052,29 @@
       "stateTokenUnknown": "Kein Modul auf diesem Display veröffentlicht {keys} bisher. Diese Platzhalter zeigen '–', bis ein Modul sie veröffentlicht.",
       "stateTokenFiltersHint": "Füge |round:1 hinzu, um Zahlen zu runden, oder |default:Text, um festzulegen, was vor dem ersten Wert angezeigt wird.",
       "stateTokenPreview": "Live-Vorschau"
+    },
+    "timetable": {
+      "show": "Wessen Woche gezeigt wird",
+      "showMember": "{name} anzeigen",
+      "noTimetable": "Kein Stundenplan",
+      "add": "+ Hinzufügen",
+      "addFor": "Stundenplan für {name} anlegen",
+      "fromFamily": "Aus Familie",
+      "manageFamily": "Familie bearbeiten",
+      "cardOrder": "Die Karten erscheinen in der Reihenfolge deiner Familienliste.",
+      "editTimetables": "Stundenpläne bearbeiten",
+      "layout": "Anordnung",
+      "layoutSideBySide": "Nebeneinander",
+      "layoutStacked": "Untereinander",
+      "detail": "Details",
+      "detailLess": "Wenig",
+      "detailSome": "Mittel",
+      "detailMore": "Viel",
+      "detailHelp": "Wenig zeigt kurze Fachkürzel, Mittel nimmt die ganzen Namen und den Raum dazu, Viel auch die Zeiten, den Wochenbuchstaben und was eingepackt werden muss. Wenig passt gut, wenn drei oder mehr Kinder nebeneinander stehen.",
+      "showStartTimes": "Anfangszeiten anzeigen",
+      "nextWeekFromFriday": "Ab Freitag die nächste Woche zeigen",
+      "noFamily": "In Familie ist noch niemand. Lege auf der Seite Familie Personen an und gib ihnen hier einen Stundenplan.",
+      "openFamily": "Familie öffnen"
     },
     "todo": {
       "viewList": "Liste",

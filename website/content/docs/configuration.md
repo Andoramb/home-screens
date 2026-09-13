@@ -29,6 +29,8 @@ Home Screens stores all configuration as JSON files on disk. The main config fil
 | `data/google-tokens.json` | Google Calendar OAuth tokens | (internal) |
 | `data/icloud-accounts.json` | iCloud account credentials (app-specific passwords) for calendar sync | `/api/icloud/accounts` |
 | `data/todos.json` | Shared to-do lists (items, due days, people, repeats) | `/api/todo/lists` |
+| `data/timetables.json` | School timetables: schools and bell times, the shared subject list, one week per person | `/api/timetables` |
+| `data/school-holidays.json` | Last-good copy of the school and public holiday dates looked up for a region | `/api/timetables/holidays` |
 | `data/routines.json` | Saved timer routines (the steps, not a running timer) | `/api/timers/routines` |
 | `data/timer-session.json` | The one timer running right now, as a snapshot plus timestamps so displays can count down on their own | `/api/timers/session` |
 | `data/google-picker-tokens.json` | Google Photos Picker tokens, kept separate from the Calendar tokens above | (internal) |

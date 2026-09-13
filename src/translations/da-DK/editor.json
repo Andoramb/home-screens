@@ -285,6 +285,7 @@
       "affirmations": "Bekræftelser",
       "meal-planner": "Madplan",
       "chore-chart": "Pligtskema",
+      "timetable": "Skema",
       "text": "Tekst",
       "image": "Billede",
       "video": "Video",
@@ -331,6 +332,7 @@
       "affirmations": "En god tanke at starte dagen på",
       "meal-planner": "Hvad der er til aftensmad i denne uge",
       "chore-chart": "Hvem der skal lave hvad i dag",
+      "timetable": "Skoleugen for de børn, du vælger",
       "text": "Dine egne ord i lige den stil, du vil have",
       "image": "Ét billede, som du selv vælger",
       "video": "En video, der gentages, fra en fil eller YouTube",
@@ -377,6 +379,7 @@
       "affirmations": "venlighed positiv opmuntring ros børn",
       "meal-planner": "mad aftensmad madplan opskrifter indkøb",
       "chore-chart": "børn pligter opgaver stjerner tjanser familie skrald",
+      "timetable": "skole skema timer fag klasse uge born børn lektier",
       "text": "tekst ord overskrift besked titel skrift",
       "image": "foto billede logo kunst",
       "video": "video film klip youtube loop mp4",
@@ -2153,7 +2156,7 @@
       }
     },
     "familyPage": {
-      "description": "Tilføj din husstand én gang. Navne, farver og emojis følger hver person i pligter, belønninger og kalendere."
+      "description": "Tilføj din husstand én gang. Navne, farver og emojis følger hver person i pligter, belønninger, kalendere og skemaer."
     }
   },
   "backgroundPicker": {
@@ -2446,6 +2449,292 @@
       "searchPlaceholder": "Søg efter måltider…",
       "noMealsFound": "Ingen måltider fundet",
       "prepTimeShort": "{minutes}m"
+    }
+  },
+  "timetableModal": {
+    "title": "Skemaer",
+    "autosaveHint": "Ændringer bliver gemt med det samme",
+    "done": "Færdig",
+    "loadError": "Skemaerne kunne ikke hentes. Luk vinduet, og åbn det igen.",
+    "saveConflict": "En anden har gemt skemaerne, mens vinduet var åbent, så vi har hentet deres. Din sidste ændring blev ikke gemt: lav den igen.",
+    "schoolFirst": "{name} skal først have en skole: tiderne for timerne kommer fra skolen. Tilføj den her, så kommer du tilbage til ugen.",
+    "schoolForMember": "Tilføj den skole, {name} går på. Vi sender dig tilbage til ugen og flytter den over på den nye skole.",
+    "tabs": {
+      "timetables": "Skemaer",
+      "schools": "Skoler og tider",
+      "subjects": "Fag"
+    },
+    "empty": {
+      "timetablesTitle": "Ingen har et skoleskema endnu",
+      "timetablesBody": "Vælg et barn til venstre for at begynde et. Navne og farver kommer fra Familie; her står kun, hvem der har et skema.",
+      "timetablesPick": "Vælg et barn til venstre for at se ugen.",
+      "schoolsTitle": "Tilføj skolen først",
+      "schoolsBody": "Alle på en skole deler dens tider, så tiderne skrives ind her én gang, og hvert barns uge hænger på dem."
+    },
+    "rail": {
+      "withTimetable": "Skemaer",
+      "without": "I din familie, endnu uden skema",
+      "none": "Intet skema",
+      "add": "+ Tilføj",
+      "footer": "Navne og farver kommer fra Familie. Hvis du vil tilføje eller omdøbe nogen, {link}.",
+      "footerLink": "åbn Familie"
+    },
+    "fromFamily": "fra Familie",
+    "school": "Skole",
+    "addSchoolLink": "+ Tilføj en skole",
+    "class": "Klasse",
+    "weeks": "Uger",
+    "weeksSame": "Ens hver uge",
+    "weeksAB": "A og B",
+    "showing": "Ugen du retter",
+    "showIcons": "Vis ikoner for fagene",
+    "paintWith": "Mal med",
+    "clear": "Slet",
+    "addSubject": "+ Fag",
+    "noSubjects": "Ingen fag endnu, så der er ikke noget at male med. Tilføj det første.",
+    "lunchBrush": "Frokostpause",
+    "grid": {
+      "hint": "Vælg et fag, og klik eller træk hen over ugen.",
+      "cellAria": "{day}, {number}. time",
+      "otherWeek": "{letter}-uge: {lesson}",
+      "otherWeekKey": "Den lille linje under en time viser, hvad der er i den time i {letter}-ugen."
+    },
+    "schools": {
+      "title": "Ringetider",
+      "addSchool": "Tilføj skole",
+      "nameLabel": "Skolens navn",
+      "nameKept": "En skole skal have et navn, så vi har beholdt {name}.",
+      "startFrom": "Start med",
+      "startFromHelp": "Du kan ændre hver time og hvert klokkeslæt bagefter, og alle på skolen deler dem.",
+      "templates": {
+        "long-45": "Korte timer (45 min.), lang dag",
+        "short-45": "Korte timer (45 min.), kortere dag",
+        "hour": "Lektioner på en time",
+        "blank": "Ingen af dem, vi taster vores egne"
+      },
+      "summary": {
+        "one": "{count} time · {start} til {end}",
+        "other": "{count} timer · {start} til {end}"
+      },
+      "noTimesYet": "Ingen tider endnu",
+      "careSummary": "{name} til {time}",
+      "period": "{number}. time",
+      "start": "Starter",
+      "end": "Slutter",
+      "addPeriod": "+ Time",
+      "addBreak": "+ Pause",
+      "breakName": "Navn på pausen",
+      "breakDefault": "Pause",
+      "minutes": {
+        "one": "{count} min.",
+        "other": "{count} min."
+      },
+      "removePeriod": "Fjern denne time",
+      "removeBreak": "Fjern denne pause",
+      "careTitle": "Fritidsordning",
+      "careName": "Hvad hedder den?",
+      "careDefault": "SFO",
+      "careUntil": "Til",
+      "careHelp": "Lad en dag stå tom, hvis der ikke er noget den dag.",
+      "sharedNote": "De her tider gælder for {names}.",
+      "endsBeforeStart": "Det skal slutte senere, end det begynder.",
+      "outOfOrder": "Det begynder, før rækken ovenover slutter.",
+      "timeNeeded": "Udfyld begge tider, for eksempel 08:15.",
+      "holidays": "Skoleferier",
+      "holidaysNone": "Ingen",
+      "holidaysHelp": "{area}: Vælg hvad skolens ferier følger. Lad den stå på Ingen, så bliver ferier ikke taget med.",
+      "holidayNoCountry": "Angiv dit land under Indstillinger > Kalender for at få en liste med områder, eller skriv en kode som DE-NW.",
+      "holidayPublicOnly": "{area}: Vælg hvor skolen ligger. Der er ingen skoleferiedatoer for dit land, så kun helligdage kommer med som fridage.",
+      "holidayNoneForCountry": "Vi har ingen feriedatoer for dit land. Du kan stadig selv skrive fridage ind under \"{section}\" nedenfor.",
+      "holidayRegionWord": "Område",
+      "holidayListFailed": "Vi kunne ikke få fat i ferielisten lige nu. Prøv igen om et øjeblik.",
+      "holidayMessages": {
+        "schoolHolidaysStale": "Det er de datoer, vi gemte sidst. Vi kunne ikke se efter nye lige nu.",
+        "schoolHolidaysUnavailable": "Vi kunne ikke hente feriedatoer for det her område. Prøv igen senere."
+      },
+      "holidayRegionPlaceholder": "Områdekode, for eksempel {example}",
+      "remove": "Fjern {name}",
+      "removeBlocked": "Denne skole er stadig i brug hos {names}. Vælg en anden skole først, så kan den fjernes.",
+      "removeConfirm": {
+        "title": "Fjern denne skole?",
+        "message": "Tiderne og de særlige dage for {name} ryger med.",
+        "confirmLabel": "Fjern skole"
+      }
+    },
+    "weekCycle": {
+      "title": "A- og B-uger",
+      "off": "Fra",
+      "oddIsA": "Ulige uger er A",
+      "evenIsA": "Lige uger er A",
+      "help": "Ugerne tælles fra årets start. Denne uge (uge {number}) er {thisLetter}-ugen. Næste uge er {nextLetter}-ugen.",
+      "turnedOff": "A- og B-ugerne er slået fra, så den anden uge for {names} er væk."
+    },
+    "specialDays": {
+      "title": "Dage, der er anderledes",
+      "add": "+ Tilføj en dag",
+      "date": "Dato",
+      "name": "Hvad hedder dagen?",
+      "nameDefault": "Særlig dag",
+      "what": "Hvad der sker",
+      "dayOff": "Fri",
+      "endsAfter": "Slut efter {number}. time",
+      "remove": "Fjern denne dag",
+      "help": "Her er dagene, som kun skolen kender. Skoleferier og helligdage kommer af sig selv, så snart du vælger et område ovenfor."
+    },
+    "subjects": {
+      "color": "Farve",
+      "icon": "Ikon",
+      "short": "Forkortelse",
+      "name": "Navn",
+      "bring": "Husk at tage med",
+      "usedBy": "Hvem har det",
+      "usedByNames": "{names} har det",
+      "usedByCount": {
+        "one": "{count} person",
+        "other": "{count} personer"
+      },
+      "nothing": "Ingenting",
+      "add": "+ Tilføj fag",
+      "newCode": "Nyt",
+      "newName": "Nyt fag",
+      "note": "Farverne starter med de almindelige hæftefarver.",
+      "footerNote": "Ret en farve eller en ting, der skal med, én gang, så følger hvert barns kort med.",
+      "remove": "Fjern {name}",
+      "removeConfirm": {
+        "title": "Fjern fag",
+        "message": "Fjern \"{name}\"? Det ryger ud af alle skemaer, der bruger det.",
+        "confirmLabel": "Fjern"
+      }
+    },
+    "import": {
+      "open": "Hent fra et regneark",
+      "title": "Hent fra et regneark",
+      "subtitle": "Fra et Google Sheet eller en fil på denne computer",
+      "back": "Tilbage",
+      "linkLabel": "Link til arket",
+      "linkHelp": "Tryk på Del i Google Sheets, vælg at alle med linket må se, og sæt linket ind her. Du behøver ikke at udgive arket. En fane, der hedder det samme som en i din familie, bliver koblet til den person; alle andre faner kobler du selv.",
+      "sample": "Hent et eksempelark",
+      "sampleHelp": "{link} for at se opbygningen: dagene øverst, en række for hver time og tiderne til venstre.",
+      "check": "Tjek",
+      "checking": "Tjekker…",
+      "found": {
+        "one": "Fandt {count} faneblad i \"{title}\"",
+        "other": "Fandt {count} faneblade i \"{title}\""
+      },
+      "foundInFile": {
+        "one": "{count} skema fundet i den valgte fil",
+        "other": "{count} skemaer fundet i de valgte filer"
+      },
+      "unlistedTitle": "Arket ville ikke vise sine faner",
+      "unlistedHelp": "Sæt i stedet linket til hver persons egen fane ind. Klik på fanen nederst i Google Sheets, og kopier så linket fra adresselinjen: det ender på #gid= og et tal.",
+      "linkFor": "Link til fanen for {name}",
+      "mapTo": "Hvem er dette faneblad til?",
+      "skip": "Spring dette faneblad over",
+      "tabSummary": {
+        "one": "{count} time, {firstDay} til {lastDay}",
+        "other": "{count} timer, {firstDay} til {lastDay}"
+      },
+      "tabSummaryOneDay": {
+        "one": "{count} time, {firstDay}",
+        "other": "{count} timer, {firstDay}"
+      },
+      "notInFamily": "Vælg hvem denne fane er til, eller {link} hvis personen ikke er med endnu.",
+      "addPerson": "tilføj {name} på Familie-siden",
+      "unknownCode": {
+        "one": "{count} forkortelse i arket er ikke blandt dine fag: \"{codes}\"",
+        "other": "{count} forkortelser i arket er ikke blandt dine fag: \"{codes}\""
+      },
+      "unknownHelp": "Det ligner {subject}, så det bliver lagt der i stedet for at blive et fag mere. Vælg et andet, eller tilføj det som nyt.",
+      "unknownHelpMaybe": "Det kan være {subject}. Vælg det, vælg et andet, eller tilføj det som nyt.",
+      "sync": "Følg arket",
+      "syncHelp": "Kigger i arket hver time og opdaterer væggen. Et skema ændrer sig cirka to gange om året, så én import er som regel nok.",
+      "cancel": "Annullér",
+      "apply": {
+        "zero": "Hent",
+        "one": "Hent {count} skema",
+        "other": "Hent {count} skemaer"
+      },
+      "working": "Henter…",
+      "footerNote": "En import udfylder skemaer for dem, der allerede er i Familie. Den tilføjer aldrig nogen.",
+      "errors": {
+        "linkNotUnderstood": "Det ligner ikke et link til Google Sheets. Kopiér linket fra adresselinjen i arket.",
+        "sheetNotFound": "Vi kunne ikke finde det ark. Tjek linket.",
+        "sheetNotShared": "Del arket, så alle med linket kan se det.",
+        "tabNotFound": "Det faneblad er der ikke længere. Kig i arket, og prøv igen.",
+        "sheetUnreachable": "Google svarede ikke. Prøv igen om et minut.",
+        "sheetTooBig": "Det ark er for stort til at læse. Brug et ark, hvor kun skemaet står."
+      },
+      "orFile": "Eller vælg en fil på denne computer",
+      "chooseFile": "Vælg en fil",
+      "fileHelp": "En CSV gemt fra Excel, Numbers eller Google Sheets. Giv filen navn efter den, den er til, for eksempel Freja.csv, så finder den selv personen. Filen bliver ikke sendt nogen steder hen.",
+      "reading": "Læser…",
+      "shapeTitle": "Sådan skal arket se ud",
+      "shapeIntro": "Dagene øverst, en række for hver time og tiderne til venstre. Det, der ikke bliver genkendt, bliver ladt ude i stedet for at blive gættet.",
+      "shapePeriod": "Time",
+      "shapeTime": "Tid",
+      "shapeBreak": "Pause",
+      "ruleTabs": "Et faneblad til hver person, opkaldt efter personen.",
+      "ruleRoom": "Lokalet skrives efter faget, for eksempel Matematik / A107.",
+      "ruleBreak": "En række, der hedder Pause eller Frokost, bliver til en pause.",
+      "ruleEmpty": "En tom celle er en fritime.",
+      "ruleCodes": "Brug de navne, du allerede bruger om fagene. Alt nyt bliver koblet til dine fag eller tilføjet.",
+      "pickSubject": "Vælg et fag",
+      "addAsNew": "Tilføj som nyt fag",
+      "needCodes": {
+        "one": "Importen venter stadig på {codes}. Vælg ovenfor hvilket fag det er, eller tilføj det som nyt.",
+        "other": "Importen venter stadig på {codes}. Vælg ovenfor hvilket fag hver af dem er, eller tilføj dem som nye."
+      },
+      "school": "Hvilken skole disse uger hører til",
+      "schoolHelp": "Tider og pauser kommer fra denne skole. Den, der allerede har et skema, bliver på sin egen skole.",
+      "needSchool": "Tilføj først en skole under fanen Skoler og tider. Tiderne for timerne kommer fra skolen.",
+      "tooManyPeriods": {
+        "one": "{school} har kun tider til {count} time om dagen, og for {names} er der flere.",
+        "other": "{school} har kun tider til {count} timer om dagen, og for {names} er der flere."
+      },
+      "tooManyPeriodsHelp": "De ekstra timer bliver ikke vist. Tilføj først de tider, der mangler på skolen, eller vælg den rigtige skole ovenfor."
+    },
+    "cell": {
+      "edit": "Lokale og hold til {subject}",
+      "room": "Lokale",
+      "roomPlaceholder": "Hvor timen er",
+      "course": "Hold",
+      "coursePlaceholder": "Kun hvis nogle timer er forskellige",
+      "courseHint": "Et kort mærke for det hold, timen hører til, som H1 eller H2. Det står i hjørnet af timen.",
+      "copyToSubject": "Kopiér til alle timer med {subject}, begge uger",
+      "copyNeedsValue": "Skriv først et lokale eller et hold.",
+      "done": "Færdig"
+    },
+    "source": {
+      "heading": "Fra et regneark",
+      "readOn": "Læst {date}",
+      "inSync": "Følger arket",
+      "notFollowing": "Følger ikke arket",
+      "couldNotCheck": "Kunne ikke tjekke",
+      "checking": "Tjekker…",
+      "lastChecked": "Sidst tjekket {when}. Næste tjek kommer inden for en time.",
+      "neverChecked": "Ikke tjekket endnu. Det første tjek kommer inden for en time.",
+      "failed": "Sidst vi kiggede, {when}, kunne vi ikke læse arket. På væggen står stadig den uge, vi allerede havde.",
+      "yoursNow": "Denne uge er din nu. Der sker ikke noget med den, medmindre du henter fra arket igen.",
+      "checkNow": "Tjek nu",
+      "tryNow": "Prøv nu",
+      "checkedChanged": "Arket havde en ny uge. Den er inde nu.",
+      "checkedSame": "Tjekket lige nu. Arket har ikke ændret sig.",
+      "importAgain": "Hent igen",
+      "openSheet": "Åbn arket",
+      "sync": "Følg arket",
+      "syncOnHelp": "Kigger i arket hver time og opdaterer væggen. Kun denne uge bliver skiftet ud.",
+      "syncOffHelp": "Hvis du slår det til, bliver denne uge skiftet ud med den fra arket.",
+      "syncFailingHelp": "Det er stadig slået til. Vi bliver ved med at prøve hver time.",
+      "stopped": "{name} følger ikke arket længere. Du har selv ændret denne uge, så vi har slået det timevise tjek fra i stedet for at overskrive det, du har skrevet.",
+      "stoppedAck": "Forstået",
+      "undo": "Fortryd"
+    },
+    "closeAnyway": "Luk uden at gemme",
+    "removeTimetable": {
+      "title": "Fjern dette skema?",
+      "message": "Alt andet om {name} bliver. Kun skoleugen ryger.",
+      "confirmLabel": "Fjern skema",
+      "action": "Fjern {name}s skema"
     }
   },
   "propertyPanel": {
@@ -3763,6 +4052,29 @@
       "stateTokenUnknown": "Intet modul på denne skærm udgiver {keys} endnu. Disse pladsholdere viser '–', indtil et modul udgiver dem.",
       "stateTokenFiltersHint": "Tilføj |round:1 for at afrunde tal, eller |default:tekst for at vælge, hvad der vises, før en værdi kommer.",
       "stateTokenPreview": "Live-forhåndsvisning"
+    },
+    "timetable": {
+      "show": "Hvis uge skal vises",
+      "showMember": "Vis {name}",
+      "noTimetable": "Intet skema",
+      "add": "+ Tilføj",
+      "addFor": "Lav et skema til {name}",
+      "fromFamily": "Fra Familie",
+      "manageFamily": "Redigér familien",
+      "cardOrder": "Kortene står i samme rækkefølge som din familieliste.",
+      "editTimetables": "Redigér skemaer",
+      "layout": "Opsætning",
+      "layoutSideBySide": "Ved siden af hinanden",
+      "layoutStacked": "Under hinanden",
+      "detail": "Detaljer",
+      "detailLess": "Lidt",
+      "detailSome": "Mellem",
+      "detailMore": "Meget",
+      "detailHelp": "Lidt viser korte fagforkortelser, Mellem tager de fulde navne og lokalet med, Meget tager også tiderne, ugebogstavet og hvad der skal med i tasken. Lidt passer godt til tre børn eller flere ved siden af hinanden.",
+      "showStartTimes": "Vis starttidspunkter",
+      "nextWeekFromFriday": "Vis næste uge fra fredag",
+      "noFamily": "Der er ingen i Familie endnu. Tilføj personer på siden Familie, og giv dem et skema her.",
+      "openFamily": "Åbn Familie"
     },
     "todo": {
       "viewList": "Liste",

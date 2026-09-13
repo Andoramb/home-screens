@@ -95,6 +95,25 @@ describe('named snapshot restoration', () => {
     await expect(fs.access(path.join(process.cwd(), 'data/family-transaction.json'))).rejects.toMatchObject({ code: 'ENOENT' });
   });
 
+  it('drops a timetable whose person is missing while keeping everyone else\'s week', async () => {
+    const snapshot = { version: 12, screens: [], settings: { calendar: { people: [{ id: 'calendar-person', name: 'Alex', color: '#fbbf24', sourceIds: ['old-calendar'] }] } } };
+    await write(`backups/${NAME}`, snapshot);
+    const school = { id: 'school', name: 'Lakeside', slots: [], weekCycle: { mode: 'off' }, specialDays: [] };
+    const subjects = [{ id: 'maths', code: 'Ma', name: 'Maths', color: '#4f8ef7', icon: 'calculator' }];
+    const kept = { memberId: member.id, schoolId: 'school', weeks: { A: { mon: { 1: { subjectId: 'maths' } } } } };
+    const orphan = { memberId: 'deleted-blair', schoolId: 'school', weeks: { A: {} } };
+    await write('timetables.json', { schools: [school], subjects, timetables: [kept, orphan] });
+
+    const response = await POST(request());
+    expect(response.status).toBe(200);
+    expect(await read('timetables.json')).toEqual({ schools: [school], subjects, timetables: [kept] });
+    expect((await read('family-migration.json')).timetableRepairs).toEqual({
+      policy: 'drop-timetables-whose-person-is-missing',
+      records: [{ before: orphan, removedMemberId: 'deleted-blair' }],
+    });
+    await expect(fs.access(path.join(process.cwd(), 'data/family-transaction.json'))).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+
   it('returns all named missing chore and to-do references in the visible error without changing disk', async () => {
     await write(`backups/${NAME}`, { version: 12, screens: [], settings: {} });
     await write('chores.json', { chores: [
@@ -108,6 +127,9 @@ describe('named snapshot restoration', () => {
     // An otherwise repairable reward must also remain byte-for-byte intact
     // when active assignments elsewhere make the whole restore invalid.
     await write('rewards.json', { rewards: [{ id: 'movie', name: 'Movie night', memberIds: ['deleted-person'], enabled: true }], balances: {}, redemptions: [] });
+    // The same goes for a timetable whose person is missing: it is repairable
+    // on its own, and the refusal must not name it or rewrite its file.
+    await write('timetables.json', { schools: [], subjects: [], timetables: [{ memberId: 'missing-alex', schoolId: 'school', weeks: { A: {} } }] });
     const before = await snapshotDataFiles();
 
     const response = await POST(request());
@@ -118,6 +140,7 @@ describe('named snapshot restoration', () => {
     for (const text of ['chores.json', 'chores[0]', 'Feed the dog', 'job-dog', 'assigneeIds', 'chores[1]', 'Water the plants', 'job-plants', 'schedule', 'todos.json', 'lists[0]', 'School morning', 'list-school', 'items[0]', 'Pack backpack', 'item-backpack', 'missing-alex', 'missing-ben', 'missing-casey', 'missing-drew']) {
       expect(body.error).toContain(text);
     }
+    expect(body.error).not.toContain('timetables.json');
     expect(body.error).toMatch(/repair|reassign|remove/i);
     expect(await snapshotDataFiles()).toEqual(before);
   });

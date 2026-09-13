@@ -47,6 +47,7 @@ const builtinComponentEntries = {
   icon: dynamic(() => import('@/components/modules/IconModule')),
   shape: dynamic(() => import('@/components/modules/ShapeModule')),
   'chore-chart': dynamic(() => import('@/components/modules/chore-chart/ChoreChartModule')),
+  timetable: dynamic(() => import('@/components/modules/timetable/TimetableModule')),
   'fullscreen-calendar': dynamic(() => import('@/components/modules/fullscreen-calendar/FullscreenCalendarModule')),
   'fullscreen-chore-chart': dynamic(() => import('@/components/modules/fullscreen-chore-chart/FullscreenChoreChartModule')),
   'fullscreen-meal-planner': dynamic(() => import('@/components/modules/fullscreen-meal-planner/FullscreenMealPlannerModule')),

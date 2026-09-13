@@ -94,6 +94,13 @@ export default function DraggableModule({
 
   const labelText = resolveModuleLabel(mod.type, t);
 
+  // A module that draws one card per item draws its own corners and shadows
+  // inside the box, so the card chrome this component repaints below (to
+  // replace the one the drag surface clips) would be an extra outer frame the
+  // display never draws. Skip it for those, keep it for every other module.
+  const itemCards = !!getModuleDefinition(mod.type)?.itemCards;
+  const cardRadius = itemCards ? undefined : mod.style.borderRadius * scale;
+
   // Status badges stack right-to-left in the top-right corner; each entry
   // occupies one fixed-width slot so any combination lines up. The wording
   // comes from the shared describer, so the corner icon, the chip below and
@@ -136,8 +143,8 @@ export default function DraggableModule({
         width: mod.size.w * scale,
         height: mod.size.h * scale,
         zIndex: mod.zIndex,
-        borderRadius: mod.style.borderRadius * scale,
-        boxShadow: (mod.style.shadowSize ?? 0) > 0
+        borderRadius: cardRadius,
+        boxShadow: !itemCards && (mod.style.shadowSize ?? 0) > 0
           ? buildModuleShadow(mod.style.shadowSize ?? 0, scale)
           : undefined,
       }}
@@ -149,7 +156,9 @@ export default function DraggableModule({
           !isModuleEnabled(mod) ? 'opacity-40 grayscale' : mod.backgroundProvider ? 'opacity-40' : ''
         }`}
         style={{
-          borderRadius: mod.style.borderRadius * scale,
+          // Stays overflow-hidden either way: without the clip the preview
+          // bleeds outside the module box.
+          borderRadius: cardRadius,
         }}
       >
         <div

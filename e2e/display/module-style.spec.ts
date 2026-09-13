@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures';
 import type { Locator, Page } from '@playwright/test';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
-import { putConfig, seedHouseholdChores, seedMeals, seedTodos, todayCalendarEvents } from '../helpers/api';
+import { putConfig, seedHouseholdChores, seedMeals, seedTimetables, seedTodos, todayCalendarEvents } from '../helpers/api';
 import { renderOnDisplay } from '../helpers/display';
 import { stubModuleData } from '../helpers/stubs';
 import { buildModuleInstance, matrixSettings, MODULE_FIXTURES, type ModuleFixture } from '../helpers/module-fixtures';
@@ -46,6 +46,7 @@ async function prepare(page: Page, request: Parameters<typeof putConfig>[0], san
   if (fx?.seed === 'chores') await seedHouseholdChores(request, sandboxDir);
   if (fx?.seed === 'meals') await seedMeals(request);
   if (fx?.seed === 'todos') seedTodos(sandboxDir);
+  if (fx?.seed === 'timetables') seedTimetables(sandboxDir);
 }
 
 async function probeEveryControl(

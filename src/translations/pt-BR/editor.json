@@ -285,6 +285,7 @@
       "affirmations": "Afirmações",
       "meal-planner": "Planejador de refeições",
       "chore-chart": "Quadro de tarefas",
+      "timetable": "Horário escolar",
       "text": "Texto",
       "image": "Imagem",
       "video": "Vídeo",
@@ -331,6 +332,7 @@
       "affirmations": "Uma mensagem carinhosa para começar o dia",
       "meal-planner": "O que tem para o jantar esta semana",
       "chore-chart": "Quem tem o que fazer hoje",
+      "timetable": "A semana escolar das crianças que você escolher",
       "text": "As palavras que você quiser, do jeito que você quiser",
       "image": "Uma imagem escolhida por você",
       "video": "Um vídeo em loop, de um arquivo ou do YouTube",
@@ -377,6 +379,7 @@
       "affirmations": "carinho positivo incentivo autoestima criancas",
       "meal-planner": "comida jantar janta cardapio receitas mercado",
       "chore-chart": "tarefas afazeres criancas estrelas familia lixo",
+      "timetable": "escola horario aulas materias turma semana criancas licao de casa",
       "text": "texto palavras titulo rotulo recado frase",
       "image": "foto imagem figura logo arte",
       "video": "video filme clipe youtube loop",
@@ -2153,7 +2156,7 @@
       }
     },
     "familyPage": {
-      "description": "Adicione sua família uma única vez. Nomes, cores e emojis acompanham cada pessoa nas tarefas, recompensas e calendários."
+      "description": "Adicione sua família uma única vez. Nomes, cores e emojis acompanham cada pessoa nas tarefas, recompensas, calendários e horários escolares."
     }
   },
   "backgroundPicker": {
@@ -2446,6 +2449,292 @@
       "searchPlaceholder": "Pesquisar refeições...",
       "noMealsFound": "Nenhuma refeição encontrada",
       "prepTimeShort": "{minutes} min"
+    }
+  },
+  "timetableModal": {
+    "title": "Horários",
+    "autosaveHint": "As mudanças são salvas na hora",
+    "done": "Pronto",
+    "loadError": "Não deu para carregar os horários. Feche esta janela e abra de novo.",
+    "saveConflict": "Outra pessoa salvou os horários enquanto esta janela estava aberta, então carregamos os dela. Sua última mudança não foi salva: faça de novo.",
+    "schoolFirst": "{name} precisa de uma escola primeiro: as horas das aulas vêm da escola. Adicione a escola aqui e levamos você de volta para a semana.",
+    "schoolForMember": "Adicione a escola em que {name} estuda. Levamos você de volta para a semana e colocamos na escola nova.",
+    "tabs": {
+      "timetables": "Horários",
+      "schools": "Escolas e horas",
+      "subjects": "Matérias"
+    },
+    "empty": {
+      "timetablesTitle": "Ninguém tem uma semana de escola ainda",
+      "timetablesBody": "Escolha uma criança à esquerda para começar uma. Os nomes e as cores vêm de Família; esta janela só diz quem tem horário.",
+      "timetablesPick": "Escolha uma criança à esquerda para ver a semana dela.",
+      "schoolsTitle": "Adicione a escola primeiro",
+      "schoolsBody": "Todo mundo em uma escola usa os mesmos horários, então as horas entram aqui uma vez e a semana de cada criança se apoia nelas."
+    },
+    "rail": {
+      "withTimetable": "Horários",
+      "without": "Na sua família, ainda sem horário",
+      "none": "Sem horário",
+      "add": "+ Adicionar",
+      "footer": "Os nomes e as cores vêm de Família. Para adicionar alguém ou trocar um nome, {link}.",
+      "footerLink": "abra Família"
+    },
+    "fromFamily": "de Família",
+    "school": "Escola",
+    "addSchoolLink": "+ Adicionar uma escola",
+    "class": "Turma",
+    "weeks": "Semanas",
+    "weeksSame": "Igual toda semana",
+    "weeksAB": "A e B",
+    "showing": "Semana que você edita",
+    "showIcons": "Mostrar os ícones das matérias",
+    "paintWith": "Pintar com",
+    "clear": "Apagar",
+    "addSubject": "+ Matéria",
+    "noSubjects": "Nenhuma matéria ainda, então não há com o que pintar. Adicione a primeira.",
+    "lunchBrush": "Almoço",
+    "grid": {
+      "hint": "Escolha uma matéria e depois clique ou arraste pela semana.",
+      "cellAria": "{day}, aula {number}",
+      "otherWeek": "semana {letter}: {lesson}",
+      "otherWeekKey": "A linha pequena embaixo de uma aula mostra o que tem nesse horário na semana {letter}."
+    },
+    "schools": {
+      "title": "Horários das aulas",
+      "addSchool": "Adicionar escola",
+      "nameLabel": "Nome da escola",
+      "nameKept": "Uma escola precisa de um nome, então mantivemos {name}.",
+      "startFrom": "Começar com",
+      "startFromHelp": "Você pode mudar cada aula e cada horário depois, e todo mundo nesta escola usa os mesmos.",
+      "templates": {
+        "long-45": "Aulas curtas (45 min), dia longo",
+        "short-45": "Aulas curtas (45 min), dia mais curto",
+        "hour": "Aulas de uma hora",
+        "blank": "Nenhum destes, vamos digitar os nossos"
+      },
+      "summary": {
+        "one": "{count} aula · {start} às {end}",
+        "other": "{count} aulas · {start} às {end}"
+      },
+      "noTimesYet": "Ainda sem horários",
+      "careSummary": "{name} até {time}",
+      "period": "Aula {number}",
+      "start": "Começa",
+      "end": "Termina",
+      "addPeriod": "+ Aula",
+      "addBreak": "+ Intervalo",
+      "breakName": "Nome do intervalo",
+      "breakDefault": "Intervalo",
+      "minutes": {
+        "one": "{count} min",
+        "other": "{count} min"
+      },
+      "removePeriod": "Tirar esta aula",
+      "removeBreak": "Tirar este intervalo",
+      "careTitle": "Atividades depois da aula",
+      "careName": "Como se chama?",
+      "careDefault": "Contraturno",
+      "careUntil": "Até",
+      "careHelp": "Deixe um dia vazio quando não tiver nesse dia.",
+      "sharedNote": "Estes horários valem para {names}.",
+      "endsBeforeStart": "Isto tem que acabar depois de começar.",
+      "outOfOrder": "Isto começa antes de a linha de cima acabar.",
+      "timeNeeded": "Preencha os dois horários, como 08:15.",
+      "holidays": "Férias escolares",
+      "holidaysNone": "Nenhuma",
+      "holidaysHelp": "{area}: escolha o que as férias da escola seguem. Deixe em Nenhuma e as férias não são levadas em conta.",
+      "holidayNoCountry": "Defina seu país em Configurações > Calendário para ter uma lista de regiões, ou escreva um código como DE-NW.",
+      "holidayPublicOnly": "{area}: escolha onde fica a escola. Não há datas de férias escolares para o seu país, então só os feriados chegam como dias sem aula.",
+      "holidayNoneForCountry": "Não temos datas de férias para o seu país. Você ainda pode marcar os dias sem aula em \"{section}\" abaixo.",
+      "holidayRegionWord": "Região",
+      "holidayListFailed": "Não conseguimos acessar a lista de férias agora. Tente de novo em um instante.",
+      "holidayMessages": {
+        "schoolHolidaysStale": "Estas são as datas que guardamos da última vez. Agora não deu para procurar datas novas.",
+        "schoolHolidaysUnavailable": "Não conseguimos as datas de férias desta região. Tente de novo mais tarde."
+      },
+      "holidayRegionPlaceholder": "Código da região, por exemplo {example}",
+      "remove": "Remover {name}",
+      "removeBlocked": "Esta escola ainda é a de {names}. Mude primeiro para outra escola e depois esta pode ser removida.",
+      "removeConfirm": {
+        "title": "Remover esta escola?",
+        "message": "Os horários e os dias especiais de {name} vão junto.",
+        "confirmLabel": "Remover escola"
+      }
+    },
+    "weekCycle": {
+      "title": "Semanas A e B",
+      "off": "Desligado",
+      "oddIsA": "As semanas ímpares são A",
+      "evenIsA": "As semanas pares são A",
+      "help": "As semanas são contadas desde o começo do ano. Esta semana (semana {number}) é a semana {thisLetter}. A semana que vem é a semana {nextLetter}.",
+      "turnedOff": "As semanas A e B estão desligadas, então a segunda semana de {names} foi removida."
+    },
+    "specialDays": {
+      "title": "Dias diferentes",
+      "add": "+ Adicionar um dia",
+      "date": "Data",
+      "name": "Como se chama?",
+      "nameDefault": "Dia especial",
+      "what": "O que acontece",
+      "dayOff": "Sem aula",
+      "endsAfter": "Termina depois da aula {number}",
+      "remove": "Tirar este dia",
+      "help": "Aqui ficam os dias que só a escola sabe. As férias escolares e os feriados chegam sozinhos assim que você escolhe uma região acima."
+    },
+    "subjects": {
+      "color": "Cor",
+      "icon": "Ícone",
+      "short": "Sigla",
+      "name": "Nome",
+      "bring": "O que levar",
+      "usedBy": "De quem é",
+      "usedByNames": "É de {names}",
+      "usedByCount": {
+        "one": "{count} pessoa",
+        "other": "{count} pessoas"
+      },
+      "nothing": "Nada",
+      "add": "+ Adicionar matéria",
+      "newCode": "Nova",
+      "newName": "Nova matéria",
+      "note": "As cores começam pelas cores comuns de caderno.",
+      "footerNote": "Mude uma cor ou um item para levar uma vez e o cartão de cada criança acompanha.",
+      "remove": "Tirar {name}",
+      "removeConfirm": {
+        "title": "Tirar matéria",
+        "message": "Tirar \"{name}\"? Ela sai de todos os horários que usam ela.",
+        "confirmLabel": "Tirar"
+      }
+    },
+    "import": {
+      "open": "Importar de uma planilha",
+      "title": "Importar de uma planilha",
+      "subtitle": "De uma planilha do Google Sheets ou de um arquivo deste computador",
+      "back": "Voltar",
+      "linkLabel": "Link da planilha",
+      "linkHelp": "No Google Sheets toque em Compartilhar, deixe que qualquer pessoa com o link possa ver e cole esse link aqui. Não precisa publicar. Uma aba com o nome de alguém da sua família é ligada a essa pessoa; qualquer outra aba você liga na mão.",
+      "sample": "Baixe uma planilha de exemplo",
+      "sampleHelp": "{link} para ver o formato: os dias no topo, uma linha para cada aula e os horários à esquerda.",
+      "check": "Verificar",
+      "checking": "Verificando…",
+      "found": {
+        "one": "{count} aba encontrada em \"{title}\"",
+        "other": "{count} abas encontradas em \"{title}\""
+      },
+      "foundInFile": {
+        "one": "{count} horário encontrado no arquivo escolhido",
+        "other": "{count} horários encontrados nos arquivos escolhidos"
+      },
+      "unlistedTitle": "Esta planilha não quis mostrar a lista de abas",
+      "unlistedHelp": "Cole o link da aba de cada pessoa. No Google Sheets, clique na aba dela embaixo e copie o link da barra de endereço: ele termina em #gid= e um número.",
+      "linkFor": "Link da aba de {name}",
+      "mapTo": "Esta aba é de quem?",
+      "skip": "Pular esta aba",
+      "tabSummary": {
+        "one": "{count} aula, de {firstDay} a {lastDay}",
+        "other": "{count} aulas, de {firstDay} a {lastDay}"
+      },
+      "tabSummaryOneDay": {
+        "one": "{count} aula, {firstDay}",
+        "other": "{count} aulas, {firstDay}"
+      },
+      "notInFamily": "Escolha de quem é esta aba, ou {link} se essa pessoa ainda não está aí.",
+      "addPerson": "adicione {name} na página Família",
+      "unknownCode": {
+        "one": "{count} sigla da planilha não está nas suas matérias: \"{codes}\"",
+        "other": "{count} siglas da planilha não estão nas suas matérias: \"{codes}\""
+      },
+      "unknownHelp": "Parece {subject}, então ela entra ali em vez de virar uma segunda matéria. Escolha outra ou adicione como nova.",
+      "unknownHelpMaybe": "Pode ser {subject}. Escolha essa, escolha outra, ou adicione como nova.",
+      "sync": "Manter igual à planilha",
+      "syncHelp": "Olha a planilha a cada hora e atualiza a tela. Um horário muda umas duas vezes por ano, então importar uma vez costuma bastar.",
+      "cancel": "Cancelar",
+      "apply": {
+        "zero": "Importar",
+        "one": "Importar {count} horário",
+        "other": "Importar {count} horários"
+      },
+      "working": "Importando…",
+      "footerNote": "A importação preenche os horários de quem já está em Família. Ela nunca adiciona ninguém.",
+      "errors": {
+        "linkNotUnderstood": "Isso não parece um link do Google Sheets. Copie o link da barra de endereço da planilha.",
+        "sheetNotFound": "Não achamos essa planilha. Confira o link.",
+        "sheetNotShared": "Compartilhe a planilha para quem tiver o link poder ver.",
+        "tabNotFound": "Essa aba não está mais na planilha. Confira a planilha e tente de novo.",
+        "sheetUnreachable": "O Google não respondeu. Tente de novo daqui a um minuto.",
+        "sheetTooBig": "Essa planilha é grande demais para ler. Use uma planilha só com o horário."
+      },
+      "orFile": "Ou escolha um arquivo deste computador",
+      "chooseFile": "Escolher arquivo",
+      "fileHelp": "Um CSV salvo do Excel, do Numbers ou do Google Sheets. Dê ao arquivo o nome da pessoa, como Ana.csv, e ele já sabe de quem é. Nada é enviado para lugar nenhum.",
+      "reading": "Lendo…",
+      "shapeTitle": "Como a planilha deve ser",
+      "shapeIntro": "Os dias no topo, uma linha para cada aula e os horários à esquerda. O que não for reconhecido fica de fora, em vez de ser adivinhado.",
+      "shapePeriod": "Aula",
+      "shapeTime": "Horário",
+      "shapeBreak": "Intervalo",
+      "ruleTabs": "Uma aba para cada pessoa, com o nome dela.",
+      "ruleRoom": "A sala vem depois da matéria, como Matemática / Sala 12.",
+      "ruleBreak": "Uma linha chamada Intervalo ou Almoço vira um intervalo.",
+      "ruleEmpty": "Deixe a célula vazia quando for horário livre.",
+      "ruleCodes": "Use os nomes que vocês já dão para cada matéria. O que for novo entra junto das suas ou é adicionado.",
+      "pickSubject": "Escolha uma matéria",
+      "addAsNew": "Adicionar como matéria nova",
+      "needCodes": {
+        "one": "A importação está esperando por {codes}. Escolha acima a matéria que é, ou adicione como nova.",
+        "other": "A importação está esperando por {codes}. Escolha acima a matéria de cada um, ou adicione como novas."
+      },
+      "school": "De qual escola são estas semanas",
+      "schoolHelp": "Os horários e os intervalos vêm desta escola. Quem já tem grade fica na escola dele.",
+      "needSchool": "Adicione uma escola primeiro, na aba Escolas e horas. As horas das aulas vêm da escola.",
+      "tooManyPeriods": {
+        "one": "{school} só tem horários para {count} aula por dia, e para {names} há mais.",
+        "other": "{school} só tem horários para {count} aulas por dia, e para {names} há mais."
+      },
+      "tooManyPeriodsHelp": "As aulas que sobram não vão aparecer. Acrescente primeiro os horários que faltam na escola, ou escolha a escola certa acima."
+    },
+    "cell": {
+      "edit": "Sala e grupo de {subject}",
+      "room": "Sala",
+      "roomPlaceholder": "Onde é esta aula",
+      "course": "Grupo",
+      "coursePlaceholder": "Só se algumas aulas forem diferentes",
+      "courseHint": "Uma etiqueta curta para a turma em que a aula acontece, como T1 ou T2. Ela aparece no canto da aula.",
+      "copyToSubject": "Copiar para todas as aulas de {subject}, nas duas semanas",
+      "copyNeedsValue": "Escreva primeiro uma sala ou um grupo.",
+      "done": "Pronto"
+    },
+    "source": {
+      "heading": "De uma planilha",
+      "readOn": "Lido em {date}",
+      "inSync": "Em dia",
+      "notFollowing": "Não segue a planilha",
+      "couldNotCheck": "Não deu para verificar",
+      "checking": "Verificando…",
+      "lastChecked": "Última verificação {when}. A próxima acontece dentro de uma hora.",
+      "neverChecked": "Ainda não verificamos. A primeira verificação acontece dentro de uma hora.",
+      "failed": "Na última vez que olhamos, {when}, não conseguimos ler a planilha. A tela continua mostrando a semana que já tínhamos.",
+      "yoursNow": "Esta semana agora é sua. Nada vai mudar ela, a não ser que você importe de novo.",
+      "checkNow": "Verificar agora",
+      "tryNow": "Tentar agora",
+      "checkedChanged": "A planilha tinha uma semana nova. Ela já entrou.",
+      "checkedSame": "Verificado agora. A planilha não mudou.",
+      "importAgain": "Importar de novo",
+      "openSheet": "Abrir a planilha",
+      "sync": "Manter igual à planilha",
+      "syncOnHelp": "Olha a planilha a cada hora e atualiza a tela. Só esta semana é trocada.",
+      "syncOffHelp": "Se você ligar isto, esta semana é trocada pela da planilha.",
+      "syncFailingHelp": "Continua ligado. Vamos tentar de novo a cada hora.",
+      "stopped": "{name} não segue mais a planilha. Você mudou esta semana na mão, então desligamos a verificação de cada hora em vez de apagar o que você escreveu.",
+      "stoppedAck": "Entendi",
+      "undo": "Desfazer"
+    },
+    "closeAnyway": "Fechar sem salvar",
+    "removeTimetable": {
+      "title": "Remover esta grade?",
+      "message": "Todo o resto de {name} continua. Só a semana de aula sai.",
+      "confirmLabel": "Remover grade",
+      "action": "Remover a grade de {name}"
     }
   },
   "propertyPanel": {
@@ -3763,6 +4052,29 @@
       "stateTokenUnknown": "Nenhum módulo deste display publica {keys} ainda. Esses marcadores mostram '–' até que um módulo os publique.",
       "stateTokenFiltersHint": "Adicione |round:1 para arredondar números, ou |default:texto para escolher o que aparece antes de um valor chegar.",
       "stateTokenPreview": "Prévia ao vivo"
+    },
+    "timetable": {
+      "show": "De quem mostrar a semana",
+      "showMember": "Mostrar {name}",
+      "noTimetable": "Sem horário",
+      "add": "+ Adicionar",
+      "addFor": "Criar o horário de {name}",
+      "fromFamily": "De Família",
+      "manageFamily": "Editar a família",
+      "cardOrder": "Os cartões seguem a ordem da sua lista de família.",
+      "editTimetables": "Editar os horários",
+      "layout": "Disposição",
+      "layoutSideBySide": "Lado a lado",
+      "layoutStacked": "Um embaixo do outro",
+      "detail": "Detalhes",
+      "detailLess": "Pouco",
+      "detailSome": "Médio",
+      "detailMore": "Muito",
+      "detailHelp": "Pouco mostra as siglas das matérias, Médio acrescenta os nomes completos e a sala, Muito acrescenta os horários, a letra da semana e o que levar. Pouco combina com três crianças ou mais lado a lado.",
+      "showStartTimes": "Mostrar os horários de início",
+      "nextWeekFromFriday": "Mostrar a próxima semana a partir de sexta",
+      "noFamily": "Ainda não tem ninguém em Família. Adicione pessoas na página Família e depois dê um horário a elas aqui.",
+      "openFamily": "Abrir Família"
     },
     "todo": {
       "viewList": "Lista",

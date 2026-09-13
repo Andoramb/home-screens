@@ -8,8 +8,9 @@ import IconPicker from '@/components/modules/chore-chart/IconPicker';
 import MobileColorPicker from '@/app/(remote)/remote/components/MobileColorPicker';
 import FormOverlay from '@/app/(remote)/remote/components/FormOverlay';
 import { useFetchData } from '@/hooks/useFetchData';
-import { choresDataUrl } from '@/lib/fetch-keys';
+import { choresDataUrl, timetablesUrl } from '@/lib/fetch-keys';
 import type { ChoreDefinition } from '@/types/config';
+import type { Timetable, TimetableData } from '@/types/timetables';
 import { useFamilyData, publishFamilyData, type FamilySnapshot } from '@/hooks/useFamilyData';
 import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { editorFetch } from '@/lib/editor-fetch';
@@ -21,8 +22,8 @@ const PAGE_SIZE = 12;
 interface Draft { member: FamilyMember; initial: FamilyMember; baseline: FamilySnapshot; isNew: boolean }
 type Variant = 'desktop' | 'mobile';
 
-function DeleteConfirmation({ name, choreCount, variant, busy, onCancel, onConfirm }: {
-  name: string; choreCount?: number; variant: Variant; busy: boolean; onCancel: () => void; onConfirm: () => void;
+function DeleteConfirmation({ name, choreCount, hasTimetable, variant, busy, onCancel, onConfirm }: {
+  name: string; choreCount?: number; hasTimetable?: boolean; variant: Variant; busy: boolean; onCancel: () => void; onConfirm: () => void;
 }) {
   const t = useTranslate('core');
   const ref = useFocusTrap<HTMLDivElement>();
@@ -31,7 +32,7 @@ function DeleteConfirmation({ name, choreCount, variant, busy, onCancel, onConfi
     <div className={`fixed inset-0 z-[160] flex justify-center bg-black/60 ${variant === 'mobile' ? 'items-end' : 'items-center p-5'}`} role="alertdialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-body`}>
       <div ref={ref} className={`w-full border border-hs-border bg-hs-panel p-5 shadow-xl ${variant === 'mobile' ? 'max-w-[640px] rounded-t-2xl pb-[max(20px,env(safe-area-inset-bottom))]' : 'max-w-sm rounded-2xl'}`} onKeyDown={(event) => { if (event.key === 'Escape' && !busy) onCancel(); }}>
         <h3 id={`${id}-title`} className="font-semibold text-hs-text-primary">{t('family.removeTitle', { name })}</h3>
-        <p id={`${id}-body`} className="mt-3 text-sm leading-relaxed text-hs-text-muted">{choreCount !== undefined && <>{t('family.removeChoreCount', { name, count: choreCount })} </>}{t('family.removeDescription', { name })}</p>
+        <p id={`${id}-body`} className="mt-3 text-sm leading-relaxed text-hs-text-muted">{choreCount !== undefined && <>{t('family.removeChoreCount', { name, count: choreCount })} </>}{hasTimetable && <>{t('family.removeTimetable', { name })} </>}{t('family.removeDescription', { name })}</p>
         <div className={`mt-5 flex gap-2 ${variant === 'mobile' ? 'flex-col' : 'justify-end'}`}>
           <Button className="min-h-12" disabled={busy} onClick={onCancel}>{t('actions.cancel')}</Button>
           <Button className="min-h-12" variant="danger" disabled={busy} onClick={onConfirm}>{t('family.remove')}</Button>
@@ -42,14 +43,17 @@ function DeleteConfirmation({ name, choreCount, variant, busy, onCancel, onConfi
 }
 
 /** One revision-checked roster editor, used by the editor and the phone. */
-export default function FamilyManager({ onChanged, variant = 'desktop', chores }: { onChanged?: () => void; variant?: Variant; chores?: readonly ChoreDefinition[] } = {}) {
+export default function FamilyManager({ onChanged, variant = 'desktop', chores, timetables }: { onChanged?: () => void; variant?: Variant; chores?: readonly ChoreDefinition[]; timetables?: readonly Timetable[] } = {}) {
   const t = useTranslate('core');
   const { members, revision, loading, error, refresh } = useFamilyData();
   const [choreData] = useFetchData<{ chores: ChoreDefinition[] }>(chores ? '' : choresDataUrl(), 60_000);
   const definitions = chores ?? choreData?.chores;
   const choreCounts = useMemo(() => definitions && new Map(members.map((member) => [member.id, definitions.filter((chore) => chore.assigneeIds.includes(member.id) || Object.hasOwn(chore.schedule ?? {}, member.id)).length])), [members, definitions]);
+  const [timetableData] = useFetchData<{ data: TimetableData }>(timetables ? '' : timetablesUrl(), 60_000);
+  const savedTimetables = timetables ?? timetableData?.data?.timetables;
+  const hasTimetable = useMemo(() => savedTimetables && new Set(savedTimetables.map((timetable) => timetable.memberId)), [savedTimetables]);
   const [draft, setDraft] = useState<Draft | null>(null);
-  const [deleting, setDeleting] = useState<{ member: FamilyMember; baseline: FamilySnapshot; choreCount?: number } | null>(null);
+  const [deleting, setDeleting] = useState<{ member: FamilyMember; baseline: FamilySnapshot; choreCount?: number; hasTimetable?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -155,12 +159,12 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores }
           return (
             <div key={member.id} className="flex flex-wrap items-center gap-2 bg-hs-panel p-3" data-testid="family-member">
               <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-lg" style={{ backgroundColor: `${member.color}25`, color: member.color }}>{member.emoji ? <ChoreIcon value={member.emoji} color={member.color} size={24} bare /> : member.name.slice(0, 1)}</span>
-              <div className="min-w-24 flex-1 break-words"><span className="text-sm font-medium text-hs-text-primary">{member.name}</span>{choreCounts && <p className="mt-1 text-xs text-hs-text-muted">{t('family.choreCount', { count: choreCounts.get(member.id) ?? 0 })}</p>}</div>
+              <div className="min-w-24 flex-1 break-words"><span className="text-sm font-medium text-hs-text-primary">{member.name}</span>{(choreCounts || hasTimetable) && <p className="mt-1 text-xs text-hs-text-muted">{[choreCounts && t('family.choreCount', { count: choreCounts.get(member.id) ?? 0 }), hasTimetable?.has(member.id) && t('family.hasTimetable')].filter(Boolean).join(' · ')}</p>}</div>
               <div className="flex shrink-0">
                 <Button variant="ghost" className="min-h-12 min-w-12 px-1" disabled={!editable || index === 0} aria-label={t('family.moveUp', { name: member.name })} onClick={() => reorder(index, -1)}><ArrowUp size={16} /></Button>
                 <Button variant="ghost" className="min-h-12 min-w-12 px-1" disabled={!editable || index === members.length - 1} aria-label={t('family.moveDown', { name: member.name })} onClick={() => reorder(index, 1)}><ArrowDown size={16} /></Button>
                 <Button variant="ghost" className="min-h-12 min-w-12 px-1" disabled={!editable} aria-label={t('family.editName', { name: member.name })} onClick={() => beginEdit(member)}><Pencil size={16} /></Button>
-                <Button variant="ghost" className="min-h-12 min-w-12 px-1 text-hs-danger" disabled={!editable} aria-label={t('family.removeTitle', { name: member.name })} onClick={() => setDeleting({ member, baseline: { members, revision: revision! }, choreCount: choreCounts?.get(member.id) })}><Trash2 size={16} /></Button>
+                <Button variant="ghost" className="min-h-12 min-w-12 px-1 text-hs-danger" disabled={!editable} aria-label={t('family.removeTitle', { name: member.name })} onClick={() => setDeleting({ member, baseline: { members, revision: revision! }, choreCount: choreCounts?.get(member.id), hasTimetable: hasTimetable?.has(member.id) })}><Trash2 size={16} /></Button>
               </div>
             </div>
           );
@@ -173,7 +177,7 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores }
       </nav>}
       {draft ? (variant === 'mobile' ? <FormOverlay backDisabled={busy} title={t(draft.isNew ? 'family.add' : 'family.edit')} dirty={JSON.stringify(draft.member) !== JSON.stringify(draft.initial)} onBack={() => { if (!busy) setDraft(null); }}>{memberForm}</FormOverlay> : memberForm) : <Button variant="primary" className="flex min-h-12 items-center gap-2" disabled={!editable || members.length >= FAMILY_LIMITS.maxMembers} onClick={() => beginEdit()}><Plus size={16} />{t('family.add')}</Button>}
       {members.length >= FAMILY_LIMITS.maxMembers && <p className="text-xs text-hs-text-muted">{t('family.limit', { count: FAMILY_LIMITS.maxMembers })}</p>}
-      {deleting && <DeleteConfirmation name={deleting.member.name} choreCount={deleting.choreCount} variant={variant} busy={busy} onCancel={() => setDeleting(null)} onConfirm={() => void save(deleting.baseline, deleting.baseline.members.filter((member) => member.id !== deleting.member.id), [deleting.member.id])} />}
+      {deleting && <DeleteConfirmation name={deleting.member.name} choreCount={deleting.choreCount} hasTimetable={deleting.hasTimetable} variant={variant} busy={busy} onCancel={() => setDeleting(null)} onConfirm={() => void save(deleting.baseline, deleting.baseline.members.filter((member) => member.id !== deleting.member.id), [deleting.member.id])} />}
     </section>
   );
 }

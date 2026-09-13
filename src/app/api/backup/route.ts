@@ -7,6 +7,7 @@ import { readMealData } from '@/lib/meal-data';
 import { readRewardData } from '@/lib/reward-data';
 import { readRoutinesFile, validateRoutines } from '@/lib/timer-data';
 import { readTodoData, validateTodoData, settleTodoMigration } from '@/lib/todo-data';
+import { readSavedTimetables, validateTimetableData } from '@/lib/timetable-data';
 import { writeBackupState } from '@/lib/backup-state';
 import { withAuth, parseJsonBody, getClientIP } from '@/lib/api-utils';
 import { validateDisplays } from '@/lib/display-filter';
@@ -38,7 +39,7 @@ export const GET = withAuth(async () => withFamilyData(async () => {
   // in parallel the very first export after an upgrade could pair a
   // pre-fold config with post-fold lists and back up neither faithfully.
   await settleTodoMigration();
-  const [config, chores, completions, meals, rewards, routines, todos, family] = await Promise.all([
+  const [config, chores, completions, meals, rewards, routines, todos, family, timetables] = await Promise.all([
     readConfig(),
     readChoreData(),
     readCompletions(),
@@ -47,6 +48,9 @@ export const GET = withAuth(async () => withFamilyData(async () => {
     readRoutinesFile(),
     readTodoData(),
     readFamilyData(),
+    // The store hands back the revision a save has to quote alongside the
+    // document; a backup carries the document on its own.
+    readSavedTimetables(),
   ]);
 
   const bundle = {
@@ -63,6 +67,9 @@ export const GET = withAuth(async () => withFamilyData(async () => {
     routines,
     todos,
     family,
+    // Left out entirely when nothing has been saved, so a restore does not
+    // create the file with one household's language of subject names in it.
+    ...(timetables ? { timetables } : {}),
   };
 
   // Record backup timestamp before releasing the snapshot lock; write both fields directly
@@ -189,6 +196,11 @@ export const POST = withAuth(async (request: NextRequest) => withDataTransaction
       const err = validateTodoData(body.todos);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
     }
+    // And for the timetables, which are written the same whole-file way.
+    if (body.timetables !== undefined) {
+      const err = validateTimetableData(body.timetables);
+      if (err) return NextResponse.json({ error: err }, { status: 400 });
+    }
 
     // Decrypt before any write: a wrong password must cost nothing, and the
     // client's fallback is to re-post the same bundle with `credentials`
@@ -226,6 +238,7 @@ export const POST = withAuth(async (request: NextRequest) => withDataTransaction
         meals: !!body.meals,
         rewards: !!body.rewards,
         routines: !!body.routines,
+        timetables: !!body.timetables,
       },
       // Present only when the bundle carried credentials. The editor needs
       // `applied` to know whether the session it is holding just died (auth),

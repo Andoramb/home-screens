@@ -80,6 +80,7 @@ import {
   FullscreenWeatherConfigSection,
   WordOfDayConfigSection,
   DisplayControlConfigSection,
+  TimetableConfigSection,
 } from '@/components/editor/config-sections';
 
 // Shared input classes — single source of truth lives in ui/input-classes.ts
@@ -457,6 +458,7 @@ export const CONFIG_SECTIONS: Record<BuiltinModuleType, ConfigSectionFC> = {
   icon: IconConfigSection,
   shape: ShapeConfigSection,
   'chore-chart': ChoreChartConfigSection,
+  timetable: TimetableConfigSection,
   'fullscreen-calendar': FullscreenCalendarConfigSection,
   'fullscreen-chore-chart': FullscreenChoreChartConfigSection,
   'fullscreen-meal-planner': FullscreenMealPlannerConfigSection,

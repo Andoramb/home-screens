@@ -69,12 +69,33 @@ describe('family transaction process isolation', () => {
     await put('config.json', { version: 13, screens: [], settings: { calendar: { personSources: { a: ['school'], b: ['work'] } } } });
     await put('chores.json', { chores: [{ id: 'job', assigneeIds: ['a', 'b'], schedule: { a: [1], b: [2] } }] });
     await put('rewards.json', { rewards: [{ memberIds: ['a', 'b'] }], balances: { a: 2, b: 4 }, redemptions: [] });
+    await put('timetables.json', { schools: [], subjects: [], timetables: [{ memberId: 'a' }, { memberId: 'b' }] });
     expect(await finish(start('delete-crash', 'config'))).toMatchObject({ signal: 'SIGKILL' });
     expect((await read('family.json')).members.map((member: { id: string }) => member.id)).toEqual(['b']);
     expect((await read('chores.json')).chores[0].assigneeIds).toEqual(['a', 'b']);
+    expect((await read('timetables.json')).timetables).toHaveLength(2);
     expect(await finish(start('recover'))).toMatchObject({ code: 0 });
     expect((await read('chores.json')).chores[0]).toMatchObject({ assigneeIds: ['b'], schedule: { b: [2] } });
     expect((await read('rewards.json')).balances).toEqual({ b: 4 });
+    expect((await read('timetables.json')).timetables).toEqual([{ memberId: 'b' }]);
+  }, 45_000);
+
+  it('finishes a deletion cascade killed as its last dependent file lands', async () => {
+    const now = '2026-09-09T12:00:00.000Z';
+    await put('family.json', { members: ['a', 'b'].map((id) => ({ id, name: id, color: '#60a5fa', createdAt: now, updatedAt: now })), migrated: true });
+    await put('config.json', { version: 13, screens: [], settings: { calendar: { personSources: { a: ['school'], b: ['work'] } } } });
+    await put('chores.json', { chores: [{ id: 'job', assigneeIds: ['a', 'b'], schedule: { a: [1], b: [2] } }] });
+    await put('timetables.json', { schools: [], subjects: [], timetables: [{ memberId: 'a' }, { memberId: 'b' }] });
+    // Timetables are planned last, so a kill on their write leaves every
+    // dependent file published and only the journal left to clear.
+    expect(await finish(start('delete-crash', 'timetables'))).toMatchObject({ signal: 'SIGKILL' });
+    expect((await read('timetables.json')).timetables).toEqual([{ memberId: 'b' }]);
+    expect(await fs.readdir(path.join(directory, 'data'))).toContain('family-transaction.json');
+    expect(await finish(start('recover'))).toMatchObject({ code: 0 });
+    expect((await read('family.json')).members.map((member: { id: string }) => member.id)).toEqual(['b']);
+    expect((await read('chores.json')).chores[0]).toMatchObject({ assigneeIds: ['b'], schedule: { b: [2] } });
+    expect((await read('timetables.json')).timetables).toEqual([{ memberId: 'b' }]);
+    expect(await fs.readdir(path.join(directory, 'data'))).not.toContain('family-transaction.json');
   }, 45_000);
 
 });

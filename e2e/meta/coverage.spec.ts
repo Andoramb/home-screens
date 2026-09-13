@@ -83,7 +83,7 @@ test('every built-in module type has an E2E fixture, and no fixture is stale', (
   expect(stale, `Fixtures reference unknown module types: ${stale.join(', ')}`).toEqual([]);
 
   // Guards against a silent registry shrink (e.g. a bad merge dropping types).
-  expect(builtin.length).toBe(44);
+  expect(builtin.length).toBe(45);
 });
 
 /**
@@ -549,6 +549,12 @@ const FIELD_DECISIONS: Record<string, FieldDecision> = {
   'standings.refreshIntervalMs': 'timing-only',
   'stock-ticker.refreshIntervalMs': 'timing-only',
   'stock-ticker.symbols': 'fetch-only',
+  // The card turns to next week the minute the school week's last lesson ends,
+  // so which side of that minute a render lands on is the real clock's answer
+  // and not one a row could assert on a Tuesday and a Saturday alike. The turn
+  // itself is covered by the resolveFocus tests in
+  // src/lib/__tests__/timetable-layout.test.ts.
+  'timetable.nextWeekFromFriday': 'not-observable',
   'todoist.refreshIntervalMs': 'timing-only',
   'traffic.refreshIntervalMs': 'timing-only',
   'weather.provider': 'fetch-only',
@@ -641,6 +647,8 @@ const EXTRA_DISCRIMINATORS: Array<{ type: string; key: string; union?: string; m
   { type: 'fullscreen-chore-chart', key: 'weekStartDay', union: 'WeekStartDay' },
   { type: 'fullscreen-chore-chart', key: 'weekProgress', union: 'FullscreenChoreChartWeekProgress' },
   { type: 'fullscreen-chore-chart', key: 'layout', union: 'FullscreenChoreChartLayout' },
+  { type: 'timetable', key: 'layout', union: 'TimetableLayout' },
+  { type: 'timetable', key: 'detail', union: 'TimetableDetail' },
 ];
 
 /**

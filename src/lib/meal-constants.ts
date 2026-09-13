@@ -1,4 +1,5 @@
 import { localISODate } from './timezone';
+import { formatClockTime, resolveTimeFormat } from './clock-time';
 import type { SavedMeal, PlannedMeal, MealSlotType, MealSettings, FullscreenTypographySize, TimeFormat } from '@/types/config';
 import { formatDateSync } from '@/i18n/formatters';
 import { DEFAULT_LOCALE } from '@/i18n/manifest';
@@ -440,6 +441,9 @@ export function resolvePlannedMealTime(
  * Format an "HH:MM" 24-hour time string for display.
  * Honors the global timeFormat preference. Returns empty string for invalid input.
  *
+ * Thin wrapper over the shared clock-time formatter so the meal planner and
+ * every other surface that shows a time of day render it identically.
+ *
  * Examples:
  *   formatMealTime('18:30', '12h') → '6:30 PM'
  *   formatMealTime('18:30', '24h') → '18:30'
@@ -449,19 +453,7 @@ export function formatMealTime(
   time: string | undefined,
   format: TimeFormat = '12h',
 ): string {
-  if (!time) return '';
-  const match = /^(\d{1,2}):(\d{2})$/.exec(time);
-  if (!match) return '';
-  const h = Number(match[1]);
-  const m = Number(match[2]);
-  if (Number.isNaN(h) || Number.isNaN(m) || h < 0 || h > 23 || m < 0 || m > 59) return '';
-
-  if (format === '24h') {
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-  }
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 === 0 ? 12 : h % 12;
-  return `${h12}:${String(m).padStart(2, '0')} ${period}`;
+  return formatClockTime(time, format);
 }
 
 /**
@@ -473,7 +465,7 @@ export function resolveMealTimeFormat(
   meal: { timeFormat?: TimeFormat } | undefined | null,
   global: TimeFormat | undefined,
 ): TimeFormat {
-  return meal?.timeFormat ?? global ?? '12h';
+  return resolveTimeFormat(meal?.timeFormat, global);
 }
 
 /**

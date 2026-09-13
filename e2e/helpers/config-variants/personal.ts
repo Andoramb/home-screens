@@ -1,4 +1,4 @@
-import { E2E_TODO_LIST_ID } from '../api';
+import { E2E_TIMETABLE_MEMBER_IDS, E2E_TIMETABLE_SEED_MEMBER_IDS, E2E_TODO_LIST_ID } from '../api';
 import { expect } from '@playwright/test';
 import type { ConfigVariant } from './types';
 import { has, lacks, child, redStyle } from './shared';
@@ -337,5 +337,46 @@ export const PERSONAL_VARIANTS: ConfigVariant[] = [
       const text = (await mod.evaluate((el) => el.textContent)) || '';
       expect(text.indexOf('Alpha Evening Chore')).toBeLessThan(text.indexOf('Zulu Morning Chore'));
     },
+  },
+
+  // ========================= TIMETABLE (local-data) =========================
+  {
+    // Stacked puts the second card under the first; side by side (the default)
+    // stands them shoulder to shoulder, so where the boxes land is the proof.
+    type: 'timetable', name: 'stacked-layout', kind: 'local-data', seed: 'timetables',
+    config: { memberIds: E2E_TIMETABLE_SEED_MEMBER_IDS, layout: 'stacked' },
+    expect: async (mod) => {
+      const cards = mod.locator('[data-testid="timetable-card"]');
+      await expect(cards).toHaveCount(2);
+      const first = await cards.nth(0).boundingBox();
+      const second = await cards.nth(1).boundingBox();
+      if (!first || !second) throw new Error('both week cards should have a box');
+      expect(second.y).toBeGreaterThan(first.y + first.height - 1);
+      expect(Math.round(second.x)).toBe(Math.round(first.x));
+    },
+  },
+  {
+    // less drops the going-home line the default (some) caps the lit day with.
+    // True on any day of the week: the setting turns the line off outright.
+    type: 'timetable', name: 'detail-less', kind: 'local-data', seed: 'timetables',
+    config: { memberIds: [E2E_TIMETABLE_MEMBER_IDS.leon], detail: 'less' },
+    expect: lacks('Leon', 'Ends at'),
+  },
+  {
+    // more is the only setting that draws the packing line under the week.
+    type: 'timetable', name: 'detail-more', kind: 'local-data', seed: 'timetables',
+    config: { memberIds: [E2E_TIMETABLE_MEMBER_IDS.leon], detail: 'more' },
+    expect: async (mod) => {
+      await has('Leon')(mod);
+      await child('[data-testid="timetable-footer"]')(mod);
+    },
+  },
+  {
+    // The bell times beside the period numbers go. 9:45 is Leon's third period
+    // and appears nowhere else on his card: his days start at 7:50 or 8:40, and
+    // the line by his name names only the first and last bell of the lit day.
+    type: 'timetable', name: 'hide-start-times', kind: 'local-data', seed: 'timetables',
+    config: { memberIds: [E2E_TIMETABLE_MEMBER_IDS.leon], showStartTimes: false },
+    expect: lacks('Leon', '9:45'),
   },
 ];

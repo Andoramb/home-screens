@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ScreenConfiguration, ChoreDefinition } from '@/types/config';
 import type { FamilyData } from '@/types/family';
 import type { TodoData } from '@/types/todos';
+import type { TimetableData } from '@/types/timetables';
 import { planFamilyMerge, validFamilyId, type LegacyFamilyMember } from './family-merge';
 import { readConfig } from './config';
 import { foldConfigTodos, validateTodoData } from './todo-data';
@@ -19,6 +20,7 @@ export interface FamilyRestoreContent {
   rewards?: unknown;
   routines?: unknown;
   todos?: TodoData;
+  timetables?: TimetableData;
 }
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 const hasLegacy = (config: ScreenConfiguration) => config.screens?.some((screen) => screen.modules?.some((mod) => mod.type === 'todo' && Array.isArray((mod.config as { items?: unknown }).items)))
@@ -97,6 +99,7 @@ export async function planFamilyRestore(body: FamilyRestoreContent): Promise<{ c
   for (const [key, path] of [
     ['choreCompletions', 'data/chore-completions.json'], ['meals', 'data/meals.json'],
     ['rewards', 'data/rewards.json'], ['routines', 'data/routines.json'], ['todos', 'data/todos.json'],
+    ['timetables', 'data/timetables.json'],
   ] as const) if (body[key] !== undefined) files.set(path, body[key]);
   if (body.config && hasLegacy(body.config)) {
     const beforeTodos = await readTransactionFile('data/todos.json');
@@ -110,7 +113,7 @@ export async function planFamilyRestore(body: FamilyRestoreContent): Promise<{ c
   }
   const configTransformed = sourceConfig !== json(nextConfig);
   if (configTransformed) files.set('data/config.json', nextConfig);
-  const { historicalOrphans, rewardAssignmentRepairs } = await validateRestoredReferences(files, new Set(merged.family.members.map((member) => member.id)));
+  const { historicalOrphans, rewardAssignmentRepairs, timetableRepairs } = await validateRestoredReferences(files, new Set(merged.family.members.map((member) => member.id)));
   const changes: TransactionChange[] = configTransformed && sourceConfigRaw !== null ? [planConfigMigrationBackup(sourceConfigRaw)] : [];
   for (const [path, value] of files) {
     const before = await readTransactionFile(path);
@@ -119,12 +122,13 @@ export async function planFamilyRestore(body: FamilyRestoreContent): Promise<{ c
   }
   const moved = !!(chores.members?.length || config.settings.calendar?.people?.length);
   const hasHistoricalOrphans = historicalOrphans.completions.length > 0 || Object.keys(historicalOrphans.balances).length > 0;
-  const evidence = moved || hasHistoricalOrphans || rewardAssignmentRepairs.length > 0 || replacedConfigWarning ? {
+  const evidence = moved || hasHistoricalOrphans || rewardAssignmentRepairs.length > 0 || timetableRepairs.length > 0 || replacedConfigWarning ? {
     path: await readTransactionFile('data/family-migration.json') === null
       ? 'data/family-migration.json' : `data/family-migrations/${randomUUID()}.json`,
     contents: json({ kind: 'import', existingFamily: currentFamily ?? familyBefore, incomingFamily: body.family, choreMembers: chores.members, calendarPeople: config.settings.calendar?.people, personSources: config.settings.calendar?.personSources, result: merged,
       ...(hasHistoricalOrphans ? { historicalOrphans: { policy: 'preserve-ledger-entries-without-creating-members', ...historicalOrphans } } : {}),
       ...(rewardAssignmentRepairs.length > 0 ? { rewardAssignmentRepairs: { policy: 'remove-missing-members-disable-if-none-remain', records: rewardAssignmentRepairs } } : {}),
+      ...(timetableRepairs.length > 0 ? { timetableRepairs: { policy: 'drop-timetables-whose-person-is-missing', records: timetableRepairs } } : {}),
       ...(replacedConfigWarning ? { replacedConfig: { before: configBefore, warning: replacedConfigWarning } } : {}),
     }),
   } : undefined;
@@ -154,6 +158,7 @@ function parseSavedObject(raw: string | null, fallback: Record<string, unknown>,
 async function validateRestoredReferences(files: Map<string, unknown>, members: Set<string>) {
   const historicalOrphans: { completions: Record<string, unknown>[]; balances: Record<string, number> } = { completions: [], balances: {} };
   const rewardAssignmentRepairs: { before: Record<string, unknown>; removedMemberIds: string[]; disabled: boolean }[] = [];
+  const timetableRepairs: { before: Record<string, unknown>; removedMemberId: unknown }[] = [];
   const missingAssignments: string[] = [];
   async function state(file: string): Promise<Record<string, unknown> | null> {
     let value = files.get(file);
@@ -238,8 +243,26 @@ async function validateRestoredReferences(files: Map<string, unknown>, members: 
       if (item.assigneeIds !== undefined) memberIds(item.assigneeIds, `${label}, assigneeIds`);
     }
   }
+  // `state` refuses a file it cannot parse, which is right for every store a
+  // restore has to reason about and wrong for this one: a bundle carrying no
+  // timetables of its own must not be stopped by a file only the timetables page
+  // reads. `planDeletion` tolerates the same file for the same reason.
+  const timetables = await state('data/timetables.json').catch(() => null);
+  // A timetable is one person's week and holds nothing else about them, so
+  // one whose person is missing has nothing left to keep: it is dropped and
+  // recorded rather than stopping a restore that is otherwise sound. A list
+  // saved in some other shape is left alone, because a restore carrying no
+  // timetables of its own must not fail on a file only that page reads.
+  if (timetables && Array.isArray(timetables.timetables)) {
+    const kept = rows(timetables.timetables, 'Timetables').filter((timetable) => {
+      if (members.has(timetable.memberId as string)) return true;
+      timetableRepairs.push({ before: timetable, removedMemberId: timetable.memberId });
+      return false;
+    });
+    if (timetableRepairs.length > 0) files.set('data/timetables.json', { ...timetables, timetables: kept });
+  }
   if (missingAssignments.length > 0) throw new FamilyError(
     `Restore stopped because these assignments name people missing from the restored family:\n${missingAssignments.join('\n')}\nRestore a backup containing their family records, or remove these assignments from the named records and retry.`,
   );
-  return { historicalOrphans, rewardAssignmentRepairs };
+  return { historicalOrphans, rewardAssignmentRepairs, timetableRepairs };
 }

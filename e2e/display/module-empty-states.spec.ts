@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures';
 import type { Page } from '@playwright/test';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
-import { putConfig, seedHouseholdChores, seedMeals, seedTodos } from '../helpers/api';
+import { putConfig, seedHouseholdChores, seedMeals, seedTimetables, seedTodos } from '../helpers/api';
 import { stubModuleData } from '../helpers/stubs';
 import { buildModuleInstance, matrixSettings } from '../helpers/module-fixtures';
 import { EMPTY_STATE_FIXTURES, type EmptyStateFixture } from '../helpers/empty-state-fixtures';
@@ -33,6 +33,10 @@ async function renderEmptyState(page: Page, fixture: EmptyStateFixture, request:
     await seedHouseholdChores(request, sandboxDir, { members: [], chores: [] });
     await seedMeals(request, { savedMeals: [], plan: [] });
     seedTodos(sandboxDir, fixture.todoSeed ?? { lists: [] });
+    // After the chore seed, never before it: seeding empty chores rewrites
+    // the roster empty, which would take the people a timetable row names
+    // with it and turn its empty state into the wrong one.
+    seedTimetables(sandboxDir, fixture.timetableSeed ?? {});
   }
 
   const mod = buildModuleInstance(fixture.type, fixture.config ?? {});

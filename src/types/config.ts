@@ -41,6 +41,7 @@ export type BuiltinModuleType =
   | 'icon'
   | 'shape'
   | 'chore-chart'
+  | 'timetable'
   | 'fullscreen-calendar'
   | 'fullscreen-chore-chart'
   | 'fullscreen-meal-planner'
@@ -2396,6 +2397,47 @@ export interface TodoConfig {
    * Initials of the people an item is for, in their colours.
    */
   showAssignees?: boolean;
+}
+
+// Timetable module config
+/** Week cards across the screen, or one above the other. */
+export type TimetableLayout = 'side-by-side' | 'stacked';
+/** How much of each lesson fits in its cell. */
+export type TimetableDetail = 'less' | 'some' | 'more';
+
+/**
+ * A School Timetable module shows one week card per person from
+ * `data/timetables.json` (see `types/timetables.ts` and
+ * `lib/timetable-data.ts`). Lessons are never stored on the module: it names
+ * the people to show and how their week is laid out, so the same plan can sit
+ * on two displays and one edit reaches both.
+ */
+export interface TimetableConfig {
+  /**
+   * Whose school week to show. Cards follow the order Settings > Family lists people in, and
+   * anyone without a timetable yet is left out
+   *
+   * Family member ids (see `types/family.ts`). Ids with no timetable, and ids
+   * of people who have left the roster, are skipped at render.
+   */
+  memberIds: string[];
+  /**
+   * Week cards side by side across the screen, or stacked one above the other. The module keeps
+   * the arrangement you pick and never swaps it to fit the box
+   */
+  layout: TimetableLayout;
+  /**
+   * How much each lesson shows: `less` keeps short subject codes, `some` adds full names and
+   * rooms, `more` adds start and end times, the A or B week letter and a packing line
+   */
+  detail: TimetableDetail;
+  /** Show the time each period starts beside its number. Omitted = shown */
+  showStartTimes?: boolean;
+  /**
+   * Once the last lesson of the school week is over, show next week instead of an empty weekend.
+   * Omitted = on
+   */
+  nextWeekFromFriday?: boolean;
 }
 
 // Sticky note module config

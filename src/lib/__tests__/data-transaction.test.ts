@@ -143,6 +143,7 @@ describe('participating entry points join the coordinator', () => {
     ['readMealData', async () => { const { readMealData } = await import('../meal-data'); return readMealData(); }],
     ['readRoutinesFile', async () => { const { readRoutinesFile } = await import('../timer-data'); return readRoutinesFile(); }],
     ['readSecrets', async () => { const { readSecrets } = await import('../secrets'); return readSecrets(); }],
+    ['readTimetables', async () => { const { readTimetables } = await import('../timetable-data'); return readTimetables(); }],
   ])('%s waits for an open transaction', async (_label, entryPoint) => {
     let release!: () => void;
     const gate = new Promise<void>((resolve) => { release = resolve; });

@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
+  dayMonthPattern,
+  dayOfMonthPattern,
   formatDate,
+  fullDatePattern,
   formatDateSync,
   formatNumber,
   formatRelativeTime,
@@ -50,6 +53,47 @@ describe('formatDateSync', () => {
     await preloadDateLocale('de-DE');
     const out = formatDateSync(fixed, 'EEEE', { locale: 'de-DE' });
     expect(out).toBe('Montag');
+  });
+});
+
+describe('dayOfMonthPattern', () => {
+  beforeEach(() => {
+    __resetFormatterLocaleCacheForTests();
+  });
+
+  // 2 November 2026 is the date the school-timetable frames end a holiday on,
+  // and a day the locales disagree about how to write.
+  const backToSchool = new Date('2026-11-02T12:00:00Z');
+
+  it('gives German and Danish the ordinal point their dates carry', () => {
+    expect(dayOfMonthPattern('de-DE')).toBe('d.');
+    expect(dayOfMonthPattern('da-DK')).toBe('d.');
+  });
+
+  it('leaves the day a bare number where the language writes one', () => {
+    for (const locale of ['en-US', 'fr-FR', 'es-ES', 'nl-NL', 'pt-BR']) {
+      expect(dayOfMonthPattern(locale)).toBe('d');
+    }
+  });
+
+  it('reads the language rather than a list, so an unshipped locale is right too', () => {
+    // Czech writes "2. listopadu"; nothing in this repo says so.
+    expect(dayOfMonthPattern('cs-CZ')).toBe('d.');
+  });
+
+  it('falls back to the bare number for a tag Intl cannot read', () => {
+    expect(dayOfMonthPattern('not a locale')).toBe('d');
+  });
+
+  it('composes into a pattern each language spells its own way', async () => {
+    const de = await formatDate(backToSchool, `EEEE, ${dayOfMonthPattern('de-DE')} MMMM`, {
+      locale: 'de-DE',
+    });
+    expect(de).toBe('Montag, 2. November');
+    const en = await formatDate(backToSchool, `EEEE, ${dayOfMonthPattern('en-US')} MMMM`, {
+      locale: 'en-US',
+    });
+    expect(en).toBe('Monday, 2 November');
   });
 });
 
@@ -112,5 +156,53 @@ describe('formatRelativeTime', () => {
     const from = to + 24 * 60 * 60 * 1000;
     const out = formatRelativeTime(from, to, { locale: 'en-US', numeric: 'always' });
     expect(out).toBe('1 day ago');
+  });
+});
+
+describe('dayMonthPattern and fullDatePattern', () => {
+  beforeEach(() => {
+    __resetFormatterLocaleCacheForTests();
+  });
+
+  const fixed = new Date('2026-11-02T12:00:00Z');
+
+  /** What the locale itself would write, which is the answer to match. */
+  const intl = (locale: string, weekday: boolean) =>
+    new Intl.DateTimeFormat(locale, {
+      ...(weekday ? { weekday: 'long' as const } : {}),
+      day: 'numeric',
+      month: 'long',
+      timeZone: 'UTC',
+    }).format(fixed);
+
+  // Composing `${dayOfMonthPattern(locale)} MMMM` by hand chose day-first for
+  // every language, so the default locale rendered "Monday, 2 November".
+  // Which half leads, the separator after the weekday, and the "de" some
+  // languages join with are all the language's own business.
+  for (const locale of ['en-US', 'de-DE', 'fr-FR', 'es-ES', 'nl-NL', 'pt-BR', 'da-DK']) {
+    it(`${locale}: writes the day and month the way the locale does`, async () => {
+      await preloadDateLocale(locale);
+      expect(formatDateSync(fixed, dayMonthPattern(locale), { locale })).toBe(intl(locale, false));
+    });
+
+    it(`${locale}: writes the weekday, day and month the way the locale does`, async () => {
+      await preloadDateLocale(locale);
+      expect(formatDateSync(fixed, fullDatePattern(locale), { locale })).toBe(intl(locale, true));
+    });
+  }
+
+  it('puts the month first for English and the day first for German', () => {
+    expect(dayMonthPattern('en-US')).toBe('MMMM d');
+    expect(dayMonthPattern('de-DE')).toBe('d. MMMM');
+  });
+
+  it('takes a short month too', () => {
+    expect(dayMonthPattern('en-US', 'short')).toBe('MMM d');
+    expect(dayMonthPattern('de-DE', 'short')).toBe('d. MMM');
+  });
+
+  it('falls back to the bare day and month for a tag Intl cannot read', () => {
+    expect(dayMonthPattern('not a locale')).toBe('d MMMM');
+    expect(fullDatePattern('not a locale')).toBe('EEEE, d MMMM');
   });
 });

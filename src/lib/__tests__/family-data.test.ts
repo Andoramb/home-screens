@@ -134,6 +134,7 @@ describe('family migration and revisions', () => {
     await put('chore-completions.json', { completions: [{ memberId: 'a' }, { memberId: 'b' }] });
     await put('rewards.json', { balances: { a: 3, b: 4 }, rewards: [{ memberIds: ['a', 'b'] }], redemptions: [{ memberId: 'a', memberName: 'a' }] });
     await put('todos.json', { lists: [{ items: [{ assigneeIds: ['a', 'b'] }] }] });
+    await put('timetables.json', { schools: [{ id: 'school' }], subjects: [], timetables: [{ memberId: 'a' }, { memberId: 'b' }] });
     const data = await readFamilyData();
     await replaceFamilyMembers({ members: [data.members[1]], revision: familyRevision(data), removedIds: ['a'] });
     expect((await read('family.json')).aliasIds).toEqual({});
@@ -143,6 +144,7 @@ describe('family migration and revisions', () => {
     expect((await read('rewards.json')).redemptions).toHaveLength(1);
     expect((await read('config.json')).settings.calendar.personSources).toEqual({ b: ['shared'] });
     expect((await read('todos.json')).lists[0].items[0].assigneeIds).toEqual(['b']);
+    expect((await read('timetables.json')).timetables).toEqual([{ memberId: 'b' }]);
   });
   it('removes chores with no assignees and normalizes surviving schedules after a batch deletion', async () => {
     await put('family.json', { members: ['a', 'b', 'c', 'd'].map((id) => member(id)), migrated: true });
@@ -167,6 +169,17 @@ describe('family migration and revisions', () => {
     await expect(replaceFamilyMembers({ members: [data.members[1]], revision: familyRevision(data), removedIds: ['a'] })).rejects.toThrow('schedule is invalid');
     expect((await read('family.json')).members).toHaveLength(2);
     expect(await fs.readdir(path.join(root, 'data'))).not.toContain('family-transaction.json');
+  });
+  it.each(['{not json', '{ "timetables": "every day" }', '[]'])('removes a person even when the saved timetables read as %s', async (saved) => {
+    await put('family.json', { members: [member('a'), member('b')], migrated: true });
+    await put('chores.json', { chores: [{ id: 'c', assigneeIds: ['a', 'b'] }] });
+    await fs.writeFile(path.join(root, 'data/timetables.json'), saved);
+    const data = await readFamilyData();
+    await replaceFamilyMembers({ members: [data.members[1]], revision: familyRevision(data), removedIds: ['a'] });
+    expect((await read('family.json')).members).toHaveLength(1);
+    expect((await read('chores.json')).chores[0].assigneeIds).toEqual(['b']);
+    // Nothing readable to repair, so the file is left exactly as it was.
+    expect(await fs.readFile(path.join(root, 'data/timetables.json'), 'utf8')).toBe(saved);
   });
   it('allows edits of a large imported roster while refusing additional members', async () => {
     await put('family.json', { members: Array.from({ length: 70 }, (_, n) => member(`id${n}`, n === 0 ? 'Long'.repeat(30) : `Name ${n}`)), migrated: true });

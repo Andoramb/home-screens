@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { NextRequest } from 'next/server';
 
 // Auth is the only dependency we stub — every other lib runs for real against
@@ -21,6 +23,7 @@ import { writeChoreData } from '@/lib/chore-data';
 import { readBackupState, writeBackupState } from '@/lib/backup-state';
 import { readAuthState, writeAuthStateRaw, isAuthEnabled } from '@/lib/auth';
 import { readSecrets, writeSecrets } from '@/lib/secrets';
+import { readTimetables, replaceTimetables } from '@/lib/timetable-data';
 import { encryptCredentials } from '@/lib/backup-crypto';
 import { getLatestSchemaVersion } from '@/lib/migrations';
 import type { ScreenConfiguration } from '@/types/config';
@@ -55,6 +58,10 @@ beforeEach(async () => {
   await writeFamilyData({ members: [], migrated: true });
   await writeBackupState({ lastBackupDate: null, lastDismissedDate: null });
   await writeSecrets({});
+  // The timetables store has no "write empty" that means "never saved": the
+  // file existing at all is what makes the export carry a timetables section,
+  // so the reset has to remove it.
+  await fs.rm(path.join(process.cwd(), 'data', 'timetables.json'), { force: true });
   await writeAuthStateRaw({ passwordHash: null, salt: null, cookieSecret: null });
 });
 
@@ -66,6 +73,17 @@ describe('POST /api/backup with malformed to-do lists', () => {
     // The store still serves reads afterwards.
     const { readTodoData } = await import('@/lib/todo-data');
     expect((await readTodoData()).lists).toEqual([]);
+  });
+});
+
+describe('POST /api/backup with malformed timetables', () => {
+  it('refuses the bundle before writing anything', async () => {
+    const res = await POST(postReq({ _type: 'home-screens-backup', _version: 2, timetables: { schools: [], subjects: [], timetables: [{ schoolId: 'school' }] } }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/person it belongs to/);
+    // The store still serves reads afterwards.
+    const { readTimetables } = await import('@/lib/timetable-data');
+    expect((await readTimetables()).data.timetables).toEqual([]);
   });
 });
 
@@ -119,8 +137,31 @@ describe('GET /api/backup', () => {
         'family',
       ].sort(),
     );
+    // A household that has never saved a timetable exports no timetables
+    // section at all. The starting subjects a read hands out are named in that
+    // household's own language, so exporting them would carry one household's
+    // language into another household's restore.
+    expect(bundle.timetables).toBeUndefined();
     // Nothing in the serialized bundle looks like a bearer/api key value.
     expect(JSON.stringify(bundle)).not.toMatch(/api[_-]?key/i);
+  });
+
+  it('exports the timetables section once a household has saved one', async () => {
+    const stamp = '2026-01-01T00:00:00.000Z';
+    await writeFamilyData({ members: [{ id: 'kid', name: 'Robin', color: '#60a5fa', createdAt: stamp, updatedAt: stamp }], migrated: true });
+    const { revision } = await readTimetables();
+    await replaceTimetables({
+      data: {
+        schools: [{ id: 's1', name: 'Lindenweg', slots: [{ kind: 'period', n: 1, start: '08:15', end: '09:00' }], weekCycle: { mode: 'off' }, specialDays: [] }],
+        subjects: [{ id: 'ma', code: 'Ma', name: 'Maths', color: '#4f8ef7', icon: 'triangle' }],
+        timetables: [{ memberId: 'kid', schoolId: 's1', weeks: { A: { mon: { 1: { subjectId: 'ma' } } } } }],
+      },
+      revision,
+    });
+
+    const bundle = await (await GET(getReq())).json();
+    expect(bundle.timetables.timetables).toHaveLength(1);
+    expect(bundle.timetables.timetables[0].memberId).toBe('kid');
   });
 
   it('records the backup timestamp and clears any prior dismissal', async () => {
@@ -173,6 +214,7 @@ describe('POST /api/backup — restore', () => {
       meals: true,
       rewards: true,
       routines: true,
+      timetables: false,
     });
 
     expect((await readConfig()).screens[0].id).toBe('roundtrip-screen');
@@ -194,6 +236,7 @@ describe('POST /api/backup — restore', () => {
     const json = await res.json();
     expect(json.restored.config).toBe(true);
     expect(json.restored.chores).toBe(false);
+    expect(json.restored.timetables).toBe(false);
 
     // Chores were not in the bundle, so they must be untouched.
     expect((await readFamilyData()).members[0].id).toBe('keep');
@@ -439,6 +482,10 @@ describe('POST /api/backup — credential section', () => {
     bundle.credentials = await credRes.json();
 
     await writeSecrets({});
+  // The timetables store has no "write empty" that means "never saved": the
+  // file existing at all is what makes the export carry a timetables section,
+  // so the reset has to remove it.
+  await fs.rm(path.join(process.cwd(), 'data', 'timetables.json'), { force: true });
     const res = await POST(postReq({ ...bundle, _passphrase: PASSWORD }));
     expect(res.status).toBe(200);
     expect(await readSecrets()).toEqual({ openweathermap_key: 'round-trip' });

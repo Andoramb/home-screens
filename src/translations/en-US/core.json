@@ -214,7 +214,7 @@
     "emoji": "Emoji (optional)",
     "color": "Color",
     "emptyTitle": "No one here yet",
-    "emptyDescription": "Add the people in your household. They will be available in chores, rewards and calendars.",
+    "emptyDescription": "Add the people in your household. They will be available in chores, rewards, calendars and school timetables.",
     "loadFailed": "Could not load your family.",
     "saveFailed": "Could not save your family.",
     "retry": "Try again",
@@ -239,6 +239,8 @@
     "removeChoreCount": {
       "one": "{name} is assigned to {count} chore.",
       "other": "{name} is assigned to {count} chores."
-    }
+    },
+    "hasTimetable": "Has a timetable",
+    "removeTimetable": "{name} has a school timetable, and it is removed as well."
   }
 }

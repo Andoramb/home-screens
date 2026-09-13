@@ -36,7 +36,8 @@ const BUILTIN_MODULE_TYPE_MAP: Record<BuiltinModuleType, true> = {
   'garbage-day': true, 'standings': true, 'affirmations': true, 'date': true,
   'display-control': true, 'meal-planner': true, 'iframe': true,
   'icon': true, 'shape': true,
-  'chore-chart': true, 'fullscreen-calendar': true, 'fullscreen-chore-chart': true,
+  'chore-chart': true, 'timetable': true,
+  'fullscreen-calendar': true, 'fullscreen-chore-chart': true,
   'fullscreen-meal-planner': true, 'fullscreen-photo': true,
   'fullscreen-weather': true, 'fullscreen-news': true,
 };

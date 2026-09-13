@@ -47,6 +47,7 @@ async function main() {
         if (stage === 'evidence') hit = target.endsWith('/family-migration.json');
         if (stage === 'config') hit = target.endsWith('/config.json');
         if (stage === 'chores') hit = target.endsWith('/chores.json');
+        if (stage === 'timetables') hit = target.endsWith('/timetables.json');
         if (stage === 'family-pending' || stage === 'family-final') {
           if (target.endsWith('/family.json')) {
             const data = JSON.parse(await fs.readFile(target, 'utf8'));

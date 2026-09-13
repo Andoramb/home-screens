@@ -28,6 +28,12 @@ function parseObject(raw: string | null, fallback: Record<string, unknown>, file
   if (!isRecord(parsed)) throw new FamilyError(`${filename} must contain an object.`, 409);
   return parsed;
 }
+/** The saved object, or null when the file holds something else entirely. */
+function readableObject(raw: string): Record<string, unknown> | null {
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); } catch { return null; }
+  return isRecord(parsed) ? parsed : null;
+}
 async function readRawFamily(): Promise<FamilyData> {
   const value = parseObject(await readTransactionFile(FAMILY_FILE_PATH), { members: [] }, 'family.json');
   if (!validateFamilyData(value)) throw new FamilyError(familyValidationError(value)!, 409);
@@ -219,11 +225,15 @@ async function planDeletion(removed: Set<string>, changes: TransactionChange[]) 
     if (!isRecord(value)) throw new FamilyError('A saved member mapping is invalid.', 409);
     return Object.fromEntries(Object.entries(value).filter(([id]) => !removed.has(id)));
   };
-  for (const filename of ['config.json', 'chores.json', 'chore-completions.json', 'rewards.json', 'todos.json']) {
+  for (const filename of ['config.json', 'chores.json', 'chore-completions.json', 'rewards.json', 'todos.json', 'timetables.json']) {
     const filePath = `data/${filename}`;
     const raw = await readTransactionFile(filePath);
     if (raw === null) continue;
-    const before = parseObject(raw, {}, filename);
+    // Timetables are read by one page and show nothing of a person but their
+    // week, so a file nothing can read must not also stop somebody being
+    // removed: it is skipped instead of refusing the whole save.
+    const before = filename === 'timetables.json' ? readableObject(raw) : parseObject(raw, {}, filename);
+    if (before === null) continue;
     const next = structuredClone(before);
     if (filename === 'config.json') {
       if (!isRecord(next.settings)) throw new FamilyError('The saved configuration is invalid.', 409);
@@ -261,6 +271,12 @@ async function planDeletion(removed: Set<string>, changes: TransactionChange[]) 
         if (!Array.isArray(list.items)) throw new FamilyError('The saved list items are invalid.', 409);
         return { ...list, items: list.items.map((item: Record<string, unknown>) => ({ ...item, ...(item.assigneeIds !== undefined ? { assigneeIds: stripIds(item.assigneeIds) } : {}) })) };
       });
+    } else if (filename === 'timetables.json') {
+      // One timetable belongs to one person and holds nothing else about
+      // them, so a removed person's week goes with them. Anything that is
+      // not a saved list of timetables is left exactly as it is.
+      if (!Array.isArray(next.timetables)) continue;
+      next.timetables = next.timetables.filter((timetable: unknown) => !isRecord(timetable) || !removed.has(timetable.memberId as string));
     }
     if (json(next) !== raw) changes.push({ path: filePath, before: raw, after: json(next) });
   }

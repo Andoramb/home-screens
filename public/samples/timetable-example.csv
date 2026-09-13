@@ -1,0 +1,10 @@
+Sample timetable. Put the days across the top and one row for each lesson.,,,,,,
+Period,Time,Monday,Tuesday,Wednesday,Thursday,Friday
+1,07:50-08:35,Math / A107,English,Biology,Math,History
+2,08:40-09:25,Math,English,Biology,PE / Gym,History
+Break,09:25-09:45,,,,,
+3,09:45-10:30,Art,History,Math,English,Biology
+4,10:35-11:20,Art,History,Music,English,Chemistry
+Lunch,11:20-12:00,,,,,
+5,12:00-12:45,PE / Gym,Math,English,Chemistry,Music
+6,12:50-13:35,Geography,Geography,,Chemistry,

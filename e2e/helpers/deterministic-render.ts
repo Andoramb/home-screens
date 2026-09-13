@@ -56,16 +56,33 @@ export async function pinRandom(page: Page): Promise<void> {
 /** Phase-1 stand-in, with an id no module fixture can collide with. */
 export const PLACEHOLDER: ModuleInstance = textModule('GALLERY PLACEHOLDER', { id: 'gallery-placeholder' });
 
+/** A moment on the wall clock. `month` counts from 1, so September is 9. */
+export interface FixedInstant {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+}
+
 /**
  * The instant every module renders at.
  *
- * Today's date at a fixed time of day, deliberately not a fixed calendar date:
- * the calendar fixtures build their events relative to the real "today", so a
- * pinned date would render every calendar view empty and the gallery would
- * stop covering them. The cost is that a baseline is only valid for the day it
- * was captured, which is fine - baseline and comparison run minutes apart.
+ * With no argument: today's date at a fixed time of day, deliberately not a
+ * fixed calendar date. The calendar fixtures build their events relative to
+ * the real "today", so a pinned date would render every calendar view empty
+ * and the gallery would stop covering them. The cost is that a baseline is
+ * only valid for the day it was captured, which is fine - baseline and
+ * comparison run minutes apart.
+ *
+ * Pass `at` for a module whose content is a specific calendar date - a school
+ * week, a holiday window - and the clock freezes there instead. The fields are
+ * read as local time, which is the zone the display renders in. A pinned date
+ * belongs to that module's own spec for the reason above: it would empty the
+ * shared matrices' calendar data.
  */
-export function galleryInstant(): Date {
+export function galleryInstant(at?: FixedInstant): Date {
+  if (at) return new Date(at.year, at.month - 1, at.day, at.hour, at.minute, 0, 0);
   const d = new Date();
   d.setHours(9, 41, 0, 0);
   return d;

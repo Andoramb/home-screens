@@ -2,7 +2,7 @@ import { expect, type Locator, type Page } from '@playwright/test';
 import { getModuleDefinition, getAllModuleDefinitions } from '@/lib/module-registry';
 import { DEFAULT_MODULE_STYLE } from '@/types/config';
 import type { ModuleInstance, ModuleType } from '@/types/config';
-import { E2E_TODO_LIST_ID } from './api';
+import { E2E_TIMETABLE_SEED_MEMBER_IDS, E2E_TODO_LIST_ID } from './api';
 
 /**
  * A per-module E2E fixture. Mirrors the app's own module-registry pattern: one
@@ -23,7 +23,7 @@ export interface ModuleFixture {
   /** Stub key (see e2e/helpers/stubs.ts STUBS) — networked modules only. */
   stubKey?: string;
   /** Which local API to seed before rendering — local-data modules only. */
-  seed?: 'chores' | 'meals' | 'todos';
+  seed?: 'chores' | 'meals' | 'todos' | 'timetables';
   /** Config overrides merged over the registry defaultConfig. */
   config?: Record<string, unknown>;
   /** Assertion proving the module rendered its expected content. */
@@ -189,6 +189,26 @@ export const MODULE_FIXTURES: Record<ModuleType, ModuleFixture> = {
   // Word + italic part-of-speech line (the module's two-part layout).
   'word-of-day': { type: 'word-of-day', kind: 'network-free', expect: matchesText(/noun|verb|adjective|adverb/) },
   affirmations: { type: 'affirmations', kind: 'network-free', expect: rendersText },
+  // Weeks live in the shared store (data/timetables.json) and the people in
+  // the family roster, so the row seeds both and names the two kids it shows.
+  // No holiday region: the card asks nothing of the outside world without one,
+  // and the local-data matrices install no stubs to catch it if it did.
+  timetable: {
+    type: 'timetable', kind: 'local-data', seed: 'timetables',
+    config: { memberIds: E2E_TIMETABLE_SEED_MEMBER_IDS },
+    expect: async (mod) => {
+      // A name on a person's own card, not module text: the empty state is one
+      // plain card, so anything less would pass on an unseeded store. The name
+      // is matched on the card's text rather than its own box, because a card
+      // squeezed small enough (the auto-size matrix renders one 400px wide)
+      // clips the name to nothing while the week beneath it still reads.
+      const leon = mod.locator('[data-testid="timetable-card"][data-member="leon"]');
+      const mia = mod.locator('[data-testid="timetable-card"][data-member="mia"]');
+      await expect(leon).toBeVisible();
+      await expect(leon).toContainText('Leon');
+      await expect(mia).toContainText('Mia');
+    },
+  },
   // Lists live in the shared store (data/todos.json); the row points at the
   // seeded list by id.
   todo: {

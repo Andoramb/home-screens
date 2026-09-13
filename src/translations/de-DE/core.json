@@ -214,7 +214,7 @@
     "emoji": "Emoji (freiwillig)",
     "color": "Farbe",
     "emptyTitle": "Noch niemand hier",
-    "emptyDescription": "Füge die Personen in deinem Haushalt hinzu. Sie stehen dann in Aufgaben, Belohnungen und Kalendern zur Verfügung.",
+    "emptyDescription": "Füge die Personen in deinem Haushalt hinzu. Sie stehen dann in Aufgaben, Belohnungen, Kalendern und Stundenplänen zur Verfügung.",
     "loadFailed": "Deine Familie konnte nicht geladen werden.",
     "saveFailed": "Deine Familie konnte nicht gespeichert werden.",
     "retry": "Erneut versuchen",
@@ -239,6 +239,8 @@
     "removeChoreCount": {
       "one": "{name} hat {count} zugewiesene Aufgabe.",
       "other": "{name} hat {count} zugewiesene Aufgaben."
-    }
+    },
+    "hasTimetable": "Hat einen Stundenplan",
+    "removeTimetable": "{name} hat einen Stundenplan, und der wird ebenfalls entfernt."
   }
 }

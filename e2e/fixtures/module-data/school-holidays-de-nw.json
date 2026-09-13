@@ -1,0 +1,264 @@
+{
+  "regions": {
+    "DE-NW": {
+      "region": "DE-NW",
+      "year": 2026,
+      "schoolHolidays": [
+        {
+          "id": "b698a2eb-afcf-4d85-baca-f8dd4592da2c",
+          "startDate": "2026-07-20",
+          "endDate": "2026-09-01",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Sommerferien"
+            },
+            {
+              "language": "EN",
+              "text": "Summer Holidays"
+            }
+          ],
+          "halfDay": false
+        },
+        {
+          "id": "8ed1f201-881e-4ea9-b7b7-5769d7bb0ec2",
+          "startDate": "2026-10-17",
+          "endDate": "2026-10-31",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Herbstferien"
+            },
+            {
+              "language": "EN",
+              "text": "Autumn Holidays"
+            }
+          ],
+          "halfDay": false
+        },
+        {
+          "id": "fd4da962-219c-465e-9021-f3bcbe5ceacd",
+          "startDate": "2026-12-23",
+          "endDate": "2027-01-06",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Weihnachtsferien"
+            },
+            {
+              "language": "EN",
+              "text": "Christmas Holidays"
+            }
+          ],
+          "halfDay": false
+        },
+        {
+          "id": "c9edf367-0f13-492f-bf7c-957b8209e5d4",
+          "startDate": "2027-03-22",
+          "endDate": "2027-04-03",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Osterferien"
+            },
+            {
+              "language": "EN",
+              "text": "Easter Holidays"
+            }
+          ],
+          "halfDay": false
+        },
+        {
+          "id": "f2c11b87-a3e1-4fcc-8723-f89ebcda80ec",
+          "startDate": "2027-05-18",
+          "endDate": "2027-05-18",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Pfingstferien"
+            },
+            {
+              "language": "EN",
+              "text": "Pentecost Holidays"
+            }
+          ],
+          "halfDay": false
+        },
+        {
+          "id": "1da9b5c8-3b0d-4510-a727-f44689e3f881",
+          "startDate": "2027-07-19",
+          "endDate": "2027-08-31",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Sommerferien"
+            },
+            {
+              "language": "EN",
+              "text": "Summer Holidays"
+            }
+          ],
+          "halfDay": false
+        }
+      ],
+      "publicHolidays": [
+        {
+          "id": "555eaa64-b8f6-44ce-850b-6af0d75555e9",
+          "date": "2026-10-03",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Tag der Deutschen Einheit"
+            },
+            {
+              "language": "EN",
+              "text": "Day of German Unity"
+            }
+          ]
+        },
+        {
+          "id": "c359d742-f458-4962-8bf1-44e5d504f6d0",
+          "date": "2026-11-01",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Allerheiligen"
+            },
+            {
+              "language": "EN",
+              "text": "All Saints' Day"
+            }
+          ]
+        },
+        {
+          "id": "b37c8536-925e-455c-9e61-8e2b984a74d1",
+          "date": "2026-12-25",
+          "names": [
+            {
+              "language": "DE",
+              "text": "1. Weihnachtsfeiertag"
+            },
+            {
+              "language": "EN",
+              "text": "Christmas Day"
+            }
+          ]
+        },
+        {
+          "id": "fafc28cf-c8fc-4290-97b0-99904f920d4f",
+          "date": "2026-12-26",
+          "names": [
+            {
+              "language": "DE",
+              "text": "2. Weihnachtsfeiertag"
+            },
+            {
+              "language": "EN",
+              "text": "2nd Day of Christmas"
+            }
+          ]
+        },
+        {
+          "id": "a9951b88-fbfa-4634-8b80-39c60abb2a0c",
+          "date": "2027-01-01",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Neujahr"
+            },
+            {
+              "language": "EN",
+              "text": "New Year's Day"
+            }
+          ]
+        },
+        {
+          "id": "f5967e35-9fbb-4cd9-ae3d-622f6cf90028",
+          "date": "2027-03-26",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Karfreitag"
+            },
+            {
+              "language": "EN",
+              "text": "Good Friday"
+            }
+          ]
+        },
+        {
+          "id": "fcd0558e-3e01-4902-b785-d8bd45baba24",
+          "date": "2027-03-29",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Ostermontag"
+            },
+            {
+              "language": "EN",
+              "text": "Easter Monday"
+            }
+          ]
+        },
+        {
+          "id": "5dce4648-d6e6-400a-936e-b85edbf85622",
+          "date": "2027-05-01",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Tag der Arbeit"
+            },
+            {
+              "language": "EN",
+              "text": "Labour Day"
+            }
+          ]
+        },
+        {
+          "id": "889b46cc-0934-44a1-9468-d88f880acc94",
+          "date": "2027-05-06",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Christi Himmelfahrt"
+            },
+            {
+              "language": "EN",
+              "text": "Ascension Day"
+            }
+          ]
+        },
+        {
+          "id": "689daf70-cc0e-44d6-a501-8a17d4a551dc",
+          "date": "2027-05-17",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Pfingstmontag"
+            },
+            {
+              "language": "EN",
+              "text": "Pentecost Monday"
+            }
+          ]
+        },
+        {
+          "id": "c1b5e914-3c7d-426d-90b4-1d8a889b02a2",
+          "date": "2027-05-27",
+          "names": [
+            {
+              "language": "DE",
+              "text": "Fronleichnam"
+            },
+            {
+              "language": "EN",
+              "text": "Corpus Christi"
+            }
+          ]
+        }
+      ],
+      "ok": true,
+      "fetchedAt": "2026-09-11T18:04:19Z"
+    }
+  }
+}

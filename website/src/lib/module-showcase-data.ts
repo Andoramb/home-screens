@@ -42,6 +42,7 @@ export const MODULE_SHOWCASE: Record<string, string[]> = {
     'Affirmations',
     'Meal Planner',
     'Chore Chart',
+    'School Timetable',
   ],
   'Media & Display': [
     'Text',

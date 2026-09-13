@@ -30,6 +30,8 @@ The Full-Screen Calendar's family grid and free time views show people who have 
 
 Choose the bin beside their name. The confirmation names the person, shows how many chores they are assigned to, and explains what will be deleted: chore assignments and schedules, completion history, ticket balance, reward access and calendar assignments. Chores with no one left assigned are also deleted; chores still assigned to someone else stay. Confirm only when you intend to remove those records.
 
+A [school timetable](/docs/school-timetable) belongs to one person, so theirs is deleted with them and the confirmation says so. The schools, bell times and subjects stay, because the rest of the family shares them.
+
 ## After upgrading
 
 Existing chore members keep their identities, so their assignments, tickets and completion history stay connected. Calendar people join the same list. An existing identity is matched first; otherwise a calendar person merges with a single person whose name matches after ignoring case and extra spaces. Two distinct chore members named Alex stay separate. Ambiguous calendar names remain separate as well.

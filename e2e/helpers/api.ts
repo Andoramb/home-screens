@@ -1,7 +1,8 @@
-import { mkdirSync, writeFileSync } from 'fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import path from 'path';
 import { expect, type APIResponse, type APIRequestContext } from '@playwright/test';
 import type { ScreenConfiguration } from '@/types/config';
+import type { TimetableData } from '@/types/timetables';
 
 export async function getConfig(request: APIRequestContext): Promise<ScreenConfiguration> {
   const res = await request.get('/api/config');
@@ -178,6 +179,114 @@ export function seedTodos(sandboxDir: string, seed: TodoSeed = todoSeed()): void
 
 /** Default swatches for seeded members that name none (the roster's own first few). */
 const SEED_MEMBER_COLORS = ['#f472b6', '#60a5fa', '#4ade80', '#fbbf24', '#a78bfa'];
+
+/**
+ * The people the timetable fixtures name. A timetable points at a person by
+ * family member id and holds nothing else about them, so the ids are fixed
+ * here: a fixture row has to name the people it shows up front, and the
+ * editor mints its own ids.
+ */
+export const E2E_TIMETABLE_MEMBER_IDS = {
+  leon: 'leon',
+  emma: 'emma',
+  mia: 'mia',
+  paul: 'paul',
+  lina: 'lina',
+  jonas: 'jonas',
+} as const;
+
+/** The two people `timetableSeed()` gives a week to, in card order. */
+export const E2E_TIMETABLE_SEED_MEMBER_IDS: string[] = [
+  E2E_TIMETABLE_MEMBER_IDS.leon,
+  E2E_TIMETABLE_MEMBER_IDS.mia,
+];
+
+/**
+ * The five people `timetableHouseholdSeed()` gives a week to, in card order.
+ * Lina is in the roster with no timetable on purpose, so a person the module
+ * has to skip is always present.
+ */
+export const E2E_TIMETABLE_HOUSEHOLD_MEMBER_IDS: string[] = [
+  E2E_TIMETABLE_MEMBER_IDS.leon,
+  E2E_TIMETABLE_MEMBER_IDS.emma,
+  E2E_TIMETABLE_MEMBER_IDS.mia,
+  E2E_TIMETABLE_MEMBER_IDS.paul,
+  E2E_TIMETABLE_MEMBER_IDS.jonas,
+];
+
+/** The schools both seeds use: one secondary with A/B weeks, one primary with after-school care. */
+export const E2E_TIMETABLE_SCHOOL_IDS = { secondary: 'gar', primary: 'ggs' } as const;
+
+/** The household behind both seeds. Colours are roster swatches, one each. */
+const TIMETABLE_PEOPLE: Record<keyof typeof E2E_TIMETABLE_MEMBER_IDS, { id: string; name: string; color: string }> = {
+  leon: { id: E2E_TIMETABLE_MEMBER_IDS.leon, name: 'Leon', color: '#60a5fa' },
+  emma: { id: E2E_TIMETABLE_MEMBER_IDS.emma, name: 'Emma', color: '#f472b6' },
+  mia: { id: E2E_TIMETABLE_MEMBER_IDS.mia, name: 'Mia', color: '#fbbf24' },
+  paul: { id: E2E_TIMETABLE_MEMBER_IDS.paul, name: 'Paul', color: '#4ade80' },
+  lina: { id: E2E_TIMETABLE_MEMBER_IDS.lina, name: 'Lina', color: '#a78bfa' },
+  jonas: { id: E2E_TIMETABLE_MEMBER_IDS.jonas, name: 'Jonas', color: '#fb923c' },
+};
+
+export interface TimetableSeed {
+  /** Written verbatim to `data/timetables.json`. Left out, nothing is saved, which is the first-run state. */
+  data?: TimetableData;
+  /** Written to the family roster. Every `memberId` in `data` has to be here; left out, the roster is left alone. */
+  members?: Array<{ id: string; name: string; color?: string; emoji?: string }>;
+}
+
+/** Nothing saved: what a household that has never opened the timetables page has. */
+const EMPTY_TIMETABLE_DATA: TimetableData = { schools: [], subjects: [], timetables: [] };
+
+const TIMETABLE_FIXTURE_DIR = path.resolve(__dirname, '..', 'fixtures', 'timetables');
+
+function timetableFixture(name: string): TimetableData {
+  return JSON.parse(readFileSync(path.join(TIMETABLE_FIXTURE_DIR, `${name}.json`), 'utf8')) as TimetableData;
+}
+
+/**
+ * Default seed: two kids at two schools. Leon is at the secondary school, so
+ * he carries A and B weeks, a class room and a lunch period; Mia is at the
+ * primary school, so she carries subject pictures and after-school care.
+ * Both have lessons every school day, so an assertion holds whichever day the
+ * real clock lands on.
+ */
+export function timetableSeed(): Required<TimetableSeed> {
+  return { data: timetableFixture('two-kids'), members: [TIMETABLE_PEOPLE.leon, TIMETABLE_PEOPLE.mia] };
+}
+
+/**
+ * The sample household the display audit renders: both schools, the full
+ * subject list, and a week each for Leon, Emma, Mia, Paul and Jonas. Lina is
+ * in the roster without one.
+ */
+export function timetableHouseholdSeed(): Required<TimetableSeed> {
+  return { data: timetableFixture('sample-household'), members: Object.values(TIMETABLE_PEOPLE) };
+}
+
+/**
+ * Seed the timetable store. Like the to-do store this writes the worker's
+ * private `data/timetables.json` directly rather than going through the API:
+ * a fixture row has to name the people and the school ids it points at up
+ * front, and a save through the API mints its own. The people go in through
+ * `seedFamily`, since a timetable names a person by family member id and
+ * holds nothing else about them.
+ *
+ * `{ members }` on its own seeds people with no timetables, and `{}` clears
+ * the store while leaving the roster as it is, which are the two empty states.
+ *
+ * Call this INSIDE the test body. The auto `resetFamily` fixture empties the
+ * family before every test through the real removal cascade, and that cascade
+ * deletes the timetables of everyone it removes, so a seed from a `beforeAll`
+ * or any other module-level setup is gone before the test starts.
+ */
+export function seedTimetables(sandboxDir: string, seed: TimetableSeed = timetableSeed()): void {
+  if (seed.members) {
+    seedFamily(sandboxDir, seed.members.map((m, i) => ({ color: SEED_MEMBER_COLORS[i % SEED_MEMBER_COLORS.length], ...m })));
+  }
+  const dataDir = path.join(sandboxDir, 'data');
+  mkdirSync(dataDir, { recursive: true });
+  writeFileSync(path.join(dataDir, 'timetables.json'), JSON.stringify(seed.data ?? EMPTY_TIMETABLE_DATA, null, 2));
+}
 
 /**
  * A single calendar event spanning today, for stubbing `/api/calendar`. The

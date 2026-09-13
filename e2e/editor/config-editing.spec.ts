@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { getConfig, putConfig, seedDisplaySharedState } from '../helpers/api';
+import { getConfig, putConfig, seedDisplaySharedState, seedTimetables } from '../helpers/api';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
 import { buildModuleInstance, matrixSettings } from '../helpers/module-fixtures';
 import { autosaved, moduleConfig, selectModule } from '../helpers/editor';
@@ -737,7 +737,7 @@ test('quote: picking an accent color preset persists', async ({ page, request })
 
 // ── Task 4: Personal ───────────────────────────────────────────────────────
 // Covers todo, sticky-note, todoist, garbage-day, affirmations, meal-planner,
-// chore-chart.
+// chore-chart, timetable.
 
 test('todo: editing the heading persists', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('todo'));
@@ -812,6 +812,38 @@ test('chore-chart: toggling Show Streaks persists', async ({ page, request }) =>
   });
 
   expect((await moduleConfig(request, 'chore-chart')).showStreaks).toBe(false);
+});
+
+test('timetable: switching Layout to Stacked persists', async ({ page, request, sandboxDir }) => {
+  // The panel is built around the family roster: with nobody in it every
+  // control below the picker is disabled, so the people come first. The
+  // window the panel opens is covered in timetable-window.spec.ts.
+  seedTimetables(sandboxDir);
+  // The window this panel opens looks the household's country up for its
+  // holiday row. That lookup is the one thing in this feature that leaves the
+  // machine, and the handler runs on the server where `externalHits` cannot
+  // see it, so it is answered here instead of being allowed out.
+  await page.route('**/api/timetables/holidays*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      country: 'US',
+      subdivisions: [],
+      regionCategory: [],
+      hasSchoolHolidays: false,
+      fetchedAt: '2026-01-01T00:00:00.000Z',
+    }),
+  }));
+
+  await selectModule(page, request, buildModuleInstance('timetable'));
+
+  // Layout is a segmented control, which picks one value out of a few rather
+  // than turning one on: radio semantics, not a pressed button.
+  await autosaved(page, async () => {
+    await page.getByRole('radiogroup', { name: 'Layout' }).getByRole('radio', { name: 'Stacked' }).click();
+  });
+
+  expect((await moduleConfig(request, 'timetable')).layout).toBe('stacked');
 });
 
 // ── Task 5: Media & Display ────────────────────────────────────────────────

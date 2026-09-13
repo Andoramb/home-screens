@@ -285,6 +285,7 @@
       "affirmations": "Affirmaties",
       "meal-planner": "Maaltijdplanner",
       "chore-chart": "Klusjeskaart",
+      "timetable": "Rooster",
       "text": "Tekst",
       "image": "Afbeelding",
       "video": "Video",
@@ -331,6 +332,7 @@
       "affirmations": "Een lieve gedachte om de dag mee te beginnen",
       "meal-planner": "Wat er deze week op tafel komt",
       "chore-chart": "Wie vandaag wat te doen heeft",
+      "timetable": "De schoolweek van de kinderen die je kiest",
       "text": "Elke tekst die je wilt, opgemaakt zoals jij wilt",
       "image": "Eén foto die jij kiest",
       "video": "Een video op herhaling, uit een bestand of van YouTube",
@@ -377,6 +379,7 @@
       "affirmations": "affirmaties positief compliment aanmoediging kinderen",
       "meal-planner": "eten avondeten maaltijden recepten boodschappen",
       "chore-chart": "klusjes taken kinderen sterren huishouden afval",
+      "timetable": "school rooster lessen vakken klas week kinderen huiswerk",
       "text": "tekst woorden titel kop bericht label",
       "image": "afbeelding foto plaatje logo kunst",
       "video": "video filmpje film clip youtube herhalen",
@@ -2153,7 +2156,7 @@
       }
     },
     "familyPage": {
-      "description": "Voeg je huishouden één keer toe. Namen, kleuren en emoji’s volgen elke persoon bij taken, beloningen en agenda’s."
+      "description": "Voeg je huishouden één keer toe. Namen, kleuren en emoji’s volgen elke persoon bij taken, beloningen, agenda’s en roosters."
     }
   },
   "backgroundPicker": {
@@ -2446,6 +2449,292 @@
       "searchPlaceholder": "Maaltijden zoeken…",
       "noMealsFound": "Geen maaltijden gevonden",
       "prepTimeShort": "{minutes} min"
+    }
+  },
+  "timetableModal": {
+    "title": "Roosters",
+    "autosaveHint": "Wijzigingen worden meteen bewaard",
+    "done": "Klaar",
+    "loadError": "De roosters konden niet geladen worden. Sluit dit venster en open het opnieuw.",
+    "saveConflict": "Iemand anders heeft de roosters opgeslagen terwijl dit venster openstond, dus we hebben die geladen. Jouw laatste wijziging is niet opgeslagen: doe hem nog een keer.",
+    "schoolFirst": "{name} heeft eerst een school nodig: de tijden van de lessen komen van de school. Voeg die hier toe, dan brengen we je terug naar de week.",
+    "schoolForMember": "Voeg de school toe waar {name} naartoe gaat. We brengen je terug naar de week en zetten die op de nieuwe school.",
+    "tabs": {
+      "timetables": "Roosters",
+      "schools": "Scholen en tijden",
+      "subjects": "Vakken"
+    },
+    "empty": {
+      "timetablesTitle": "Nog niemand heeft een schoolweek",
+      "timetablesBody": "Kies links een kind om er een te beginnen. Namen en kleuren komen uit Gezin; dit venster zegt alleen wie een rooster heeft.",
+      "timetablesPick": "Kies links een kind om zijn week te zien.",
+      "schoolsTitle": "Voeg eerst de school toe",
+      "schoolsBody": "Iedereen op een school deelt de tijden, dus de tijden komen hier één keer en de week van elk kind hangt eraan."
+    },
+    "rail": {
+      "withTimetable": "Roosters",
+      "without": "In je gezin, nog geen rooster",
+      "none": "Geen rooster",
+      "add": "+ Toevoegen",
+      "footer": "Namen en kleuren komen uit Gezin. Om iemand toe te voegen of een andere naam te geven, {link}.",
+      "footerLink": "open Gezin"
+    },
+    "fromFamily": "uit Gezin",
+    "school": "Welke school",
+    "addSchoolLink": "+ School toevoegen",
+    "class": "Klas",
+    "weeks": "Weken",
+    "weeksSame": "Elke week hetzelfde",
+    "weeksAB": "A en B",
+    "showing": "Week die je bewerkt",
+    "showIcons": "Icoontjes van de vakken tonen",
+    "paintWith": "Schilderen met",
+    "clear": "Wissen",
+    "addSubject": "+ Vak",
+    "noSubjects": "Nog geen vakken, dus er is niets om mee te schilderen. Voeg het eerste toe.",
+    "lunchBrush": "Lunchpauze",
+    "grid": {
+      "hint": "Kies een vak en klik of sleep dan over de week.",
+      "cellAria": "{day}, {number}e uur",
+      "otherWeek": "{letter}-week: {lesson}",
+      "otherWeekKey": "Het kleine regeltje onder een les laat zien wat er op dat uur in de {letter}-week staat."
+    },
+    "schools": {
+      "title": "Lestijden",
+      "addSchool": "School toevoegen",
+      "nameLabel": "Naam van de school",
+      "nameKept": "Een school heeft een naam nodig, dus {name} blijft staan.",
+      "startFrom": "Beginnen met",
+      "startFromHelp": "Je kunt elk lesuur en elke tijd daarna nog aanpassen, en iedereen op deze school deelt ze.",
+      "templates": {
+        "long-45": "Korte lessen (45 min), lange dag",
+        "short-45": "Korte lessen (45 min), kortere dag",
+        "hour": "Lessen van een uur",
+        "blank": "Geen van deze, we vullen zelf onze tijden in"
+      },
+      "summary": {
+        "one": "{count} uur · {start} tot {end}",
+        "other": "{count} uren · {start} tot {end}"
+      },
+      "noTimesYet": "Nog geen tijden",
+      "careSummary": "{name} tot {time}",
+      "period": "{number}e uur",
+      "start": "Begint",
+      "end": "Eindigt",
+      "addPeriod": "+ Uur",
+      "addBreak": "+ Pauze",
+      "breakName": "Naam van de pauze",
+      "breakDefault": "Pauze",
+      "minutes": {
+        "one": "{count} min.",
+        "other": "{count} min."
+      },
+      "removePeriod": "Dit uur weghalen",
+      "removeBreak": "Deze pauze weghalen",
+      "careTitle": "Naschoolse opvang",
+      "careName": "Hoe heet het?",
+      "careDefault": "Naschoolse opvang",
+      "careUntil": "Tot",
+      "careHelp": "Laat een dag leeg als er die dag geen opvang is.",
+      "sharedNote": "Deze tijden gelden voor {names}.",
+      "endsBeforeStart": "Dit moet later eindigen dan het begint.",
+      "outOfOrder": "Dit begint voordat de rij erboven klaar is.",
+      "timeNeeded": "Vul beide tijden in, bijvoorbeeld 08:15.",
+      "holidays": "Schoolvakanties",
+      "holidaysNone": "Geen",
+      "holidaysHelp": "{area}: Kies waar je school de vakanties van volgt. Laat het op Geen staan en vakanties worden niet meegenomen.",
+      "holidayNoCountry": "Stel je land in bij Instellingen > Kalender om een lijst met regio's te krijgen, of typ een code als DE-NW.",
+      "holidayPublicOnly": "{area}: Kies waar je school staat. Er zijn geen schoolvakantiedata voor jouw land, dus alleen officiële feestdagen komen als vrije dag binnen.",
+      "holidayNoneForCountry": "We hebben geen vakantiedata voor jouw land. Je kunt vrije dagen nog steeds zelf invullen bij \"{section}\" hieronder.",
+      "holidayRegionWord": "Regio",
+      "holidayListFailed": "We konden de vakantielijst nu niet bereiken. Probeer het over een momentje nog eens.",
+      "holidayMessages": {
+        "schoolHolidaysStale": "Dit zijn de data die we de vorige keer hebben bewaard. We konden nu niet kijken of er nieuwe zijn.",
+        "schoolHolidaysUnavailable": "We kregen geen vakantiedata voor deze streek. Probeer het later nog eens."
+      },
+      "holidayRegionPlaceholder": "Regiocode, bijvoorbeeld {example}",
+      "remove": "{name} weghalen",
+      "removeBlocked": "Deze school is nog in gebruik bij {names}. Kies eerst een andere school, dan kan deze weg.",
+      "removeConfirm": {
+        "title": "Deze school weghalen?",
+        "message": "De tijden en bijzondere dagen van {name} gaan mee.",
+        "confirmLabel": "School weghalen"
+      }
+    },
+    "weekCycle": {
+      "title": "A- en B-weken",
+      "off": "Uit",
+      "oddIsA": "Oneven weken zijn A",
+      "evenIsA": "Even weken zijn A",
+      "help": "De weken worden geteld vanaf het begin van het jaar. Deze week (week {number}) is de {thisLetter}-week. Volgende week is de {nextLetter}-week.",
+      "turnedOff": "De A- en B-weken staan uit, dus de tweede week van {names} is weg."
+    },
+    "specialDays": {
+      "title": "Dagen die anders zijn",
+      "add": "+ Dag toevoegen",
+      "date": "Datum",
+      "name": "Hoe heet die dag?",
+      "nameDefault": "Bijzondere dag",
+      "what": "Wat er gebeurt",
+      "dayOff": "Vrije dag",
+      "endsAfter": "Uit na het {number}e uur",
+      "remove": "Deze dag weghalen",
+      "help": "Dit zijn de dagen die alleen de school kent. Schoolvakanties en feestdagen komen vanzelf binnen zodra je hierboven een regio kiest."
+    },
+    "subjects": {
+      "color": "Kleur",
+      "icon": "Icoontje",
+      "short": "Afkorting",
+      "name": "Naam",
+      "bring": "Meenemen",
+      "usedBy": "Voor wie",
+      "usedByNames": "Voor {names}",
+      "usedByCount": {
+        "one": "{count} persoon",
+        "other": "{count} personen"
+      },
+      "nothing": "Niets",
+      "add": "+ Vak toevoegen",
+      "newCode": "Nieuw",
+      "newName": "Nieuw vak",
+      "note": "De kleuren komen van gewone schriftkleuren.",
+      "footerNote": "Pas één keer een kleur of iets om mee te nemen aan, en de kaart van elk kind gaat mee.",
+      "remove": "{name} weghalen",
+      "removeConfirm": {
+        "title": "Vak weghalen",
+        "message": "\"{name}\" weghalen? Het verdwijnt uit elk rooster dat het gebruikt.",
+        "confirmLabel": "Weghalen"
+      }
+    },
+    "import": {
+      "open": "Importeren uit een spreadsheet",
+      "title": "Importeren uit een spreadsheet",
+      "subtitle": "Uit een Google Sheet of een bestand op deze computer",
+      "back": "Terug",
+      "linkLabel": "Link naar het blad",
+      "linkHelp": "Druk in Google Sheets op Delen, zet het zo dat iedereen met de link mag kijken en plak die link hier. Publiceren hoeft niet. Een tabblad met de naam van iemand uit je gezin wordt aan die persoon gekoppeld; elk ander tabblad koppel je zelf.",
+      "sample": "Download een voorbeeldblad",
+      "sampleHelp": "{link} om te zien hoe het eruitziet: de dagen bovenaan, één regel per uur en de tijden links.",
+      "check": "Controleren",
+      "checking": "Bezig met controleren…",
+      "found": {
+        "one": "{count} tabblad gevonden in \"{title}\"",
+        "other": "{count} tabbladen gevonden in \"{title}\""
+      },
+      "foundInFile": {
+        "one": "{count} rooster gevonden in het gekozen bestand",
+        "other": "{count} roosters gevonden in de gekozen bestanden"
+      },
+      "unlistedTitle": "Dit blad wilde zijn tabbladen niet noemen",
+      "unlistedHelp": "Plak dan de link naar het eigen tabblad van elke persoon. Klik in Google Sheets onderaan op het tabblad en kopieer de link uit de adresbalk: die eindigt op #gid= en een getal.",
+      "linkFor": "Link naar het tabblad van {name}",
+      "mapTo": "Voor wie is dit tabblad?",
+      "skip": "Dit tabblad overslaan",
+      "tabSummary": {
+        "one": "{count} uur, {firstDay} tot {lastDay}",
+        "other": "{count} uren, {firstDay} tot {lastDay}"
+      },
+      "tabSummaryOneDay": {
+        "one": "{count} uur op {firstDay}",
+        "other": "{count} uren op {firstDay}"
+      },
+      "notInFamily": "Kies voor wie dit tabblad is, of {link} als die persoon er nog niet bij staat.",
+      "addPerson": "voeg {name} toe op de pagina Gezin",
+      "unknownCode": {
+        "one": "{count} afkorting uit het blad staat niet bij je vakken: \"{codes}\"",
+        "other": "{count} afkortingen uit het blad staan niet bij je vakken: \"{codes}\""
+      },
+      "unknownHelp": "Het lijkt op {subject}, dus het gaat daarheen in plaats van een tweede vak te worden. Kies een ander vak of voeg het als nieuw toe.",
+      "unknownHelpMaybe": "Het kan {subject} zijn. Kies dat, kies een ander vak, of voeg het als nieuw toe.",
+      "sync": "Bijhouden met het blad",
+      "syncHelp": "Kijkt elk uur in het blad en werkt de muur bij. Een rooster verandert ongeveer twee keer per jaar, dus één keer importeren is meestal genoeg.",
+      "cancel": "Annuleren",
+      "apply": {
+        "zero": "Importeren",
+        "one": "{count} rooster importeren",
+        "other": "{count} roosters importeren"
+      },
+      "working": "Bezig met importeren…",
+      "footerNote": "Importeren vult roosters in voor mensen die al in Gezin staan. Het voegt nooit iemand toe.",
+      "errors": {
+        "linkNotUnderstood": "Dit lijkt geen Google Sheets-link. Kopieer de link uit de adresbalk van het blad.",
+        "sheetNotFound": "We konden dat blad niet vinden. Kijk de link na.",
+        "sheetNotShared": "Deel het blad zodat iedereen met de link het kan bekijken.",
+        "tabNotFound": "Dat tabblad staat niet meer in het blad. Kijk in het blad en probeer het opnieuw.",
+        "sheetUnreachable": "Google gaf geen antwoord. Probeer het over een minuutje nog eens.",
+        "sheetTooBig": "Dat blad is te groot om te lezen. Neem een blad waar alleen het rooster in staat."
+      },
+      "orFile": "Of kies een bestand op deze computer",
+      "chooseFile": "Bestand kiezen",
+      "fileHelp": "Een CSV die je uit Excel, Numbers of Google Sheets hebt opgeslagen. Geef het bestand de naam van de persoon, zoals Sanne.csv, dan wordt die meteen gevonden. Er wordt niets ergens naartoe gestuurd.",
+      "reading": "Bezig met lezen…",
+      "shapeTitle": "Hoe het blad eruit hoort te zien",
+      "shapeIntro": "De dagen bovenaan, één regel per uur en de tijden links. Wat niet herkend wordt, blijft weg in plaats van dat er iets van gemaakt wordt.",
+      "shapePeriod": "Uur",
+      "shapeTime": "Tijd",
+      "shapeBreak": "Pauze",
+      "ruleTabs": "Eén tabblad per persoon, met de naam van die persoon erop.",
+      "ruleRoom": "Het lokaal komt achter het vak, zoals Wiskunde / B12.",
+      "ruleBreak": "Een regel die Pauze of Lunch heet, wordt een pauze.",
+      "ruleEmpty": "Een leeg vakje is een tussenuur.",
+      "ruleCodes": "Gebruik de namen die je zelf al voor de vakken gebruikt. Alles wat nieuw is, gaat naar die van jou of komt erbij.",
+      "pickSubject": "Kies een vak",
+      "addAsNew": "Als nieuw vak toevoegen",
+      "needCodes": {
+        "one": "Importeren wacht nog op {codes}. Kies hierboven welk vak het is, of voeg het als nieuw toe.",
+        "other": "Importeren wacht nog op {codes}. Kies hierboven bij elk welk vak het is, of voeg ze als nieuw toe."
+      },
+      "school": "Van welke school deze weken zijn",
+      "schoolHelp": "Tijden en pauzes komen van deze school. Wie al een rooster heeft, blijft op zijn eigen school.",
+      "needSchool": "Voeg eerst een school toe, op het tabblad Scholen en tijden. De tijden van de lessen komen van de school.",
+      "tooManyPeriods": {
+        "one": "{school} heeft maar tijden voor {count} les per dag, en voor {names} zijn er meer.",
+        "other": "{school} heeft maar tijden voor {count} lessen per dag, en voor {names} zijn er meer."
+      },
+      "tooManyPeriodsHelp": "De lessen die over zijn, komen niet in beeld. Vul eerst de ontbrekende tijden van de school aan, of kies hierboven de juiste school."
+    },
+    "cell": {
+      "edit": "Lokaal en cluster voor {subject}",
+      "room": "Lokaal",
+      "roomPlaceholder": "Waar deze les is",
+      "course": "Cluster",
+      "coursePlaceholder": "Alleen als sommige lessen anders zijn",
+      "courseHint": "Een kort label voor het cluster waarin de les valt, zoals G1 of G2. Het staat in de hoek van de les.",
+      "copyToSubject": "Kopiëren naar elke les van {subject}, allebei de weken",
+      "copyNeedsValue": "Vul eerst een lokaal of een cluster in.",
+      "done": "Klaar"
+    },
+    "source": {
+      "heading": "Uit een spreadsheet",
+      "readOn": "Gelezen op {date}",
+      "inSync": "Bijgehouden",
+      "notFollowing": "Volgt het blad niet",
+      "couldNotCheck": "Kon niet kijken",
+      "checking": "Bezig met kijken…",
+      "lastChecked": "Laatst gekeken {when}. De volgende keer is binnen een uur.",
+      "neverChecked": "Nog niet gekeken. De eerste keer is binnen een uur.",
+      "failed": "Toen we voor het laatst keken, {when}, konden we het blad niet lezen. Op de muur staat nog de week die we al hadden.",
+      "yoursNow": "Deze week is nu van jou. Er verandert niets meer, tenzij je opnieuw importeert.",
+      "checkNow": "Nu kijken",
+      "tryNow": "Nu proberen",
+      "checkedChanged": "Het blad had een nieuwe week. Die staat er nu in.",
+      "checkedSame": "Net gekeken. Het blad is niet veranderd.",
+      "importAgain": "Opnieuw importeren",
+      "openSheet": "Het blad openen",
+      "sync": "Bijhouden met het blad",
+      "syncOnHelp": "Kijkt elk uur in het blad en werkt de muur bij. Alleen deze week wordt vervangen.",
+      "syncOffHelp": "Als je dit aanzet, wordt deze week vervangen door die uit het blad.",
+      "syncFailingHelp": "Staat nog aan. We blijven het elk uur proberen.",
+      "stopped": "{name} volgt het blad niet meer. Je hebt deze week zelf aangepast, dus we hebben het kijken van elk uur uitgezet in plaats van jouw werk te vervangen.",
+      "stoppedAck": "Begrepen",
+      "undo": "Ongedaan maken"
+    },
+    "closeAnyway": "Sluiten zonder opslaan",
+    "removeTimetable": {
+      "title": "Dit rooster weghalen?",
+      "message": "Bij {name} blijft al het andere. Alleen de schoolweek gaat weg.",
+      "confirmLabel": "Rooster weghalen",
+      "action": "Rooster van {name} weghalen"
     }
   },
   "propertyPanel": {
@@ -3763,6 +4052,29 @@
       "stateTokenUnknown": "Geen enkele module op dit display publiceert {keys} nog. Die plekken tonen '–' totdat een module ze publiceert.",
       "stateTokenFiltersHint": "Voeg |round:1 toe om getallen af te ronden, of |default:tekst om te kiezen wat er staat voordat een waarde binnenkomt.",
       "stateTokenPreview": "Live voorbeeld"
+    },
+    "timetable": {
+      "show": "Van wie je de week laat zien",
+      "showMember": "{name} tonen",
+      "noTimetable": "Geen rooster",
+      "add": "+ Toevoegen",
+      "addFor": "Een rooster maken voor {name}",
+      "fromFamily": "Uit Gezin",
+      "manageFamily": "Gezin bewerken",
+      "cardOrder": "De kaarten staan in de volgorde van je gezinslijst.",
+      "editTimetables": "Roosters bewerken",
+      "layout": "Indeling",
+      "layoutSideBySide": "Naast elkaar",
+      "layoutStacked": "Onder elkaar",
+      "detail": "Details",
+      "detailLess": "Weinig",
+      "detailSome": "Gemiddeld",
+      "detailMore": "Veel",
+      "detailHelp": "Weinig laat korte vakafkortingen zien, Gemiddeld voegt de volledige namen en het lokaal toe, Veel voegt de tijden, de weekletter en wat mee moet toe. Weinig past goed bij drie of meer kinderen naast elkaar.",
+      "showStartTimes": "Begintijden tonen",
+      "nextWeekFromFriday": "Vanaf vrijdag de volgende week tonen",
+      "noFamily": "Er zit nog niemand in Gezin. Voeg mensen toe op de pagina Gezin en geef ze hier een rooster.",
+      "openFamily": "Gezin openen"
     },
     "todo": {
       "viewList": "Lijst",

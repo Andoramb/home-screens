@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fetchWithTimeout } from '@/lib/api-utils';
-import { isBlockedHost } from '@/lib/url-safety';
+import { isAllowedDomain } from '@/lib/url-safety';
 import { auditProxyDenied } from './audit';
+
+export { isAllowedDomain } from '@/lib/url-safety';
 
 // --- Constants ---
 
@@ -10,34 +12,6 @@ const PROXY_TIMEOUT_MS = 15_000;
  *  re-validated against allowedDomains and isSafeExternalUrl, so this is the
  *  cap on how many DNS lookups a single request can fan out to. */
 const MAX_REDIRECT_HOPS = 5;
-
-// --- Domain validation ---
-
-function matchesDomain(hostname: string, pattern: string): boolean {
-  if (pattern === '*') return true; // caller already checked isBlockedHost
-  if (pattern.startsWith('*.')) {
-    const suffix = pattern.slice(2);
-    return hostname === suffix || hostname.endsWith('.' + suffix);
-  }
-  return hostname === pattern;
-}
-
-export function isAllowedDomain(url: string, allowedDomains: string[], allowLan: boolean): boolean {
-  try {
-    const { hostname } = new URL(url);
-    // Without allowLan, apply the strict SSRF blocklist (rejects all private
-    // ranges and loopback). With allowLan, reject only the targets that are
-    // dangerous regardless of permission: cloud metadata + unspecified.
-    if (!allowLan && isBlockedHost(hostname)) return false;
-    if (allowLan) {
-      const lit = hostname.toLowerCase();
-      if (lit === '0.0.0.0' || lit === '169.254.169.254') return false;
-    }
-    return allowedDomains.some((pattern) => matchesDomain(hostname, pattern));
-  } catch {
-    return false;
-  }
-}
 
 // --- Redirect following with per-hop SSRF re-validation ---
 

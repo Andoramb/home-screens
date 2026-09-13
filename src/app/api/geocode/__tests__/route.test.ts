@@ -132,7 +132,43 @@ describe('GET /api/geocode', () => {
       latitude: 40.7127281,
       longitude: -74.0060152,
       displayName: 'New York, New York, US',
+      countryCode: 'US',
     });
+  });
+
+  // The school-holiday region is picked per state, so the settings page offers
+  // the state the address already names instead of a list of sixteen.
+  it('returns the country and state codes Nominatim already sends', async () => {
+    mockFetchSuccess([
+      makeNominatimResult({
+        address: {
+          city: 'Dusseldorf',
+          state: 'Nordrhein-Westfalen',
+          country_code: 'de',
+          'ISO3166-2-lvl4': 'DE-NW',
+        },
+      }),
+    ]);
+
+    const response = await GET(makeRequest({ q: 'Dusseldorf' }));
+    const json = await response.json();
+
+    expect(json.countryCode).toBe('DE');
+    expect(json.subdivisionCode).toBe('DE-NW');
+  });
+
+  it('omits the state code when the address has none', async () => {
+    mockFetchSuccess([
+      makeNominatimResult({
+        address: { city: 'Monaco', country_code: 'mc' },
+      }),
+    ]);
+
+    const response = await GET(makeRequest({ q: 'Monaco' }));
+    const json = await response.json();
+
+    expect(json.countryCode).toBe('MC');
+    expect(json).not.toHaveProperty('subdivisionCode');
   });
 
   it('constructs displayName from city + state + country', async () => {
@@ -277,6 +313,40 @@ describe('GET /api/geocode', () => {
     expect(calledUrl).toContain('format=json');
     expect(calledUrl).toContain('limit=1');
     expect(calledUrl).toContain('addressdetails=1');
+  });
+
+  describe('?detect=ip', () => {
+    function mockIpResponse(data: Record<string, unknown>) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: true, json: () => Promise.resolve(data) })),
+      );
+    }
+
+    it('puts the state code back together from the parts this source gives', async () => {
+      mockIpResponse({ lat: 51.2, lon: 6.8, city: 'Dusseldorf', region: 'NW', regionName: 'North Rhine-Westphalia', countryCode: 'DE' });
+
+      const response = await GET(makeRequest({ detect: 'ip' }));
+      const json = await response.json();
+
+      expect(json).toEqual({
+        latitude: 51.2,
+        longitude: 6.8,
+        displayName: 'Dusseldorf, North Rhine-Westphalia, DE',
+        countryCode: 'DE',
+        subdivisionCode: 'DE-NW',
+      });
+    });
+
+    it('omits the state code when this source gives something that is not one', async () => {
+      mockIpResponse({ lat: 51.2, lon: 6.8, city: 'Dusseldorf', region: 'Nordrhein', regionName: 'North Rhine-Westphalia', countryCode: 'DE' });
+
+      const response = await GET(makeRequest({ detect: 'ip' }));
+      const json = await response.json();
+
+      expect(json.countryCode).toBe('DE');
+      expect(json).not.toHaveProperty('subdivisionCode');
+    });
   });
 
   it('parses lat/lon as numbers in the response', async () => {

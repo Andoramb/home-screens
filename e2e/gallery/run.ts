@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
-import { seedHouseholdChores, seedMeals, seedTodos, todayCalendarEvents } from '../helpers/api';
+import { seedHouseholdChores, seedMeals, seedTimetables, seedTodos, todayCalendarEvents } from '../helpers/api';
 import { PLACEHOLDER, QUARANTINE, galleryInstant, mountClientSide, pinRandom, settle } from '../helpers/deterministic-render';
 import { renderOnDisplay } from '../helpers/display';
 import { stubModuleData } from '../helpers/stubs';
@@ -44,6 +44,7 @@ export function runGallery(label: string): void {
         if (fx.seed === 'chores') await seedHouseholdChores(request, sandboxDir);
         if (fx.seed === 'meals') await seedMeals(request);
         if (fx.seed === 'todos') seedTodos(sandboxDir);
+        if (fx.seed === 'timetables') seedTimetables(sandboxDir);
 
         const def = getModuleDefinition(type);
         const mod = applyScenario(
@@ -105,6 +106,7 @@ export function runGallery(label: string): void {
         if (fx.seed === 'chores') await seedHouseholdChores(request, sandboxDir);
         if (fx.seed === 'meals') await seedMeals(request);
         if (fx.seed === 'todos') seedTodos(sandboxDir);
+        if (fx.seed === 'timetables') seedTimetables(sandboxDir);
 
         const def = getModuleDefinition(variant.type);
         const mod = applyScenario(

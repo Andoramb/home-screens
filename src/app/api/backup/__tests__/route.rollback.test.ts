@@ -14,7 +14,8 @@ import { getLatestSchemaVersion } from '@/lib/migrations';
 const iso = '2026-01-01T00:00:00.000Z';
 const member = { id: 'alex', name: 'Alex', color: '#60a5fa', createdAt: iso, updatedAt: iso };
 const config = { version: getLatestSchemaVersion(), settings: {}, screens: [{ id: 'before', name: 'Before', modules: [] }] };
-const files = ['config.json', 'family.json', 'chores.json', 'chore-completions.json', 'rewards.json', 'meals.json', 'todos.json', 'secrets.json', 'google-tokens.json'];
+// Indexed positionally below, so new files are appended, never inserted.
+const files = ['config.json', 'family.json', 'chores.json', 'chore-completions.json', 'rewards.json', 'meals.json', 'todos.json', 'secrets.json', 'google-tokens.json', 'timetables.json'];
 const write = (file: string, value: unknown) => fs.writeFile(path.join(process.cwd(), 'data', file), JSON.stringify(value, null, 2));
 const read = (file: string) => fs.readFile(path.join(process.cwd(), 'data', file), 'utf8');
 const body = () => ({
@@ -23,6 +24,7 @@ const body = () => ({
   chores: { chores: [] }, choreCompletions: { completions: [] },
   rewards: { rewards: [], balances: { alex: 20 }, redemptions: [] },
   meals: { savedMeals: [], plan: [], groceryChecked: [], settings: {} },
+  timetables: { schools: [], subjects: [{ id: 'maths', code: 'Ma', name: 'Maths', color: '#4f8ef7', icon: 'calculator' }], timetables: [] },
 });
 const request = (value: unknown) => new NextRequest('http://localhost/api/backup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
 const credentialBody = () => ({ ...body(), credentials: { encrypted: false, data: { secrets: { openweathermap_key: 'new-key' }, oauthTokens: { google: { access_token: 'new-token' } } } } });
@@ -40,6 +42,7 @@ beforeEach(async () => {
   await write('todos.json', { lists: [], migratedFromConfig: true });
   await write('secrets.json', { openweathermap_key: 'old-key' });
   await write('google-tokens.json', { access_token: 'old-token' });
+  await write('timetables.json', { schools: [], subjects: [], timetables: [] });
   await readFamilyData();
   before = await Promise.all(files.map(read));
 });
@@ -80,6 +83,7 @@ describe('whole restore journal', () => {
     expect(JSON.parse(await read('config.json')).screens[0].id).toBe('after');
     expect(JSON.parse(await read('rewards.json')).balances.alex).toBe(20);
     expect(JSON.parse(await read('family.json')).members[0].name).toBe('Alex restored');
+    expect(JSON.parse(await read('timetables.json')).subjects[0].name).toBe('Maths');
   });
   it('plans credentials and publishes them after content', async () => {
     const writes = failOnceAt('never-written.json');
@@ -99,6 +103,11 @@ describe('whole restore journal', () => {
     expect((await POST(request(credentialBody()))).status).toBe(500);
     // Rollback may rewrite old credential images, but no new value survives.
     expect(writes.indexOf('secrets.json')).toBeGreaterThan(writes.indexOf('rewards.json'));
+    await expectRollback();
+  });
+  it('rolls every landed content file back when the timetables write fails', async () => {
+    failOnceAt('timetables.json');
+    expect((await POST(request(body()))).status).toBe(500);
     await expectRollback();
   });
   it('does not touch absent credential sections', async () => {

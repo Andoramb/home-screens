@@ -285,6 +285,7 @@
       "affirmations": "Affirmations",
       "meal-planner": "Meal Planner",
       "chore-chart": "Chore Chart",
+      "timetable": "School Timetable",
       "text": "Text",
       "image": "Image",
       "video": "Video",
@@ -331,6 +332,7 @@
       "affirmations": "A kind thought to start the day",
       "meal-planner": "What is for dinner this week",
       "chore-chart": "Who has what to do today",
+      "timetable": "The school week of the kids you pick",
       "text": "Any words you like, styled how you like",
       "image": "One picture you pick",
       "video": "A video on a loop, from a file or YouTube",
@@ -377,6 +379,7 @@
       "affirmations": "kindness positive encouragement kids",
       "meal-planner": "food dinner supper recipes groceries",
       "chore-chart": "kids jobs tasks stars chores family trash",
+      "timetable": "school timetable lessons subjects class week homework kids",
       "text": "words label heading message title",
       "image": "photo picture logo art",
       "video": "movie clip youtube loop",
@@ -2153,7 +2156,7 @@
       }
     },
     "familyPage": {
-      "description": "Add your household once. Names, colors and emoji follow each person across chores, rewards and calendars."
+      "description": "Add your household once. Names, colors and emoji follow each person across chores, rewards, calendars and school timetables."
     }
   },
   "backgroundPicker": {
@@ -2446,6 +2449,292 @@
       "searchPlaceholder": "Search meals...",
       "noMealsFound": "No meals found",
       "prepTimeShort": "{minutes}m"
+    }
+  },
+  "timetableModal": {
+    "title": "Timetables",
+    "autosaveHint": "Changes save as you go",
+    "done": "Done",
+    "loadError": "We could not load the timetables. Try closing this window and opening it again.",
+    "saveConflict": "Somebody else saved the timetables while this window was open, so we loaded theirs. Your last change did not save: make it again.",
+    "schoolFirst": "{name} needs a school first: the lesson times come from the school. Add it here and we will bring you back to their week.",
+    "schoolForMember": "Add the school {name} goes to. We will bring you back to their week and put them at the new school.",
+    "tabs": {
+      "timetables": "Timetables",
+      "schools": "Schools & times",
+      "subjects": "Subjects"
+    },
+    "empty": {
+      "timetablesTitle": "Nobody has a school week yet",
+      "timetablesBody": "Pick a child on the left to start one. Names and colors come from Family; this window only says who has a timetable.",
+      "timetablesPick": "Pick a child on the left to see their week.",
+      "schoolsTitle": "Add the school first",
+      "schoolsBody": "Everyone at one school shares its bell times, so the times go in once and every child's week hangs off them."
+    },
+    "rail": {
+      "withTimetable": "Timetables",
+      "without": "In your family, no timetable yet",
+      "none": "No timetable",
+      "add": "+ Add",
+      "footer": "Names and colors come from Family. To add or rename someone, {link}.",
+      "footerLink": "open Family"
+    },
+    "fromFamily": "from Family",
+    "school": "School",
+    "addSchoolLink": "+ Add a school",
+    "class": "Class",
+    "weeks": "Weeks",
+    "weeksSame": "Same each week",
+    "weeksAB": "A and B",
+    "showing": "Editing week",
+    "showIcons": "Show subject icons",
+    "paintWith": "Paint with",
+    "clear": "Clear",
+    "addSubject": "+ Subject",
+    "noSubjects": "No subjects yet, so there is nothing to paint with. Add the first one to start.",
+    "lunchBrush": "Lunch",
+    "grid": {
+      "hint": "Pick a subject, then click or drag across the week.",
+      "cellAria": "{day}, period {number}",
+      "otherWeek": "week {letter}: {lesson}",
+      "otherWeekKey": "The small line under a lesson is what that period is in week {letter}."
+    },
+    "schools": {
+      "title": "Bell times",
+      "addSchool": "Add school",
+      "nameLabel": "School name",
+      "nameKept": "A school needs a name, so we kept {name}.",
+      "startFrom": "Start from",
+      "startFromHelp": "You can change every period and time afterwards, and everyone at this school shares them.",
+      "templates": {
+        "long-45": "Short lessons (45 min), long day",
+        "short-45": "Short lessons (45 min), shorter day",
+        "hour": "Hour-long lessons",
+        "blank": "None of these, we will type our own"
+      },
+      "summary": {
+        "one": "{count} period · {start} to {end}",
+        "other": "{count} periods · {start} to {end}"
+      },
+      "noTimesYet": "No times yet",
+      "careSummary": "{name} until {time}",
+      "period": "Period {number}",
+      "start": "Starts",
+      "end": "Ends",
+      "addPeriod": "+ Period",
+      "addBreak": "+ Break",
+      "breakName": "Break name",
+      "breakDefault": "Break",
+      "minutes": {
+        "one": "{count} minute",
+        "other": "{count} minutes"
+      },
+      "removePeriod": "Remove this period",
+      "removeBreak": "Remove this break",
+      "careTitle": "After-school care",
+      "careName": "What is it called?",
+      "careDefault": "After-school care",
+      "careUntil": "Until",
+      "careHelp": "Leave a day empty when there is no care that day.",
+      "sharedNote": "These times are shared by {names}.",
+      "endsBeforeStart": "This has to end later than it starts.",
+      "outOfOrder": "This starts before the row above it ends.",
+      "timeNeeded": "Fill in both times, like 08:15.",
+      "holidays": "School holidays",
+      "holidaysNone": "None",
+      "holidaysHelp": "{area}: Pick the one your school's holidays follow. Leave it at None and holidays are ignored.",
+      "holidayNoCountry": "Set your country under Settings > Calendar to get a list of regions, or type a code like DE-NW.",
+      "holidayPublicOnly": "{area}: Pick the one your school is in. Your country has no school holiday dates, so only public holidays show as days off.",
+      "holidayNoneForCountry": "We have no holiday dates for your country. You can still mark days off yourself under \"{section}\" below.",
+      "holidayRegionWord": "Region",
+      "holidayListFailed": "We could not reach the holiday list just now. Try again in a moment.",
+      "holidayMessages": {
+        "schoolHolidaysStale": "These are the dates we saved earlier. We could not look for new ones just now.",
+        "schoolHolidaysUnavailable": "We could not get the holiday dates for this region. Try again later."
+      },
+      "holidayRegionPlaceholder": "Region code, for example {example}",
+      "remove": "Remove {name}",
+      "removeBlocked": "This school is still in use by {names}. Move them to another school first, then it can go.",
+      "removeConfirm": {
+        "title": "Remove this school?",
+        "message": "The times and special days for {name} go with it.",
+        "confirmLabel": "Remove school"
+      }
+    },
+    "weekCycle": {
+      "title": "A and B weeks",
+      "off": "Off",
+      "oddIsA": "Odd week numbers are A",
+      "evenIsA": "Even week numbers are A",
+      "help": "Weeks are numbered from the start of the year. This week (week {number}) is week {thisLetter}. Next week is week {nextLetter}.",
+      "turnedOff": "Turning A and B weeks off removed the second week for {names}."
+    },
+    "specialDays": {
+      "title": "Days that are different",
+      "add": "+ Add a day",
+      "date": "Date",
+      "name": "What is it called?",
+      "nameDefault": "Special day",
+      "what": "What happens",
+      "dayOff": "Day off",
+      "endsAfter": "Ends after period {number}",
+      "remove": "Remove this day",
+      "help": "These are the days only your school knows about. School holidays and public holidays come in by themselves once you pick a region above."
+    },
+    "subjects": {
+      "color": "Color",
+      "icon": "Icon",
+      "short": "Short code",
+      "name": "Name",
+      "bring": "Bring along",
+      "usedBy": "Used by",
+      "usedByNames": "Used by {names}",
+      "usedByCount": {
+        "one": "{count} person",
+        "other": "{count} people"
+      },
+      "nothing": "Nothing",
+      "add": "+ Add subject",
+      "newCode": "New",
+      "newName": "New subject",
+      "note": "Colors start from common notebook colors.",
+      "footerNote": "Change a color or a bring item once and every kid's card follows.",
+      "remove": "Remove {name}",
+      "removeConfirm": {
+        "title": "Remove subject",
+        "message": "Remove \"{name}\"? It comes off every timetable that uses it.",
+        "confirmLabel": "Remove"
+      }
+    },
+    "import": {
+      "open": "Import from a spreadsheet",
+      "title": "Import from a spreadsheet",
+      "subtitle": "From a Google Sheet or a file on this computer",
+      "back": "Back",
+      "linkLabel": "Link to the sheet",
+      "linkHelp": "In Google Sheets press Share, set it so anyone with the link can view, and paste that link here. You do not need to publish it. A tab named after somebody in your family is matched to them; any other tab you point at the right person yourself.",
+      "sample": "Download a sample sheet",
+      "sampleHelp": "{link} to see the shape: the days across the top, one row for each lesson, and the times on the left.",
+      "check": "Check",
+      "checking": "Checking…",
+      "found": {
+        "one": "Found {count} tab in \"{title}\"",
+        "other": "Found {count} tabs in \"{title}\""
+      },
+      "foundInFile": {
+        "one": "Found {count} timetable in the file you picked",
+        "other": "Found {count} timetables in the files you picked"
+      },
+      "unlistedTitle": "This sheet would not list its tabs",
+      "unlistedHelp": "Paste the link to each person’s own tab instead. In Google Sheets, click their tab at the bottom, then copy the link from the address bar: it ends in #gid= and a number.",
+      "linkFor": "Link to {name}'s tab",
+      "mapTo": "Who is this tab for?",
+      "skip": "Skip this tab",
+      "tabSummary": {
+        "one": "{count} period, {firstDay} to {lastDay}",
+        "other": "{count} periods, {firstDay} to {lastDay}"
+      },
+      "tabSummaryOneDay": {
+        "one": "{count} period on {firstDay}",
+        "other": "{count} periods on {firstDay}"
+      },
+      "notInFamily": "Pick who this tab is for, or {link} if they are not in your family yet.",
+      "addPerson": "add {name} on the Family page",
+      "unknownCode": {
+        "one": "{count} code in the sheet is not in your subjects: \"{codes}\"",
+        "other": "{count} codes in the sheet are not in your subjects: \"{codes}\""
+      },
+      "unknownHelp": "It looks like {subject}, so it is matched to that instead of becoming a second subject. Pick another one or add it as new.",
+      "unknownHelpMaybe": "It might be {subject}. Pick that, pick another, or add it as new.",
+      "sync": "Keep in sync with the sheet",
+      "syncHelp": "Checks the sheet every hour and updates the wall. A timetable changes about twice a year, so importing once is usually enough.",
+      "cancel": "Cancel",
+      "apply": {
+        "zero": "Import",
+        "one": "Import {count} timetable",
+        "other": "Import {count} timetables"
+      },
+      "working": "Importing…",
+      "footerNote": "An import fills in timetables for people already in Family. It never adds anyone.",
+      "errors": {
+        "linkNotUnderstood": "That does not look like a Google Sheets link. Copy the link from the address bar of the sheet.",
+        "sheetNotFound": "We could not find that sheet. Check the link.",
+        "sheetNotShared": "Share the sheet so anyone with the link can view it.",
+        "tabNotFound": "That tab is not in the sheet any more. Check the sheet and try again.",
+        "sheetUnreachable": "Google did not answer. Try again in a minute.",
+        "sheetTooBig": "That sheet is too big to read. Use a sheet with just the timetable in it."
+      },
+      "orFile": "Or pick a file from this computer",
+      "chooseFile": "Choose a file",
+      "fileHelp": "A CSV saved out of Excel, Numbers or Google Sheets. Name the file after the person it is for, like Taylor.csv, and it will find them. Nothing is uploaded anywhere.",
+      "reading": "Reading…",
+      "shapeTitle": "What the spreadsheet should look like",
+      "shapeIntro": "Days across the top, one row for each lesson, and the times down the left. Anything it does not recognise is left out rather than guessed at.",
+      "shapePeriod": "Period",
+      "shapeTime": "Time",
+      "shapeBreak": "Break",
+      "ruleTabs": "One tab for each person, named after them.",
+      "ruleRoom": "Put the room after the subject, like Math / A107.",
+      "ruleBreak": "A row called Break or Lunch becomes a break.",
+      "ruleEmpty": "Leave a cell empty for a free period.",
+      "ruleCodes": "Use whatever you already call each subject. Anything new is matched to yours, or added.",
+      "pickSubject": "Pick a subject",
+      "addAsNew": "Add it as a new subject",
+      "needCodes": {
+        "one": "Import is waiting on {codes}. Pick the subject it means above, or add it as new.",
+        "other": "Import is waiting on {codes}. Pick the subject each one means above, or add them as new."
+      },
+      "school": "Which school these weeks are at",
+      "schoolHelp": "Times and breaks come from this school. Anyone who already has a timetable keeps the school they are at.",
+      "needSchool": "Add a school first, on the Schools & times tab. The lesson times come from the school.",
+      "tooManyPeriods": {
+        "one": "{school} only has times for {count} lesson a day, and this is more than that for {names}.",
+        "other": "{school} only has times for {count} lessons a day, and this is more than that for {names}."
+      },
+      "tooManyPeriodsHelp": "The extra lessons will not show up. Add the missing times to the school first, or pick the right school above."
+    },
+    "cell": {
+      "edit": "Room and course group for {subject}",
+      "room": "Room",
+      "roomPlaceholder": "Where this lesson is",
+      "course": "Course group",
+      "coursePlaceholder": "Only if some lessons differ",
+      "courseHint": "A short badge for the set or stream a lesson is in, like Higher or Foundation. It shows in the corner of the lesson.",
+      "copyToSubject": "Copy to every {subject}, both weeks",
+      "copyNeedsValue": "Type a room or a course group first.",
+      "done": "Done"
+    },
+    "source": {
+      "heading": "From a spreadsheet",
+      "readOn": "Read {date}",
+      "inSync": "In sync",
+      "notFollowing": "Not following the sheet",
+      "couldNotCheck": "Could not check",
+      "checking": "Checking…",
+      "lastChecked": "Last checked {when}. Next check within the hour.",
+      "neverChecked": "Not checked yet. The first check happens within the hour.",
+      "failed": "We could not read the sheet when we last looked, {when}. The wall is still showing the week we already had.",
+      "yoursNow": "This week is yours now. Nothing will change it unless you import again.",
+      "checkNow": "Check now",
+      "tryNow": "Try now",
+      "checkedChanged": "The sheet had a new week. It is in now.",
+      "checkedSame": "Checked just now. The sheet has not changed.",
+      "importAgain": "Import again",
+      "openSheet": "Open the sheet",
+      "sync": "Keep in sync with the sheet",
+      "syncOnHelp": "Checks every hour and updates the wall. Only this week is replaced.",
+      "syncOffHelp": "Turning this on replaces this week with the sheet's.",
+      "syncFailingHelp": "Still on. We will keep trying every hour.",
+      "stopped": "{name} is no longer following the sheet. You changed this week by hand, so the hourly check has been switched off rather than replacing what you typed.",
+      "stoppedAck": "Got it",
+      "undo": "Undo"
+    },
+    "closeAnyway": "Close without saving",
+    "removeTimetable": {
+      "title": "Remove this timetable?",
+      "message": "{name} keeps everything else. Only their school week goes.",
+      "confirmLabel": "Remove timetable",
+      "action": "Remove {name}'s timetable"
     }
   },
   "propertyPanel": {
@@ -3763,6 +4052,29 @@
       "stateTokenUnknown": "Nothing on this display publishes {keys} yet. Those spots show '–' until a module publishes them.",
       "stateTokenFiltersHint": "Add |round:1 to round numbers, or |default:text to choose what shows before a value arrives.",
       "stateTokenPreview": "Live preview"
+    },
+    "timetable": {
+      "show": "Whose week to show",
+      "showMember": "Show {name}",
+      "noTimetable": "No timetable",
+      "add": "+ Add",
+      "addFor": "Add a timetable for {name}",
+      "fromFamily": "From Family",
+      "manageFamily": "Manage family",
+      "cardOrder": "Cards appear in the order your family list is in.",
+      "editTimetables": "Edit timetables",
+      "layout": "Layout",
+      "layoutSideBySide": "Side by side",
+      "layoutStacked": "Stacked",
+      "detail": "Detail",
+      "detailLess": "Less",
+      "detailSome": "Some",
+      "detailMore": "More",
+      "detailHelp": "Less shows short subject codes, Some adds full names and the room, More adds times, the week letter and what to pack. Less suits three or more kids side by side.",
+      "showStartTimes": "Show start times",
+      "nextWeekFromFriday": "Show next week from Friday",
+      "noFamily": "Nobody is in Family yet. Add people on the Family page, then give them a timetable here.",
+      "openFamily": "Open Family"
     },
     "todo": {
       "viewList": "List",

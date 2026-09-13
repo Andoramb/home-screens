@@ -1,4 +1,4 @@
-import { E2E_TODO_LIST_ID } from './api';
+import { E2E_TIMETABLE_MEMBER_IDS, E2E_TODO_LIST_ID } from './api';
 import { expect, type Locator, type Page } from '@playwright/test';
 import type { ModuleType } from '@/types/config';
 
@@ -24,6 +24,8 @@ export interface EmptyStateFixture {
   noLocation?: boolean;
   /** Seed the shared to-do store with these lists (todos rows only). */
   todoSeed?: import('./api').TodoSeed;
+  /** Seed the timetable store and the roster it names (timetable rows only). */
+  timetableSeed?: import('./api').TimetableSeed;
   /** Config overrides merged over the registry defaultConfig. */
   config?: Record<string, unknown>;
   /** Assertion proving the empty state (and its kid-friendly copy) rendered. */
@@ -180,5 +182,19 @@ export const EMPTY_STATE_FIXTURES: EmptyStateFixture[] = [
       await expect(mod).toContainText('No family members yet');
       await expect(mod).toContainText('/remote and tap Chores');
     },
+  },
+  {
+    // Nobody picked yet (the registry default): the card says where to pick.
+    type: 'timetable', name: 'nobody-picked', kind: 'local-data',
+    config: {},
+    expect: showsCopy("Pick whose week to show in this module's settings."),
+  },
+  {
+    // Leon is on the roster and picked, but his week has not been entered, so
+    // the card says the week is missing rather than that nobody is chosen.
+    type: 'timetable', name: 'no-week-yet', kind: 'local-data',
+    timetableSeed: { members: [{ id: E2E_TIMETABLE_MEMBER_IDS.leon, name: 'Leon' }] },
+    config: { memberIds: [E2E_TIMETABLE_MEMBER_IDS.leon] },
+    expect: showsCopy('No timetable yet. A grown-up can add one in the editor.'),
   },
 ];

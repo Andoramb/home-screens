@@ -113,6 +113,7 @@ All of these use the location under **Settings > Location & language**; see [Wea
 - **Affirmations** ([reference](/docs/module-reference#affirmations)): a kind line for the day in four views: **Elegant**, **Card**, **Minimal** and **Typewriter**. Needs nothing.
 - **Meal Planner** ([reference](/docs/module-reference#meal-planner)): this week's meals in a tile. Views: **Week**, **Today**, **Next meal**, **Compact** and **List**. Needs meals from the [family remote](/docs/meals).
 - **Chore Chart** ([reference](/docs/module-reference#chore-chart)): today's chores in a tile. Views: **Board** (a column per person), **Star chart** (the week), **Today**, **Progress** (a bar per person) and **Compact**. Needs people and chores from the [family remote](/docs/chores). Kids can check things off on a touchscreen.
+- **School Timetable** ([reference](/docs/module-reference#school-timetable)): the school week of the children you pick, one card each, with today's column lit up, what to pack and the holidays marked. Three levels of detail rather than views, side by side or stacked. Needs people under **Settings > Family** and a week typed in or imported from a spreadsheet. See [School timetable](/docs/school-timetable).
 
 ### Health & Fitness
 

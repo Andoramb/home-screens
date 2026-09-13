@@ -9,7 +9,9 @@ import {
   registerPluginModule,
   unregisterModule,
   resolveModuleLabel,
+  styleReachesModule,
 } from '@/lib/module-registry';
+import type { ModuleDefinition } from '@/lib/module-registry';
 import type { ModuleType, BuiltinModuleType } from '@/types/config';
 
 const ALL_MODULE_TYPES: ModuleType[] = [
@@ -23,6 +25,7 @@ const ALL_MODULE_TYPES: ModuleType[] = [
   'date', 'meal-planner', 'iframe', 'chore-chart',
   'fullscreen-calendar', 'fullscreen-chore-chart', 'fullscreen-meal-planner',
   'fullscreen-photo', 'fullscreen-weather', 'fullscreen-news', 'display-control', 'icon', 'shape',
+  'timetable',
 ];
 
 describe('MODULE_CATEGORIES', () => {
@@ -42,7 +45,7 @@ describe('MODULE_CATEGORIES', () => {
 });
 
 describe('Registry completeness', () => {
-  it('registers all 44 module types', () => {
+  it('registers all 45 module types', () => {
     for (const type of ALL_MODULE_TYPES) {
       expect(getModuleDefinition(type as ModuleType), `Missing module: ${type}`).toBeDefined();
     }
@@ -168,8 +171,8 @@ describe('getModuleDefinition', () => {
 });
 
 describe('getAllModuleDefinitions', () => {
-  it('returns an array of length 44', () => {
-    expect(getAllModuleDefinitions()).toHaveLength(44);
+  it('returns an array of length 45', () => {
+    expect(getAllModuleDefinitions()).toHaveLength(45);
   });
 
   it('all items have required fields', () => {
@@ -296,7 +299,7 @@ describe('getModulesByCategory', () => {
     expect(types).toHaveLength(1);
   });
 
-  it('total modules across all categories equals 44 (no duplicates, no missing)', () => {
+  it('total modules across all categories equals 45 (no duplicates, no missing)', () => {
     const grouped = getModulesByCategory();
     let total = 0;
     const allTypes = new Set<string>();
@@ -306,8 +309,8 @@ describe('getModulesByCategory', () => {
         total++;
       }
     }
-    expect(total).toBe(44);
-    expect(allTypes.size).toBe(44);
+    expect(total).toBe(45);
+    expect(allTypes.size).toBe(45);
   });
 });
 
@@ -595,6 +598,29 @@ describe('registerPluginModule — providesState namespacing', () => {
     });
     const def = getModuleDefinition('plugin:my-widget' as ModuleType)!;
     expect(() => def.deriveProvidedKeys!({})).toThrow('plugin bug');
+  });
+});
+
+describe('styleReachesModule', () => {
+  it('is true for an ordinary card module', () => {
+    expect(styleReachesModule(getModuleDefinition('clock'))).toBe(true);
+  });
+
+  it('is false for a module that fills the canvas', () => {
+    expect(styleReachesModule(getModuleDefinition('fullscreen-calendar'))).toBe(false);
+  });
+
+  it('is false for a cardless module', () => {
+    expect(styleReachesModule(getModuleDefinition('display-control'))).toBe(false);
+  });
+
+  it('stays true for a module that draws one card per item', () => {
+    // `itemCards` means several cards, not no card: every card is handed the
+    // same style, so the Style section and the Card Title control must keep
+    // showing. The style E2E matrix picks its modules from this same answer,
+    // so folding the flag in here would quietly drop one from the matrix.
+    const def: Partial<ModuleDefinition> = { itemCards: true };
+    expect(styleReachesModule(def)).toBe(true);
   });
 });
 

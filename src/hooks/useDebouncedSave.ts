@@ -56,6 +56,11 @@ interface UseDebouncedSaveReturn {
   flush: () => void;
   /** Whether an edit is waiting for its debounce. */
   hasPending: () => boolean;
+  /**
+   * Drop a pending save without running it. For a caller that saves the same
+   * values itself and does not want the timer firing a second send behind it.
+   */
+  cancel: () => void;
 }
 
 /**
@@ -186,5 +191,9 @@ export function useDebouncedSave(options: UseDebouncedSaveOptions): UseDebounced
 
   const hasPending = useCallback(() => saverRef.current?.hasPending() ?? false, []);
 
-  return { flush, hasPending };
+  const cancel = useCallback(() => {
+    saverRef.current?.cancel();
+  }, []);
+
+  return { flush, hasPending, cancel };
 }
