@@ -1061,7 +1061,36 @@
       "panelPowerOffHelp": "Pour les affichages Raspberry Pi. L'écran devient complètement noir et met quelques secondes à revenir quand quelqu'un le réveille. Laissez ceci désactivé si votre écran ne se rallume pas tout seul."
     },
     "mediaPage": {
-      "description": "Tout ce qui a été envoyé sur ce hub, au même endroit. Les fichiers encore utilisés quelque part ne peuvent pas être supprimés."
+      "description": "Tout ce qui a été envoyé sur ce hub, au même endroit. Les fichiers encore utilisés quelque part ne peuvent pas être supprimés.",
+      "upload": "Envoyer",
+      "dropzone": "Déposez des photos ou vidéos ici, ou cliquez pour choisir, autant que vous voulez",
+      "saveInto": "Enregistrer dans",
+      "uploadFailedWithStatus": "Échec de l'envoi ({status})",
+      "uploadFailed": "Échec de l'envoi",
+      "loadFailed": "Impossible de charger vos photos et vidéos",
+      "tryAgain": "Réessayer",
+      "allFolders": "Toutes les photos et vidéos",
+      "topLevel": "Bibliothèque (racine)",
+      "allKinds": "Tous les types",
+      "images": "Photos",
+      "videos": "Vidéos",
+      "inUse": "Utilisé",
+      "usedBy": "Utilisé par",
+      "kind": {
+        "screen": "Écran '{name}'",
+        "dayRule": "Règle de jour",
+        "module": "Module sur '{name}'",
+        "other": "Quelque part dans les réglages"
+      },
+      "selected": "{count} sélectionnés",
+      "empty": "Rien ici pour l'instant — envoyez des photos ou des vidéos",
+      "deleteTitle": {
+        "one": "Supprimer 1 fichier ?",
+        "other": "Supprimer {count} fichiers ?"
+      },
+      "deleteMessage": "Ils disparaîtront de ce hub pour tous les écrans. Un fichier encore utilisé ne peut pas être supprimé, donc rien ne peut casser.",
+      "deleteConfirm": "Supprimer",
+      "refused": "{file} est encore utilisé et n'a pas été supprimé"
     },
     "integrationsPage": {
       "description": "Clés et identifiants qui débloquent du contenu supplémentaire : agendas, photos, trafic, actualités. Ils restent sur cet appareil et ne sont envoyés nulle part.",

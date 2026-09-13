@@ -409,7 +409,7 @@
         "location": "Placering og sprog",
         "data": "Sikkerhedskopier",
         "integrations": "API-nøgler",
-        "media": "Billeder & video",
+        "media": "Billeder & videoer",
         "meals": "Måltider",
         "network": "Netværk",
         "security": "Sikkerhed",
@@ -1061,7 +1061,36 @@
       "panelPowerOffHelp": "Til Raspberry Pi-displays. Skærmen bliver helt mørk og bruger et par sekunder på at komme tilbage, når nogen vækker den. Lad dette være slået fra, hvis din skærm ikke tænder igen af sig selv."
     },
     "mediaPage": {
-      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som stadig bruges et sted, kan ikke slettes."
+      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som stadig bruges et sted, kan ikke slettes.",
+      "upload": "Upload",
+      "dropzone": "Træk billeder eller videoer herhen, eller klik for at vælge – lige så mange, du vil",
+      "saveInto": "Gem i",
+      "uploadFailedWithStatus": "Upload mislykkedes ({status})",
+      "uploadFailed": "Upload mislykkedes",
+      "loadFailed": "Dine billeder og videoer kunne ikke indlæses",
+      "tryAgain": "Prøv igen",
+      "allFolders": "Alle billeder & videoer",
+      "topLevel": "Bibliotek (øverste niveau)",
+      "allKinds": "Alle typer",
+      "images": "Billeder",
+      "videos": "Videoer",
+      "inUse": "I brug",
+      "usedBy": "Bruges af",
+      "kind": {
+        "screen": "Skærm '{name}'",
+        "dayRule": "Dagsregel",
+        "module": "Modul på '{name}'",
+        "other": "Et sted i indstillingerne"
+      },
+      "selected": "{count} valgt",
+      "empty": "Endnu ingenting her – upload nogle billeder eller videoer",
+      "deleteTitle": {
+        "one": "Slet 1 fil?",
+        "other": "Slet {count} filer?"
+      },
+      "deleteMessage": "De er derefter væk fra denne hub for alle skærme. Filer, der stadig bruges, kan ikke slettes – så intet kan gå i stykker.",
+      "deleteConfirm": "Slet",
+      "refused": "{file} bruges stadig og blev ikke slettet"
     },
     "integrationsPage": {
       "description": "Nøgler og logins, der låser op for ekstra indhold: kalendere, billeder, trafik, nyheder. De bliver på denne enhed og sendes ingen steder hen.",

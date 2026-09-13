@@ -1061,7 +1061,36 @@
       "panelPowerOffHelp": "Für Raspberry-Pi-Displays. Der Bildschirm wird komplett dunkel und braucht ein paar Sekunden, bis er nach dem Aufwecken wieder da ist. Lass das aus, wenn dein Bildschirm nicht von selbst wieder angeht."
     },
     "mediaPage": {
-      "description": "Alles, was auf diesem Hub hochgeladen wurde, an einem Ort. Dateien, die noch irgendwo verwendet werden, können nicht gelöscht werden."
+      "description": "Alles, was auf diesem Hub hochgeladen wurde, an einem Ort. Dateien, die noch irgendwo verwendet werden, können nicht gelöscht werden.",
+      "upload": "Hochladen",
+      "dropzone": "Ziehe Bilder oder Videos hierher oder klicke zum Auswählen – so viele du magst",
+      "saveInto": "Speichern in",
+      "uploadFailedWithStatus": "Hochladen fehlgeschlagen ({status})",
+      "uploadFailed": "Hochladen fehlgeschlagen",
+      "loadFailed": "Deine Bilder und Videos konnten nicht geladen werden",
+      "tryAgain": "Erneut versuchen",
+      "allFolders": "Alle Bilder & Videos",
+      "topLevel": "Bibliothek (oberste Ebene)",
+      "allKinds": "Alle Arten",
+      "images": "Bilder",
+      "videos": "Videos",
+      "inUse": "In Verwendung",
+      "usedBy": "Verwendet von",
+      "kind": {
+        "screen": "Bildschirm '{name}'",
+        "dayRule": "Tagesregel",
+        "module": "Modul auf '{name}'",
+        "other": "Irgendwo in den Einstellungen"
+      },
+      "selected": "{count} ausgewählt",
+      "empty": "Noch nichts hier – lade ein paar Bilder oder Videos hoch",
+      "deleteTitle": {
+        "one": "1 Datei löschen?",
+        "other": "{count} Dateien löschen?"
+      },
+      "deleteMessage": "Danach sind sie auf diesem Hub für jeden Bildschirm weg. Dateien, die noch von etwas verwendet werden, können nicht gelöscht werden – dadurch kann nichts kaputtgehen.",
+      "deleteConfirm": "Löschen",
+      "refused": "{file} wird noch verwendet und wurde nicht gelöscht"
     },
     "integrationsPage": {
       "description": "Schlüssel und Anmeldungen, die zusätzliche Inhalte freischalten: Kalender, Fotos, Verkehr, Nachrichten. Sie bleiben auf diesem Gerät und werden nirgendwohin gesendet.",

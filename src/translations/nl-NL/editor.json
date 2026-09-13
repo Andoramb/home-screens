@@ -1061,7 +1061,36 @@
       "panelPowerOffHelp": "Voor Raspberry Pi-displays. Het scherm gaat helemaal op zwart en heeft een paar seconden nodig om terug te komen als iemand het wekt. Laat dit uit als je scherm niet vanzelf weer aangaat."
     },
     "mediaPage": {
-      "description": "Alles wat naar deze hub is geüpload, op één plek. Bestanden die nog ergens worden gebruikt, kunnen niet worden verwijderd."
+      "description": "Alles wat naar deze hub is geüpload, op één plek. Bestanden die nog ergens worden gebruikt, kunnen niet worden verwijderd.",
+      "upload": "Uploaden",
+      "dropzone": "Sleep afbeeldingen of video's hierheen, of klik om te kiezen, zoveel als je wilt",
+      "saveInto": "Opslaan in",
+      "uploadFailedWithStatus": "Uploaden mislukt ({status})",
+      "uploadFailed": "Uploaden mislukt",
+      "loadFailed": "Je afbeeldingen en video's konden niet worden geladen",
+      "tryAgain": "Opnieuw proberen",
+      "allFolders": "Alle afbeeldingen & video's",
+      "topLevel": "Bibliotheek (bovenste niveau)",
+      "allKinds": "Alle soorten",
+      "images": "Afbeeldingen",
+      "videos": "Video's",
+      "inUse": "In gebruik",
+      "usedBy": "Gebruikt door",
+      "kind": {
+        "screen": "Scherm '{name}'",
+        "dayRule": "Dagregel",
+        "module": "Module op '{name}'",
+        "other": "Ergens in de instellingen"
+      },
+      "selected": "{count} geselecteerd",
+      "empty": "Nog niets hier – upload een paar afbeeldingen of video's",
+      "deleteTitle": {
+        "one": "1 bestand verwijderen?",
+        "other": "{count} bestanden verwijderen?"
+      },
+      "deleteMessage": "Ze zijn daarna op deze hub voor elk scherm weg. Bestanden die nog worden gebruikt, kunnen niet worden verwijderd — er kan dus niets kapot.",
+      "deleteConfirm": "Verwijderen",
+      "refused": "{file} is nog in gebruik en is niet verwijderd"
     },
     "integrationsPage": {
       "description": "Sleutels en logins die extra inhoud vrijgeven: agenda’s, foto’s, verkeer, nieuws. Ze blijven op dit apparaat en gaan nergens heen.",

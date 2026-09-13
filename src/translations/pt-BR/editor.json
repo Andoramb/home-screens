@@ -1061,7 +1061,36 @@
       "panelPowerOffHelp": "Para telas com Raspberry Pi. A tela fica totalmente escura e leva alguns segundos para voltar quando alguém a acorda. Deixe isso desligado se a sua tela não volta a ligar sozinha."
     },
     "mediaPage": {
-      "description": "Tudo o que foi enviado para este hub, em um só lugar. Arquivos que algo ainda usa não podem ser excluídos."
+      "description": "Tudo o que foi enviado para este hub, em um só lugar. Arquivos que ainda estão em uso não podem ser excluídos.",
+      "upload": "Enviar",
+      "dropzone": "Arraste fotos ou vídeos para aqui, ou clique para escolher, quantos você quiser",
+      "saveInto": "Salvar em",
+      "uploadFailedWithStatus": "Falha ao enviar ({status})",
+      "uploadFailed": "Falha ao enviar",
+      "loadFailed": "Não foi possível carregar suas fotos e vídeos",
+      "tryAgain": "Tentar novamente",
+      "allFolders": "Todas as fotos e vídeos",
+      "topLevel": "Biblioteca (nível superior)",
+      "allKinds": "Todos os tipos",
+      "images": "Fotos",
+      "videos": "Vídeos",
+      "inUse": "Em uso",
+      "usedBy": "Usado por",
+      "kind": {
+        "screen": "Tela '{name}'",
+        "dayRule": "Regra de dia",
+        "module": "Módulo em '{name}'",
+        "other": "Em algum lugar das configurações"
+      },
+      "selected": "{count} selecionados",
+      "empty": "Nada aqui ainda — envie algumas fotos ou vídeos",
+      "deleteTitle": {
+        "one": "Excluir 1 arquivo?",
+        "other": "Excluir {count} arquivos?"
+      },
+      "deleteMessage": "Eles desaparecerão deste hub para todas as telas. Arquivos que ainda estão em uso não podem ser excluídos, então nenhuma tela pode quebrar.",
+      "deleteConfirm": "Excluir",
+      "refused": "{file} ainda está em uso e não foi excluído"
     },
     "integrationsPage": {
       "description": "Chaves e acessos que liberam conteúdo extra: calendários, fotos, trânsito, notícias. Ficam neste aparelho e não são enviados a lugar nenhum.",

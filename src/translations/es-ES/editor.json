@@ -1061,7 +1061,36 @@
       "panelPowerOffHelp": "Para displays con Raspberry Pi. La pantalla se queda completamente a oscuras y tarda unos segundos en volver cuando alguien la despierta. Déjalo desactivado si tu pantalla no vuelve a encenderse sola."
     },
     "mediaPage": {
-      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos que algo sigue usando no se pueden eliminar."
+      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos que se siguen usando no se pueden eliminar.",
+      "upload": "Subir",
+      "dropzone": "Arrastra imágenes o vídeos aquí, o haz clic para elegir: tantos como quieras",
+      "saveInto": "Guardar en",
+      "uploadFailedWithStatus": "Error al subir ({status})",
+      "uploadFailed": "Error al subir",
+      "loadFailed": "No se pudieron cargar tus imágenes y vídeos",
+      "tryAgain": "Intentar de nuevo",
+      "allFolders": "Todas las imágenes y vídeos",
+      "topLevel": "Biblioteca (nivel superior)",
+      "allKinds": "Todos los tipos",
+      "images": "Imágenes",
+      "videos": "Vídeos",
+      "inUse": "En uso",
+      "usedBy": "Usado por",
+      "kind": {
+        "screen": "Pantalla '{name}'",
+        "dayRule": "Regla de día",
+        "module": "Módulo en '{name}'",
+        "other": "En algún lugar de la configuración"
+      },
+      "selected": "{count} seleccionados",
+      "empty": "Aún no hay nada aquí: sube algunas imágenes o vídeos",
+      "deleteTitle": {
+        "one": "¿Eliminar 1 archivo?",
+        "other": "¿Eliminar {count} archivos?"
+      },
+      "deleteMessage": "Desaparecerán de este hub para todas las pantallas. Los archivos que aún se usan no se pueden eliminar, así que ninguna pantalla puede romperse.",
+      "deleteConfirm": "Eliminar",
+      "refused": "{file} todavía se está usando y no se ha eliminado"
     },
     "integrationsPage": {
       "description": "Claves y accesos que desbloquean contenido extra: calendarios, fotos, tráfico, noticias. Se guardan en este dispositivo y no se envían a ningún sitio.",
