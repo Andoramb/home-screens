@@ -329,11 +329,12 @@ function DayRuleFields({ rule, availableSources, onChange }: {
         onChange={(v) => {
           if (v === 'specific') {
             // Entering specific-days mode seeds a minimal pattern and drops
-            // `when` so the dropdown stays a single choice.
+            // `when` and any picked weekdays so the dropdown stays a single
+            // clean choice.
             if (match.dayOfMonth == null && !match.lastDayOfMonth && !match.weekdayOfMonth) {
-              patchMatch({ when: undefined, dayOfMonth: 1 });
+              patchMatch({ when: undefined, daysOfWeek: undefined, dayOfMonth: 1 });
             } else {
-              patchMatch({ when: undefined });
+              patchMatch({ when: undefined, daysOfWeek: undefined });
             }
           } else {
             patchMatch({
@@ -424,6 +425,9 @@ function DayRuleFields({ rule, availableSources, onChange }: {
           )}
         </>
       )}
+      {/* Specific days owns the whole date question, so the plain weekday
+          row hides under it (the nth-weekday pattern picks its own weekday). */}
+      {whichDays !== 'specific' && (
       <div className="flex flex-col gap-1">
         <span className="text-xs text-hs-text-muted">{t(`${KEY}.daysOfWeek`)}</span>
         <div className="flex gap-1">
@@ -445,6 +449,7 @@ function DayRuleFields({ rule, availableSources, onChange }: {
           })}
         </div>
       </div>
+      )}
       <LabeledSelect
         label={t(`${KEY}.eventsOnDay`)}
         value={match.withEvents ?? 'ignore'}
