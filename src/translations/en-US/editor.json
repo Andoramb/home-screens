@@ -1063,7 +1063,7 @@
     "mediaPage": {
       "description": "Everything uploaded to this hub, in one place. Files that something still uses can't be deleted.",
       "upload": "Upload",
-      "dropzone": "Drop pictures or videos here, or click to pick — as many as you like",
+      "dropzone": "Drop pictures or videos here, or click to pick, as many as you like",
       "saveInto": "Save into",
       "uploadFailedWithStatus": "Upload failed ({status})",
       "uploadFailed": "Upload failed",
@@ -1080,17 +1080,91 @@
         "screen": "Screen '{name}'",
         "dayRule": "Day rule",
         "module": "Module on '{name}'",
-        "other": "Somewhere in settings"
+        "other": "Somewhere in settings",
+        "slideshow": "Slideshow on '{name}'",
+        "rotation": "Rotating background on a screen right now"
       },
       "selected": "{count} selected",
-      "empty": "Nothing here yet — upload some pictures or videos",
+      "empty": "Nothing here yet. Upload some pictures or videos",
       "deleteTitle": {
         "one": "Delete 1 file?",
         "other": "Delete {count} files?"
       },
       "deleteMessage": "They'll be gone from this hub for every screen. Nothing that still uses a file can be deleted, so this can't break a screen.",
       "deleteConfirm": "Delete",
-      "refused": "{file} is still in use and was not deleted"
+      "refused": "{file} is still in use and was not deleted",
+      "loading": "Loading your pictures and videos",
+      "emptyFiltered": "Nothing matches this filter",
+      "deleteFailed": {
+        "one": "1 file couldn't be deleted. Try again.",
+        "other": "{count} files couldn't be deleted. Try again."
+      },
+      "deleteOne": "Delete {file}",
+      "open": "Open {file}",
+      "select": "Select {file}",
+      "unnamed": "Untitled screen",
+      "kindFilter": "Show",
+      "viewer": {
+        "close": "Close",
+        "previous": "Previous",
+        "next": "Next",
+        "folder": "Folder",
+        "type": "Type",
+        "dimensions": "Size in pixels",
+        "size": "File size",
+        "notUsed": "Not used anywhere yet"
+      },
+      "unusedOnly": "Unused only",
+      "storage": "Library uses {size}, {free} free on this hub",
+      "storageNoFree": "Library uses {size}",
+      "missingHeading": "Something points at a file that isn't in the library",
+      "missingFile": "{where} points at {path}, which is missing",
+      "missingFolder": "{where} shows the folder {path}, which is missing",
+      "openInEditor": "Open in the editor",
+      "replace": "Replace",
+      "replaceOne": "Replace {file}",
+      "replaceHint": "Swaps the file everywhere it's used. The new one needs the same ending ({ext}).",
+      "replaceFailed": "Couldn't replace {file}",
+      "replaced": "{file} was replaced",
+      "search": "Find by name",
+      "sort": "Sort",
+      "sortName": "Name",
+      "sortNewest": "Newest first",
+      "sortLargest": "Largest first",
+      "selectAll": "Select all",
+      "clearSelection": "Clear selection",
+      "moveTo": "Move to",
+      "moveTitle": {
+        "one": "Move 1 file?",
+        "other": "Move {count} files?"
+      },
+      "moveMessage": "Everything that shows these files will follow them to the new folder.",
+      "moveConfirm": "Move",
+      "moved": {
+        "one": "1 file moved",
+        "other": "{count} files moved"
+      },
+      "moveFailed": "Couldn't move the files",
+      "placesUpdated": {
+        "one": "1 place that used them was updated",
+        "other": "{count} places that used them were updated"
+      },
+      "newFolder": "New folder",
+      "folderName": "Folder name",
+      "create": "Create",
+      "folderCreated": "Folder {name} created",
+      "createFolderFailed": "Couldn't create the folder",
+      "renameFolder": "Rename",
+      "save": "Save",
+      "cancel": "Cancel",
+      "folderRenamed": "Folder renamed to {name}",
+      "renameFolderFailed": "Couldn't rename the folder",
+      "deleteFolder": "Delete folder",
+      "deleteFolderTitle": "Delete the folder {name}?",
+      "deleteFolderMessage": "Only an empty folder can be deleted.",
+      "folderDeleted": "Folder {name} deleted",
+      "folderNotEmpty": "That folder still has files in it. Move or delete them first.",
+      "deleteFolderFailed": "Couldn't delete the folder"
     },
     "integrationsPage": {
       "description": "Keys and logins that unlock extra content: calendars, photos, traffic, news. They are stored on this device and never sent anywhere else.",

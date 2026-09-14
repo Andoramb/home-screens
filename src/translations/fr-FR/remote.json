@@ -542,7 +542,9 @@
     "mainFolderTab": "Dossier principal",
     "deleteConfirmTitle": "Supprimer cette photo ?",
     "deleteConfirmDescription": "Elle disparaît de l'écran et définitivement de la bibliothèque de photos.",
-    "savedAsHint": "Sera enregistré sous {name}"
+    "savedAsHint": "Sera enregistré sous {name}",
+    "deleteInUse": "Cette photo est encore affichée sur un écran, elle ne peut donc pas être supprimée",
+    "deleteInUseOn": "Cette photo est encore utilisée sur {where}, elle ne peut donc pas être supprimée"
   },
   "choresKidView": {
     "notConfigured": "Aucune tâche pour l'instant. Demande à un grand d'ajouter un tableau de tâches à l'écran.",

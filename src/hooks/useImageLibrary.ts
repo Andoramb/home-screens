@@ -5,7 +5,7 @@ import { useTranslate } from '@/i18n';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import { displayCache } from '@/lib/display-cache';
 import { logger } from '@/lib/logger';
-import { deleteLibraryImage, type DirectoryInfo } from '@/lib/library-client';
+import { deleteLibraryImage, usageNames, type DirectoryInfo } from '@/lib/library-client';
 import type { MediaListItem } from '@/types/config';
 
 const log = logger('useImageLibrary');
@@ -195,6 +195,12 @@ export function useImageLibrary({ initialDirectory }: UseImageLibraryOptions): U
         setSelectedImage((prev) => prev === imageUrl ? null : prev);
         fetchDirectories();
         displayCache.invalidateByPrefix('/api/backgrounds');
+      } else if (res?.status === 409) {
+        // Something still shows it; say where instead of "failed".
+        const names = usageNames(res.usage);
+        setError(names.length > 0
+          ? t('errors.deleteImageInUseOn', { where: names.join(', ') })
+          : t('errors.deleteImageInUse'));
       } else {
         setError(t('errors.deleteImageFailed'));
       }

@@ -366,8 +366,9 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'editor|settings.alertFormFields.positionLabel',
     'editor|settings.displaysIndex.formNameLabel',
     'editor|settings.integrationsPage.microsoft.clientIdLabel',
-    // "Videos" is the German word too (media page).
+    // "Videos" and "Name" are the German words too (media page).
     'editor|settings.mediaPage.videos',
+    'editor|settings.mediaPage.sortName',
     'editor|settings.networkPage.hostname.heading',
     'editor|settings.perDisplayPage.overview.transitionLabels.crossfade',
     'editor|settings.pluginAuth.garmin.mfaPlaceholder',

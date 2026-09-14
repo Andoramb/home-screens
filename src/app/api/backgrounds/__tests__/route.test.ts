@@ -17,7 +17,7 @@ vi.mock('@/lib/auth', () => ({
 
 // Hoisted config holder (the inventory-route.test.ts convention): each test
 // re-imports the route after vi.resetModules(), which re-runs this factory
-// into a fresh registry — the DELETE in-use scan reads configState.config at
+// into a fresh registry; the DELETE in-use scan reads configState.config at
 // call time, so per-test seeding survives that.
 const configState = vi.hoisted(() => ({ config: {} as unknown }));
 
@@ -720,6 +720,65 @@ describe('POST /api/backgrounds', () => {
 
 // ─── DELETE endpoint ────────────────────────────────────────────
 
+describe('POST /api/backgrounds reserved names', () => {
+  it('refuses a top-level upload named like a rotation file, but allows it in a folder', async () => {
+    const { POST } = await getHandlers();
+    const rejected = await POST(makePostRequest([{ name: 'rotation-mine.png', type: 'image/png', content: Buffer.from('img') }]));
+    expect(rejected.status).toBe(400);
+    expect((await rejected.json()).error).toContain('rotation-');
+    await expect(fs.access(path.join(bgsDir, 'rotation-mine.png'))).rejects.toThrow();
+
+    const allowed = await POST(makePostRequest([{ name: 'rotation-mine.png', type: 'image/png', content: Buffer.from('img') }], 'trips'));
+    expect(allowed.status).toBe(201);
+  });
+});
+
+describe('POST /api/backgrounds replace', () => {
+  function makeReplaceRequest(target: string, file: { name: string; type: string; content: Buffer }): NextRequest {
+    const formData = new FormData();
+    formData.set('replace', target);
+    formData.append('file', new File([new Blob([new Uint8Array(file.content)], { type: file.type })], file.name, { type: file.type }));
+    return new NextRequest('http://localhost/api/backgrounds', { method: 'POST', body: formData });
+  }
+
+  it('overwrites the file in place under its old name', async () => {
+    const { POST } = await getHandlers();
+    const natureDir = path.join(bgsDir, 'nature');
+    await fs.mkdir(natureDir, { recursive: true });
+    await fs.writeFile(path.join(natureDir, 'a.jpg'), 'old');
+
+    const res = await POST(makeReplaceRequest('nature/a.jpg', { name: 'whatever name.JPG', type: 'image/jpeg', content: Buffer.from('new bytes') }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).path).toBe('/api/backgrounds/serve?file=nature%2Fa.jpg');
+    expect(await fs.readFile(path.join(natureDir, 'a.jpg'), 'utf8')).toBe('new bytes');
+    // No stray upload under the picked file's name, no temp file left behind.
+    expect(await fs.readdir(natureDir)).toEqual(['a.jpg']);
+  });
+
+  it('refuses a replacement with a different extension, and a missing target', async () => {
+    const { POST } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'a.jpg'), 'old');
+
+    const wrongExt = await POST(makeReplaceRequest('a.jpg', { name: 'b.png', type: 'image/png', content: Buffer.from('new') }));
+    expect(wrongExt.status).toBe(400);
+    expect((await wrongExt.json()).error).toContain('.jpg');
+    expect(await fs.readFile(path.join(bgsDir, 'a.jpg'), 'utf8')).toBe('old');
+
+    const missing = await POST(makeReplaceRequest('nope.jpg', { name: 'b.jpg', type: 'image/jpeg', content: Buffer.from('new') }));
+    expect(missing.status).toBe(404);
+  });
+
+  it('applies the upload type and size rules and rejects traversal in the target', async () => {
+    const { POST } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'a.jpg'), 'old');
+    const badType = await POST(makeReplaceRequest('a.jpg', { name: 'b.jpg', type: 'text/html', content: Buffer.from('<x>') }));
+    expect(badType.status).toBe(400);
+    const traversal = await POST(makeReplaceRequest('../a.jpg', { name: 'b.jpg', type: 'image/jpeg', content: Buffer.from('new') }));
+    expect([400, 404]).toContain(traversal.status);
+    expect(await fs.readFile(path.join(bgsDir, 'a.jpg'), 'utf8')).toBe('old');
+  });
+});
+
 describe('DELETE /api/backgrounds', () => {
   it('deletes an existing file', async () => {
     const { DELETE } = await getHandlers();
@@ -903,9 +962,7 @@ describe('DELETE /api/backgrounds in-use protection', () => {
     await expect(fs.access(path.join(bgsDir, 'unused.jpg'))).rejects.toThrow();
   });
 
-  it('refuses a hand-placed spaced filename referenced as a bare path', async () => {
-    // The scanner reads bare paths containing spaces as prose, so a defensive
-    // quoted-boundary check must catch this one.
+  it('refuses a hand-placed spaced filename referenced as a bare path, naming the screen', async () => {
     configState.config = {
       screens: [{ id: 's1', name: 'Home', backgroundImage: 'my photo.jpg' }],
     };
@@ -917,26 +974,19 @@ describe('DELETE /api/backgrounds in-use protection', () => {
     expect(res.status).toBe(409);
     const json = await res.json();
     expect(json.error).toBe('in use');
-    // The scanner cannot see this reference, so the refusal carries no usage
-    // detail — the empty array is the backstop's signature.
-    expect(json.usage).toEqual([]);
+    // One scanner drives both the badge and the refusal, so the refusal
+    // carries the same where-used detail the page shows.
+    expect(json.usage).toEqual([
+      { kind: 'screen', name: 'Home', configPath: 'screens[0].backgroundImage', screenId: 's1' },
+    ]);
 
     await expect(fs.access(abs)).resolves.toBeUndefined();
   });
 
-  it('refuses a spaced filename in a serve URL the scanner regex misses', async () => {
-    // Isolates the percent-encoded backstop: the URL lacks the /api prefix,
-    // so SERVE_RE does not match it, and the bare-path gate normalizes the
-    // whole string (not the filename) — the scanner finds nothing and only
-    // the `file=my%20photo.jpg` substring check can refuse. The 409 with an
-    // empty usage array is that check's signature.
+  it('refuses a spaced filename in a hand-edited, unencoded serve URL', async () => {
     configState.config = {
       screens: [
-        {
-          id: 's1',
-          name: 'Home',
-          backgroundImage: 'backgrounds/serve?file=my%20photo.jpg',
-        },
+        { id: 's1', name: 'Home', backgroundImage: '/api/backgrounds/serve?file=my photo.jpg' },
       ],
     };
     const { DELETE } = await getHandlers();
@@ -945,10 +995,7 @@ describe('DELETE /api/backgrounds in-use protection', () => {
 
     const res = await DELETE(makeDeleteRequest({ file: 'my photo.jpg' }));
     expect(res.status).toBe(409);
-    const json = await res.json();
-    expect(json.error).toBe('in use');
-    expect(json.usage).toEqual([]);
-
+    expect((await res.json()).usage).toHaveLength(1);
     await expect(fs.access(abs)).resolves.toBeUndefined();
   });
 
@@ -970,8 +1017,98 @@ describe('DELETE /api/backgrounds in-use protection', () => {
     expect(res.status).toBe(409);
     const json = await res.json();
     expect(json.error).toBe('in use');
+    expect(json.usage).toHaveLength(1);
 
     await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('refuses a file an older install references as /backgrounds/<path>', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', backgroundImage: '/backgrounds/nature/a.png' }],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = await seedNaturePng();
+
+    const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(res.status).toBe(409);
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('keys the in-use check on the normalized path, whatever the directory spelling', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', backgroundImage: 'nature/a.png' }],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = await seedNaturePng();
+
+    for (const directory of ['nature/', './nature', 'nature//', '/nature']) {
+      const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory }));
+      expect(res.status, directory).toBe(409);
+    }
+    // Dot-dot segments are not a spelling of anything: refused outright.
+    const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature/../nature' }));
+    expect(res.status).toBe(400);
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('ignores an unrelated URL that happens to carry a file= param', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Home', modules: [
+        { type: 'iframe', config: { url: 'https://photos.example.com/view?file=beach.jpg' } },
+      ] }],
+    };
+    const { DELETE } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'beach.jpg'), 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'beach.jpg' }));
+    expect(res.status).toBe(200);
+    await expect(fs.access(path.join(bgsDir, 'beach.jpg'))).rejects.toThrow();
+  });
+
+  it('refuses every file inside a folder a slideshow shows', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Hall', modules: [
+        { type: 'photo-slideshow', config: { source: 'local', directory: 'nature' } },
+      ] }],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = await seedNaturePng();
+
+    const res = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).usage).toEqual([
+      { kind: 'slideshow', name: 'Hall', configPath: 'screens[0].modules[0].config.directory', screenId: 's1' },
+    ]);
+    await expect(fs.access(abs)).resolves.toBeUndefined();
+  });
+
+  it('refuses a rotation file a screen is showing right now and deletes a stale one', async () => {
+    vi.doMock('@/lib/background-rotation-cache', async () => {
+      const actual = await vi.importActual<typeof import('@/lib/background-rotation-cache')>(
+        '@/lib/background-rotation-cache',
+      );
+      return {
+        ...actual,
+        rotationCacheStore: {
+          read: async () => ({
+            s1: { path: '/api/backgrounds/serve?file=rotation-unsplash-live.jpg', source: 'unsplash', query: '', fetchedAt: 0, intervalMinutes: 60 },
+          }),
+        },
+      };
+    });
+    const { DELETE } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'rotation-unsplash-live.jpg'), 'img');
+    await fs.writeFile(path.join(bgsDir, 'rotation-unsplash-stale.jpg'), 'img');
+
+    const live = await DELETE(makeDeleteRequest({ file: 'rotation-unsplash-live.jpg' }));
+    expect(live.status).toBe(409);
+    expect((await live.json()).usage).toEqual([{ kind: 'rotation', configPath: 'rotation' }]);
+    await expect(fs.access(path.join(bgsDir, 'rotation-unsplash-live.jpg'))).resolves.toBeUndefined();
+
+    const stale = await DELETE(makeDeleteRequest({ file: 'rotation-unsplash-stale.jpg' }));
+    expect(stale.status).toBe(200);
+    await expect(fs.access(path.join(bgsDir, 'rotation-unsplash-stale.jpg'))).rejects.toThrow();
+    vi.doUnmock('@/lib/background-rotation-cache');
   });
 
   it('does not mistake a substring: root a.jpg deletes while nature/a.jpg is used', async () => {

@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Error al iniciar el flujo del dispositivo",
     "codeExpired": "Código caducado. Inténtalo de nuevo.",
     "authorizationFailed": "Error de autorización",
-    "startSignInFailed": "No se pudo iniciar la sesión"
+    "startSignInFailed": "No se pudo iniciar la sesión",
+    "deleteImageInUse": "Esta foto todavía se muestra en una pantalla, así que no se puede eliminar",
+    "deleteImageInUseOn": "Esta foto todavía se usa en {where}, así que no se puede eliminar"
   },
   "days": {
     "sunday": "Domingo",

@@ -6,6 +6,7 @@ import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
 import { IMAGE_FILE_RE } from '@/lib/library-files';
+import { LibraryMoveError, renameLibraryFolder } from '@/lib/library-moves';
 
 export const dynamic = 'force-dynamic';
 
@@ -181,3 +182,30 @@ export const DELETE = withAuth(async (request: NextRequest) => {
   await fs.rmdir(resolved);
   return NextResponse.json({ deleted: dirPath });
 }, 'Failed to delete directory');
+
+/**
+ * PATCH /api/backgrounds/directories  { path, name }
+ *
+ * Renames a folder in place (the parent stays) and rewrites every config
+ * reference to a file inside it, and every slideshow showing it, so nothing
+ * on the wall goes blank.
+ */
+export const PATCH = withAuth(async (request: NextRequest) => {
+  const body = await parseJsonBody<{ path?: unknown; name?: unknown }>(request);
+  if (body instanceof NextResponse) return body;
+  const { path: dirPath, name } = body;
+  if (!dirPath || typeof dirPath !== 'string') {
+    return NextResponse.json({ error: 'path is required' }, { status: 400 });
+  }
+  if (!name || typeof name !== 'string') {
+    return NextResponse.json({ error: 'name is required' }, { status: 400 });
+  }
+  try {
+    return NextResponse.json(await renameLibraryFolder(dirPath, name));
+  } catch (err) {
+    if (err instanceof LibraryMoveError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
+}, 'Failed to rename directory');

@@ -645,7 +645,7 @@ describe('setPluginSettings — 32KB cap', () => {
 describe('getInstalledPlugins cache invalidation', () => {
   // The module-level installedCache used to key on mtimeMs alone. Two writes
   // can land in the same clock tick (back-to-back fs.writeFile does here), so
-  // a file rewritten in place looked unchanged and a stale read was served —
+  // a file rewritten in place looked unchanged and a stale read was served,
   // which is also how one test's seeded manifest leaked into the next. The
   // cache must key on path + mtime + size; this test asserts the correctness
   // contract (fresh contents after a same-path rewrite) rather than trying to

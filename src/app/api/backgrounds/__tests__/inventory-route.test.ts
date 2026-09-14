@@ -15,7 +15,7 @@ vi.mock('@/lib/auth', () => ({
 }));
 
 // Hoisted config holder: each test re-imports the route after
-// vi.resetModules(), which re-runs this factory into a fresh registry — the
+// vi.resetModules(), which re-runs this factory into a fresh registry; the
 // implementation reads configState.config at call time, so per-test seeding
 // survives that.
 const configState = vi.hoisted(() => ({ config: {} as unknown }));
@@ -54,7 +54,7 @@ function makeGetRequest(): NextRequest {
   return new NextRequest(new URL('http://localhost/api/backgrounds/inventory'));
 }
 
-/** A real 1x1 transparent PNG — image-size must read width 1, height 1 from it. */
+/** A real 1x1 transparent PNG: image-size must read width 1, height 1 from it. */
 const PNG_1X1 = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
   'base64',
@@ -89,7 +89,7 @@ function bigHeaderJpeg(): Buffer {
 }
 
 describe('GET /api/backgrounds/inventory', () => {
-  it('lists every image and video with bytes, image dimensions, and folder counts', async () => {
+  it('lists every image and video with bytes, image dimensions, and folders', async () => {
     const { GET } = await getHandlers();
     const natureDir = path.join(bgsDir, 'nature');
     await fs.mkdir(natureDir);
@@ -135,7 +135,7 @@ describe('GET /api/backgrounds/inventory', () => {
     expect(bad.height).toBeUndefined();
 
     // Directory output is order-sensitive: sorted by path.
-    expect(json.directories).toEqual([{ name: 'nature', path: 'nature', count: 3 }]);
+    expect(json.directories).toEqual([{ name: 'nature', path: 'nature' }]);
   });
 
   it('walks two folder levels deep, lists empty folders, and stops at the third', async () => {
@@ -152,13 +152,36 @@ describe('GET /api/backgrounds/inventory', () => {
     expect(json.items.map((i) => i.path)).toEqual(['themes/christmas/clip.mp4']);
     // Order-sensitive: subfolders sorted by path, empty ones included.
     expect(json.directories).toEqual([
-      { name: 'a', path: 'a', count: 0 },
-      { name: 'b', path: 'a/b', count: 0 },
-      { name: 'themes', path: 'themes', count: 0 },
-      { name: 'christmas', path: 'themes/christmas', count: 1 },
+      { name: 'a', path: 'a' },
+      { name: 'b', path: 'a/b' },
+      { name: 'themes', path: 'themes' },
+      { name: 'christmas', path: 'themes/christmas' },
     ]);
     // The depth-3 folder 'c' and its file are never listed.
     expect(json.directories.some((d) => d.path === 'a/b/c')).toBe(false);
+  });
+
+  it('hides top-level rotation files, which the background rotation owns', async () => {
+    const { GET } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'rotation-unsplash-abc.jpg'), 'jpeg-bytes');
+    await fs.writeFile(path.join(bgsDir, 'mine.jpg'), 'jpeg-bytes');
+    // Only the top level is the rotation's; a user folder may use the word.
+    await fs.mkdir(path.join(bgsDir, 'trips'));
+    await fs.writeFile(path.join(bgsDir, 'trips', 'rotation-class.jpg'), 'jpeg-bytes');
+
+    const res = await GET(makeGetRequest());
+    const json: MediaInventory = await res.json();
+    expect(json.items.map((i) => i.path)).toEqual(['mine.jpg', 'trips/rotation-class.jpg']);
+  });
+
+  it('skips symlinks, as the picker listing does', async () => {
+    const { GET } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'real.png'), PNG_1X1);
+    await fs.symlink(path.join(bgsDir, 'real.png'), path.join(bgsDir, 'link.png'));
+
+    const res = await GET(makeGetRequest());
+    const json: MediaInventory = await res.json();
+    expect(json.items.map((i) => i.path)).toEqual(['real.png']);
   });
 
   it('recovers dimensions that sit beyond the 64 KiB header probe', async () => {
@@ -200,8 +223,40 @@ describe('GET /api/backgrounds/inventory', () => {
     expect(Array.isArray(json.usage['nature/a.png'])).toBe(true);
     expect(json.usage['nature/a.png'][0].kind).toBe('screen');
     expect(json.usage['nature/a.png']).toEqual([
-      { kind: 'screen', name: 'Home', configPath: 'screens[0].backgroundImage' },
+      expect.objectContaining({ kind: 'screen', name: 'Home', configPath: 'screens[0].backgroundImage' }),
     ]);
+  });
+
+  it('reports config references to files and folders that are not in the library', async () => {
+    await fs.writeFile(path.join(bgsDir, 'have.jpg'), 'jpeg-bytes');
+    await fs.writeFile(path.join(bgsDir, 'rotation-unsplash-live.jpg'), 'jpeg-bytes');
+    await fs.mkdir(path.join(bgsDir, 'nature'));
+    configState.config = { screens: [
+      { id: 's1', name: 'Hall', backgroundImage: 'have.jpg' },
+      { id: 's2', name: 'Porch', backgroundImage: '/api/backgrounds/serve?file=gone.jpg' },
+      // Hidden from the listing, but on disk: not missing.
+      { id: 's3', name: 'Rot', backgroundImage: 'rotation-unsplash-live.jpg' },
+      { id: 's4', name: 'Den', modules: [
+        { id: 'm1', type: 'photo-slideshow', config: { directory: 'old-trips' } },
+        { id: 'm2', type: 'photo-slideshow', config: { directory: 'nature' } },
+      ] },
+    ] };
+    const { GET } = await getHandlers();
+    const json: MediaInventory = await (await GET(makeGetRequest())).json();
+    expect(json.missing).toEqual([
+      { path: 'gone.jpg', kind: 'file', uses: [expect.objectContaining({ name: 'Porch', screenId: 's2' })] },
+      { path: 'old-trips', kind: 'folder', uses: [expect.objectContaining({ name: 'Den', screenId: 's4', moduleId: 'm1' })] },
+    ]);
+  });
+
+  it('sums the listed bytes and reports the volume space', async () => {
+    await fs.writeFile(path.join(bgsDir, 'a.jpg'), 'aaaa');
+    await fs.writeFile(path.join(bgsDir, 'b.mp4'), 'bbbbbb');
+    const { GET } = await getHandlers();
+    const json: MediaInventory = await (await GET(makeGetRequest())).json();
+    expect(json.storage.bytes).toBe(10);
+    expect(json.storage.freeBytes).toBeGreaterThan(0);
+    expect(json.storage.totalBytes).toBeGreaterThanOrEqual(json.storage.freeBytes!);
   });
 
   it('returns an empty usage map when the config references nothing', async () => {
@@ -226,7 +281,7 @@ describe('GET /api/backgrounds/inventory', () => {
 
     const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ items: [], directories: [], usage: {} });
+    expect(await res.json()).toMatchObject({ items: [], directories: [], usage: {}, missing: [], storage: { bytes: 0 } });
   });
 
   it('rejects an unauthenticated request', async () => {
