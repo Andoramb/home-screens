@@ -99,28 +99,27 @@ function YourPictures({ value, onPick }: {
 
   return (
     <div className="flex flex-col gap-1.5">
-      {pictures.map(({ url }) => {
-        // Same selected treatment as the background picker: accent border
-        // plus ring, so opening an existing rule shows which picture it holds.
-        const selected = value === url;
-        return (
-          <div
-            key={url}
-            className={`flex items-center gap-1 rounded border px-1.5 py-1 ${selected ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
-            data-my-art=""
-          >
+      {/* Same tile shape as the Built-in grid, two per row instead of three;
+       * the selected tile wears the accent border and ring so opening an
+       * existing rule shows which picture it holds. */}
+      <div className="grid grid-cols-2 gap-1.5">
+        {pictures.map(({ url }) => {
+          const selected = value === url;
+          return (
             <button
+              key={url}
               type="button"
               aria-pressed={selected}
               onClick={() => { lib.setError(null); onPick(url); }}
-              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+              className={`overflow-hidden rounded border ${selected ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong hover:border-hs-text-faint'}`}
+              data-my-art=""
             >
-              <span className="h-8 w-11 flex-none rounded bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
-              <span className={`truncate text-[11px] ${selected ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>{displayName(url)}</span>
+              <span className="block h-14 bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
+              <span className={`block truncate px-0.5 py-0.5 text-[10px] ${selected ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>{displayName(url)}</span>
             </button>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
       <button
         type="button"
         disabled={lib.uploading}

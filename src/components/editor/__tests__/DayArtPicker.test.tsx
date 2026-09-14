@@ -43,7 +43,7 @@ describe('DayArtPicker', () => {
     const { container, rerender } = render(wrap(<DayArtPicker value={SERVE} onChange={() => {}} />));
     expect(pressedTab(container)).toBe(1);
     await act(async () => {});
-    expect(container.querySelector('[data-my-art] button')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('[data-my-art]')?.getAttribute('aria-pressed')).toBe('true');
 
     // Undo swaps the value back to built-in art: the Built-in tab shows it.
     rerender(wrap(<DayArtPicker value={HALLOWEEN} onChange={() => {}} />));
@@ -57,7 +57,7 @@ describe('DayArtPicker', () => {
     const tabs = container.querySelectorAll<HTMLButtonElement>('[data-day-art-picker] > div:first-child button');
     await act(async () => { fireEvent.click(tabs[1]); });
     expect(pressedTab(container)).toBe(1);
-    await act(async () => { fireEvent.click(container.querySelector('[data-my-art] button')!); });
+    await act(async () => { fireEvent.click(container.querySelector('[data-my-art]')!); });
     expect(onChange).toHaveBeenCalledWith(SERVE);
     // The parent applies the pick; the tab now follows the value again.
     rerender(wrap(<DayArtPicker value={SERVE} onChange={onChange} />));
@@ -70,8 +70,9 @@ describe('DayArtPicker', () => {
     listing([SERVE, '/api/backgrounds/serve?file=calendar-art%2Fbeach.png']);
     const { container } = render(wrap(<DayArtPicker value={SERVE} onChange={() => {}} />));
     await act(async () => {});
-    // The selected row wears the accent border and ring the background
-    // picker uses; the name goes accent too, the other rows stay plain.
+    // Tiles sit two per row like the Built-in grid; the selected tile wears
+    // the accent border and ring, its name goes accent, the other stays plain.
+    expect(container.querySelector('[data-my-art]')?.parentElement?.className).toContain('grid-cols-2');
     const [selected, other] = Array.from(container.querySelectorAll<HTMLElement>('[data-my-art]'));
     expect(selected.className).toContain('border-hs-accent');
     expect(selected.className).toContain('ring-1');
