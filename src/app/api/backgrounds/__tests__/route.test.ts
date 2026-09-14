@@ -1137,7 +1137,7 @@ describe('svg day art', () => {
     const { POST } = await getHandlers();
     const res = await POST(
       makePostRequest(
-        [{ name: 'art.svg', type: 'image/svg+xml', content: Buffer.from('<svg/>') }],
+        [{ name: 'art.svg', type: 'image/svg+xml', content: Buffer.from('<svg viewBox="0 0 120 80"/>') }],
         'calendar-art',
       ),
     );
@@ -1147,6 +1147,30 @@ describe('svg day art', () => {
     await expect(
       fs.readFile(path.join(bgsDir, 'calendar-art', 'art.svg'), 'utf8'),
     ).resolves.toBeTruthy();
+  });
+
+  it('refuses an svg that declares no size, so it cannot stretch on the wall', async () => {
+    const { POST } = await getHandlers();
+    const res = await POST(
+      makePostRequest(
+        [{ name: 'shapeless.svg', type: 'image/svg+xml', content: Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><rect width="10" height="10"/></svg>') }],
+        'calendar-art',
+      ),
+    );
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('shapeless.svg has no size information. Add a viewBox to the SVG and try again.');
+    await expect(fs.access(path.join(bgsDir, 'calendar-art', 'shapeless.svg'))).rejects.toThrow();
+  });
+
+  it('accepts an svg sized by absolute width and height', async () => {
+    const { POST } = await getHandlers();
+    const res = await POST(
+      makePostRequest(
+        [{ name: 'sized.svg', type: 'image/svg+xml', content: Buffer.from('<svg width="300" height="200"/>') }],
+        'calendar-art',
+      ),
+    );
+    expect(res.status).toBe(201);
   });
 
   it('lists svg files in the calendar-art folder', async () => {

@@ -22,6 +22,7 @@ import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
 import { removeThumbnails } from '@/lib/thumbnails';
 import { extensionOf, fileNameOf, folderOf } from '@/lib/media-paths';
 import { enqueueCommand } from '@/lib/display-commands';
+import { svgDeclaresSize } from '@/lib/svg-intrinsic-size';
 import type { MediaListItem } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -122,6 +123,18 @@ function sanitizeName(name: string): string {
 }
 
 /**
+ * An SVG with no viewBox and no absolute width/height has no shape the
+ * browser can scale, so it stretches to whatever box it is painted in (a day
+ * cell at "Picture size 40", a screen background). Refuse it with a plain
+ * explanation rather than store a picture that only looks right by accident.
+ */
+async function svgSizeProblem(file: File): Promise<string | null> {
+  if (file.type !== 'image/svg+xml') return null;
+  if (svgDeclaresSize(await file.text())) return null;
+  return `${file.name} has no size information. Add a viewBox to the SVG and try again.`;
+}
+
+/**
  * Overwrite one library file with an upload of the same type. The name (and
  * so every reference to it) stays; the extension must match because the
  * references carry it. Written beside the original and renamed over it, so
@@ -161,6 +174,8 @@ async function replaceLibraryFile(target: string, files: File[]): Promise<NextRe
       { status: 413 },
     );
   }
+  const svgProblem = await svgSizeProblem(file);
+  if (svgProblem) return NextResponse.json({ error: svgProblem }, { status: 400 });
   const tmp = `${filePath}.replace-${process.pid}.tmp`;
   try {
     await writeLibraryFile(tmp, file.stream(), maxSize);
@@ -226,6 +241,8 @@ export const POST = withAuth(async (request: NextRequest) => {
     if (file.size > maxSize) {
       return NextResponse.json({ error: `File too large: ${file.name} (max ${maxLabel})` }, { status: 413 });
     }
+    const svgProblem = await svgSizeProblem(file);
+    if (svgProblem) return NextResponse.json({ error: svgProblem }, { status: 400 });
   }
 
   // The top-level `rotation-` names belong to the background rotation, which

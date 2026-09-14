@@ -622,6 +622,54 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     },
   },
   {
+    // The default size is plain cover, on the portrait month cell and on
+    // any other cell shape: no scale opt-in on the painter, so the
+    // @container axis-bound rules never match and existing rules render
+    // exactly as they did before the size control existed.
+    type: 'fullscreen-calendar', name: 'day-rules-art-default-cover', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundScale: 100 }],
+    },
+    expect: async (mod) => {
+      const art = mod.locator('[data-day-art-image]').first();
+      await expect(art).toHaveCSS('background-size', 'cover');
+      await expect(art).not.toHaveAttribute('data-day-art-scaled');
+    },
+  },
+  {
+    // Week-list day rows are landscape (full width, a fraction of the
+    // height), the shape the month cell never takes on a portrait display.
+    // Cover must hold there too: 3:2 art bound to the width of a wide row
+    // would leave the row's top and bottom unpainted.
+    type: 'fullscreen-calendar', name: 'day-rules-art-default-cover-landscape', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'week-list',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg' }],
+    },
+    expect: async (mod) => {
+      const art = mod.locator('[data-day-art-image]').first();
+      await expect(art).toHaveCSS('background-size', 'cover');
+      const landscape = await art.evaluate((el) => { const r = el.getBoundingClientRect(); return r.width > r.height; });
+      expect(landscape, 'the week-list day row is a landscape box').toBe(true);
+    },
+  },
+  {
+    // Below 100 in a landscape box the art binds to the width (the longer
+    // axis) and the height follows the art's own ratio. The month-grid row
+    // above covers the portrait branch; this is the other @container rule.
+    type: 'fullscreen-calendar', name: 'day-rules-art-scale-landscape', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'week-list',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundScale: 40 }],
+    },
+    expect: async (mod) => {
+      const art = mod.locator('[data-day-art-image]').first();
+      await expect(art).toHaveAttribute('data-day-art-scaled', '');
+      await expect(art).toHaveCSS('background-size', '40% auto');
+    },
+  },
+  {
     // A Font Awesome pick stores a `fa:<style>:<name>` token instead of a
     // glyph. Both rule icons and day badges have to render it as the icon
     // font's <i>, not print the token as text.

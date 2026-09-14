@@ -122,7 +122,7 @@ describe('day-rule art scale and position sliders', () => {
     );
     const card = container.querySelector('[data-rule-card]')!;
     await expand(card);
-    // Picture branch renders: dimming, size, X, Y — then the card's fade slider.
+    // Picture branch renders: dimming, size, X, Y, then the card's fade slider.
     const ranges = card.querySelectorAll('input[type="range"]');
     expect(ranges.length).toBeGreaterThanOrEqual(4);
     expect((ranges[1] as HTMLInputElement).value).toBe('100');

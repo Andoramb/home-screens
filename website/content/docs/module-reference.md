@@ -553,13 +553,16 @@ The **Calendar** and **Full-Screen Calendar** modules share two small rules engi
 | `background` | string | A color, or `auto` to tint the day from its own events' colors |
 | `backgroundImage` | string | A picture painted on the day, under its number and events: a built-in path such as `/starter-day-art/birthday.svg`, or the serve URL of a picture in the media library's `calendar-art` folder |
 | `backgroundDim` | number | 0–0.9, how far the picture fades; default 0.4 |
+| `backgroundScale` | number | 10–100, picture size; 100 (the default) fills the day, smaller values span that percent of the day's longer side |
+| `backgroundPositionX` | number | 0–100, where the picture sits left to right when it is smaller than the day; 0 is the left edge, 100 the right, 50 (the default) centered |
+| `backgroundPositionY` | number | 0–100, where the picture sits top to bottom; 0 is the top edge, 100 the bottom, 50 (the default) centered |
 | `opacity` | number | 0.1–1, applied to the day |
 | `borderColor` | string | Outline color for the day |
 | `badgeIcon`, `badgeText`, `badgeColor` | string | A small marker drawn on the day |
 
 **Specific days** narrows a rule to fixed dates: a day of every month (payday on the 15th), a fixed date each year (October 31), every day of one month, the last day of the month (any month, or just one), or the nth weekday of the month, 1st through 5th or the last, so "the 4th Thursday of November" works. Days that don't exist in a month never match: the 31st simply skips shorter months. A rule's other choices (a badge, an outline, a background) then apply to exactly those days.
 
-A day rule's background can also be a **picture**: pick from the art that ships with Home Screens (birthdays, Halloween, Christmas, and other quiet patterns) or add your own image or SVG under **Your pictures**. The picture is painted on the day cell exactly as it otherwise renders, above the cell's own fill and under the day's number and events, everywhere the calendar draws days. **Art dimming** fades the picture itself: transparent parts of a PNG leave the cell untouched, so the cell keeps its normal look with the art laid in.
+A day rule's background can also be a **picture**: pick from the art that ships with Home Screens (birthdays, Halloween, Christmas, and other quiet patterns) or add your own image or SVG under **Your pictures**. The picture is painted on the day cell exactly as it otherwise renders, above the cell's own fill and under the day's number and events, everywhere the calendar draws days. **Art dimming** fades the picture itself: transparent parts of a PNG leave the cell untouched, so the cell keeps its normal look with the art laid in. **Picture size** shrinks the picture inside the day (at 100 it fills the day as before), and **Horizontal position** and **Vertical position** choose which corner or edge a smaller picture sits against. An SVG you add needs a `viewBox` (or a fixed width and height) so it keeps its shape at every size; the library says so if one is missing.
 
 **Matching an event**: every field you set has to hold (they combine with AND), and a rule with an empty match applies to everything:
 
