@@ -74,13 +74,19 @@ function compactMatch(match: CalendarEventMatch): CalendarEventMatch {
   return out;
 }
 
+/** Collapses a name to the form used for the uniqueness check: trimmed,
+ *  internal runs of whitespace collapsed to one space, lowercased. */
+function normalizeRuleName(name: string): string {
+  return name.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 /** Inline name editor opened by the card's pencil. Commits a trimmed name
  *  (or clears it when empty) on Enter / blur; Escape cancels. A name another
  *  rule in the same list already carries (ignoring case and spacing) is
  *  refused — the editor stays open and says so, nothing is written. */
 function RuleNameEditor({ initial, otherNames, onCommit, onCancel }: {
   initial: string;
-  /** Lowercased, trimmed names of the other rules in this list. */
+  /** Normalized (see `normalizeRuleName`) names of the other rules in this list. */
   otherNames: string[];
   onCommit: (name: string | undefined) => void;
   onCancel: () => void;
@@ -90,7 +96,7 @@ function RuleNameEditor({ initial, otherNames, onCommit, onCancel }: {
   const [taken, setTaken] = useState(false);
   const commit = () => {
     const trimmed = draft.trim();
-    if (trimmed && otherNames.includes(trimmed.toLowerCase())) {
+    if (trimmed && otherNames.includes(normalizeRuleName(trimmed))) {
       setTaken(true);
       return;
     }
@@ -126,7 +132,7 @@ function RuleCard({ index, total, name, expanded, onToggle, onRename, otherNames
   expanded: boolean;
   onToggle: () => void;
   onRename: (name: string | undefined) => void;
-  /** Lowercased, trimmed names of the other rules in this list. */
+  /** Normalized (see `normalizeRuleName`) names of the other rules in this list. */
   otherNames: string[];
   onMove: (to: number) => void;
   onRemove: () => void;
@@ -649,12 +655,13 @@ function DayRuleFields({ rule, availableSources, onChange }: {
 }
 
 /** Names another rule in the list already carries, for the uniqueness check —
- *  lowercased and trimmed, and without the rule being edited itself. */
-function otherRuleNames<T extends { name?: string }>(rules: T[], selfIndex: number): string[] {
+ *  normalized (see `normalizeRuleName`) and without the rule being edited
+ *  itself. An unnamed rule falls back to its displayed "Rule N" label so a
+ *  typed name can't collide with it either. */
+function otherRuleNames<T extends { name?: string }>(rules: T[], selfIndex: number, fallbackTitle: (n: number) => string): string[] {
   return rules
-    .filter((_, j) => j !== selfIndex)
-    .map((r) => r.name?.trim().toLowerCase())
-    .filter((n): n is string => !!n);
+    .map((r, j) => (j === selfIndex ? null : normalizeRuleName(r.name?.trim() || fallbackTitle(j + 1))))
+    .filter((n): n is string => n != null);
 }
 
 export function CalendarRulesEditor({ eventRules, dayRules, availableSources, onChange }: {
@@ -697,7 +704,7 @@ export function CalendarRulesEditor({ eventRules, dayRules, availableSources, on
             expanded={expanded.has(rule.id)}
             onToggle={() => toggleRule(rule.id)}
             onRename={(name) => setEvents(replaceAt(events, i, { ...rule, name }))}
-            otherNames={otherRuleNames(events, i)}
+            otherNames={otherRuleNames(events, i, (n) => t(`${KEY}.ruleTitle`, { n }))}
             onMove={(to) => setEvents(move(events, i, to))}
             onRemove={() => setEvents(events.filter((r) => r.id !== rule.id))}
           >
@@ -727,7 +734,7 @@ export function CalendarRulesEditor({ eventRules, dayRules, availableSources, on
             expanded={expanded.has(rule.id)}
             onToggle={() => toggleRule(rule.id)}
             onRename={(name) => setDays(replaceAt(days, i, { ...rule, name }))}
-            otherNames={otherRuleNames(days, i)}
+            otherNames={otherRuleNames(days, i, (n) => t(`${KEY}.ruleTitle`, { n }))}
             onMove={(to) => setDays(move(days, i, to))}
             onRemove={() => setDays(days.filter((r) => r.id !== rule.id))}
           >

@@ -181,4 +181,38 @@ describe('rule names', () => {
     expect(eventsRef.current?.[0].name).toBe('Halloween');
     expect(dayCard(container).querySelector('[data-rule-name-taken]')).toBeNull();
   });
+
+  it('a name differing only by internal spacing is still refused as a duplicate', async () => {
+    const daysRef = { current: undefined as CalendarDayRule[] | undefined };
+    const { container } = render(
+      <Harness
+        initialDays={[
+          { id: 'r1', match: {}, name: 'Trash Pickup' },
+          { id: 'r2', match: {} },
+        ]}
+        daysRef={daysRef}
+      />,
+    );
+    await rename(dayCard(container, 1), 'Trash  Pickup');
+    const card2 = dayCard(container, 1);
+    expect(card2.querySelector('[data-rule-name-taken]')?.textContent).toBeTruthy();
+    expect(daysRef.current?.[1].name).toBeUndefined();
+  });
+
+  it('a name matching another rule\'s "Rule N" fallback is refused', async () => {
+    const daysRef = { current: undefined as CalendarDayRule[] | undefined };
+    const { container } = render(
+      <Harness
+        initialDays={[
+          { id: 'r1', match: {} },
+          { id: 'r2', match: {} },
+        ]}
+        daysRef={daysRef}
+      />,
+    );
+    await rename(dayCard(container, 0), 'Rule 2');
+    const card1 = dayCard(container, 0);
+    expect(card1.querySelector('[data-rule-name-taken]')?.textContent).toBeTruthy();
+    expect(daysRef.current?.[0].name).toBeUndefined();
+  });
 });
