@@ -68,7 +68,7 @@ export default function DayArtPicker({ value, onChange }: {
               aria-label={t(`${KEY}.artNames.${art.id}`)}
               aria-pressed={value === art.path}
               onClick={() => pick(art.path)}
-              className={`overflow-hidden rounded border ${value === art.path ? 'border-hs-accent' : 'border-hs-border-strong hover:border-hs-text-faint'}`}
+              className={`overflow-hidden rounded border ${value === art.path ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong hover:border-hs-text-faint'}`}
               data-art-option={art.id}
             >
               <span className="block h-10 bg-cover bg-center" style={{ backgroundImage: `url(${art.path})` }} />
@@ -99,19 +99,28 @@ function YourPictures({ value, onPick }: {
 
   return (
     <div className="flex flex-col gap-1.5">
-      {pictures.map(({ url }) => (
-        <div key={url} className="flex items-center gap-1 rounded border border-hs-border-strong px-1.5 py-1" data-my-art="">
-          <button
-            type="button"
-            aria-pressed={value === url}
-            onClick={() => { lib.setError(null); onPick(url); }}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left"
+      {pictures.map(({ url }) => {
+        // Same selected treatment as the background picker: accent border
+        // plus ring, so opening an existing rule shows which picture it holds.
+        const selected = value === url;
+        return (
+          <div
+            key={url}
+            className={`flex items-center gap-1 rounded border px-1.5 py-1 ${selected ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
+            data-my-art=""
           >
-            <span className="h-8 w-11 flex-none rounded bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
-            <span className="truncate text-[11px] text-hs-text-muted">{displayName(url)}</span>
-          </button>
-        </div>
-      ))}
+            <button
+              type="button"
+              aria-pressed={selected}
+              onClick={() => { lib.setError(null); onPick(url); }}
+              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+            >
+              <span className="h-8 w-11 flex-none rounded bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
+              <span className={`truncate text-[11px] ${selected ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>{displayName(url)}</span>
+            </button>
+          </div>
+        );
+      })}
       <button
         type="button"
         disabled={lib.uploading}

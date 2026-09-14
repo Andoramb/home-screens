@@ -66,6 +66,28 @@ describe('DayArtPicker', () => {
     expect(pressedTab(container)).toBe(0);
   });
 
+  it('marks the selected picture on Your pictures', async () => {
+    listing([SERVE, '/api/backgrounds/serve?file=calendar-art%2Fbeach.png']);
+    const { container } = render(wrap(<DayArtPicker value={SERVE} onChange={() => {}} />));
+    await act(async () => {});
+    // The selected row wears the accent border and ring the background
+    // picker uses; the name goes accent too, the other rows stay plain.
+    const [selected, other] = Array.from(container.querySelectorAll<HTMLElement>('[data-my-art]'));
+    expect(selected.className).toContain('border-hs-accent');
+    expect(selected.className).toContain('ring-1');
+    expect(other.className).not.toContain('border-hs-accent');
+    expect(selected.querySelectorAll('span')[1].className).toContain('text-hs-accent-hover');
+    expect(other.querySelectorAll('span')[1].className).toContain('text-hs-text-muted');
+  });
+
+  it('rings the selected built-in art', () => {
+    const { container } = render(wrap(<DayArtPicker value={HALLOWEEN} onChange={() => {}} />));
+    const halloween = container.querySelector<HTMLElement>('[data-art-option="halloween"]')!;
+    expect(halloween.className).toContain('border-hs-accent');
+    expect(halloween.className).toContain('ring-1');
+    expect(container.querySelector<HTMLElement>('[data-art-option="celebrate"]')!.className).not.toContain('ring-1');
+  });
+
   it('an upload selects the new picture and invalidates the canvas library cache', async () => {
     listing([]);
     const onChange = vi.fn();
