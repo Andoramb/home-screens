@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useImageLibrary } from '@/hooks/useImageLibrary';
 import { libraryFileFromServeUrl } from '@/lib/library-client';
+import { TILE_THUMBNAIL_WIDTH, serveUrlFor } from '@/lib/media-paths';
 import { STARTER_DAY_ART, STARTER_DAY_ART_URL } from '@/lib/starter-day-art';
 import { useTranslate } from '@/i18n';
 
@@ -28,6 +29,39 @@ function tabFor(value: string | undefined): Tab {
 function displayName(url: string): string {
   const file = libraryFileFromServeUrl(url) ?? '';
   return file.startsWith(`${CALENDAR_ART_DIR}/`) ? file.slice(CALENDAR_ART_DIR.length + 1) : file;
+}
+
+/** The small copy the serve route keeps for grids, so a tile never downloads
+ *  and decodes a full-size photo; a URL outside the library is used as is. */
+function tileImage(url: string): string {
+  const file = libraryFileFromServeUrl(url);
+  return file ? serveUrlFor(file, { width: TILE_THUMBNAIL_WIDTH }) : url;
+}
+
+/** One picture tile. Both tabs render through it so the selected look
+ *  (accent border, ring and name) cannot drift between them. */
+function ArtTile({ selected, image, label, imageHeight, onClick, dataAttrs }: {
+  selected: boolean;
+  image: string;
+  label: string;
+  imageHeight: 'h-10' | 'h-14';
+  onClick: () => void;
+  dataAttrs: Record<`data-${string}`, string>;
+}) {
+  return (
+    <button
+      type="button"
+      title={label}
+      aria-label={label}
+      aria-pressed={selected}
+      onClick={onClick}
+      className={`overflow-hidden rounded border ${selected ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong hover:border-hs-text-faint'}`}
+      {...dataAttrs}
+    >
+      <span className={`block ${imageHeight} bg-cover bg-center`} style={{ backgroundImage: `url(${image})` }} />
+      <span className={`block truncate px-0.5 py-0.5 text-[10px] ${selected ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>{label}</span>
+    </button>
+  );
 }
 
 export default function DayArtPicker({ value, onChange }: {
@@ -62,18 +96,15 @@ export default function DayArtPicker({ value, onChange }: {
       {tab === 'builtin' && (
         <div className="grid grid-cols-3 gap-1.5">
           {STARTER_DAY_ART.map((art) => (
-            <button
+            <ArtTile
               key={art.id}
-              type="button"
-              aria-label={t(`${KEY}.artNames.${art.id}`)}
-              aria-pressed={value === art.path}
+              selected={value === art.path}
+              image={art.path}
+              label={t(`${KEY}.artNames.${art.id}`)}
+              imageHeight="h-10"
               onClick={() => pick(art.path)}
-              className={`overflow-hidden rounded border ${value === art.path ? 'border-hs-accent' : 'border-hs-border-strong hover:border-hs-text-faint'}`}
-              data-art-option={art.id}
-            >
-              <span className="block h-10 bg-cover bg-center" style={{ backgroundImage: `url(${art.path})` }} />
-              <span className="block truncate px-0.5 py-0.5 text-[10px] text-hs-text-muted">{t(`${KEY}.artNames.${art.id}`)}</span>
-            </button>
+              dataAttrs={{ 'data-art-option': art.id }}
+            />
           ))}
         </div>
       )}
@@ -97,21 +128,49 @@ function YourPictures({ value, onPick }: {
   const lib = useImageLibrary({ initialDirectory: CALENDAR_ART_DIR });
   const pictures = lib.items.filter((item) => item.type === 'image');
 
+  // The listing has settled once its first fetch has come back; before that
+  // a held picture is not known to be missing from the folder.
+  const [listed, setListed] = useState(false);
+  useEffect(() => { if (lib.loadingImages) setListed(true); }, [lib.loadingImages]);
+
+  // A rule can hold a picture this folder does not list: Pictures & videos
+  // moved or renamed it (the rule was rewritten to follow), a layout import
+  // brought a file from another folder, or it is a video. The wall still
+  // paints it, so it shows as the current pick instead of nothing.
+  const held = value && tabFor(value) === 'yours' && listed && !lib.loadingImages && !pictures.some((p) => p.url === value)
+    ? value
+    : null;
+
   return (
     <div className="flex flex-col gap-1.5">
-      {pictures.map(({ url }) => (
-        <div key={url} className="flex items-center gap-1 rounded border border-hs-border-strong px-1.5 py-1" data-my-art="">
-          <button
-            type="button"
-            aria-pressed={value === url}
-            onClick={() => { lib.setError(null); onPick(url); }}
-            className="flex min-w-0 flex-1 items-center gap-2 text-left"
-          >
-            <span className="h-8 w-11 flex-none rounded bg-cover bg-center" style={{ backgroundImage: `url(${url})` }} />
-            <span className="truncate text-[11px] text-hs-text-muted">{displayName(url)}</span>
-          </button>
+      {/* Same tile as the Built-in grid, two per row instead of three; the
+       * selected tile wears the accent border and ring so opening an
+       * existing rule shows which picture it holds. */}
+      {(held || pictures.length > 0) && (
+        <div className="grid grid-cols-2 gap-1.5">
+          {held && (
+            <ArtTile
+              selected
+              image={tileImage(held)}
+              label={libraryFileFromServeUrl(held) ?? held}
+              imageHeight="h-14"
+              onClick={() => onPick(held)}
+              dataAttrs={{ 'data-current-art': '' }}
+            />
+          )}
+          {pictures.map(({ url }) => (
+            <ArtTile
+              key={url}
+              selected={value === url}
+              image={tileImage(url)}
+              label={displayName(url)}
+              imageHeight="h-14"
+              onClick={() => { lib.setError(null); onPick(url); }}
+              dataAttrs={{ 'data-my-art': '' }}
+            />
+          ))}
         </div>
-      ))}
+      )}
       <button
         type="button"
         disabled={lib.uploading}
