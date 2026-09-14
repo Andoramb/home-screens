@@ -1,0 +1,51 @@
+{
+  "out": ".claude/mockups/<name>",
+  "servers": {
+    "main": "http://127.0.0.1:3131",
+    "branch": "http://127.0.0.1:3132"
+  },
+  "viewport": {
+    "width": 1080,
+    "height": 1920
+  },
+  "scale": 3,
+  "stubs": {
+    "**/api/weather*": "e2e/fixtures/module-data/weather.json"
+  },
+  "shots": [
+    {
+      "screen": "s-weather",
+      "waitFor": "[data-module-id=\"w-current\"] >> text=/72\u00b0/",
+      "crops": [
+        {
+          "name": "current",
+          "selector": "[data-module-id=\"w-current\"]",
+          "pad": 8
+        },
+        {
+          "name": "daily",
+          "selector": "[data-module-id=\"w-daily\"]",
+          "pad": 8
+        }
+      ],
+      "measure": [
+        {
+          "name": "temp",
+          "selector": "[data-module-id=\"w-current\"] >> text=/^72\u00b0/",
+          "props": [
+            "fontSize",
+            "fontWeight",
+            "lineHeight"
+          ]
+        },
+        {
+          "name": "daily-box",
+          "selector": "[data-module-id=\"w-daily\"]",
+          "props": [
+            "padding"
+          ]
+        }
+      ]
+    }
+  ]
+}

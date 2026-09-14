@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>TITLE</title>
+<style>
+body{margin:0;padding:24px 32px;font:15px/1.5 -apple-system,Inter,system-ui,sans-serif;background:#111;color:#eee}
+h1{font-size:22px;margin:0 0 4px}h2{font-size:18px;margin:44px 0 6px;color:#fff}h3{font-size:15px;margin:22px 0 6px;color:#ddd}
+p{max-width:960px;color:#bbb;margin:4px 0 12px}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:1700px}
+.pair figure{margin:0;background:#1b1b1b;border:1px solid #333;border-radius:8px;padding:10px}
+.pair figcaption{font-weight:600;margin-bottom:8px;color:#fff}.pair figcaption span{font-weight:400;color:#999;margin-left:8px}
+.pair .note{font-size:13px;color:#aaa;margin:8px 0 0}
+.shot{position:relative;display:block}
+.shot img{width:100%;display:block;border-radius:4px}
+/* Callouts: percentages of the image box, so they scale with it. */
+.mark{position:absolute;border:2px dashed #ff3b3b;background:rgba(255,59,59,.18);pointer-events:none;box-sizing:border-box}
+.mark.ok{border-color:#3ddc84;background:rgba(61,220,132,.10)}
+.tag{position:absolute;background:#ff3b3b;color:#fff;font-size:12px;font-weight:600;padding:2px 7px;border-radius:3px;white-space:nowrap;line-height:1.3}
+.tag.ok{background:#1f9d5a}
+.zoom{max-width:1100px}
+table{border-collapse:collapse;margin:8px 0 0}td,th{border:1px solid #333;padding:4px 12px;text-align:left;vertical-align:top}th{color:#fff}
+code{background:#222;padding:1px 5px;border-radius:3px;color:#f8c}
+</style></head><body>
+<h1>TITLE</h1>
+<p>One paragraph: what config both sides render, which build is left and which is right, and what the reader should look for.</p>
+
+<table><tr><th>Case</th><th>Box</th><th>main</th><th>branch</th><th>What differs</th></tr>
+<tr><td>Which module and view (e.g. weather, current view)</td><td>WxH</td><td><code>computed value</code></td><td><code>computed value</code></td><td>What that means in pixels</td></tr></table>
+
+<h2>1. Case name</h2>
+<p><b>Where:</b> say exactly where on the image the difference is, in words a reader can follow without the boxes.</p>
+<div class="pair">
+<figure><figcaption>main<span>what the computed style says</span></figcaption>
+<div class="shot"><img src="main-s-weather.png">
+<div class="mark ok" style="left:7%;top:6%;width:60%;height:19%"></div><div class="tag ok" style="left:8%;top:26%">what is here on main</div></div></figure>
+<figure><figcaption>branch<span>what the computed style says</span></figcaption>
+<div class="shot"><img src="branch-s-weather.png">
+<div class="mark" style="left:7%;top:6%;width:60%;height:19%"></div><div class="tag" style="left:8%;top:26%">what is wrong here, with the measured size</div></div></figure>
+</div>
+
+<h3>One module, 3x zoom</h3>
+<div class="pair zoom">
+<figure><figcaption>main</figcaption><div class="shot"><img src="main-s-weather-current.png"></div></figure>
+<figure><figcaption>branch</figcaption><div class="shot"><img src="branch-s-weather-current.png">
+<div class="mark" style="left:40%;top:10%;width:35%;height:30%"></div><div class="tag" style="left:30%;top:2%">what moved or resized, with the measured px (row range from measure.mjs)</div></div></figure>
+</div>
+
+<h2>Why it happens</h2>
+<p>The mechanism in two or three sentences, then the fix.</p>
+</body></html>

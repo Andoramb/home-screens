@@ -27,6 +27,7 @@
 !.claude/
 .claude/*
 !.claude/commands/
+!.claude/skills/
 tailwind/*
 mockups/*
 plans/*
