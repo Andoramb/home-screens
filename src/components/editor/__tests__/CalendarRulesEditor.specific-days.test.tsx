@@ -41,6 +41,13 @@ function Harness({ initial, stateRef }: {
  *  (non-picture) day-rule card, so counting them spots the row reliably. */
 const weekdayButtons = (card: Element) => Array.from(card.querySelectorAll('button[aria-pressed]'));
 
+/** Rules render collapsed; open the card so its fields exist. */
+const expand = async (card: Element) => {
+  await act(async () => {
+    fireEvent.click(card.querySelector('[data-rule-toggle]')!);
+  });
+};
+
 describe('specific days and the weekday row', () => {
   afterEach(cleanup);
 
@@ -50,6 +57,7 @@ describe('specific days and the weekday row', () => {
       <Harness initial={[{ id: 'r1', match: { daysOfWeek: [5] } }]} stateRef={stateRef} />,
     );
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
 
     // Friday is picked and visible before the switch.
     expect(weekdayButtons(card)).toHaveLength(7);

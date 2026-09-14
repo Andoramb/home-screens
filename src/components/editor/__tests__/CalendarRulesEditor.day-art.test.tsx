@@ -38,6 +38,13 @@ function Harness({ initial, stateRef }: {
 
 const HALLOWEEN = '/starter-day-art/halloween.svg';
 
+/** Rules render collapsed; open the card so its fields exist. */
+const expand = async (card: Element) => {
+  await act(async () => {
+    fireEvent.click(card.querySelector('[data-rule-toggle]')!);
+  });
+};
+
 describe('two day rules with picture backgrounds', () => {
   afterEach(cleanup);
 
@@ -53,6 +60,8 @@ describe('two day rules with picture backgrounds', () => {
     const cards = container.querySelectorAll('[data-rule-card]');
     expect(cards).toHaveLength(2);
     const card2 = cards[1];
+    await expand(cards[0]);
+    await expand(card2);
 
     // Card 2: Background -> Picture. In an empty-match card the selects run
     // Which days, Events on day, Background. The Background one is last.
@@ -94,6 +103,7 @@ describe('picture mode owns the whole background choice', () => {
       <Harness initial={[{ id: 'r1', match: {}, background: '#ff0000' }]} stateRef={stateRef} />,
     );
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
     await act(async () => {
       fireEvent.change(backgroundSelect(card), { target: { value: 'picture' } });
     });

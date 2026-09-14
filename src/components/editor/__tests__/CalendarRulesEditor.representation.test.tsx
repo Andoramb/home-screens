@@ -44,6 +44,13 @@ const selectValues = (card: Element) => Array.from(card.querySelectorAll('select
 const weekdayButtons = (card: Element) => Array.from(card.querySelectorAll('button[aria-pressed]'));
 const ref = () => ({ current: undefined as CalendarDayRule[] | undefined });
 
+/** Rules render collapsed; open the card so its fields exist. */
+const expand = async (card: Element) => {
+  await act(async () => {
+    fireEvent.click(card.querySelector('[data-rule-toggle]')!);
+  });
+};
+
 describe('day-rule cards represent every legal match', () => {
   afterEach(cleanup);
 
@@ -52,6 +59,7 @@ describe('day-rule cards represent every legal match', () => {
     const stateRef = ref();
     const { container } = render(<Harness initial={[{ id: 'r1', match: { months: [11] } }]} stateRef={stateRef} />);
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
     // Which days, Pattern, Month, Events on day, Background: no Day select
     // claiming "the 1st" for a rule that badges all of December.
     expect(selectValues(card)).toEqual(['specific', 'whole-month', '11', 'ignore', 'none']);
@@ -65,6 +73,7 @@ describe('day-rule cards represent every legal match', () => {
     await preloadDateLocale('de-DE');
     const stateRef = ref();
     const { container } = render(<Harness initial={[{ id: 'r1', match: { months: [2] } }]} stateRef={stateRef} locale="de-DE" />);
+    await expand(container.querySelector('[data-rule-card]')!);
     const monthSelect = container.querySelectorAll('select')[2];
     expect(monthSelect.options[monthSelect.selectedIndex].textContent).toBe('März');
   });
@@ -73,6 +82,7 @@ describe('day-rule cards represent every legal match', () => {
     const stateRef = ref();
     const { container } = render(<Harness initial={[{ id: 'r1', match: { dayOfMonth: 20, months: [5] } }]} stateRef={stateRef} />);
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
     expect(selectValues(card)[1]).toBe('yearly-day');
     await act(async () => {
       fireEvent.change(card.querySelectorAll('select')[1], { target: { value: 'whole-month' } });
@@ -84,6 +94,7 @@ describe('day-rule cards represent every legal match', () => {
     const stateRef = ref();
     const { container } = render(<Harness initial={[{ id: 'r1', match: { dayOfMonth: 20, daysOfWeek: [4] } }]} stateRef={stateRef} />);
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
     expect(selectValues(card)[0]).toBe('specific');
     // The row shows because the wall ANDs Thursday with the 20th.
     expect(weekdayButtons(card)).toHaveLength(7);
@@ -100,6 +111,7 @@ describe('day-rule cards represent every legal match', () => {
     const stateRef = ref();
     const { container } = render(<Harness initial={[{ id: 'r1', match: { dayOfMonth: 20, when: 'today' } }]} stateRef={stateRef} />);
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
     // Day select is the third select (Which days, Pattern, Day).
     await act(async () => {
       fireEvent.change(card.querySelectorAll('select')[2], { target: { value: '21' } });
@@ -113,17 +125,19 @@ describe('day-rule cards represent every legal match', () => {
       <Harness initial={[{ id: 'r1', match: {}, background: '#3b82f6', backgroundImage: '/starter-day-art/sprinkles.svg' }]} stateRef={stateRef} />,
     );
     const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
     expect(selectValues(card).at(-1)).toBe('picture');
     const color = card.querySelector('input[type="color"]') as HTMLInputElement | null;
     expect(color, 'color picker rendered next to the picture').toBeTruthy();
     expect(color!.value).toBe('#3b82f6');
   });
 
-  it('a picture alone shows no color picker', () => {
+  it('a picture alone shows no color picker', async () => {
     const stateRef = ref();
     const { container } = render(
       <Harness initial={[{ id: 'r1', match: {}, backgroundImage: '/starter-day-art/sprinkles.svg' }]} stateRef={stateRef} />,
     );
+    await expand(container.querySelector('[data-rule-card]')!);
     expect(container.querySelector('input[type="color"]')).toBeNull();
   });
 });

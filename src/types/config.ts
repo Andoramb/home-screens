@@ -1294,6 +1294,8 @@ export interface CalendarEventMatch {
 
 export interface CalendarEventRule {
   id: string;
+  /** Editor-only label ("Trash pickup"), unique within the list; never rendered on the display. */
+  name?: string;
   match: CalendarEventMatch;
   hide?: boolean;
   color?: string;       // replaces the source color
@@ -1334,6 +1336,8 @@ export interface CalendarDayMatch {
 
 export interface CalendarDayRule {
   id: string;
+  /** Editor-only label ("Halloween"), unique within the list; never rendered on the display. */
+  name?: string;
   match: CalendarDayMatch;
   /** CSS color, or 'auto' = tinted from that day's event colors. */
   background?: string;

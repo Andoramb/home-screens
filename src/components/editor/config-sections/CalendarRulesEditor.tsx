@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { ChevronRight, Pencil } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import ColorPicker from '@/components/ui/ColorPicker';
 import IconField from '@/components/ui/IconField';
@@ -72,25 +74,102 @@ function compactMatch(match: CalendarEventMatch): CalendarEventMatch {
   return out;
 }
 
-function RuleCard({ index, total, onMove, onRemove, children }: {
+/** Inline name editor opened by the card's pencil. Commits a trimmed name
+ *  (or clears it when empty) on Enter / blur; Escape cancels. A name another
+ *  rule in the same list already carries (ignoring case and spacing) is
+ *  refused — the editor stays open and says so, nothing is written. */
+function RuleNameEditor({ initial, otherNames, onCommit, onCancel }: {
+  initial: string;
+  /** Lowercased, trimmed names of the other rules in this list. */
+  otherNames: string[];
+  onCommit: (name: string | undefined) => void;
+  onCancel: () => void;
+}) {
+  const t = useTranslate('editor');
+  const [draft, setDraft] = useState(initial);
+  const [taken, setTaken] = useState(false);
+  const commit = () => {
+    const trimmed = draft.trim();
+    if (trimmed && otherNames.includes(trimmed.toLowerCase())) {
+      setTaken(true);
+      return;
+    }
+    onCommit(trimmed || undefined);
+  };
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5" data-rule-name-editor="">
+      <input
+        autoFocus
+        value={draft}
+        onChange={(e) => { setDraft(e.target.value); setTaken(false); }}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') { e.preventDefault(); commit(); }
+          if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+        }}
+        placeholder={t(`${KEY}.ruleNamePlaceholder`)}
+        className="w-full rounded border border-hs-accent bg-hs-input px-1.5 py-0.5 text-xs font-semibold text-hs-text-body outline-none"
+      />
+      {taken && (
+        <span className="text-[10px] text-hs-warning" data-rule-name-taken="">
+          {t(`${KEY}.ruleNameTaken`)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+function RuleCard({ index, total, name, expanded, onToggle, onRename, otherNames, onMove, onRemove, children }: {
   index: number;
   total: number;
+  name: string | undefined;
+  expanded: boolean;
+  onToggle: () => void;
+  onRename: (name: string | undefined) => void;
+  /** Lowercased, trimmed names of the other rules in this list. */
+  otherNames: string[];
   onMove: (to: number) => void;
   onRemove: () => void;
   children: ReactNode;
 }) {
   const t = useTranslate('editor');
+  const [editing, setEditing] = useState(false);
   return (
     <div className="flex flex-col gap-2 rounded-md border border-hs-border-strong bg-hs-card p-2.5" data-rule-card="">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-hs-text-body">{t(`${KEY}.ruleTitle`, { n: index + 1 })}</span>
-        <div className="flex items-center gap-1">
+      <div className="flex items-center justify-between gap-1">
+        {editing ? (
+          <RuleNameEditor
+            initial={name ?? ''}
+            otherNames={otherNames}
+            onCommit={(next) => { setEditing(false); onRename(next); }}
+            onCancel={() => setEditing(false)}
+          />
+        ) : (
+          <button
+            type="button"
+            data-rule-toggle=""
+            aria-expanded={expanded}
+            onClick={onToggle}
+            className="flex min-w-0 flex-1 items-center gap-1 text-left"
+          >
+            <ChevronRight className={`h-3 w-3 flex-none text-hs-text-faint transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`} aria-hidden="true" />
+            <span className={`truncate text-xs font-semibold ${name ? 'text-hs-text-body' : 'text-hs-text-muted'}`} data-rule-name="">
+              {name ?? t(`${KEY}.ruleTitle`, { n: index + 1 })}
+            </span>
+          </button>
+        )}
+        <div className="flex flex-none items-center gap-1">
+          {!editing && (
+            <button type="button" aria-label={t(`${KEY}.renameRule`)} title={t(`${KEY}.renameRule`)} onClick={() => setEditing(true)} className="px-1 text-xs text-hs-text-muted hover:text-hs-text-body">
+              <Pencil className="h-3 w-3" aria-hidden="true" />
+            </button>
+          )}
           <button type="button" aria-label={t(`${KEY}.moveUp`)} title={t(`${KEY}.moveUp`)} disabled={index === 0} onClick={() => onMove(index - 1)} className="px-1 text-xs text-hs-text-muted hover:text-hs-text-body disabled:opacity-30">▲</button>
           <button type="button" aria-label={t(`${KEY}.moveDown`)} title={t(`${KEY}.moveDown`)} disabled={index === total - 1} onClick={() => onMove(index + 1)} className="px-1 text-xs text-hs-text-muted hover:text-hs-text-body disabled:opacity-30">▼</button>
           <button type="button" aria-label={t(`${KEY}.remove`)} title={t(`${KEY}.remove`)} onClick={onRemove} className="px-1 text-xs text-hs-text-muted hover:text-hs-danger">✕</button>
         </div>
       </div>
-      {children}
+      {expanded && <div className="flex flex-col gap-2 border-t border-hs-border pt-2">{children}</div>}
     </div>
   );
 }
@@ -569,6 +648,15 @@ function DayRuleFields({ rule, availableSources, onChange }: {
   );
 }
 
+/** Names another rule in the list already carries, for the uniqueness check —
+ *  lowercased and trimmed, and without the rule being edited itself. */
+function otherRuleNames<T extends { name?: string }>(rules: T[], selfIndex: number): string[] {
+  return rules
+    .filter((_, j) => j !== selfIndex)
+    .map((r) => r.name?.trim().toLowerCase())
+    .filter((n): n is string => !!n);
+}
+
 export function CalendarRulesEditor({ eventRules, dayRules, availableSources, onChange }: {
   eventRules: CalendarEventRule[] | undefined;
   dayRules: CalendarDayRule[] | undefined;
@@ -581,6 +669,18 @@ export function CalendarRulesEditor({ eventRules, dayRules, availableSources, on
   const setEvents = (next: CalendarEventRule[]) => onChange({ eventRules: next.length > 0 ? next : undefined });
   const setDays = (next: CalendarDayRule[]) => onChange({ dayRules: next.length > 0 ? next : undefined });
 
+  // Rules collapse one at a time so opening the group reads as a list, not a
+  // wall of forms; a freshly added rule opens expanded so it can be filled in
+  // right away. In-memory only — nothing about expansion is saved.
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleRule = (id: string) => setExpanded((prev) => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
+  const expand = (id: string) => setExpanded((prev) => (prev.has(id) ? prev : new Set(prev).add(id)));
+
   return (
     <div className="flex flex-col gap-3" data-calendar-rules="">
       <div className="flex flex-col gap-2" data-rules-list="events">
@@ -589,11 +689,26 @@ export function CalendarRulesEditor({ eventRules, dayRules, availableSources, on
           <span className="text-[11px] text-hs-text-muted">{t(`${KEY}.eventLooksHint`)}</span>
         </div>
         {events.map((rule, i) => (
-          <RuleCard key={rule.id} index={i} total={events.length} onMove={(to) => setEvents(move(events, i, to))} onRemove={() => setEvents(events.filter((r) => r.id !== rule.id))}>
+          <RuleCard
+            key={rule.id}
+            index={i}
+            total={events.length}
+            name={rule.name}
+            expanded={expanded.has(rule.id)}
+            onToggle={() => toggleRule(rule.id)}
+            onRename={(name) => setEvents(replaceAt(events, i, { ...rule, name }))}
+            otherNames={otherRuleNames(events, i)}
+            onMove={(to) => setEvents(move(events, i, to))}
+            onRemove={() => setEvents(events.filter((r) => r.id !== rule.id))}
+          >
             <EventRuleFields rule={rule} availableSources={availableSources} onChange={(next) => setEvents(replaceAt(events, i, next))} />
           </RuleCard>
         ))}
-        <Button variant="secondary" size="sm" onClick={() => setEvents([...events, { id: newId(), match: {} }])}>
+        <Button variant="secondary" size="sm" onClick={() => {
+          const id = newId();
+          setEvents([...events, { id, match: {} }]);
+          expand(id);
+        }}>
           {t(`${KEY}.addEventRule`)}
         </Button>
       </div>
@@ -604,11 +719,26 @@ export function CalendarRulesEditor({ eventRules, dayRules, availableSources, on
           <span className="text-[11px] text-hs-text-muted">{t(`${KEY}.dayLooksHint`)}</span>
         </div>
         {days.map((rule, i) => (
-          <RuleCard key={rule.id} index={i} total={days.length} onMove={(to) => setDays(move(days, i, to))} onRemove={() => setDays(days.filter((r) => r.id !== rule.id))}>
+          <RuleCard
+            key={rule.id}
+            index={i}
+            total={days.length}
+            name={rule.name}
+            expanded={expanded.has(rule.id)}
+            onToggle={() => toggleRule(rule.id)}
+            onRename={(name) => setDays(replaceAt(days, i, { ...rule, name }))}
+            otherNames={otherRuleNames(days, i)}
+            onMove={(to) => setDays(move(days, i, to))}
+            onRemove={() => setDays(days.filter((r) => r.id !== rule.id))}
+          >
             <DayRuleFields rule={rule} availableSources={availableSources} onChange={(next) => setDays(replaceAt(days, i, next))} />
           </RuleCard>
         ))}
-        <Button variant="secondary" size="sm" onClick={() => setDays([...days, { id: newId(), match: {} }])}>
+        <Button variant="secondary" size="sm" onClick={() => {
+          const id = newId();
+          setDays([...days, { id, match: {} }]);
+          expand(id);
+        }}>
           {t(`${KEY}.addDayRule`)}
         </Button>
       </div>

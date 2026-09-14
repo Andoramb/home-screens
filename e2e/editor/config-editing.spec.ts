@@ -378,6 +378,61 @@ test('calendar: adding an event rule and a day rule persists', async ({ page, re
   expect((await moduleConfig(request, 'calendar')).dayRules).toBeUndefined();
 });
 
+test('calendar: rule names are optional, unique per list, and rules expand one at a time', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('calendar', {
+    eventRules: [{ id: 'e1', match: {}, name: 'Halloween' }],
+    dayRules: [
+      { id: 'd1', match: {}, name: 'Thanksgiving' },
+      { id: 'd2', match: {} },
+    ],
+  }));
+
+  await page.getByRole('button', { name: /Advanced looks/i }).click();
+
+  const dayRulesOf = async () => (await moduleConfig(request, 'calendar')).dayRules as Array<Record<string, unknown>>;
+  const dayCards = page.locator('[data-rules-list="days"] [data-rule-card]');
+
+  // Collapsed by default: names (and the Rule N fallback) show, forms don't.
+  await expect(dayCards.nth(0)).toContainText('Thanksgiving');
+  await expect(dayCards.nth(1)).toContainText('Rule 2');
+  await expect(dayCards.nth(0).getByLabel('Which days')).toHaveCount(0);
+
+  // Expanding one rule leaves the others collapsed; collapsing hides the form.
+  await dayCards.nth(0).locator('[data-rule-toggle]').click();
+  await expect(dayCards.nth(0).getByLabel('Which days')).toBeVisible();
+  await expect(dayCards.nth(1).getByLabel('Which days')).toHaveCount(0);
+  await dayCards.nth(0).locator('[data-rule-toggle]').click();
+  await expect(dayCards.nth(0).getByLabel('Which days')).toHaveCount(0);
+
+  // The same name in the event list is fine — the two lists are separate.
+  const card2 = dayCards.nth(1);
+  await card2.getByRole('button', { name: 'Rename rule' }).click();
+  await autosaved(page, async () => {
+    await card2.getByPlaceholder('Rule name (optional)').fill('Halloween');
+    await card2.getByPlaceholder('Rule name (optional)').press('Enter');
+  });
+  expect((await dayRulesOf())[1].name).toBe('Halloween');
+  await expect(card2.locator('[data-rule-name]')).toHaveText('Halloween');
+
+  // A name another day rule already carries (case and spacing aside) is refused.
+  await card2.getByRole('button', { name: 'Rename rule' }).click();
+  const nameInput = card2.getByPlaceholder('Rule name (optional)');
+  await nameInput.fill('  thanksgiving ');
+  await nameInput.press('Enter');
+  await expect(card2.locator('[data-rule-name-taken]')).toBeVisible();
+  expect((await dayRulesOf())[1].name).toBe('Halloween');
+
+  // Escape cancels the edit; an empty name clears back to the Rule N fallback.
+  await nameInput.press('Escape');
+  await card2.getByRole('button', { name: 'Rename rule' }).click();
+  await autosaved(page, async () => {
+    await nameInput.fill('');
+    await nameInput.press('Enter');
+  });
+  expect((await dayRulesOf())[1].name).toBeUndefined();
+  await expect(card2.locator('[data-rule-name]')).toHaveText('Rule 2');
+});
+
 test('fullscreen-calendar: adding an event rule persists', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('fullscreen-calendar'));
 
