@@ -16,7 +16,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
-import { Backpack, House, Sun } from 'lucide-react';
+import { Backpack, House, Pencil, Sun, X } from 'lucide-react';
 import type { ModuleStyle, TimeFormat, TimetableDetail } from '@/types/config';
 import type { FamilyMember } from '@/types/family';
 import type { Timetable, TimetableSchool, TimetableSubject } from '@/types/timetables';
@@ -65,6 +65,10 @@ import {
 
 /** Row one holds the day names, so the model's first row is grid row two. */
 const FIRST_ROW = 2;
+
+/** The one colour a test is marked in, on every surface: amber, with dark ink on it. */
+const TEST_COLOR = '#fbbf24';
+const TEST_INK = '#1c1917';
 
 export interface WeekCardProps {
   member: Pick<FamilyMember, 'id' | 'name' | 'color'>;
@@ -818,11 +822,42 @@ export default function WeekCard({
                   overflow: 'hidden',
                 }}
               >
-                {model.tail.form !== 'bare' && <House size="1em" aria-hidden="true" />}
-                {model.tail.form === 'sentence'
-                  ? t('timetable.endsAt', { time: clock(model.tail.endTime) })
-                  : clock(model.tail.endTime)}
+                {model.tail.endTime !== undefined && (
+                  <>
+                    {model.tail.form !== 'bare' && <House size="1em" aria-hidden="true" />}
+                    {model.tail.form === 'sentence'
+                      ? t('timetable.endsAt', { time: clock(model.tail.endTime) })
+                      : clock(model.tail.endTime)}
+                  </>
+                )}
               </span>
+              {/* One-off things to bring from the day's notes, as the chips
+                  the subjects' own items are drawn with. */}
+              {model.tail.bring?.map((item) => (
+                <span
+                  key={item}
+                  data-testid="timetable-note-bring"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.28em',
+                    marginLeft: '0.45em',
+                    padding: '0.12em 0.5em',
+                    borderRadius: 999,
+                    fontSize: atLeast(CARD_TEXT.chip.px, CARD_TEXT.chip.em, fontSize),
+                    fontWeight: 700,
+                    whiteSpace: 'nowrap',
+                    background: ink(0.9),
+                    color: tokens.onInk,
+                    maxWidth: '100%',
+                    minWidth: 0,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <Backpack size="1em" aria-hidden="true" />
+                  <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item}</span>
+                </span>
+              ))}
             </div>
           )}
         </div>
@@ -869,6 +904,36 @@ export default function WeekCard({
                   </>
                 )}
                 <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{item}</span>
+              </span>
+            ))}
+            {/* Today's tests, and what tomorrow brings: the footer is the one
+                place on the card with the words for it. */}
+            {[
+              ...(model.footer.tests ?? []).map((name) => ({ key: `test-${name}`, kind: 'test' as const, text: name || t('timetable.test') })),
+              ...(model.footer.tomorrow?.tests ?? []).map((name) => ({ key: `tomorrow-test-${name}`, kind: 'test' as const, text: t('timetable.tomorrowNote', { what: name || t('timetable.test') }) })),
+              ...(model.footer.tomorrow?.cancelled ?? []).map((n) => ({ key: `tomorrow-off-${n}`, kind: 'off' as const, text: t('timetable.tomorrowNote', { what: t('timetable.periodOff', { period: t('timetable.period', { number: String(n) }) }) }) })),
+            ].map((pill) => (
+              <span
+                key={pill.key}
+                data-testid={pill.kind === 'test' ? 'timetable-note-test' : 'timetable-note-off'}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35em',
+                  padding: '0.3em 0.85em',
+                  borderRadius: 999,
+                  fontSize: atLeast(FOOTER_ROW.px, FOOTER_ROW.em, fontSize),
+                  fontWeight: 700,
+                  whiteSpace: 'nowrap',
+                  background: pill.kind === 'test' ? TEST_COLOR : ink(0.12),
+                  color: pill.kind === 'test' ? TEST_INK : ink(0.92),
+                  maxWidth: '100%',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                {pill.kind === 'test' ? <Pencil size="1em" aria-hidden="true" /> : <X size="1em" aria-hidden="true" />}
+                <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{pill.text}</span>
               </span>
             ))}
             {model.footer.legend.length > 0 && (

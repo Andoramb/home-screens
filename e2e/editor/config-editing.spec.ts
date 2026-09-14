@@ -882,6 +882,32 @@ test('timetable: switching Layout to Stacked persists', async ({ page, request, 
   expect((await moduleConfig(request, 'timetable')).layout).toBe('stacked');
 });
 
+test('timetable: switching View to Day persists', async ({ page, request, sandboxDir }) => {
+  seedTimetables(sandboxDir);
+  await page.route('**/api/timetables/holidays*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      country: 'US',
+      subdivisions: [],
+      regionCategory: [],
+      hasSchoolHolidays: false,
+      fetchedAt: '2026-01-01T00:00:00.000Z',
+    }),
+  }));
+
+  await selectModule(page, request, buildModuleInstance('timetable'));
+
+  await autosaved(page, async () => {
+    await page.getByRole('radiogroup', { name: 'View' }).getByRole('radio', { name: 'Day' }).click();
+  });
+
+  expect((await moduleConfig(request, 'timetable')).view).toBe('day');
+  // The week-only switches leave with the week; the switch time arrives.
+  await expect(page.getByRole('switch', { name: 'Show next week from Friday' })).toHaveCount(0);
+  await expect(page.getByLabel('Show tomorrow after')).toHaveValue('16:00');
+});
+
 // ── Task 5: Media & Display ────────────────────────────────────────────────
 // Covers image, photo-slideshow, qr-code, iframe, icon, shape, display-control.
 

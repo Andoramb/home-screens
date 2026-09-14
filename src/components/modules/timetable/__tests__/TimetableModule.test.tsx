@@ -18,6 +18,8 @@ import { I18nProvider } from '@/i18n/provider';
 import { preloadDateLocale } from '@/i18n';
 import deDEModules from '@/translations/de-DE/modules.json';
 import deDECore from '@/translations/de-DE/core.json';
+import nlNLModules from '@/translations/nl-NL/modules.json';
+import nlNLCore from '@/translations/nl-NL/core.json';
 
 installResizeObserverStub();
 
@@ -234,17 +236,27 @@ function GermanWrapper({ children }: { children: ReactNode }) {
   );
 }
 
+/** The same household on a Dutch wall, for the seams the Dutch list carries. */
+function DutchWrapper({ children }: { children: ReactNode }) {
+  return (
+    <I18nProvider locale="nl-NL" blob={{ modules: nlNLModules, core: nlNLCore }}>
+      {children}
+    </I18nProvider>
+  );
+}
+
 function renderModule(
   over: Partial<TimetableConfig> = {},
   cardStyle: Partial<ModuleStyle> = {},
   wrapper: typeof Wrapper = Wrapper,
+  timeFormat: '24h' | '12h' = '24h',
 ) {
   return render(
     <TimetableModule
       config={makeConfig(over)}
       style={{ ...style, ...cardStyle }}
       timezone={ZONE}
-      timeFormat="24h"
+      timeFormat={timeFormat}
     />,
     { wrapper },
   );
@@ -863,20 +875,31 @@ describe('the language the wall is in', () => {
     );
     const label = cell?.querySelector<HTMLElement>('div[style*="hyphens"]');
     // The mark is invisible and prints a hyphen only at the break the browser
-    // takes, so the name still reads as it was typed.
-    expect(text(label)).toBe('Sach\u00ADunterricht');
+    // takes, so the name still reads as it was typed. "unterricht" carries a
+    // seam of its own, being wider than a single period on the Day view.
+    expect(text(label)).toBe('Sach\u00ADunter\u00ADricht');
     expect(label?.style.hyphens).toBe('manual');
   });
 
   it('leaves a compound to the browser once its own halves stop fitting', () => {
-    // Three cards across: "unterricht" is wider than the column on its own,
-    // so the seam would cost the name a hyphen rather than buy it one.
-    const { container } = inGerman({ memberIds: ['mia'], detail: 'some' });
+    // A Dutch household, because the Dutch list has a compound whose first
+    // half is twelve letters: "Maatschappij" is wider than a quiet column on
+    // its own, so the seam would cost the name a hyphen rather than buy it
+    // one, and the browser keeps its dictionary.
+    timetables = {
+      data: {
+        schools: [GAR, GGS],
+        subjects: SUBJECTS.map((subject) => (subject.id === 'su' ? { ...subject, name: 'Maatschappijleer' } : subject)),
+        timetables: [LEON, MIA, PAUL],
+      },
+      revision: 'r-nl',
+    };
+    const { container } = renderModule({ memberIds: ['mia'], detail: 'some' }, {}, DutchWrapper);
     const cell = cells(container, '[data-kind="lesson"]').find((el) =>
-      text(el).startsWith('Sach'),
+      text(el).startsWith('Maat'),
     );
     const label = cell?.querySelector<HTMLElement>('div[style*="hyphens"]');
-    expect(text(label)).toBe('Sachunterricht');
+    expect(text(label)).toBe('Maatschappijleer');
     expect(label?.style.hyphens).toBe('auto');
   });
 
@@ -890,5 +913,225 @@ describe('the language the wall is in', () => {
     const label = cell?.querySelector<HTMLElement>('div[style*="hyphens"]');
     expect(text(label)).toBe('Sachunterricht');
     expect(label?.style.hyphens).toBe('auto');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The Day view: everyone's next school day on one clock
+// ---------------------------------------------------------------------------
+
+describe('TimetableModule day view', () => {
+  const rowsOf = (root: HTMLElement) =>
+    cells(root, '[data-testid="timetable-day-row"]').map((el) => el.dataset.member);
+
+  beforeEach(() => {
+    // The television every H frame was drawn on.
+    box = { width: 1856, height: 912 };
+  });
+
+  it('draws one row per person in roster order, on one clock, with the packing card under them', () => {
+    const { container } = renderModule({ memberIds: ['paul', 'leon', 'mia'], view: 'day', layout: 'stacked', detail: 'some' });
+    const day = container.querySelector<HTMLElement>('[data-testid="timetable-day-view"]');
+    expect(day?.dataset.orientation).toBe('rows');
+    // Thursday at 07:10 is before the switch time, so the card shows today.
+    expect(day?.dataset.date).toBe('2026-09-10');
+    expect(day?.dataset.labelKind).toBe('today');
+    expect(rowsOf(container)).toEqual(['leon', 'mia', 'paul']);
+    expect(cells(container, '[data-testid="timetable-card"]')).toHaveLength(0);
+    // Every card is a real module card with the one Style section's glass.
+    for (const el of cells(container, '[data-testid="timetable-day-row"]')) {
+      expect(el.parentElement?.style.padding).toBe(`${DEFAULT_MODULE_STYLE.padding}px`);
+    }
+    expect(text(container.querySelector('[data-testid="timetable-day-pill"]'))).toBe('Today');
+    expect(container.querySelector('[data-testid="timetable-pack-strip"]')).not.toBeNull();
+  });
+
+  it('says when each person starts and is done, and what goes in the bag', () => {
+    const { container } = renderModule({ memberIds: ['leon', 'mia'], view: 'day', layout: 'stacked', detail: 'some' });
+    const leon = container.querySelector<HTMLElement>('[data-testid="timetable-day-row"][data-member="leon"]')!;
+    // Leon's first period is free: a free block on the clock, and the day starts at 08:40.
+    expect(text(leon.querySelector('[data-testid="timetable-day-start"]'))).toContain('08:40');
+    expect(leon.querySelector('[data-testid="timetable-day-block"][data-kind="free"]')).not.toBeNull();
+    expect(text(leon.querySelector('[data-testid="timetable-day-end"]'))).toContain('13:15');
+    const mia = container.querySelector<HTMLElement>('[data-testid="timetable-day-row"][data-member="mia"]')!;
+    expect(text(mia.querySelector('[data-testid="timetable-day-end"]'))).toContain('OGS until 16:00');
+    expect(mia.querySelector('[data-testid="timetable-day-block"][data-kind="care"]')).not.toBeNull();
+    // Erdkunde brings the atlas, Sport the kit; nothing is listed twice.
+    const packs = cells(container, '[data-testid="timetable-pack"]');
+    expect(packs.map((el) => el.dataset.member)).toEqual(['leon', 'mia']);
+    expect(cells(packs[0], '[data-testid="timetable-bring"]').map(text)).toEqual(['Atlas']);
+    expect(cells(packs[1], '[data-testid="timetable-bring"]').map(text)).toEqual(['Sportzeug']);
+  });
+
+  it('gives a row whose school is shut its reason, and no bag', () => {
+    timetables = {
+      data: {
+        schools: [{ ...GAR, specialDays: [{ date: '2026-09-10', label: 'Pädagogischer Tag', kind: 'off' }] }, GGS],
+        subjects: SUBJECTS,
+        timetables: [LEON, MIA, PAUL],
+      },
+      revision: 'r2',
+    };
+    const { container } = renderModule({ memberIds: ['leon', 'mia'], view: 'day', layout: 'stacked' });
+    // Mia has school, so the card stays on Thursday and Leon's row says why it is empty.
+    expect(container.querySelector<HTMLElement>('[data-testid="timetable-day-view"]')?.dataset.date).toBe('2026-09-10');
+    const leon = container.querySelector<HTMLElement>('[data-testid="timetable-day-row"][data-member="leon"]')!;
+    expect(leon.dataset.closed).toBe('true');
+    expect(text(leon.querySelector('[data-testid="timetable-day-closed"]'))).toContain('Pädagogischer Tag');
+    expect(leon.querySelectorAll('[data-testid="timetable-day-block"]')).toHaveLength(0);
+    const pack = container.querySelector<HTMLElement>('[data-testid="timetable-pack"][data-member="leon"]')!;
+    expect(pack.querySelectorAll('[data-testid="timetable-bring"]')).toHaveLength(0);
+    expect(text(pack.querySelector('[data-testid="timetable-pack-none"]'))).toBe('No school');
+  });
+
+  it('shows tomorrow from the switch time, and names the day at the weekend', () => {
+    vi.setSystemTime(new Date('2026-09-10T14:10:00Z')); // 16:10 in Berlin
+    const { container, unmount } = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked' });
+    const day = container.querySelector<HTMLElement>('[data-testid="timetable-day-view"]');
+    expect(day?.dataset.date).toBe('2026-09-11');
+    expect(text(container.querySelector('[data-testid="timetable-day-pill"]'))).toBe('Tomorrow');
+    unmount();
+
+    vi.setSystemTime(new Date('2026-09-12T08:00:00Z')); // Saturday
+    const weekend = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked' });
+    expect(weekend.container.querySelector<HTMLElement>('[data-testid="timetable-day-view"]')?.dataset.date).toBe('2026-09-14');
+    expect(text(weekend.container.querySelector('[data-testid="timetable-day-pill"]'))).toBe('Monday');
+  });
+
+  it('draws columns with the bag in each head when the layout is side by side', () => {
+    box = { width: 1016, height: 1752 };
+    const { container } = renderModule({ memberIds: ['leon', 'mia'], view: 'day', layout: 'side-by-side' });
+    const day = container.querySelector<HTMLElement>('[data-testid="timetable-day-view"]');
+    expect(day?.dataset.orientation).toBe('columns');
+    expect(container.querySelector('[data-testid="timetable-pack-strip"]')).toBeNull();
+    expect(container.querySelector('[data-testid="timetable-day-ruler"]')).not.toBeNull();
+    const mia = container.querySelector<HTMLElement>('[data-testid="timetable-day-row"][data-member="mia"]')!;
+    expect(cells(mia, '[data-testid="timetable-bring"]').map(text)).toEqual(['Sportzeug']);
+  });
+
+  it('reads as German on a German wall', () => {
+    const { container } = renderModule({ memberIds: ['leon', 'mia'], view: 'day', layout: 'stacked' }, {}, GermanWrapper);
+    expect(text(container.querySelector('[data-testid="timetable-day-pill"]'))).toBe('Heute');
+    expect(text(container.querySelector('[data-testid="timetable-day-start"]'))).toContain('los um');
+    expect(text(container.querySelector('[data-testid="timetable-day-end"]'))).toContain('Schluss');
+    expect(text(container.querySelector('[data-testid="timetable-pack-strip"]'))).toContain('Heute mitnehmen');
+  });
+
+  it('draws a line at the current time across every row while the card shows today', () => {
+    vi.setSystemTime(new Date('2026-09-10T07:52:00Z')); // Thursday 09:52 in Berlin
+    const { container } = renderModule({ memberIds: ['leon', 'mia'], view: 'day', layout: 'stacked' });
+    const lines = cells(container, '[data-testid="timetable-now-line"]');
+    expect(lines.map((el) => el.closest<HTMLElement>('[data-member]')?.dataset.member)).toEqual(['leon', 'mia']);
+    expect(lines[0].getAttribute('aria-label')).toBe('Current time: 09:52');
+    // 09:52 on a clock from 07:30 to 16:30 sits at 26.3% of the lane, on every lane alike.
+    expect(lines.map((el) => el.style.left)).toEqual(['26.296%', '26.296%']);
+    // The time on the ruler, at the same spot.
+    const pill = container.querySelector<HTMLElement>('[data-testid="timetable-day-ruler"] [data-testid="timetable-now-pill"]')!;
+    expect(text(pill)).toBe('09:52');
+    expect(pill.style.left).toBe('26.296%');
+    // The 10:00 label would sit under the pill, so it steps aside; 09:00 and 11:00 stay.
+    const ruler = text(container.querySelector('[data-testid="timetable-day-ruler"]'));
+    expect(ruler).toContain('09:00');
+    expect(ruler).not.toContain('10:00');
+    expect(ruler).toContain('11:00');
+  });
+
+  it('runs the line across the columns, and reads the display clock', () => {
+    vi.setSystemTime(new Date('2026-09-10T07:52:00Z'));
+    box = { width: 1016, height: 1752 };
+    const { container } = renderModule({ memberIds: ['leon', 'mia'], view: 'day', layout: 'side-by-side' }, {}, Wrapper, '12h');
+    const lines = cells(container, '[data-testid="timetable-now-line"]');
+    expect(lines).toHaveLength(2);
+    expect(lines[0].style.top).toBe('26.296%');
+    expect(lines[0].style.borderTop).toContain('2px solid');
+    expect(lines[0].getAttribute('aria-label')).toBe('Current time: 9:52 AM');
+    expect(text(container.querySelector('[data-testid="timetable-now-pill"]'))).toBe('9:52 AM');
+  });
+
+  it('leaves the line off before school, on tomorrow, and when the setting is off', () => {
+    // 07:10 in Berlin: the card shows today, but the clock has not reached the axis.
+    const early = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked' });
+    expect(early.container.querySelector('[data-testid="timetable-now-line"]')).toBeNull();
+    expect(early.container.querySelector('[data-testid="timetable-now-pill"]')).toBeNull();
+    early.unmount();
+
+    // 16:10: the card has moved on to Friday, where there is no now to point at.
+    vi.setSystemTime(new Date('2026-09-10T14:10:00Z'));
+    const tomorrow = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked' });
+    expect(text(tomorrow.container.querySelector('[data-testid="timetable-day-pill"]'))).toBe('Tomorrow');
+    expect(tomorrow.container.querySelector('[data-testid="timetable-now-line"]')).toBeNull();
+    tomorrow.unmount();
+
+    vi.setSystemTime(new Date('2026-09-10T07:52:00Z'));
+    const off = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked', showNowLine: false });
+    expect(off.container.querySelector('[data-testid="timetable-now-line"]')).toBeNull();
+    expect(off.container.querySelector('[data-testid="timetable-now-pill"]')).toBeNull();
+  });
+
+  it('goes back to week cards when the view is week', () => {
+    const { container } = renderModule({ memberIds: ['leon'], view: 'week' });
+    expect(container.querySelector('[data-testid="timetable-day-view"]')).toBeNull();
+    expect(cells(container, '[data-testid="timetable-card"]').map((el) => el.dataset.member)).toEqual(['leon']);
+  });
+
+  it('keeps the empty states: nobody picked, and weeks with nothing in them', () => {
+    timetables = {
+      data: { schools: [GAR], subjects: SUBJECTS, timetables: [{ ...LEON, weeks: { A: {} } }] },
+      revision: 'r3',
+    };
+    const { container } = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked' });
+    expect(container.querySelector('[data-testid="timetable-day-view"]')).toBeNull();
+    expect(container.textContent).toContain('No lessons yet');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dates to remember, on both views
+// ---------------------------------------------------------------------------
+
+describe('TimetableModule dates to remember', () => {
+  const NOTED_LEON: Timetable = {
+    ...LEON,
+    notes: [
+      { id: 'n1', date: '2026-09-11', kind: 'test', subjectId: 'ma', text: 'Mathe-Arbeit' },
+      { id: 'n2', date: '2026-09-11', kind: 'cancelled', periods: [6] },
+      { id: 'n3', date: '2026-09-11', kind: 'bring', text: 'Wanderschuhe' },
+    ],
+  };
+
+  beforeEach(() => {
+    timetables = { data: { schools: [GAR, GGS], subjects: SUBJECTS, timetables: [NOTED_LEON, MIA, PAUL] }, revision: 'r-notes' };
+  });
+
+  it('marks the day view: a pencil on the test, the lesson off faded, the pills on the packing card', () => {
+    vi.setSystemTime(new Date('2026-09-10T17:10:00Z')); // Thursday 19:10 in Berlin: tomorrow is Friday
+    box = { width: 1856, height: 912 };
+    const { container } = renderModule({ memberIds: ['leon'], view: 'day', layout: 'stacked' });
+    expect(container.querySelector<HTMLElement>('[data-testid="timetable-day-view"]')?.dataset.date).toBe('2026-09-11');
+    const maths = container.querySelector<HTMLElement>('[data-testid="timetable-day-block"][data-test="true"]')!;
+    expect(text(maths)).toContain('Mathe-Arbeit');
+    expect(maths.querySelector('[data-testid="timetable-test-flag"]')).not.toBeNull();
+    const off = container.querySelector<HTMLElement>('[data-testid="timetable-day-block"][data-off="cancelled"]')!;
+    expect(text(off)).toContain('cancelled');
+    expect(text(container.querySelector('[data-testid="timetable-day-end"]'))).toContain('12:25');
+    expect(text(container.querySelector('[data-testid="timetable-day-end"]'))).toContain('usually 13:15');
+    const pack = container.querySelector<HTMLElement>('[data-testid="timetable-pack"][data-member="leon"]')!;
+    expect(cells(pack, '[data-testid="timetable-bring"]').map(text)).toEqual(['Sportzeug', 'Wanderschuhe']);
+    expect(cells(pack, '[data-testid="timetable-pack-test"]').map(text)).toEqual(['Mathe-Arbeit']);
+  });
+
+  it('marks the week view on the day, and says what tomorrow brings the evening before', () => {
+    vi.setSystemTime(new Date('2026-09-11T05:10:00Z')); // Friday morning
+    const { container, unmount } = renderModule({ memberIds: ['leon'], detail: 'some' });
+    expect(container.querySelector('[data-testid="timetable-cell"][data-test="true"]')).not.toBeNull();
+    expect(text(container.querySelector('[data-testid="timetable-cell"][data-cancelled="true"]'))).toContain('cancelled');
+    expect(cells(container, '[data-testid="timetable-note-bring"]').map(text)).toEqual(['Wanderschuhe']);
+    expect(text(container.querySelector('[data-testid="timetable-meta"]'))).toContain('12:25');
+    unmount();
+
+    vi.setSystemTime(new Date('2026-09-10T17:10:00Z')); // Thursday evening, at More
+    const more = renderModule({ memberIds: ['leon'], detail: 'more' });
+    expect(cells(more.container, '[data-testid="timetable-note-test"]').map(text)).toEqual(['Tomorrow: Mathe-Arbeit']);
+    expect(cells(more.container, '[data-testid="timetable-note-off"]').map(text)).toEqual(['Tomorrow: period 6 off']);
   });
 });

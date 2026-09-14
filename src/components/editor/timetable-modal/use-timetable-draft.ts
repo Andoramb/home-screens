@@ -36,6 +36,7 @@ import {
   type Timetable,
   type TimetableCell,
   type TimetableData,
+  type TimetableNote,
   type TimetableSchool,
   type TimetableSlot,
   type TimetableSubject,
@@ -567,6 +568,45 @@ export function withSubject(
   return { ...data, subjects: data.subjects.map((subject) => (subject.id === subjectId ? change(subject) : subject)) };
 }
 
+// ---------------------------------------------------------------------------
+// Dates to remember
+// ---------------------------------------------------------------------------
+
+/** A new, unfinished date for one person: the day is asked, not guessed. */
+export function makeNote(kind: TimetableNote['kind'] = 'test'): TimetableNote {
+  return { id: newId('note'), date: '', kind };
+}
+
+/** Add or replace one person's date, keeping the list in date order. */
+export function withNote(data: TimetableData, memberId: string, note: TimetableNote): TimetableData {
+  return withTimetable(data, memberId, (timetable) => {
+    const rest = (timetable.notes ?? []).filter((entry) => entry.id !== note.id);
+    const notes = [...rest, note].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    return { ...timetable, notes };
+  });
+}
+
+/** Take one date off one person. */
+export function withoutNote(data: TimetableData, memberId: string, noteId: string): TimetableData {
+  return withTimetable(data, memberId, (timetable) => {
+    const notes = (timetable.notes ?? []).filter((entry) => entry.id !== noteId);
+    const { notes: _dropped, ...rest } = timetable;
+    return notes.length ? { ...rest, notes } : rest;
+  });
+}
+
+/**
+ * Whether a date is complete enough for the store to take: a day, and for
+ * each kind the thing it points at. The editor keeps an unfinished row on
+ * screen and out of the save, and never lets it look saved.
+ */
+export function noteIsComplete(note: TimetableNote): boolean {
+  if (!note.date) return false;
+  if (note.kind === 'test') return Boolean(note.subjectId);
+  if (note.kind === 'bring') return Boolean(note.text?.trim());
+  return (note.periods?.length ?? 0) > 0;
+}
+
 /** Take a subject off the list and out of every week that used it. */
 export function withoutSubject(data: TimetableData, subjectId: string): TimetableData {
   const strip = (week: TimetableWeek): TimetableWeek => {
@@ -581,13 +621,19 @@ export function withoutSubject(data: TimetableData, subjectId: string): Timetabl
   return {
     ...data,
     subjects: data.subjects.filter((subject) => subject.id !== subjectId),
-    timetables: data.timetables.map((timetable) => ({
-      ...timetable,
-      weeks: {
-        A: strip(timetable.weeks.A),
-        ...(timetable.weeks.B ? { B: strip(timetable.weeks.B) } : {}),
-      },
-    })),
+    timetables: data.timetables.map((timetable) => {
+      // A test in the removed subject has nothing left to point at.
+      const notes = timetable.notes?.filter((note) => !(note.kind === 'test' && note.subjectId === subjectId));
+      const { notes: _dropped, ...rest } = timetable;
+      return {
+        ...rest,
+        weeks: {
+          A: strip(timetable.weeks.A),
+          ...(timetable.weeks.B ? { B: strip(timetable.weeks.B) } : {}),
+        },
+        ...(notes?.length ? { notes } : {}),
+      };
+    }),
   };
 }
 
@@ -640,12 +686,21 @@ export function sanitizeTimetableData(data: TimetableData): TimetableData {
     .filter((timetable) => byId.has(timetable.schoolId))
     .map((timetable) => {
       const alternates = byId.get(timetable.schoolId)?.weekCycle.mode !== 'off';
+      // An unfinished date stays in the draft and out of the save, the way an
+      // unfinished special day does; a finished one is trimmed as the store
+      // will trim it.
+      const notes = (timetable.notes ?? [])
+        .filter(noteIsComplete)
+        .map((note) => ({ ...note, ...(note.text !== undefined ? { text: note.text.trim() } : {}) }))
+        .filter((note) => !(note.kind === 'test' && note.subjectId && !subjectIds.has(note.subjectId)));
+      const { notes: _all, ...rest } = timetable;
       return {
-        ...timetable,
+        ...rest,
         weeks: {
           A: keepCells(timetable.weeks.A),
           ...(timetable.weeks.B && alternates ? { B: keepCells(timetable.weeks.B) } : {}),
         },
+        ...(notes.length ? { notes } : {}),
       };
     });
 

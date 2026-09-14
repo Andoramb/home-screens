@@ -27,7 +27,7 @@ import { PT_BR_SUBJECTS } from './pt-BR';
 import { DA_DK_SUBJECTS } from './da-DK';
 import type { DefaultSubject } from './types';
 
-export { hyphenateSubjectName } from './hyphenation';
+export { hyphenateSubjectName, SUBJECT_BREAK_MARKS } from './hyphenation';
 export type { DefaultSubject, TimetableSubjectIcon } from './types';
 export { TIMETABLE_SUBJECT_ICONS } from './types';
 

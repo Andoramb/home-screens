@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { TIMETABLE_LIMITS, type TimetableData } from '@/types/timetables';
 import {
+  makeNote,
+  noteIsComplete,
   paintedCell,
   sanitizeTimetableData,
   shortCodeFor,
@@ -15,6 +17,8 @@ import {
   withWeekCycle,
   withWeeksAB,
   withoutSchool,
+  withNote,
+  withoutNote,
   withoutSubject,
   withoutTimetable,
 } from '../use-timetable-draft';
@@ -304,5 +308,69 @@ describe('taking a school away again', () => {
     // there instead of offering the delete.
     const data = household();
     expect(withoutSchool(data, 'school-1')).toEqual(data);
+  });
+});
+
+describe('dates to remember', () => {
+  const noted = (): TimetableData => {
+    const data = household();
+    data.timetables[0] = {
+      ...data.timetables[0],
+      notes: [
+        { id: 'n2', date: '2026-09-18', kind: 'bring', text: 'Brotdose' },
+        { id: 'n1', date: '2026-09-11', kind: 'test', subjectId: 'ma', text: 'Mathe-Arbeit' },
+      ],
+    };
+    return data;
+  };
+
+  it('adds a date in date order and replaces one with the same id', () => {
+    const added = withNote(household(), 'leon', { id: 'a', date: '2026-09-25', kind: 'cancelled', periods: [2] });
+    expect(added.timetables[0].notes?.map((n) => n.id)).toEqual(['a']);
+    const earlier = withNote(added, 'leon', { id: 'b', date: '2026-09-11', kind: 'bring', text: 'Hut' });
+    expect(earlier.timetables[0].notes?.map((n) => n.id)).toEqual(['b', 'a']);
+    const changed = withNote(earlier, 'leon', { id: 'a', date: '2026-09-01', kind: 'cancelled', periods: [1] });
+    expect(changed.timetables[0].notes?.map((n) => [n.id, n.date])).toEqual([['a', '2026-09-01'], ['b', '2026-09-11']]);
+    // Somebody with no timetable gets nothing.
+    expect(withNote(household(), 'emma', { id: 'x', date: '2026-09-11', kind: 'bring', text: 'Hut' })).toEqual(household());
+  });
+
+  it('takes a date away, and the list with it once empty', () => {
+    const data = noted();
+    const one = withoutNote(data, 'leon', 'n1');
+    expect(one.timetables[0].notes?.map((n) => n.id)).toEqual(['n2']);
+    const none = withoutNote(one, 'leon', 'n2');
+    expect('notes' in none.timetables[0]).toBe(false);
+  });
+
+  it('knows when a date is finished enough to save', () => {
+    expect(noteIsComplete(makeNote('test'))).toBe(false);
+    expect(noteIsComplete({ id: 'x', date: '2026-09-11', kind: 'test' })).toBe(false);
+    expect(noteIsComplete({ id: 'x', date: '2026-09-11', kind: 'test', subjectId: 'ma' })).toBe(true);
+    expect(noteIsComplete({ id: 'x', date: '2026-09-11', kind: 'bring', text: '  ' })).toBe(false);
+    expect(noteIsComplete({ id: 'x', date: '2026-09-11', kind: 'bring', text: 'Hut' })).toBe(true);
+    expect(noteIsComplete({ id: 'x', date: '2026-09-11', kind: 'cancelled', periods: [] })).toBe(false);
+    expect(noteIsComplete({ id: 'x', date: '2026-09-11', kind: 'cancelled', periods: [1] })).toBe(true);
+  });
+
+  it('keeps unfinished dates out of the save and trims the finished ones', () => {
+    const data = withNote(withNote(noted(), 'leon', makeNote('bring')), 'leon', { id: 'sp', date: '2026-09-20', kind: 'bring', text: '  Turnbeutel ' });
+    const sent = sanitizeTimetableData(data);
+    expect(sent.timetables[0].notes?.map((n) => n.id)).toEqual(['n1', 'n2', 'sp']);
+    expect(sent.timetables[0].notes?.find((n) => n.id === 'sp')?.text).toBe('Turnbeutel');
+    // The unfinished one is still in the draft.
+    expect(data.timetables[0].notes).toHaveLength(4);
+  });
+
+  it('drops a test in a subject that is being removed', () => {
+    const data = withoutSubject(noted(), 'ma');
+    expect(data.timetables[0].notes?.map((n) => n.id)).toEqual(['n2']);
+    expect(JSON.stringify(data.timetables[0].weeks)).not.toContain('"ma"');
+  });
+
+  it('leaves the dates alone when the week cycle or the second week changes', () => {
+    const data = noted();
+    expect(withWeeksAB(data, 'leon', true).timetables[0].notes).toEqual(data.timetables[0].notes);
+    expect(withWeekCycle(data, 'school-1', { mode: 'parity', oddWeek: 'A' }).timetables[0].notes).toEqual(data.timetables[0].notes);
   });
 });

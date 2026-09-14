@@ -20,7 +20,9 @@ import type {
   TimetableConfig,
   TimetableDetail,
   TimetableLayout,
+  TimetableView,
 } from '@/types/config';
+import { DEFAULT_TOMORROW_FROM } from '@/lib/timetable-day';
 
 const FAMILY_PAGE = settingsPath({ kind: 'defaults', page: 'family' });
 
@@ -90,6 +92,12 @@ export function TimetableConfigSection({ mod, screenId }: { mod: ModuleInstance;
   );
   const chosen = new Set(c.memberIds ?? []);
   const hasFamily = members.length > 0;
+
+  const VIEWS: SegmentedOption<TimetableView>[] = [
+    { value: 'week', label: t('configSections.timetable.viewWeek') },
+    { value: 'day', label: t('configSections.timetable.viewDay') },
+  ];
+  const view: TimetableView = c.view ?? 'week';
 
   const LAYOUTS: SegmentedOption<TimetableLayout>[] = [
     { value: 'side-by-side', label: t('configSections.timetable.layoutSideBySide') },
@@ -276,15 +284,40 @@ export function TimetableConfigSection({ mod, screenId }: { mod: ModuleInstance;
         <TimetableModal memberId={windowFor.memberId} onClose={() => setWindowFor(null)} />
       )}
 
-      <LabeledField label={t('configSections.timetable.layout')} as="div">
-        <SegmentedControl
-          label={t('configSections.timetable.layout')}
-          value={c.layout ?? 'side-by-side'}
-          onChange={(layout) => set({ layout })}
-          options={LAYOUTS}
-          disabled={!hasFamily}
-        />
-      </LabeledField>
+      <div className="space-y-1">
+        <LabeledField label={t('configSections.timetable.view')} as="div">
+          <SegmentedControl
+            label={t('configSections.timetable.view')}
+            value={view}
+            onChange={(next) => set({ view: next })}
+            options={VIEWS}
+            disabled={!hasFamily}
+          />
+        </LabeledField>
+        <p className="text-[11px] leading-relaxed text-hs-text-faint">
+          {t('configSections.timetable.viewHelp')}
+        </p>
+      </div>
+
+      <div className="space-y-1">
+        <LabeledField label={t('configSections.timetable.layout')} as="div">
+          <SegmentedControl
+            label={t('configSections.timetable.layout')}
+            value={c.layout ?? 'side-by-side'}
+            onChange={(layout) => set({ layout })}
+            options={LAYOUTS}
+            disabled={!hasFamily}
+          />
+        </LabeledField>
+        {/* In the Day view the two layouts are rows and columns rather than
+            two arrangements of week cards, so the line under the control
+            says which is which. */}
+        {view === 'day' && (
+          <p className="text-[11px] leading-relaxed text-hs-text-faint">
+            {t('configSections.timetable.layoutHelpDay')}
+          </p>
+        )}
+      </div>
 
       <div className="space-y-1">
         <LabeledField label={t('configSections.timetable.detail')} as="div">
@@ -303,18 +336,46 @@ export function TimetableConfigSection({ mod, screenId }: { mod: ModuleInstance;
         </p>
       </div>
 
-      <Toggle
-        label={t('configSections.timetable.showStartTimes')}
-        checked={c.showStartTimes ?? true}
-        onChange={(showStartTimes) => set({ showStartTimes })}
-        disabled={!hasFamily}
-      />
-      <Toggle
-        label={t('configSections.timetable.nextWeekFromFriday')}
-        checked={c.nextWeekFromFriday ?? true}
-        onChange={(nextWeekFromFriday) => set({ nextWeekFromFriday })}
-        disabled={!hasFamily}
-      />
+      {/* Settings that do nothing in the current view are hidden rather than
+          greyed out: a switch that never changes the wall is a puzzle. */}
+      {view === 'week' && (
+        <>
+          <Toggle
+            label={t('configSections.timetable.showStartTimes')}
+            checked={c.showStartTimes ?? true}
+            onChange={(showStartTimes) => set({ showStartTimes })}
+            disabled={!hasFamily}
+          />
+          <Toggle
+            label={t('configSections.timetable.nextWeekFromFriday')}
+            checked={c.nextWeekFromFriday ?? true}
+            onChange={(nextWeekFromFriday) => set({ nextWeekFromFriday })}
+            disabled={!hasFamily}
+          />
+        </>
+      )}
+      {view === 'day' && (
+        <div className="space-y-1">
+          <LabeledField label={t('configSections.timetable.tomorrowFrom')}>
+            <input
+              type="time"
+              value={c.tomorrowFrom ?? DEFAULT_TOMORROW_FROM}
+              onChange={(event) => set({ tomorrowFrom: event.target.value || DEFAULT_TOMORROW_FROM })}
+              disabled={!hasFamily}
+              className="w-full rounded-md border border-hs-border-strong bg-hs-card/60 px-2 py-1 text-xs tabular-nums text-hs-text-body"
+            />
+          </LabeledField>
+          <p className="text-[11px] leading-relaxed text-hs-text-faint">
+            {t('configSections.timetable.tomorrowFromHelp')}
+          </p>
+          <Toggle
+            label={t('configSections.timetable.showNowLine')}
+            checked={c.showNowLine ?? true}
+            onChange={(showNowLine) => set({ showNowLine })}
+            disabled={!hasFamily}
+          />
+        </div>
+      )}
       {/* No heading controls here: the one picker at the top of Module
           settings owns both the card title and this module's own heading, and
           a second switch over the same two fields did nothing whenever a card

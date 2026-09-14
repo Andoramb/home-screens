@@ -2426,6 +2426,8 @@ export interface TodoConfig {
 export type TimetableLayout = 'side-by-side' | 'stacked';
 /** How much of each lesson fits in its cell. */
 export type TimetableDetail = 'less' | 'some' | 'more';
+/** The whole school week per person, or one school day for the whole family on a shared clock. */
+export type TimetableView = 'week' | 'day';
 
 /**
  * A School Timetable module shows one week card per person from
@@ -2443,6 +2445,18 @@ export interface TimetableConfig {
    * of people who have left the roster, are skipped at render.
    */
   memberIds: string[];
+  /**
+   * `week` shows each person's whole week. `day` puts everyone's next school day on one clock,
+   * with when each of them starts and finishes and what goes in the bag. Omitted = week
+   */
+  view?: TimetableView;
+  /**
+   * Day view only. Before this time of day the card shows today; from it on, the next school
+   * day. 'HH:MM' on a 24 hour clock. Omitted = 16:00
+   */
+  tomorrowFrom?: string;
+  /** Day view only. A line across the clock at the current time while the card shows today. Omitted = shown */
+  showNowLine?: boolean;
   /**
    * Week cards side by side across the screen, or stacked one above the other. The module keeps
    * the arrangement you pick and never swaps it to fit the box

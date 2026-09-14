@@ -288,3 +288,47 @@ describe('TimetableConfigSection people who have left the household', () => {
     expect(lastSavedConfig().memberIds).toEqual(['leon', 'emma']);
   });
 });
+
+describe('TimetableConfigSection view', () => {
+  it('switches between the Week and the Day view', () => {
+    render(module({ memberIds: ['leon'], layout: 'side-by-side', detail: 'some' }));
+
+    const group = screen.getByRole('radiogroup', { name: 'View' });
+    expect((group.querySelector('[aria-checked="true"]') as HTMLElement).textContent).toBe('Week');
+    fireEvent.click(screen.getByRole('radio', { name: 'Day' }));
+
+    expect(lastSavedConfig().view).toBe('day');
+  });
+
+  it('hides the week-only switches in the Day view and shows the switch time instead', () => {
+    render(module({ memberIds: ['leon'], layout: 'stacked', detail: 'some', view: 'day' }));
+
+    expect(screen.queryByRole('switch', { name: 'Show start times' })).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Show next week from Friday' })).toBeNull();
+    const time = screen.getByLabelText('Show tomorrow after') as HTMLInputElement;
+    expect(time.type).toBe('time');
+    // Unset, the field shows the default rather than an empty box.
+    expect(time.value).toBe('16:00');
+    expect(screen.getByText('Before this time the card shows today.')).toBeTruthy();
+    expect(screen.getByText(/Stacked puts each kid on a row/)).toBeTruthy();
+
+    fireEvent.change(time, { target: { value: '14:30' } });
+    expect(lastSavedConfig().tomorrowFrom).toBe('14:30');
+
+    // The line at the current time is on unless switched off, like the calendar's.
+    const nowLine = screen.getByRole('switch', { name: 'Show a line at the current time' });
+    expect(nowLine.getAttribute('aria-checked')).toBe('true');
+    fireEvent.click(nowLine);
+    expect(lastSavedConfig().showNowLine).toBe(false);
+  });
+
+  it('keeps the week-only switches, and no switch time, in the Week view', () => {
+    render(module({ memberIds: ['leon'], layout: 'side-by-side', detail: 'some' }));
+
+    expect(screen.getByRole('switch', { name: 'Show start times' })).toBeTruthy();
+    expect(screen.getByRole('switch', { name: 'Show next week from Friday' })).toBeTruthy();
+    expect(screen.queryByLabelText('Show tomorrow after')).toBeNull();
+    expect(screen.queryByRole('switch', { name: 'Show a line at the current time' })).toBeNull();
+    expect(screen.queryByText(/Stacked puts each kid on a row/)).toBeNull();
+  });
+});

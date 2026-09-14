@@ -1115,10 +1115,13 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
     category: 'Personal',
     defaultConfig: {
       memberIds: [],
+      view: 'week',
       layout: 'side-by-side',
       detail: 'some',
       showStartTimes: true,
       nextWeekFromFriday: true,
+      tomorrowFrom: '16:00',
+      showNowLine: true,
     },
     defaultSize: { w: 1000, h: 880 },
   },

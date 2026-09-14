@@ -738,6 +738,12 @@ export function buildRows(
 // Day blocks
 // ---------------------------------------------------------------------------
 
+/**
+ * Why a period is not happening: the day is cut short by a dated exception at
+ * the school, or the lesson was cancelled by a note on the timetable.
+ */
+export type OffReason = 'short' | 'cancelled';
+
 export interface LessonBlock {
   kind: 'lesson';
   periods: number[];
@@ -748,13 +754,46 @@ export interface LessonBlock {
   room?: string;
   /** The same subject twice in a row, drawn as one tall block. */
   double: boolean;
+  /** Not happening today. Drawn faded, and never counted towards the day's start or end. */
+  off?: OffReason;
 }
 
 export type TimetableBlock =
   | LessonBlock
-  | { kind: 'free'; periods: number[]; start: string; end: string }
-  | { kind: 'lunch'; periods: number[]; start: string; end: string }
+  | { kind: 'free'; periods: number[]; start: string; end: string; off?: OffReason }
+  | { kind: 'lunch'; periods: number[]; start: string; end: string; off?: OffReason }
   | { kind: 'care'; label: string; start: string; end: string };
+
+/** What the notes on a timetable say about one date. */
+export interface DayNotes {
+  /** The subjects with a test that day, each with the name the note gave it, if any. */
+  tests: Map<string, string | undefined>;
+  /** One-off things to bring, in the order they were written. */
+  bring: string[];
+  /** The periods that are off. */
+  cancelled: Set<number>;
+}
+
+/** The notes a timetable carries for one date, read into the three things the wall draws. */
+export function notesOn(timetable: Timetable, date: string): DayNotes {
+  const out: DayNotes = { tests: new Map(), bring: [], cancelled: new Set() };
+  for (const note of timetable.notes ?? []) {
+    if (note.date !== date) continue;
+    if (note.kind === 'test' && note.subjectId) {
+      if (!out.tests.has(note.subjectId) || note.text) out.tests.set(note.subjectId, note.text);
+    } else if (note.kind === 'bring' && note.text) {
+      out.bring.push(note.text);
+    } else if (note.kind === 'cancelled') {
+      for (const n of note.periods ?? []) out.cancelled.add(n);
+    }
+  }
+  return out;
+}
+
+/** Whether a date has any note on it at all. */
+export function hasNotes(notes: DayNotes): boolean {
+  return notes.tests.size > 0 || notes.bring.length > 0 || notes.cancelled.size > 0;
+}
 
 type BlockOrBreak = TimetableBlock | { kind: 'break' };
 
@@ -786,8 +825,15 @@ export function dayBlocks(
    * the part that is off be dimmed on its own.
    */
   splitAfterPeriod?: number,
+  /** Periods a note says are off that day. Marked `off` and never merged with a period that is on. */
+  cancelled?: ReadonlySet<number>,
 ): TimetableBlock[] {
   const byId = new Map(subjects.map((s) => [s.id, s]));
+  const offReason = (n: number): OffReason | undefined => {
+    if (splitAfterPeriod !== undefined && n > splitAfterPeriod) return 'short';
+    if (cancelled?.has(n)) return 'cancelled';
+    return undefined;
+  };
 
   let last = 0;
   for (const slot of school.slots) {
@@ -810,6 +856,7 @@ export function dayBlocks(
     // keeps the two in step, so this only shows up in a hand-edited file.
     const subject = isLesson(cell) ? byId.get(cell.subjectId) : undefined;
 
+    const off = offReason(slot.n);
     let block: TimetableBlock;
     if (isLesson(cell) && subject) {
       block = {
@@ -821,21 +868,23 @@ export function dayBlocks(
         course: cell.course,
         room: cell.room ?? timetable.usualRoom,
         double: false,
+        ...(off ? { off } : {}),
       };
     } else if (cell && 'lunch' in cell) {
-      block = { kind: 'lunch', periods: [slot.n], start: slot.start, end: slot.end };
+      block = { kind: 'lunch', periods: [slot.n], start: slot.start, end: slot.end, ...(off ? { off } : {}) };
     } else {
-      block = { kind: 'free', periods: [slot.n], start: slot.start, end: slot.end };
+      block = { kind: 'free', periods: [slot.n], start: slot.start, end: slot.end, ...(off ? { off } : {}) };
     }
 
     const prev = out[out.length - 1];
+    // A period that is on and one that is off are never one block: a double
+    // whose second half is cancelled has to be two cells before the half that
+    // is not happening can be dimmed on its own.
     const crossesCut =
-      splitAfterPeriod !== undefined &&
       prev !== undefined &&
       prev.kind !== 'break' &&
       prev.kind !== 'care' &&
-      prev.periods[prev.periods.length - 1] <= splitAfterPeriod &&
-      slot.n > splitAfterPeriod;
+      prev.off !== block.off;
     if (!crossesCut && prev?.kind === 'free' && block.kind === 'free') {
       prev.periods.push(slot.n);
       prev.end = block.end;
@@ -886,11 +935,30 @@ export function periodEndTime(school: TimetableSchool, period: number): string |
   return end;
 }
 
+/**
+ * What to pack for a day: each subject's `bring` item, in lesson order, once
+ * each. The Week footer and the Day view's packing strip both read this, so
+ * the two cannot disagree about a bag.
+ */
+export function bringFor(blocks: readonly TimetableBlock[]): string[] {
+  const seen = new Set<string>();
+  return blocks
+    .filter((b): b is LessonBlock => b.kind === 'lesson' && !b.off)
+    .map((b) => b.subject.bring)
+    .filter((item): item is string => {
+      if (!item || seen.has(item)) return false;
+      seen.add(item);
+      return true;
+    });
+}
+
 /** When the lessons of a day start and end, ignoring care. Null on a day with none. */
 export function daySpan(
   blocks: readonly TimetableBlock[],
 ): { start: string; end: string; firstPeriod: number } | null {
-  const lessons = blocks.filter((b): b is LessonBlock => b.kind === 'lesson');
+  // A lesson that is off does not start or end the day: the last lessons
+  // cancelled move the end forward, the first ones move the start back.
+  const lessons = blocks.filter((b): b is LessonBlock => b.kind === 'lesson' && !b.off);
   if (!lessons.length) return null;
   return {
     start: lessons[0].start,
@@ -953,16 +1021,18 @@ export interface FocusResolution {
   closedDays: Partial<Record<DayKey, string>>;
   /** Columns that finish early, with the last period that still happens. */
   shortDays: Partial<Record<DayKey, { label: string; endsAfterPeriod: number }>>;
+  /** The notes on each day of the shown week, for the days that have any. */
+  notes: Partial<Record<DayKey, DayNotes>>;
   /** Set while the household is in the middle of a school holiday. */
   holiday?: { name: string; backOn: string };
 }
 
-function holidayOn(date: string, ctx: FocusContext): TimetableHoliday | undefined {
+export function holidayOn(date: string, ctx: FocusContext): TimetableHoliday | undefined {
   return ctx.schoolHolidays?.find((h) => date >= h.start && date <= h.end);
 }
 
 /** The period a dated exception cuts this day short after, when one does. */
-function endsAfterOn(date: string, ctx: FocusContext): number | undefined {
+export function endsAfterOn(date: string, ctx: FocusContext): number | undefined {
   const short = ctx.school.specialDays.find(
     (day) => day.date === date && day.kind === 'ends-after' && day.period !== undefined,
   );
@@ -970,7 +1040,7 @@ function endsAfterOn(date: string, ctx: FocusContext): number | undefined {
 }
 
 /** The name of the day off, when school is shut on this date for any reason. */
-function closureOn(date: string, ctx: FocusContext): string | undefined {
+export function closureOn(date: string, ctx: FocusContext): string | undefined {
   const special = ctx.school.specialDays.find((d) => d.date === date && d.kind === 'off');
   if (special) return special.label;
   const holiday = holidayOn(date, ctx);
@@ -1000,7 +1070,8 @@ function lastSchoolDayOfWeek(
     const day = DAY_KEYS[i];
     const date = addDays(weekStart, i);
     if (closureOn(date, ctx)) continue;
-    if (daySpan(dayBlocks(ctx.timetable, ctx.school, ctx.subjects, day, week))) return { day, date };
+    const blocks = dayBlocks(ctx.timetable, ctx.school, ctx.subjects, day, week, endsAfterOn(date, ctx), notesOn(ctx.timetable, date).cancelled);
+    if (daySpan(blocks)) return { day, date };
   }
   return null;
 }
@@ -1037,8 +1108,10 @@ export function resolveFocus(now: Date, timeZone: string | undefined, ctx: Focus
     const thisMonday = mondayOf(today);
     const week = weekLetterOn(ctx.school, thisMonday);
     const last = lastSchoolDayOfWeek(thisMonday, week, ctx);
+    // Read with the day's cut and cancellations, so a week whose last lesson
+    // is off turns the page when the one before it ends.
     const lastLessons = last
-      ? daySpan(dayBlocks(ctx.timetable, ctx.school, ctx.subjects, last.day, week))
+      ? daySpan(dayBlocks(ctx.timetable, ctx.school, ctx.subjects, last.day, week, endsAfterOn(last.date, ctx), notesOn(ctx.timetable, last.date).cancelled))
       : null;
     // A day cut short by a dated exception is over when its last surviving
     // period is. Reading the whole grid's end kept the card on a finished week
@@ -1076,11 +1149,14 @@ export function resolveFocus(now: Date, timeZone: string | undefined, ctx: Focus
   const dayDates = {} as Record<DayKey, string>;
   const closedDays: Partial<Record<DayKey, string>> = {};
   const shortDays: Partial<Record<DayKey, { label: string; endsAfterPeriod: number }>> = {};
+  const notes: Partial<Record<DayKey, DayNotes>> = {};
   DAY_KEYS.forEach((day, i) => {
     const date = addDays(weekStart, i);
     dayDates[day] = date;
     const closed = closureOn(date, ctx);
     if (closed) closedDays[day] = closed;
+    const onDay = notesOn(ctx.timetable, date);
+    if (hasNotes(onDay)) notes[day] = onDay;
     const short = ctx.school.specialDays.find(
       (d) => d.date === date && d.kind === 'ends-after' && d.period !== undefined,
     );
@@ -1098,6 +1174,7 @@ export function resolveFocus(now: Date, timeZone: string | undefined, ctx: Focus
     dayDates,
     closedDays,
     shortDays,
+    notes,
     holiday,
   };
 }
@@ -2108,6 +2185,13 @@ export interface LessonCardCell {
   /** The week letter, on lessons the other week changes. */
   weekBadge?: WeekLetter;
   double: boolean;
+  /**
+   * A test that day in this subject: the name the note gave it, or '' for a
+   * test with no name, which the component prints as the plain word.
+   */
+  test?: string;
+  /** The lesson is off by a note, and says so in a word; a short day's cut says it in the header instead. */
+  cancelled?: boolean;
 }
 
 export interface FreeCardCell {
@@ -2295,14 +2379,31 @@ export interface TimetableCardModel {
    * alone. Absent where even the time does not fit, because the line above the
    * grid already says when the day ends and "13:1" is not a time.
    */
-  tail?: { endTime: string; rowStart: number; rowEnd: number; form: 'sentence' | 'time' | 'bare' };
+  tail?: {
+    /** Absent where the Detail draws no going-home line and the tail holds chips alone. */
+    endTime?: string;
+    rowStart: number;
+    rowEnd: number;
+    form: 'sentence' | 'time' | 'bare';
+    /** One-off things to bring on the lit day, from its notes, as chips under the line. */
+    bring?: string[];
+  };
   footer?: {
     /**
-     * What to pack for the focus day, in lesson order and without repeats.
-     * Absent on a day school is shut: there is nothing to pack for a day that
-     * is not happening, and "nothing special" is still an instruction.
+     * What to pack for the focus day, in lesson order and without repeats,
+     * the subjects' items first and then the day's one-off notes. Absent on a
+     * day school is shut: there is nothing to pack for a day that is not
+     * happening, and "nothing special" is still an instruction.
      */
     bring?: string[];
+    /** The lit day's tests, as the note named them ('' for a test with no name). */
+    tests?: string[];
+    /**
+     * Tomorrow's notes, when the card is on today: a test named as the note
+     * named it, and the periods that are off. Only the More footer has the
+     * words for them.
+     */
+    tomorrow?: { tests: string[]; cancelled: number[] };
     legend: WeekDifference[];
   };
   /**
@@ -2358,7 +2459,7 @@ export function longestSubjectLabel(
  * somebody whose whole week is one course sees no badges at all, because there
  * would be nothing to tell apart.
  */
-function usualCourse(timetable: Timetable): string | undefined {
+export function usualCourse(timetable: Timetable): string | undefined {
   const counts = new Map<string, number>();
   for (const week of weeksOf(timetable)) {
     for (const day of DAY_KEYS) {
@@ -2854,10 +2955,11 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
     const isFocus = day === focus.focusDay;
     const rich = isFocus && wide;
     const endsAfter = focus.shortDays[day]?.endsAfterPeriod;
-    // The cut is handed to `dayBlocks` so a double is not merged across it: the
-    // half that still happens and the half that does not have to be separate
-    // cells before either can be dimmed on its own.
-    const blocks = dayBlocks(timetable, school, subjects, day, week, endsAfter);
+    const onDay = focus.notes[day];
+    // The cut and the cancellations are handed to `dayBlocks` so a double is
+    // not merged across either: the half that still happens and the half that
+    // does not have to be separate cells before either can be dimmed on its own.
+    const blocks = dayBlocks(timetable, school, subjects, day, week, endsAfter, onDay?.cancelled);
     const span = daySpan(blocks);
 
     // Free periods after the day's last drawn lesson are a gap before something
@@ -2878,7 +2980,8 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
     let lastLessonRow = -1;
     let lastLessonEnd: string | undefined;
 
-    const fade = (periods: number[]) => endsAfter !== undefined && periods[0] > endsAfter;
+    // One fade rule for both reasons a period is off: `dayBlocks` marked it.
+    const fade = (block: { off?: OffReason }) => block.off !== undefined;
 
     for (const block of blocks) {
       if (block.kind === 'care') {
@@ -2903,7 +3006,7 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
         if (block.kind !== 'lesson' || foldRow < 0) continue;
         folded.push(block);
         lastLessonRow = Math.max(lastLessonRow, foldRow);
-        if (!fade(block.periods)) lastLessonEnd = block.end;
+        if (!fade(block)) lastLessonEnd = block.end;
         continue;
       }
 
@@ -2913,7 +3016,7 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
       if (!placed.length) continue;
       const rowStart = rowOfPeriod.get(placed[0])!;
       const rowEnd = rowOfPeriod.get(placed[placed.length - 1])! + 1;
-      const faded = fade(block.periods);
+      const faded = fade(block);
 
       if (block.kind === 'free') {
         const late = preset.late && span !== null && block.periods[0] < span.firstPeriod;
@@ -2976,6 +3079,8 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
           showIcon: rich ? icons || detail !== 'less' : icons || (preset.names === 'all' && detail === 'more'),
           weekBadge: preset.ab && changedPeriods.has(`${day}:${block.periods[0]}`) ? week : undefined,
           double: block.double,
+          ...(onDay?.tests.has(block.subject.id) ? { test: onDay.tests.get(block.subject.id) ?? '' } : {}),
+          ...(block.off === 'cancelled' ? { cancelled: true } : {}),
         },
       });
     }
@@ -2989,7 +3094,7 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
       cells.push({
         rowStart: foldRow,
         rowEnd: foldRow + 1,
-        faded: fade(folded[0].periods),
+        faded: fade(folded[0]),
         cell: {
           kind: 'folded',
           widthPx: width,
@@ -3031,24 +3136,26 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
         : cut ?? lastLessonEnd;
       focusSpan = span ? { start: span.start, end: dayEnd ?? span.end } : null;
       const capForm = endCapForm();
-      if (preset.endCap && dayEnd && lastLessonRow >= 0 && capForm !== 'none') {
+      // The one-off things to bring go under the going-home line at Less and
+      // Some, where the footer is not drawn; at More they join the footer.
+      const chips = !preset.foot && onDay?.bring.length ? onDay.bring : undefined;
+      const wantsCap = preset.endCap && dayEnd && capForm !== 'none';
+      if ((wantsCap || chips) && lastLessonRow >= 0) {
         let start = lastLessonRow + 1;
         while (start < rows.length && rows[start].kind === 'break') start++;
         // The care band keeps its own row; everything above it is spare.
         const end = careRow >= 0 ? careRow : rows.length;
-        if (start < end) tail = { endTime: dayEnd, rowStart: start, rowEnd: end, form: capForm };
+        if (start < end) {
+          tail = {
+            ...(wantsCap ? { endTime: dayEnd } : {}),
+            rowStart: start,
+            rowEnd: end,
+            form: capForm === 'none' ? 'bare' : capForm,
+            ...(chips ? { bring: chips } : {}),
+          };
+        }
       }
-      if (preset.foot) {
-        const seen = new Set<string>();
-        footerBring = blocks
-          .filter((b): b is LessonBlock => b.kind === 'lesson')
-          .map((b) => b.subject.bring)
-          .filter((item): item is string => {
-            if (!item || seen.has(item)) return false;
-            seen.add(item);
-            return true;
-          });
-      }
+      if (preset.foot) footerBring = [...bringFor(blocks), ...(onDay?.bring ?? [])];
     }
 
     const wantsMonth = namesMonth(day);
@@ -3122,7 +3229,22 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
     // Detail setting, or Monday could be any Monday.
     showDayDates,
     tail,
-    footer: preset.foot ? { bring: footerBring ?? undefined, legend: changed } : undefined,
+    footer: preset.foot ? { bring: footerBring ?? undefined, ...footerNotes(), legend: changed } : undefined,
     holiday: holidayLine,
   };
+
+  /**
+   * The lit day's tests, and tomorrow's notes while the card is on today: the
+   * footer is the one place with the words for "Tomorrow: maths test".
+   */
+  function footerNotes(): { tests?: string[]; tomorrow?: { tests: string[]; cancelled: number[] } } {
+    const today = focus.notes[focus.focusDay];
+    const tests = today && today.tests.size ? [...today.tests.values()].map((name) => name ?? '') : undefined;
+    if (focus.focusLabelKind !== 'today') return tests ? { tests } : {};
+    const next = notesOn(timetable, addDays(focus.focusDate, 1));
+    const cancelled = [...next.cancelled].sort((a, b) => a - b);
+    const nextTests = [...next.tests.values()].map((name) => name ?? '');
+    const tomorrow = nextTests.length || cancelled.length ? { tests: nextTests, cancelled } : undefined;
+    return { ...(tests ? { tests } : {}), ...(tomorrow ? { tomorrow } : {}) };
+  }
 }

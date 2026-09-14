@@ -372,6 +372,19 @@ export const PERSONAL_VARIANTS: ConfigVariant[] = [
     },
   },
   {
+    // The Day view draws everyone's next school day on one clock: one row per
+    // person with the name on it, in place of the week cards.
+    type: 'timetable', name: 'view-day', kind: 'local-data', seed: 'timetables',
+    config: { memberIds: E2E_TIMETABLE_SEED_MEMBER_IDS, view: 'day', layout: 'stacked' },
+    expect: async (mod) => {
+      await child('[data-testid="timetable-day-view"]')(mod);
+      const leon = mod.locator('[data-testid="timetable-day-row"][data-member="leon"]');
+      await expect(leon).toBeVisible();
+      await expect(leon).toContainText('Leon');
+      await expect(mod.locator('[data-testid="timetable-card"]')).toHaveCount(0);
+    },
+  },
+  {
     // The bell times beside the period numbers go. 9:45 is Leon's third period
     // and appears nowhere else on his card: his days start at 7:50 or 8:40, and
     // the line by his name names only the first and last bell of the lit day.

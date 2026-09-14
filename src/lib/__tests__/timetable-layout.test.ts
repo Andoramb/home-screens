@@ -8,13 +8,16 @@ import type {
   TimetableSubject,
 } from '@/types/timetables';
 import {
+  bringFor,
   buildRows,
   cardBaseFontSize,
   cardMetrics,
   cardModel,
   dayBlocks,
   daySpan,
+  hasNotes,
   isoWeekNumber,
+  notesOn,
   resolveFocus,
   resolveCardFontSize,
   resolveHeading,
@@ -1496,5 +1499,98 @@ describe('a day a dated exception cuts short', () => {
     const focus = resolveFocus(new Date('2026-09-11T09:00:00'), undefined, { school, timetable, subjects });
     expect(focus.currentWeek).toBe(true);
     expect(focus.focusDay).toBe('fri');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dates to remember on the week card
+// ---------------------------------------------------------------------------
+
+describe('dates to remember', () => {
+  const NOTED_LEON: Timetable = {
+    ...LEON,
+    notes: [
+      { id: 'n1', date: '2026-09-11', kind: 'test', subjectId: 'ma', text: 'Mathe-Arbeit' },
+      { id: 'n2', date: '2026-09-11', kind: 'cancelled', periods: [6] },
+      { id: 'n3', date: '2026-09-11', kind: 'bring', text: 'Wanderschuhe' },
+    ],
+  };
+  const ctx = (timetable: Timetable): FocusContext => ({ school: GAR, timetable, subjects: SUBJECTS });
+
+  it('reads a date\'s notes into tests, things to bring and periods off', () => {
+    const notes = notesOn(NOTED_LEON, '2026-09-11');
+    expect([...notes.tests]).toEqual([['ma', 'Mathe-Arbeit']]);
+    expect(notes.bring).toEqual(['Wanderschuhe']);
+    expect([...notes.cancelled]).toEqual([6]);
+    expect(hasNotes(notesOn(NOTED_LEON, '2026-09-10'))).toBe(false);
+  });
+
+  it('marks a cancelled period off in the blocks and keeps it out of the span', () => {
+    const blocks = dayBlocks(NOTED_LEON, GAR, SUBJECTS, 'fri', 'A', undefined, new Set([6]));
+    const last = blocks[blocks.length - 1];
+    expect(last.kind).toBe('lesson');
+    expect(last.kind === 'lesson' && last.off).toBe('cancelled');
+    // Sport was a double over 5 and 6; only the 6th is off, so it is two blocks.
+    expect(blocks.filter((b) => b.kind === 'lesson' && b.subject.id === 'sp').map((b) => b.kind === 'lesson' && b.periods)).toEqual([[5], [6]]);
+    expect(daySpan(blocks)?.end).toBe('12:25');
+    expect(bringFor(blocks)).toEqual(['Sportzeug']);
+  });
+
+  it('turns the page when the cancelled last lesson would have ended, not when it ends', () => {
+    // Friday 12:30 in Berlin: the 6th period is off, so the week is over at 12:25.
+    const at = new Date('2026-09-11T10:30:00Z');
+    expect(resolveFocus(at, ZONE, ctx(NOTED_LEON)).focusLabelKind).toBe('weekday');
+    expect(resolveFocus(at, ZONE, ctx(LEON)).focusLabelKind).toBe('today');
+  });
+
+  it('carries the notes of the shown week by day', () => {
+    const focus = resolveFocus(new Date('2026-09-10T05:10:00Z'), ZONE, ctx(NOTED_LEON));
+    expect(Object.keys(focus.notes)).toEqual(['fri']);
+    expect(focus.notes.fri?.bring).toEqual(['Wanderschuhe']);
+  });
+
+  function friday(detail: TimetableDetail, timetable = NOTED_LEON): TimetableCardModel {
+    const focus = resolveFocus(new Date('2026-09-11T05:10:00Z'), ZONE, ctx(timetable));
+    const metrics = cardMetrics({ cardWidth: 900, cardHeight: 880, detail, padding: 0, rows: buildRows(timetable, GAR, detail).rows });
+    return cardModel({ member: { id: 'leon', name: 'Leon', color: '#60a5fa' }, timetable, school: GAR, subjects: SUBJECTS, detail, focus, metrics });
+  }
+
+  it('flags the test on the lesson, fades the cancelled one, and moves the going-home time', () => {
+    const model = friday('some');
+    const fri = model.days.find((d) => d.day === 'fri')!;
+    const lessons = fri.cells.filter((c) => c.cell.kind === 'lesson');
+    const maths = lessons.find((c) => c.cell.kind === 'lesson' && c.cell.subject.id === 'ma')!;
+    expect(maths.cell.kind === 'lesson' && maths.cell.test).toBe('Mathe-Arbeit');
+    const sixth = lessons.find((c) => c.cell.kind === 'lesson' && c.cell.periods.includes(6))!;
+    expect(sixth.faded).toBe(true);
+    expect(sixth.cell.kind === 'lesson' && sixth.cell.cancelled).toBe(true);
+    expect(model.header.span).toEqual({ start: '07:50', end: '12:25' });
+    expect(model.tail?.endTime).toBe('12:25');
+    // The one-off item sits under the going-home line at Some.
+    expect(model.tail?.bring).toEqual(['Wanderschuhe']);
+    expect(model.footer).toBeUndefined();
+  });
+
+  it('at More the one-off item joins the footer, with the test named', () => {
+    const model = friday('more');
+    expect(model.tail?.bring).toBeUndefined();
+    expect(model.footer?.bring).toEqual(['Sportzeug', 'Wanderschuhe']);
+    expect(model.footer?.tests).toEqual(['Mathe-Arbeit']);
+    expect(model.footer?.tomorrow).toBeUndefined();
+  });
+
+  it('at More on the day before, the footer says what tomorrow brings', () => {
+    const focus = resolveFocus(new Date('2026-09-10T05:10:00Z'), ZONE, ctx(NOTED_LEON));
+    const metrics = cardMetrics({ cardWidth: 900, cardHeight: 880, detail: 'more', padding: 0, rows: buildRows(NOTED_LEON, GAR, 'more').rows });
+    const model = cardModel({ member: { id: 'leon', name: 'Leon', color: '#60a5fa' }, timetable: NOTED_LEON, school: GAR, subjects: SUBJECTS, detail: 'more', focus, metrics });
+    expect(model.footer?.tomorrow).toEqual({ tests: ['Mathe-Arbeit'], cancelled: [6] });
+    // Thursday itself has no notes, so no test pills of its own.
+    expect(model.footer?.tests).toBeUndefined();
+  });
+
+  it('draws a chip under the last lesson even at Less, which has no going-home line', () => {
+    const model = friday('less');
+    expect(model.tail?.endTime).toBeUndefined();
+    expect(model.tail?.bring).toEqual(['Wanderschuhe']);
   });
 });

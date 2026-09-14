@@ -27,6 +27,7 @@ import {
   type TimetableData,
   type TimetableSchool,
   type TimetableSlot,
+  type TimetableNote,
   type TimetableSpecialDay,
   type TimetableSubject,
   type TimetableWeek,
@@ -309,6 +310,60 @@ function cleanSpecialDays(raw: unknown, at: string): TimetableSpecialDay[] {
   });
 }
 
+/**
+ * A person's dates to remember, each checked against the school and the
+ * subjects it points at: a test names a subject that exists, a cancellation
+ * names periods the school has, a thing to bring says what. Kept sorted by
+ * date so the editor and the wall read them in order.
+ */
+function cleanNotes(
+  raw: unknown,
+  at: string,
+  school: TimetableSchool,
+  subjectIds: ReadonlySet<string>,
+): TimetableNote[] {
+  const entries = asList(raw, `${at} needs a list of dates`);
+  if (entries.length > TIMETABLE_LIMITS.maxNotesPerTimetable) {
+    throw new TimetableError(400, `${at} can have up to ${TIMETABLE_LIMITS.maxNotesPerTimetable} dates`);
+  }
+  const periods = new Set(school.slots.filter((slot) => slot.kind === 'period').map((slot) => (slot as { n: number }).n));
+  const ids = new Set<string>();
+  const notes = entries.map((entry): TimetableNote => {
+    const note = asRecord(entry, `${at} has a date that is not saved properly`);
+    const id = cleanId(note.id, `${at} has a date with no id`);
+    if (ids.has(id)) throw new TimetableError(400, `${at} has two dates with the same id`);
+    ids.add(id);
+    if (typeof note.date !== 'string' || !isValidISODate(note.date)) {
+      throw new TimetableError(400, `${at}: dates need a real day, like 2026-02-16`);
+    }
+    const text = cleanOptionalText(
+      note.text,
+      TIMETABLE_LIMITS.maxNoteLength,
+      `A date's words can be up to ${TIMETABLE_LIMITS.maxNoteLength} characters`,
+    );
+    if (note.kind === 'test') {
+      const subjectId = cleanId(note.subjectId, `${at}: say which subject the test on ${note.date} is in`);
+      if (!subjectIds.has(subjectId)) throw new TimetableError(400, `${at}: the test on ${note.date} is in a subject that is not in the list`);
+      return { id, date: note.date, kind: 'test', subjectId, ...(text ? { text } : {}) };
+    }
+    if (note.kind === 'bring') {
+      if (!text) throw new TimetableError(400, `${at}: say what to bring on ${note.date}`);
+      return { id, date: note.date, kind: 'bring', text };
+    }
+    if (note.kind === 'cancelled') {
+      const list = asList(note.periods, `${at}: say which lessons are off on ${note.date}`);
+      const cleaned = [...new Set(list.map((n) => cleanPeriodNumber(n, `${at}: lessons that are off are listed by period number`)))].sort((a, b) => a - b);
+      if (cleaned.length === 0) throw new TimetableError(400, `${at}: say which lessons are off on ${note.date}`);
+      for (const n of cleaned) {
+        if (!periods.has(n)) throw new TimetableError(400, `${at}: ${school.name} has no period ${n} to be off on ${note.date}`);
+      }
+      return { id, date: note.date, kind: 'cancelled', periods: cleaned };
+    }
+    throw new TimetableError(400, `${at}: a date is a test, something to bring, or a lesson that is off`);
+  });
+  return notes.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+}
+
 function cleanSchool(raw: unknown, index: number): TimetableSchool {
   const where = `school ${index + 1}`;
   const school = asRecord(raw, `School ${index + 1} is not saved properly`);
@@ -487,6 +542,7 @@ function cleanTimetable(
     weekB = cleanWeek(weeks.B, `${where}, week B`, subjectIds);
   }
   const source = cleanSource(entry.source, where, subjectIds);
+  const notes = cleanNotes(entry.notes ?? [], where, school, subjectIds);
   return {
     memberId,
     schoolId,
@@ -495,7 +551,32 @@ function cleanTimetable(
     ...(icons !== undefined ? { icons } : {}),
     weeks: { A: weekA, ...(weekB ? { B: weekB } : {}) },
     ...(source ? { source } : {}),
+    ...(notes.length ? { notes } : {}),
   };
+}
+
+/** How long a date is kept once it has passed, so the file does not grow forever. */
+export const NOTE_KEEP_DAYS = 14;
+
+/**
+ * The document with every date older than a fortnight dropped.
+ *
+ * Done on save with the clock handed in, never inside `cleanTimetableData`:
+ * validation and restore must stay pure, so a backup from last year restores
+ * exactly what it holds and only the next save tidies it.
+ */
+export function withoutPastNotes(data: TimetableData, now: Date): TimetableData {
+  const cutoff = new Date(now.getTime() - NOTE_KEEP_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  let changed = false;
+  const timetables = data.timetables.map((timetable) => {
+    if (!timetable.notes?.length) return timetable;
+    const kept = timetable.notes.filter((note) => note.date >= cutoff);
+    if (kept.length === timetable.notes.length) return timetable;
+    changed = true;
+    const { notes: _dropped, ...rest } = timetable;
+    return kept.length ? { ...rest, notes: kept } : rest;
+  });
+  return changed ? { ...data, timetables } : data;
 }
 
 /**
@@ -645,7 +726,7 @@ export function readSavedTimetables(): Promise<TimetableData | null> {
  * The roster check, the revision check and the write share one coordinator
  * section, so nobody can be removed from the family in between.
  */
-export function replaceTimetables(input: ReplaceTimetablesInput): Promise<TimetableSnapshot> {
+export function replaceTimetables(input: ReplaceTimetablesInput, now: Date = new Date()): Promise<TimetableSnapshot> {
   return withFamilyData(async () => {
     try {
       const saved = await store.updateAtomic(async (current) => {
@@ -656,7 +737,7 @@ export function replaceTimetables(input: ReplaceTimetablesInput): Promise<Timeta
         if (input.revision !== timetableRevision(base)) {
           throw new TimetableError(409, 'Somebody else changed the timetables. Reopen the page and make your change again.', 'revision');
         }
-        const next = withServerNotes(cleanTimetableData(input.data), base);
+        const next = withoutPastNotes(withServerNotes(cleanTimetableData(input.data), base), now);
         const missing = await validateMemberReferences(next.timetables.map((timetable) => timetable.memberId));
         // The check answers with a ready-made response for a route; here only
         // its verdict matters, so the timetable wording is used instead.

@@ -5067,6 +5067,40 @@
           "default": []
         },
         {
+          "name": "view",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "TimetableView",
+            "values": [
+              "week",
+              "day"
+            ]
+          },
+          "description": "`week` shows each person's whole week. `day` puts everyone's next school day on one clock, with when each of them starts and finishes and what goes in the bag. Omitted = week",
+          "default": "week"
+        },
+        {
+          "name": "tomorrowFrom",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "string"
+          },
+          "description": "Day view only. Before this time of day the card shows today; from it on, the next school day. 'HH:MM' on a 24 hour clock. Omitted = 16:00",
+          "default": "16:00"
+        },
+        {
+          "name": "showNowLine",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Day view only. A line across the clock at the current time while the card shows today. Omitted = shown",
+          "default": true
+        },
+        {
           "name": "layout",
           "optional": false,
           "type": {
@@ -5115,6 +5149,10 @@
           "description": "Once the last lesson of the school week is over, show next week instead of an empty weekend. Omitted = on",
           "default": true
         }
+      ],
+      "views": [
+        "week",
+        "day"
       ]
     },
     {
