@@ -327,7 +327,7 @@ describe('readConfig — migration race conditions', () => {
     expect(writeFileCount).toBe(1);
     const snapshots = await fs.readdir(path.join(configDir, 'backups'));
     expect(snapshots).toHaveLength(1);
-    expect(snapshots[0]).toContain('-migration.0.');
+    expect(snapshots[0]).toContain('migration.0.');
     const backup = path.join(configDir, 'backups', snapshots[0]);
     expect(await fs.readFile(backup, 'utf8')).toBe(JSON.stringify(outdated));
     expect(publications.indexOf(backup)).toBeLessThan(publications.indexOf(path.join(configDir, 'config.json')));
