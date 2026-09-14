@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Kunne ikke starte enhedslogin",
     "codeExpired": "Koden er udløbet. Prøv igen.",
     "authorizationFailed": "Godkendelse fejlede",
-    "startSignInFailed": "Start af logind fejlede"
+    "startSignInFailed": "Start af logind fejlede",
+    "deleteImageInUse": "Dette billede vises stadig på en skærm, så det kan ikke slettes",
+    "deleteImageInUseOn": "Dette billede bruges stadig på {where}, så det kan ikke slettes"
   },
   "days": {
     "sunday": "søndag",

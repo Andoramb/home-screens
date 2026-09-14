@@ -542,7 +542,9 @@
     "mainFolderTab": "Pasta principal",
     "deleteConfirmTitle": "Excluir esta foto?",
     "deleteConfirmDescription": "Ela sai da tela e da biblioteca de fotos para sempre.",
-    "savedAsHint": "Será salvo como {name}"
+    "savedAsHint": "Será salvo como {name}",
+    "deleteInUse": "Esta foto ainda aparece em uma tela, então não pode ser excluída",
+    "deleteInUseOn": "Esta foto ainda é usada em {where}, então não pode ser excluída"
   },
   "choresKidView": {
     "notConfigured": "Nenhuma tarefa ainda. Peça a um adulto para adicionar um quadro de tarefas à tela.",

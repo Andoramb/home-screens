@@ -542,7 +542,9 @@
     "mainFolderTab": "Hauptordner",
     "deleteConfirmTitle": "Dieses Foto löschen?",
     "deleteConfirmDescription": "Es verschwindet vom Display und endgültig aus der Fotobibliothek.",
-    "savedAsHint": "Wird gespeichert als {name}"
+    "savedAsHint": "Wird gespeichert als {name}",
+    "deleteInUse": "Dieses Foto wird noch auf einem Bildschirm gezeigt und kann deshalb nicht gelöscht werden",
+    "deleteInUseOn": "Dieses Foto wird noch auf {where} verwendet und kann deshalb nicht gelöscht werden"
   },
   "choresKidView": {
     "notConfigured": "Noch keine Aufgaben. Bitte einen Erwachsenen, eine Aufgabentafel zum Display hinzuzufügen.",

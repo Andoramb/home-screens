@@ -7,6 +7,10 @@ import { withMediaTokenAuth } from '@/lib/api-utils';
 import { parseRangeHeader } from '@/lib/http-range';
 import { toWebStream } from '@/lib/web-stream';
 import { IMAGE_MIME_BY_EXT, VIDEO_MIME_BY_EXT } from '@/lib/library-files';
+import { canThumbnail, thumbnailPath, thumbnailWidth } from '@/lib/thumbnails';
+import { logger } from '@/lib/logger';
+
+const log = logger('backgrounds-serve');
 
 export const dynamic = 'force-dynamic';
 
@@ -94,12 +98,43 @@ export const GET = withMediaTokenAuth(async (request: NextRequest) => {
     return serveVideo(request, filePath, videoType);
   }
 
+  // Images revalidate instead of expiring: a replaced picture must show on
+  // the wall at its next paint, not a day later. The tag follows the file's
+  // size and mtime (a thumbnail is keyed by the same pair), so an unchanged
+  // file costs one conditional request answered with 304 and no body.
+  let stat;
+  try {
+    stat = await fs.stat(filePath);
+  } catch {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  }
+  const etag = `W/"${stat.size}-${Math.round(stat.mtimeMs)}"`;
+  const cacheHeaders = { 'Cache-Control': 'no-cache', ETag: etag };
+  if (request.headers.get('if-none-match') === etag) {
+    return new NextResponse(null, { status: 304, headers: cacheHeaders });
+  }
+
+  // `w=<width>` asks for the small WebP copy the library grid shows; the
+  // wall and the viewer never pass it and get the original. A copy that
+  // cannot be made (an undecodable file) falls back to the original.
+  const width = thumbnailWidth(request.nextUrl.searchParams.get('w'));
+  if (width && canThumbnail(filePath)) {
+    try {
+      const thumb = await thumbnailPath(filePath, filename, width);
+      return new NextResponse(await fs.readFile(thumb), {
+        headers: { 'Content-Type': 'image/webp', ...cacheHeaders },
+      });
+    } catch (err) {
+      log.debug(`Thumbnail failed for ${filename}, serving the original:`, err);
+    }
+  }
+
   try {
     const buffer = await fs.readFile(filePath);
     const contentType = IMAGE_MIME_BY_EXT[ext] || 'application/octet-stream';
     const headers: Record<string, string> = {
       'Content-Type': contentType,
-      'Cache-Control': 'public, max-age=86400',
+      ...cacheHeaders,
     };
     if (contentType === 'image/svg+xml') {
       // SVG can carry script; serve it so scripts can never run even when

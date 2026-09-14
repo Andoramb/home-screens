@@ -170,9 +170,15 @@ test('deleting a photo removes it from the grid and from disk', async ({ page, r
   await seedImage(request, folder, 'e2e-seed.png');
   expect(existsSync(bgPath(sandboxDir, folder, 'e2e-seed.png'))).toBe(true);
 
-  await putConfig(request, photoConfig(folder));
+  // The wall's slideshow shows a different folder, so this photo is free to
+  // go; a photo the wall still shows is refused (next test).
+  const shown = uniqueFolder();
+  createdFolders.push(shown);
+  await seedImage(request, shown, 'e2e-shown.png');
+  await putConfig(request, photoConfig(shown));
   await page.goto('/remote');
   await page.getByRole('button', { name: 'Photos', exact: true }).click();
+  await page.getByRole('button', { name: folder }).click();
 
   // The seeded image renders; open the per-image delete confirmation.
   const deleteButton = page.getByRole('button', { name: 'Delete photo' });
@@ -187,4 +193,21 @@ test('deleting a photo removes it from the grid and from disk', async ({ page, r
   await expect
     .poll(() => existsSync(bgPath(sandboxDir, folder, 'e2e-seed.png')))
     .toBe(false);
+});
+
+test('a photo the wall still shows cannot be deleted, and the phone says where it is used', async ({ page, request, sandboxDir }) => {
+  const folder = uniqueFolder();
+  createdFolders.push(folder);
+  await seedImage(request, folder, 'e2e-seed.png');
+
+  await putConfig(request, photoConfig(folder));
+  await page.goto('/remote');
+  await page.getByRole('button', { name: 'Photos', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Delete photo' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
+
+  await expect(page.getByText("still used on Screen One")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete photo' })).toHaveCount(1);
+  expect(existsSync(bgPath(sandboxDir, folder, 'e2e-seed.png'))).toBe(true);
 });

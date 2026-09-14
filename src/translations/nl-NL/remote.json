@@ -542,7 +542,9 @@
     "mainFolderTab": "Hoofdmap",
     "deleteConfirmTitle": "Deze foto verwijderen?",
     "deleteConfirmDescription": "Hij verdwijnt van het scherm en definitief uit de fotobibliotheek.",
-    "savedAsHint": "Wordt opgeslagen als {name}"
+    "savedAsHint": "Wordt opgeslagen als {name}",
+    "deleteInUse": "Deze foto staat nog op een scherm en kan daarom niet worden verwijderd",
+    "deleteInUseOn": "Deze foto wordt nog gebruikt op {where} en kan daarom niet worden verwijderd"
   },
   "choresKidView": {
     "notConfigured": "Nog geen klusjes. Vraag een volwassene om een klusjeskaart aan het scherm toe te voegen.",

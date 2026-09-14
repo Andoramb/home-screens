@@ -9839,7 +9839,29 @@
           "access": "session"
         },
         {
+          "method": "PATCH",
+          "access": "session"
+        },
+        {
           "method": "DELETE",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/backgrounds/inventory",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/backgrounds/move",
+      "methods": [
+        {
+          "method": "POST",
           "access": "session"
         }
       ]

@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Geräte-Anmeldung konnte nicht gestartet werden",
     "codeExpired": "Code abgelaufen. Bitte erneut versuchen.",
     "authorizationFailed": "Autorisierung fehlgeschlagen",
-    "startSignInFailed": "Anmeldung konnte nicht gestartet werden"
+    "startSignInFailed": "Anmeldung konnte nicht gestartet werden",
+    "deleteImageInUse": "Dieses Foto wird noch auf einem Bildschirm gezeigt und kann deshalb nicht gelöscht werden",
+    "deleteImageInUseOn": "Dieses Foto wird noch auf {where} verwendet und kann deshalb nicht gelöscht werden"
   },
   "days": {
     "sunday": "Sonntag",

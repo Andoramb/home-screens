@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Falha ao iniciar fluxo do dispositivo",
     "codeExpired": "Código expirado. Tente novamente.",
     "authorizationFailed": "Falha na autorização",
-    "startSignInFailed": "Falha ao iniciar o login"
+    "startSignInFailed": "Falha ao iniciar o login",
+    "deleteImageInUse": "Esta foto ainda aparece em uma tela, então não pode ser excluída",
+    "deleteImageInUseOn": "Esta foto ainda é usada em {where}, então não pode ser excluída"
   },
   "days": {
     "sunday": "Domingo",

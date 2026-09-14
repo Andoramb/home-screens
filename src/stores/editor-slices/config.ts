@@ -78,6 +78,12 @@ export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions
         const activeScreens = getActiveScreens(config, selectedDisplayId);
         const screenParam = params.get('screen');
         const restoredScreen = screenParam && activeScreens.find((s) => s.id === screenParam);
+        // A `module` param (the media page's "open in the editor" links) lands
+        // with that module selected, so the property panel opens on it.
+        const moduleParam = params.get('module');
+        const restoredModule = restoredScreen && moduleParam
+          ? restoredScreen.modules.find((m) => m.id === moduleParam)
+          : undefined;
         set({
           config,
           configRevision,
@@ -87,7 +93,7 @@ export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions
           saveErrorKind: null,
           selectedDisplayId,
           selectedScreenId: restoredScreen ? restoredScreen.id : activeScreens[0]?.id ?? null,
-          selectedModuleId: null,
+          selectedModuleId: restoredModule?.id ?? null,
           isDirty: false,
           _past: [],
           _future: [],

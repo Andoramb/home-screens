@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
 import Slider from '@/components/ui/Slider';
 import Toggle from '@/components/ui/Toggle';
 import Button from '@/components/ui/Button';
@@ -63,7 +64,7 @@ export function FullscreenPhotoConfigSection({ mod, screenId }: { mod: ModuleIns
 
   const source: PhotoSource = c.source ?? 'local';
   const directory = (c.directory as string) || '';
-  const isSinglePhoto = c.file !== undefined;
+  const isSinglePhoto = isSinglePhotoMode(c);
 
   const fetchPreviews = useCallback(async (dir: string) => {
     try {

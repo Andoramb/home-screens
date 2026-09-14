@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Apparaataanmelding kon niet worden gestart",
     "codeExpired": "Code verlopen. Probeer het opnieuw.",
     "authorizationFailed": "Autorisatie mislukt",
-    "startSignInFailed": "Aanmelding kon niet worden gestart"
+    "startSignInFailed": "Aanmelding kon niet worden gestart",
+    "deleteImageInUse": "Deze foto staat nog op een scherm en kan daarom niet worden verwijderd",
+    "deleteImageInUseOn": "Deze foto wordt nog gebruikt op {where} en kan daarom niet worden verwijderd"
   },
   "days": {
     "sunday": "Zondag",

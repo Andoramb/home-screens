@@ -11,71 +11,32 @@ import { fetchICloudMedia } from '@/lib/icloud-media';
 import { writeLibraryFile, MAX_IMPORT_IMAGE_BYTES } from '@/lib/library-files';
 import { fetchWithTimeout, withDisplayAuth } from '@/lib/api-utils';
 import { findScreenById } from '@/lib/display-filter';
-import { createJsonStore } from '@/lib/json-store';
+import {
+  ROTATION_FILE_RE,
+  referencedRotationFiles,
+  rotationCacheStore as cacheStore,
+  type BackgroundCache,
+  type RotationCacheEntry,
+} from '@/lib/background-rotation-cache';
 import type { BackgroundRotation } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
 
 const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
 
-interface CacheEntry {
-  path: string;
-  source: string;
-  query: string;
-  fetchedAt: number;
-  intervalMinutes: number;
-  immichFilters?: string;
-  icloudAlbum?: string;
-}
-
-type BackgroundCache = Record<string, CacheEntry>;
-
-/**
- * Rotation bookkeeping, not durable data: nothing backs it up or restores it,
- * and losing it costs one extra upstream fetch. `transient` gives it the
- * store's per-file queue and atomic rename without taking the global data
- * lock or paying two fsyncs on a path that runs on every screen rotation.
- *
- * It has to be a store rather than a read/modify/write pair because the fetch
- * between the two takes seconds: a plain write-back persisted a snapshot taken
- * before the network call and clobbered any entry another screen's rotation
- * had committed in the meantime.
- */
-const cacheStore = createJsonStore<BackgroundCache>({
-  path: 'data/background-cache.json',
-  defaultValue: {},
-  transient: true,
-});
-
-/** Only files the rotation savers below wrote themselves — user uploads and
- *  iCloud imports never carry this prefix, so pruning can't touch them. */
-const ROTATION_FILE_RE = /^rotation-/;
-
 /** Unreferenced rotation files kept as a grace buffer, newest first, so a
  *  display still showing the previous background doesn't lose it mid-swap. */
 const PRUNE_KEEP_RECENT = 8;
 
-function cacheFileName(servePath: string): string | null {
-  try {
-    return new URL(servePath, 'http://local').searchParams.get('file');
-  } catch {
-    return null;
-  }
-}
-
 /**
- * Rotation files accumulate forever otherwise — an iCloud album alone can
+ * Rotation files accumulate forever otherwise: an iCloud album alone can
  * leave thousands of one-time backgrounds on a Pi SD card over a few weeks.
  * Deletes rotation-cache files that no screen's cache entry references,
  * keeping the newest few as a grace buffer. Best-effort: any error just
  * leaves files for the next rotation to prune.
  */
 async function pruneRotationFiles(cache: BackgroundCache): Promise<void> {
-  const referenced = new Set<string>();
-  for (const entry of Object.values(cache)) {
-    const name = cacheFileName(entry.path);
-    if (name) referenced.add(name);
-  }
+  const referenced = referencedRotationFiles(cache);
 
   let entries;
   try {
@@ -292,7 +253,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     }
 
     if (newPath) {
-      const entry: CacheEntry = {
+      const entry: RotationCacheEntry = {
         path: newPath,
         source,
         query: rotation.query,

@@ -4,6 +4,7 @@ import { useEffect, useRef, useMemo } from 'react';
 import type { FullscreenPhotoConfig, MediaListItem, ModuleStyle, TimeFormat } from '@/types/config';
 import { useFetchData } from '@/hooks/useFetchData';
 import { photoSlideshowUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
+import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
 import { useMediaRotation } from '@/hooks/useRotatingIndex';
 import { useAuthImageState } from '@/components/display/useAuthImage';
 import { useTZClock } from '@/hooks/useTZClock';
@@ -254,7 +255,7 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
   const t = useTranslate('modules');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const isSinglePhoto = config.file !== undefined;
+  const isSinglePhoto = isSinglePhotoMode(config);
   const playVideos = !!(screenId && moduleId);
 
   // Fetch photo list (reuses same API as photo-slideshow) — skip when single photo.

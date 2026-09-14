@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
+import sharp from 'sharp';
 import { signMediaToken } from '@/lib/media-token';
 
 // Controllable auth: `authRejects` simulates auth-enabled with no valid
@@ -212,5 +213,91 @@ describe('svg art', () => {
     const res = await GET(makeRequest({ file: 'calendar-art/photo.jfif' }));
     expect(res.status).toBe(200);
     expect(res.headers.get('Content-Type')).toBe('image/jpeg');
+  });
+});
+
+describe('thumbnails (w= param)', () => {
+  async function seedPng(name: string, width: number, height: number) {
+    await fs.writeFile(path.join(bgsDir, name), await sharp({
+      create: { width, height, channels: 3, background: '#cc2222' },
+    }).png().toBuffer());
+  }
+
+  it('serves a WebP copy at the requested width and caches it under data/thumbnails', async () => {
+    await seedPng('wide.png', 1600, 400);
+    const GET = await getGET();
+    const res = await GET(makeRequest({ file: 'wide.png', w: '480' }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/webp');
+    const meta = await sharp(Buffer.from(await res.arrayBuffer())).metadata();
+    expect(meta.width).toBe(480);
+    expect(meta.height).toBe(120);
+    expect(await fs.readdir(path.join(tmpDir, 'data', 'thumbnails'))).toHaveLength(1);
+  });
+
+  it('ignores a width that is not on the list and serves the original', async () => {
+    await seedPng('wide.png', 1600, 400);
+    const GET = await getGET();
+    const res = await GET(makeRequest({ file: 'wide.png', w: '999' }));
+    expect(res.headers.get('Content-Type')).toBe('image/png');
+    expect((await sharp(Buffer.from(await res.arrayBuffer())).metadata()).width).toBe(1600);
+  });
+
+  it('leaves svg and gif whole even when a width is asked for', async () => {
+    await fs.writeFile(path.join(bgsDir, 'art.svg'), '<svg xmlns="http://www.w3.org/2000/svg"></svg>');
+    const GET = await getGET();
+    const res = await GET(makeRequest({ file: 'art.svg', w: '480' }));
+    expect(res.headers.get('Content-Type')).toBe('image/svg+xml');
+  });
+
+  it('falls back to the original when the picture cannot be decoded', async () => {
+    await fs.writeFile(path.join(bgsDir, 'broken.jpg'), 'not a jpeg');
+    const GET = await getGET();
+    const res = await GET(makeRequest({ file: 'broken.jpg', w: '480' }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get('Content-Type')).toBe('image/jpeg');
+    expect(await res.text()).toBe('not a jpeg');
+  });
+
+  it('still requires a credential for a thumbnail', async () => {
+    authState.authRejects = true;
+    await seedPng('wide.png', 100, 100);
+    const GET = await getGET();
+    const res = await GET(makeRequest({ file: 'wide.png', w: '480' }));
+    expect(res.status).toBe(401);
+  });
+});
+
+describe('image revalidation', () => {
+  it('tags images by size and mtime, answers a matching If-None-Match with 304, and never expires them', async () => {
+    await fs.writeFile(path.join(bgsDir, 'pic.jpg'), 'jpeg bytes');
+    const GET = await getGET();
+    const first = await GET(makeRequest({ file: 'pic.jpg' }));
+    expect(first.status).toBe(200);
+    expect(first.headers.get('Cache-Control')).toBe('no-cache');
+    const etag = first.headers.get('ETag');
+    expect(etag).toMatch(/^W\/"\d+-\d+"$/);
+
+    const again = await GET(makeRequest({ file: 'pic.jpg' }, { 'if-none-match': etag! }));
+    expect(again.status).toBe(304);
+    expect(again.headers.get('ETag')).toBe(etag);
+
+    // A replaced file (new size) gets a new tag, so the old one no longer matches.
+    await fs.writeFile(path.join(bgsDir, 'pic.jpg'), 'different jpeg bytes');
+    const replaced = await GET(makeRequest({ file: 'pic.jpg' }, { 'if-none-match': etag! }));
+    expect(replaced.status).toBe(200);
+    expect(replaced.headers.get('ETag')).not.toBe(etag);
+  });
+
+  it('gives a thumbnail the same tag as its original', async () => {
+    await fs.writeFile(path.join(bgsDir, 'wide.png'), await sharp({
+      create: { width: 800, height: 200, channels: 3, background: '#cc2222' },
+    }).png().toBuffer());
+    const GET = await getGET();
+    const original = await GET(makeRequest({ file: 'wide.png' }));
+    const thumb = await GET(makeRequest({ file: 'wide.png', w: '320' }));
+    expect(thumb.headers.get('ETag')).toBe(original.headers.get('ETag'));
+    const cached = await GET(makeRequest({ file: 'wide.png', w: '320' }, { 'if-none-match': original.headers.get('ETag')! }));
+    expect(cached.status).toBe(304);
   });
 });
