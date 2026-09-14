@@ -173,10 +173,12 @@ test('uploaded day art reaches the wall through the display token', async ({ pag
 
   try {
     await page.goto('/display');
-    const art = page.locator('[data-module-id="cal"] [data-day-art]').first();
+    const art = page.locator('[data-module-id="cal"] [data-day-art-image]').first();
     await expect(art).toBeVisible();
     // The blob is the proof the bytes came back through displayFetch; the raw
     // serve URL in CSS is exactly the request the wall cannot authenticate.
+    // (The painter child carries the background; the outer layer is the
+    // positioning container and opacity/dimming element.)
     await expect(art).toHaveCSS('background-image', /^url\("blob:/);
   } finally {
     // Hand the serial flow back the sandbox default screen it asserts on.

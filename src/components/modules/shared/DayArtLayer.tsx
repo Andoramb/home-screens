@@ -1,5 +1,6 @@
 'use client';
 
+import type { CSSProperties } from 'react';
 import { useAuthImage } from '@/components/display/useAuthImage';
 import type { DayDecor } from '@/lib/calendar-rules';
 
@@ -14,6 +15,14 @@ import type { DayDecor } from '@/lib/calendar-rules';
  * underneath, transparent pixels change nothing. Both calendar modules
  * render this wherever a day cell carries decor.
  *
+ * Scale and position ride the inner painter: the layer is a size
+ * container (globals.css — its box is inset-driven, so size containment
+ * is free), and the art binds to the cell's longer axis at
+ * --day-art-scale percent; background-position percentages natively mean
+ * 0% = left/top edges aligned, 100% = right/bottom edges, 50% = centered.
+ * Everything about blending (element opacity, z-index -1, rounding) stays
+ * on the layer exactly as before.
+ *
  * Uploaded art lives behind the media-library serve route, which a CSS
  * background request cannot authenticate against on a password-protected
  * wall, so the URL goes through `useAuthImage` like every other API-served
@@ -23,15 +32,15 @@ import type { DayDecor } from '@/lib/calendar-rules';
 export function DayArtLayer({ decor }: { decor: DayDecor }) {
   const src = useAuthImage(decor.backgroundImage);
   if (!src) return null;
+  const scale = decor.backgroundScale ?? 100;
+  const x = decor.backgroundPositionX ?? 50;
+  const y = decor.backgroundPositionY ?? 50;
   return (
     <div
       data-day-art=""
       aria-hidden="true"
       className="pointer-events-none absolute inset-0"
       style={{
-        backgroundImage: `url("${src}")`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
         zIndex: -1,
         // Inherit the cell's rounding so cover art cannot poke out square
         // corners (no border-radius = inherit 0).
@@ -40,6 +49,17 @@ export function DayArtLayer({ decor }: { decor: DayDecor }) {
         // is lossless and keeps the emitted style readable.
         opacity: Math.round((1 - (decor.backgroundDim ?? 0.4)) * 100) / 100,
       }}
-    />
+    >
+      <div
+        data-day-art-image=""
+        className="absolute inset-0"
+        style={{
+          backgroundImage: `url("${src}")`,
+          backgroundPosition: `${x}% ${y}%`,
+          borderRadius: 'inherit',
+          '--day-art-scale': String(scale),
+        } as CSSProperties}
+      />
+    </div>
   );
 }

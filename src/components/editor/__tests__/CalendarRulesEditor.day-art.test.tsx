@@ -111,3 +111,66 @@ describe('picture mode owns the whole background choice', () => {
     expect(stateRef.current?.[0].backgroundImage).toBe('/starter-day-art/celebrate.svg');
   });
 });
+
+describe('day-rule art scale and position sliders', () => {
+  afterEach(cleanup);
+
+  it('picture cards show the three sliders; defaults write back as undefined', async () => {
+    const stateRef: { current: CalendarDayRule[] | undefined } = { current: undefined };
+    const { container } = render(
+      <Harness initial={[{ id: 'r1', match: {}, backgroundImage: HALLOWEEN }]} stateRef={stateRef} />,
+    );
+    const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
+    // Picture branch renders: dimming, size, X, Y — then the card's fade slider.
+    const ranges = card.querySelectorAll('input[type="range"]');
+    expect(ranges.length).toBeGreaterThanOrEqual(4);
+    expect((ranges[1] as HTMLInputElement).value).toBe('100');
+    expect((ranges[2] as HTMLInputElement).value).toBe('50');
+    expect((ranges[3] as HTMLInputElement).value).toBe('50');
+    // Size and position step by 2; dimming keeps its coarser step of 5.
+    expect((ranges[1] as HTMLInputElement).step).toBe('2');
+    expect((ranges[2] as HTMLInputElement).step).toBe('2');
+    expect((ranges[3] as HTMLInputElement).step).toBe('2');
+    expect((ranges[0] as HTMLInputElement).step).toBe('5');
+
+    await act(async () => { fireEvent.change(ranges[1], { target: { value: '40' } }); });
+    await act(async () => { fireEvent.change(ranges[2], { target: { value: '0' } }); });
+    await act(async () => { fireEvent.change(ranges[3], { target: { value: '100' } }); });
+    expect(stateRef.current?.[0].backgroundScale).toBe(40);
+    expect(stateRef.current?.[0].backgroundPositionX).toBe(0);
+    expect(stateRef.current?.[0].backgroundPositionY).toBe(100);
+
+    // Back to defaults → stored as undefined.
+    const again = card.querySelectorAll('input[type="range"]');
+    await act(async () => { fireEvent.change(again[1], { target: { value: '100' } }); });
+    await act(async () => { fireEvent.change(again[2], { target: { value: '50' } }); });
+    await act(async () => { fireEvent.change(again[3], { target: { value: '50' } }); });
+    expect(stateRef.current?.[0].backgroundScale).toBeUndefined();
+    expect(stateRef.current?.[0].backgroundPositionX).toBeUndefined();
+    expect(stateRef.current?.[0].backgroundPositionY).toBeUndefined();
+  });
+
+  it('leaving picture mode clears scale and position with the art', async () => {
+    const stateRef: { current: CalendarDayRule[] | undefined } = { current: undefined };
+    const { container } = render(
+      <Harness
+        initial={[{
+          id: 'r1', match: {}, backgroundImage: HALLOWEEN,
+          backgroundScale: 40, backgroundPositionX: 0, backgroundPositionY: 100,
+        }]}
+        stateRef={stateRef}
+      />,
+    );
+    const card = container.querySelector('[data-rule-card]')!;
+    await expand(card);
+    const selects = card.querySelectorAll('select');
+    await act(async () => {
+      fireEvent.change(selects[selects.length - 1], { target: { value: 'none' } });
+    });
+    expect(stateRef.current?.[0].backgroundImage).toBeUndefined();
+    expect(stateRef.current?.[0].backgroundScale).toBeUndefined();
+    expect(stateRef.current?.[0].backgroundPositionX).toBeUndefined();
+    expect(stateRef.current?.[0].backgroundPositionY).toBeUndefined();
+  });
+});

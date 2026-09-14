@@ -586,6 +586,9 @@ function DayRuleFields({ rule, availableSources, onChange }: {
             patch({
               backgroundImage: undefined,
               backgroundDim: undefined,
+              backgroundScale: undefined,
+              backgroundPositionX: undefined,
+              backgroundPositionY: undefined,
               background: v === 'none' ? undefined : v === 'auto' ? 'auto' : DEFAULT_DAY_BG,
             });
           }
@@ -608,6 +611,33 @@ function DayRuleFields({ rule, availableSources, onChange }: {
             step={5}
             displayValue={`${Math.round((rule.backgroundDim ?? 0.4) * 100)}%`}
             onChange={(v) => patch({ backgroundDim: v === 40 ? undefined : v / 100 })}
+          />
+          <Slider
+            label={t(`${KEY}.artScale`)}
+            value={rule.backgroundScale ?? 100}
+            min={10}
+            max={100}
+            step={2}
+            displayValue={`${rule.backgroundScale ?? 100}%`}
+            onChange={(v) => patch({ backgroundScale: v === 100 ? undefined : v })}
+          />
+          <Slider
+            label={t(`${KEY}.artPositionX`)}
+            value={rule.backgroundPositionX ?? 50}
+            min={0}
+            max={100}
+            step={2}
+            displayValue={`${rule.backgroundPositionX ?? 50}%`}
+            onChange={(v) => patch({ backgroundPositionX: v === 50 ? undefined : v })}
+          />
+          <Slider
+            label={t(`${KEY}.artPositionY`)}
+            value={rule.backgroundPositionY ?? 50}
+            min={0}
+            max={100}
+            step={2}
+            displayValue={`${rule.backgroundPositionY ?? 50}%`}
+            onChange={(v) => patch({ backgroundPositionY: v === 50 ? undefined : v })}
           />
         </>
       )}

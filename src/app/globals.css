@@ -475,3 +475,25 @@ body {
     animation: none;
   }
 }
+
+/* ============================================================================
+   Day art scale & position (see components/modules/shared/DayArtLayer.tsx).
+   The art layer is absolutely inset-driven, so size containment is free and
+   makes it the query container for its painter child. The art binds to the
+   cell's longer axis at --day-art-scale percent (portrait cells fill the
+   height, landscape cells the width; ties count as portrait, matching the
+   old cover tiebreak). no-repeat matters below 100% where cover used to
+   hide tiling. Browsers without container queries keep plain cover = the
+   previous Fill behavior.
+   ============================================================================ */
+[data-day-art] { container-type: size; }
+[data-day-art-image] {
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+@container (orientation: portrait) {
+  [data-day-art-image] { background-size: auto calc(var(--day-art-scale, 100) * 1%); }
+}
+@container (orientation: landscape) {
+  [data-day-art-image] { background-size: calc(var(--day-art-scale, 100) * 1%) auto; }
+}

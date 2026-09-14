@@ -300,6 +300,38 @@ describe('resolveDayDecor: art', () => {
     expect(decor.backgroundDim).toBe(0.4);
   });
 
+  it('scale and position ride the winning art rule, clamped to their ranges', () => {
+    const rules: CalendarDayRule[] = [
+      { id: 'a', match: {}, backgroundImage: '/x.svg', backgroundScale: 40, backgroundPositionX: 0, backgroundPositionY: 100 },
+      { id: 'b', match: {}, backgroundImage: '/y.svg', backgroundScale: 80, backgroundPositionX: 20, backgroundPositionY: 20 },
+    ];
+    const decor = resolveDayDecor(today, [], rules, ctx);
+    expect(decor.backgroundScale).toBe(40);
+    expect(decor.backgroundPositionX).toBe(0);
+    expect(decor.backgroundPositionY).toBe(100);
+  });
+
+  it('scale and position default to 100/50/50 and clamp hand-edited extremes', () => {
+    const d = resolveDayDecor(today, [], [{ id: 'a', match: {}, backgroundImage: '/x.svg' }], ctx);
+    expect(d.backgroundScale).toBe(100);
+    expect(d.backgroundPositionX).toBe(50);
+    expect(d.backgroundPositionY).toBe(50);
+    const wild = resolveDayDecor(today, [], [{
+      id: 'a', match: {}, backgroundImage: '/x.svg',
+      backgroundScale: 500, backgroundPositionX: -20, backgroundPositionY: NaN,
+    }], ctx);
+    expect(wild.backgroundScale).toBe(100);
+    expect(wild.backgroundPositionX).toBe(0);
+    expect(wild.backgroundPositionY).toBe(50);
+  });
+
+  it('scale and position are absent when no rule carries art', () => {
+    const d = resolveDayDecor(today, [], [{ id: 'a', match: {}, background: '#123456' }], ctx);
+    expect(d.backgroundScale).toBeUndefined();
+    expect(d.backgroundPositionX).toBeUndefined();
+    expect(d.backgroundPositionY).toBeUndefined();
+  });
+
   it('a color from one matching rule pairs with art from another', () => {
     const rules: CalendarDayRule[] = [
       { id: 'a', match: {}, background: '#123456' },

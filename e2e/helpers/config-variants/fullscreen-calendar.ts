@@ -587,6 +587,41 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     },
   },
   {
+    // Art size binds to the cell's longer axis: at 40% the painted
+    // background height is 40% of the month cell, and it never tiles
+    // (no-repeat matters the moment cover stops filling).
+    type: 'fullscreen-calendar', name: 'day-rules-art-scale', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundScale: 40 }],
+    },
+    expect: async (mod) => {
+      const art = mod.locator('[data-day-art-image]').first();
+      await expect(art).toHaveCSS('--day-art-scale', '40');
+      await expect(art).toHaveCSS('background-repeat', 'no-repeat');
+      // Computed background-size may come back resolved (px) or specified
+      // (%); both must equal 40% of the layer box along the cell's height.
+      const check = await art.evaluate((el) => {
+        const second = getComputedStyle(el).backgroundSize.split(' ')[1];
+        if (second.endsWith('%')) return parseFloat(second) === 40;
+        return Math.abs(parseFloat(second) - el.clientHeight * 0.4) <= 2;
+      });
+      expect(check, 'art height is 40% of the cell height').toBe(true);
+    },
+  },
+  {
+    // Position percentages are native background-position semantics:
+    // 0% aligns the art's left edge with the cell's, 100% the bottom edges.
+    type: 'fullscreen-calendar', name: 'day-rules-art-position', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
+    config: {
+      view: 'month-grid',
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, backgroundImage: '/starter-day-art/celebrate.svg', backgroundScale: 40, backgroundPositionX: 0, backgroundPositionY: 100 }],
+    },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-day-art-image]').first()).toHaveCSS('background-position', '0% 100%');
+    },
+  },
+  {
     // A Font Awesome pick stores a `fa:<style>:<name>` token instead of a
     // glyph. Both rule icons and day badges have to render it as the icon
     // font's <i>, not print the token as text.

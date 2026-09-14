@@ -45,6 +45,9 @@ export interface DayDecor {
   background?: string;
   backgroundImage?: string;
   backgroundDim?: number;
+  backgroundScale?: number;
+  backgroundPositionX?: number;
+  backgroundPositionY?: number;
   opacity?: number;
   borderColor?: string;
   badges: DayBadge[];
@@ -227,6 +230,12 @@ export function autoDayTint(dayEvents: CalendarEvent[], alpha: number): string |
  * declares one (icon or text). Returns a shared empty decor for the common
  * no-rules case so cells can compare against it cheaply.
  */
+/** Percent field with a default and a range, NaN-safe like backgroundDim. */
+function pctIn(v: number | undefined, dflt: number, min: number, max: number): number {
+  const n = v == null || !Number.isFinite(v) ? dflt : v;
+  return Math.min(max, Math.max(min, n));
+}
+
 export function resolveDayDecor(
   day: Date,
   dayEvents: CalendarEvent[],
@@ -238,6 +247,9 @@ export function resolveDayDecor(
   let background: string | undefined;
   let backgroundImage: string | undefined;
   let backgroundDim: number | undefined;
+  let backgroundScale: number | undefined;
+  let backgroundPositionX: number | undefined;
+  let backgroundPositionY: number | undefined;
   let opacity: number | undefined;
   let borderColor: string | undefined;
   const badges: DayBadge[] = [];
@@ -252,6 +264,9 @@ export function resolveDayDecor(
       backgroundImage = rule.backgroundImage;
       const dim = rule.backgroundDim;
       backgroundDim = dim == null || !Number.isFinite(dim) ? 0.4 : Math.min(1, Math.max(0, dim));
+      backgroundScale = pctIn(rule.backgroundScale, 100, 10, 100);
+      backgroundPositionX = pctIn(rule.backgroundPositionX, 50, 0, 100);
+      backgroundPositionY = pctIn(rule.backgroundPositionY, 50, 0, 100);
     }
     if (opacity == null && rule.opacity != null) opacity = clampOpacity(rule.opacity);
     if (borderColor == null && rule.borderColor) borderColor = rule.borderColor;
@@ -260,7 +275,7 @@ export function resolveDayDecor(
     if (icon || text) badges.push({ icon: icon || undefined, text: text || undefined, color: rule.badgeColor || undefined });
   }
   if (background == null && backgroundImage == null && opacity == null && borderColor == null && badges.length === 0) return NO_DECOR;
-  return { background, backgroundImage, backgroundDim, opacity, borderColor, badges };
+  return { background, backgroundImage, backgroundDim, backgroundScale, backgroundPositionX, backgroundPositionY, opacity, borderColor, badges };
 }
 
 /**
