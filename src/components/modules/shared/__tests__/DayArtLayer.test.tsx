@@ -29,19 +29,50 @@ describe('DayArtLayer', () => {
   });
   afterEach(cleanup);
 
-  it('paints the image with cover positioning under the cell content and inherits the cell rounding', () => {
+  it('paints the image on an inner painter under the cell content, inheriting the rounding', () => {
     const { container } = render(<DayArtLayer decor={art({})} />);
     const el = container.querySelector('[data-day-art]') as HTMLElement;
     expect(el.getAttribute('aria-hidden')).toBe('true');
-    expect(el.style.backgroundImage).toBe('url("/a.png")');
-    expect(el.style.backgroundSize).toBe('cover');
-    expect(el.style.backgroundPosition).toBe('center center');
-    expect(el.style.borderRadius).toBe('inherit');
-    // Below the in-flow digits and event pills; mergeCellDecor isolates the
-    // cell so this stays above the cell's own background.
     expect(el.style.zIndex).toBe('-1');
+    expect(el.style.borderRadius).toBe('inherit');
+    const img = el.querySelector('[data-day-art-image]') as HTMLElement;
+    expect(img.style.backgroundImage).toBe('url("/a.png")');
+    expect(img.style.borderRadius).toBe('inherit');
+    // Default size is plain cover from globals.css: no opt-in attribute and
+    // no scale variable, so the @container axis-bound rules cannot match.
+    expect(img.hasAttribute('data-day-art-scaled')).toBe(false);
+    expect(img.style.getPropertyValue('--day-art-scale')).toBe('');
     // A static path never needs the display token.
     expect(displayFetch).not.toHaveBeenCalled();
+  });
+
+  it('positions by percentage: given values land inline, default is centered', () => {
+    const { container } = render(
+      <>
+        <DayArtLayer decor={art({})} />
+        <DayArtLayer decor={art({ backgroundScale: 40, backgroundPositionX: 0, backgroundPositionY: 100 })} />
+      </>,
+    );
+    const imgs = container.querySelectorAll<HTMLElement>('[data-day-art-image]');
+    expect(imgs[0].style.backgroundPosition).toBe('50% 50%');
+    expect(imgs[0].hasAttribute('data-day-art-scaled')).toBe(false);
+    expect(imgs[1].style.backgroundPosition).toBe('0% 100%');
+    // Below 100 opts into the axis-bound size (globals.css @container rules).
+    expect(imgs[1].hasAttribute('data-day-art-scaled')).toBe(true);
+    expect(imgs[1].style.getPropertyValue('--day-art-scale')).toBe('40');
+  });
+
+  it('an explicit 100 is the default, not a 100% axis binding', () => {
+    const { container } = render(<DayArtLayer decor={art({ backgroundScale: 100 })} />);
+    const img = container.querySelector('[data-day-art-image]') as HTMLElement;
+    expect(img.hasAttribute('data-day-art-scaled')).toBe(false);
+    expect(img.style.getPropertyValue('--day-art-scale')).toBe('');
+  });
+
+  it('keeps dimming on the layer element regardless of scale and position', () => {
+    const { container } = render(<DayArtLayer decor={art({ backgroundDim: 0.7, backgroundScale: 25 })} />);
+    const el = container.querySelector('[data-day-art]') as HTMLElement;
+    expect(el.style.opacity).toBe('0.3');
   });
 
   it('maps dimming to opacity: default 0.4 dim renders at 0.6, 0.7 dim at 0.3', () => {
@@ -72,7 +103,7 @@ describe('DayArtLayer', () => {
     await act(async () => {
       resolveFetch({ ok: true, blob: async () => new Blob(['x']) });
     });
-    const el = container.querySelector('[data-day-art]') as HTMLElement;
+    const el = container.querySelector('[data-day-art-image]') as HTMLElement;
     expect(el.style.backgroundImage).toBe('url("blob:art")');
   });
 

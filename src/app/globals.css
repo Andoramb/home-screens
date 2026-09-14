@@ -475,3 +475,27 @@ body {
     animation: none;
   }
 }
+
+/* ============================================================================
+   Day art scale & position (see components/modules/shared/DayArtLayer.tsx).
+   The default is plain cover: whichever axis needs more, so the art reaches
+   every cell edge at any aspect. That is the pre-size-control behavior and
+   what "100%" means. A size below 100 sets data-day-art-scaled and binds the
+   art to the cell's longer axis at --day-art-scale percent instead (portrait
+   cells by height, landscape cells by width; ties count as portrait). The
+   layer is absolutely inset-driven, so size containment is free and makes it
+   the query container for its painter child. no-repeat matters below 100%
+   where cover used to hide tiling. Browsers without container queries keep
+   cover at every size.
+   ============================================================================ */
+[data-day-art] { container-type: size; }
+[data-day-art-image] {
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+@container (orientation: portrait) {
+  [data-day-art-image][data-day-art-scaled] { background-size: auto calc(var(--day-art-scale) * 1%); }
+}
+@container (orientation: landscape) {
+  [data-day-art-image][data-day-art-scaled] { background-size: calc(var(--day-art-scale) * 1%) auto; }
+}
