@@ -38,8 +38,10 @@ describe('DayArtLayer', () => {
     const img = el.querySelector('[data-day-art-image]') as HTMLElement;
     expect(img.style.backgroundImage).toBe('url("/a.png")');
     expect(img.style.borderRadius).toBe('inherit');
-    // Size binding lives in globals.css (@container orientation), fed by:
-    expect(img.style.getPropertyValue('--day-art-scale')).toBe('100');
+    // Default size is plain cover from globals.css: no opt-in attribute and
+    // no scale variable, so the @container axis-bound rules cannot match.
+    expect(img.hasAttribute('data-day-art-scaled')).toBe(false);
+    expect(img.style.getPropertyValue('--day-art-scale')).toBe('');
     // A static path never needs the display token.
     expect(displayFetch).not.toHaveBeenCalled();
   });
@@ -53,9 +55,18 @@ describe('DayArtLayer', () => {
     );
     const imgs = container.querySelectorAll<HTMLElement>('[data-day-art-image]');
     expect(imgs[0].style.backgroundPosition).toBe('50% 50%');
-    expect(imgs[0].style.getPropertyValue('--day-art-scale')).toBe('100');
+    expect(imgs[0].hasAttribute('data-day-art-scaled')).toBe(false);
     expect(imgs[1].style.backgroundPosition).toBe('0% 100%');
+    // Below 100 opts into the axis-bound size (globals.css @container rules).
+    expect(imgs[1].hasAttribute('data-day-art-scaled')).toBe(true);
     expect(imgs[1].style.getPropertyValue('--day-art-scale')).toBe('40');
+  });
+
+  it('an explicit 100 is the default, not a 100% axis binding', () => {
+    const { container } = render(<DayArtLayer decor={art({ backgroundScale: 100 })} />);
+    const img = container.querySelector('[data-day-art-image]') as HTMLElement;
+    expect(img.hasAttribute('data-day-art-scaled')).toBe(false);
+    expect(img.style.getPropertyValue('--day-art-scale')).toBe('');
   });
 
   it('keeps dimming on the layer element regardless of scale and position', () => {

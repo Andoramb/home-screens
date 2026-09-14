@@ -1345,7 +1345,7 @@ export interface CalendarDayRule {
   backgroundImage?: string;
   /** 0-1, how far the art itself fades (its opacity is 1 minus this); default 0.4. */
   backgroundDim?: number;
-  /** Art size as percent of the cell's longer axis, 10-100; default 100 (= Fill). */
+  /** Art size, 10-100. 100 (the default) fills the cell like before (cover); below that, the art spans this percent of the cell's longer axis. */
   backgroundScale?: number;
   /** Art horizontal placement, 0-100 (0% = left edges aligned, 100% = right edges); default 50. */
   backgroundPositionX?: number;

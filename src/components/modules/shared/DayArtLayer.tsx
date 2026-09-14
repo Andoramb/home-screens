@@ -15,13 +15,18 @@ import type { DayDecor } from '@/lib/calendar-rules';
  * underneath, transparent pixels change nothing. Both calendar modules
  * render this wherever a day cell carries decor.
  *
- * Scale and position ride the inner painter: the layer is a size
- * container (globals.css — its box is inset-driven, so size containment
- * is free), and the art binds to the cell's longer axis at
- * --day-art-scale percent; background-position percentages natively mean
- * 0% = left/top edges aligned, 100% = right/bottom edges, 50% = centered.
- * Everything about blending (element opacity, z-index -1, rounding) stays
- * on the layer exactly as before.
+ * Scale and position ride the inner painter. At the default size (100)
+ * the art is painted with `cover`, exactly as before the size control
+ * existed: cover scales by whichever axis needs more, so it always reaches
+ * all four cell edges whatever the art's aspect. Only a size below 100
+ * opts into the axis-bound rule (data-day-art-scaled): the layer is a size
+ * container (globals.css; its box is inset-driven, so size containment is
+ * free), and the art binds to the cell's longer axis at --day-art-scale
+ * percent. Binding to one axis is not cover, so it must never be the
+ * default: 3:2 art in a 1.4:1 landscape cell leaves bands at "100%".
+ * background-position percentages natively mean 0% = left/top edges
+ * aligned, 100% = right/bottom edges, 50% = centered. Everything about
+ * blending (element opacity, z-index -1, rounding) stays on the layer.
  *
  * Uploaded art lives behind the media-library serve route, which a CSS
  * background request cannot authenticate against on a password-protected
@@ -52,12 +57,13 @@ export function DayArtLayer({ decor }: { decor: DayDecor }) {
     >
       <div
         data-day-art-image=""
+        data-day-art-scaled={scale < 100 ? '' : undefined}
         className="absolute inset-0"
         style={{
           backgroundImage: `url("${src}")`,
           backgroundPosition: `${x}% ${y}%`,
           borderRadius: 'inherit',
-          '--day-art-scale': String(scale),
+          ...(scale < 100 ? { '--day-art-scale': String(scale) } : {}),
         } as CSSProperties}
       />
     </div>
