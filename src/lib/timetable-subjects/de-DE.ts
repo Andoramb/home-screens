@@ -49,8 +49,10 @@ export const DE_DE_SUBJECTS: DefaultSubject[] = [
  * break that fits and one further along would be chosen over the seam.
  */
 export const DE_DE_NAME_SEAMS: string[][] = [
-  ['Sach', 'unterricht'],
-  ['Förder', 'unterricht'],
+  // "unterricht" is itself ten letters, wider than a single period on the
+  // Day view's clock, so it may break once more at its own syllable seam.
+  ['Sach', 'unter', 'richt'],
+  ['Förder', 'unter', 'richt'],
   ['Klassen', 'rat'],
   ['Sozial', 'wissen', 'schaften'],
   ['Wirt', 'schaft-', 'Politik'],

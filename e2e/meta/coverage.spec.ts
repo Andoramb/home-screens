@@ -555,6 +555,14 @@ const FIELD_DECISIONS: Record<string, FieldDecision> = {
   // itself is covered by the resolveFocus tests in
   // src/lib/__tests__/timetable-layout.test.ts.
   'timetable.nextWeekFromFriday': 'not-observable',
+  // Same reason: which side of the switch time a render lands on is the real
+  // clock's answer. The switch itself is covered by the resolveFamilyDay tests
+  // in src/lib/__tests__/timetable-day.test.ts.
+  'timetable.tomorrowFrom': 'not-observable',
+  // The line draws only while the card shows today and the real clock is
+  // inside the school day, which a spec cannot arrange. Covered by the
+  // TimetableModule day view tests under a frozen clock.
+  'timetable.showNowLine': 'not-observable',
   'todoist.refreshIntervalMs': 'timing-only',
   'traffic.refreshIntervalMs': 'timing-only',
   'weather.provider': 'fetch-only',

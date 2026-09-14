@@ -658,3 +658,46 @@ test('an import into a two-school household asks which school, and warns when th
   // And every one of the nine periods is on a school that rings a bell for it.
   expect(Object.keys(lina?.weeks.A.mon ?? {})).toHaveLength(9);
 });
+
+test('a date added on the Dates tab reaches the wall: the Day view packs it the evening before', async ({ page, request, sandboxDir }) => {
+  const window = await openWindow(page, request, sandboxDir);
+  await window.getByRole('tab', { name: 'Dates', exact: true }).click();
+  await expect(window.getByText('Nothing coming up')).toBeVisible();
+
+  // Tomorrow, worked out from the real clock, so the wall's Day view (which
+  // shows tomorrow from 16:00) or today's card (before it) can carry the pill
+  // either way: the row is asserted on the saved document, the wall on the
+  // packing card for whichever day it shows.
+  const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  await window.getByRole('button', { name: 'Add a date' }).click();
+  const form = window.getByTestId('timetable-note-form');
+  await form.getByRole('button', { name: /^Leon/ }).click();
+  await form.getByLabel('Day').fill(tomorrow);
+  await form.getByRole('radio', { name: 'Something to bring' }).click();
+  await form.getByLabel('What to bring').fill('Wanderschuhe');
+  const saved = savedOnce(page);
+  await form.getByRole('button', { name: 'Add', exact: true }).click();
+  await saved;
+  await expect(window.getByTestId('timetable-note-row')).toHaveCount(1);
+  await expect(window.getByRole('tab', { name: /Dates/ })).toContainText('1');
+  await window.getByRole('button', { name: 'Done', exact: true }).click();
+
+  const { data } = await savedTimetables(request);
+  const leon = data.timetables.find((timetable) => timetable.memberId === E2E_TIMETABLE_MEMBER_IDS.leon);
+  expect(leon?.notes).toEqual([{ id: expect.any(String), date: tomorrow, kind: 'bring', text: 'Wanderschuhe' }]);
+
+  // The wall: Leon's Day view row lists the bag for the day it shows. Before
+  // the switch time that is today, so only a wall already on tomorrow carries
+  // the pill; the store is what the test holds to, the wall is checked when
+  // it is showing the right day.
+  await stubModuleData(page);
+  const wall = await renderOnDisplay(page, request, baseConfig({
+    screens: [makeScreen('s1', 'S1', [buildModuleInstance('timetable', { memberIds: [E2E_TIMETABLE_MEMBER_IDS.leon], view: 'day', layout: 'stacked' })])],
+    settings: matrixSettings(),
+  }));
+  const day = wall.module('timetable').locator('[data-testid="timetable-day-view"]');
+  await expect(day).toBeVisible();
+  if ((await day.getAttribute('data-date')) === tomorrow) {
+    await expect(wall.module('timetable').locator('[data-testid="timetable-bring"]', { hasText: 'Wanderschuhe' })).toBeVisible();
+  }
+});

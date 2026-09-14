@@ -97,6 +97,27 @@ export type TimetableCell = { subjectId: string; room?: string; course?: string 
 /** One week of lessons: day, then period number, then what happens in it. */
 export type TimetableWeek = Partial<Record<DayKey, Record<number, TimetableCell>>>;
 
+/**
+ * Something about one day for one person: a test, a one-off thing to bring, or
+ * lessons that are off.
+ *
+ * A test points at a subject, so it survives the timetable being repainted and
+ * marks every lesson in that subject that day. A cancellation points at
+ * periods, because "the 6th period is off" is how schools say it.
+ */
+export interface TimetableNote {
+  id: string;
+  /** YYYY-MM-DD, local calendar date. */
+  date: string;
+  kind: 'test' | 'bring' | 'cancelled';
+  /** Test: the subject being tested. */
+  subjectId?: string;
+  /** Cancelled: the period numbers that are off that day. */
+  periods?: number[];
+  /** Test: an optional name ("Mathe-Arbeit"). Bring: the thing to bring. */
+  text?: string;
+}
+
 export interface Timetable {
   /** A `FamilyMember` id, the only link to a person. Unknown ids are skipped at render. */
   memberId: string;
@@ -114,6 +135,8 @@ export interface Timetable {
   weeks: { A: TimetableWeek; B?: TimetableWeek };
   /** Where the week came from, when it was read out of a spreadsheet. */
   source?: TimetableSource;
+  /** Dates to remember: tests, one-off things to bring, lessons that are off. Sorted by date. */
+  notes?: TimetableNote[];
 }
 
 /**
@@ -169,4 +192,6 @@ export const TIMETABLE_LIMITS = {
   maxCodeLength: 6,
   maxRoomLength: 16,
   maxBringLength: 40,
+  maxNotesPerTimetable: 60,
+  maxNoteLength: 40,
 } as const;

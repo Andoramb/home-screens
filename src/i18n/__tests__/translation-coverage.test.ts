@@ -329,6 +329,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|displayHero.stateOffline',
   ]),
   'de-DE': new Set([
+    // "(optional)" is the German word too.
+    'editor|timetableModal.dates.optional',
     // 'Name' is the German word too
     'editor|todoListModal.nameLabel',
     // Wall names that are the same word in German.
@@ -475,6 +477,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|timers.minutesShort',
   ]),
   'fr-FR': new Set([
+    // "Dates" is the French word too.
+    'editor|timetableModal.tabs.dates',
     // 'Focus' and 'Compact' are the French words too
     'editor|configSections.todo.viewFocus',
     'editor|configSections.todo.viewCompact',
@@ -615,9 +619,10 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
   ]),
   'nl-NL': new Set([
     'remote|lists.itemSheet.textLabel',
-    // 'Focus', 'Compact' and 'Item' are the Dutch words too
+    // 'Focus', 'Compact', 'Item' and 'Week' are the Dutch words too
     'editor|configSections.todo.viewFocus',
     'editor|configSections.todo.viewCompact',
+    'editor|configSections.timetable.viewWeek',
     'editor|todoListModal.itemTextLabel',
     'core|launcher.editor.title',
     // '1D' / '5D' chart captions: day = día / dag / dia / dag, so the letter matches en-US

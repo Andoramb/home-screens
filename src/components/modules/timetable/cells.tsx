@@ -20,7 +20,7 @@
  */
 
 import type { CSSProperties, ReactNode } from 'react';
-import { Backpack, Utensils } from 'lucide-react';
+import { Backpack, Pencil, Utensils } from 'lucide-react';
 import { subjectIcon } from '@/components/timetable/subject-icons';
 import type { TimeFormat } from '@/types/config';
 import {
@@ -189,6 +189,57 @@ function CourseBadge({ course, tokens }: { course: string; tokens: CardTokens })
     >
       {course}
     </span>
+  );
+}
+
+/** The one colour a test is marked in, on every surface: amber, with dark ink on it. */
+const TEST_COLOR = '#fbbf24';
+const TEST_INK = '#1c1917';
+
+/** A pencil in the corner of a lesson with a test that day. */
+function TestFlag({ base }: { base: number }) {
+  return (
+    <span
+      data-testid="timetable-test-flag"
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        top: '0.2em',
+        right: '0.2em',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '1.25em',
+        height: '1.25em',
+        borderRadius: '50%',
+        fontSize: atLeast(15, 0.56, base),
+        background: TEST_COLOR,
+        color: TEST_INK,
+        boxShadow: '0 0 0 2px rgba(0,0,0,0.3)',
+      }}
+    >
+      <Pencil size="0.75em" strokeWidth={2.6} />
+    </span>
+  );
+}
+
+/** The word under a lesson that is off by a note, or the test's name under one that has a test. */
+function NoteLine({ text, color, base }: { text: string; color: string; base: number }) {
+  return (
+    <div
+      style={{
+        marginTop: '0.14em',
+        fontSize: atLeast(14, 0.5, base),
+        fontWeight: 750,
+        color,
+        whiteSpace: 'nowrap',
+        maxWidth: '100%',
+        ...ELLIPSIS,
+        ...KEEPS_HEIGHT,
+      }}
+    >
+      {text}
+    </div>
   );
 }
 
@@ -425,8 +476,18 @@ export function LessonCell({
   }
 
   return (
-    <div data-testid="timetable-cell" data-kind="lesson" data-periods={cell.periods.join(',')} style={style}>
+    <div
+      data-testid="timetable-cell"
+      data-kind="lesson"
+      data-periods={cell.periods.join(',')}
+      data-test={cell.test !== undefined ? 'true' : undefined}
+      data-cancelled={cell.cancelled ? 'true' : undefined}
+      style={style}
+    >
       {body}
+      {cell.test !== undefined && <NoteLine text={cell.test || t('timetable.test')} color={TEST_COLOR} base={tokens.base} />}
+      {cell.cancelled && <NoteLine text={t('timetable.cancelled')} color={ink(1)} base={tokens.base} />}
+      {cell.test !== undefined && <TestFlag base={tokens.base} />}
       {cell.weekBadge && <WeekBadge letter={cell.weekBadge} base={tokens.base} />}
     </div>
   );

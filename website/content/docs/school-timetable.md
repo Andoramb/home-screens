@@ -157,6 +157,24 @@ The country all of this is worked out from is the one you set for public holiday
 - At Some and More, the going-home time sits under the last lesson of the day that is on.
 - At Less and Some, a lesson with something to pack shows a small note on it when there is room. At More, everything for that day collects into one Bring line at the foot of the card, and after-school care gets a row of its own.
 
+## The day view
+
+Set **View** to **Day** and the module shows the whole family's next school day on one clock instead of a week per person. Every person gets a row with when they start on the left, their lessons laid out by the hour, and when they are done on the right, with after-school care running on after the last lesson. Under the rows a packing card says what goes in each bag, read off the subjects' **Bring** lines. Somebody with nothing extra to bring says so, and somebody whose school is shut that day says why.
+
+Before **Show tomorrow after** (4 pm unless you change it) the card shows today, which makes it a good breakfast screen. From that time on it shows the next school day, so in the evening it already has tomorrow up. Friday evening and the weekend show Monday, and a holiday for everyone skips to the first day back.
+
+**Layout** means something different here. **Stacked** puts each person on a row, one under the other, which suits a television. **Side by side** gives each person a column with time running down, which suits a portrait wall, with the bag list in each column's head. **Detail** works as it does for the week: **Less** keeps short subject codes, **Some** adds full names and rooms, **More** adds start times and the school under each name.
+
+A day that ends early stays on the clock: the lessons that are not happening fade, a dashed line marks the new end, and the end column shows the usual time underneath. While the card shows today, a line across the clock marks the current time, with the time on the ruler beside it; **Show a line at the current time** turns it off.
+
+A common setup is the week view on the everyday screen and the day view on an evening screen. Give the evening screen a schedule, or put it in a profile, and the display turns the page for you.
+
+## Tests, things to bring, and cancelled lessons
+
+The **Dates** tab in the Timetables window is for the things that change every week: a test, a one-off thing to bring, or a lesson that is off. Pick who, pick the day, and the form tells you what that day already is for them (Friday, week A, school 07:50 to 13:15). A test picks one of the subjects they have that day; a lesson that is off ticks one or more of that day's lessons, and the form says straight away when they are now done. Something to bring works on any day, even one with no school, for a trip or a party.
+
+On the wall, a test puts a pencil on that lesson and a pill on the packing card. A lesson that is off fades, the going-home time moves, and the usual time shows underneath. At More, the week card's footer also says what tomorrow brings ("Tomorrow: maths test"). Dates clear themselves two weeks after they have passed.
+
 ## Where the data lives
 
 Timetables are kept in `data/timetables.json` on the hub, next to chores and meals, and are included in backups. A timetable belongs to one person, so removing somebody under **Settings > Family** deletes their timetable along with the rest of their records. The confirmation says so before anything happens.

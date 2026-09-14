@@ -22,6 +22,7 @@ import { editorFetch } from '@/lib/editor-fetch';
 import { checkSheetNow } from '@/lib/timetable-client';
 import { useFormattingLocale, useTranslate } from '@/i18n';
 import type { TimetableData, TimetableSchool, TimetableWeek, WeekLetter } from '@/types/timetables';
+import DatesTab, { upcomingNoteCount } from './DatesTab';
 import ImportView from './ImportView';
 import { PROSE_CLASS } from './prose';
 import SchoolsTab from './SchoolsTab';
@@ -48,7 +49,7 @@ import {
   type TimetableBrush,
 } from './use-timetable-draft';
 
-const TABS = ['timetables', 'schools', 'subjects'] as const;
+const TABS = ['timetables', 'schools', 'subjects', 'dates'] as const;
 type TabKey = (typeof TABS)[number];
 
 /**
@@ -320,6 +321,7 @@ export default function TimetableModal({ memberId, onClose }: TimetableModalProp
 
   const footerNote = () => {
     if (tab === 'subjects') return t('timetableModal.subjects.footerNote');
+    if (tab === 'dates') return t('timetableModal.dates.footerNote');
     // Only when there is a week on screen with something to paint on it: the
     // hint used to ask a household with no grid and no palette to pick a
     // subject and drag across a week that was not there.
@@ -507,6 +509,13 @@ export default function TimetableModal({ memberId, onClose }: TimetableModalProp
                   }`}
                 >
                   {t(`timetableModal.tabs.${key}`)}
+                  {/* How many dates are still to come, so a parent sees at a
+                      glance that there is something on the tab. */}
+                  {key === 'dates' && upcomingNoteCount(data) > 0 && (
+                    <span className="ml-1.5 rounded-full bg-hs-hover px-1.5 py-px text-[10px] font-bold tabular-nums text-hs-text-body">
+                      {upcomingNoteCount(data)}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -574,6 +583,7 @@ export default function TimetableModal({ memberId, onClose }: TimetableModalProp
               />
             )}
             {tab === 'subjects' && <SubjectsTab data={data} members={members} update={draft.update} />}
+            {tab === 'dates' && <DatesTab data={data} members={members} update={draft.update} />}
           </div>
 
           <div className="flex items-center gap-3 border-t border-hs-border-strong px-5 py-3">

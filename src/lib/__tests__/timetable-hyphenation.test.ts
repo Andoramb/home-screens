@@ -29,9 +29,12 @@ const SEAM_LISTS = [
 ];
 
 describe('hyphenateSubjectName', () => {
-  it('breaks a German compound at its seam, not inside its second half', () => {
-    expect(hyphenateSubjectName('Sachunterricht', 'de-DE')).toBe(`Sach${SHY}unterricht`);
-    expect(hyphenateSubjectName('Förderunterricht', 'de-DE')).toBe(`Förder${SHY}unterricht`);
+  it('breaks a German compound at its seams, never at a fill-the-line spot', () => {
+    // The compound seam first; "unterricht" is ten letters on its own, wider
+    // than a single period on the Day view's clock, so it also carries its
+    // own syllable seam rather than being broken wherever the line fills.
+    expect(hyphenateSubjectName('Sachunterricht', 'de-DE')).toBe(`Sach${SHY}unter${SHY}richt`);
+    expect(hyphenateSubjectName('Förderunterricht', 'de-DE')).toBe(`Förder${SHY}unter${SHY}richt`);
   });
 
   it('breaks a name at the hyphen it already has, without printing a second one', () => {
@@ -58,7 +61,7 @@ describe('hyphenateSubjectName', () => {
   });
 
   it('follows the name a household typed, capitals and all', () => {
-    expect(hyphenateSubjectName('SACHUNTERRICHT', 'de-DE')).toBe(`SACH${SHY}UNTERRICHT`);
+    expect(hyphenateSubjectName('SACHUNTERRICHT', 'de-DE')).toBe(`SACH${SHY}UNTER${SHY}RICHT`);
   });
 
   it('is not a German-only table', () => {
@@ -74,7 +77,7 @@ describe('hyphenateSubjectName', () => {
   });
 
   it('gives a region its language\'s seams', () => {
-    expect(hyphenateSubjectName('Sachunterricht', 'de-AT')).toBe(`Sach${SHY}unterricht`);
+    expect(hyphenateSubjectName('Sachunterricht', 'de-AT')).toBe(`Sach${SHY}unter${SHY}richt`);
   });
 
   it('never changes what the name says', () => {

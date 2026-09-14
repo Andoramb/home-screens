@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext, Page } from '@playwright/test';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
-import { putConfig, seedHouseholdChores, seedMeals, seedTodos, todayCalendarEvents } from '../helpers/api';
+import { putConfig, seedHouseholdChores, seedMeals, seedTimetables, seedTodos, todayCalendarEvents } from '../helpers/api';
 import { stubModuleData } from '../helpers/stubs';
 import { buildModuleInstance, matrixSettings } from '../helpers/module-fixtures';
 import { VIEW_MATRIX, type ViewSpec } from '../helpers/view-matrix';
@@ -27,6 +27,7 @@ async function renderView(page: Page, request: APIRequestContext, sandboxDir: st
   if (spec.seed === 'chores') await seedHouseholdChores(request, sandboxDir);
   if (spec.seed === 'meals') await seedMeals(request);
   if (spec.seed === 'todos') seedTodos(sandboxDir);
+  if (spec.seed === 'timetables') seedTimetables(sandboxDir);
 
   const instance = buildModuleInstance(spec.type, { ...(spec.config ?? {}), [spec.key]: view });
   await putConfig(request, baseConfig({

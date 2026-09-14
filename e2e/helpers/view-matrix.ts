@@ -1,5 +1,5 @@
 import type { ModuleType } from '@/types/config';
-import { E2E_TODO_LIST_ID } from './api';
+import { E2E_TIMETABLE_SEED_MEMBER_IDS, E2E_TODO_LIST_ID } from './api';
 
 /**
  * Multi-view coverage data. Each high-view module lists every view it should
@@ -19,7 +19,7 @@ export interface ViewSpec {
   views: string[];
   kind: 'network-free' | 'networked' | 'local-data';
   stubKey?: string;
-  seed?: 'chores' | 'meals' | 'todos';
+  seed?: 'chores' | 'meals' | 'todos' | 'timetables';
   config?: Record<string, unknown>;
 }
 
@@ -57,4 +57,6 @@ export const VIEW_MATRIX: ViewSpec[] = [
   { type: 'meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'next-meal', 'compact', 'list'] },
   { type: 'fullscreen-meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'menu-board', 'next-meal'] },
   { type: 'fullscreen-weather', key: 'view', kind: 'networked', stubKey: 'weather', views: ['panorama', 'strip', 'almanac', 'ambient', 'week', 'hourly'] },
+  { type: 'timetable', key: 'view', kind: 'local-data', seed: 'timetables', config: { memberIds: E2E_TIMETABLE_SEED_MEMBER_IDS },
+    views: ['week', 'day'] },
 ];

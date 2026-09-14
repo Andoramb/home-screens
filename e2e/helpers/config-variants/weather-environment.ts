@@ -160,17 +160,17 @@ export const WEATHER_ENVIRONMENT_VARIANTS: ConfigVariant[] = [
       expect(op).toBe('0.35');
     },
   },
-  // showTimestamp toggles the font-mono timestamp overlay (default on).
+  // showTimestamp toggles the timestamp chip (default on).
   {
     type: 'rain-map', name: 'hide-timestamp', kind: 'networked', stubKey: 'rain-map', allowsExternal: true,
     config: { showTimestamp: false },
-    expect: async (mod) => { await child('img[src*="tile.openstreetmap.org"]')(mod); await count('.font-mono', 0)(mod); },
+    expect: async (mod) => { await child('img[src*="tile.openstreetmap.org"]')(mod); await count('[data-testid="rain-map-timestamp"]', 0)(mod); },
   },
   // showTimeline toggles the animated timeline dots (default on, needs >1 frame).
   {
     type: 'rain-map', name: 'hide-timeline', kind: 'networked', stubKey: 'rain-map', allowsExternal: true,
     config: { showTimeline: false },
-    expect: async (mod) => { await child('img[src*="tile.openstreetmap.org"]')(mod); await count('.rounded-full.transition-all', 0)(mod); },
+    expect: async (mod) => { await child('img[src*="tile.openstreetmap.org"]')(mod); await count('[data-testid="rain-map-timeline"]', 0)(mod); },
   },
   // latitude/longitude recenter the tile grid; assert the base tile x/y for London.
   {

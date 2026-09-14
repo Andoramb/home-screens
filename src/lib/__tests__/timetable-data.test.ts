@@ -446,3 +446,85 @@ describe('validateTimetableData', () => {
     });
   });
 });
+
+// ---------------------------------------------------------------------------
+// Dates to remember: tests, things to bring, lessons that are off
+// ---------------------------------------------------------------------------
+
+describe('dates to remember', () => {
+  const note = (over: Partial<import('@/types/timetables').TimetableNote> = {}) => ({
+    id: 'n1', date: '2026-09-11', kind: 'bring' as const, text: 'Wanderschuhe', ...over,
+  });
+  const withNotes = (...notes: ReturnType<typeof note>[]): TimetableData => {
+    const d = doc();
+    d.timetables[0] = timetable({ notes });
+    return d;
+  };
+
+  it('accepts each kind, and hands the list back sorted by date', () => {
+    const d = withNotes(
+      note({ id: 'b', date: '2026-09-25', kind: 'test', subjectId: 'math', text: 'Klausur' }),
+      note({ id: 'a', date: '2026-09-11', kind: 'cancelled', periods: [2, 1, 2] }),
+      note({ id: 'c', date: '2026-09-12' }),
+    );
+    expect(mod.validateTimetableData(d)).toBeNull();
+    const cleaned = mod.cleanTimetableData(d).timetables[0].notes!;
+    expect(cleaned.map((n) => n.id)).toEqual(['a', 'c', 'b']);
+    // Periods are deduped and sorted; a test's optional name is kept.
+    expect(cleaned[0]).toEqual({ id: 'a', date: '2026-09-11', kind: 'cancelled', periods: [1, 2] });
+    expect(cleaned[2]).toEqual({ id: 'b', date: '2026-09-25', kind: 'test', subjectId: 'math', text: 'Klausur' });
+  });
+
+  it('leaves a timetable with no dates exactly as it was', () => {
+    expect(mod.cleanTimetableData(doc()).timetables[0].notes).toBeUndefined();
+    expect(mod.cleanTimetableData(withNotes()).timetables[0].notes).toBeUndefined();
+  });
+
+  it.each<[string, Partial<ReturnType<typeof note>>, string]>([
+    ['a bad date', { date: 'Friday' }, 'real day'],
+    ['a test in no subject', { kind: 'test', subjectId: undefined }, 'which subject'],
+    ['a test in a subject that is not in the list', { kind: 'test', subjectId: 'art' }, 'not in the list'],
+    ['something to bring with no words', { kind: 'bring', text: '   ' }, 'what to bring'],
+    ['a cancellation with no periods', { kind: 'cancelled', periods: [] }, 'which lessons'],
+    ['a cancellation of a period the school has not got', { kind: 'cancelled', periods: [7] }, 'no period 7'],
+    ['a kind nobody knows', { kind: 'party' as never }, 'a test, something to bring'],
+    ['words past the cap', { text: 'x'.repeat(TIMETABLE_LIMITS.maxNoteLength + 1) }, 'characters'],
+  ])('refuses %s', (_label, over, reason) => {
+    expect(mod.validateTimetableData(withNotes(note(over)))).toContain(reason);
+  });
+
+  it('refuses two dates with the same id, and more than the cap', () => {
+    expect(mod.validateTimetableData(withNotes(note(), note({ date: '2026-09-12' })))).toContain('same id');
+    const many = Array.from({ length: TIMETABLE_LIMITS.maxNotesPerTimetable + 1 }, (_, i) => note({ id: `n${i}` }));
+    expect(mod.validateTimetableData(withNotes(...many))).toContain(`up to ${TIMETABLE_LIMITS.maxNotesPerTimetable}`);
+  });
+
+  it('drops a date a fortnight past on save, and keeps one thirteen days past', async () => {
+    await seedFamily(['kid']);
+    const before = await mod.readTimetables();
+    const now = new Date('2026-09-25T12:00:00Z');
+    const d = withNotes(
+      note({ id: 'old', date: '2026-09-10' }),
+      note({ id: 'edge', date: '2026-09-11' }),
+      note({ id: 'soon', date: '2026-09-30' }),
+    );
+    const { data } = await mod.replaceTimetables({ data: d, revision: before.revision }, now);
+    expect(data.timetables[0].notes!.map((n) => n.id)).toEqual(['edge', 'soon']);
+    // On disk the same way, so the file cannot grow forever.
+    expect((await readJson<TimetableData>('timetables.json')).timetables[0].notes!.map((n) => n.id)).toEqual(['edge', 'soon']);
+  });
+
+  it('takes the notes field off altogether once every date is past', async () => {
+    await seedFamily(['kid']);
+    const before = await mod.readTimetables();
+    const { data } = await mod.replaceTimetables({ data: withNotes(note({ date: '2026-01-05' })), revision: before.revision }, new Date('2026-09-25T12:00:00Z'));
+    expect(data.timetables[0].notes).toBeUndefined();
+  });
+
+  it('never prunes inside validation, so a restore keeps what the backup holds', () => {
+    const d = withNotes(note({ date: '2019-01-05' }));
+    expect(mod.validateTimetableData(d)).toBeNull();
+    expect(mod.cleanTimetableData(d).timetables[0].notes).toHaveLength(1);
+    expect(mod.withoutPastNotes(d, new Date('2019-01-10T00:00:00Z')).timetables[0].notes).toHaveLength(1);
+  });
+});
