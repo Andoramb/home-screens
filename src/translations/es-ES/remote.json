@@ -542,7 +542,9 @@
     "mainFolderTab": "Carpeta principal",
     "deleteConfirmTitle": "¿Eliminar esta foto?",
     "deleteConfirmDescription": "Desaparece de la pantalla y de la biblioteca de fotos para siempre.",
-    "savedAsHint": "Se guardará como {name}"
+    "savedAsHint": "Se guardará como {name}",
+    "deleteInUse": "Esta foto todavía se muestra en una pantalla, así que no se puede eliminar",
+    "deleteInUseOn": "Esta foto todavía se usa en {where}, así que no se puede eliminar"
   },
   "choresKidView": {
     "notConfigured": "Aún no hay tareas. Pídele a una persona mayor que añada una tabla de tareas a la pantalla.",

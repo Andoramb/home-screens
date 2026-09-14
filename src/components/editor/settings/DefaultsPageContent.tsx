@@ -9,6 +9,7 @@ import LanguageFields from '@/components/editor/settings/LanguageFields';
 import TimeFormatFields from '@/components/editor/settings/TimeFormatFields';
 import WeatherSection from '@/components/editor/settings/WeatherSection';
 import IntegrationsSection from '@/components/editor/settings/IntegrationsSection';
+import MediaLibraryPage from '@/components/editor/settings/MediaLibraryPage';
 import CalendarSection from '@/components/editor/settings/CalendarSection';
 import FamilyManager from '@/components/family/FamilyManager';
 import MealsSection from '@/components/editor/settings/MealsSection';
@@ -71,6 +72,7 @@ const PAGE_HEADERS: Record<
   meals: { descriptionKey: 'settings.mealsPage.description', savesAutomatically: true },
   phone: { descriptionKey: 'settings.phonePage.description' },
   integrations: { descriptionKey: 'settings.integrationsPage.description' },
+  media: { descriptionKey: 'settings.mediaPage.description' },
   automation: { descriptionKey: 'settings.automationPage.description', savesAutomatically: true },
   security: { descriptionKey: 'settings.securityPage.description' },
   network: { descriptionKey: 'settings.networkPage.description' },
@@ -172,6 +174,8 @@ export default function DefaultsPageContent({
 
     integrations: <IntegrationsSection />,
 
+    media: <MediaLibraryPage />,
+
     security: <SecuritySection />,
 
     data: (
@@ -196,7 +200,7 @@ export default function DefaultsPageContent({
     <div className={`mx-auto px-6 py-6 ${
       page === 'stats'
         ? 'max-w-6xl'
-        : page === 'integrations'
+        : page === 'integrations' || page === 'media'
           ? 'max-w-4xl'
           : 'max-w-2xl'
     }`}>

@@ -70,6 +70,24 @@ The background picker's Local tab shows the top level of your library only. Phot
 
 ---
 
+## Managing your library
+
+Every picture and video you upload lands in one shared library, and **Settings > Pictures & videos** shows all of it: thumbnails with each picture's resolution and every file's size, a type tag (JPG, SVG, MP4), folder filters, and a switch between images and videos. Videos show their first frame. The grid loads small copies of each picture (kept under `data/thumbnails`, rebuilt on demand, never backed up), so a big library opens quickly; opening a picture shows the original. Click any tile to see it full size, or to play a video, and use the arrow keys to step through the rest.
+
+Files that something still uses can't be deleted. If a screen background, a calendar day picture, or a slideshow still points at a file, it wears an **In use** badge (hover the badge, or open the file, to see where it's used), and delete leaves it alone. A slideshow locks every file in the folder it shows. Cleaning up can never break a screen.
+
+To add files, open the upload panel and drop in as many pictures or videos as you like, choosing which folder they land in. The built-in starter pictures for calendar day looks are not part of this library: they ship with Home Screens and refresh on upgrades. Backgrounds that rotate on their own (Unsplash, NASA, Immich, iCloud) are managed by the rotation and are not listed here; their file names start with `rotation-`, and an upload with such a name is turned away so it cannot be mistaken for one.
+
+If something on a screen points at a file that is no longer in the library, the page says so at the top, with a link that opens the editor on that screen. The where-used lines under an **In use** badge open the editor the same way. The **Unused only** chip shows just the files nothing uses, and the line under the folder chips shows how much space the library takes and how much is free on the hub.
+
+A file that is in use cannot be deleted, but it can be **replaced**: the swap button on its tile (or Replace in the viewer) takes a new file of the same type and puts it in place under the same name, so every screen and module that shows it keeps working and picks up the new picture on its next paint.
+
+Folders are managed here too: **New folder** makes one (inside the folder you are looking at, or at the top level), and a folder you have opened offers **Rename** and **Delete folder**. Only an empty folder can be deleted. Tick files and pick **Move to** to move them into another folder. Renaming a folder or moving files updates every screen, day rule, module and slideshow that pointed at them, so nothing on the wall goes blank. Use the search box to find a file by name, the sort menu to order by name, newest or largest, **Select all** to tick everything in view, and shift-click to tick a range.
+
+Deleting happens here, one file at a time from the trash button on its tile, or many at once by ticking their boxes. The background picker's own delete button is gone: pickers pick and upload, the library page manages. The delete buttons that remain elsewhere, inside a module's media browser or on the phone's Photos tab, answer to the same rule: files still in use stay put, and the phone says which screen still shows the photo.
+
+---
+
 ## Unsplash integration
 
 Unsplash provides access to a library of high-quality, freely usable photographs. A free API key is required.

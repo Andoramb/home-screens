@@ -542,7 +542,9 @@
     "mainFolderTab": "Hovedmappe",
     "deleteConfirmTitle": "Slet dette foto?",
     "deleteConfirmDescription": "Det forsvinder fra skærmen og ud af fotobiblioteket for altid.",
-    "savedAsHint": "Gemmes som {name}"
+    "savedAsHint": "Gemmes som {name}",
+    "deleteInUse": "Dette billede vises stadig på en skærm, så det kan ikke slettes",
+    "deleteInUseOn": "Dette billede bruges stadig på {where}, så det kan ikke slettes"
   },
   "choresKidView": {
     "notConfigured": "Ingen pligter endnu. Bed en voksen om at tilføje et pligtskema til skærmen.",

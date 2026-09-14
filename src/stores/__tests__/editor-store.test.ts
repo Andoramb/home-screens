@@ -2303,6 +2303,22 @@ describe('editor store', () => {
       expect(store.getState()._future).toHaveLength(0);
     });
 
+    it('loadConfig selects the module named in the URL', async () => {
+      const store = useEditorStore;
+      store.setState({ config: makeConfig(), isDirty: false });
+      store.getState().addModule('screen-1', 'clock');
+      const loaded = store.getState().config!;
+      const moduleId = loaded.screens[0].modules[0].id;
+      window.location.search = `?screen=screen-1&module=${moduleId}`;
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(loaded) }));
+
+      await store.getState().loadConfig();
+
+      expect(store.getState().selectedScreenId).toBe('screen-1');
+      expect(store.getState().selectedModuleId).toBe(moduleId);
+      window.location.search = '';
+    });
+
     it('importConfig records history before replacement', () => {
       const store = useEditorStore;
       const originalConfig = makeConfig();

@@ -15,6 +15,13 @@ import {
   VIDEO_MIME_TYPES,
 } from '@/lib/library-files';
 import { mintMediaToken } from '@/lib/media-token';
+import { readConfig } from '@/lib/config';
+import { scanMediaUsage } from '@/lib/media-usage';
+import { isRotationFile, referencedRotationFiles, rotationCacheStore } from '@/lib/background-rotation-cache';
+import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
+import { removeThumbnails } from '@/lib/thumbnails';
+import { extensionOf, fileNameOf, folderOf } from '@/lib/media-paths';
+import { enqueueCommand } from '@/lib/display-commands';
 import type { MediaListItem } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -110,6 +117,66 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   return NextResponse.json(items);
 }, 'Failed to list backgrounds');
 
+function sanitizeName(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+/**
+ * Overwrite one library file with an upload of the same type. The name (and
+ * so every reference to it) stays; the extension must match because the
+ * references carry it. Written beside the original and renamed over it, so
+ * a display fetching mid-upload sees the old file or the new one, never a
+ * partial one.
+ */
+async function replaceLibraryFile(target: string, files: File[]): Promise<NextResponse> {
+  if (files.length !== 1) {
+    return NextResponse.json({ error: 'Pick one file to replace with' }, { status: 400 });
+  }
+  const file = files[0];
+  const relativePath = libraryRelativePath(fileNameOf(target), folderOf(target));
+  const filePath = relativePath ? safeLibraryPath(relativePath) : null;
+  if (!relativePath || !filePath) {
+    return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+  }
+  try {
+    if (!(await fs.stat(filePath)).isFile()) throw new Error('not a file');
+  } catch {
+    return NextResponse.json({ error: 'File not found' }, { status: 404 });
+  }
+  const ext = extensionOf(relativePath);
+  if (extensionOf(file.name) !== ext) {
+    return NextResponse.json(
+      { error: `The new file needs to end in ${ext} like the one it replaces` },
+      { status: 400 },
+    );
+  }
+  const isVideo = VIDEO_MIME_TYPES.includes(file.type);
+  if (!isVideo && !IMAGE_MIME_TYPES.includes(file.type)) {
+    return NextResponse.json({ error: `Invalid file type: ${file.name}` }, { status: 400 });
+  }
+  const maxSize = isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES;
+  if (file.size > maxSize) {
+    return NextResponse.json(
+      { error: `File too large: ${file.name} (max ${isVideo ? '200 MB' : '10 MB'})` },
+      { status: 413 },
+    );
+  }
+  const tmp = `${filePath}.replace-${process.pid}.tmp`;
+  try {
+    await writeLibraryFile(tmp, file.stream(), maxSize);
+    await fs.rename(tmp, filePath);
+  } catch (err) {
+    await fs.unlink(tmp).catch(() => { /* never written */ });
+    throw err;
+  }
+  await removeThumbnails(relativePath);
+  // The wall keeps a picture in an <img> that never re-requests an unchanged
+  // URL, and the config did not change, so nothing else would tell it. A
+  // reload makes every display show the new file at once.
+  enqueueCommand('all', 'reload');
+  return NextResponse.json({ path: serveUrl(fileNameOf(relativePath), folderOf(relativePath) || undefined) });
+}
+
 export const POST = withAuth(async (request: NextRequest) => {
   // Reject oversized uploads before parsing: a genuinely oversized multipart
   // body makes request.formData() throw (surfacing as a 500), so the per-file
@@ -141,6 +208,13 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'No file provided' }, { status: 400 });
   }
 
+  // `replace=<library path>` swaps one existing file in place, keeping its
+  // name so every screen and module that points at it keeps working.
+  const replaceTarget = formData.get('replace');
+  if (typeof replaceTarget === 'string' && replaceTarget) {
+    return replaceLibraryFile(replaceTarget, files);
+  }
+
   // Validate all files first
   for (const file of files) {
     const isVideo = VIDEO_MIME_TYPES.includes(file.type);
@@ -154,12 +228,25 @@ export const POST = withAuth(async (request: NextRequest) => {
     }
   }
 
+  // The top-level `rotation-` names belong to the background rotation, which
+  // prunes anything unreferenced under that prefix; a user file there would
+  // be listed nowhere and deleted on the next rotation.
+  if (!directory) {
+    const reserved = files.find((file) => ROTATION_FILE_RE.test(sanitizeName(file.name)));
+    if (reserved) {
+      return NextResponse.json(
+        { error: `Names starting with "rotation-" are kept for rotating backgrounds. Please rename ${reserved.name} and try again.` },
+        { status: 400 },
+      );
+    }
+  }
+
   await fs.mkdir(dir, { recursive: true });
 
   const uploadedPaths: string[] = [];
 
   for (const file of files) {
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const safeName = sanitizeName(file.name);
     const filePath = path.join(dir, safeName);
     // Stream to disk in chunks. formData() above already holds the one
     // unavoidable in-memory copy; buffering again via arrayBuffer() would
@@ -176,18 +263,36 @@ export const POST = withAuth(async (request: NextRequest) => {
   return NextResponse.json({ paths: uploadedPaths }, { status: 201 });
 }, 'Failed to upload background');
 
+/**
+ * The library-relative path a DELETE body names, in the exact spelling the
+ * inventory and the usage scan use (`folder/name`, no empty or dot segments),
+ * or null when the directory carries a traversal or an absolute prefix. The
+ * usage check keys on this string, so it must be the same string the
+ * filesystem resolves; a trailing slash or `./` in `directory` would
+ * otherwise slip a referenced file past the guard.
+ */
+function libraryRelativePath(file: string, directory: string | undefined): string | null {
+  const segments = (directory ?? '').split('/').filter((seg) => seg !== '' && seg !== '.');
+  if (segments.some((seg) => seg === '..')) return null;
+  const base = path.basename(file);
+  if (!base || base === '.' || base === '..') return null;
+  return [...segments, base].join('/');
+}
+
 export const DELETE = withAuth(async (request: NextRequest) => {
-  const body = await parseJsonBody<{ file?: unknown; directory?: string }>(request);
+  const body = await parseJsonBody<{ file?: unknown; directory?: unknown }>(request);
   if (body instanceof NextResponse) return body;
   const { file, directory } = body;
   if (!file || typeof file !== 'string') {
     return NextResponse.json({ error: 'file parameter required' }, { status: 400 });
   }
+  if (directory != null && typeof directory !== 'string') {
+    return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
+  }
 
-  // Resolve file within optional directory
-  const relativePath = directory ? `${directory}/${path.basename(file)}` : path.basename(file);
-  const filePath = safeLibraryPath(relativePath);
-  if (!filePath) {
+  const relativePath = libraryRelativePath(file, directory ?? undefined);
+  const filePath = relativePath ? safeLibraryPath(relativePath) : null;
+  if (!relativePath || !filePath) {
     return NextResponse.json({ error: 'Invalid path' }, { status: 400 });
   }
 
@@ -197,6 +302,33 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'File not found' }, { status: 404 });
   }
 
+  // Refuse to delete a file the config still references somewhere: a stale
+  // page or a quick edit must never be able to remove a picture or video
+  // something still shows. The readConfig() read is serialized with editor
+  // config saves through the shared data-transaction coordinator (PUT
+  // /api/config takes the same queue), so the residual race is only the
+  // sub-millisecond disk timing between the read's lock release and the
+  // unlink; wrapping the unlink would not improve it.
+  const config = await readConfig();
+  const usage = scanMediaUsage(config, new Set([relativePath])).get(relativePath);
+  if (usage) {
+    return NextResponse.json({ error: 'in use', usage }, { status: 409 });
+  }
+
+  // Rotation files are owned by the background rotation, which records them
+  // in its own cache rather than in the config. One a screen is showing right
+  // now must survive too; the rotation prunes the rest itself.
+  if (isRotationFile(relativePath)) {
+    const referenced = referencedRotationFiles(await rotationCacheStore.read());
+    if (referenced.has(relativePath)) {
+      return NextResponse.json(
+        { error: 'in use', usage: [{ kind: 'rotation', configPath: 'rotation' }] },
+        { status: 409 },
+      );
+    }
+  }
+
   await fs.unlink(filePath);
-  return NextResponse.json({ deleted: path.basename(file) });
+  await removeThumbnails(relativePath);
+  return NextResponse.json({ deleted: path.basename(relativePath) });
 }, 'Failed to delete background');

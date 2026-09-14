@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
-import { deleteLibraryImage, type DirectoryInfo } from '@/lib/library-client';
+import { deleteLibraryImage, usageNames, type DirectoryInfo } from '@/lib/library-client';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
 import { useTranslate } from '@/i18n';
 import ConfirmSheet from './ConfirmSheet';
@@ -128,6 +128,12 @@ export default function PhotosTab({ directory: initialDirectory }: { directory: 
         setImages((prev) => prev.filter((img) => img !== imageUrl));
         fetchDirectories();
         showSuccess(t('photosTab.photoDeleted'));
+      } else if (res?.status === 409) {
+        // Something on the wall still shows it; say where instead of "failed".
+        const names = usageNames(res.usage);
+        setError(names.length > 0
+          ? t('photosTab.deleteInUseOn', { where: names.join(', ') })
+          : t('photosTab.deleteInUse'));
       } else {
         setError(t('photosTab.deleteFailed'));
       }

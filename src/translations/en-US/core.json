@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Failed to start device flow",
     "codeExpired": "Code expired. Please try again.",
     "authorizationFailed": "Authorization failed",
-    "startSignInFailed": "Failed to start sign-in"
+    "startSignInFailed": "Failed to start sign-in",
+    "deleteImageInUse": "This photo is still showing on a screen, so it can't be deleted",
+    "deleteImageInUseOn": "This photo is still used on {where}, so it can't be deleted"
   },
   "days": {
     "sunday": "Sunday",

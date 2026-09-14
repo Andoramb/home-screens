@@ -103,7 +103,9 @@
     "deviceFlowFailed": "Échec du démarrage de l'authentification par appareil",
     "codeExpired": "Code expiré. Réessaie.",
     "authorizationFailed": "Échec de l'autorisation",
-    "startSignInFailed": "Impossible de démarrer la connexion"
+    "startSignInFailed": "Impossible de démarrer la connexion",
+    "deleteImageInUse": "Cette photo est encore affichée sur un écran, elle ne peut donc pas être supprimée",
+    "deleteImageInUseOn": "Cette photo est encore utilisée sur {where}, elle ne peut donc pas être supprimée"
   },
   "days": {
     "sunday": "Dimanche",

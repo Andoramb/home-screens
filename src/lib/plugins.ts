@@ -27,18 +27,22 @@ const installedStore = createJsonStore<InstalledPluginsFile>({
   defaultValue: { schemaVersion: 1, plugins: [] },
 });
 
-// In-memory cache for installed.json (avoids disk reads every 3s poll)
-let installedCache: { data: InstalledPluginsFile; mtime: number } | null = null;
+// In-memory cache for installed.json (avoids disk reads every 3s poll).
+// Keyed on path + mtime + size: same-tick writes can share an mtimeMs, and
+// the lazy store path means one cache variable can point at several absolute
+// paths (tests swap cwd), so mtime alone cannot prove the data still fresh.
+let installedCache: { data: InstalledPluginsFile; mtime: number; size: number; filePath: string } | null = null;
 
 export async function getInstalledPlugins(): Promise<InstalledPluginsFile> {
   try {
-    const stat = await fs.stat(installedStore.filePath);
-    const mtime = stat.mtimeMs;
-    if (installedCache && installedCache.mtime === mtime) {
-      return installedCache.data;
+    const filePath = installedStore.filePath;
+    const stat = await fs.stat(filePath);
+    const cached = installedCache;
+    if (cached && cached.filePath === filePath && cached.mtime === stat.mtimeMs && cached.size === stat.size) {
+      return cached.data;
     }
     const data = await installedStore.read();
-    installedCache = { data, mtime };
+    installedCache = { data, mtime: stat.mtimeMs, size: stat.size, filePath };
     return data;
   } catch {
     return { schemaVersion: 1, plugins: [] };

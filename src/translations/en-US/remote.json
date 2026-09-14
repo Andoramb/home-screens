@@ -542,7 +542,9 @@
     "mainFolderTab": "Main folder",
     "deleteConfirmTitle": "Delete this photo?",
     "deleteConfirmDescription": "It comes off the wall and out of the photo library for good.",
-    "savedAsHint": "Saved as {name}"
+    "savedAsHint": "Saved as {name}",
+    "deleteInUse": "This photo is still showing on a screen, so it can't be deleted",
+    "deleteInUseOn": "This photo is still used on {where}, so it can't be deleted"
   },
   "choresKidView": {
     "notConfigured": "No chores yet. Ask a grown-up to add a chore chart to the display.",

@@ -34,6 +34,11 @@ describe('parseSettingsRoute', () => {
     }
   });
 
+  it('parses ?section=defaults&page=media as the Pictures & videos page', () => {
+    const params = new URLSearchParams('section=defaults&page=media');
+    expect(parseSettingsRoute(params)).toEqual({ kind: 'defaults', page: 'media' });
+  });
+
   it('rejects an unknown ?section=defaults&page= value and falls back to screen', () => {
     const params = new URLSearchParams('section=defaults&page=banana');
     expect(parseSettingsRoute(params)).toEqual({ kind: 'defaults', page: 'screen' });
