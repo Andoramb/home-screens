@@ -285,3 +285,73 @@ test('week navigation shows the plan slice for the viewed week', async ({ page, 
   await expect(page.getByText('This Week Supper')).toBeVisible();
   await expect(page.getByText('Next Week Supper')).toHaveCount(0);
 });
+
+// ── Cross-surface writes ──────────────────────────────────────────────
+//
+// The Meals tab fetches once on mount and never polls, so anything another
+// surface writes afterwards is invisible to it. It used to PUT its whole
+// `savedMeals` and `plan` on every change regardless, so whichever request
+// landed second won the half it had never touched and the loser was never
+// told. Each action now sends only the half it changed.
+
+test('a plan edit leaves a meal added elsewhere alone', async ({ page, request }) => {
+  await seedMeals(request, {
+    savedMeals: [{ id: 'meal-1', name: 'Spaghetti Night', emoji: '🍝' }],
+    plan: [],
+    force: true,
+  });
+  await page.goto('/remote');
+  await openMeals(page);
+  await page.getByRole('button', { name: 'Plan', exact: true }).click();
+
+  // Another surface (the editor modal, a second phone) adds a meal after this
+  // page loaded. Its copy of the library is now one meal short.
+  await seedMeals(request, {
+    savedMeals: [
+      { id: 'meal-1', name: 'Spaghetti Night', emoji: '🍝' },
+      { id: 'meal-2', name: 'Late Addition', emoji: '🥗' },
+    ],
+  });
+
+  await page.getByRole('button', { name: /Plan Dinner for/ }).first().click();
+  await page.getByRole('button', { name: /Spaghetti Night/ }).click();
+
+  await expect
+    .poll(async () => {
+      const data = await getMealData(request);
+      return {
+        names: data.savedMeals.map((m) => m.name).sort(),
+        dinners: data.plan.filter((p) => p.slot === 'dinner' && p.mealId === 'meal-1').length,
+      };
+    })
+    .toEqual({ names: ['Late Addition', 'Spaghetti Night'], dinners: 1 });
+});
+
+test('a library edit leaves a meal planned elsewhere alone', async ({ page, request }) => {
+  await seedMeals(request, {
+    savedMeals: [{ id: 'meal-edit', name: 'Taco Tuesday', emoji: '🌮' }],
+    plan: [],
+    force: true,
+  });
+  await page.goto('/remote');
+  await openMeals(page);
+  await page.getByRole('button', { name: 'Library' }).click();
+
+  // Another surface plans that meal for tonight while this page sits on the
+  // Library tab holding an empty plan.
+  await seedMeals(request, {
+    plan: [{ slot: 'dinner', mealId: 'meal-edit', date: isoDate(0) }],
+  });
+
+  await page.getByRole('button', { name: /Taco Tuesday/ }).click();
+  await expect(page.getByText('Edit Meal')).toBeVisible();
+  await page.getByPlaceholder('e.g. Chicken Stir Fry').fill('Taco Wednesday');
+  await page.getByRole('button', { name: 'Save Changes' }).click();
+
+  await expect
+    .poll(async () => {
+      const data = await getMealData(request);
+      return { names: data.savedMeals.map((m) => m.name), planned: data.plan.length };
+    })
+    .toEqual({ names: ['Taco Wednesday'], planned: 1 });
+});

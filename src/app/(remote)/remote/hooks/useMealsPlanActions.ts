@@ -8,6 +8,7 @@ import {
   replaceWeekInPlan,
   copyWeekEntries,
 } from '@/lib/meal-constants';
+import type { MealDataWrite } from '@/lib/meal-write';
 import { useTranslate } from '@/i18n';
 import { getWeekDates, type MealsConfirmAction } from '../components/meals-shared';
 
@@ -15,7 +16,7 @@ interface MealsPlanActionsParams {
   savedMeals: SavedMeal[];
   plan: PlannedMeal[];
   setPlan: Dispatch<SetStateAction<PlannedMeal[]>>;
-  saveData: (meals: SavedMeal[], planData: PlannedMeal[], grocery?: string[]) => Promise<boolean>;
+  saveData: (changes: MealDataWrite) => Promise<boolean>;
   settings: MealSettings;
   /** The viewed week, from `useMealsWeekNav` */
   weekDates: ReturnType<typeof getWeekDates>;
@@ -63,14 +64,14 @@ export function useMealsPlanActions({
     newPlan.push({ ...(existing ?? {}), date, slot, mealId });
     setPlan(newPlan);
     setPickingSlot(null);
-    await saveData(savedMeals, newPlan);
-  }, [plan, savedMeals, saveData, setPlan, setPickingSlot]);
+    await saveData({ plan: newPlan });
+  }, [plan, saveData, setPlan, setPickingSlot]);
 
   const clearSlot = useCallback(async (date: string, slot: MealSlotType) => {
     const newPlan = plan.filter((p) => !(p.date === date && p.slot === slot));
     setPlan(newPlan);
-    await saveData(savedMeals, newPlan);
-  }, [plan, savedMeals, saveData, setPlan]);
+    await saveData({ plan: newPlan });
+  }, [plan, saveData, setPlan]);
 
   const setSlotTime = useCallback(async (date: string, slot: MealSlotType, time: string | undefined) => {
     const existing = plan.find((p) => p.date === date && p.slot === slot);
@@ -83,8 +84,8 @@ export function useMealsPlanActions({
     }
     const newPlan = plan.map((p) => (p === existing ? updated : p));
     setPlan(newPlan);
-    await saveData(savedMeals, newPlan);
-  }, [plan, savedMeals, saveData, setPlan]);
+    await saveData({ plan: newPlan });
+  }, [plan, saveData, setPlan]);
 
   const clearAllPlan = useCallback(() => {
     setConfirmAction({
@@ -95,11 +96,11 @@ export function useMealsPlanActions({
         const weekSet = new Set(weekDates.map((d) => d.date));
         const remaining = plan.filter((p) => !weekSet.has(p.date));
         setPlan(remaining);
-        await saveData(savedMeals, remaining);
+        await saveData({ plan: remaining });
         setConfirmAction(null);
       },
     });
-  }, [savedMeals, plan, weekDates, saveData, setPlan, setConfirmAction, t]);
+  }, [plan, weekDates, saveData, setPlan, setConfirmAction, t]);
 
   const suggestRandom = useCallback(async () => {
     if (savedMeals.length === 0) return;
@@ -107,7 +108,7 @@ export function useMealsPlanActions({
     const newWeek = generateRandomPlan(savedMeals, settings.enabledSlots, weekDateStrs);
     const merged = replaceWeekInPlan(plan, weekDateStrs, newWeek);
     setPlan(merged);
-    await saveData(savedMeals, merged);
+    await saveData({ plan: merged });
   }, [savedMeals, plan, weekDates, settings.enabledSlots, saveData, setPlan]);
 
   const copyLastWeek = useCallback(async () => {
@@ -122,8 +123,8 @@ export function useMealsPlanActions({
     if (restamped.length === 0) return;
     const merged = replaceWeekInPlan(plan, weekDateStrs, restamped);
     setPlan(merged);
-    await saveData(savedMeals, merged);
-  }, [plan, savedMeals, viewingWeekStart, weekDates, settings.weekStartDay, saveData, setPlan]);
+    await saveData({ plan: merged });
+  }, [plan, viewingWeekStart, weekDates, settings.weekStartDay, saveData, setPlan]);
 
   const hasPreviousWeekEntries = useMemo(() => {
     const prevStart = new Date(viewingWeekStart);

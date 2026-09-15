@@ -21,6 +21,7 @@ import SidebarGrocery from './SidebarGrocery';
 import WeekGrid from './WeekGrid';
 import MealPickerPopover from './MealPickerPopover';
 import type { SavedMeal, PlannedMeal, MealSlotType, MealSettings } from '@/types/config';
+import type { MealDataWrite } from '@/lib/meal-write';
 import { useTranslate } from '@/i18n';
 
 // ── Props ────────────────────────────────────────────────────
@@ -31,7 +32,12 @@ interface MealPlannerModalProps {
   /** Shared meal settings — slots, week start, default times. Comes from data/meals.json. */
   settings: MealSettings;
   accentColor: string;
-  onUpdate: (updates: Record<string, unknown>) => void;
+  /**
+   * Persist a change. Pass only the half that changed — the store preserves
+   * whatever is omitted, so an unchanged field sent here would overwrite an
+   * edit another surface made in the meantime.
+   */
+  onUpdate: (updates: MealDataWrite) => void;
   onClose: () => void;
 }
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { SavedMeal, PlannedMeal, MealSettings, TimeFormat } from '@/types/config';
 import { DEFAULT_MEAL_SETTINGS, normalizeMealSettings } from '@/lib/meal-constants';
+import { mealWriteBody, type MealDataWrite } from '@/lib/meal-write';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 
 export function useMealsData() {
@@ -18,11 +19,17 @@ export function useMealsData() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // True once a GET has actually delivered the stored data. An empty array
+  // only means "the user emptied it" after that; before it, this hook is
+  // holding empty state it never received. See `mealWriteBody`.
+  const loadedRef = useRef(false);
+
   const fetchData = useCallback(async () => {
     try {
       const res = await editorFetch('/api/meals/data');
       if (!res.ok) return;
       const data = await res.json();
+      loadedRef.current = true;
       setSavedMeals(Array.isArray(data.savedMeals) ? data.savedMeals : []);
       setPlan(Array.isArray(data.plan) ? data.plan : []);
       setGroceryChecked(Array.isArray(data.groceryChecked) ? data.groceryChecked : []);
@@ -38,21 +45,21 @@ export function useMealsData() {
     }
   }, []);
 
-  const saveData = useCallback(async (
-    meals: SavedMeal[],
-    planData: PlannedMeal[],
-    grocery?: string[],
-  ): Promise<boolean> => {
+  /**
+   * Partial write — pass only the half the action actually changed.
+   *
+   * Assigning a meal to a slot sends `{ plan }`; editing the library sends
+   * `{ savedMeals }`; deleting a meal sends both, because it also prunes the
+   * plan entries pointing at it. The API preserves omitted fields, so an open
+   * editor modal and this phone can no longer overwrite each other's untouched
+   * half.
+   */
+  const saveData = useCallback(async (changes: MealDataWrite): Promise<boolean> => {
     try {
       const res = await editorFetch('/api/meals/data', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          savedMeals: meals,
-          plan: planData,
-          ...(grocery !== undefined ? { groceryChecked: grocery } : {}),
-          force: meals.length === 0 && planData.length === 0,
-        }),
+        body: JSON.stringify(mealWriteBody(changes, loadedRef.current)),
       });
       if (!res.ok) {
         setSaveError('Failed to save. Please try again.');

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import { DEFAULT_MEAL_SETTINGS } from '@/lib/meal-constants';
+import { mealWriteBody, type MealDataWrite } from '@/lib/meal-write';
 import { displayCache } from '@/lib/display-cache';
 import type {
   ModuleInstance,
@@ -64,14 +65,22 @@ export function useMealPlannerData<C>({
   });
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // True once a GET has actually delivered the stored data. Until then this
+  // hook holds empty arrays it never received, and an empty array it sends is
+  // not the user emptying anything. See `mealWriteBody`.
+  const loadedRef = useRef(false);
+
   const fetchMealData = useCallback(() => {
     editorFetch('/api/meals/data')
       .then((r) => r.json())
-      .then((d) => setMealData({
-        savedMeals: d.savedMeals ?? [],
-        plan: d.plan ?? [],
-        settings: d.settings ?? { ...DEFAULT_MEAL_SETTINGS },
-      }))
+      .then((d) => {
+        loadedRef.current = true;
+        setMealData({
+          savedMeals: d.savedMeals ?? [],
+          plan: d.plan ?? [],
+          settings: d.settings ?? { ...DEFAULT_MEAL_SETTINGS },
+        });
+      })
       .catch(() => {});
   }, []);
 
@@ -108,15 +117,16 @@ export function useMealPlannerData<C>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleModalUpdate = useCallback(async (updates: Record<string, unknown>) => {
+  const handleModalUpdate = useCallback(async (updates: MealDataWrite) => {
     const current = mealDataRef.current;
-    // The modal only edits meals + plan. Don't include `settings` in the PUT body —
-    // the API preserves existing settings when the field is omitted, which avoids
-    // clobbering changes made concurrently from /remote or Settings → Meals since
-    // this panel last fetched (the cached `current.settings` could be stale).
+    // Send only what the modal changed. The API preserves every omitted field,
+    // so a slot assignment here cannot overwrite a meal the phone added since
+    // this panel last fetched, and vice versa. `settings` is never sent at all:
+    // it belongs to /remote and Settings > Meals, and the cached copy here
+    // could be stale.
     const optimistic: MealsPayload = {
-      savedMeals: (updates.savedMeals as SavedMeal[]) ?? current.savedMeals,
-      plan: (updates.plan as PlannedMeal[]) ?? current.plan,
+      savedMeals: updates.savedMeals ?? current.savedMeals,
+      plan: updates.plan ?? current.plan,
       settings: current.settings, // local optimistic state only — not sent
     };
     setMealData(optimistic);
@@ -125,11 +135,7 @@ export function useMealPlannerData<C>({
       const res = await editorFetch('/api/meals/data', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          savedMeals: optimistic.savedMeals,
-          plan: optimistic.plan,
-          // settings deliberately omitted — API preserves existing
-        }),
+        body: JSON.stringify(mealWriteBody(updates, loadedRef.current)),
       });
       if (!res.ok) {
         // Roll back so the panel stops showing an edit the server rejected.

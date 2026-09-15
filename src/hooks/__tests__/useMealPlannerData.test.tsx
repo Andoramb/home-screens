@@ -2,8 +2,12 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, cleanup, act, waitFor } from '@testing-library/react';
-import type { ModuleInstance } from '@/types/config';
+import type { ModuleInstance, SavedMeal, PlannedMeal } from '@/types/config';
 import { useMealPlannerData } from '../useMealPlannerData';
+
+/** Meals and plan entries only need enough shape for identity assertions here. */
+const meals = (...ids: string[]) => ids.map((id) => ({ id })) as unknown as SavedMeal[];
+const entries = (...ids: string[]) => ids.map((id) => ({ id })) as unknown as PlannedMeal[];
 
 function makeModule(config: Record<string, unknown> = {}): ModuleInstance {
   return {
@@ -114,7 +118,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: [{ id: 'new' }, { id: 'new-2' }] });
+      await result.current.handleModalUpdate({ savedMeals: meals('new', 'new-2') });
     });
 
     expect(result.current.saveError).not.toBeNull();
@@ -135,7 +139,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: [{ id: 'new' }] });
+      await result.current.handleModalUpdate({ savedMeals: meals('new') });
     });
 
     expect(result.current.saveError).not.toBeNull();
@@ -156,7 +160,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: [{ id: 'new' }] });
+      await result.current.handleModalUpdate({ savedMeals: meals('new') });
     });
 
     expect(result.current.saveError).toBeNull();
@@ -180,7 +184,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: [{ id: 'local' }] });
+      await result.current.handleModalUpdate({ savedMeals: meals('local') });
     });
 
     expect(result.current.mealData.savedMeals).toEqual(reconciled.savedMeals);
@@ -201,7 +205,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: [{ id: 'x' }] });
+      await result.current.handleModalUpdate({ savedMeals: meals('x') });
     });
 
     const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
@@ -209,5 +213,104 @@ describe('useMealPlannerData', () => {
     const body = JSON.parse((putCall![1] as RequestInit).body as string);
     expect(body).not.toHaveProperty('settings');
     expect(body).toHaveProperty('savedMeals');
+  });
+
+  /* ─── partial writes ─────────────────────
+   * The panel used to PUT its whole `savedMeals` and `plan` on every change,
+   * filled in from its own possibly-stale copy. A phone editing the plan while
+   * this modal was open lost that edit to the modal's stale copy, and vice
+   * versa. Only the half the modal actually changed goes on the wire now.
+   */
+  it('sends only the field the modal changed', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.handleModalUpdate({ plan: entries('plan-2') });
+    });
+
+    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
+    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(body).not.toHaveProperty('savedMeals');
+    expect(body.plan).toEqual([{ id: 'plan-2' }]);
+    // The panel still shows both halves — only the request is narrowed.
+    expect(result.current.mealData.savedMeals).toEqual(SERVER_PAYLOAD.savedMeals);
+  });
+
+  it('keeps showing the untouched half while a partial write is in flight', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.handleModalUpdate({ savedMeals: meals('m-1', 'm-2') });
+    });
+
+    expect(result.current.mealData.plan).toEqual(SERVER_PAYLOAD.plan);
+  });
+
+  /* ─── the empty-overwrite guard ─────────────────────
+   * The server refuses an empty savedMeals/plan against non-empty stored data
+   * unless the caller confirms. A combined write slipped past that whenever
+   * either half was non-empty; a partial write no longer does, so clearing the
+   * last planned week has to say it meant it. Only a panel that loaded the
+   * stored data first is allowed to: an empty array from a panel whose GET
+   * failed is data it never had.
+   */
+  it('confirms a deliberate clear once the stored data has loaded', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.plan).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.handleModalUpdate({ plan: [] });
+    });
+
+    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
+    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(body.force).toBe(true);
+  });
+
+  it('does not confirm an empty write from a panel whose load failed', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    await act(async () => {
+      await result.current.handleModalUpdate({ plan: [] });
+    });
+
+    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
+    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    expect(body).not.toHaveProperty('force');
   });
 });

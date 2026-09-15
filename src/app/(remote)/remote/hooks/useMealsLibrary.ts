@@ -3,6 +3,7 @@
 import { useState, useMemo, type Dispatch, type SetStateAction } from 'react';
 import type { SavedMeal, PlannedMeal } from '@/types/config';
 import { normalizeTag } from '@/lib/meal-constants';
+import type { MealDataWrite } from '@/lib/meal-write';
 import { useTranslate } from '@/i18n';
 import { useMealForm } from './useMealForm';
 import type { MealsConfirmAction } from '../components/meals-shared';
@@ -12,7 +13,7 @@ interface MealsLibraryParams {
   setSavedMeals: Dispatch<SetStateAction<SavedMeal[]>>;
   plan: PlannedMeal[];
   setPlan: Dispatch<SetStateAction<PlannedMeal[]>>;
-  saveData: (meals: SavedMeal[], planData: PlannedMeal[], grocery?: string[]) => Promise<boolean>;
+  saveData: (changes: MealDataWrite) => Promise<boolean>;
   saving: boolean;
   setSaving: Dispatch<SetStateAction<boolean>>;
   setSaveError: Dispatch<SetStateAction<string | null>>;
@@ -64,7 +65,7 @@ export function useMealsLibrary({
       newMeals = savedMeals.map((m) => (m.id === mealData.id ? mealData : m));
     }
 
-    const ok = await saveData(newMeals, plan);
+    const ok = await saveData({ savedMeals: newMeals });
     setSaving(false);
     if (ok) {
       setSavedMeals(newMeals);
@@ -87,7 +88,8 @@ export function useMealsLibrary({
         setPlan(newPlan);
         form.setEditingMeal(null);
         setConfirmAction(null);
-        await saveData(newMeals, newPlan);
+        // Both halves: deleting a meal also prunes the plan entries for it.
+        await saveData({ savedMeals: newMeals, plan: newPlan });
       },
     });
   };
@@ -97,7 +99,7 @@ export function useMealsLibrary({
       m.id === mealId ? { ...m, isFavorite: !m.isFavorite } : m,
     );
     setSavedMeals(newMeals);
-    await saveData(newMeals, plan);
+    await saveData({ savedMeals: newMeals });
   };
 
   const filteredMeals = useMemo(() => {
