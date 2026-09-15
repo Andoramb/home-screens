@@ -493,6 +493,14 @@
       "clockCheck": {
         "summary": "Uhren vergleichen",
         "description": "Vergleiche die Uhr in diesem Browser mit der Uhr auf dem Gerät, auf dem Home Screens läuft. Wenn sie nicht übereinstimmen, ändere die Zeitzone oben."
+      },
+      "deviceClock": {
+        "message": "Die Uhr dieses Geräts steht auf {deviceTimezone}, deine Bildschirme zeigen aber {displayTimezone}.",
+        "help": "Deine Bildschirme zeigen so oder so die richtige Zeit. Das ändert nur die Zeitangaben, die das Gerät für sich selbst notiert, und macht sie lesbarer.",
+        "button": "Uhr des Geräts angleichen",
+        "settingButton": "Wird geändert…",
+        "success": "Die Uhr des Geräts passt jetzt zu deinen Bildschirmen.",
+        "error": "Die Uhr des Geräts konnte nicht geändert werden."
       }
     },
     "calendarPage": {
@@ -2962,7 +2970,7 @@
   },
   "sudoPrompt": {
     "title": "Home Screens erlauben, Änderungen an diesem Gerät vorzunehmen",
-    "body": "Updates, WLAN-Änderungen und das Umbenennen dieses Geräts müssen Systembefehle ausführen, ohne nach einem Passwort gefragt zu werden. Gib das Gerätepasswort einmal ein, und Home Screens richtet das dauerhaft ein.",
+    "body": "Updates, WLAN-Änderungen, das Umbenennen dieses Geräts und das Stellen seiner Uhr müssen Systembefehle ausführen, ohne nach einem Passwort gefragt zu werden. Gib das Gerätepasswort einmal ein, und Home Screens richtet das dauerhaft ein.",
     "imageHint": "Auf dem fertigen Home Screens Image lautet das Passwort screens, sofern du es nicht geändert hast.",
     "passwordLabel": "Gerätepasswort",
     "passwordPlaceholder": "Passwort",

@@ -493,6 +493,14 @@
       "clockCheck": {
         "summary": "Clock check",
         "description": "Compare this browser's clock with the clock on the device running Home Screens. If they disagree, the timezone above is the thing to change."
+      },
+      "deviceClock": {
+        "message": "This device's clock is set to {deviceTimezone}, but your screens show {displayTimezone}.",
+        "help": "Your screens show the right time either way. This only changes the timestamps the device keeps for itself, which makes them easier to read.",
+        "button": "Match the device's clock",
+        "settingButton": "Changing…",
+        "success": "The device's clock now matches your screens.",
+        "error": "Could not change the device's clock."
       }
     },
     "calendarPage": {
@@ -2962,7 +2970,7 @@
   },
   "sudoPrompt": {
     "title": "Allow Home Screens to make changes to this device",
-    "body": "Updating, changing WiFi and renaming this device all need to run system commands without being asked for a password. Enter the device password once and Home Screens sets that up for good.",
+    "body": "Updating, changing WiFi, renaming this device and setting its clock all need to run system commands without being asked for a password. Enter the device password once and Home Screens sets that up for good.",
     "imageHint": "On the ready-made Home Screens image the password is screens, unless you changed it.",
     "passwordLabel": "Device password",
     "passwordPlaceholder": "Password",

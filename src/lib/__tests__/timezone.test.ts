@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { createTZDate, formatTimeInTZ, formatDateInTZ, parseDateInTZ, listTimezoneValues, COMMON_TIMEZONES } from '@/lib/timezone';
+import {
+  createTZDate,
+  formatTimeInTZ,
+  formatDateInTZ,
+  parseDateInTZ,
+  listTimezoneValues,
+  isKnownTimezone,
+  canonicalTimezone,
+  sameTimezone,
+  COMMON_TIMEZONES,
+} from '@/lib/timezone';
 
 describe('createTZDate', () => {
   it('returns a Date close to now when no timezone is provided', () => {
@@ -374,5 +384,70 @@ describe('listTimezoneValues', () => {
     }
     expect(zones).toContain('UTC');
     expect(new Set(zones).size).toBe(zones.length);
+  });
+});
+
+describe('isKnownTimezone', () => {
+  it('accepts every zone the picker offers', () => {
+    for (const tz of COMMON_TIMEZONES) expect(isKnownTimezone(tz.value)).toBe(true);
+    expect(isKnownTimezone('UTC')).toBe(true);
+  });
+
+  it('accepts both spellings of a renamed zone', () => {
+    // `Intl.supportedValuesOf` lists only the primary id, and which one that
+    // is depends on the runtime's ICU vintage. Testing membership of that list
+    // told a household on Europe/Kyiv that its own timezone did not exist, and
+    // no reconciliation button ever appeared. Both names are real zones and
+    // both are what a config can legitimately hold.
+    for (const pair of [
+      ['Europe/Kyiv', 'Europe/Kiev'],
+      ['Asia/Kolkata', 'Asia/Calcutta'],
+      ['America/Nuuk', 'America/Godthab'],
+      ['Europe/Istanbul', 'Asia/Istanbul'],
+    ]) {
+      for (const zone of pair) expect(isKnownTimezone(zone), zone).toBe(true);
+      expect(sameTimezone(pair[0], pair[1]), pair.join(' vs ')).toBe(true);
+    }
+  });
+
+  it('rejects an offset, which Intl accepts but timedatectl does not want', () => {
+    // The shape guard exists for exactly this: `Intl.DateTimeFormat` takes
+    // "+05:30" happily, and it is not a zone name.
+    expect(isKnownTimezone('+05:30')).toBe(false);
+    expect(isKnownTimezone('-08:00')).toBe(false);
+    // ...while a real zone whose name contains a sign still passes.
+    expect(isKnownTimezone('Etc/GMT+5')).toBe(true);
+  });
+
+  it('rejects anything that is not a zone id', () => {
+    // This is the gate in front of `timedatectl set-timezone`, so the cases
+    // that matter are the crafted ones, not just typos.
+    expect(isKnownTimezone('Mars/Olympus_Mons')).toBe(false);
+    expect(isKnownTimezone('Europe/Berlin; rm -rf /')).toBe(false);
+    expect(isKnownTimezone('Europe/Berlin --adjust-system-clock')).toBe(false);
+    expect(isKnownTimezone('../../etc/shadow')).toBe(false);
+    expect(isKnownTimezone('')).toBe(false);
+  });
+});
+
+describe('canonicalTimezone / sameTimezone', () => {
+  it('treats the two spellings of an aliased zone as one zone', () => {
+    // Which of the pair a runtime calls primary is its own business; both
+    // sides go through the same ICU here, so they have to agree either way.
+    expect(sameTimezone('Asia/Calcutta', 'Asia/Kolkata')).toBe(true);
+    expect(sameTimezone('Etc/UTC', 'UTC')).toBe(true);
+  });
+
+  it('keeps distinct zones distinct even when they share an offset today', () => {
+    // Berlin and Paris are both UTC+1/+2 year round, but they are different
+    // zones and the device reporting one while the screens show the other is
+    // still worth saying out loud.
+    expect(sameTimezone('Europe/Berlin', 'Europe/Paris')).toBe(false);
+    expect(sameTimezone('UTC', 'Europe/Berlin')).toBe(false);
+  });
+
+  it('returns an unknown zone unchanged instead of throwing', () => {
+    expect(canonicalTimezone('Mars/Olympus_Mons')).toBe('Mars/Olympus_Mons');
+    expect(sameTimezone('Mars/Olympus_Mons', 'Mars/Olympus_Mons')).toBe(true);
   });
 });

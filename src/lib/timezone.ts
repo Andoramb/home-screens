@@ -94,6 +94,62 @@ export function listTimezoneValues(): string[] {
 }
 
 /**
+ * Zone names only: letters, digits, `_`, `+` and `-` in `/`-separated
+ * segments, starting with a letter. This is the shape guard, and the reason
+ * it exists is `Intl.DateTimeFormat` below, which also accepts offset forms
+ * like "+05:30" that are not zone names and are not what `timedatectl` wants.
+ * It rejects every crafted argument on the way past: spaces, `;`, `..`.
+ */
+const ZONE_NAME = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+)*$/;
+
+/**
+ * Is this a genuine IANA zone identifier, and so the one thing the API will
+ * hand `timedatectl`?
+ *
+ * Not `listTimezoneValues().includes(zone)`, which was the first spelling and
+ * was wrong: `Intl.supportedValuesOf` lists only the *primary* id of each
+ * zone, and which of an alias pair is primary depends on the runtime's ICU
+ * vintage. Node here answers "Europe/Kiev", so a household on "Europe/Kyiv"
+ * (or "America/Nuuk", or any other renamed zone) was told its own timezone
+ * did not exist. Patching COMMON_TIMEZONES zone by zone is how "Asia/Kolkata"
+ * came to pass while the other renames did not.
+ *
+ * ICU's tz database is the allowlist instead. It is a superset of the picker
+ * list, current for whatever runtime is asking, and still an enumeration:
+ * anything that is not a real zone name throws.
+ */
+export function isKnownTimezone(zone: string): boolean {
+  if (!ZONE_NAME.test(zone)) return false;
+  try {
+    Intl.DateTimeFormat('en-US', { timeZone: zone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Collapse an IANA alias to whatever primary id this runtime prefers, so two
+ * spellings of one zone compare equal. ICU canonicalizes in either direction
+ * depending on its vintage (Chromium has served "Asia/Calcutta" as the
+ * primary, other builds "Asia/Kolkata"), which is fine: both sides of a
+ * comparison go through here in the same runtime, so the direction never
+ * matters. An unknown zone is returned unchanged rather than throwing.
+ */
+export function canonicalTimezone(zone: string): string {
+  try {
+    return Intl.DateTimeFormat('en-US', { timeZone: zone }).resolvedOptions().timeZone;
+  } catch {
+    return zone;
+  }
+}
+
+/** Do two zone ids name the same zone, alias spellings included? */
+export function sameTimezone(a: string, b: string): boolean {
+  return a === b || canonicalTimezone(a) === canonicalTimezone(b);
+}
+
+/**
  * Create a Date whose local-time methods (getHours, getMonth, etc.) reflect
  * the given IANA timezone. Works by extracting date parts via Intl and
  * reconstructing a local Date from them.

@@ -493,6 +493,14 @@
       "clockCheck": {
         "summary": "Klokken vergelijken",
         "description": "Vergelijk de klok in deze browser met de klok op het apparaat waarop Home Screens draait. Komen ze niet overeen, pas dan de tijdzone hierboven aan."
+      },
+      "deviceClock": {
+        "message": "De klok van dit apparaat staat op {deviceTimezone}, maar je schermen tonen {displayTimezone}.",
+        "help": "Je schermen tonen hoe dan ook de juiste tijd. Dit verandert alleen de tijdstippen die het apparaat voor zichzelf bijhoudt, waardoor ze makkelijker te lezen zijn.",
+        "button": "Klok van het apparaat gelijkzetten",
+        "settingButton": "Bezig met wijzigen…",
+        "success": "De klok van het apparaat komt nu overeen met je schermen.",
+        "error": "De klok van het apparaat kon niet worden gewijzigd."
       }
     },
     "calendarPage": {
@@ -2962,7 +2970,7 @@
   },
   "sudoPrompt": {
     "title": "Home Screens toestaan om wijzigingen aan dit apparaat te maken",
-    "body": "Bijwerken, wifi wijzigen en dit apparaat hernoemen moeten systeemopdrachten uitvoeren zonder om een wachtwoord te vragen. Voer het apparaatwachtwoord één keer in en Home Screens regelt dat voorgoed.",
+    "body": "Bijwerken, wifi wijzigen, dit apparaat hernoemen en de klok ervan instellen moeten systeemopdrachten uitvoeren zonder om een wachtwoord te vragen. Voer het apparaatwachtwoord één keer in en Home Screens regelt dat voorgoed.",
     "imageHint": "Op de kant-en-klare Home Screens image is het wachtwoord screens, tenzij je het hebt gewijzigd.",
     "passwordLabel": "Apparaatwachtwoord",
     "passwordPlaceholder": "Wachtwoord",

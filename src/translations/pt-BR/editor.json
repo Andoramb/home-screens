@@ -493,6 +493,14 @@
       "clockCheck": {
         "summary": "Conferir os relógios",
         "description": "Compare o relógio deste navegador com o do aparelho que roda o Home Screens. Se não baterem, mude o fuso horário acima."
+      },
+      "deviceClock": {
+        "message": "O relógio deste aparelho está em {deviceTimezone}, mas suas telas mostram {displayTimezone}.",
+        "help": "Suas telas mostram a hora certa de qualquer jeito. Isso muda apenas os horários que o aparelho anota para si mesmo, e deixa a leitura mais fácil.",
+        "button": "Acertar o relógio do aparelho",
+        "settingButton": "Alterando…",
+        "success": "O relógio do aparelho agora combina com suas telas.",
+        "error": "Não foi possível alterar o relógio do aparelho."
       }
     },
     "calendarPage": {
@@ -2962,7 +2970,7 @@
   },
   "sudoPrompt": {
     "title": "Permitir que o Home Screens faça alterações neste dispositivo",
-    "body": "Atualizar, mudar o WiFi e renomear este dispositivo precisam executar comandos do sistema sem pedir senha. Digite a senha do dispositivo uma vez e o Home Screens deixa isso configurado de vez.",
+    "body": "Atualizar, mudar o WiFi, renomear este aparelho e acertar o relógio dele precisam executar comandos do sistema sem pedir senha. Digite a senha do dispositivo uma vez e o Home Screens deixa isso configurado de vez.",
     "imageHint": "Na imagem pronta do Home Screens a senha é screens, a menos que você a tenha alterado.",
     "passwordLabel": "Senha do dispositivo",
     "passwordPlaceholder": "Senha",

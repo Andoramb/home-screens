@@ -493,6 +493,14 @@
       "clockCheck": {
         "summary": "Tjek urene",
         "description": "Sammenlign uret i denne browser med uret på den enhed, der kører Home Screens. Passer de ikke sammen, så ret tidszonen ovenfor."
+      },
+      "deviceClock": {
+        "message": "Denne enheds ur står på {deviceTimezone}, men dine skærme viser {displayTimezone}.",
+        "help": "Dine skærme viser den rigtige tid uanset hvad. Dette ændrer kun de tidspunkter, enheden noterer til sig selv, så de bliver lettere at læse.",
+        "button": "Stil enhedens ur ens",
+        "settingButton": "Ændrer…",
+        "success": "Enhedens ur passer nu med dine skærme.",
+        "error": "Enhedens ur kunne ikke ændres."
       }
     },
     "calendarPage": {
@@ -2962,7 +2970,7 @@
   },
   "sudoPrompt": {
     "title": "Tillad Home Screens at ændre denne enhed",
-    "body": "Opdateringer, WiFi-ændringer og omdøbning af denne enhed skal kunne køre systemkommandoer uden at blive bedt om en adgangskode. Indtast enhedens adgangskode én gang, så sætter Home Screens det op for altid.",
+    "body": "Opdateringer, WiFi-ændringer, omdøbning af denne enhed og indstilling af dens ur skal kunne køre systemkommandoer uden at blive bedt om en adgangskode. Indtast enhedens adgangskode én gang, så sætter Home Screens det op for altid.",
     "imageHint": "På det færdige Home Screens image er adgangskoden screens, medmindre du har ændret den.",
     "passwordLabel": "Enhedens adgangskode",
     "passwordPlaceholder": "Adgangskode",

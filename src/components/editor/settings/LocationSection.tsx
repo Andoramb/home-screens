@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useId } from 'react';
+import { useState, useEffect, useCallback, useId } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import Button from '@/components/ui/Button';
 import TimezoneSelect from '@/components/editor/TimezoneSelect';
+import SudoPasswordPrompt from '@/components/editor/SudoPasswordPrompt';
 import { useFormattingLocale, useTranslate } from '@/i18n';
 import { logger } from '@/lib/logger';
 import { hasValidLocation } from '@/lib/location';
+import { isKnownTimezone, sameTimezone } from '@/lib/timezone';
 
 const log = logger('location');
 
@@ -38,6 +40,17 @@ interface LocationStatus {
   kind: StatusKind;
 }
 
+/**
+ * The device-clock result, tagged with the zone it was about. Picking a
+ * different zone brings the offer back, and "the device's clock now matches
+ * your screens" sitting under it would be a lie, so the message is rendered
+ * only while `forZone` is still the chosen zone. Tagging beats clearing on
+ * change: it retires a stale failure the same way, with no effect to fire.
+ */
+interface DeviceClockStatus extends LocationStatus {
+  forZone: string;
+}
+
 export default function LocationSection({ values, onChange }: Props) {
   const { lat, lon, locationName, timezone } = values;
   const locale = useFormattingLocale();
@@ -52,25 +65,87 @@ export default function LocationSection({ values, onChange }: Props) {
   const [browserTime, setBrowserTime] = useState(() => new Date());
   const [serverInfo, setServerInfo] = useState<{ offsetMs: number; timezone: string } | null>(null);
 
+  // Device-clock offer state. `deviceStatus` is only ever set by pressing the
+  // button, so a page that opens with a mismatch opens on the plain offer.
+  const [settingDeviceZone, setSettingDeviceZone] = useState(false);
+  const [deviceStatus, setDeviceStatus] = useState<DeviceClockStatus | null>(null);
+  const [needsSudo, setNeedsSudo] = useState(false);
+
   useEffect(() => {
     const timer = setInterval(() => setBrowserTime(new Date()), 1000);
     return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    async function fetchServerTime() {
-      const fetchedAt = Date.now();
-      try {
-        const res = await editorFetch('/api/time');
-        const data = await res.json();
-        const serverMs = new Date(data.iso).getTime();
-        setServerInfo({ offsetMs: serverMs - fetchedAt, timezone: data.timezone });
-      } catch (err) {
-        log.debug('Failed to fetch server time:', err);
-      }
+  const fetchServerTime = useCallback(async () => {
+    const fetchedAt = Date.now();
+    try {
+      const res = await editorFetch('/api/time');
+      const data = await res.json();
+      const serverMs = new Date(data.iso).getTime();
+      setServerInfo({ offsetMs: serverMs - fetchedAt, timezone: data.timezone });
+    } catch (err) {
+      log.debug('Failed to fetch server time:', err);
     }
-    fetchServerTime();
   }, []);
+
+  useEffect(() => {
+    fetchServerTime();
+  }, [fetchServerTime]);
+
+  /**
+   * The device's own clock zone, when it disagrees with the one the screens
+   * render in. Null covers every case with nothing to offer: the server time
+   * hasn't arrived, no zone has been chosen yet (the display follows the
+   * device, so there is nothing to reconcile), the configured value isn't a
+   * zone this runtime knows, or the two already agree, alias spellings of one
+   * zone included, so "Asia/Calcutta" against "Asia/Kolkata" stays quiet.
+   */
+  const deviceZoneToFix =
+    serverInfo &&
+    timezone.trim() !== '' &&
+    isKnownTimezone(timezone) &&
+    !sameTimezone(timezone, serverInfo.timezone)
+      ? serverInfo.timezone
+      : null;
+
+  async function matchDeviceClock() {
+    if (!deviceZoneToFix || settingDeviceZone) return;
+    // Captured up front: the request describes this zone whatever the picker
+    // does while it is in flight.
+    const zone = timezone;
+    setSettingDeviceZone(true);
+    setDeviceStatus(null);
+    try {
+      const res = await editorFetch('/api/system/timezone', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ timezone: zone }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ok) {
+        // Re-read rather than trusting the request: the offer disappears
+        // because the device now reports the new zone, not because we said so.
+        await fetchServerTime();
+        setDeviceStatus({
+          message: t('settings.locationPage.deviceClock.success'),
+          kind: 'success',
+          forZone: zone,
+        });
+      } else if (data.needsSudoPassword) {
+        setNeedsSudo(true);
+      } else {
+        setDeviceStatus({
+          message: data.error ?? t('settings.locationPage.deviceClock.error'),
+          kind: 'error',
+          forZone: zone,
+        });
+      }
+    } catch {
+      setDeviceStatus({ message: t('common.serverUnreachable'), kind: 'error', forZone: zone });
+    } finally {
+      setSettingDeviceZone(false);
+    }
+  }
 
   async function lookupLocation() {
     if (!locationQuery.trim()) return;
@@ -236,6 +311,60 @@ export default function LocationSection({ values, onChange }: Props) {
           <p id={tzHelpId} className="text-xs text-hs-text-faint mt-1">
             {t('settings.locationPage.timezoneHelp')}
           </p>
+
+          {/* The device's own clock is a separate thing from the zone above,
+              and an image-flashed Pi runs UTC because nobody ever chose. The
+              screens are right either way, so this is an offer and never a
+              side effect of saving the picker. */}
+          {deviceZoneToFix && (
+            <div
+              className="mt-2 rounded-md border border-hs-border-strong bg-hs-card px-3 py-2.5"
+              data-testid="device-clock-offer"
+            >
+              <p className="text-xs text-hs-text-body">
+                {t('settings.locationPage.deviceClock.message', {
+                  deviceTimezone: deviceZoneToFix,
+                  displayTimezone: timezone,
+                })}
+              </p>
+              <p className="text-xs text-hs-text-faint mt-1">
+                {t('settings.locationPage.deviceClock.help')}
+              </p>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="mt-2"
+                onClick={matchDeviceClock}
+                disabled={settingDeviceZone}
+              >
+                {settingDeviceZone
+                  ? t('settings.locationPage.deviceClock.settingButton')
+                  : t('settings.locationPage.deviceClock.button')}
+              </Button>
+            </div>
+          )}
+
+          {/* Outside the offer above, which unmounts the moment the device
+              reports the new zone, so the confirmation has to outlive it. */}
+          {deviceStatus?.forZone === timezone && (
+            <p
+              className={`text-xs mt-1.5 ${deviceStatus.kind === 'error' ? 'text-hs-danger' : 'text-hs-success'}`}
+              aria-live="polite"
+              role={deviceStatus.kind === 'error' ? 'alert' : undefined}
+            >
+              {deviceStatus.message}
+            </p>
+          )}
+          {needsSudo && (
+            <SudoPasswordPrompt
+              compact
+              onGranted={() => {
+                setNeedsSudo(false);
+                matchDeviceClock();
+              }}
+              onCancel={() => setNeedsSudo(false)}
+            />
+          )}
         </div>
 
         {/* Diagnostic, not a setting: folded away so the page opens on the two

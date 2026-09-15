@@ -493,6 +493,14 @@
       "clockCheck": {
         "summary": "Vérifier les horloges",
         "description": "Comparez l'horloge de ce navigateur avec celle de l'appareil qui fait tourner Home Screens. Si elles diffèrent, changez le fuseau horaire ci-dessus."
+      },
+      "deviceClock": {
+        "message": "L'horloge de cet appareil est réglée sur {deviceTimezone}, alors que vos écrans affichent {displayTimezone}.",
+        "help": "Vos écrans affichent la bonne heure dans les deux cas. Cela ne change que les horodatages que l'appareil conserve pour lui-même, ce qui les rend plus faciles à lire.",
+        "button": "Aligner l'horloge de l'appareil",
+        "settingButton": "Modification…",
+        "success": "L'horloge de l'appareil correspond maintenant à vos écrans.",
+        "error": "Impossible de modifier l'horloge de l'appareil."
       }
     },
     "calendarPage": {
@@ -2962,7 +2970,7 @@
   },
   "sudoPrompt": {
     "title": "Autoriser Home Screens à modifier cet appareil",
-    "body": "Les mises à jour, les changements de WiFi et le renommage de cet appareil doivent exécuter des commandes système sans demander de mot de passe. Saisissez le mot de passe de l'appareil une seule fois et Home Screens s'en charge définitivement.",
+    "body": "Les mises à jour, les changements de WiFi, le renommage de cet appareil et le réglage de son horloge doivent exécuter des commandes système sans demander de mot de passe. Saisissez le mot de passe de l'appareil une seule fois et Home Screens s'en charge définitivement.",
     "imageHint": "Sur l'image Home Screens prête à l'emploi, le mot de passe est screens, sauf si vous l'avez changé.",
     "passwordLabel": "Mot de passe de l'appareil",
     "passwordPlaceholder": "Mot de passe",
