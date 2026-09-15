@@ -8,7 +8,7 @@ const DOUBLE_TAP_MS = 300;
 const DEFAULT_PAUSE_TIMEOUT_S = 300;
 
 interface UsePauseRotationOptions {
-  /** `settings.pauseEnabled`; undefined means enabled. */
+  /** Whether the pause gesture exists: `settings.pauseEnabled`, and false while the dots are hidden. Undefined means enabled. */
   pauseEnabled: boolean | undefined;
   /** `settings.pauseTimeoutSeconds`; 0 means stay paused indefinitely. */
   pauseTimeoutSeconds: number | undefined;

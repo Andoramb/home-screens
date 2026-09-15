@@ -152,6 +152,63 @@ test('pauseEnabled:false makes double-tapping the active dot a no-op', async ({ 
 });
 
 // ---------------------------------------------------------------------------
+// showPaginationDots: the pause gesture and progress line live on the dots.
+// ---------------------------------------------------------------------------
+
+test('showPaginationDots:false draws no dots or progress line, and rotation still advances', async ({ page, request }) => {
+  await renderOnDisplay(page, request, baseConfig({
+    screens: threeScreens(),
+    settings: { rotationIntervalMs: 2000, showPaginationDots: false },
+  }));
+  await expect(page.getByText(A, { exact: true })).toBeVisible();
+  await expect(page.getByTestId('pagination-dots')).toHaveCount(0);
+  await expect(page.getByTestId('rotation-progress')).toHaveCount(0);
+  await expect(page.getByText(B, { exact: true })).toBeVisible({ timeout: 6000 });
+});
+
+test('switching the dots off while paused resumes rotation', async ({ page, request }) => {
+  const screens = threeScreens();
+  await renderOnDisplay(page, request, baseConfig({
+    screens,
+    settings: { rotationIntervalMs: 3_600_000, pauseTimeoutSeconds: 0 },
+  }));
+  await expect(page.getByText(A, { exact: true })).toBeVisible();
+  await page.locator('button[aria-current="true"]').dblclick();
+  await expect(page.getByTestId('pause-pill')).toBeVisible();
+
+  // Same screen ids, so the live config poll does not reset the rotation on
+  // its own. With the dots gone there is no pill and no dot to double-tap, so
+  // the pause has to go with them or the wall stays on A for good.
+  await putConfig(request, baseConfig({
+    screens,
+    settings: { rotationIntervalMs: 2000, pauseTimeoutSeconds: 0, showPaginationDots: false },
+  }));
+  await expect(page.getByTestId('pagination-dots')).toHaveCount(0, { timeout: 8000 });
+  await expect(page.getByText(B, { exact: true })).toBeVisible({ timeout: 8000 });
+});
+
+test('a display override decides the dots for that display alone', async ({ page, request }) => {
+  const screensFor = (prefix: string) => [
+    makeScreen(`${prefix}-a`, 'A', [textModule(A)]),
+    makeScreen(`${prefix}-b`, 'B', [textModule(B)]),
+  ];
+  const config = baseConfig({
+    settings: { showPaginationDots: false },
+    displays: [
+      { id: 'hall', name: 'Hall', screens: screensFor('hall') },
+      { id: 'kitchen', name: 'Kitchen', screens: screensFor('kitchen'), settings: { showPaginationDots: true } },
+    ],
+  });
+
+  await renderOnDisplay(page, request, config, '/display/kitchen');
+  await expect(page.getByTestId('pagination-dots')).toBeVisible();
+
+  await page.goto('/display/hall');
+  await expect(page.getByText(A, { exact: true })).toBeVisible();
+  await expect(page.getByTestId('pagination-dots')).toHaveCount(0);
+});
+
+// ---------------------------------------------------------------------------
 // Plugin-driven navigation events (SDK.emit → pluginEventBus → ScreenRotator).
 // ---------------------------------------------------------------------------
 

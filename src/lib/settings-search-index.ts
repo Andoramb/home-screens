@@ -38,6 +38,8 @@ export interface SettingsFieldVisibilityContext {
   isMultiDisplay: boolean;
   profileCount: number;
   transitionEffect: string;
+  /** Some wall still draws the screen dots, so the pause and progress-line defaults render (`paginationDotDefaultsInUse`). */
+  dotDefaultsInUse: boolean;
 }
 
 /**
@@ -93,16 +95,18 @@ export function isSettingsFieldReachable(
 const singleDisplayOnly = (ctx: SettingsFieldVisibilityContext) => !ctx.isMultiDisplay;
 const hasProfiles = (ctx: SettingsFieldVisibilityContext) => ctx.profileCount > 0;
 const hasTransition = (ctx: SettingsFieldVisibilityContext) => ctx.transitionEffect !== 'none';
+const hasDots = (ctx: SettingsFieldVisibilityContext) => ctx.dotDefaultsInUse;
 
 export const SETTINGS_FIELD_INDEX: SettingsFieldEntry[] = [
   { pageId: 'screen', fieldId: 'display.canvasOrientation', labelKey: 'common.orientation', panel: 'appearance', visibleWhen: singleDisplayOnly },
   { pageId: 'screen', fieldId: 'display.canvasResolution', labelKey: 'common.resolution', panel: 'appearance', visibleWhen: singleDisplayOnly },
   { pageId: 'screen', fieldId: 'display.canvasFlip', labelKey: 'settings.defaultDisplayPage.canvas.flipLabel', panel: 'appearance', visibleWhen: singleDisplayOnly },
   { pageId: 'screen', fieldId: 'display.rotationInterval', labelKey: 'settings.defaultDisplayPage.fields.rotationIntervalLabel', panel: 'appearance' },
-  { pageId: 'screen', fieldId: 'display.pauseEnabled', labelKey: 'settings.defaultDisplayPage.fields.pauseEnabledLabel', panel: 'appearance' },
+  { pageId: 'screen', fieldId: 'display.pauseEnabled', labelKey: 'settings.defaultDisplayPage.fields.pauseEnabledLabel', panel: 'appearance', visibleWhen: hasDots },
   { pageId: 'screen', fieldId: 'display.swipeEnabled', labelKey: 'settings.defaultDisplayPage.fields.swipeEnabledLabel', panel: 'appearance' },
   { pageId: 'screen', fieldId: 'display.setupHintEnabled', labelKey: 'settings.defaultDisplayPage.fields.setupHintLabel', panel: 'appearance' },
-  { pageId: 'screen', fieldId: 'display.showRotationProgress', labelKey: 'settings.defaultDisplayPage.fields.rotationProgressLabel', panel: 'appearance' },
+  { pageId: 'screen', fieldId: 'display.showRotationProgress', labelKey: 'settings.defaultDisplayPage.fields.rotationProgressLabel', panel: 'appearance', visibleWhen: hasDots },
+  { pageId: 'screen', fieldId: 'display.showPaginationDots', labelKey: 'settings.defaultDisplayPage.fields.paginationDotsLabel', panel: 'appearance' },
   { pageId: 'screen', fieldId: 'display.transitionEffect', labelKey: 'settings.defaultDisplayPage.fields.transitionEffectLabel', panel: 'appearance' },
   { pageId: 'screen', fieldId: 'display.transitionDuration', labelKey: 'settings.defaultDisplayPage.fields.transitionDurationLabel', panel: 'appearance', visibleWhen: hasTransition },
   { pageId: 'screen', fieldId: 'display.cursorHideSeconds', labelKey: 'settings.defaultDisplayPage.fields.cursorHideLabel', panel: 'appearance' },

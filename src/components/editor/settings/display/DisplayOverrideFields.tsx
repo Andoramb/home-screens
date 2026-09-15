@@ -10,6 +10,7 @@ import { useEditorStore } from '@/stores/editor-store';
 import { TRANSITION_OPTIONS } from '@/lib/transitions';
 import { useTranslate, tOrFallback } from '@/i18n';
 import { settingsHref } from '@/lib/settings-route';
+import { displayShowsPaginationDots, showsPaginationDots } from '@/lib/pagination-dots';
 import type {
   DisplayNode,
   DisplayNodeSettings,
@@ -72,6 +73,7 @@ export default function DisplayOverrideFields({ config, display }: DisplayOverri
   // Effective values that field-conditional logic uses (e.g. pauseTimeout
   // only renders when pauseEnabled is true). Match the same precedence
   // `filterConfigForDisplay` uses on the server.
+  const effectiveShowDots = displayShowsPaginationDots(settings, display);
   const effectivePauseEnabled =
     overrides.pauseEnabled !== undefined
       ? overrides.pauseEnabled
@@ -173,23 +175,23 @@ export default function DisplayOverrideFields({ config, display }: DisplayOverri
           )}
 
           <OverrideRow
-            label={t('settings.defaultDisplayPage.fields.pauseEnabledLabel')}
-            defaultValue={settings.pauseEnabled ?? true}
-            override={overrides.pauseEnabled}
-            onFork={(seed) => setOverride('pauseEnabled', seed)}
-            onReset={() => setOverride('pauseEnabled', undefined)}
+            label={t('settings.defaultDisplayPage.fields.paginationDotsLabel')}
+            defaultValue={showsPaginationDots(settings)}
+            override={overrides.showPaginationDots}
+            onFork={(seed) => setOverride('showPaginationDots', seed)}
+            onReset={() => setOverride('showPaginationDots', undefined)}
             defaultsPageHref={DEFAULTS_HREF}
             defaultsPageLabel={DEFAULTS_LABEL}
             formatValue={(v) =>
               v
-                ? t('settings.defaultDisplayPage.fields.pauseEnabledToggle')
-                : t('settings.perDisplayPage.display.fields.pauseEnabledLabelDisabled')
+                ? t('settings.defaultDisplayPage.fields.paginationDotsToggle')
+                : t('settings.perDisplayPage.display.fields.paginationDotsLabelDisabled')
             }
             displayName={display.name}
           >
             {({ value, onChange, disabled }) => (
               <Toggle
-                label={t('settings.defaultDisplayPage.fields.pauseEnabledToggle')}
+                label={t('settings.defaultDisplayPage.fields.paginationDotsToggle')}
                 checked={value}
                 disabled={disabled}
                 onChange={onChange}
@@ -197,10 +199,40 @@ export default function DisplayOverrideFields({ config, display }: DisplayOverri
             )}
           </OverrideRow>
 
+          {/* Pause and the progress line live on the dots, so they hide
+              with them. Same orphan rule as transitionDuration: an existing
+              override keeps its row so it can still be reset. */}
+          {(effectiveShowDots || overrides.pauseEnabled !== undefined) && (
+            <OverrideRow
+              label={t('settings.defaultDisplayPage.fields.pauseEnabledLabel')}
+              defaultValue={settings.pauseEnabled ?? true}
+              override={overrides.pauseEnabled}
+              onFork={(seed) => setOverride('pauseEnabled', seed)}
+              onReset={() => setOverride('pauseEnabled', undefined)}
+              defaultsPageHref={DEFAULTS_HREF}
+              defaultsPageLabel={DEFAULTS_LABEL}
+              formatValue={(v) =>
+                v
+                  ? t('settings.defaultDisplayPage.fields.pauseEnabledToggle')
+                  : t('settings.perDisplayPage.display.fields.pauseEnabledLabelDisabled')
+              }
+              displayName={display.name}
+            >
+              {({ value, onChange, disabled }) => (
+                <Toggle
+                  label={t('settings.defaultDisplayPage.fields.pauseEnabledToggle')}
+                  checked={value}
+                  disabled={disabled}
+                  onChange={onChange}
+                />
+              )}
+            </OverrideRow>
+          )}
+
           {/* Same orphan-visibility rule as transitionDuration above:
               stay visible whenever the override exists even if
-              `pauseEnabled` was overridden to false. */}
-          {(effectivePauseEnabled || overrides.pauseTimeoutSeconds !== undefined) && (
+              `pauseEnabled` or the dots were overridden off. */}
+          {((effectiveShowDots && effectivePauseEnabled) || overrides.pauseTimeoutSeconds !== undefined) && (
             <OverrideRow
               label={t('settings.defaultDisplayPage.fields.pauseTimeoutLabel')}
               defaultValue={settings.pauseTimeoutSeconds ?? 300}
@@ -285,30 +317,32 @@ export default function DisplayOverrideFields({ config, display }: DisplayOverri
             )}
           </OverrideRow>
 
-          <OverrideRow
-            label={t('settings.defaultDisplayPage.fields.rotationProgressLabel')}
-            defaultValue={settings.showRotationProgress ?? true}
-            override={overrides.showRotationProgress}
-            onFork={(seed) => setOverride('showRotationProgress', seed)}
-            onReset={() => setOverride('showRotationProgress', undefined)}
-            defaultsPageHref={DEFAULTS_HREF}
-            defaultsPageLabel={DEFAULTS_LABEL}
-            formatValue={(v) =>
-              v
-                ? t('settings.defaultDisplayPage.fields.rotationProgressToggle')
-                : t('settings.perDisplayPage.display.fields.rotationProgressLabelDisabled')
-            }
-            displayName={display.name}
-          >
-            {({ value, onChange, disabled }) => (
-              <Toggle
-                label={t('settings.defaultDisplayPage.fields.rotationProgressToggle')}
-                checked={value}
-                disabled={disabled}
-                onChange={onChange}
-              />
-            )}
-          </OverrideRow>
+          {(effectiveShowDots || overrides.showRotationProgress !== undefined) && (
+            <OverrideRow
+              label={t('settings.defaultDisplayPage.fields.rotationProgressLabel')}
+              defaultValue={settings.showRotationProgress ?? true}
+              override={overrides.showRotationProgress}
+              onFork={(seed) => setOverride('showRotationProgress', seed)}
+              onReset={() => setOverride('showRotationProgress', undefined)}
+              defaultsPageHref={DEFAULTS_HREF}
+              defaultsPageLabel={DEFAULTS_LABEL}
+              formatValue={(v) =>
+                v
+                  ? t('settings.defaultDisplayPage.fields.rotationProgressToggle')
+                  : t('settings.perDisplayPage.display.fields.rotationProgressLabelDisabled')
+              }
+              displayName={display.name}
+            >
+              {({ value, onChange, disabled }) => (
+                <Toggle
+                  label={t('settings.defaultDisplayPage.fields.rotationProgressToggle')}
+                  checked={value}
+                  disabled={disabled}
+                  onChange={onChange}
+                />
+              )}
+            </OverrideRow>
+          )}
         </div>
       </div>
 

@@ -127,6 +127,7 @@ describe('conditionally-rendered field gating', () => {
     isMultiDisplay: false,
     profileCount: 0,
     transitionEffect: 'fade',
+    dotDefaultsInUse: true,
   };
 
   it('keeps the update choice reachable without advanced mode', () => {
@@ -176,12 +177,27 @@ describe('conditionally-rendered field gating', () => {
     expect(FORM_DEFAULTS.display.transitionEffect).not.toBe('none');
   });
 
+  it('hides the pause and progress-line defaults while no wall draws the dots', () => {
+    // Both live on the dots, so the Screen page stops rendering them.
+    for (const fieldId of ['display.pauseEnabled', 'display.showRotationProgress']) {
+      const entry = SETTINGS_FIELD_INDEX.find((f) => f.fieldId === fieldId)!;
+      expect(isSettingsFieldReachable(entry, DEFAULT_INSTALL)).toBe(true);
+      expect(isSettingsFieldReachable(entry, { ...DEFAULT_INSTALL, dotDefaultsInUse: false })).toBe(false);
+    }
+    const dots = SETTINGS_FIELD_INDEX.find((f) => f.fieldId === 'display.showPaginationDots')!;
+    expect(isSettingsFieldReachable(dots, { ...DEFAULT_INSTALL, dotDefaultsInUse: false })).toBe(true);
+  });
+
+  it('resolves unset screen dots to shown, as the page does', () => {
+    expect(FORM_DEFAULTS.display.showPaginationDots).toBe(true);
+  });
+
   it('leaves unconditional fields reachable in every context', () => {
     const entry = SETTINGS_FIELD_INDEX.find((f) => f.fieldId === 'location.timezone')!;
     expect(isSettingsFieldReachable(entry, DEFAULT_INSTALL)).toBe(true);
     expect(
       isSettingsFieldReachable(entry, {
-        advancedMode: true, isMultiDisplay: true, profileCount: 5, transitionEffect: 'none',
+        advancedMode: true, isMultiDisplay: true, profileCount: 5, transitionEffect: 'none', dotDefaultsInUse: false,
       }),
     ).toBe(true);
   });

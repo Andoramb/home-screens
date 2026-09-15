@@ -12,6 +12,7 @@ import {
 import { declaredCanvasDimensions } from '@/lib/display-filter';
 import { resolvePanelPowerEnabled } from '@/lib/panel-power';
 import { FULLSCREEN_THEMES } from '@/lib/fullscreen-themes';
+import { showsPaginationDots } from '@/lib/pagination-dots';
 import { useTranslate, tOrFallback, type TranslateFn } from '@/i18n';
 import { settingsHref } from '@/lib/settings-route';
 import ProfileSubtab from './ProfileSubtab';
@@ -389,6 +390,18 @@ function formatOverrideComparison(
       return compare(
         formatPauseEnabled(overrideValue as boolean, t),
         defaultValue != null ? formatPauseEnabled(defaultValue as boolean, t) : null,
+      );
+    case 'showPaginationDots':
+      // Unset resolves to shown, so there is always a default to name.
+      return compare(
+        formatPauseEnabled(overrideValue as boolean, t),
+        formatPauseEnabled(showsPaginationDots(settings), t),
+      );
+    case 'showRotationProgress':
+      // Unset resolves to shown, as on the display.
+      return compare(
+        formatPauseEnabled(overrideValue as boolean, t),
+        formatPauseEnabled(settings.showRotationProgress ?? true, t),
       );
     case 'setupHintEnabled':
       return compare(

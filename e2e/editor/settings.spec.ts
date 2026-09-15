@@ -286,6 +286,55 @@ test('Defaults › Meals: follow global clears a stored time format override', a
     .toBeUndefined();
 });
 
+test('Defaults › Screen: pause and progress-line controls follow the screen dots', async ({ page, request }) => {
+  await putConfig(request, baseConfig());
+  await page.goto('/editor/settings?section=defaults&page=screen');
+
+  const pause = page.locator('[data-field-id="display.pauseEnabled"]');
+  const progress = page.locator('[data-field-id="display.showRotationProgress"]');
+  await expect(pause).toBeVisible();
+  await expect(progress).toBeVisible();
+
+  // Both live on the dots, so they leave with them.
+  await page.locator('[data-field-id="display.showPaginationDots"]').getByRole('switch').click();
+  await expect(pause).toHaveCount(0);
+  await expect(progress).toHaveCount(0);
+});
+
+test('settings search only offers the pause control while a display shows the dots', async ({ page, request }) => {
+  const nav = page.locator('nav');
+  const search = nav.getByPlaceholder('Search settings…');
+  const pauseResult = nav.getByRole('button', { name: /Allow pause on touchscreen/ });
+
+  await putConfig(request, baseConfig());
+  await page.goto('/editor/settings?section=defaults&page=screen');
+  await search.fill('pause');
+  await expect(pauseResult).toBeVisible();
+
+  // With the dots off the page has no pause control, so a result would lead nowhere.
+  await putConfig(request, baseConfig({ settings: { showPaginationDots: false } }));
+  await page.reload();
+  await expect(page.locator('[data-field-id="display.showPaginationDots"]')).toBeVisible();
+  await search.fill('pause');
+  await expect(nav.getByText('No settings found')).toBeVisible();
+  await expect(pauseResult).toHaveCount(0);
+});
+
+test('Defaults › Screen: a display that turns the dots back on keeps the shared pause controls editable', async ({ page, request }) => {
+  await putConfig(request, baseConfig({
+    settings: { showPaginationDots: false },
+    displays: [
+      { id: 'main', name: 'Main', screens: [makeScreen('m1', 'M1', [textModule('MAIN')])] },
+      { id: 'kitchen', name: 'Kitchen', screens: [makeScreen('k1', 'K1', [textModule('KIT')])], settings: { showPaginationDots: true } },
+    ],
+  }));
+  await page.goto('/editor/settings?section=defaults&page=screen');
+  await expect(page.locator('[data-field-id="display.showPaginationDots"]')).toBeVisible();
+  // Kitchen still inherits these, so they stay on the page.
+  await expect(page.locator('[data-field-id="display.pauseEnabled"]')).toBeVisible();
+  await expect(page.locator('[data-field-id="display.showRotationProgress"]')).toBeVisible();
+});
+
 test.describe('per-display overrides', () => {
   function multiDisplayConfig() {
     return baseConfig({
@@ -328,5 +377,42 @@ test.describe('per-display overrides', () => {
     await expect
       .poll(async () => (await kitchenSettings(request)).transitionEffect)
       .toBeUndefined();
+  });
+
+  test('overriding the screen dots off hides the pause rows and names the override on the overview', async ({ page, request }) => {
+    await putConfig(request, multiDisplayConfig());
+    await page.goto('/editor/settings?section=display&id=kitchen&subtab=overrides');
+
+    await expect(overrideRow(page, 'Allow pause on touchscreen')).toBeVisible();
+    await expect(overrideRow(page, 'Progress line under the screen dots')).toBeVisible();
+
+    const dots = overrideRow(page, 'Screen dots');
+    await dots.getByRole('button', { name: 'Override', exact: true }).click();
+    await dots.getByRole('switch').click();
+    await expect
+      .poll(async () => (await kitchenSettings(request)).showPaginationDots)
+      .toBe(false);
+
+    await expect(page.getByText('Allow pause on touchscreen', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Auto-resume timeout', { exact: true })).toHaveCount(0);
+    await expect(page.getByText('Progress line under the screen dots', { exact: true })).toHaveCount(0);
+
+    await page.goto('/editor/settings?section=display&id=kitchen&subtab=overview');
+    await expect(page.getByText('Screen dots: Off (default: On)', { exact: true })).toBeVisible();
+  });
+
+  test('a progress-line override is named with its value on the overview and the Defaults banner', async ({ page, request }) => {
+    const config = multiDisplayConfig();
+    const kitchen = (config as unknown as { displays: DisplayNode[] }).displays.find((d) => d.id === 'kitchen')!;
+    kitchen.settings = { showRotationProgress: false };
+    await putConfig(request, config);
+
+    await page.goto('/editor/settings?section=display&id=kitchen&subtab=overview');
+    await expect(page.getByText('Progress line: Off (default: On)', { exact: true })).toBeVisible();
+
+    await page.goto('/editor/settings?section=defaults&page=screen');
+    await expect(page.locator('a[href*="section=display&id=kitchen"]')).toBeVisible();
+    await expect(page.locator('strong', { hasText: /^Progress line$/ })).toBeVisible();
+    await expect(page.getByText('showRotationProgress')).toHaveCount(0);
   });
 });

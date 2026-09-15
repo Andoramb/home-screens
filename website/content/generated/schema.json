@@ -7245,6 +7245,16 @@
           "defaultText": "true"
         },
         {
+          "name": "showPaginationDots",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Show the row of screen dots at the bottom of the display",
+          "defaultText": "true"
+        },
+        {
           "name": "backupReminder",
           "optional": true,
           "type": {
@@ -8833,6 +8843,15 @@
             "text": "boolean"
           },
           "description": "Show the rotation progress line"
+        },
+        {
+          "name": "showPaginationDots",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Show the row of screen dots"
         },
         {
           "name": "alerts",

@@ -65,6 +65,7 @@ import {
   type SettingsRoute,
 } from '@/lib/settings-route';
 import { FORM_DEFAULTS } from '@/lib/settings-form';
+import { paginationDotDefaultsInUse } from '@/lib/pagination-dots';
 import { getDisplayProfiles } from '@/lib/display-filter';
 import {
   SETTINGS_FIELD_INDEX,
@@ -278,8 +279,13 @@ export default function SettingsSidebar({ onAddDisplay }: SettingsSidebarProps) 
       // the same dead end this gating exists to prevent, inverted.
       transitionEffect:
         config?.settings?.transitionEffect ?? FORM_DEFAULTS.display.transitionEffect,
+      // Same unset resolution as transitionEffect above, for the same reason.
+      dotDefaultsInUse: paginationDotDefaultsInUse(
+        config?.settings?.showPaginationDots ?? FORM_DEFAULTS.display.showPaginationDots,
+        config?.displays,
+      ),
     }),
-    [config?.settings?.advancedMode, config?.settings?.transitionEffect, profilesForSelectedDisplay, isMultiDisplay],
+    [config?.settings?.advancedMode, config?.settings?.transitionEffect, config?.settings?.showPaginationDots, config?.displays, profilesForSelectedDisplay, isMultiDisplay],
   );
   const filteredFields = useMemo(
     () =>

@@ -803,6 +803,9 @@
       "fields": {
         "rotationIntervalLabel": "Interval for skærmskift",
         "rotationIntervalHelp": "Hvor længe hver skærm vises, før der automatisk skiftes til den næste. Gælder kun, når du har flere skærme.",
+        "paginationDotsLabel": "Skærmprikker",
+        "paginationDotsToggle": "Slået til",
+        "paginationDotsHelp": "Rækken af prikker nederst på skærmen, der viser, hvilken skærm der vises, og som du kan trykke på for at skifte til en anden. Slår du dette fra, forsvinder også dobbelttryk-for-pause, da den gestus sidder på prikkerne.",
         "pauseEnabledLabel": "Tillad pause på touchskærm",
         "pauseEnabledToggle": "Slået til",
         "pauseEnabledHelp": "Dobbelttryk på den aktive prik for at sætte skærmskift på pause. Dobbelttryk igen for at fortsætte.",
@@ -885,6 +888,8 @@
           "pauseTimeoutSeconds": "Pausens varighed",
           "swipeEnabled": "Stryg for at skifte",
           "setupHintEnabled": "Opsætningsbesked",
+          "showPaginationDots": "Skærmprikker",
+          "showRotationProgress": "Fremdriftslinje",
           "cursorHideSeconds": "Skjul markøren",
           "fullscreenTheme": "Tema",
           "sleep": "Slumring & dæmpning",
@@ -949,6 +954,7 @@
         "appearanceHeading": "Udseende",
         "fields": {
           "rotationIntervalSeconds": "{seconds} sekunder",
+          "paginationDotsLabelDisabled": "Slået fra",
           "pauseEnabledLabelDisabled": "Slået fra",
           "swipeEnabledLabelDisabled": "Slået fra",
           "setupHintLabelDisabled": "Slået fra",

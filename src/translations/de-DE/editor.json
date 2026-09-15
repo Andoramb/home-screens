@@ -803,6 +803,9 @@
       "fields": {
         "rotationIntervalLabel": "Bildschirmwechsel-Intervall",
         "rotationIntervalHelp": "Wie lange jeder Bildschirm angezeigt wird, bevor automatisch zum nächsten gewechselt wird. Gilt nur, wenn mehrere Bildschirme konfiguriert sind.",
+        "paginationDotsLabel": "Bildschirmpunkte",
+        "paginationDotsToggle": "Aktiviert",
+        "paginationDotsHelp": "Die Punktreihe unten am Display, die zeigt, welcher Bildschirm gerade angezeigt wird, und mit der man zu einem anderen springen kann. Schaltet man das aus, verschwindet auch die Doppeltipp-Pause, da diese Geste an den Punkten hängt.",
         "pauseEnabledLabel": "Pause per Touchscreen erlauben",
         "pauseEnabledToggle": "Aktiviert",
         "pauseEnabledHelp": "Tippe doppelt auf den aktiven Paginierungspunkt, um den Bildschirmwechsel zu pausieren. Doppeltippe erneut, um fortzufahren.",
@@ -885,6 +888,8 @@
           "pauseTimeoutSeconds": "Pause-Timeout",
           "swipeEnabled": "Wisch-Navigation",
           "setupHintEnabled": "Einrichtungshinweis",
+          "showPaginationDots": "Bildschirmpunkte",
+          "showRotationProgress": "Fortschrittslinie",
           "cursorHideSeconds": "Mauszeiger ausblenden",
           "fullscreenTheme": "Design",
           "sleep": "Schlafen & Dimmen",
@@ -949,6 +954,7 @@
         "appearanceHeading": "Erscheinungsbild",
         "fields": {
           "rotationIntervalSeconds": "{seconds} Sekunden",
+          "paginationDotsLabelDisabled": "Deaktiviert",
           "pauseEnabledLabelDisabled": "Deaktiviert",
           "swipeEnabledLabelDisabled": "Deaktiviert",
           "setupHintLabelDisabled": "Deaktiviert",

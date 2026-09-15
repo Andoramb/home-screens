@@ -39,6 +39,7 @@ import { setHostSettings } from '@/lib/plugin-host-settings';
 import { setDisplayToken } from '@/lib/display-fetch';
 import { ModuleSurfaceProvider } from '@/components/modules/module-surface';
 import { installConsoleBuffer } from '@/lib/console-buffer';
+import { showsPaginationDots } from '@/lib/pagination-dots';
 
 interface ScreenRotatorProps {
   screens: Screen[];
@@ -239,10 +240,17 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     setRotationEpoch((e) => e + 1);
   }, []);
 
+  // The pause gesture and the progress line both live on the dots, so with
+  // the dots off neither exists. Folding this into `pauseEnabled` lets the
+  // hook's own "feature switched off" clear release a pause taken before the
+  // dots went away, which would otherwise freeze rotation with no pill and no
+  // gesture left to resume it.
+  const showDots = showsPaginationDots(settings);
+
   // All pause state and the double-tap gesture. Must run above
   // useDisplayControl, which consumes `clearPause` for its remote next/prev.
   const { paused, pausedUntil, handleDotClick, clearPause } = usePauseRotation({
-    pauseEnabled: settings.pauseEnabled,
+    pauseEnabled: showDots && (settings.pauseEnabled ?? true),
     pauseTimeoutSeconds: settings.pauseTimeoutSeconds,
     activeIndex: safeIndex,
     screenKey,
@@ -555,9 +563,9 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   }, [showHint, hadContentKey]);
   const deliberatelyEmpty = hadContentBefore || (allScreens.length > 0 && enabledScreens.length === 0);
 
-  // The thin line under the active dot. Off in settings, or nothing armed
-  // (sticky screen, single screen), draws nothing.
-  const rotationProgress = (settings.showRotationProgress ?? true) && dwellStartedAt !== null && currentDuration > 0
+  // The thin line under the active dot. Off in settings, no dots to draw it
+  // under, or nothing armed (sticky screen, single screen), draws nothing.
+  const rotationProgress = showDots && (settings.showRotationProgress ?? true) && dwellStartedAt !== null && currentDuration > 0
     ? { startedAt: dwellStartedAt, durationMs: currentDuration }
     : null;
 
@@ -625,15 +633,17 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
           allScreens: demand must survive profile filtering. */}
       <PluginServiceLayer screens={allScreens} rules={rules} />
 
-      <PaginationDots
-        screens={screens}
-        activeIndex={safeIndex}
-        paused={paused || preview}
-        onDotClick={handleDotClick}
-        onResume={preview ? undefined : clearPause}
-        pausedUntil={pausedUntil}
-        progress={preview ? null : rotationProgress}
-      />
+      {showDots && (
+        <PaginationDots
+          screens={screens}
+          activeIndex={safeIndex}
+          paused={paused || preview}
+          onDotClick={handleDotClick}
+          onResume={preview ? undefined : clearPause}
+          pausedUntil={pausedUntil}
+          progress={preview ? null : rotationProgress}
+        />
+      )}
 
       <NetworkIndicator displayState={displayState} scale={scale} />
       <AlertOverlay alertSettings={settings.alerts} displayState={displayState} viewport={viewportSize} />

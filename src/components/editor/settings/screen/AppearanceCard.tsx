@@ -13,6 +13,13 @@ import { useTranslate, tOrFallback } from '@/i18n';
 interface AppearanceCardProps {
   values: DisplayState;
   onChange: (updates: Partial<DisplayState>) => void;
+  /**
+   * Whether any wall still draws the dots (see `paginationDotDefaultsInUse`).
+   * The pause and progress-line defaults live on the dots, so they hide only
+   * when no display uses them; a display that turns the dots back on still
+   * inherits them and needs them editable here.
+   */
+  dotDefaultsInUse: boolean;
 }
 
 /**
@@ -20,7 +27,7 @@ interface AppearanceCardProps {
  * per-display OverrideRow links back to. Mockup-aligned: single rounded
  * container with border-b separated rows.
  */
-export default function AppearanceCard({ values, onChange }: AppearanceCardProps) {
+export default function AppearanceCard({ values, onChange, dotDefaultsInUse }: AppearanceCardProps) {
   const t = useTranslate('editor');
 
   const {
@@ -34,6 +41,7 @@ export default function AppearanceCard({ values, onChange }: AppearanceCardProps
     swipeEnabled,
     setupHintEnabled,
     showRotationProgress,
+    showPaginationDots,
   } = values;
 
   // TRANSITION_OPTIONS is exported and consumed by multiple call sites
@@ -74,39 +82,67 @@ export default function AppearanceCard({ values, onChange }: AppearanceCardProps
         </FieldHelp>
       </FieldRow>
 
-      <FieldRow fieldId="display.pauseEnabled">
-        <FieldLabel>{t('settings.defaultDisplayPage.fields.pauseEnabledLabel')}</FieldLabel>
+      <FieldRow fieldId="display.showPaginationDots">
+        <FieldLabel>{t('settings.defaultDisplayPage.fields.paginationDotsLabel')}</FieldLabel>
         <Toggle
-          label={t('settings.defaultDisplayPage.fields.pauseEnabledToggle')}
-          checked={pauseEnabled}
-          onChange={(v) => onChange({ pauseEnabled: v })}
+          label={t('settings.defaultDisplayPage.fields.paginationDotsToggle')}
+          checked={showPaginationDots}
+          onChange={(v) => onChange({ showPaginationDots: v })}
         />
         <FieldHelp>
-          {t('settings.defaultDisplayPage.fields.pauseEnabledHelp')}
+          {t('settings.defaultDisplayPage.fields.paginationDotsHelp')}
         </FieldHelp>
-        {pauseEnabled && (
-          <div className="mt-3">
-            <Slider
-              label={t('settings.defaultDisplayPage.fields.pauseTimeoutLabel')}
-              value={pauseTimeoutSeconds}
-              min={0}
-              max={600}
-              step={30}
-              displayValue={
-                pauseTimeoutSeconds === 0
-                  ? t('settings.defaultDisplayPage.fields.pauseTimeoutNever')
-                  : t('settings.defaultDisplayPage.fields.pauseTimeoutSeconds', {
-                      seconds: pauseTimeoutSeconds,
-                    })
-              }
-              onChange={(v) => onChange({ pauseTimeoutSeconds: v })}
+      </FieldRow>
+
+      {dotDefaultsInUse && (
+        <>
+          <FieldRow fieldId="display.pauseEnabled">
+            <FieldLabel>{t('settings.defaultDisplayPage.fields.pauseEnabledLabel')}</FieldLabel>
+            <Toggle
+              label={t('settings.defaultDisplayPage.fields.pauseEnabledToggle')}
+              checked={pauseEnabled}
+              onChange={(v) => onChange({ pauseEnabled: v })}
             />
             <FieldHelp>
-              {t('settings.defaultDisplayPage.fields.pauseTimeoutHelp')}
+              {t('settings.defaultDisplayPage.fields.pauseEnabledHelp')}
             </FieldHelp>
-          </div>
-        )}
-      </FieldRow>
+            {pauseEnabled && (
+              <div className="mt-3">
+                <Slider
+                  label={t('settings.defaultDisplayPage.fields.pauseTimeoutLabel')}
+                  value={pauseTimeoutSeconds}
+                  min={0}
+                  max={600}
+                  step={30}
+                  displayValue={
+                    pauseTimeoutSeconds === 0
+                      ? t('settings.defaultDisplayPage.fields.pauseTimeoutNever')
+                      : t('settings.defaultDisplayPage.fields.pauseTimeoutSeconds', {
+                          seconds: pauseTimeoutSeconds,
+                        })
+                  }
+                  onChange={(v) => onChange({ pauseTimeoutSeconds: v })}
+                />
+                <FieldHelp>
+                  {t('settings.defaultDisplayPage.fields.pauseTimeoutHelp')}
+                </FieldHelp>
+              </div>
+            )}
+          </FieldRow>
+
+          <FieldRow fieldId="display.showRotationProgress">
+            <FieldLabel>{t('settings.defaultDisplayPage.fields.rotationProgressLabel')}</FieldLabel>
+            <Toggle
+              label={t('settings.defaultDisplayPage.fields.rotationProgressToggle')}
+              checked={showRotationProgress}
+              onChange={(v) => onChange({ showRotationProgress: v })}
+            />
+            <FieldHelp>
+              {t('settings.defaultDisplayPage.fields.rotationProgressHelp')}
+            </FieldHelp>
+          </FieldRow>
+        </>
+      )}
 
       <FieldRow fieldId="display.swipeEnabled">
         <FieldLabel>{t('settings.defaultDisplayPage.fields.swipeEnabledLabel')}</FieldLabel>
@@ -117,18 +153,6 @@ export default function AppearanceCard({ values, onChange }: AppearanceCardProps
         />
         <FieldHelp>
           {t('settings.defaultDisplayPage.fields.swipeEnabledHelp')}
-        </FieldHelp>
-      </FieldRow>
-
-      <FieldRow fieldId="display.showRotationProgress">
-        <FieldLabel>{t('settings.defaultDisplayPage.fields.rotationProgressLabel')}</FieldLabel>
-        <Toggle
-          label={t('settings.defaultDisplayPage.fields.rotationProgressToggle')}
-          checked={showRotationProgress}
-          onChange={(v) => onChange({ showRotationProgress: v })}
-        />
-        <FieldHelp>
-          {t('settings.defaultDisplayPage.fields.rotationProgressHelp')}
         </FieldHelp>
       </FieldRow>
 

@@ -15,6 +15,7 @@ import DefaultsPageShell from '@/components/editor/settings/DefaultsPageShell';
 import { useDefaultsPageHeader } from '@/components/editor/settings/useDefaultsPageHeader';
 import CanvasCard from '@/components/editor/settings/screen/CanvasCard';
 import AppearanceCard from '@/components/editor/settings/screen/AppearanceCard';
+import { paginationDotDefaultsInUse } from '@/lib/pagination-dots';
 import SleepFormFields, {
   type SleepFormValues,
 } from '@/components/editor/settings/display/SleepFormFields';
@@ -209,7 +210,11 @@ export default function ScreenSection({
       )}
 
       {panel === 'appearance' && (
-        <AppearanceCard values={displayValues} onChange={onDisplayChange} />
+        <AppearanceCard
+          values={displayValues}
+          onChange={onDisplayChange}
+          dotDefaultsInUse={paginationDotDefaultsInUse(displayValues.showPaginationDots, config.displays)}
+        />
       )}
 
       {/* Sleep & dimming — formerly the Defaults → Sleep page. Whole-block

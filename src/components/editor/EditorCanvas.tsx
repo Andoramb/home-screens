@@ -26,6 +26,7 @@ import { useTranslate, type TranslateFn } from '@/i18n';
 import type { ModuleInstance } from '@/types/config';
 import { stackOrder } from '@/lib/module-utils';
 import { isScreenEmpty, getDisplayProfiles, getActiveProfileId } from '@/lib/display-filter';
+import { displayShowsPaginationDots } from '@/lib/pagination-dots';
 import { resolveProfileScreens } from '@/lib/schedule';
 import { usePreviewData } from './usePreviewData';
 import DraggableModule from './DraggableModule';
@@ -322,9 +323,10 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
   const [moduleMenu, setModuleMenu] = useState<ModuleMenuState | null>(null);
   useEffect(() => { setModuleMenu(null); }, [selectedScreenId, selectedDisplayId]);
 
-  // The display only draws pagination dots when more than one screen rotates,
-  // and what rotates is the active profile's slice of the enabled screens —
-  // the same resolution the kiosk runs (schedule windows aside).
+  // The display only draws pagination dots when they are switched on for it
+  // and more than one screen rotates, and what rotates is the active
+  // profile's slice of the enabled screens, the same resolution the kiosk
+  // runs (schedule windows aside).
   const rotatingScreenCount = useMemo(() => {
     if (!config) return 0;
     const enabled = activeScreens.filter((s) => s.enabled !== false);
@@ -332,6 +334,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
     const profiles = display ? getDisplayProfiles(display, config.profiles) : config.profiles;
     return resolveProfileScreens(enabled, profiles, getActiveProfileId(config, selectedDisplayId), now).length;
   }, [config, activeScreens, selectedDisplayId, now]);
+  const showDotsGuide = rotatingScreenCount > 1 && !!config && displayShowsPaginationDots(config.settings, activeDisplay);
 
   if (!currentScreen) {
     // A display with no screens at all is a different problem from "nothing
@@ -488,7 +491,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
                   source={liveState.source}
                 />
               ))}
-              {rotatingScreenCount > 1 && (
+              {showDotsGuide && (
                 <DotsGuide screenCount={rotatingScreenCount} scale={effectiveScale} t={t} />
               )}
               {(() => {

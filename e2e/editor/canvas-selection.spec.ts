@@ -139,3 +139,13 @@ test('the canvas shows where the display draws its pagination dots', async ({ pa
   await expect(guide).toHaveText('');
   await expect(guide.locator('[title="Screen dots show here"]')).toHaveCount(2);
 });
+
+test('the canvas draws no dots guide when the display has its screen dots off', async ({ page, request }) => {
+  await putConfig(request, baseConfig({
+    screens: [makeScreen('a', 'A', [textModule('A')]), makeScreen('b', 'B', [textModule('B')])],
+    settings: { showPaginationDots: false },
+  }));
+  await openEditor(page);
+  await expect(page.getByText('A', { exact: true }).first()).toBeVisible();
+  await expect(page.getByTestId('dots-guide')).toHaveCount(0);
+});

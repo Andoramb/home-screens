@@ -803,6 +803,9 @@
       "fields": {
         "rotationIntervalLabel": "Intervalle de rotation des écrans",
         "rotationIntervalHelp": "Durée d'affichage de chaque écran avant de passer automatiquement au suivant. S'applique uniquement quand plusieurs écrans sont configurés.",
+        "paginationDotsLabel": "Points d'écran",
+        "paginationDotsToggle": "Activé",
+        "paginationDotsHelp": "La rangée de points en bas de l'écran qui indique quel écran est affiché et permet d'appuyer pour passer à un autre. La désactiver supprime aussi la pause par double-tap, puisque ce geste se trouve sur les points.",
         "pauseEnabledLabel": "Autoriser la pause sur écran tactile",
         "pauseEnabledToggle": "Activé",
         "pauseEnabledHelp": "Double-tape sur le point de pagination actif pour mettre en pause la rotation. Double-tape à nouveau pour reprendre.",
@@ -885,6 +888,8 @@
           "pauseTimeoutSeconds": "Délai de pause",
           "swipeEnabled": "Navigation par balayage",
           "setupHintEnabled": "Message de configuration",
+          "showPaginationDots": "Points d'écran",
+          "showRotationProgress": "Ligne de progression",
           "cursorHideSeconds": "Masquer le curseur",
           "fullscreenTheme": "Thème",
           "sleep": "Veille et atténuation",
@@ -949,6 +954,7 @@
         "appearanceHeading": "Apparence",
         "fields": {
           "rotationIntervalSeconds": "{seconds} secondes",
+          "paginationDotsLabelDisabled": "Désactivé",
           "pauseEnabledLabelDisabled": "Désactivée",
           "swipeEnabledLabelDisabled": "Désactivé",
           "setupHintLabelDisabled": "Désactivé",

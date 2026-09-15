@@ -803,6 +803,9 @@
       "fields": {
         "rotationIntervalLabel": "Intervalo de rotación de pantallas",
         "rotationIntervalHelp": "Cuánto tiempo se muestra cada pantalla antes de pasar automáticamente a la siguiente. Solo se aplica si tienes varias pantallas configuradas.",
+        "paginationDotsLabel": "Puntos de pantalla",
+        "paginationDotsToggle": "Activado",
+        "paginationDotsHelp": "La fila de puntos en la parte inferior de la pantalla que muestra qué pantalla se está mostrando y permite tocar para saltar a otra. Al desactivarla también se elimina la pausa con doble toque, ya que ese gesto vive en los puntos.",
         "pauseEnabledLabel": "Permitir pausa táctil",
         "pauseEnabledToggle": "Activado",
         "pauseEnabledHelp": "Toca dos veces el punto de paginación activo para pausar la rotación. Toca dos veces de nuevo para reanudar.",
@@ -885,6 +888,8 @@
           "pauseTimeoutSeconds": "Tiempo de pausa",
           "swipeEnabled": "Navegación deslizando",
           "setupHintEnabled": "Mensaje de configuración",
+          "showPaginationDots": "Puntos de pantalla",
+          "showRotationProgress": "Línea de progreso",
           "cursorHideSeconds": "Ocultar cursor",
           "fullscreenTheme": "Tema",
           "sleep": "Suspensión y atenuación",
@@ -949,6 +954,7 @@
         "appearanceHeading": "Apariencia",
         "fields": {
           "rotationIntervalSeconds": "{seconds} segundos",
+          "paginationDotsLabelDisabled": "Desactivado",
           "pauseEnabledLabelDisabled": "Desactivado",
           "swipeEnabledLabelDisabled": "Desactivado",
           "setupHintLabelDisabled": "Desactivado",

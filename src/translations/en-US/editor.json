@@ -803,6 +803,9 @@
       "fields": {
         "rotationIntervalLabel": "Screen rotation interval",
         "rotationIntervalHelp": "How long each screen is shown before automatically cycling to the next. Only applies when you have multiple screens configured.",
+        "paginationDotsLabel": "Screen dots",
+        "paginationDotsToggle": "Enabled",
+        "paginationDotsHelp": "The row of dots at the bottom of the display that shows which screen is showing and lets you tap to jump to another. Turning this off also removes double-tap-to-pause, since that gesture lives on the dots.",
         "pauseEnabledLabel": "Allow pause on touchscreen",
         "pauseEnabledToggle": "Enabled",
         "pauseEnabledHelp": "Double-tap the active pagination dot to pause screen rotation. Double-tap again to resume.",
@@ -885,6 +888,8 @@
           "pauseTimeoutSeconds": "Pause timeout",
           "swipeEnabled": "Swipe navigation",
           "setupHintEnabled": "Setup message",
+          "showPaginationDots": "Screen dots",
+          "showRotationProgress": "Progress line",
           "cursorHideSeconds": "Hide cursor",
           "fullscreenTheme": "Theme",
           "sleep": "Sleep & dimming",
@@ -949,6 +954,7 @@
         "appearanceHeading": "Appearance",
         "fields": {
           "rotationIntervalSeconds": "{seconds} seconds",
+          "paginationDotsLabelDisabled": "Disabled",
           "pauseEnabledLabelDisabled": "Disabled",
           "swipeEnabledLabelDisabled": "Disabled",
           "setupHintLabelDisabled": "Disabled",

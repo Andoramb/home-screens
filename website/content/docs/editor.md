@@ -195,7 +195,7 @@ Outside that window the display skips the screen in rotation, exactly as if you 
 
 ### Screen Rotation
 
-The global rotation interval lives in **Settings > Screen > Rotation & appearance**. Screens cycle in order at this interval. The display view shows small indicator dots at the bottom.
+The global rotation interval lives in **Settings > Screen > Rotation & appearance**. Screens cycle in order at this interval. The display view shows small indicator dots at the bottom, unless **Screen dots** is turned off.
 
 Any screen can have its own time. Click an empty area of the canvas, then under **Screen settings** click **Use a different time** and set it, or reset to go back to the shared default. A screen with its own time shows a small pill on its tab (for example `10s`) so you can see it at a glance.
 
@@ -276,7 +276,8 @@ Three tabs: **Rotation & appearance**, **Sleep & dimming**, and **Alerts**. Most
 - **After a wake-up, stay on for** (shown when a schedule is on), how long the display stays awake when someone touches it or wakes it from the remote during a scheduled dim or sleep window, before the schedule takes over again. Defaults to 5 minutes; set it to the minimum for the old behavior of going right back to sleep.
 - **Screensaver** picks what shows during the *dimmed* state, before full sleep: a drifting clock, blank, or off (no clock, the display still dims).
 - **Switch the screen's power off too** (under "While turned off") cuts the screen's power whenever the display is asleep, instead of only painting it black. It works on Raspberry Pi displays set up by the installer, and it follows every way a display can go to sleep: the overnight schedule, idle time, the remote, and rules. The screen takes a few seconds to come back when someone wakes it. Leave it off if your screen does not come back on by itself after losing its signal.
-- **Touchscreen Pause** (on by default), double-tapping the active pagination dot on the display pauses screen rotation; double-tap again to resume. An optional auto-resume timeout (default 5 minutes) restarts rotation on its own.
+- **Screen dots** (on by default), the row of dots at the bottom of the display that shows which screen is up and lets you tap to jump to another. Turning it off also removes Touchscreen Pause and the progress line, since both live on the dots, so their settings are hidden while no display shows dots. The editor stops drawing the dots outline on the canvas too.
+- **Touchscreen Pause** (on by default, needs Screen dots), double-tapping the active pagination dot on the display pauses screen rotation; double-tap again to resume. An optional auto-resume timeout (default 5 minutes) restarts rotation on its own.
 - **Swipe to change screens** (on by default), flick left anywhere on the display for the next screen, or right for the previous one. Vertical swipes are left alone so scrolling content like the chore chart keeps working.
 - **Theme** sets the color scheme used by the full-screen modules, not the editor.
 

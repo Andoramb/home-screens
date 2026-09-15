@@ -803,6 +803,9 @@
       "fields": {
         "rotationIntervalLabel": "Schermrotatie-interval",
         "rotationIntervalHelp": "Hoe lang elk scherm wordt getoond voordat automatisch naar het volgende wordt gewisseld. Geldt alleen als je meerdere schermen hebt geconfigureerd.",
+        "paginationDotsLabel": "Schermstippen",
+        "paginationDotsToggle": "Ingeschakeld",
+        "paginationDotsHelp": "De rij stippen onderaan het scherm die laat zien welk scherm wordt getoond en waarmee je naar een ander scherm kunt tikken. Als je dit uitschakelt, verdwijnt ook de dubbeltik-om-te-pauzeren, want dat gebaar zit op de stippen.",
         "pauseEnabledLabel": "Pauze op touchscreen toestaan",
         "pauseEnabledToggle": "Ingeschakeld",
         "pauseEnabledHelp": "Dubbeltik op de actieve paginatiestip om de schermrotatie te pauzeren. Dubbeltik nogmaals om te hervatten.",
@@ -885,6 +888,8 @@
           "pauseTimeoutSeconds": "Pauze-time-out",
           "swipeEnabled": "Veegnavigatie",
           "setupHintEnabled": "Installatiebericht",
+          "showPaginationDots": "Schermstippen",
+          "showRotationProgress": "Voortgangslijn",
           "cursorHideSeconds": "Cursor verbergen",
           "fullscreenTheme": "Thema",
           "sleep": "Slapen & dimmen",
@@ -949,6 +954,7 @@
         "appearanceHeading": "Uiterlijk",
         "fields": {
           "rotationIntervalSeconds": "{seconds} seconden",
+          "paginationDotsLabelDisabled": "Uitgeschakeld",
           "pauseEnabledLabelDisabled": "Uitgeschakeld",
           "swipeEnabledLabelDisabled": "Uitgeschakeld",
           "setupHintLabelDisabled": "Uitgeschakeld",

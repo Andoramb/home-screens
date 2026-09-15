@@ -57,6 +57,7 @@ describe('settings-form transforms', () => {
         swipeEnabled: false,
         setupHintEnabled: false,
         showRotationProgress: false,
+        showPaginationDots: false,
       },
       location: { lat: '44.7133', lon: '-93.4227', locationName: 'Prior Lake, MN', timezone: 'America/Chicago' },
       weather: { provider: 'openweathermap', units: 'metric', radarServerUrl: 'http://nas.local:8080' },

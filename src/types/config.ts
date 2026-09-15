@@ -781,6 +781,17 @@ export interface GlobalSettings {
    * @default true
    */
   showRotationProgress?: boolean;
+  /**
+   * Show the row of screen dots at the bottom of the display
+   *
+   * Show the row of dots (or the compact "3 / 8" counter with lots of
+   * screens) at the bottom of the display that shows which screen is active
+   * and lets you tap to jump between them. Turning this off also removes the
+   * double-tap-to-pause gesture, since that lives on the dots. Default true.
+   *
+   * @default true
+   */
+  showPaginationDots?: boolean;
   /** Backup reminder (see BackupReminderSettings) */
   backupReminder?: BackupReminderSettings;
   /** New-release banner (see UpdateNotificationSettings) */
@@ -962,6 +973,8 @@ export interface DisplayNodeSettings {
   setupHintEnabled?: boolean;
   /** Show the rotation progress line */
   showRotationProgress?: boolean;
+  /** Show the row of screen dots */
+  showPaginationDots?: boolean;
   /** Alert overlay, replacing the shared object as a whole */
   alerts?: AlertSettings;
 

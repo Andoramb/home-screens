@@ -283,7 +283,7 @@ Transition duration is configurable from 0.3 to 2.0 seconds. All effects except 
 
 ### Manual navigation
 
-The display shows pagination dots at the bottom when there are multiple screens. Click a dot to jump directly to that screen. On a touchscreen you can also **flick left or right anywhere on the display** to go to the next or previous screen (on by default; turn it off with **Swipe to change screens** in Settings > Screen). **Double-tap the active (highlighted) dot** to pause screen rotation, double-tap again to resume. An optional auto-resume timeout (configurable in Settings > Screen) resumes rotation after inactivity. Navigation is also available via the [remote display control API](/docs/api).
+The display shows pagination dots at the bottom when there are multiple screens (on by default; turn them off with **Screen dots** in Settings > Screen, which also removes the double-tap pause and the progress line, since both live on the dots). Click a dot to jump directly to that screen. On a touchscreen you can also **flick left or right anywhere on the display** to go to the next or previous screen (on by default; turn it off with **Swipe to change screens** in Settings > Screen). **Double-tap the active (highlighted) dot** to pause screen rotation, double-tap again to resume. An optional auto-resume timeout (configurable in Settings > Screen) resumes rotation after inactivity. Navigation is also available via the [remote display control API](/docs/api).
 
 ---
 
