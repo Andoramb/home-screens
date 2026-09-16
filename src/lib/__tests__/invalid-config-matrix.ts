@@ -1,0 +1,48 @@
+/**
+ * Configs every whole-config write path must refuse, and the error each one
+ * has to name. Shared by the validator's own test and by the route tests for
+ * the editor save, the backup restore and the offline snapshot restore, so
+ * the three entry points cannot drift apart on what a valid config is again.
+ */
+const base = {
+  screens: [{ id: 's1', name: 'Main', modules: [] }],
+  settings: { displayWidth: 1080, displayHeight: 1920 },
+};
+
+export const INVALID_CONFIGS: { name: string; config: unknown; error: RegExp }[] = [
+  { name: 'a config that is not an object', config: [], error: /must be an object/ },
+  { name: 'a config with no screens', config: { settings: {} }, error: /screens/ },
+  { name: 'a config with no settings', config: { screens: [] }, error: /settings/ },
+  {
+    name: 'calendar ownership that is not a list of ids per person',
+    config: { ...base, settings: { ...base.settings, calendar: { personSources: { alice: 'cal-1' } } } },
+    error: /Calendar ownership/,
+  },
+  {
+    name: 'two displays with the same id',
+    config: { ...base, displays: [{ id: 'kitchen', screens: [] }, { id: 'kitchen', screens: [] }] },
+    error: /Duplicate display id/,
+  },
+  {
+    name: 'a screen schedule with a day outside 0-6',
+    config: { ...base, screens: [{ id: 's1', name: 'Main', modules: [], schedule: { daysOfWeek: [9] } }] },
+    error: /daysOfWeek/,
+  },
+  {
+    name: 'a module visibility condition of an unknown kind',
+    config: {
+      ...base,
+      screens: [{
+        id: 's1',
+        name: 'Main',
+        modules: [{ id: 'm1', type: 'clock', config: {}, visibility: { conditions: [{ kind: 'bogus' }] } }],
+      }],
+    },
+    error: /visibility condition kind/,
+  },
+  {
+    name: 'a display whose screen schedule has a day outside 0-6',
+    config: { ...base, displays: [{ id: 'kitchen', screens: [{ id: 'k1', name: 'K', modules: [], schedule: { daysOfWeek: [7] } }] }] },
+    error: /daysOfWeek/,
+  },
+];

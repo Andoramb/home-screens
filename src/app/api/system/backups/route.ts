@@ -6,7 +6,7 @@ import path from 'path';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { withDataTransaction } from '@/lib/data-transaction';
 import { saveImportedConfig } from '@/lib/family-import';
-import { validateDisplays, validateAllSchedules } from '@/lib/display-filter';
+import { validateConfigForWrite } from '@/lib/config-validation';
 import type { ScreenConfiguration } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -85,7 +85,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     let config: unknown;
     try { config = JSON.parse(content.toString('utf8')); }
     catch { return NextResponse.json({ error: 'Backup file is not valid JSON' }, { status: 400 }); }
-    const validationError = validateSnapshot(config);
+    const validationError = validateConfigForWrite(config);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
     // The snapshot may predate family identities and shared lists. Plan and
@@ -96,18 +96,3 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ ok: true, restored: name });
   });
 }, 'Restore failed');
-
-function validateSnapshot(value: unknown): string | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return 'Invalid config: must be an object';
-  const config = value as ScreenConfiguration;
-  if (!Array.isArray(config.screens) || !config.settings || typeof config.settings !== 'object' || Array.isArray(config.settings)) {
-    return 'Invalid config: must include screens array and settings';
-  }
-  // Existing config validators expect nested records; malformed snapshots
-  // must be refused before planning, rather than becoming a partial restore.
-  try {
-    return validateDisplays(config) || validateAllSchedules(config);
-  } catch {
-    return 'Invalid config: malformed screens, displays or schedules';
-  }
-}

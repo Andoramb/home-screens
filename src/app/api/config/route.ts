@@ -12,7 +12,7 @@ import { getAllScreens } from '@/lib/display-filter';
 import { syncKioskConf, applyDisplaySettings } from '@/lib/kiosk';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
 import { maybeSendBeacon } from '@/lib/telemetry';
-import { validateDisplays, validateAllSchedules } from '@/lib/display-filter';
+import { validateConfigForWrite } from '@/lib/config-validation';
 import type { ScreenConfiguration, DisplayNode } from '@/types/config';
 import { logger } from '@/lib/logger';
 
@@ -78,96 +78,78 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
  * "load theirs / keep mine" instead of silently undoing someone else's edit.
  * Clients that send no revision keep the old last-writer-wins behaviour.
  */
-export const PUT = withAuth(async (request: NextRequest) => withDataTransaction(async () => {
+export const PUT = withAuth(async (request: NextRequest) => {
+  // Parse and validate before taking the data lock: the body is the client's
+  // input, not persisted state, and every display poll queues behind the
+  // lock while it is held.
   const body = await parseJsonBody<ScreenConfiguration>(request);
   if (body instanceof NextResponse) return body;
-  if (!body || !Array.isArray(body.screens) || !body.settings) {
-    return NextResponse.json(
-      { error: 'Invalid config: must include screens array and settings' },
-      { status: 400 },
-    );
-  }
-  const config = body;
+  const invalid = validateConfigForWrite(body);
+  if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
+  return saveConfig(request, body);
+}, 'Failed to write config');
 
-  const mappings = config.settings.calendar?.personSources;
-  if (mappings !== undefined && (!mappings || typeof mappings !== 'object' || Array.isArray(mappings)
-    || Object.values(mappings).some((ids) => !Array.isArray(ids) || ids.some((id) => typeof id !== 'string')))) {
-    return NextResponse.json({ error: 'Calendar ownership must list calendar source ids for each person.' }, { status: 400 });
-  }
+async function saveConfig(request: NextRequest, config: ScreenConfiguration): Promise<NextResponse> {
+  return withDataTransaction(async () => {
+    // The revision check and the write happen inside the store's queue, so a
+    // save that lands between our read and our write is seen, not clobbered.
+    const expected = request.headers.get(CONFIG_REVISION_HEADER);
+    const seen: { prev: ScreenConfiguration | null; conflict: ScreenConfiguration | null } = { prev: null, conflict: null };
+    // A validated editor copy can repair syntactically broken config data.
+    // Only the replaced config may be corrupt: lock/recovery/permission errors
+    // still fail, and the journal keeps its exact corrupt before-image.
+    const raw = await readTransactionFile('data/config.json');
+    let corrupt = false;
+    if (raw !== null) {
+      try { JSON.parse(raw); } catch { corrupt = true; }
+    }
+    if (!corrupt) await settleFamilyMigration();
+    const current = corrupt ? null : await readConfig();
+    if (current && expected && configRevision(current) !== expected) {
+      return NextResponse.json(
+        { error: 'The layout was changed somewhere else since it was loaded.', config: current },
+        { status: 409, headers: withRevision(current) },
+      );
+    }
+    let saved: ScreenConfiguration = config;
+    const legacy = config.settings.calendar?.people !== undefined
+      || getAllScreens(config).some((screen) => screen.modules.some((mod) => mod.type === 'todo' && Array.isArray((mod.config as { items?: unknown }).items)));
+    if (legacy || corrupt) {
+      seen.prev = current;
+      saved = await saveImportedConfig(config);
+    } else {
+      const references = await validateMemberReferences(Object.keys(config.settings.calendar?.personSources ?? {}));
+      if (references) return references;
+      await updateConfigAtomic((latest) => {
+        seen.prev = latest;
+        if (expected && configRevision(latest) !== expected) {
+          seen.conflict = latest;
+          return latest;
+        }
+        return saved;
+      });
+    }
+    if (seen.conflict) {
+      return NextResponse.json(
+        { error: 'The layout was changed somewhere else since it was loaded.', config: seen.conflict },
+        { status: 409, headers: withRevision(seen.conflict) },
+      );
+    }
 
-  // Validate the multi-display registry if present. The validator enforces
-  // unique URL-safe slugs and that screen/profile cross-references resolve.
-  const displayError = validateDisplays(config);
-  if (displayError) {
-    return NextResponse.json({ error: displayError }, { status: 400 });
-  }
+    // Keep kiosk.conf in sync so kiosk-launcher.sh picks up changes on next boot
+    syncKioskConf(saved).catch((e) => log.error('kiosk.conf sync failed:', e));
 
-  // Validate every screen/module schedule and every module's visibility
-  // conditions so malformed gating is rejected at write time instead of
-  // silently misbehaving at runtime.
-  const scheduleError = validateAllSchedules(config);
-  if (scheduleError) {
-    return NextResponse.json({ error: scheduleError }, { status: 400 });
-  }
+    // Apply display rotation/mode immediately via wlr-randr (no reboot needed).
+    // Only attempt when display settings actually changed.
+    const before = seen.prev;
+    const displayChanged = !before
+      || before.settings.displayTransform !== config.settings.displayTransform
+      || before.settings.displayWidth !== config.settings.displayWidth
+      || before.settings.displayHeight !== config.settings.displayHeight;
+    if (displayChanged) {
+      applyDisplaySettings(saved).catch(() => {});
+    }
 
-  // The revision check and the write happen inside the store's queue, so a
-  // save that lands between our read and our write is seen, not clobbered.
-  const expected = request.headers.get(CONFIG_REVISION_HEADER);
-  const seen: { prev: ScreenConfiguration | null; conflict: ScreenConfiguration | null } = { prev: null, conflict: null };
-  // A validated editor copy can repair syntactically broken config data.
-  // Only the replaced config may be corrupt: lock/recovery/permission errors
-  // still fail, and the journal keeps its exact corrupt before-image.
-  const raw = await readTransactionFile('data/config.json');
-  let corrupt = false;
-  if (raw !== null) {
-    try { JSON.parse(raw); } catch { corrupt = true; }
-  }
-  if (!corrupt) await settleFamilyMigration();
-  const current = corrupt ? null : await readConfig();
-  if (current && expected && configRevision(current) !== expected) {
-    return NextResponse.json(
-      { error: 'The layout was changed somewhere else since it was loaded.', config: current },
-      { status: 409, headers: withRevision(current) },
-    );
-  }
-  let saved: ScreenConfiguration = config;
-  const legacy = config.settings.calendar?.people !== undefined
-    || getAllScreens(config).some((screen) => screen.modules.some((mod) => mod.type === 'todo' && Array.isArray((mod.config as { items?: unknown }).items)));
-  if (legacy || corrupt) {
-    seen.prev = current;
-    saved = await saveImportedConfig(config);
-  } else {
-    const references = await validateMemberReferences(Object.keys(config.settings.calendar?.personSources ?? {}));
-    if (references) return references;
-    await updateConfigAtomic((latest) => {
-      seen.prev = latest;
-      if (expected && configRevision(latest) !== expected) {
-        seen.conflict = latest;
-        return latest;
-      }
-      return saved;
-    });
-  }
-  if (seen.conflict) {
-    return NextResponse.json(
-      { error: 'The layout was changed somewhere else since it was loaded.', config: seen.conflict },
-      { status: 409, headers: withRevision(seen.conflict) },
-    );
-  }
-
-  // Keep kiosk.conf in sync so kiosk-launcher.sh picks up changes on next boot
-  syncKioskConf(saved).catch((e) => log.error('kiosk.conf sync failed:', e));
-
-  // Apply display rotation/mode immediately via wlr-randr (no reboot needed).
-  // Only attempt when display settings actually changed.
-  const before = seen.prev;
-  const displayChanged = !before
-    || before.settings.displayTransform !== config.settings.displayTransform
-    || before.settings.displayWidth !== config.settings.displayWidth
-    || before.settings.displayHeight !== config.settings.displayHeight;
-  if (displayChanged) {
-    applyDisplaySettings(saved).catch(() => {});
-  }
-
-  return NextResponse.json(saved, { headers: withRevision(saved) });
-}), 'Failed to write config');
+    return NextResponse.json(saved, { headers: withRevision(saved) });
+  });
+}

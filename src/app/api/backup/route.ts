@@ -10,7 +10,7 @@ import { readTodoData, validateTodoData, settleTodoMigration } from '@/lib/todo-
 import { readSavedTimetables, validateTimetableData } from '@/lib/timetable-data';
 import { writeBackupState } from '@/lib/backup-state';
 import { withAuth, parseJsonBody, getClientIP } from '@/lib/api-utils';
-import { validateDisplays } from '@/lib/display-filter';
+import { validateConfigForWrite } from '@/lib/config-validation';
 import { planCredentialRestore } from '@/lib/backup-credentials';
 import { withFamilyData } from '@/lib/family-api';
 import { readFamilyData, familyValidationError } from '@/lib/family-data';
@@ -82,25 +82,6 @@ export const GET = withAuth(async () => withFamilyData(async () => {
   return NextResponse.json(bundle);
 }), 'Failed to create backup');
 
-// Shape + displays validation — mirror /api/config PUT so a restore can't
-// persist a config that the editor would reject. Without this gate, a
-// malformed bundle (missing screens, duplicate display IDs, non-URL-safe
-// slugs, etc.) would be written to config.json as-is and could break
-// rendering or invalidate cross-references.
-function validateRestoredConfig(config: unknown): string | null {
-  if (!config || typeof config !== 'object') {
-    return 'Invalid config: must be an object';
-  }
-  const c = config as Partial<ScreenConfiguration>;
-  if (!Array.isArray(c.screens) || !c.settings) {
-    return 'Invalid config: must include screens array and settings';
-  }
-  const mappings = c.settings.calendar?.personSources;
-  if (mappings !== undefined && (!mappings || typeof mappings !== 'object' || Array.isArray(mappings)
-    || Object.values(mappings).some((ids) => !Array.isArray(ids) || ids.some((id) => typeof id !== 'string')))) return 'Calendar ownership must list calendar source ids for each person.';
-  return validateDisplays(config as ScreenConfiguration);
-}
-
 // Fields a restore bundle may carry. Each optional file mirrors the type its
 // writer expects; screens/settings let the legacy config-only format be
 // recognized before it is written as a full ScreenConfiguration.
@@ -169,15 +150,17 @@ async function resolveCredentials(
   }
 }
 
-export const POST = withAuth(async (request: NextRequest) => withDataTransaction(async () => {
+// Everything up to the plan runs outside the data lock: the body can be
+// 25 MB over a phone's Wi-Fi, and every display poll queues behind the lock
+// while it is held. Validation and decryption read only the body, so no
+// current source is consulted before the replacement has been checked; a good
+// full backup must be able to repair corrupt files it replaces. Pending
+// journals recover when the lock is taken for the plan and commit.
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await parseJsonBody<RestoreBundle>(request, {
     maxBytes: MAX_RESTORE_BYTES,
   });
   if (body instanceof NextResponse) return body;
-
-  // Pending journals recover under the coordinator. Do not migrate or read
-  // current sources before validating the replacement: a good full backup
-  // must be able to repair corrupt files it replaces.
 
   // New bundle format
   if (body._type === 'home-screens-backup') {
@@ -187,7 +170,7 @@ export const POST = withAuth(async (request: NextRequest) => withDataTransaction
     delete body._passphrase;
 
     if (body.config !== undefined) {
-      const err = validateRestoredConfig(body.config);
+      const err = validateConfigForWrite(body.config);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
     }
     // Same gate for the lists: the file is written whole, and a malformed one
@@ -218,14 +201,18 @@ export const POST = withAuth(async (request: NextRequest) => withDataTransaction
     }
     const invalid = validateContentSections(body);
     if (invalid) return NextResponse.json({ error: invalid }, { status: 400 });
-    const planned = await planFamilyRestore(body);
-    let credentialResult: CredentialApplyResult | null = null;
-    if (credentialPayload) {
-      const credentials = await planCredentialRestore(credentialPayload, getClientIP(request));
-      planned.changes.push(...credentials.changes);
-      credentialResult = credentials.result;
-    }
-    await commitDataTransaction({ kind: 'backup-restore', changes: planned.changes, evidence: planned.evidence, rollbackOnError: true });
+    const clientIp = getClientIP(request);
+    const credentialResult = await withDataTransaction(async () => {
+      const planned = await planFamilyRestore(body);
+      let result: CredentialApplyResult | null = null;
+      if (credentialPayload) {
+        const credentials = await planCredentialRestore(credentialPayload, clientIp);
+        planned.changes.push(...credentials.changes);
+        result = credentials.result;
+      }
+      await commitDataTransaction({ kind: 'backup-restore', changes: planned.changes, evidence: planned.evidence, rollbackOnError: true });
+      return result;
+    });
     if (credentialResult) audit({ action: 'credential_backup_restore', sections: credentialResult.applied.length, skipped: credentialResult.skipped });
 
     return NextResponse.json({
@@ -249,10 +236,12 @@ export const POST = withAuth(async (request: NextRequest) => withDataTransaction
 
   // Legacy format: raw ScreenConfiguration object
   if (body.screens && Array.isArray(body.screens) && body.settings) {
-    const err = validateRestoredConfig(body);
+    const err = validateConfigForWrite(body);
     if (err) return NextResponse.json({ error: err }, { status: 400 });
-    const planned = await planFamilyRestore({ config: body as unknown as ScreenConfiguration });
-    await commitDataTransaction({ kind: 'backup-restore', changes: planned.changes, evidence: planned.evidence, rollbackOnError: true });
+    await withDataTransaction(async () => {
+      const planned = await planFamilyRestore({ config: body as unknown as ScreenConfiguration });
+      await commitDataTransaction({ kind: 'backup-restore', changes: planned.changes, evidence: planned.evidence, rollbackOnError: true });
+    });
     return NextResponse.json({ restored: { config: true } });
   }
 
@@ -260,7 +249,7 @@ export const POST = withAuth(async (request: NextRequest) => withDataTransaction
     { error: 'Unrecognized backup format' },
     { status: 400 },
   );
-}), 'Failed to restore backup');
+}, 'Failed to restore backup');
 
 function validateContentSections(body: FamilyRestoreContent): string | null {
   const record = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);

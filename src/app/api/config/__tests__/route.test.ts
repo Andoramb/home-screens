@@ -41,6 +41,8 @@ vi.mock('@/lib/telemetry', () => ({
 import { GET, PUT } from '@/app/api/config/route';
 import { readConfig, writeConfig, updateConfigAtomic, configRevision } from '@/lib/config';
 import { CONFIG_REVISION_HEADER } from '@/lib/config-revision';
+import { withDataTransaction } from '@/lib/data-transaction';
+import { INVALID_CONFIGS } from '@/lib/__tests__/invalid-config-matrix';
 
 const dummyConfig = {
   screens: [{ id: 's1', name: 'Main', modules: [] }],
@@ -226,6 +228,47 @@ describe('PUT /api/config', () => {
     const res = await PUT(makePutRequest({ ...dummyConfig, settings: { ...dummyConfig.settings, calendar: { personSources: { alex: 'not-an-array' } } } }));
     expect(res.status).toBe(400);
     expect(writeConfig).not.toHaveBeenCalled();
+  });
+
+  for (const { name, config, error } of INVALID_CONFIGS) {
+    it(`refuses ${name} before writing`, async () => {
+      const res = await PUT(makePutRequest(config));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toMatch(error);
+      expect(writeConfig).not.toHaveBeenCalled();
+    });
+  }
+
+  it('does not hold the data lock while the request body is still uploading', async () => {
+    let release!: () => void;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        release = () => {
+          controller.enqueue(new TextEncoder().encode(JSON.stringify(dummyConfig)));
+          controller.close();
+        };
+      },
+    });
+    const request = new NextRequest('http://localhost/api/config', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      ...({ duplex: 'half' } as object),
+    });
+    const put = PUT(request);
+
+    // An unrelated read must get through while the body is pending.
+    // Let the route run up to its body read before contending for the lock.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    let unrelated = 'blocked';
+    const read = withDataTransaction(async () => { unrelated = 'done'; });
+    await Promise.race([read, new Promise((resolve) => setTimeout(resolve, 500))]);
+    expect(unrelated).toBe('done');
+
+    release();
+    const res = await put;
+    expect(res.status).toBe(200);
+    expect(writeConfig).toHaveBeenCalledWith(dummyConfig);
   });
 
   it('returns 400 when screens is missing', async () => {

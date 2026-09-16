@@ -49,6 +49,7 @@ vi.mock('@/lib/family-import', () => ({ saveImportedConfig: saveImportedConfigMo
 
 import { NextRequest } from 'next/server';
 import { GET, POST } from '../route';
+import { INVALID_CONFIGS } from '@/lib/__tests__/invalid-config-matrix';
 
 const VALID_NAME = 'config-v1.2.3-20260101-120000.json';
 
@@ -141,6 +142,16 @@ describe('POST /api/system/backups', () => {
     expect(saveImportedConfigMock).toHaveBeenCalledWith({ version: 13, screens: [], settings: {} });
     expect(access.depth).toBe(0);
   });
+
+  for (const { name, config, error } of INVALID_CONFIGS) {
+    it(`refuses a snapshot holding ${name}, exactly as the editor save does`, async () => {
+      readFileMock.mockResolvedValueOnce(Buffer.from(JSON.stringify(config)));
+      const res = await POST(postRequest({ name: VALID_NAME }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toMatch(error);
+      expect(saveImportedConfigMock).not.toHaveBeenCalled();
+    });
+  }
 
   it('returns 404 for a missing snapshot without attempting an import', async () => {
     readFileMock.mockRejectedValueOnce(Object.assign(new Error('missing'), { code: 'ENOENT' }));

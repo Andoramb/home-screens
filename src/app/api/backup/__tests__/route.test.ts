@@ -28,6 +28,8 @@ import { encryptCredentials } from '@/lib/backup-crypto';
 import { getLatestSchemaVersion } from '@/lib/migrations';
 import type { ScreenConfiguration } from '@/types/config';
 import type { ChoreData } from '@/lib/chore-data';
+import { withDataTransaction } from '@/lib/data-transaction';
+import { INVALID_CONFIGS } from '@/lib/__tests__/invalid-config-matrix';
 
 const cleanConfig = {
   version: getLatestSchemaVersion(),
@@ -252,6 +254,44 @@ describe('POST /api/backup — restore', () => {
     expect(res.status).toBe(200);
     expect((await res.json()).restored).toEqual({ config: true });
     expect((await readConfig()).screens[0].id).toBe('legacy-screen');
+  });
+
+  for (const { name, config, error } of INVALID_CONFIGS) {
+    it(`refuses a bundle carrying ${name}, exactly as the editor save does`, async () => {
+      const res = await POST(postReq({ _type: 'home-screens-backup', config }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toMatch(error);
+      expect((await readConfig()).screens[0].id).toBe('default');
+    });
+  }
+
+  it('does not hold the data lock while the bundle is still uploading', async () => {
+    let release!: () => void;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        release = () => {
+          controller.enqueue(new TextEncoder().encode(JSON.stringify({ _type: 'home-screens-backup', config: cleanConfig })));
+          controller.close();
+        };
+      },
+    });
+    const request = new NextRequest('http://localhost/api/backup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+      ...({ duplex: 'half' } as object),
+    });
+    const post = POST(request);
+
+    // Let the route run up to its body read before contending for the lock.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    let unrelated = 'blocked';
+    const read = withDataTransaction(async () => { unrelated = 'done'; });
+    await Promise.race([read, new Promise((resolve) => setTimeout(resolve, 500))]);
+    expect(unrelated).toBe('done');
+
+    release();
+    expect((await post).status).toBe(200);
   });
 
   it('rejects a malformed bundle whose config is missing screens', async () => {
