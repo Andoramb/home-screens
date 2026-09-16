@@ -1,142 +1,124 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code (claude.ai/code) when working in this repository.
 
 ## Project Overview
 
-Custom smart display system (Dakboard/MagicMirror replacement). Web-based, runs on Raspberry Pi in Chromium kiosk mode. Portrait 1080×1920 display. All data stored locally as JSON — no database, no cloud.
+Custom smart display system (a Dakboard / MagicMirror replacement). Web-based, runs on a Raspberry Pi in Chromium kiosk mode, portrait 1080x1920 by default. All data is local JSON under `data/`. No database, no cloud. Solo pre-release project: no backwards-compatibility shims or migration paths unless asked.
 
 ## Commands
 
 ```bash
-npm run dev          # Start dev server (Next.js)
+npm run dev          # Dev server (Next.js)
 npm run build        # Production build
-npm run lint         # ESLint (flat config, next/core-web-vitals + typescript)
-npm test             # Run all tests (vitest)
-npm run test:watch   # Watch mode
-npx vitest run src/lib/__tests__/config.test.ts  # Run a single test file
-npm run test:e2e     # Playwright E2E suite (run `npm run build` first)
-npx playwright test --project=editor   # Run one surface's E2E specs
+npm run lint         # ESLint
+npm test             # Unit tests (vitest)
+npx vitest run src/lib/__tests__/config.test.ts   # One test file
+npm run test:e2e     # Playwright E2E (needs `npm run build` first)
+npx playwright test --project=meta     # Coverage ratchets; run first when adding a module
+npx playwright test --project=editor   # One surface's E2E specs
+npm run test:shell   # Bash tests for scripts/*.sh (run after editing any shell script)
 ```
+
+Preflight gate before any commit: `npx tsc --noEmit`, `npm run lint`, `npm test` all pass.
 
 ## Tech Stack
 
-- Next.js 16 + React 19 (App Router)
-- Tailwind CSS v4
-- @dnd-kit for drag-and-drop editor
-- Zustand for editor state management
-- Framer Motion for UI animations (editor panels, some module content); screen transitions use the browser's View Transitions API (`ScreenRotator.startScreenTransition`), not Framer Motion
-- Vitest for testing
-- Path alias: `@/*` → `./src/*`
+Next.js 16 + React 19 (App Router), Tailwind v4, Zustand (editor state), @dnd-kit (editor drag-and-drop), Framer Motion (editor panels only; screen transitions use the View Transitions API in `ScreenRotator`), Vitest, Playwright. Path alias `@/*` maps to `./src/*`.
 
 ## Architecture
 
-### Route Groups
-- `(display)` — fullscreen kiosk view, no chrome. Legacy `/display` and per-display `/display/[displayId]`. When the displays registry is populated, legacy `/display` **renders the main display inline** (not a redirect) — Chromium `--app` mode duplicates its window when following a 307 RSC redirect, so the route resolves the target display server-side and renders `ScreenRotator` directly with the correct `displayId`.
-- `(editor)` — configuration editor at `/editor`, has toolbars/panels
-- `(auth)` — authentication at `/login`
-- `(remote)` — remote control + family surfaces (chores, meals, timers, photos) at `/remote`
+### Route groups (`src/app/`)
+| Group | Path | Purpose |
+|---|---|---|
+| `(display)` | `/display`, `/display/[displayId]` | Fullscreen kiosk view. When the displays registry exists, `/display` renders the main display inline rather than redirecting (Chromium `--app` mode duplicates its window on a 307). |
+| `(editor)` | `/editor` | Layout editor plus Settings. |
+| `(remote)` | `/remote` | Phone remote and family surfaces (chores, meals, timers, lists, photos). Manages data; the editor styles the display. |
+| `(auth)` | `/login` | Authentication. |
+| `api/` | `/api/*` | One `route.ts` per endpoint. All external services (weather, calendar, stocks...) are proxied server-side to hold secrets and avoid CORS. |
 
-### Module System
-The codebase uses a **module registry pattern**. There are 45 built-in module types. Each requires:
-1. A React component in `src/components/modules/`
-2. A type in the `BuiltinModuleType` union (`src/types/config.ts`). `ModuleType` is the composite alias `BuiltinModuleType | PluginModuleType` and has no member list to extend.
-3. A config interface in `src/types/config.ts`
-4. Registration in `src/lib/module-registry.ts` (type, label, icon, category, `defaultConfig`, and `defaultSize` — sizes live on the registry entry, read via `getModuleDefinition(type).defaultSize`, not in `src/lib/constants.ts`)
-5. A dynamic import in `src/lib/module-components.ts`
-6. A config section component in `src/components/editor/config-sections/` (one file per module), exported from that directory's barrel and dispatched in `src/components/editor/PropertyPanel.tsx` — sections are not authored inline in `PropertyPanel.tsx`, which only dispatches
-7. Optionally an API route in `src/app/api/` for external data
-8. An E2E fixture row in `e2e/helpers/module-fixtures.ts` (the `meta` coverage ratchet fails otherwise). If the module fetches data, add a stub fixture too (see Testing below). The meta ratchets also police config depth: every config field needs a `CONFIG_VARIANTS` row (in `e2e/helpers/config-variants/`) or a reasoned `FIELD_DECISIONS` entry in `e2e/meta/coverage.spec.ts`; mode-like string unions may need `EXTRA_DISCRIMINATORS` member rows; a component using `ModuleEmptyState`/`LocationRequired` needs an `EMPTY_STATE_FIXTURES` row.
-9. A PropertyPanel field-edit case in `e2e/editor/config-editing.spec.ts` referencing `buildModuleInstance('<type>')` — its own `meta` ratchet fails without one.
-10. If the module declares a `*View` / `*ViewMode` union: either a `VIEW_MATRIX` row in `e2e/display/module-views.spec.ts` (which then requires every member of the union) or a `SINGLE_VIEW_TESTED_MODULES` entry.
+### API auth tiers
+Every route under `src/app/api/` opens with one guard from `src/lib/auth.ts`, and picking the wrong one is the easiest security mistake to make:
+- `requireSession`: a logged-in editor or phone user. Rejects display bearer tokens. Use for anything that writes config or family data.
+- `requireDisplayAuth`: a session cookie or the kiosk's display bearer token, with an optional trusted-IP bypass. Use for reads a wall display needs and the few writes it may make (tick a to-do, post status).
+- `requireAdoptedDisplay`: LAN plus presence in `config.displays`. Used by Pi telemetry.
+- `requireSudo` (`src/lib/sudo-grant.ts`): for system actions (upgrade, WiFi, hostname, restart). Answers 409 when the service account has no passwordless sudo, which the editor turns into a password prompt that repairs the grant.
+`src/proxy.ts` sits in front of all of it: auth on/off, the IP allowlist, and rejection of cross-origin writes.
 
-Run `npx playwright test --project=meta` first when adding a module — the ratchets name exactly which registry entries are missing.
+### Config schema migrations
+`config.json` carries a schema version. `src/lib/migrations/` holds one `vN-to-vN+1.ts` per step and `migrateUp` runs on every read; the latest version is derived from the list, so adding a file is the whole bump. Any change to the shape of `ScreenConfiguration`, `Screen`, `ModuleInstance` or a module config needs a migration, not a read-time shim. Plugin config shapes migrate through `src/lib/plugin-config-migration.ts`.
 
-Every `ModuleInstance` supports three visibility gates, AND-combined at render time: `enabled?: boolean` (per-module disable toggle, mirrors `Screen.enabled`; disabled modules are excluded from prefetch and shared-data fetches but stay dimmed-visible in the editor), `schedule?: ModuleSchedule` (day/time window), and `visibility?: ModuleVisibility` (declarative conditions over the shared state bus).
+### Module system
+Built-in module types plus runtime plugins, found through a registry. Adding a built-in module touches these places, and the `meta` E2E project names exactly which ones are still missing:
 
-### Shared State Bus & Conditional Visibility
-`src/lib/shared-state-store.ts` is a per-tab key/value bus with unconditional clears (no producer refcount) and cached snapshots for `useSyncExternalStore`. Modules (host or plugin) publish string values; any module can condition its visibility on them via `ModuleVisibility` — a closed union of `state` / `numeric` / `time` / `and` / `or` / `not` conditions (Home Assistant-style semantics), with a `whenUnknown` fallback evaluated before the condition tree so the boolean algebra never sees a three-valued input. `time` is the only condition with no `sourceKey` — a local time-of-day / day-of-week gate whose fields mirror `ModuleSchedule` exactly (same HH:MM format, 0=Sun day numbering, overnight wrap when start > end), evaluated in the display's timezone; it never evaluates to unknown, so it cannot trip `whenUnknown`. **Clears are tombstoned, not deleted**: `clearKey`/`clearKeysByPrefix` mark the entry `staleAt` and hold its last value for a 15s grace window (a fresh publish revives it), so routine producer restarts never blink conditioned modules; plugin reload is a swap — `loadAllPlugins` fetches the new installed list before tearing anything down (a failed fetch makes the reload a no-op: registrations and keys stay live) and only purges key namespaces of plugins gone from the new set. The Text module supports `{<state-key>}` tokens (`src/lib/shared-state-template.ts`; double-brace `{{time}}` template variables are unaffected, unknown keys render an en dash). Displays post a bus snapshot with their status heartbeat (tombstoned entries included, carrying `staleAt`, so the editor evaluates exactly as the display does and badges the value as no longer updating; field omitted while empty after one clearing report); the fast throttled re-report on bus changes is armed only while an editor is watching — the shared-state GET marks per-display interest (15s TTL) and the commands drain returns it as `sharedStateWatched`, otherwise the snapshot rides the 30s heartbeat. The hub keeps the latest per display in memory and serves `GET /api/display/shared-state?display=<id>`, which the editor polls (`useDisplaySharedState`) to show live values and case-mismatch warnings next to condition inputs (all condition inputs, including numeric bounds, commit on blur, not per keystroke). The key input uses a custom suggestion dropdown (opens on focus; native datalist can't be opened programmatically), and new conditions start with an empty `sourceKey` — legal per the validator, evaluated as unknown so `whenUnknown` governs until a key is picked. A `backgroundProvider?: boolean` flag on `ModuleInstance` mounts the module once in a hidden `BackgroundProviderLayer` so its data loop (and published state) survives screen rotation — background-only, not "also render". The editor UI is `VisibilityConditionsSection.tsx`, with the condition picker sourced from provided state keys (`src/lib/provided-state-keys.ts`).
+1. Component in `src/components/modules/`
+2. Type added to the `BuiltinModuleType` union and a config interface in `src/types/config.ts`
+3. Registry entry in `src/lib/module-registry.ts` (type, label, icon, category, `defaultConfig`, `defaultSize`; set `autoSizesText` if the component uses `useScaledFontSize` / `useFitFontSize`)
+4. Dynamic import in `src/lib/module-components.ts`
+5. Config section in `src/components/editor/config-sections/` (one file per module, exported from the barrel, dispatched in `PropertyPanel.tsx`)
+6. Optional API route under `src/app/api/`
+7. Fixture row in `e2e/helpers/module-fixtures.ts`; a JSON stub under `e2e/fixtures/module-data/` plus a `stubKey` if it fetches data; a `CONFIG_VARIANTS` row per config field (or a reasoned `FIELD_DECISIONS` entry in `e2e/meta/coverage.spec.ts`); an `EMPTY_STATE_FIXTURES` row if it uses `ModuleEmptyState` / `LocationRequired`
+8. A `buildModuleInstance('<type>')` field-edit case in `e2e/editor/config-editing.spec.ts`
+9. If it declares a `*View` union: a `VIEW_MATRIX` row in `e2e/display/module-views.spec.ts` or a `SINGLE_VIEW_TESTED_MODULES` entry
 
-### Plugin System
-Plugins extend the module system without modifying core code. A plugin is an IIFE bundle + manifest that loads at runtime. Plugins use `window.__HS_SDK__` for host utilities and `pluginFetch` for API proxy calls; `publishState`/`clearState` feed the shared state bus, with keys advertised via the manifest `providesState` field or a `deriveProvidedKeys` export. Plugin types are namespaced as `plugin:<moduleType>`. Plugin files live in `data/plugins/`. The plugin proxy at `/api/plugins/proxy/[pluginId]` has SSRF hardening and per-plugin rate limits (60 req/min; 240 for `localNetwork` plugins). A manifest `auth` field declares a server-side auth adapter — declarative OAuth2 (`authorization_code` with PKCE, `device_code`, `client_credentials`) or the named Garmin SSO adapter — run entirely by the host via `/api/plugins/auth/*` (start POST / poll PUT / status GET / disconnect DELETE per plugin, plus a shared HMAC-signed-state callback); tokens live out-of-tree in `data/plugin-tokens/` and the proxy injects and transparently refreshes them for the adapter's `tokenTargetDomains` (one 401 retry, then a structured `auth_expired` response). The SDK exposes read-only `getAuthStatus` (display + editor) and `startAuth` (editor-only, dispatches to the Connection panel).
+Every `ModuleInstance` has three AND-combined visibility gates: `enabled` (toggle), `schedule` (day/time window) and `visibility` (conditions over the shared state bus). A `backgroundProvider` flag mounts a module hidden in `BackgroundProviderLayer` so its data loop survives screen rotation.
 
-### Multi-Display (Hub-and-Spoke)
-Optional `displays?: DisplayNode[]` registry on `ScreenConfiguration`. **When unset, the system runs in legacy single-display mode** (config.screens is the source of truth) — this is still the default. When set, each `DisplayNode` owns its own `screens: Screen[]` plus `displayWidth` / `displayHeight` / `displayTransform`, and (optionally) its own `profiles: Profile[]` and `activeProfile`; the deprecated shared-pool fields `DisplayNode.screenIds` and `DisplayNode.profileIds` were removed in schema v4 (`Profile.screenIds` is unaffected and remains the current mechanism). The hub serves all displays, each Pi polls `/api/display/commands?display=<id>` and reports per-tab status (clientId, post-rotation viewport, source IP) back. Per-display command queues live in `display-commands.ts` keyed by displayId, with `__default__` for legacy callers and `all` as a broadcast keyword. Heartbeats live in an in-memory `statusMap` (not config.json) to avoid write contention with editor saves. The first `addDisplay` auto-seeds a sibling `main` display inheriting the global screens **only when the first added display is not itself `main`**; if the user adds `main` first, that display inherits the globals directly. Subsequent displays start empty. **`main` is a regular `DisplayNode` that owns its own dimensions** — `addDisplay` seeds `displays[main]` from the globals at migration time, so no "main is special" branch or read-time normalization shim is needed anywhere. Editor store routes every screen mutation through `getActiveScreens` / `withActiveScreens` so edits target the currently selected display. `validateDisplays` enforces URL-safe slugs (≤64 chars), unique IDs, ≤64 displays, ≤256 screens-per-display, dimension caps. Display-only Pis (`install.sh --display-only`) skip Node.js entirely and run a chromium+labwc kiosk against the hub. The settings page splits the sidebar into **Defaults** (every shared value) and **Per display** (one drill-down page per display) — every default has a real source-of-truth page, every per-display field uses an `OverrideRow` with explicit Override / Reset to default actions, and the Defaults pages render a backlink banner via `findDisplaysOverridingFields` listing which displays currently override their fields. The 2026-07 reorganization merged the Defaults sidebar to the pages listed in `DEFAULT_PAGE_IDS` (`settings-route.ts`) under four group headers (Screen / Content / Automation / Maintenance): `screen` absorbed display+sleep+alerts (URL-driven tabs via `?panel=appearance|sleep|alerts`), `automation` absorbed profiles+rules+shared-state (tabs via `?panel=profiles|rules|live`), `integrations` ("API keys") sits under Content, config backups moved from System to `data` ("Backups & data"), and Docs became a sidebar-footer link. Per-display subtabs collapsed to `overview` (absorbing profile+identity) and `overrides` (absorbing display+sleep+alerts). `settings-route.ts` parses and canonicalizes the settings URL (a `page`/`panel`/`subtab` the URL claims but the parser didn't resolve is rewritten away); retired page/subtab ids fall back to the default page, while the pre-reorganization `?tab=` values are mapped to the page and panel that absorbed them (`RETIRED_TAB_ROUTES`, so `?tab=sleep` resolves to `screen` with panel `sleep`) and the `tab` param is stripped on rewrite.
+### Shared state bus
+`src/lib/shared-state-store.ts` is a per-tab key/value bus. Producers are plugins (`publishState` / `clearState` via the SDK) and the host's calendar facts (`src/lib/calendar-state.ts`). Any module can condition its visibility on keys through `ModuleVisibility`, a closed union of `state` / `numeric` / `time` / `and` / `or` / `not` with a `whenUnknown` fallback evaluated before the tree. Clears are tombstoned for a 15s grace window so producer restarts never blink modules. Displays post a bus snapshot with their heartbeat; the editor polls `/api/display/shared-state?display=<id>` to show live values next to condition inputs (`VisibilityConditionsSection.tsx`). The Text module renders `{<state-key>}` tokens (`src/lib/shared-state-template.ts`).
 
-The `display-control` module is a touch widget that dispatches hub commands (wake/sleep/next/prev/brightness) back at configurable targets (`self`, `all`, or a specific display ID) via `src/lib/display-dispatch.ts`. `useDisplayId` resolves `self` at runtime from the kiosk's own ID. Per-Pi hardware reporting runs via `scripts/reporter.sh` posting to `/api/display/hw-stats`, which is gated by `requireAdoptedDisplay` (LAN + presence in `config.displays`) rather than a bearer token — the old reporter_token flow was removed.
+### Plugin system
+A plugin is an IIFE bundle plus manifest loaded at runtime from `data/plugins/`, typed as `plugin:<moduleType>`. Plugins use `window.__HS_SDK__` and `pluginFetch`, which goes through `/api/plugins/proxy/[pluginId]` (SSRF hardening, 60 req/min, 240 for `localNetwork` plugins). A manifest `auth` field declares a host-run OAuth2 or Garmin SSO adapter (`/api/plugins/auth/*`); tokens live in `data/plugin-tokens/` and the proxy injects and refreshes them. The real SDK contract is the host's `PluginGlobals.tsx`, not the template typings. Plugin manifests may ship `translations` that register under namespace `plugin:<pluginId>`.
 
-### Data Flow
-- Main config: `data/config.json` (read/written via `src/lib/config.ts`)
-- Meal-planner state + shared settings: `data/meals.json` (atomic writes via `src/lib/meal-data.ts`; settings live here so /remote and all meal-planner module instances stay in sync)
-- Family roster: `data/family.json` (via `src/lib/family-data.ts` and revision-checked `/api/family`; shared identities for chores, calendars and rewards). Editor Settings > Family and phone Settings > Family use the same `FamilyManager`.
-- Chore definitions: `data/chores.json` (via `src/lib/chore-data.ts`); completions and history live in `data/chore-completions.json`. Consumers join the family roster separately.
-- Stores participating in family changes or backup restore share `src/lib/data-transaction.ts`, a reentrant coordinator that serializes them through one per-root queue. Family migration, removal and backup restore use a durable journal with recoverable before/after images. Keep reference checks and their writes inside the coordinator; new multi-file write paths must participate too. Server startup pins the data root so a release swap cannot move it mid-write. There is no cross-process lock: the app is a single process (`node server.js`) that serializes its own writes, and the two other writers (`upgrade.sh deploy` and the offline restore) both refuse to run while the service is up. Losing power partway through is covered by the journal, not by locking. Runtime-only timer sessions, telemetry and backup reminders use per-file atomic writes without the global lock or fsync.
-- Timer routines + running session: `data/routines.json` and `data/timer-session.json` (via `src/lib/timer-data.ts` — routines are authored family data, the session is hot runtime state kept in its own file; displays poll `/api/timers/session` and derive countdowns locally from its timestamps)
-- Shared to-do lists: `data/todos.json` (via `src/lib/todo-data.ts`: lists with items, due dates, assignees and repeat schedules; a `todo` module points at a list by `listId` and never carries items; the phone's Lists tab, the wall and the editor all write through `/api/todo/lists*`, so a check-off never touches config.json. The first read after upgrade folds pre-v2 inline module `items` and the old `todo-state.json` taps into lists)
-- School timetables: `data/timetables.json` (via `src/lib/timetable-data.ts`: schools and bell times, one shared subject list, and one week per person keyed by `FamilyMember` id, holding nothing else about them so the roster stays the only place a name or colour lives. Read and written whole through `/api/timetables` with a revision check, so a save from a stale copy is refused with 409 and the current document; the store joins `data-transaction.ts` and validates member ids against the roster inside the same section as the write. Part of the family-removal cascade (`planDeletion` drops the removed person's timetable) and of the backup bundle. `readTimetables` hands a household that has never saved the default subject catalogue for its language, from `src/lib/timetable-subjects/`; nothing is written until the first real save)
-- School holiday cache: `data/school-holidays.json` (via `src/lib/school-holidays.ts`, behind `/api/timetables/holidays`: last-good copies of the OpenHolidays lookups, capped at 16 entries, oldest dropped first. Requests omit `languageIsoCode` so one cached payload serves every display language and the name is picked at render. A failed fetch answers with the saved copy and `ok: false` plus a message key instead of an error. Coverage is partial: of the shipped locales only DE, FR and NL have school-holiday data, US and DK are not supported countries at all, ES and BR return nothing, and the upstream API answers an unknown country or region with 200 and an empty list, so every code is validated before a URL is built. The module skips the lookup entirely when no region is set)
-- API keys: `data/secrets.json`
-- iCloud account credentials: `data/icloud-accounts.json` (via `src/lib/icloud-accounts.ts` — CalDAV app-specific passwords, kept out of config.json; the API never returns passwords, picked calendars persist as `icloudSources` in config)
-- Plugin bundles: `data/plugins/`
-- Plugin auth tokens: `data/plugin-tokens/<pluginId>.json` (via `src/lib/plugin-auth.ts` — serialized writes, owner-only permissions, kept outside the plugin dir so upgrades can't wipe them)
-- `/api/config` handles GET/PUT for the config file
-- Editor loads config into a Zustand store (`src/stores/editor-store.ts`), edits in-memory, saves via PUT
-- Display reads config server-side and renders modules
+### Multi-display (hub and spoke)
+`ScreenConfiguration.displays?: DisplayNode[]` is optional. Unset means legacy single-display mode with `config.screens` as the source of truth, which is still the default. When set, each `DisplayNode` (including `main`, which is a regular node seeded from the globals at migration time) owns its own `screens`, dimensions, transform and optional profiles. Each Pi polls `/api/display/commands?display=<id>` and posts status; per-display command queues, the in-memory heartbeat `statusMap` and viewport reports live in `src/lib/display-commands.ts` (`__default__` for legacy callers, `all` broadcasts). Editor screen mutations go through `getActiveScreens` / `withActiveScreens` so edits target the selected display. `validateDisplays` enforces slug, uniqueness and size caps. Display-only Pis (`scripts/install.sh --display-only`) run a Chromium kiosk against the hub with no Node.
 
-### API Pattern
-All API routes are server-side proxies for external services (weather, calendar, stocks, etc.) to handle secrets and CORS. Routes live in `src/app/api/*/route.ts` (about 120 route files) covering config, weather, calendar, sports, plugins, system management, displays, network (WiFi/IP/hostname), i18n dictionaries, shared to-do lists (`/api/todo/lists*`), and more. `/api/displays` is a read-only registry+heartbeat endpoint with a 1.5s readConfig cache. `/api/display/[action]` handles per-display command enqueueing and status posts; `/api/display/hw-stats` accepts adopted-display-gated hardware telemetry. `/api/todo/lists` (GET display-auth, POST session) and its `[listId]` / `[listId]/items` / `[listId]/items/[itemId]` children are the to-do store's only door; item PATCH is display-auth so the wall can tick. The upgrade pipeline (`/api/system/upgrade`, rollback, backups) is hardened against tamper.
+Settings is split into **Defaults** (shared values, pages listed in `DEFAULT_PAGE_IDS`) and **Per display** (one page per display, every field an `OverrideRow` with explicit Override / Reset). `src/lib/settings-route.ts` parses and canonicalizes the settings URL and maps retired ids. `src/lib/display-defaults-backlinks.ts` tells a Defaults page which displays override its fields.
 
-### Key Files
-- `src/types/config.ts` — all TypeScript types (ModuleType, ModuleInstance, ScreenConfiguration, GlobalSettings, DisplayNode)
-- `src/types/plugins.ts` — plugin manifest and runtime types
-- `src/lib/module-registry.ts` — module definitions (type, label, icon, category, defaults)
-- `src/lib/module-components.ts` — dynamic imports mapping ModuleType → React component
-- `src/lib/config.ts` — config file read/write (also exposes `updateConfigAtomic` for queued read-modify-write)
-- `src/lib/weather/` — 9 weather providers (OpenWeatherMap, WeatherAPI, Pirate Weather, NOAA, Open-Meteo, Yr.no, SMHI, Met Office, Environment Canada) with shared types and factory
-- `src/lib/google-calendar.ts` — Google Calendar integration (OAuth device flow)
-- `src/lib/caldav-calendar.ts` + `src/lib/icloud-accounts.ts` — iCloud calendar sync (CalDAV via tsdav, per-calendar failure isolation, optional CardDAV contact-birthday source); accounts managed by `/api/icloud/accounts`, calendars listed by `/api/icloud/calendars`
-- `src/lib/meal-data.ts` — shared meal-planner store (`data/meals.json`), atomic writes, settings + savedMeals + plan + groceryChecked
-- `src/stores/editor-store.ts` — Zustand store composition point: wires `mutateConfig` (pure history bookkeeping in `editor-save.ts`: `applyMutation`, `COALESCE_KEYS`) and undo/redo. The actions live in `src/stores/editor-slices/` (config, selection, modules, screens, settings, profiles, rules, displays, layout; `types.ts` holds the decomposed `EditorState`). Multi-display helpers (`getActiveScreens`, `getActiveDimensions`, `withActiveScreens`, `orientDimensions`) are re-exported from `@/lib/editor-multi-display` / `@/lib/display-filter`
-- `src/lib/plugin-loader.ts` — plugin loading, registration, and dev mode
-- `src/lib/display-filter.ts` — `filterConfigForDisplay`, `validateDisplays`, `findScreenById`, `getDisplayScreens` (shared between server route and `useLiveConfig`)
-- `src/lib/display-commands.ts` — per-display command queues, `statusMap`, `viewportReports`, `getUnadoptedDisplays` with stale eviction
-- `src/lib/display-client-id.ts` — per-tab `clientId` from sessionStorage so the hub can distinguish multiple tabs reporting under the same display ID
-- `src/lib/display-dispatch.ts`, `src/hooks/useDisplayId.ts`, `src/hooks/useHoldConfirm.ts` — shared helpers behind the `display-control` module (target resolution, command dispatch, hold-to-confirm buttons)
-- `src/lib/resolve-screen-duration.ts` + `src/components/display/useScreenRotationTimer.ts` — per-screen `rotationDurationMs` override with global-default fallback, used by `ScreenRotator` and module prefetch timing
-- `src/lib/shared-state-store.ts` + `src/lib/shared-state-types.ts` — per-tab shared state bus (unconditional clears, key/value caps, cached snapshots); consumed via `src/hooks/useSharedStateKeys.ts`. Producers are plugins (via the SDK's `publishState`/`clearState`) and the host's calendar facts (`src/lib/calendar-state.ts`, published from `useSharedDisplayData` so they survive screen rotation and exist on displays showing no calendar)
-- `src/components/display/BackgroundProviderLayer.tsx`, `src/components/editor/VisibilityConditionsSection.tsx` — hidden mount layer for `backgroundProvider` modules + the editor UI for visibility conditions
-- `src/lib/todo-data.ts` + `src/types/todos.ts`: shared to-do list store (`data/todos.json`): pure list/item operations the `/api/todo/lists*` routes call, lazy repeat schedules, and the one-time fold-in of pre-v2 inline module items
-- `src/components/editor/DisplaySwitcher.tsx`, `src/components/editor/settings/DisplaysIndexPage.tsx` — multi-display UI (toolbar pill + Per display > All displays index)
-- `src/components/editor/settings/SettingsSidebar.tsx`, `src/components/editor/settings/display/PerDisplayPage.tsx`, `src/lib/settings-route.ts` — Phase 4 settings split (Defaults / Per display) with URL-driven routing
-- `src/components/editor/settings/OverrideRow.tsx`, `src/lib/display-defaults-backlinks.ts` — per-display field overrides + the "which displays override this field?" backlink banner on Defaults pages
-- `src/i18n/` — i18n runtime (`provider.tsx`, `loader.ts`, `manifest.ts`, `formatters.ts`, `server-blob.ts`, `file-reader.ts`); `manifest.ts` is the source of truth for registered locales
-- `src/translations/<locale>/{core,editor,modules,remote,weather}.json` — host dictionaries, one folder per locale; fallback chain walks language siblings then `FALLBACK_LOCALE` (`en-US`)
-- `src/app/api/i18n/[locale]/route.ts` — serves `{ <namespace>: <dictionary>, ... }` for a `?ns=` list; unknown locales fall back silently; partial locales walk the per-namespace fallback chain
+### Data files (`data/`)
+| File | Module | Notes |
+|---|---|---|
+| `config.json` | `src/lib/config.ts` | Layout, displays, settings. `GET/PUT /api/config`; `updateConfigAtomic` for queued read-modify-write. Editor loads it into `src/stores/editor-store.ts`, edits in memory, saves via PUT. |
+| `secrets.json` | | API keys. |
+| `family.json` | `src/lib/family-data.ts` | Shared roster for chores, calendars, rewards, timetables. |
+| `chores.json`, `chore-completions.json` | `src/lib/chore-data.ts` | Definitions and history. |
+| `meals.json` | `src/lib/meal-data.ts` | Meal planner state and settings, shared by `/remote` and every module instance. |
+| `todos.json` | `src/lib/todo-data.ts` | Shared to-do lists; a `todo` module points at a `listId` and never carries items. Only door is `/api/todo/lists*`. |
+| `routines.json`, `timer-session.json` | `src/lib/timer-data.ts` | Authored routines vs hot running session; displays derive countdowns from timestamps. |
+| `timetables.json` | `src/lib/timetable-data.ts` | School bell times and one week per family member, revision-checked (409 on stale save). |
+| `school-holidays.json` | `src/lib/school-holidays.ts` | Last-good OpenHolidays cache; only DE, FR, NL have data. |
+| `icloud-accounts.json` | `src/lib/icloud-accounts.ts` | CalDAV app passwords, never returned by the API. |
+| `plugins/`, `plugin-tokens/` | `src/lib/plugin-loader.ts`, `src/lib/plugin-auth.ts` | Bundles and OAuth tokens, kept apart so upgrades cannot wipe tokens. |
+
+Stores that take part in family changes or backup restore go through `src/lib/data-transaction.ts`, a reentrant per-root coordinator with a durable journal. Keep reference checks and their writes inside it, and make any new multi-file write path participate. The app is one process that serializes its own writes; there is no cross-process lock.
 
 ### I18n
-The active locale lives in `GlobalSettings.locale` (BCP-47 tag, defaults to `en-US`); an optional `formattingLocale` overrides date/number formatting only. Seven locales ship out of the box: `en-US`, `de-DE`, `fr-FR`, `es-ES`, `nl-NL`, `pt-BR`, `da-DK`. Server-rendered pages get a pre-built locale blob via `buildLocaleBlob`; client pages hydrate the same dictionaries through `/api/i18n/[locale]` (per-namespace HTTP cache, full-URL keyed). Plugin manifests can declare `translations: { '<bcp47>': '<path>' }`; the loader registers them under namespace `plugin:<pluginId>` and exposes `__HS_SDK__.translate(...)` to plugin code.
+Locale lives in `GlobalSettings.locale` (BCP-47, default `en-US`), with optional `formattingLocale` for dates and numbers. Shipped locales: en-US, de-DE, fr-FR, es-ES, nl-NL, pt-BR, da-DK. Dictionaries are `src/translations/<locale>/{core,editor,modules,remote,weather}.json`; `src/i18n/manifest.ts` is the source of truth for registered locales. Server pages get a blob from `buildLocaleBlob`; client pages hydrate through `/api/i18n/[locale]`. A layout that passes `namespaces` without `blob` renders raw keys until the fetch lands.
 
-### Website
-The marketing site and documentation live in `website/` as a separate Next.js app:
-- Static export deployed to Cloudflare Pages at homescreens.dev
-- Marketing homepage at `/` with dark theme
-- Documentation at `/docs/*` using Markdoc for content, with search (FlexSearch), light/dark theme, and sidebar navigation
-- Docs components namespaced under `src/components/docs/` to avoid collisions with marketing components
-- Build requires `--webpack` flag (Markdoc not Turbopack-compatible)
-- `website/src/lib/docs-navigation.ts` defines the sidebar structure
+### Other key files
+- `src/types/config.ts`: every config type (ModuleType, ModuleInstance, ScreenConfiguration, GlobalSettings, DisplayNode); `src/types/plugins.ts` for plugin manifests
+- `src/stores/editor-slices/`: editor actions by area (config, selection, modules, screens, settings, profiles, rules, displays, layout); history bookkeeping in `editor-save.ts`
+- `src/lib/weather/`: one file per provider behind a shared interface and factory
+- `src/lib/google-calendar.ts`, `src/lib/caldav-calendar.ts`: calendar integrations
+- `src/lib/display-filter.ts`: `filterConfigForDisplay`, `validateDisplays`, `getDisplayScreens`
+- `src/lib/display-dispatch.ts`, `src/hooks/useDisplayId.ts`: the `display-control` module's hub commands (`self`, `all`, or a display id)
+- `src/lib/resolve-screen-duration.ts`: per-screen rotation duration with global fallback
+- `scripts/reporter.sh` posts Pi hardware stats to `/api/display/hw-stats`, gated by `requireAdoptedDisplay` (LAN plus presence in `config.displays`)
+- `website/`: separate Next.js app for homescreens.dev (marketing plus Markdoc docs, static export to Cloudflare Pages, build with `--webpack`); sidebar in `website/src/lib/docs-navigation.ts`
 
-### Testing
-Tests use Vitest with `@` path aliases configured. Test files live in `__tests__/` directories alongside the code they test. Environment is `node`.
+## Testing
 
-E2E tests live in `e2e/` (Playwright, Chromium only). Each worker boots its own production `next start` from a sandboxed cwd with a private `data/` (`e2e/helpers/sandbox.ts`, mirroring `vitest.setup.ts`), so E2E runs never touch the real `data/` directory. Specs reset state via `PUT /api/config` in `beforeEach`. Requires a production build: `npm run build && npm run test:e2e`. CI shards the suite (`--shard=i/n`) and merges blob reports into one HTML report.
+Unit tests are Vitest in `__tests__/` directories next to the code, `node` environment, with `data/` and `public/` sandboxed by `vitest.setup.ts`.
 
-**Module coverage is data-driven.** `e2e/helpers/module-fixtures.ts` holds one `ModuleFixture` row per built-in module type (config overrides + an assertion), and the render matrices (`e2e/display/modules-static.spec.ts`, `modules-data.spec.ts`, `module-views.spec.ts`) loop over it. Config-field depth lives in `e2e/helpers/config-variants/` (per-family row files concatenated by `index.ts`; each row flips one field and asserts the render changed — rows support `stubBody`, custom `seedData`, and `companions` for cross-module effects) and empty states in `e2e/helpers/empty-state-fixtures.ts` (looped by `module-empty-states.spec.ts`). The `meta` project has 15 ratchets (`e2e/meta/coverage.spec.ts`). They fail if any built-in type lacks a fixture, a config field lacks a variant row or a reasoned `FIELD_DECISIONS` entry, a discriminator-union member goes untested, an empty-state component lacks a registry row, a built-in type has no `buildModuleInstance` field-edit case in `config-editing.spec.ts`, a module with a `*View` union is in neither `VIEW_MATRIX` nor `SINGLE_VIEW_TESTED_MODULES` (or is in the matrix but missing one of its views), a settings page or per-display subtab is unreferenced by an editor spec, an API route is neither E2E-exercised nor unit-tested nor a `ROUTE_DECISIONS` entry, a manifest locale is missing from any surface i18n spec (editor, display, remote, chores), a module whose component tree reaches `useScaledFontSize` / `useFitFontSize` is not flagged `autoSizesText` in the registry (the flag drives `AUTOSIZED_MODULES` in `e2e/helpers/autosized-modules.ts`, the auto-size matrix asserting type is sized for its box, and the meaning of Text size's 100%: the fitted size there, the base pixel size elsewhere), or a `STYLE_EXEMPTIONS` entry (`e2e/helpers/style-matrix.ts`) names a module or control the style matrix does not probe. The style matrix itself (`e2e/display/module-style.spec.ts`) runs every module the editor offers a Style section to (`styleReachesModule` in the registry, so the population cannot drift) plus the fixture plugin, changes one of text colour, background, font size and font family at a time through the config poll, and fails if the module's own screenshot does not change; exemptions carry a reason. **To test a new module: add its fixture row; if it fetches data, add a JSON fixture under `e2e/fixtures/module-data/` and a `stubKey` so `stubModuleData` (`e2e/helpers/stubs.ts`) serves it.** Module data is fetched client-side, so `page.route` intercepts it at the browser boundary — the `stubModuleData` external-block catch-all is the no-beacon safeguard (asserted via `externalHits`), guaranteeing a spec makes zero real upstream calls. Local-data modules (chore-chart, meal-planner, todo) seed instead of stubbing: chores and meals via their real APIs (`seedChores` / `seedMeals`), to-do lists by writing the worker's sandbox `data/todos.json` (`seedTodos(sandboxDir)`, because a fixture row has to name its `listId` up front and the API mints ids). Plugin specs seed a fixture plugin into the sandbox with `seedFixturePlugin` (`e2e/helpers/fixture-plugin.ts`).
+E2E is Playwright, Chromium only, in `e2e/`. Each worker boots its own production `next start` from a sandboxed cwd with a private `data/` (`e2e/helpers/sandbox.ts`), so runs never touch the real data. Specs reset state with `PUT /api/config` in `beforeEach`.
+
+Module coverage is data-driven. `e2e/helpers/module-fixtures.ts` has one row per built-in type and the render matrices loop over it; config-field depth lives in `e2e/helpers/config-variants/`, empty states in `e2e/helpers/empty-state-fixtures.ts`, the style matrix in `e2e/display/module-style.spec.ts` (exemptions in `e2e/helpers/style-matrix.ts` carry a reason). Module data is fetched client-side and stubbed at the browser boundary by `stubModuleData` (`e2e/helpers/stubs.ts`), whose external-block catch-all guarantees zero real upstream calls. Local-data modules seed instead: `seedChores`, `seedMeals`, `seedTodos(sandboxDir)`; plugin specs use `seedFixturePlugin`. The ratchets in `e2e/meta/coverage.spec.ts` also police settings pages, API routes (`ROUTE_DECISIONS`), locales per surface, `autoSizesText` flags and style exemptions.
 
 ## Working Conventions
 
-- Plans and specs live in `.claude/plans/` (finished ones move to `.claude/plans-finished/`); mockups live in `.claude/mockups/`. None of these are committed.
-- UI features are mockup-first: real HTML mockup in `.claude/mockups/`, sign-off, implement, then audit the rendered implementation against the mockup before calling it done.
-- Preflight gate before any commit: `npx tsc --noEmit`, `npm run lint`, `npm test` must all pass.
-- Commit style: one summary line, blank line, bulleted body. No phase references, no review-finding references, no attribution, no em-dashes. Never commit until the user signs off; prefer one commit per unit of tested work.
-- User-visible strings are kid-friendly plain language: no "admin", "permission", "enum", "backfill", or node/chromium jargon (the chore chart and /remote are used by children; issue reporters are not developers).
-- Member-based UIs must work with 5+ members (aggregate indicators, not per-member visuals).
+- Plans and specs live in `.claude/plans/` (finished ones in `.claude/plans-finished/`), mockups in `.claude/mockups/`. None are committed.
+- UI features are mockup-first: real HTML mockup, sign-off, implement, then audit the rendered result against the mockup.
+- Never claim a fix without observing the fixed behavior in the running app or a re-run check.
+- Never commit until the user signs off. One summary line, blank line, bulleted body. No phase or review references, no attribution, no em-dashes.
+- User-visible strings are kid-friendly plain language: no "admin", "permission", "enum", "backfill", or node/chromium jargon. Children use the chore chart and `/remote`; issue reporters are not developers.
+- Member-based UIs must work with 5+ members: aggregate indicators, not per-member visuals.
+- Placeholder content in unconfigured modules is intentional; never blank it.
