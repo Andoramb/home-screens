@@ -1,5 +1,6 @@
 import { createJsonStore } from './json-store';
 import type { TransactionChange } from './data-transaction';
+import { canAffordReward } from '@/lib/reward-rules';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -114,7 +115,7 @@ export function redeemReward(
 ): Promise<RewardData> {
   return updateRewards((data) => {
     const balance = data.balances[memberId] ?? 0;
-    if (balance < reward.cost) throw new Error('Insufficient balance');
+    if (!canAffordReward(balance, reward)) throw new Error('Insufficient balance');
 
     const redemption: RewardRedemption = {
       id: crypto.randomUUID(),

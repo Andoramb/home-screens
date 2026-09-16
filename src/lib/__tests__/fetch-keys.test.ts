@@ -182,8 +182,12 @@ describe('sportsUrl', () => {
 });
 
 describe('standingsUrl', () => {
-  it('defaults league to nfl and grouping to division', () => {
-    expect(standingsUrl({})).toBe('/api/standings?league=nfl&grouping=division');
+  /* The defaults have to be the registry's, not this builder's own: a URL
+   * built with a different default than the module renders with asks for one
+   * grouping and labels the answer as another. A meta ratchet holds the two
+   * together; this pins the values the registry currently advertises. */
+  it('defaults to the league and grouping the registry advertises', () => {
+    expect(standingsUrl({})).toBe('/api/standings?league=nba&grouping=conference');
   });
 
   it('uses provided league and grouping', () => {

@@ -1056,3 +1056,193 @@ test('every style-matrix exemption names a probed module and a probed control', 
     .flatMap(([type, byField]) => Object.entries(byField ?? {}).filter(([, reason]) => !reason?.trim()).map(([f]) => `${type}.${f}`));
   expect(unreasoned, `STYLE_EXEMPTIONS entries without a reason: ${unreasoned.join(', ')}`).toEqual([]);
 });
+
+/* ── Registry defaults vs the defaults the code actually uses ──────────────
+ *
+ * A module's `defaultConfig` entry is what the editor places, what its config
+ * control shows as selected, and what the Style and variant matrices assume.
+ * When the code that renders (or fetches) falls back to a different literal for
+ * the same field, a config placed before that field existed renders one thing
+ * while the editor claims another, and nobody sees a type error: every one of
+ * these fields is required in `types/config.ts`, so the fallback is only
+ * reachable for an unmigrated config.
+ *
+ * Two had drifted when this was written (`fullscreen-meal-planner` density,
+ * `standings` grouping) and `standings` had drifted twice more in its URL
+ * builder, where the cost is worse than cosmetic: the request asked for one
+ * grouping while the module labelled the answer as another.
+ */
+
+/**
+ * `<module type>.<field>` → why the code deliberately differs from the registry.
+ *
+ * The legitimate case is a field whose absence means something other than its
+ * default: the registry value is what a newly placed module gets, while the
+ * code's fallback is what "nobody ever set this" should render as. Inventing
+ * the default there would show the household a bin day or an icon it never
+ * chose. A reason here is that claim, not a place to park a failure.
+ */
+const DEFAULT_FALLBACK_EXEMPTIONS: Record<string, string> = {
+  'garbage-day.trashDay': '-1 is the module\'s own "no collection day" sentinel, the same one the '
+    + 'registry uses for customDay. A config that never set a day should show no day, not Monday.',
+  'garbage-day.recyclingDay': 'see trashDay: -1 means no collection day was ever chosen.',
+  'icon.iconName': 'buildIconClass(\'\') renders nothing, which is what an icon module carrying no '
+    + 'chosen icon should draw. The registry\'s star is what the editor places, not what an empty '
+    + 'config means.',
+};
+
+/** The literal on the right of a `??`, or undefined when it is an expression. */
+function literalFallback(raw: string): string | number | boolean | undefined {
+  const text = raw.trim().replace(/\)+$/, '');
+  if (/^'[^']*'$/.test(text)) return text.slice(1, -1);
+  if (/^-?\d[\d_]*(\.\d+)?$/.test(text)) return Number(text.replace(/_/g, ''));
+  if (text === 'true') return true;
+  if (text === 'false') return false;
+  return undefined;
+}
+
+/**
+ * Every `config.<field> ?? <literal>` in a body of source, as field → literal.
+ * A field read with two different fallbacks in one module keeps the first;
+ * either way a disagreement with the registry is reported.
+ */
+function configFallbacks(source: string): Map<string, string | number | boolean> {
+  const out = new Map<string, string | number | boolean>();
+  // `(config.league as string | undefined) ?? 'nba'` reads the same as the bare
+  // form once the cast is dropped.
+  const text = source.replace(/\(\s*config\.([A-Za-z0-9_]+)\s+as[^)]*\)/g, 'config.$1');
+  for (const m of text.matchAll(/\bconfig\.([A-Za-z0-9_]+)\s*\?\?\s*([^;,\n]+)/g)) {
+    const value = literalFallback(m[2]);
+    if (value !== undefined && !out.has(m[1])) out.set(m[1], value);
+  }
+  return out;
+}
+
+/** module type → the source of the URL builder registered for it in fetch-keys. */
+function fetchBuilderSources(): Map<string, string> {
+  const src = readFileSync(path.resolve(REPO_ROOT, 'src/lib/fetch-keys.ts'), 'utf8');
+  const bodies = new Map<string, string>();
+  for (const m of src.matchAll(/export function (\w+)\(config: AnyConfig\)[^{]*\{([\s\S]*?)\n\}/g)) {
+    bodies.set(m[1], m[2]);
+  }
+  const out = new Map<string, string>();
+  for (const m of src.matchAll(/'?([a-z0-9-]+)'?:\s*\{\s*buildUrl:\s*(\w+)/g)) {
+    const body = bodies.get(m[2]);
+    if (body) out.set(m[1], body);
+  }
+  return out;
+}
+
+test('a module renders and fetches with the defaults its registry entry advertises', () => {
+  const sources = moduleComponentSources();
+  expect([...sources.keys()].sort()).toEqual([...builtinTypes()].sort());
+
+  const builders = fetchBuilderSources();
+  expect(builders.size, 'parsed no fetch-key builders; the file shape changed').toBeGreaterThan(5);
+
+  const mismatches: string[] = [];
+  for (const [type, componentSource] of sources) {
+    const defaults = getModuleDefinition(type as ModuleType)?.defaultConfig;
+    if (!defaults) continue;
+    const places: Array<[string, string]> = [['renders with', componentSource]];
+    const builder = builders.get(type);
+    if (builder) places.push(['fetches with', builder]);
+
+    for (const [where, source] of places) {
+      for (const [field, fallback] of configFallbacks(source)) {
+        // A field the registry does not set has no advertised default to match.
+        if (!(field in defaults)) continue;
+        const advertised = defaults[field];
+        if (advertised === null || typeof advertised === 'object') continue;
+        if (advertised === fallback) continue;
+        if (`${type}.${field}` in DEFAULT_FALLBACK_EXEMPTIONS) continue;
+        mismatches.push(
+          `${type}.${field}: registry says ${JSON.stringify(advertised)}, ${where} ${JSON.stringify(fallback)}`,
+        );
+      }
+    }
+  }
+
+  expect(
+    mismatches.sort(),
+    'Registry defaultConfig and the code\'s own fallback disagree. Change the fallback to match the '
+    + 'registry, or add a DEFAULT_FALLBACK_EXEMPTIONS entry saying why they differ:\n'
+    + mismatches.map((m) => `  ${m}`).join('\n'),
+  ).toEqual([]);
+});
+
+/* ── Every API route declares an auth posture ──────────────────────────────
+ *
+ * Writes are default-deny in the middleware, but GET protection is a
+ * hand-maintained allowlist (`PROTECTED_GET_ROUTES` in src/proxy.ts). That
+ * asymmetry means a future GET route serving household data is public unless
+ * somebody remembers to add it, and nothing fails if they do not.
+ *
+ * So every route has to say what it is, one of four ways: an auth wrapper, a
+ * route factory that applies one, `auth: 'display' | 'session'` on a
+ * `cachedProxyRoute` config (which a grep for guard clauses will not find, see
+ * the note on that factory), or membership of `PROTECTED_GET_ROUTES`. What is
+ * left is public, and has to say why here.
+ */
+
+/** Routes reachable with no credentials at all, and the reason each one is. */
+const PUBLIC_ROUTES: Record<string, string> = {
+  '/api/auth/login': 'the door: it is how a session is obtained.',
+  '/api/auth/logout': 'clearing your own cookie needs no proof of who you are.',
+  '/api/auth/status': 'answers only whether auth is switched on, which the login page needs before anyone can log in.',
+  '/api/i18n/[locale]': 'ships the UI dictionaries. Every surface needs them before login, and they are the same strings for every household.',
+  '/api/plugins/auth/callback': 'the OAuth redirect target. The provider sends the browser here with no session; the HMAC-signed state is what proves the exchange is ours.',
+  '/api/plugins/registry': 'a read-only index of publicly available plugins, identical for every household.',
+  '/api/system/build-id': 'the running build string, which the client polls to notice a deploy. It carries nothing about the household.',
+};
+
+/** Wrapper and guard identifiers that authenticate a handler. */
+const AUTH_GUARDS = ['withAuth', 'withDisplayAuth', 'withMediaTokenAuth', 'requireAdoptedDisplay', 'requireSession', 'requireDisplayAuth'];
+
+/** Route-factory exports that apply a guard on the caller's behalf. */
+function guardingFactories(): string[] {
+  const src = readFileSync(path.resolve(REPO_ROOT, 'src/lib/route-factories.ts'), 'utf8');
+  const names: string[] = [];
+  for (const m of src.matchAll(/export function (\w+)[\s\S]*?(?=\nexport function |$)/g)) {
+    if (AUTH_GUARDS.some((g) => m[0].includes(`${g}(`))) names.push(m[1]);
+  }
+  return names;
+}
+
+function protectedGetRoutes(): string[] {
+  const src = readFileSync(path.resolve(REPO_ROOT, 'src/proxy.ts'), 'utf8');
+  const block = /const PROTECTED_GET_ROUTES = \[([\s\S]*?)\]/.exec(src);
+  expect(block, 'could not parse PROTECTED_GET_ROUTES; src/proxy.ts changed shape').toBeTruthy();
+  return [...block![1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+}
+
+test('every API route declares an auth posture', () => {
+  const apiRoot = path.resolve(REPO_ROOT, 'src/app/api');
+  const routeFiles = walk(apiRoot).filter((f) => f.endsWith('route.ts') && !f.includes('__tests__'));
+  expect(routeFiles.length, 'found no API route files').toBeGreaterThan(100);
+
+  const factories = guardingFactories();
+  const protectedGets = protectedGetRoutes();
+
+  const undeclared: string[] = [];
+  for (const file of routeFiles) {
+    const apiPath = `/api/${path.relative(apiRoot, file).replace(/\/route\.ts$/, '')}`;
+    const source = readFileSync(file, 'utf8');
+    const guarded = AUTH_GUARDS.some((g) => new RegExp(`\\b${g}\\b`).test(source))
+      || factories.some((f) => new RegExp(`\\b${f}\\b`).test(source))
+      || /auth:\s*'(display|session)'/.test(source)
+      || protectedGets.some((p) => apiPath === p || apiPath.startsWith(`${p}/`));
+    if (!guarded && !(apiPath in PUBLIC_ROUTES)) undeclared.push(apiPath);
+  }
+
+  expect(
+    undeclared.sort(),
+    'API routes that neither authenticate nor say why they are public. Add a guard, a '
+    + `cachedProxyRoute auth tier, or a PUBLIC_ROUTES entry with a reason:\n${undeclared.map((r) => `  ${r}`).join('\n')}`,
+  ).toEqual([]);
+
+  const stale = Object.keys(PUBLIC_ROUTES).filter(
+    (p) => !routeFiles.some((f) => `/api/${path.relative(apiRoot, f).replace(/\/route\.ts$/, '')}` === p),
+  );
+  expect(stale, `PUBLIC_ROUTES entries with no matching route.ts — remove them: ${stale.join(', ')}`).toEqual([]);
+});

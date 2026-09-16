@@ -12,6 +12,7 @@ import { useTranslate } from '@/i18n';
 import ConfirmSheet from './ConfirmSheet';
 import RewardFormOverlay from './RewardFormOverlay';
 import { formatTimeAgoLocalized } from '@/lib/chore-constants';
+import { isRewardOfferedTo, canAffordReward, ticketsAfterRedeeming } from '@/lib/reward-rules';
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -77,9 +78,7 @@ export default function RewardsView({
 
   const availableRewards = useMemo(() => {
     if (!data) return [];
-    return data.rewards
-      .filter((r) => r.enabled)
-      .filter((r) => r.memberIds.length === 0 || r.memberIds.includes(selectedMemberId));
+    return data.rewards.filter((r) => isRewardOfferedTo(r, selectedMemberId));
   }, [data, selectedMemberId]);
 
   const sortedRedemptions = useMemo(() => {
@@ -314,7 +313,7 @@ export default function RewardsView({
 
       {redeemTarget && (() => {
         const cost = redeemTarget.reward.cost;
-        const remaining = Math.max(0, balance - cost);
+        const remaining = ticketsAfterRedeeming(balance, redeemTarget.reward);
         const remainingTickets = remaining === 1
           ? t('rewardsView.ticketCountSingular', { n: remaining })
           : t('rewardsView.ticketCountPlural', { n: remaining });
@@ -480,7 +479,7 @@ function RedeemSection({
       )}
 
       {rewards.map((reward) => {
-        const canAfford = balance >= reward.cost;
+        const canAfford = canAffordReward(balance, reward);
         return (
           <button
             key={reward.id}

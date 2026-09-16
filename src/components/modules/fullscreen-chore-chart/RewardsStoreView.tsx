@@ -20,6 +20,7 @@ import RedeemConfirm from './rewards/RedeemConfirm';
 import RedeemedBanner from './rewards/RedeemedBanner';
 import { useElementBox } from '@/hooks/useElementBox';
 import { fitStore, feedMetrics, hiddenBelow } from './rewards/storeLayout';
+import { isRewardOfferedTo } from '@/lib/reward-rules';
 
 interface RewardsStoreViewProps {
   members: FamilyMember[];
@@ -132,13 +133,8 @@ export function RewardsStoreView({
     setRedeemed(null);
   }, []);
 
-  // Reward filtering: enabled AND (memberIds empty OR includes selected member)
   const visibleRewards = useMemo(
-    () => rewards.filter(
-      (r) =>
-        r.enabled &&
-        (r.memberIds.length === 0 || (selectedMemberId !== null && r.memberIds.includes(selectedMemberId))),
-    ),
+    () => rewards.filter((r) => isRewardOfferedTo(r, selectedMemberId)),
     [rewards, selectedMemberId],
   );
 

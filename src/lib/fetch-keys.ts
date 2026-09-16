@@ -78,8 +78,11 @@ export function sportsUrl(config: AnyConfig): string {
 }
 
 export function standingsUrl(config: AnyConfig): string {
-  const league = (config.league as string | undefined) ?? 'nfl';
-  const grouping = (config.grouping as string | undefined) ?? 'division';
+  // These must match the registry's defaultConfig and the module's own render
+  // fallback. A URL built with a different default than the module renders with
+  // fetches one grouping and labels it as another.
+  const league = (config.league as string | undefined) ?? 'nba';
+  const grouping = (config.grouping as string | undefined) ?? 'conference';
   return `/api/standings?league=${encodeURIComponent(league)}&grouping=${encodeURIComponent(grouping)}`;
 }
 

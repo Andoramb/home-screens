@@ -4,6 +4,7 @@ import { publicErrorResponse, parseJsonBody } from '@/lib/api-utils';
 import { readRewardData, redeemReward } from '@/lib/reward-data';
 import { readFamilyData } from '@/lib/family-data';
 import { withFamilyData } from '@/lib/family-api';
+import { isRewardEligibleFor, canAffordReward } from '@/lib/reward-rules';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,8 +48,9 @@ export const POST = async (request: NextRequest) => {
       );
     }
 
-    // Check member eligibility
-    if (reward.memberIds.length > 0 && !reward.memberIds.includes(memberId)) {
+    // Checked apart from `enabled` above so the two answer differently: a
+    // disabled reward is "no such reward", an ineligible one is "not yours".
+    if (!isRewardEligibleFor(reward, memberId)) {
       return NextResponse.json(
         { error: 'Member is not eligible for this reward' },
         { status: 403 },
@@ -57,7 +59,7 @@ export const POST = async (request: NextRequest) => {
 
     // Check balance
     const balance = rewardData.balances[memberId] ?? 0;
-    if (balance < reward.cost) {
+    if (!canAffordReward(balance, reward)) {
       return NextResponse.json(
         { error: 'Insufficient point balance' },
         { status: 400 },

@@ -20,7 +20,7 @@ const DEFAULT_REFRESH_MS = FETCH_KEY_REGISTRY['standings']?.ttlMs ?? 300_000;
 
 export default function StandingsModule({ config, style }: StandingsModuleProps) {
   const t = useTranslate('modules');
-  const grouping = config.grouping ?? 'division';
+  const grouping = config.grouping ?? 'conference';
   const view = config.view ?? 'table';
 
   const [data, error] = useFetchData<{ groups: StandingsGroup[] }>(

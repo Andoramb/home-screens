@@ -37,13 +37,21 @@ Next.js 16 + React 19 (App Router), Tailwind v4, Zustand (editor state), @dnd-ki
 | `(auth)` | `/login` | Authentication. |
 | `api/` | `/api/*` | One `route.ts` per endpoint. All external services (weather, calendar, stocks...) are proxied server-side to hold secrets and avoid CORS. |
 
+### Code shared between surfaces
+The same domain is often edited from two or three places: the editor, `/remote`, and sometimes the wall. What they share and what they must not is settled:
+
+- **Rules go in `src/lib/<domain>-*.ts`** as pure functions: what a valid edit is, what an action does to the data, what an absent value means. `meal-settings.ts` and `meal-plan-actions.ts` are the worked examples, and `chore-form-presentation.ts` is the older one. A rule written twice is the shape that lets a fix land on one surface and not the other.
+- **Components both surfaces render go in `src/components/<domain>/`** (`family/`, `meals/`, `timetable/`), not inside `src/app/(remote)/remote/components/` where the editor cannot reach them.
+- **Markup usually should not be shared.** The phone is touch-sized and inline-styled against the `remote` dictionary; the editor is not a touch surface, uses Tailwind, reads the `editor` dictionary, and its fields carry `data-field-id` for the settings search. One component serving both takes the styling system, density, dictionary and save model as parameters, which costs more than it saves. Share the rules underneath instead.
+
 ### API auth tiers
 Every route under `src/app/api/` opens with one guard from `src/lib/auth.ts`, and picking the wrong one is the easiest security mistake to make:
 - `requireSession`: a logged-in editor or phone user. Rejects display bearer tokens. Use for anything that writes config or family data.
 - `requireDisplayAuth`: a session cookie or the kiosk's display bearer token, with an optional trusted-IP bypass. Use for reads a wall display needs and the few writes it may make (tick a to-do, post status).
 - `requireAdoptedDisplay`: LAN plus presence in `config.displays`. Used by Pi telemetry.
 - `requireSudo` (`src/lib/sudo-grant.ts`): for system actions (upgrade, WiFi, hostname, restart). Answers 409 when the service account has no passwordless sudo, which the editor turns into a password prompt that repairs the grant.
-`src/proxy.ts` sits in front of all of it: auth on/off, the IP allowlist, and rejection of cross-origin writes.
+Proxy routes built with `cachedProxyRoute` are the exception to "opens with a guard": they declare `auth: 'display' | 'session'` on the factory config instead, so grepping for a guard clause will not find them.
+`src/proxy.ts` sits in front of all of it: auth on/off, the IP allowlist, and rejection of cross-origin writes. Writes are default-deny there, but GET protection is a hand-maintained allowlist (`PROTECTED_GET_ROUTES`), so a meta ratchet requires every route to declare a posture one of those ways or name itself in `PUBLIC_ROUTES` with a reason.
 
 ### Config schema migrations
 `config.json` carries a schema version. `src/lib/migrations/` holds one `vN-to-vN+1.ts` per step and `migrateUp` runs on every read; the latest version is derived from the list, so adding a file is the whole bump. Any change to the shape of `ScreenConfiguration`, `Screen`, `ModuleInstance` or a module config needs a migration, not a read-time shim. Plugin config shapes migrate through `src/lib/plugin-config-migration.ts`.
@@ -111,7 +119,7 @@ Unit tests are Vitest in `__tests__/` directories next to the code, `node` envir
 
 E2E is Playwright, Chromium only, in `e2e/`. Each worker boots its own production `next start` from a sandboxed cwd with a private `data/` (`e2e/helpers/sandbox.ts`), so runs never touch the real data. Specs reset state with `PUT /api/config` in `beforeEach`.
 
-Module coverage is data-driven. `e2e/helpers/module-fixtures.ts` has one row per built-in type and the render matrices loop over it; config-field depth lives in `e2e/helpers/config-variants/`, empty states in `e2e/helpers/empty-state-fixtures.ts`, the style matrix in `e2e/display/module-style.spec.ts` (exemptions in `e2e/helpers/style-matrix.ts` carry a reason). Module data is fetched client-side and stubbed at the browser boundary by `stubModuleData` (`e2e/helpers/stubs.ts`), whose external-block catch-all guarantees zero real upstream calls. Local-data modules seed instead: `seedChores`, `seedMeals`, `seedTodos(sandboxDir)`; plugin specs use `seedFixturePlugin`. The ratchets in `e2e/meta/coverage.spec.ts` also police settings pages, API routes (`ROUTE_DECISIONS`), locales per surface, `autoSizesText` flags and style exemptions.
+Module coverage is data-driven. `e2e/helpers/module-fixtures.ts` has one row per built-in type and the render matrices loop over it; config-field depth lives in `e2e/helpers/config-variants/`, empty states in `e2e/helpers/empty-state-fixtures.ts`, the style matrix in `e2e/display/module-style.spec.ts` (exemptions in `e2e/helpers/style-matrix.ts` carry a reason). Module data is fetched client-side and stubbed at the browser boundary by `stubModuleData` (`e2e/helpers/stubs.ts`), whose external-block catch-all guarantees zero real upstream calls. Local-data modules seed instead: `seedChores`, `seedMeals`, `seedTodos(sandboxDir)`; plugin specs use `seedFixturePlugin`. The ratchets in `e2e/meta/coverage.spec.ts` also police settings pages, API routes (`ROUTE_DECISIONS`), locales per surface, `autoSizesText` flags, style exemptions, every route's auth posture (`PUBLIC_ROUTES`), and agreement between a registry `defaultConfig` and the fallback the code renders or fetches with (`DEFAULT_FALLBACK_EXEMPTIONS`).
 
 ## Working Conventions
 

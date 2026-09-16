@@ -63,7 +63,7 @@ export default function FullscreenMealPlannerModule({
 
   const bu = Math.min(dims.w, dims.h) / 100;
   const typoMul = getTypoMultiplier(config.typographySize ?? 'medium');
-  const densityMul = getDensityMultiplier(config.density ?? 'snug');
+  const densityMul = getDensityMultiplier(config.density ?? 'cozy');
   const d = densityMul;
   const landscape = dims.w > dims.h;
 

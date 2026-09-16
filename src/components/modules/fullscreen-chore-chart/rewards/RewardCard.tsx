@@ -6,6 +6,7 @@ import type { RewardDefinition } from '@/lib/reward-data';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { useTranslate } from '@/i18n';
 import { NAME_MAX_LINES, DESC_MAX_LINES, type CardMetrics } from './storeLayout';
+import { canAffordReward, ticketsStillNeeded } from '@/lib/reward-rules';
 
 interface RewardCardProps {
   reward: RewardDefinition;
@@ -36,7 +37,7 @@ const clampDesc = clampLines(DESC_MAX_LINES);
  */
 export default function RewardCard({ reward, balance, allowTouch, onRedeem, metrics: m, onAccent }: RewardCardProps) {
   const tr = useTranslate('modules');
-  const canAfford = balance >= reward.cost;
+  const canAfford = canAffordReward(balance, reward);
   const tappable = allowTouch && canAfford;
   const Tag: 'button' | 'div' = tappable ? 'button' : 'div';
 
@@ -44,7 +45,7 @@ export default function RewardCard({ reward, balance, allowTouch, onRedeem, metr
   if (!canAfford) {
     slot = (
       <span style={{ fontSize: m.cost * 0.92, fontWeight: 600, color: 'var(--fcc-text-3)', lineHeight: 1.2 }}>
-        {tr('fullscreen-chore-chart.rewardsStore.moreTickets', { count: reward.cost - balance })}
+        {tr('fullscreen-chore-chart.rewardsStore.moreTickets', { count: ticketsStillNeeded(balance, reward) })}
       </span>
     );
   } else if (allowTouch) {
