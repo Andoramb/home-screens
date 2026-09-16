@@ -3,13 +3,14 @@ import type { ScreenConfiguration, ChoreDefinition } from '@/types/config';
 import type { FamilyData } from '@/types/family';
 import type { TodoData } from '@/types/todos';
 import type { TimetableData } from '@/types/timetables';
-import { planFamilyMerge, validFamilyId, type LegacyFamilyMember } from './family-merge';
+import { planFamilyMerge, type LegacyFamilyMember } from './family-merge';
 import { readConfig } from './config';
 import { foldConfigTodos, validateTodoData } from './todo-data';
 import { migrateUp } from './migrations';
 import { planConfigMigrationBackup } from './config-migration-backup';
 import { FamilyError } from './family-errors';
 import { commitDataTransaction, readTransactionFile, type TransactionChange } from './data-transaction';
+import { MEMBER_REFERENCE_DOMAINS } from './member-references';
 
 export interface FamilyRestoreContent {
   config?: ScreenConfiguration;
@@ -113,7 +114,7 @@ export async function planFamilyRestore(body: FamilyRestoreContent): Promise<{ c
   }
   const configTransformed = sourceConfig !== json(nextConfig);
   if (configTransformed) files.set('data/config.json', nextConfig);
-  const { historicalOrphans, rewardAssignmentRepairs, timetableRepairs } = await validateRestoredReferences(files, new Set(merged.family.members.map((member) => member.id)));
+  const referenceEvidence = await validateRestoredReferences(files, new Set(merged.family.members.map((member) => member.id)));
   const changes: TransactionChange[] = configTransformed && sourceConfigRaw !== null ? [planConfigMigrationBackup(sourceConfigRaw)] : [];
   for (const [path, value] of files) {
     const before = await readTransactionFile(path);
@@ -121,14 +122,11 @@ export async function planFamilyRestore(body: FamilyRestoreContent): Promise<{ c
     if (before !== after) changes.push({ path, before, after });
   }
   const moved = !!(chores.members?.length || config.settings.calendar?.people?.length);
-  const hasHistoricalOrphans = historicalOrphans.completions.length > 0 || Object.keys(historicalOrphans.balances).length > 0;
-  const evidence = moved || hasHistoricalOrphans || rewardAssignmentRepairs.length > 0 || timetableRepairs.length > 0 || replacedConfigWarning ? {
+  const evidence = moved || Object.keys(referenceEvidence).length > 0 || replacedConfigWarning ? {
     path: await readTransactionFile('data/family-migration.json') === null
       ? 'data/family-migration.json' : `data/family-migrations/${randomUUID()}.json`,
     contents: json({ kind: 'import', existingFamily: currentFamily ?? familyBefore, incomingFamily: body.family, choreMembers: chores.members, calendarPeople: config.settings.calendar?.people, personSources: config.settings.calendar?.personSources, result: merged,
-      ...(hasHistoricalOrphans ? { historicalOrphans: { policy: 'preserve-ledger-entries-without-creating-members', ...historicalOrphans } } : {}),
-      ...(rewardAssignmentRepairs.length > 0 ? { rewardAssignmentRepairs: { policy: 'remove-missing-members-disable-if-none-remain', records: rewardAssignmentRepairs } } : {}),
-      ...(timetableRepairs.length > 0 ? { timetableRepairs: { policy: 'drop-timetables-whose-person-is-missing', records: timetableRepairs } } : {}),
+      ...referenceEvidence,
       ...(replacedConfigWarning ? { replacedConfig: { before: configBefore, warning: replacedConfigWarning } } : {}),
     }),
   } : undefined;
@@ -153,116 +151,43 @@ function parseSavedObject(raw: string | null, fallback: Record<string, unknown>,
   return value;
 }
 
-/** Validate the resulting snapshot and plan repairs to stale reward eligibility.
- * Only the in-memory after-images change here; validation never writes to disk. */
+/**
+ * Check every member reference in the snapshot the restore will leave behind,
+ * against the family it will have. Each file's policy (refuse, repair, keep
+ * as history, drop) is its own domain's rule in `member-references`; this
+ * walk reads whichever image is current (the incoming section, or the file on
+ * disk when the bundle carries none), applies the plan and gathers evidence.
+ * Only the in-memory after-images change here; nothing is written.
+ */
 async function validateRestoredReferences(files: Map<string, unknown>, members: Set<string>) {
-  const historicalOrphans: { completions: Record<string, unknown>[]; balances: Record<string, number> } = { completions: [], balances: {} };
-  const rewardAssignmentRepairs: { before: Record<string, unknown>; removedMemberIds: string[]; disabled: boolean }[] = [];
-  const timetableRepairs: { before: Record<string, unknown>; removedMemberId: unknown }[] = [];
-  const missingAssignments: string[] = [];
-  async function state(file: string): Promise<Record<string, unknown> | null> {
-    let value = files.get(file);
-    if (!files.has(file)) {
-      const raw = await readTransactionFile(file);
-      if (raw === null) return null;
-      try { value = JSON.parse(raw); } catch { throw new Error(`${file} is corrupt. Repair it before restoring family data.`); }
-    }
-    if (!isRecord(value)) throw new Error(`${file} must contain an object.`);
-    return value;
-  }
-  function rows(value: unknown, label: string): Record<string, unknown>[] {
-    if (!Array.isArray(value) || value.some((row) => !isRecord(row))) throw new Error(`${label} must be an array of records.`);
-    return value;
-  }
-  function recordLabel(file: string, location: string, record: Record<string, unknown>): string {
-    const name = record.name ?? record.text;
-    return `${file}, ${location}${typeof name === 'string' ? ` ${JSON.stringify(name)}` : ''}${typeof record.id === 'string' ? ` (id ${JSON.stringify(record.id)})` : ''}`;
-  }
-  function checkedIds(value: unknown, label: string): string[] {
-    if (!Array.isArray(value)) throw new FamilyError(`${label} must be a list of person IDs.`);
-    const invalid = value.filter((id) => !validFamilyId(id));
-    if (invalid.length > 0) throw new FamilyError(`${label} contains invalid person IDs: ${invalid.map((id) => JSON.stringify(id)).join(', ')}. Repair this record and retry.`);
-    return value;
-  }
-  function memberIds(value: unknown, label: string): void {
-    const missing = [...new Set(checkedIds(value, label).filter((id) => !members.has(id)))];
-    if (missing.length > 0) missingAssignments.push(`${label}: ${missing.map((id) => JSON.stringify(id)).join(', ')}`);
-  }
-  const chores = await state('data/chores.json');
-  if (chores) for (const [index, chore] of rows(chores.chores, 'Chores').entries()) {
-    const label = recordLabel('data/chores.json', `chores[${index}]`, chore);
-    memberIds(chore.assigneeIds, `${label}, assigneeIds`);
-    if (chore.schedule !== undefined) {
-      if (!isRecord(chore.schedule)) throw new FamilyError(`${label}, schedule must map person IDs to days.`);
-      memberIds(Object.keys(chore.schedule), `${label}, schedule`);
-      for (const [id, days] of Object.entries(chore.schedule)) {
-        if (!Array.isArray(days) || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6)) throw new FamilyError(`${label}, schedule for ${JSON.stringify(id)} contains invalid days.`);
+  const evidence: Record<string, Record<string, unknown>> = {};
+  const missing: string[] = [];
+  for (const domain of MEMBER_REFERENCE_DOMAINS) {
+    let value = files.get(domain.path);
+    if (!files.has(domain.path)) {
+      const raw = await readTransactionFile(domain.path);
+      if (raw === null) continue;
+      try { value = JSON.parse(raw); } catch {
+        // A bundle carrying no timetables of its own must not be stopped by a
+        // file only the timetables page reads; every other store has to be
+        // readable for the restore to reason about it.
+        if (domain.unreadable === 'skip') continue;
+        throw new Error(`${domain.path} is corrupt. Repair it before restoring family data.`);
       }
     }
-  }
-  const completions = await state('data/chore-completions.json');
-  // Older deletion paths left completion history (and occasionally balances)
-  // behind. Preserve these ledgers without inventing a person or assigning
-  // future work to that identity. Evidence records every unresolved entry.
-  if (completions) for (const completion of rows(completions.completions, 'Chore completions')) {
-    if (!validFamilyId(completion.memberId)) throw new Error('A chore completion needs a valid member identity.');
-    if (!members.has(completion.memberId)) historicalOrphans.completions.push(completion);
-  }
-  const rewards = await state('data/rewards.json');
-  if (rewards) {
-    const repairedRewards = rows(rewards.rewards, 'Rewards').map((reward, index) => {
-      const ids = checkedIds(reward.memberIds, `${recordLabel('data/rewards.json', `rewards[${index}]`, reward)}, memberIds`);
-      const removedMemberIds = [...new Set(ids.filter((id) => !members.has(id)))];
-      if (removedMemberIds.length === 0) return reward;
-      // The old detached deletion cascade removed eligibility and balances in
-      // one write. Either may survive that write failing. Repair eligibility
-      // without inventing people or broadening a restricted reward to everyone.
-      const memberIds = ids.filter((id) => members.has(id));
-      const disabled = memberIds.length === 0;
-      rewardAssignmentRepairs.push({ before: reward, removedMemberIds, disabled });
-      return { ...reward, memberIds, ...(disabled ? { enabled: false } : {}) };
-    });
-    if (rewardAssignmentRepairs.length > 0) files.set('data/rewards.json', { ...rewards, rewards: repairedRewards });
-    if (!isRecord(rewards.balances)) throw new Error('Reward balances must be a member mapping.');
-    for (const [id, balance] of Object.entries(rewards.balances)) {
-      if (!validFamilyId(id)) throw new Error('A reward balance needs a valid member identity.');
-      if (typeof balance !== 'number' || !Number.isFinite(balance)) throw new Error('A reward balance must be a finite number.');
-      if (!members.has(id)) historicalOrphans.balances[id] = balance;
+    if (!isRecord(value)) {
+      if (domain.unreadable === 'skip') continue;
+      throw new Error(`${domain.path} must contain an object.`);
     }
-    // Redemptions are denormalized historical facts: their person may have
-    // been removed since redemption, so their member ids must remain intact.
-    rows(rewards.redemptions, 'Reward redemptions');
+    const plan = domain.planRestore(value, members);
+    if (plan.doc) files.set(domain.path, plan.doc);
+    missing.push(...plan.missing);
+    // Domains that share a policy share a key (chore history and reward
+    // balances are both preserved ledgers), so their records are merged.
+    for (const [key, records] of Object.entries(plan.evidence)) evidence[key] = { ...evidence[key], ...records };
   }
-  const todos = await state('data/todos.json');
-  if (todos) {
-    const invalid = validateTodoData(todos);
-    if (invalid) throw new Error(invalid);
-    for (const [listIndex, list] of rows(todos.lists, 'To-do lists').entries()) for (const [itemIndex, item] of rows(list.items, 'To-do items').entries()) {
-      const listLabel = recordLabel('data/todos.json', `lists[${listIndex}]`, list);
-      const label = recordLabel(listLabel, `items[${itemIndex}]`, item);
-      if (item.assigneeIds !== undefined) memberIds(item.assigneeIds, `${label}, assigneeIds`);
-    }
-  }
-  // `state` refuses a file it cannot parse, which is right for every store a
-  // restore has to reason about and wrong for this one: a bundle carrying no
-  // timetables of its own must not be stopped by a file only the timetables page
-  // reads. `planDeletion` tolerates the same file for the same reason.
-  const timetables = await state('data/timetables.json').catch(() => null);
-  // A timetable is one person's week and holds nothing else about them, so
-  // one whose person is missing has nothing left to keep: it is dropped and
-  // recorded rather than stopping a restore that is otherwise sound. A list
-  // saved in some other shape is left alone, because a restore carrying no
-  // timetables of its own must not fail on a file only that page reads.
-  if (timetables && Array.isArray(timetables.timetables)) {
-    const kept = rows(timetables.timetables, 'Timetables').filter((timetable) => {
-      if (members.has(timetable.memberId as string)) return true;
-      timetableRepairs.push({ before: timetable, removedMemberId: timetable.memberId });
-      return false;
-    });
-    if (timetableRepairs.length > 0) files.set('data/timetables.json', { ...timetables, timetables: kept });
-  }
-  if (missingAssignments.length > 0) throw new FamilyError(
-    `Restore stopped because these assignments name people missing from the restored family:\n${missingAssignments.join('\n')}\nRestore a backup containing their family records, or remove these assignments from the named records and retry.`,
+  if (missing.length > 0) throw new FamilyError(
+    `Restore stopped because these assignments name people missing from the restored family:\n${missing.join('\n')}\nRestore a backup containing their family records, or remove these assignments from the named records and retry.`,
   );
-  return { historicalOrphans, rewardAssignmentRepairs, timetableRepairs };
+  return evidence;
 }

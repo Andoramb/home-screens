@@ -99,6 +99,8 @@ Settings is split into **Defaults** (shared values, pages listed in `DEFAULT_PAG
 
 Stores that take part in family changes or backup restore go through `src/lib/data-transaction.ts`, a reentrant per-root coordinator with a durable journal. Keep reference checks and their writes inside it, and make any new multi-file write path participate. The app is one process that serializes its own writes; there is no cross-process lock.
 
+Every file that names a family member by id registers a `MemberReferenceDomain` in `src/lib/member-references/`: pure rules for what removing a person and restoring a backup mean for that file. Family deletion and restore walk that registry and nothing else, and `registry.test.ts` refuses a domain without a row exercising its policies. A new member-based store is added there before it ships.
+
 ### I18n
 Locale lives in `GlobalSettings.locale` (BCP-47, default `en-US`), with optional `formattingLocale` for dates and numbers. Shipped locales: en-US, de-DE, fr-FR, es-ES, nl-NL, pt-BR, da-DK. Dictionaries are `src/translations/<locale>/{core,editor,modules,remote,weather}.json`; `src/i18n/manifest.ts` is the source of truth for registered locales. Server pages get a blob from `buildLocaleBlob`; client pages hydrate through `/api/i18n/[locale]`. A layout that passes `namespaces` without `blob` renders raw keys until the fetch lands.
 

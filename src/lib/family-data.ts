@@ -8,6 +8,7 @@ import { planFamilyMerge, validateFamilyData, validFamilyColor, validFamilyId, t
 import { migrateUp } from './migrations';
 import { planConfigMigrationBackup } from './config-migration-backup';
 import { FamilyError } from './family-errors';
+import { MEMBER_REFERENCE_DOMAINS } from './member-references';
 export { FamilyError } from './family-errors';
 
 export { validateFamilyData } from './family-merge';
@@ -215,69 +216,23 @@ export async function replaceFamilyMembers(input: ReplaceFamilyInput): Promise<F
   });
 }
 
-/** Compute all dependent after-images before publishing any of the deletion. */
+/**
+ * Compute every dependent after-image before publishing any of the deletion.
+ * What a removal means for each file is that file's own rule, declared in
+ * `member-references`; this walk only reads, hands over and collects.
+ */
 async function planDeletion(removed: Set<string>, changes: TransactionChange[]) {
-  const stripIds = (ids: unknown): string[] => {
-    if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) throw new FamilyError('A saved member assignment is invalid.', 409);
-    return ids.filter((id) => !removed.has(id));
-  };
-  const withoutKeys = (value: unknown): Record<string, unknown> => {
-    if (!isRecord(value)) throw new FamilyError('A saved member mapping is invalid.', 409);
-    return Object.fromEntries(Object.entries(value).filter(([id]) => !removed.has(id)));
-  };
-  for (const filename of ['config.json', 'chores.json', 'chore-completions.json', 'rewards.json', 'todos.json', 'timetables.json']) {
-    const filePath = `data/${filename}`;
-    const raw = await readTransactionFile(filePath);
+  for (const domain of MEMBER_REFERENCE_DOMAINS) {
+    const raw = await readTransactionFile(domain.path);
     if (raw === null) continue;
-    // Timetables are read by one page and show nothing of a person but their
-    // week, so a file nothing can read must not also stop somebody being
-    // removed: it is skipped instead of refusing the whole save.
-    const before = filename === 'timetables.json' ? readableObject(raw) : parseObject(raw, {}, filename);
+    const filename = domain.path.slice('data/'.length);
+    // A store nothing but its own page reads must not stop somebody being
+    // removed when it cannot be read: it is skipped instead of refusing the save.
+    const before = domain.unreadable === 'skip' ? readableObject(raw) : parseObject(raw, {}, filename);
     if (before === null) continue;
-    const next = structuredClone(before);
-    if (filename === 'config.json') {
-      if (!isRecord(next.settings)) throw new FamilyError('The saved configuration is invalid.', 409);
-      if (isRecord(next.settings.calendar) && next.settings.calendar.personSources !== undefined) next.settings.calendar.personSources = withoutKeys(next.settings.calendar.personSources);
-    } else if (filename === 'chores.json') {
-      if (!Array.isArray(next.chores)) throw new FamilyError('The saved chore definitions are invalid.', 409);
-      next.chores = next.chores.map((chore: unknown) => {
-        if (!isRecord(chore)) throw new FamilyError('The saved chore definitions are invalid.', 409);
-        const updated: Record<string, unknown> & { assigneeIds: string[] } = { ...chore, assigneeIds: stripIds(chore.assigneeIds) };
-        if (chore.schedule !== undefined) {
-          const schedule = withoutKeys(chore.schedule);
-          if (Object.values(schedule).some((days) => !Array.isArray(days) || days.some((day) => !Number.isInteger(day) || day < 0 || day > 6))) throw new FamilyError('The saved chore schedule is invalid.', 409);
-          const entries = Object.values(schedule) as number[][];
-          if (entries.length === 0 || (entries.length === 1 && updated.rotation === 'schedule')) {
-            delete updated.schedule;
-            updated.rotation = 'fixed';
-            if (entries.length === 1) updated.daysOfWeek = entries[0];
-          } else {
-            updated.schedule = schedule;
-            updated.daysOfWeek = [...new Set(entries.flat())].sort((a, b) => a - b);
-          }
-        }
-        return updated;
-      }).filter((chore) => chore.assigneeIds.length > 0);
-    } else if (filename === 'chore-completions.json') {
-      if (!Array.isArray(next.completions)) throw new FamilyError('The saved chore completions are invalid.', 409);
-      next.completions = next.completions.filter((completion: Record<string, unknown>) => !removed.has(completion.memberId as string));
-    } else if (filename === 'rewards.json') {
-      if (!Array.isArray(next.rewards)) throw new FamilyError('The saved rewards are invalid.', 409);
-      next.balances = withoutKeys(next.balances);
-      next.rewards = next.rewards.map((reward: Record<string, unknown>) => ({ ...reward, memberIds: stripIds(reward.memberIds) }));
-    } else if (filename === 'todos.json') {
-      if (!Array.isArray(next.lists)) throw new FamilyError('The saved lists are invalid.', 409);
-      next.lists = next.lists.map((list: Record<string, unknown>) => {
-        if (!Array.isArray(list.items)) throw new FamilyError('The saved list items are invalid.', 409);
-        return { ...list, items: list.items.map((item: Record<string, unknown>) => ({ ...item, ...(item.assigneeIds !== undefined ? { assigneeIds: stripIds(item.assigneeIds) } : {}) })) };
-      });
-    } else if (filename === 'timetables.json') {
-      // One timetable belongs to one person and holds nothing else about
-      // them, so a removed person's week goes with them. Anything that is
-      // not a saved list of timetables is left exactly as it is.
-      if (!Array.isArray(next.timetables)) continue;
-      next.timetables = next.timetables.filter((timetable: unknown) => !isRecord(timetable) || !removed.has(timetable.memberId as string));
-    }
-    if (json(next) !== raw) changes.push({ path: filePath, before: raw, after: json(next) });
+    const next = domain.removeMembers(before, removed);
+    // The same object back means the domain had nothing to say about this
+    // file, and a file it did not touch is not rewritten in its own style.
+    if (next !== before && json(next) !== raw) changes.push({ path: domain.path, before: raw, after: json(next) });
   }
 }
