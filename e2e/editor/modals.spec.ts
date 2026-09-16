@@ -282,6 +282,66 @@ test.describe('Meal-planner editor modal', () => {
     await expect.poll(() => savedMealNames(request)).toContain('New Meal');
   });
 
+  /* The modal's week actions each hand a whole new plan up through onUpdate.
+   * Copy Last Week takes the source and target weeks as two same-shaped date
+   * lists, so a swap would quietly restamp this week onto last week instead,
+   * and nothing about the types would say so. */
+  test('planning a meal into a slot persists the entry', async ({ page, request }) => {
+    await seedMeals(request, {
+      savedMeals: [{ id: 'meal-1', name: 'Pasta', emoji: '🍝' }],
+      plan: [],
+      force: true,
+    });
+    await openMealModal(page, request);
+
+    const saved = page.waitForResponse(
+      (r) => r.url().includes('/api/meals/data') && r.request().method() === 'PUT' && r.ok(),
+    );
+    // An empty slot is a click target holding a "+" that only inks on hover;
+    // it carries no role of its own, so select it by that glyph.
+    await page.getByRole('dialog').getByText('+', { exact: true }).first().click();
+    // The picker floats above the modal in its own overlay; scope to it so the
+    // library list behind the scrim is not what gets clicked.
+    await expect(page.getByText('Choose a Meal')).toBeVisible();
+    await page.getByRole('button', { name: /Pasta/ }).click();
+    await saved;
+
+    await expect
+      .poll(async () => (await (await request.get('/api/meals/data')).json()).plan.length)
+      .toBe(1);
+  });
+
+  test('Copy Last Week restamps last week onto this one, leaving last week intact', async ({ page, request }) => {
+    // One meal planned a week ago today, nothing this week.
+    const lastWeek = new Date();
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    const lastWeekISO = `${lastWeek.getFullYear()}-${String(lastWeek.getMonth() + 1).padStart(2, '0')}-${String(lastWeek.getDate()).padStart(2, '0')}`;
+    const today = new Date();
+    const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    await seedMeals(request, {
+      savedMeals: [{ id: 'meal-1', name: 'Pasta', emoji: '🍝' }],
+      plan: [{ slot: 'dinner', mealId: 'meal-1', date: lastWeekISO }],
+      force: true,
+    });
+    await openMealModal(page, request);
+
+    const saved = page.waitForResponse(
+      (r) => r.url().includes('/api/meals/data') && r.request().method() === 'PUT' && r.ok(),
+    );
+    await page.getByRole('button', { name: 'Copy Last Week' }).click();
+    await saved;
+
+    // The entry lands on the same weekday of this week, and last week keeps its
+    // own. A swapped source/target would have left this week empty.
+    await expect
+      .poll(async () => {
+        const plan = (await (await request.get('/api/meals/data')).json()).plan as Array<{ date: string }>;
+        return plan.map((p) => p.date).sort();
+      })
+      .toEqual([lastWeekISO, todayISO].sort());
+  });
+
   test('editing a saved meal round-trips the new name', async ({ page, request }) => {
     await seedMeals(request, {
       savedMeals: [{ id: 'meal-1', name: 'Pasta', emoji: '🍝' }],

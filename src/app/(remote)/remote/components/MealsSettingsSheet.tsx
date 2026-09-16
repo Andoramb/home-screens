@@ -32,8 +32,10 @@ export default function MealsSettingsSheet({ settings, globalTimeFormat, onSave,
   const t = useTranslate('remote');
   const tCore = useTranslate('core');
 
-  const { draft, setDraft, toggleSlot, setDefaultTime, saving, saveError, handleSave } =
-    useMealsSettingsDraft(settings, onSave, onClose);
+  const {
+    draft, toggleSlot, setDefaultTime, setWeekStartDay, setTimeFormat,
+    saving, saveError, handleSave,
+  } = useMealsSettingsDraft(settings, onSave, onClose);
 
   return (
     <div
@@ -113,13 +115,13 @@ export default function MealsSettingsSheet({ settings, globalTimeFormat, onSave,
 
           <MealsSettingsWeekStartSection
             weekStartDay={draft.weekStartDay}
-            onChange={(day) => setDraft({ ...draft, weekStartDay: day })}
+            onChange={setWeekStartDay}
           />
 
           <MealsSettingsTimeFormatSection
             timeFormat={draft.timeFormat}
             globalTimeFormat={globalTimeFormat}
-            onChange={(fmt) => setDraft({ ...draft, timeFormat: fmt })}
+            onChange={setTimeFormat}
           />
 
           <MealsSettingsDefaultTimesSection

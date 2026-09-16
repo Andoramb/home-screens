@@ -286,6 +286,36 @@ test('Defaults › Meals: follow global clears a stored time format override', a
     .toBeUndefined();
 });
 
+test('Defaults › Meals: the last meal slot cannot be turned off', async ({ page, request }) => {
+  // Seeded with the three default slots, so two clicks leave exactly one.
+  await putConfig(request, baseConfig());
+  const seeded = await request.put('/api/meals/data', {
+    data: { settings: { enabledSlots: ['breakfast', 'lunch', 'dinner'] } },
+  });
+  expect(seeded.ok()).toBe(true);
+
+  await page.goto('/editor/settings?section=defaults&page=meals');
+  const dinner = page.locator('[data-field-id="meals.enabledSlots"]').getByRole('button', { name: 'Dinner' });
+
+  for (const name of ['Breakfast', 'Lunch']) {
+    const saved = page.waitForResponse(
+      (r) => r.url().includes('/api/meals/data') && r.request().method() === 'PUT' && r.ok(),
+    );
+    await page.locator('[data-field-id="meals.enabledSlots"]').getByRole('button', { name }).click();
+    await saved;
+  }
+  await expect(dinner).toHaveAttribute('aria-pressed', 'true');
+
+  // A week with nothing to fill is not a state the page offers a way out of,
+  // so the click is refused outright and there is nothing to save.
+  await dinner.click();
+  await expect(dinner).toHaveAttribute('aria-pressed', 'true');
+
+  await expect
+    .poll(async () => (await (await request.get('/api/meals/data')).json()).settings.enabledSlots)
+    .toEqual(['dinner']);
+});
+
 test('Defaults › Screen: pause and progress-line controls follow the screen dots', async ({ page, request }) => {
   await putConfig(request, baseConfig());
   await page.goto('/editor/settings?section=defaults&page=screen');

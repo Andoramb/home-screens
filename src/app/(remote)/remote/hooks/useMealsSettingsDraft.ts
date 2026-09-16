@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import type { MealSettings, MealSlotType } from '@/types/config';
+import type { MealSettings, MealSlotType, TimeFormat, WeekStartDay } from '@/types/config';
+import {
+  toggleMealSlot,
+  setMealSlotDefaultTime,
+  setMealWeekStart,
+  setMealTimeFormat,
+} from '@/lib/meal-settings';
 import { useTranslate } from '@/i18n';
 
 /**
@@ -27,24 +33,16 @@ export function useMealsSettingsDraft(
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  const toggleSlot = (slot: MealSlotType) => {
-    const has = draft.enabledSlots.includes(slot);
-    const next = has
-      ? draft.enabledSlots.filter((s) => s !== slot)
-      : [...draft.enabledSlots, slot];
-    if (next.length === 0) return; // require at least one
-    setDraft({ ...draft, enabledSlots: next });
-  };
+  // The edit rules are shared with the editor's Settings > Meals page; only the
+  // draft-then-Save behaviour around them is this sheet's own.
+  const toggleSlot = (slot: MealSlotType) => setDraft(toggleMealSlot(draft, slot));
 
-  const setDefaultTime = (slot: MealSlotType, time: string | undefined) => {
-    const nextTimes = { ...draft.defaultSlotTimes };
-    if (time) {
-      nextTimes[slot] = time;
-    } else {
-      delete nextTimes[slot];
-    }
-    setDraft({ ...draft, defaultSlotTimes: nextTimes });
-  };
+  const setDefaultTime = (slot: MealSlotType, time: string | undefined) =>
+    setDraft(setMealSlotDefaultTime(draft, slot, time));
+
+  const setWeekStartDay = (day: WeekStartDay) => setDraft(setMealWeekStart(draft, day));
+
+  const setTimeFormat = (fmt: TimeFormat | undefined) => setDraft(setMealTimeFormat(draft, fmt));
 
   const handleSave = async () => {
     if (saving) return;
@@ -69,6 +67,8 @@ export function useMealsSettingsDraft(
     setDraft,
     toggleSlot,
     setDefaultTime,
+    setWeekStartDay,
+    setTimeFormat,
     saving,
     saveError,
     handleSave,

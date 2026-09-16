@@ -6,18 +6,24 @@ import Button from '@/components/ui/Button';
 import {
   SLOT_ORDER,
   SLOT_META,
-  DEFAULT_MEAL_SETTINGS,
   formatMealTime,
   getMealSlotLabelKey,
   getSlotTimePresets,
   normalizeMealSettings,
   resolveMealTimeFormat,
 } from '@/lib/meal-constants';
+import {
+  toggleMealSlot,
+  setMealSlotDefaultTime,
+  setMealWeekStart,
+  setMealTimeFormat,
+  resetMealSettings,
+} from '@/lib/meal-settings';
 import { displayCache } from '@/lib/display-cache';
 import { useEditorStore } from '@/stores/editor-store';
 import { useTranslate } from '@/i18n';
 import PhoneSurfaceLinks from '@/components/editor/PhoneSurfaceLinks';
-import type { MealSettings, MealSlotType, TimeFormat } from '@/types/config';
+import type { MealSettings, MealSlotType, TimeFormat, WeekStartDay } from '@/types/config';
 
 /**
  * Editor settings page section for meal-planner shared settings.
@@ -177,47 +183,34 @@ export default function MealsSection() {
 
   // ── Field handlers — each immediately persists ──
 
-  const toggleSlot = useCallback((slot: MealSlotType) => {
+  /**
+   * Apply one of the shared edit rules and persist the result. A rule that
+   * refuses the edit returns the settings it was given (turning off the last
+   * slot), and there is then nothing to save.
+   */
+  const apply = useCallback((edit: (current: MealSettings) => MealSettings) => {
     if (!settings) return;
-    const has = settings.enabledSlots.includes(slot);
-    const next = has
-      ? settings.enabledSlots.filter((s) => s !== slot)
-      : [...settings.enabledSlots, slot];
-    if (next.length === 0) return; // require at least one
-    const updated: MealSettings = { ...settings, enabledSlots: next };
+    const updated = edit(settings);
+    if (updated === settings) return;
     setSettings(updated);
     persist(updated, settings);
   }, [settings, persist]);
 
-  const setWeekStartDay = useCallback((day: 'sunday' | 'monday') => {
-    if (!settings) return;
-    const updated: MealSettings = { ...settings, weekStartDay: day };
-    setSettings(updated);
-    persist(updated, settings);
-  }, [settings, persist]);
+  const toggleSlot = useCallback((slot: MealSlotType) => {
+    apply((current) => toggleMealSlot(current, slot));
+  }, [apply]);
+
+  const setWeekStartDay = useCallback((day: WeekStartDay) => {
+    apply((current) => setMealWeekStart(current, day));
+  }, [apply]);
 
   const setTimeFormat = useCallback((fmt: TimeFormat | undefined) => {
-    if (!settings) return;
-    // undefined = follow global — the explicit undefined overwrites any stored
-    // override here, then serializes out of the PUT body so the key is gone
-    // server-side too (spreading an empty object would have kept the old key).
-    const updated: MealSettings = { ...settings, timeFormat: fmt };
-    setSettings(updated);
-    persist(updated, settings);
-  }, [settings, persist]);
+    apply((current) => setMealTimeFormat(current, fmt));
+  }, [apply]);
 
   const setDefaultTime = useCallback((slot: MealSlotType, time: string | undefined) => {
-    if (!settings) return;
-    const nextTimes = { ...settings.defaultSlotTimes };
-    if (time) {
-      nextTimes[slot] = time;
-    } else {
-      delete nextTimes[slot];
-    }
-    const updated: MealSettings = { ...settings, defaultSlotTimes: nextTimes };
-    setSettings(updated);
-    persist(updated, settings);
-  }, [settings, persist]);
+    apply((current) => setMealSlotDefaultTime(current, slot, time));
+  }, [apply]);
 
   // ── Render ──
 
@@ -474,16 +467,7 @@ export default function MealsSection() {
       <section>
         <Button
           variant="secondary"
-          onClick={() => {
-            const defaults: MealSettings = {
-              ...DEFAULT_MEAL_SETTINGS,
-              enabledSlots: [...DEFAULT_MEAL_SETTINGS.enabledSlots],
-              defaultSlotTimes: {},
-            };
-            const prev = settings;
-            setSettings(defaults);
-            persist(defaults, prev);
-          }}
+          onClick={() => apply(resetMealSettings)}
           disabled={saving}
         >
           {t('settings.mealsPage.reset.button')}

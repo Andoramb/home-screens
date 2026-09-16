@@ -2,17 +2,25 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { uuid } from '@/lib/uuid';
-import { generateRandomPlan } from '@/lib/meal-shuffle';
 import {
   DEFAULT_MEAL_EMOJI,
   toISODate,
   getWeekRange,
   getWeekDatesForRange,
   filterPlanToWeek,
-  replaceWeekInPlan,
-  copyWeekEntries,
   resolveMealTimeFormat,
 } from '@/lib/meal-constants';
+import {
+  assignPlanSlot,
+  clearPlanSlot,
+  setPlanSlotTime,
+  clearPlanWeek,
+  shufflePlanWeek,
+  copyPlanWeek,
+  upsertSavedMeal,
+  removeSavedMeal,
+  toggleSavedMealFavorite,
+} from '@/lib/meal-plan-actions';
 import { useEditorStore } from '@/stores/editor-store';
 import CRUDModalShell from '@/components/editor/CRUDModalShell';
 import SidebarLibrary from './SidebarLibrary';
@@ -140,16 +148,12 @@ export default function MealPlannerModal({
   }, [t]);
 
   const saveMeal = useCallback((updated: SavedMeal) => {
+    onUpdate({ savedMeals: upsertSavedMeal(savedMeals, updated) });
     if (pendingMeal && updated.id === pendingMeal.id) {
-      // First save of a new meal — persist it then return to library
-      onUpdate({ savedMeals: [...savedMeals, updated] });
+      // First save of a new meal — return to the library once it is persisted
       setPendingMeal(null);
       setSelectedMealId(null);
       setSidebarTab('library');
-    } else {
-      onUpdate({
-        savedMeals: savedMeals.map((m) => (m.id === updated.id ? updated : m)),
-      });
     }
     showToast(t('mealPlannerModal.toast.changesSaved'));
   }, [savedMeals, pendingMeal, onUpdate, showToast, t]);
@@ -163,8 +167,7 @@ export default function MealPlannerModal({
     }
     const deletedMeal = savedMeals.find((m) => m.id === id);
     const deletedEntries = plan.filter((p) => p.mealId === id);
-    const remainingMeals = savedMeals.filter((m) => m.id !== id);
-    const remainingPlan = plan.filter((p) => p.mealId !== id);
+    const { savedMeals: remainingMeals, plan: remainingPlan } = removeSavedMeal(savedMeals, plan, id);
     onUpdate({ savedMeals: remainingMeals, plan: remainingPlan });
     setSelectedMealId(null);
     setSidebarTab('library');
@@ -185,42 +188,23 @@ export default function MealPlannerModal({
       setPendingMeal({ ...pendingMeal, isFavorite: !pendingMeal.isFavorite });
       return;
     }
-    onUpdate({
-      savedMeals: savedMeals.map((m) =>
-        m.id === id ? { ...m, isFavorite: !m.isFavorite } : m,
-      ),
-    });
+    onUpdate({ savedMeals: toggleSavedMealFavorite(savedMeals, id) });
   }, [savedMeals, pendingMeal, onUpdate]);
 
   const setSlotMeal = useCallback((date: string, slot: MealSlotType, mealId: string) => {
-    const existing = plan.find((p) => p.date === date && p.slot === slot);
-    const filtered = plan.filter((p) => !(p.date === date && p.slot === slot));
-    // Preserve existing per-instance fields (time, notes, customText) when changing the meal
-    const updated: PlannedMeal = { ...(existing ?? {}), date, slot, mealId };
-    onUpdate({ plan: [...filtered, updated] });
+    onUpdate({ plan: assignPlanSlot(plan, date, slot, mealId) });
     setPickerTarget(null);
   }, [plan, onUpdate]);
 
   const setSlotTime = useCallback((date: string, slot: MealSlotType, time: string | undefined) => {
-    const existing = plan.find((p) => p.date === date && p.slot === slot);
-    if (!existing) return; // can't set a time on a slot with no meal
-    // Treat empty string the same as undefined — a future caller (or a bug in
-    // MealTimeChip) that emits `""` must not write an invalid `time: ""` to
-    // JSON, where it would fail `isValidTimeString` on the next read.
-    const normalized = time ? time : undefined;
-    const updated: PlannedMeal = { ...existing };
-    if (normalized) {
-      updated.time = normalized;
-    } else {
-      delete updated.time;
-    }
-    const newPlan = plan.map((p) => (p === existing ? updated : p));
+    const newPlan = setPlanSlotTime(plan, date, slot, time);
+    if (newPlan === plan) return; // no meal in that slot, so no time to set
     onUpdate({ plan: newPlan });
   }, [plan, onUpdate]);
 
   const removeSlotMeal = useCallback((date: string, slot: MealSlotType) => {
     const removed = plan.find((p) => p.date === date && p.slot === slot);
-    const newPlan = plan.filter((p) => !(p.date === date && p.slot === slot));
+    const newPlan = clearPlanSlot(plan, date, slot);
     onUpdate({ plan: newPlan });
     if (removed) {
       showToast(t('mealPlannerModal.toast.mealRemoved'), () => {
@@ -231,8 +215,7 @@ export default function MealPlannerModal({
 
   const suggestRandom = useCallback(() => {
     if (savedMeals.length === 0) return;
-    const newWeek = generateRandomPlan(savedMeals, slots, viewedWeekDates);
-    onUpdate({ plan: replaceWeekInPlan(plan, viewedWeekDates, newWeek) });
+    onUpdate({ plan: shufflePlanWeek(plan, savedMeals, slots, viewedWeekDates) });
     showToast(t('mealPlannerModal.toast.randomSuggested'));
   }, [savedMeals, slots, plan, viewedWeekDates, onUpdate, showToast, t]);
 
@@ -240,18 +223,16 @@ export default function MealPlannerModal({
     const prevStart = new Date(viewingWeekStart);
     prevStart.setDate(prevStart.getDate() - 7);
     const prevWeekDates = getWeekDatesForRange(toISODate(prevStart), weekStartDay);
-    const restamped = copyWeekEntries(plan, prevWeekDates, viewedWeekDates);
-    if (restamped.length === 0) return;
-    onUpdate({ plan: replaceWeekInPlan(plan, viewedWeekDates, restamped) });
+    const newPlan = copyPlanWeek(plan, prevWeekDates, viewedWeekDates);
+    if (newPlan === plan) return; // nothing planned last week
+    onUpdate({ plan: newPlan });
     showToast(t('mealPlannerModal.toast.lastWeekCopied'));
   }, [plan, viewingWeekStart, viewedWeekDates, weekStartDay, onUpdate, showToast, t]);
 
   const clearWeek = useCallback(() => {
     if (weekPlan.length === 0) return;
-    const weekSet = new Set(viewedWeekDates);
-    const remaining = plan.filter((p) => !weekSet.has(p.date));
     const snapshot = [...plan];
-    onUpdate({ plan: remaining });
+    onUpdate({ plan: clearPlanWeek(plan, viewedWeekDates) });
     showToast(t('mealPlannerModal.toast.weekCleared'), () => {
       onUpdate({ plan: snapshot });
     });

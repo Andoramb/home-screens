@@ -1,0 +1,164 @@
+import { describe, it, expect } from 'vitest';
+import type { SavedMeal, PlannedMeal } from '@/types/config';
+import {
+  assignPlanSlot,
+  clearPlanSlot,
+  setPlanSlotTime,
+  clearPlanWeek,
+  shufflePlanWeek,
+  copyPlanWeek,
+  upsertSavedMeal,
+  removeSavedMeal,
+  toggleSavedMealFavorite,
+} from '../meal-plan-actions';
+
+const WEEK = ['2026-09-13', '2026-09-14', '2026-09-15', '2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19'];
+const NEXT_WEEK = ['2026-09-20', '2026-09-21', '2026-09-22', '2026-09-23', '2026-09-24', '2026-09-25', '2026-09-26'];
+
+const meal = (id: string, extra: Partial<SavedMeal> = {}): SavedMeal =>
+  ({ id, name: id, ...extra }) as SavedMeal;
+
+const entry = (date: string, mealId: string, extra: Partial<PlannedMeal> = {}): PlannedMeal =>
+  ({ date, slot: 'dinner', mealId, ...extra }) as PlannedMeal;
+
+function find(plan: PlannedMeal[], date: string) {
+  return plan.find((p) => p.date === date && p.slot === 'dinner');
+}
+
+describe('assignPlanSlot', () => {
+  it('fills an empty slot', () => {
+    const next = assignPlanSlot([], '2026-09-15', 'dinner', 'm-1');
+    expect(next).toHaveLength(1);
+    expect(find(next, '2026-09-15')?.mealId).toBe('m-1');
+  });
+
+  it('replaces the meal already in that slot without duplicating it', () => {
+    const next = assignPlanSlot([entry('2026-09-15', 'm-1')], '2026-09-15', 'dinner', 'm-2');
+    expect(next).toHaveLength(1);
+    expect(find(next, '2026-09-15')?.mealId).toBe('m-2');
+  });
+
+  /* Swapping the meal should not silently drop a serving time somebody set. */
+  it("keeps the existing entry's own fields", () => {
+    const plan = [entry('2026-09-15', 'm-1', { time: '18:30', notes: 'double batch' })];
+    const swapped = find(assignPlanSlot(plan, '2026-09-15', 'dinner', 'm-2'), '2026-09-15');
+    expect(swapped).toMatchObject({ mealId: 'm-2', time: '18:30', notes: 'double batch' });
+  });
+
+  it('leaves the other slots and days alone', () => {
+    const plan = [entry('2026-09-14', 'm-1'), { ...entry('2026-09-15', 'm-1'), slot: 'lunch' } as PlannedMeal];
+    const next = assignPlanSlot(plan, '2026-09-15', 'dinner', 'm-2');
+    expect(next).toHaveLength(3);
+    expect(next.filter((p) => p.slot === 'lunch')).toHaveLength(1);
+  });
+});
+
+describe('clearPlanSlot', () => {
+  it('empties one slot and nothing else', () => {
+    const plan = [entry('2026-09-15', 'm-1'), entry('2026-09-16', 'm-2')];
+    const next = clearPlanSlot(plan, '2026-09-15', 'dinner');
+    expect(next.map((p) => p.date)).toEqual(['2026-09-16']);
+  });
+});
+
+describe('setPlanSlotTime', () => {
+  it('sets a time', () => {
+    const next = setPlanSlotTime([entry('2026-09-15', 'm-1')], '2026-09-15', 'dinner', '18:30');
+    expect(find(next, '2026-09-15')?.time).toBe('18:30');
+  });
+
+  /* A stored "" is not a valid HH:MM and fails isValidTimeString on the next
+   * read, so both a cleared value and an empty string remove the field. */
+  it.each([undefined, ''])('removes the field when cleared with %p', (value) => {
+    const plan = [entry('2026-09-15', 'm-1', { time: '18:30' })];
+    const updated = find(setPlanSlotTime(plan, '2026-09-15', 'dinner', value), '2026-09-15')!;
+    expect('time' in updated).toBe(false);
+  });
+
+  it('is a no-op on a slot with no meal in it', () => {
+    const plan = [entry('2026-09-15', 'm-1')];
+    expect(setPlanSlotTime(plan, '2026-09-16', 'dinner', '18:30')).toBe(plan);
+  });
+});
+
+describe('clearPlanWeek', () => {
+  it('drops the viewed week and keeps every other', () => {
+    const plan = [entry('2026-09-15', 'm-1'), entry('2026-09-22', 'm-2')];
+    expect(clearPlanWeek(plan, WEEK).map((p) => p.date)).toEqual(['2026-09-22']);
+  });
+});
+
+describe('shufflePlanWeek', () => {
+  it('fills the week from the library and leaves other weeks alone', () => {
+    const plan = [entry('2026-09-22', 'm-keep')];
+    const next = shufflePlanWeek(plan, [meal('m-1'), meal('m-2')], ['dinner'], WEEK);
+    expect(next.filter((p) => WEEK.includes(p.date)).length).toBeGreaterThan(0);
+    expect(next.filter((p) => p.date === '2026-09-22')).toEqual([entry('2026-09-22', 'm-keep')]);
+  });
+
+  it('is a no-op for a household with no saved meals', () => {
+    const plan = [entry('2026-09-15', 'm-1')];
+    expect(shufflePlanWeek(plan, [], ['dinner'], WEEK)).toBe(plan);
+  });
+});
+
+describe('copyPlanWeek', () => {
+  it("restamps the source week's entries onto the target week", () => {
+    const plan = [entry('2026-09-15', 'm-1')];
+    const next = copyPlanWeek(plan, WEEK, NEXT_WEEK);
+    // Same weekday, one week on: Tuesday to Tuesday.
+    expect(find(next, '2026-09-22')?.mealId).toBe('m-1');
+    expect(find(next, '2026-09-15')?.mealId).toBe('m-1');
+  });
+
+  it('is a no-op when the source week is empty', () => {
+    const plan = [entry('2026-09-22', 'm-1')];
+    expect(copyPlanWeek(plan, WEEK, NEXT_WEEK)).toBe(plan);
+  });
+
+  it('replaces whatever the target week held', () => {
+    const plan = [entry('2026-09-15', 'm-new'), entry('2026-09-22', 'm-old')];
+    const next = copyPlanWeek(plan, WEEK, NEXT_WEEK);
+    expect(next.filter((p) => p.date === '2026-09-22')).toHaveLength(1);
+    expect(find(next, '2026-09-22')?.mealId).toBe('m-new');
+  });
+});
+
+describe('upsertSavedMeal', () => {
+  it('adds a meal the library has never seen', () => {
+    expect(upsertSavedMeal([meal('m-1')], meal('m-2')).map((m) => m.id)).toEqual(['m-1', 'm-2']);
+  });
+
+  it('replaces a meal in place rather than appending a second copy', () => {
+    const next = upsertSavedMeal([meal('m-1'), meal('m-2')], meal('m-1', { name: 'Renamed' }));
+    expect(next.map((m) => m.id)).toEqual(['m-1', 'm-2']);
+    expect(next[0].name).toBe('Renamed');
+  });
+});
+
+describe('removeSavedMeal', () => {
+  /* A plan entry whose meal no longer exists renders as a slot the user cannot
+   * clear, so both halves have to move together. */
+  it('removes the meal and every plan entry pointing at it', () => {
+    const next = removeSavedMeal(
+      [meal('m-1'), meal('m-2')],
+      [entry('2026-09-15', 'm-1'), entry('2026-09-16', 'm-2')],
+      'm-1',
+    );
+    expect(next.savedMeals.map((m) => m.id)).toEqual(['m-2']);
+    expect(next.plan.map((p) => p.mealId)).toEqual(['m-2']);
+  });
+});
+
+describe('toggleSavedMealFavorite', () => {
+  it('stars and unstars', () => {
+    const starred = toggleSavedMealFavorite([meal('m-1')], 'm-1');
+    expect(starred[0].isFavorite).toBe(true);
+    expect(toggleSavedMealFavorite(starred, 'm-1')[0].isFavorite).toBe(false);
+  });
+
+  it('leaves the other meals alone', () => {
+    const next = toggleSavedMealFavorite([meal('m-1'), meal('m-2')], 'm-2');
+    expect(next[0].isFavorite).toBeUndefined();
+  });
+});

@@ -3,6 +3,11 @@
 import { useState, useMemo, type Dispatch, type SetStateAction } from 'react';
 import type { SavedMeal, PlannedMeal } from '@/types/config';
 import { normalizeTag } from '@/lib/meal-constants';
+import {
+  upsertSavedMeal,
+  removeSavedMeal,
+  toggleSavedMealFavorite,
+} from '@/lib/meal-plan-actions';
 import type { MealDataWrite } from '@/lib/meal-write';
 import { useTranslate } from '@/i18n';
 import { useMealForm } from './useMealForm';
@@ -56,14 +61,7 @@ export function useMealsLibrary({
     setSaving(true);
     setSaveError(null);
 
-    const mealData = form.buildMealData();
-
-    let newMeals: SavedMeal[];
-    if (form.editingMeal === 'new') {
-      newMeals = [...savedMeals, mealData];
-    } else {
-      newMeals = savedMeals.map((m) => (m.id === mealData.id ? mealData : m));
-    }
+    const newMeals = upsertSavedMeal(savedMeals, form.buildMealData());
 
     const ok = await saveData({ savedMeals: newMeals });
     setSaving(false);
@@ -81,23 +79,19 @@ export function useMealsLibrary({
       description: t('mealsTab.confirm.deleteMeal.description'),
       confirmLabel: t('mealsTab.confirm.deleteMeal.confirmLabel'),
       onConfirm: async () => {
-        const id = mealToDelete.id;
-        const newMeals = savedMeals.filter((m) => m.id !== id);
-        const newPlan = plan.filter((p) => p.mealId !== id);
-        setSavedMeals(newMeals);
-        setPlan(newPlan);
+        const next = removeSavedMeal(savedMeals, plan, mealToDelete.id);
+        setSavedMeals(next.savedMeals);
+        setPlan(next.plan);
         form.setEditingMeal(null);
         setConfirmAction(null);
         // Both halves: deleting a meal also prunes the plan entries for it.
-        await saveData({ savedMeals: newMeals, plan: newPlan });
+        await saveData(next);
       },
     });
   };
 
   const toggleFavorite = async (mealId: string) => {
-    const newMeals = savedMeals.map((m) =>
-      m.id === mealId ? { ...m, isFavorite: !m.isFavorite } : m,
-    );
+    const newMeals = toggleSavedMealFavorite(savedMeals, mealId);
     setSavedMeals(newMeals);
     await saveData({ savedMeals: newMeals });
   };
