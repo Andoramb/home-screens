@@ -57,6 +57,7 @@ vi.mock('@/lib/meal-data', () => {
 
 import { GET, PUT } from '@/app/api/meals/data/route';
 import { readMealData, writeMealData } from '@/lib/meal-data';
+import { mealRevision } from '@/lib/meal-revision';
 import { __resetConfigReadCacheForTests } from '@/lib/config-cache';
 
 const defaultSettings = {
@@ -138,17 +139,84 @@ describe('GET /api/meals/data', () => {
 // ------- PUT tests -------
 
 describe('PUT /api/meals/data', () => {
-  function makePutRequest(body: unknown): NextRequest {
+  /** The revision a client that loaded the current mock would quote. */
+  async function currentRevision(): Promise<string> {
+    const existing = await readMealData().catch(() => emptyData);
+    return mealRevision(existing as never);
+  }
+
+  /**
+   * A body carrying `savedMeals` or `plan` quotes the current revision unless
+   * the test set one itself; the revision tests below cover the mismatch and
+   * missing cases.
+   */
+  async function makePutRequest(body: Record<string, unknown>): Promise<NextRequest> {
+    const replacesArrays = body.savedMeals !== undefined || body.plan !== undefined;
+    const withRevision = replacesArrays && !('revision' in body)
+      ? { ...body, revision: await currentRevision() }
+      : body;
     return new NextRequest('http://localhost/api/meals/data', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+      body: JSON.stringify(withRevision),
     });
   }
 
+  describe('revision check', () => {
+    it('returns the revision a save has to quote', async () => {
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+      const res = await GET(new NextRequest('http://localhost/api/meals/data'));
+      const json = await res.json();
+      expect(json.revision).toBe(mealRevision(populatedData as never));
+    });
+
+    it('refuses an array write that quotes no revision', async () => {
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+      const res = await PUT(await makePutRequest({ plan: [{ date: '2026-04-05', slot: 'lunch', mealId: 'm1' }], revision: undefined }));
+      expect(res.status).toBe(400);
+      expect(writeMealData).not.toHaveBeenCalled();
+    });
+
+    /* Two phones that both loaded [original] and save [original, A] and
+     * [original, B]: the second save must not quietly drop A. */
+    it('answers a save built from an older copy with 409 and the current data', async () => {
+      const stale = mealRevision(emptyData as never);
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+
+      const res = await PUT(await makePutRequest({
+        plan: [{ date: '2026-04-05', slot: 'lunch', mealId: 'm1' }],
+        revision: stale,
+      }));
+      const json = await res.json();
+
+      expect(res.status).toBe(409);
+      expect(json.reason).toBe('revision');
+      expect(json.plan).toEqual(populatedData.plan);
+      expect(json.savedMeals).toEqual(populatedData.savedMeals);
+      expect(json.revision).toBe(mealRevision(populatedData as never));
+      expect(writeMealData).not.toHaveBeenCalled();
+    });
+
+    it('answers an accepted save with the new revision', async () => {
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+      const newPlan = [...populatedData.plan, { date: '2026-04-05', slot: 'lunch', mealId: 'm1' }];
+      const res = await PUT(await makePutRequest({ plan: newPlan }));
+      const json = await res.json();
+      expect(res.status).toBe(200);
+      expect(json.revision).toBe(mealRevision({ savedMeals: populatedData.savedMeals, plan: newPlan } as never));
+      expect(json.globalTimeFormat).toBeDefined();
+    });
+
+    it('does not make a settings-only write quote a revision', async () => {
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+      const res = await PUT(await makePutRequest({ settings: { weekStartDay: 'sunday' } }));
+      expect(res.status).toBe(200);
+    });
+  });
+
   it('saves valid meal data', async () => {
     const payload = { savedMeals: populatedData.savedMeals, plan: populatedData.plan };
-    const res = await PUT(makePutRequest(payload));
+    const res = await PUT(await makePutRequest(payload));
     const json = await res.json();
 
     expect(res.status).toBe(200);
@@ -158,7 +226,7 @@ describe('PUT /api/meals/data', () => {
   });
 
   it('returns 400 when savedMeals is present but not an array', async () => {
-    const res = await PUT(makePutRequest({ savedMeals: 'not-array', plan: [] }));
+    const res = await PUT(await makePutRequest({ savedMeals: 'not-array', plan: [] }));
 
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -166,7 +234,7 @@ describe('PUT /api/meals/data', () => {
   });
 
   it('returns 400 when plan is present but not an array', async () => {
-    const res = await PUT(makePutRequest({ savedMeals: [], plan: 'not-array' }));
+    const res = await PUT(await makePutRequest({ savedMeals: [], plan: 'not-array' }));
 
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -174,7 +242,7 @@ describe('PUT /api/meals/data', () => {
   });
 
   it('returns 400 when groceryChecked is present but not an array', async () => {
-    const res = await PUT(makePutRequest({ groceryChecked: 'not-array' }));
+    const res = await PUT(await makePutRequest({ groceryChecked: 'not-array' }));
 
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -182,7 +250,7 @@ describe('PUT /api/meals/data', () => {
   });
 
   it('returns 400 when no writable fields are present', async () => {
-    const res = await PUT(makePutRequest({ force: true }));
+    const res = await PUT(await makePutRequest({ force: true }));
 
     expect(res.status).toBe(400);
     const json = await res.json();
@@ -195,7 +263,7 @@ describe('PUT /api/meals/data', () => {
     it('returns 409 when overwriting non-empty data with empty payload', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({ savedMeals: [], plan: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [], plan: [] }));
 
       expect(res.status).toBe(409);
       const json = await res.json();
@@ -206,7 +274,7 @@ describe('PUT /api/meals/data', () => {
     it('allows empty payload when existing data is also empty', async () => {
       vi.mocked(readMealData).mockResolvedValue(emptyData as never);
 
-      const res = await PUT(makePutRequest({ savedMeals: [], plan: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [], plan: [] }));
 
       expect(res.status).toBe(200);
       expect(writeMealData).toHaveBeenCalled();
@@ -215,7 +283,7 @@ describe('PUT /api/meals/data', () => {
     it('allows empty payload when force flag is true', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({ savedMeals: [], plan: [], force: true }));
+      const res = await PUT(await makePutRequest({ savedMeals: [], plan: [], force: true }));
 
       expect(res.status).toBe(200);
       expect(writeMealData).toHaveBeenCalled();
@@ -224,7 +292,7 @@ describe('PUT /api/meals/data', () => {
     it('allows empty payload when readMealData fails (cannot verify existing)', async () => {
       vi.mocked(readMealData).mockRejectedValue(new Error('file not found'));
 
-      const res = await PUT(makePutRequest({ savedMeals: [], plan: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [], plan: [] }));
 
       expect(res.status).toBe(200);
       expect(writeMealData).toHaveBeenCalled();
@@ -237,7 +305,7 @@ describe('PUT /api/meals/data', () => {
     it('returns 409 when wiping savedMeals alone without force', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({ savedMeals: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [] }));
 
       expect(res.status).toBe(409);
       expect(writeMealData).not.toHaveBeenCalled();
@@ -246,7 +314,7 @@ describe('PUT /api/meals/data', () => {
     it('returns 409 when wiping plan alone without force', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({ plan: [] }));
+      const res = await PUT(await makePutRequest({ plan: [] }));
 
       expect(res.status).toBe(409);
       expect(writeMealData).not.toHaveBeenCalled();
@@ -255,7 +323,7 @@ describe('PUT /api/meals/data', () => {
     it('allows wiping savedMeals alone with force flag', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({ savedMeals: [], force: true }));
+      const res = await PUT(await makePutRequest({ savedMeals: [], force: true }));
 
       expect(res.status).toBe(200);
       expect(writeMealData).toHaveBeenCalled();
@@ -266,7 +334,7 @@ describe('PUT /api/meals/data', () => {
 
       // Guard only fires if ALL present fields are empty. Here savedMeals has
       // content so the user is clearly making a deliberate edit.
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         savedMeals: [{ id: 'm2', name: 'Pasta' }],
         plan: [],
       }));
@@ -282,7 +350,7 @@ describe('PUT /api/meals/data', () => {
     it('preserves existing groceryChecked when not provided', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({ savedMeals: [{ id: 'm2' }], plan: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [{ id: 'm2' }], plan: [] }));
       const json = await res.json();
 
       expect(res.status).toBe(200);
@@ -291,7 +359,7 @@ describe('PUT /api/meals/data', () => {
 
     it('uses provided groceryChecked when given', async () => {
       const newChecked = ['flour', 'sugar'];
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         savedMeals: [{ id: 'm2' }],
         plan: [],
         groceryChecked: newChecked,
@@ -304,7 +372,7 @@ describe('PUT /api/meals/data', () => {
     it('falls back gracefully when readMealData fails during field preservation', async () => {
       vi.mocked(readMealData).mockRejectedValue(new Error('disk error'));
 
-      const res = await PUT(makePutRequest({ savedMeals: [{ id: 'm2' }], plan: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [{ id: 'm2' }], plan: [] }));
       const json = await res.json();
 
       expect(res.status).toBe(200);
@@ -315,7 +383,7 @@ describe('PUT /api/meals/data', () => {
   it('allows non-empty payload without force flag', async () => {
     vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-    const res = await PUT(makePutRequest({
+    const res = await PUT(await makePutRequest({
       savedMeals: [{ id: 'm2', name: 'Pasta' }],
       plan: [],
     }));
@@ -330,7 +398,7 @@ describe('PUT /api/meals/data', () => {
     it('preserves existing settings when body omits the settings field', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         savedMeals: populatedData.savedMeals,
         plan: populatedData.plan,
       }));
@@ -345,7 +413,7 @@ describe('PUT /api/meals/data', () => {
     it('writes provided settings through normalization', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         savedMeals: populatedData.savedMeals,
         plan: populatedData.plan,
         settings: {
@@ -367,7 +435,7 @@ describe('PUT /api/meals/data', () => {
     it('sanitizes malformed settings (drops bad fields, keeps good ones)', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         savedMeals: populatedData.savedMeals,
         plan: populatedData.plan,
         settings: {
@@ -393,7 +461,7 @@ describe('PUT /api/meals/data', () => {
     it('accepts settings-only PUT (no meals/plan in body)', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         settings: { enabledSlots: ['breakfast', 'lunch'], weekStartDay: 'monday' },
       }));
       const json = await res.json();
@@ -413,7 +481,7 @@ describe('PUT /api/meals/data', () => {
       // because the writer isn't claiming to write meal data at all.
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         settings: { enabledSlots: ['breakfast', 'dinner'] },
       }));
 
@@ -424,7 +492,7 @@ describe('PUT /api/meals/data', () => {
     it('accepts grocery-only PUT', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         groceryChecked: ['flour', 'sugar'],
       }));
       const json = await res.json();
@@ -442,7 +510,7 @@ describe('PUT /api/meals/data', () => {
 
       const newMeals = [{ id: 'm2', name: 'Pasta' }];
       const newPlan = [{ date: '2026-04-05', slot: 'lunch', mealId: 'm2' }];
-      const res = await PUT(makePutRequest({ savedMeals: newMeals, plan: newPlan }));
+      const res = await PUT(await makePutRequest({ savedMeals: newMeals, plan: newPlan }));
       const json = await res.json();
 
       expect(res.status).toBe(200);
@@ -459,7 +527,7 @@ describe('PUT /api/meals/data', () => {
       // PUT would overwrite it. After this fix, settings-only PUTs only touch settings.
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(makePutRequest({
+      const res = await PUT(await makePutRequest({
         settings: { weekStartDay: 'sunday' },
       }));
       const json = await res.json();

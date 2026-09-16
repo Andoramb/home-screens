@@ -25,21 +25,17 @@ export interface MealDataWrite {
  *
  * `force` answers the server's empty-overwrite guard, which refuses an empty
  * `savedMeals` or `plan` against non-empty stored data unless the caller
- * confirms it meant it. An empty array is only intentional if the surface
- * loaded the stored data first, in which case it is the user clearing the last
- * planned week or deleting the last saved meal. A surface whose fetch failed is
- * holding empty arrays it never received, and the guard should keep refusing
- * those.
+ * confirms it meant it. Every write is made from a loaded snapshot (see
+ * `meal-client.ts`; a save also has to quote that snapshot's revision), so an
+ * empty array here is the user clearing the last planned week or deleting the
+ * last saved meal, never a surface that failed to load.
  *
  * Partial writes make this distinction matter. A combined write of both fields
  * slipped past the guard whenever either half was non-empty, so clearing the
  * whole plan only needed confirming when the library was empty too.
  */
-export function mealWriteBody(
-  changes: MealDataWrite,
-  loaded: boolean,
-): MealDataWrite & { force?: boolean } {
+export function mealWriteBody(changes: MealDataWrite): MealDataWrite & { force?: boolean } {
   const written = [changes.savedMeals, changes.plan].filter((a) => a !== undefined);
   const clearing = written.length > 0 && written.every((a) => a.length === 0);
-  return clearing && loaded ? { ...changes, force: true } : changes;
+  return clearing ? { ...changes, force: true } : changes;
 }

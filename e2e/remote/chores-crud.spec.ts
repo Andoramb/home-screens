@@ -1,6 +1,6 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { putConfig, seedHouseholdChores } from '../helpers/api';
+import { putConfig, seedChores, seedHouseholdChores, seedRewards } from '../helpers/api';
 import { confirmSheet } from '../helpers/remote';
 import { baseConfig, choreChartModule, makeScreen } from '../helpers/config-fixtures';
 
@@ -179,6 +179,36 @@ test('admin edits a chore name and it round-trips', async ({ page, request, sand
     .toContain('Feed the cat');
 });
 
+/* Two phones editing the chore list. The other renamed the chore first; this
+ * phone's rename is built from its older copy, so the hub refuses it and the
+ * phone shows the current list with a note to make the change again. Nothing
+ * either phone saved is lost, and the change can be made again on the fresh
+ * copy without reloading. */
+test('a chore edit made from an older copy is refused and the newer list shown', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, MEMBER_AND_CHORE);
+  await page.goto('/remote');
+  await openManage(page);
+
+  // The other phone saves first; its write moves the revision this page holds.
+  await seedChores(request, { chores: [{ ...MEMBER_AND_CHORE.chores[0], name: 'Walk the dog' }] });
+
+  await page.getByRole('button', { name: 'Edit Feed the dog' }).click();
+  await page.getByPlaceholder('Chore name...').fill('Feed the cat');
+  await page.getByRole('button', { name: 'Save Chore' }).click();
+
+  await expect(page.getByText("Someone else changed the chores. Your last change wasn't saved. Please try it again.")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Edit Walk the dog' })).toBeVisible();
+  expect((await getChoreData(request)).chores.map((c) => c.name)).toEqual(['Walk the dog']);
+
+  // Made again on the copy the hub handed over, the change lands.
+  await page.getByRole('button', { name: 'Edit Walk the dog' }).click();
+  await page.getByPlaceholder('Chore name...').fill('Feed the cat');
+  await page.getByRole('button', { name: 'Save Chore' }).click();
+  await expect
+    .poll(async () => (await getChoreData(request)).chores.map((c) => c.name))
+    .toEqual(['Feed the cat']);
+});
+
 test('admin explicitly deletes the last chore with force and it round-trips', async ({ page, request, sandboxDir }) => {
   await seedHouseholdChores(request, sandboxDir, MEMBER_AND_CHORE);
   await page.goto('/remote');
@@ -189,7 +219,7 @@ test('admin explicitly deletes the last chore with force and it round-trips', as
   const saved = page.waitForResponse((response) => response.url().endsWith('/api/chores/data') && response.request().method() === 'PUT');
   await confirmSheet(page).getByRole('button', { name: 'Delete Chore' }).click();
   const response = await saved;
-  expect(response.request().postDataJSON()).toEqual({ chores: [], force: true });
+  expect(response.request().postDataJSON()).toEqual({ chores: [], force: true, revision: expect.any(String) });
   expect(response.ok()).toBe(true);
 
   await expect
@@ -206,19 +236,22 @@ for (const [label, reloadBody] of [['malformed', {}], ['empty', { chores: [] }]]
     await page.getByRole('button', { name: 'Edit Avery' }).click();
     await page.getByLabel('Name', { exact: true }).fill('Avery Rose');
 
-    // Only corrupt the browser's post-save reload. The real store retains a
-    // chore, and its real PUT guard must refuse the resulting empty autosave.
+    // Only corrupt the browser's post-save reload. A reload that is not a
+    // chore snapshot (no list, or no revision to quote) is a failed reload:
+    // it is neither shown as an empty list nor sent back as one.
+    let puts = 0;
     await page.route('**/api/chores/data', async (route) => {
       if (route.request().method() === 'GET') {
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(reloadBody) });
-      } else await route.fallback();
+      } else {
+        if (route.request().method() === 'PUT') puts += 1;
+        await route.fallback();
+      }
     });
-    const saved = page.waitForResponse((response) => response.url().endsWith('/api/chores/data') && response.request().method() === 'PUT');
     await page.getByTestId('family-manager').getByRole('button', { name: 'Save', exact: true }).click();
-    const response = await saved;
-    expect(response.request().postDataJSON()).toEqual({ chores: [], force: false });
-    expect(response.status()).toBe(409);
     await expect(page.getByText('Failed to save. Please try again.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Chores', exact: true })).toBeVisible();
+    expect(puts).toBe(0);
 
     const persisted = await getChoreData(request);
     expect(persisted.chores).toEqual(MEMBER_AND_CHORE.chores);
@@ -323,14 +356,10 @@ test('admin redeems a reward and it records a redemption', async ({ page, reques
   await seedHouseholdChores(request, sandboxDir, ONE_MEMBER);
   // Seed a reward and a balance directly so this spec is independent of the
   // create-reward flow.
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [{
+  await seedRewards(request, [{
         id: 'r1', name: 'Movie Night', emoji: '🎬', cost: 2,
         description: '', memberIds: [], enabled: true,
-      }],
-    },
-  });
+      }]);
   await request.post('/api/rewards/data', { data: { memberId: 'm1', amount: 5 } });
 
   await page.goto('/remote');
@@ -570,14 +599,10 @@ test('admin edits a reward through the reward form and it round-trips', async ({
     members: [{ id: 'm-rw', name: 'Toby', emoji: '🦊', color: '#f59e0b' }],
     chores: [],
   });
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [{
+  await seedRewards(request, [{
         id: 'rw-edit', name: 'Movie Night', emoji: 'lucide:popcorn', cost: 5,
         description: '', memberIds: [], enabled: true,
-      }],
-    },
-  });
+      }]);
 
   await page.goto('/remote');
   await page.getByRole('button', { name: 'Chores', exact: true }).click();
@@ -610,13 +635,9 @@ test('admin deletes a reward through the reward form and it round-trips', async 
   // refuses (guardEmptyOverwrite, 409) unless the client sends force. A
   // confirmed delete does, so the last reward can actually be deleted —
   // it used to bounce with "Failed to save. Please try again."
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [
+  await seedRewards(request, [
         { id: 'rw-del', name: 'Bike Ride', emoji: 'lucide:bike', cost: 4, description: '', memberIds: [], enabled: true },
-      ],
-    },
-  });
+      ]);
 
   await page.goto('/remote');
   await page.getByRole('button', { name: 'Chores', exact: true }).click();
@@ -722,14 +743,10 @@ test('a failed reward save warns and drops the reward back out of the list', asy
   });
   // A pre-existing reward gives the rollback something to restore *to*, so the
   // assertion distinguishes "reverted to the snapshot" from "wiped the list".
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [{
+  await seedRewards(request, [{
         id: 'rw-snap', name: 'Board Game', emoji: 'lucide:puzzle', cost: 6,
         description: '', memberIds: [], enabled: true,
-      }],
-    },
-  });
+      }]);
 
   // PUT is the rewards-list write; POST on the same path is a balance adjust.
   await page.route('**/api/rewards/data', async (route) => {

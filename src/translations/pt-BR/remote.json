@@ -78,6 +78,7 @@
     "customColorTitle": "Cor personalizada"
   },
   "choresTab": {
+    "changedElsewhere": "Outra pessoa alterou as tarefas. Sua última alteração não foi salva. Tente de novo.",
     "header": "Tarefas",
     "subNav": {
       "today": "Hoje",
@@ -412,6 +413,7 @@
     "showingNow": "({count} na tela agora)"
   },
   "rewardsView": {
+    "changedElsewhere": "Outra pessoa alterou as recompensas. Sua última alteração não foi salva. Tente de novo.",
     "nav": {
       "redeem": "Resgatar",
       "rewards": "Editar a lista",

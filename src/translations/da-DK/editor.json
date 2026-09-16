@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "En anden har ændret pligterne. Din seneste ændring blev ikke gemt. Prøv igen.",
     "title": "Pligtskema",
     "subtitleMembersChores": "{members} medlemmer · {chores} pligter",
     "loadError": "Kunne ikke indlæse pligtdata. Ændringer bliver ikke gemt.",

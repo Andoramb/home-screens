@@ -78,6 +78,7 @@
     "customColorTitle": "Custom color"
   },
   "choresTab": {
+    "changedElsewhere": "Someone else changed the chores. Your last change wasn't saved. Please try it again.",
     "header": "Chores",
     "subNav": {
       "today": "Today",
@@ -412,6 +413,7 @@
     "showingNow": "({count} showing now)"
   },
   "rewardsView": {
+    "changedElsewhere": "Someone else changed the rewards. Your last change wasn't saved. Please try it again.",
     "nav": {
       "redeem": "Redeem",
       "rewards": "Edit list",

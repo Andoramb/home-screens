@@ -43,8 +43,16 @@ export function useMealsTabData() {
 
   const weekNav = useMealsWeekNav(settings);
 
+  // Load once, and again whenever the phone comes back to this page. A tab
+  // left open on Sunday's plan would otherwise keep an hours-old copy, and
+  // the first tap on it would have to be re-applied against the hub's copy.
   useEffect(() => {
     fetchData();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') fetchData();
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
   }, [fetchData]);
 
   const planActions = useMealsPlanActions({

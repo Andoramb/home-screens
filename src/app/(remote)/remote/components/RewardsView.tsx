@@ -20,6 +20,8 @@ interface RewardsData {
   rewards: RewardDefinition[];
   balances: Record<string, number>;
   redemptions: RewardRedemption[];
+  /** Quoted on every save of the reward list; see `contentRevision`. */
+  revision: string;
 }
 
 interface RewardsViewProps {
@@ -53,7 +55,7 @@ export default function RewardsView({
   const [editingReward, setEditingReward] = useState<RewardDefinition | 'new' | null>(null);
   const [redeemTarget, setRedeemTarget] = useState<{ reward: RewardDefinition; memberId: string } | null>(null);
   const [adjusting, setAdjusting] = useState<Set<string>>(new Set());
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<'failed' | 'conflict' | null>(null);
 
   // ── Fetch ──
   const fetchData = useCallback(async () => {
@@ -128,24 +130,34 @@ export default function RewardsView({
    * against a buggy client wiping the data, but deleting the only reward is
    * exactly that list and the person just confirmed it. After a failure the
    * real state is fetched back so the page never shows a phantom.
+   *
+   * The list quotes the revision it was built from. When somebody else saved
+   * first the hub answers 409 with `reason: 'revision'`; the change is rolled
+   * back, the current list fetched, and the person told to make it again.
    */
   const persistRewards = async (updated: RewardDefinition[], snapshot: RewardsData | null, force = false) => {
-    setSaveError(false);
+    setSaveError(null);
     try {
       const res = await editorFetch('/api/rewards/data', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rewards: updated, ...(force ? { force: true } : {}) }),
+        body: JSON.stringify({ rewards: updated, ...(force ? { force: true } : {}), revision: snapshot?.revision }),
       });
+      const json = await res.json().catch(() => null) as { rewards?: RewardDefinition[]; revision?: string; reason?: string } | null;
       if (!res.ok) {
         setData(snapshot);
-        setSaveError(true);
+        setSaveError(res.status === 409 && json?.reason === 'revision' ? 'conflict' : 'failed');
         await fetchData();
+        return;
+      }
+      if (json?.revision) {
+        const revision = json.revision;
+        setData((prev) => prev ? { ...prev, rewards: json.rewards ?? prev.rewards, revision } : prev);
       }
     } catch (err) {
       if (isSessionExpired(err)) return;
       setData(snapshot);
-      setSaveError(true);
+      setSaveError('failed');
       await fetchData();
     }
   };
@@ -156,7 +168,7 @@ export default function RewardsView({
     const updated = editingReward === 'new'
       ? [...existing, reward]
       : existing.map((r) => (r.id === reward.id ? reward : r));
-    setData((prev) => ({ rewards: updated, balances: prev?.balances ?? {}, redemptions: prev?.redemptions ?? [] }));
+    setData((prev) => ({ rewards: updated, balances: prev?.balances ?? {}, redemptions: prev?.redemptions ?? [], revision: prev?.revision ?? '' }));
     setEditingReward(null);
     await persistRewards(updated, snapshot);
   };
@@ -164,7 +176,7 @@ export default function RewardsView({
   const handleDeleteReward = async (id: string) => {
     const snapshot = data;
     const updated = (data?.rewards ?? []).filter((r) => r.id !== id);
-    setData((prev) => ({ rewards: updated, balances: prev?.balances ?? {}, redemptions: prev?.redemptions ?? [] }));
+    setData((prev) => ({ rewards: updated, balances: prev?.balances ?? {}, redemptions: prev?.redemptions ?? [], revision: prev?.revision ?? '' }));
     setEditingReward(null);
     await persistRewards(updated, snapshot, true);
   };
@@ -237,7 +249,7 @@ export default function RewardsView({
             fontSize: 12,
           }}
         >
-          {t('rewardsView.saveFailed')}
+          {saveError === 'conflict' ? t('rewardsView.changedElsewhere') : t('rewardsView.saveFailed')}
         </div>
       )}
 

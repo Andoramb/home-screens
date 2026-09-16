@@ -169,11 +169,13 @@ test.afterEach(async ({ request }) => {
     } });
     expect(cleared.ok(), `family reset answered ${cleared.status()}`).toBe(true);
   }
-  for (const [url, body] of [
-    ['/api/chores/data', { chores: [], force: true }],
-    ['/api/rewards/data', { rewards: [], force: true }],
+  // Whole-list writes quote the revision they were built from.
+  for (const [readUrl, url, body] of [
+    ['/api/chores/data', '/api/chores/data', { chores: [], force: true }],
+    ['/api/rewards', '/api/rewards/data', { rewards: [], force: true }],
   ] as const) {
-    const response = await request.put(url, { data: body });
+    const { revision } = await (await request.get(readUrl)).json() as { revision: string };
+    const response = await request.put(url, { data: { ...body, revision } });
     expect(response.ok(), `${url} reset answered ${response.status()}: ${(await response.text()).slice(0, 200)}`).toBe(true);
   }
 });

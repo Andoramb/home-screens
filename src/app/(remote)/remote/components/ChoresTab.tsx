@@ -13,7 +13,7 @@ import type {
   ChoreToggleRequest,
   ChoreToggleResponse,
 } from '@/types/config';
-import type { ChoreData } from '@/lib/chore-data';
+import { asChoreSnapshot, ChoreSession, type ChoreSnapshot } from '@/lib/chore-client';
 import {
   resolveAssignee,
   choreAppliesToday,
@@ -87,7 +87,7 @@ interface ChoresTabProps {
    * so the first paint is populated. These are data, not module config, which
    * is why they arrive as their own prop rather than inside `config`.
    */
-  choreData: ChoreData;
+  choreData: ChoreSnapshot;
   /** When false, hides Manage sub-view and restricts Rewards to redeem/history only. */
   isAdmin?: boolean;
 }
@@ -99,6 +99,18 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   // ── Lifted state (shared between Today + Manage views) ──
   const { members } = useFamilyData();
   const [chores, setChores] = useState<ChoreDefinition[]>(choreData.chores ?? []);
+  // Saves go through one session (`lib/chore-client.ts`): they run in order,
+  // each quoting the revision the previous one was answered with, so a list
+  // from an older copy cannot overwrite what another phone saved since.
+  const [session] = useState(() => new ChoreSession(editorFetch, choreData));
+  // A list the hub handed us (a reload, or a conflict's current copy) is
+  // already saved: the auto-save below must not send it straight back.
+  const adoptedRef = useRef<ChoreDefinition[] | null>(null);
+  const adoptChores = useCallback((snapshot: ChoreSnapshot) => {
+    adoptedRef.current = snapshot.chores;
+    session.adopt(snapshot);
+    setChores(snapshot.chores);
+  }, [session]);
   // Only the exact empty list produced by a deliberate last-chore deletion
   // may bypass the server guard. Missing props or reload data never grant it.
   const intentionalEmpty = useRef<ChoreDefinition[] | null>(null);
@@ -135,17 +147,19 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   useDebouncedSave({
     values: [chores],
     flushOnUnmount: true,
-    save: () =>
-      editorFetch('/api/chores/data', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chores,
-          force: chores === intentionalEmpty.current,
-        }),
-      }).then(throwIfNotOk),
-    // Without `throwIfNotOk` above a 500 resolved and this never fired: the new
-    // member stayed on screen and was gone after reload, with no warning.
+    save: async () => {
+      if (chores === adoptedRef.current) return;
+      const outcome = await session.save(chores, chores === intentionalEmpty.current);
+      // Somebody else saved first. Show their list rather than replace it;
+      // the change made here has to be made again on top of it.
+      if (outcome.kind === 'conflict') {
+        adoptChores(outcome.snapshot);
+        setLastWarning(t('choresTab.changedElsewhere'));
+      }
+    },
+    // The session rejects on any other failure; without that a 500 resolved
+    // and this never fired: the new member stayed on screen and was gone
+    // after reload, with no warning.
     onError: (err) => {
       if (isSessionExpired(err)) return;
       log.error('Chore auto-save failed:', err);
@@ -510,7 +524,11 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
           members={members}
           chores={chores}
           onFamilyChanged={() => {
-            void editorFetch('/api/chores/data').then(throwIfNotOk).then((res) => res.json()).then((data) => setChores(data.chores ?? [])).catch(() => setLastWarning(t('choresTab.saveFailed')));
+            void editorFetch('/api/chores/data').then(throwIfNotOk).then((res) => res.json()).then((json) => {
+              const snapshot = asChoreSnapshot(json);
+              if (!snapshot) throw new Error('Malformed chore data');
+              adoptChores(snapshot);
+            }).catch(() => setLastWarning(t('choresTab.saveFailed')));
             void fetchCompletions();
             void fetchBalances();
           }}

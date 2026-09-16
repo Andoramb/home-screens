@@ -4,9 +4,21 @@ import { readMealData, updateMealData, prunePlan, type MealData } from '@/lib/me
 import { readConfigCached } from '@/lib/config-cache';
 import { withAuth, withDisplayAuth, guardEmptyOverwrite, assertOptionalArrays, parseJsonBody } from '@/lib/api-utils';
 import { normalizeMealSettings } from '@/lib/meal-constants';
+import { mealRevision } from '@/lib/meal-revision';
 import { DEFAULT_TIME_FORMAT } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * The stored data as a client sees it: the internal migration marker never
+ * goes on the wire (client state must not grow a dependency on migration
+ * machinery), and the revision a save has to quote is always present.
+ */
+function toWire(data: MealData) {
+  const { timeFormatLegacyStripped: _marker, ...rest } = data;
+  void _marker;
+  return { ...rest, revision: mealRevision(data) };
+}
 
 /**
  * GET /api/meals/data — return saved meals + plan + grocery checked state + shared settings.
@@ -20,15 +32,11 @@ export const dynamic = 'force-dynamic';
  * in-process writes invalidate it, so displays polling every 60s share one
  * config parse without serving stale or defaulted settings.
  *
- * The internal `timeFormatLegacyStripped` migration marker never goes on the
- * wire — client state must not grow a dependency on migration machinery.
  */
 export const GET = withDisplayAuth(async () => {
   const [data, config] = await Promise.all([readMealData(), readConfigCached()]);
-  const { timeFormatLegacyStripped: _marker, ...rest } = data;
-  void _marker;
   return NextResponse.json({
-    ...rest,
+    ...toWire(data),
     globalTimeFormat: config.settings?.timeFormat ?? DEFAULT_TIME_FORMAT,
   });
 }, 'Failed to read meal data');
@@ -44,6 +52,12 @@ export const GET = withDisplayAuth(async () => {
  *
  * Required: at least one writable field must be present (otherwise the request
  * is a no-op and returns 400). Each present field must be a valid type.
+ *
+ * A write of `savedMeals` or `plan` replaces that array whole, so it has to
+ * quote the `revision` it was built from (see `mealRevision`). One built from
+ * an older copy comes back as a 409 carrying what is stored now, with
+ * `reason: 'revision'` so the client can tell it from the empty-overwrite
+ * guard's 409, re-apply its edit to the fresh copy and try again.
  *
  * The empty-overwrite guard runs whenever `savedMeals` OR `plan` is being
  * written — previously it only ran when both were present, which let a
@@ -63,9 +77,10 @@ export const PUT = withAuth(async (req: NextRequest) => {
     groceryChecked?: MealData['groceryChecked'];
     settings?: unknown;
     force?: boolean;
+    revision?: unknown;
   }>(req);
   if (body instanceof NextResponse) return body;
-  const { savedMeals, plan, groceryChecked, settings, force } = body;
+  const { savedMeals, plan, groceryChecked, settings, force, revision } = body;
 
   const arrayCheck = assertOptionalArrays(body, ['savedMeals', 'plan', 'groceryChecked']);
   if (arrayCheck) return arrayCheck;
@@ -83,10 +98,30 @@ export const PUT = withAuth(async (req: NextRequest) => {
     );
   }
 
+  const replacesArrays = hasSavedMeals || hasPlan;
+  if (replacesArrays && (typeof revision !== 'string' || !revision)) {
+    return NextResponse.json(
+      { error: 'Reopen the meal planner and try again.' },
+      { status: 400 },
+    );
+  }
+
   // Atomic read-modify-write — the mutator sees the most recent on-disk state
   // and no other writer can land between its read and its write. Throwing a
   // Response from inside short-circuits to the caller (withAuth re-throws).
   const data = await updateMealData(async (existing) => {
+    // The revision check shares the queue with the write, so a save that lands
+    // between this client's read and its write is seen rather than clobbered.
+    if (replacesArrays && revision !== mealRevision(existing)) {
+      throw NextResponse.json(
+        {
+          error: 'Somebody else changed the meals. Your change was not saved; try it again.',
+          reason: 'revision',
+          ...toWire(existing),
+        },
+        { status: 409 },
+      );
+    }
     // Empty-overwrite guard: fires whenever savedMeals OR plan is being
     // written as an empty array against non-empty existing data. We build
     // the projected incoming/existing pairs based on which fields are
@@ -120,8 +155,11 @@ export const PUT = withAuth(async (req: NextRequest) => {
     };
   });
 
-  // Keep the internal migration marker off the wire (see GET).
-  const { timeFormatLegacyStripped: _marker, ...rest } = data;
-  void _marker;
-  return NextResponse.json(rest);
+  // The same shape as GET, so a client can adopt the response as its next
+  // snapshot and hand it to the display cache without asking again.
+  const config = await readConfigCached();
+  return NextResponse.json({
+    ...toWire(data),
+    globalTimeFormat: config.settings?.timeFormat ?? DEFAULT_TIME_FORMAT,
+  });
 }, 'Failed to update meal data');

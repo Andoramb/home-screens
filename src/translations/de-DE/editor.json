@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "Jemand anderes hat die Aufgaben geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
     "title": "Aufgabentafel",
     "subtitleMembersChores": "{members} Mitglieder · {chores} Aufgaben",
     "loadError": "Aufgaben konnten nicht geladen werden. Änderungen werden nicht gespeichert.",

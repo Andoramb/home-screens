@@ -327,6 +327,35 @@ test('a plan edit leaves a meal added elsewhere alone', async ({ page, request }
     .toEqual({ names: ['Late Addition', 'Spaghetti Night'], dinners: 1 });
 });
 
+/* Two phones planning the same week. Both loaded an empty plan; the other
+ * planned lunch first. This phone's dinner is built from its older copy, so
+ * the hub refuses it with the current plan, and the phone re-applies the
+ * dinner on top of that: both slots survive, nobody re-does anything. */
+test('a slot planned from an older copy lands next to what another phone planned since', async ({ page, request }) => {
+  await seedMeals(request, {
+    savedMeals: [{ id: 'meal-1', name: 'Spaghetti Night', emoji: '🍝' }],
+    plan: [],
+    force: true,
+  });
+  await page.goto('/remote');
+  await openMeals(page);
+  await page.getByRole('button', { name: 'Plan', exact: true }).click();
+
+  // The other phone saves first; its write moves the revision this page holds.
+  await seedMeals(request, { plan: [{ slot: 'lunch', mealId: 'meal-1', date: isoDate(0) }] });
+
+  await page.getByRole('button', { name: /Plan Dinner for/ }).first().click();
+  await page.getByRole('button', { name: /Spaghetti Night/ }).click();
+
+  await expect
+    .poll(async () => {
+      const plan = (await getMealData(request)).plan.filter((p) => p.mealId === 'meal-1');
+      return plan.map((p) => p.slot).sort();
+    })
+    .toEqual(['dinner', 'lunch']);
+  await expect(page.getByText(/Failed to save|Network error/)).toHaveCount(0);
+});
+
 test('a library edit leaves a meal planned elsewhere alone', async ({ page, request }) => {
   await seedMeals(request, {
     savedMeals: [{ id: 'meal-edit', name: 'Taco Tuesday', emoji: '🌮' }],

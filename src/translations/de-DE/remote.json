@@ -78,6 +78,7 @@
     "customColorTitle": "Eigene Farbe"
   },
   "choresTab": {
+    "changedElsewhere": "Jemand anderes hat die Aufgaben geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
     "header": "Aufgaben",
     "subNav": {
       "today": "Heute",
@@ -412,6 +413,7 @@
     "showingNow": "({count} gerade sichtbar)"
   },
   "rewardsView": {
+    "changedElsewhere": "Jemand anderes hat die Belohnungen geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
     "nav": {
       "redeem": "Einlösen",
       "rewards": "Liste bearbeiten",

@@ -8,18 +8,27 @@ import {
   debitPoints,
 } from '@/lib/reward-data';
 import { withFamilyData, validateMemberReferences } from '@/lib/family-api';
+import { contentRevision } from '@/lib/content-revision';
 import type { RewardDefinition } from '@/lib/reward-data';
 
 export const dynamic = 'force-dynamic';
 
-/** PUT — update reward definitions (parents only). */
+/**
+ * PUT — replace the reward definitions (parents only). The body quotes the
+ * `revision` its list was built from (`GET /api/rewards` or the previous
+ * save); one built from an older copy comes back as a 409 with
+ * `reason: 'revision'` and the current list rather than overwriting it.
+ */
 export const PUT = withAuth(async (request: NextRequest) => withFamilyData(async () => {
-  const body = await parseJsonBody<{ rewards: RewardDefinition[]; force?: boolean }>(request);
+  const body = await parseJsonBody<{ rewards: RewardDefinition[]; force?: boolean; revision?: unknown }>(request);
   if (body instanceof NextResponse) return body;
-  const { rewards, force } = body;
+  const { rewards, force, revision } = body;
 
   const invalid = assertRequiredArrays(body, ['rewards']);
   if (invalid) return invalid;
+  if (typeof revision !== 'string' || !revision) {
+    return NextResponse.json({ error: 'Reload the page and try again.' }, { status: 400 });
+  }
 
   if (rewards.some((reward) => !reward || !Array.isArray(reward.memberIds))) {
     return NextResponse.json({ error: 'Each reward needs a member list.' }, { status: 400 });
@@ -27,16 +36,24 @@ export const PUT = withAuth(async (request: NextRequest) => withFamilyData(async
   const references = await validateMemberReferences(rewards.flatMap((reward) => reward.memberIds));
   if (references) return references;
 
-  const guard = await guardEmptyOverwrite(
-    [rewards],
-    async () => { const d = await readRewardData(); return [d.rewards]; },
-    'reward',
-    force,
-  );
+  // A list that cannot be read has nothing to compare against; the write is
+  // what repairs it, and the empty guard below keeps its own reading.
+  let current: RewardDefinition[] | null = null;
+  try { current = (await readRewardData()).rewards; } catch { /* unreadable */ }
+  if (current && revision !== contentRevision(current)) {
+    return NextResponse.json({
+      error: 'Somebody else changed the rewards. Reload the page and make your change again.',
+      reason: 'revision',
+      rewards: current,
+      revision: contentRevision(current),
+    }, { status: 409 });
+  }
+
+  const guard = await guardEmptyOverwrite([rewards], async () => [current ?? []], 'reward', force);
   if (guard) return guard;
 
   const result = await updateRewardDefinitions(rewards);
-  return NextResponse.json({ rewards: result.rewards });
+  return NextResponse.json({ rewards: result.rewards, revision: contentRevision(result.rewards) });
 }), 'Failed to write reward data');
 
 /** POST — manual balance adjustment (parents only). */

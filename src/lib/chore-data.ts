@@ -2,6 +2,8 @@ import type { ChoreDefinition } from '@/types/config';
 import { createJsonStore } from './json-store';
 import { settleFamilyMigration } from './family-data';
 import { withDataTransaction } from './data-transaction';
+import { contentRevision } from './content-revision';
+import type { ChoreSnapshot } from './chore-client';
 
 export interface ChoreData {
   /** Chore definitions (see ChoreDefinition) */
@@ -25,3 +27,9 @@ export function readChoreData(): Promise<ChoreData> {
   });
 }
 export const writeChoreData = store.write;
+
+/** What `GET /api/chores/data` and the server-rendered phone pages hand out. */
+export async function readChoreSnapshot(): Promise<ChoreSnapshot> {
+  const { chores } = await readChoreData();
+  return { chores, revision: contentRevision(chores) };
+}

@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "Outra pessoa alterou as tarefas. Sua última alteração não foi salva. Tente de novo.",
     "title": "Quadro de tarefas",
     "subtitleMembersChores": "{members} membros · {chores} tarefas",
     "loadError": "Falha ao carregar dados das tarefas. Alterações não serão salvas.",

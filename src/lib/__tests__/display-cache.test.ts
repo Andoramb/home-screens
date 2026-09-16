@@ -351,6 +351,41 @@ describe('displayCache', () => {
       expect(displayCache.get('/api/test')).toBeNull();
     });
 
+    it('does not let a prefetch whose body was still downloading during replace() store it', async () => {
+      let resolveBody!: () => void;
+      const bodyReady = new Promise<void>((r) => { resolveBody = r; });
+      vi.stubGlobal('fetch', vi.fn(async () => ({
+        ok: true,
+        json: () => bodyReady.then(() => ({ revision: 'before-save' })),
+      })));
+
+      const prefetchPromise = displayCache.prefetch('/api/todo/lists', 60_000);
+      await Promise.resolve(); // headers have arrived, the body has not
+      displayCache.replace('/api/todo/lists', { revision: 'saved' }, 60_000);
+      resolveBody();
+      await prefetchPromise;
+
+      expect(displayCache.get('/api/todo/lists')?.data).toEqual({ revision: 'saved' });
+    });
+
+    it('does not let a prefetch that was out during replace() store its older answer', async () => {
+      let resolveFetch!: () => void;
+      const fetchPromise = new Promise<void>((r) => { resolveFetch = r; });
+      vi.stubGlobal('fetch', vi.fn(() =>
+        fetchPromise.then(() => ({
+          ok: true,
+          json: () => Promise.resolve({ revision: 'before-save' }),
+        })),
+      ));
+
+      const prefetchPromise = displayCache.prefetch('/api/todo/lists', 60_000);
+      displayCache.replace('/api/todo/lists', { revision: 'saved' }, 60_000);
+      resolveFetch();
+      await prefetchPromise;
+
+      expect(displayCache.get('/api/todo/lists')?.data).toEqual({ revision: 'saved' });
+    });
+
     it('allows new fetches after clear()', async () => {
       stubFetch({ fresh: true });
 

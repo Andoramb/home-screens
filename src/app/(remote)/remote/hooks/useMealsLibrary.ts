@@ -8,7 +8,7 @@ import {
   removeSavedMeal,
   toggleSavedMealFavorite,
 } from '@/lib/meal-plan-actions';
-import type { MealDataWrite } from '@/lib/meal-write';
+import type { MealEdit } from '@/lib/meal-client';
 import { useTranslate } from '@/i18n';
 import { useMealForm } from './useMealForm';
 import type { MealsConfirmAction } from '../components/meals-shared';
@@ -18,7 +18,7 @@ interface MealsLibraryParams {
   setSavedMeals: Dispatch<SetStateAction<SavedMeal[]>>;
   plan: PlannedMeal[];
   setPlan: Dispatch<SetStateAction<PlannedMeal[]>>;
-  saveData: (changes: MealDataWrite) => Promise<boolean>;
+  saveData: (edit: MealEdit) => Promise<boolean>;
   saving: boolean;
   setSaving: Dispatch<SetStateAction<boolean>>;
   setSaveError: Dispatch<SetStateAction<string | null>>;
@@ -61,14 +61,12 @@ export function useMealsLibrary({
     setSaving(true);
     setSaveError(null);
 
-    const newMeals = upsertSavedMeal(savedMeals, form.buildMealData());
-
-    const ok = await saveData({ savedMeals: newMeals });
+    const meal = form.buildMealData();
+    // Not optimistic: the form stays open until the hub has the meal, and
+    // `saveData` adopts the saved library on success.
+    const ok = await saveData((c) => ({ savedMeals: upsertSavedMeal(c.savedMeals, meal) }));
     setSaving(false);
-    if (ok) {
-      setSavedMeals(newMeals);
-      form.setEditingMeal(null);
-    }
+    if (ok) form.setEditingMeal(null);
   };
 
   const deleteMeal = () => {
@@ -85,15 +83,14 @@ export function useMealsLibrary({
         form.setEditingMeal(null);
         setConfirmAction(null);
         // Both halves: deleting a meal also prunes the plan entries for it.
-        await saveData(next);
+        await saveData((c) => removeSavedMeal(c.savedMeals, c.plan, mealToDelete.id));
       },
     });
   };
 
   const toggleFavorite = async (mealId: string) => {
-    const newMeals = toggleSavedMealFavorite(savedMeals, mealId);
-    setSavedMeals(newMeals);
-    await saveData({ savedMeals: newMeals });
+    setSavedMeals(toggleSavedMealFavorite(savedMeals, mealId));
+    await saveData((c) => ({ savedMeals: toggleSavedMealFavorite(c.savedMeals, mealId) }));
   };
 
   const filteredMeals = useMemo(() => {

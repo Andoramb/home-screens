@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import type { SavedMeal, PlannedMeal, MealSettings, TimeFormat } from '@/types/config';
-import { DEFAULT_MEAL_SETTINGS, normalizeMealSettings } from '@/lib/meal-constants';
-import { mealWriteBody, type MealDataWrite } from '@/lib/meal-write';
+import { DEFAULT_MEAL_SETTINGS } from '@/lib/meal-constants';
+import { MealClientError, MealSession, type MealEdit, type MealSnapshot } from '@/lib/meal-client';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 
 export function useMealsData() {
@@ -19,59 +19,56 @@ export function useMealsData() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // True once a GET has actually delivered the stored data. An empty array
-  // only means "the user emptied it" after that; before it, this hook is
-  // holding empty state it never received. See `mealWriteBody`.
-  const loadedRef = useRef(false);
+  // Loads and saves share one session (`lib/meal-client.ts`): it keeps the
+  // copy the hub last answered with, quotes its revision on every save, and
+  // re-applies an edit to the hub's newer copy when somebody else saved first.
+  const [session] = useState(() => new MealSession(editorFetch));
+
+  const adoptData = useCallback((snapshot: MealSnapshot) => {
+    setSavedMeals(snapshot.savedMeals);
+    setPlan(snapshot.plan);
+    setGroceryChecked(snapshot.groceryChecked);
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await editorFetch('/api/meals/data');
-      if (!res.ok) return;
-      const data = await res.json();
-      loadedRef.current = true;
-      setSavedMeals(Array.isArray(data.savedMeals) ? data.savedMeals : []);
-      setPlan(Array.isArray(data.plan) ? data.plan : []);
-      setGroceryChecked(Array.isArray(data.groceryChecked) ? data.groceryChecked : []);
-      // Defensive client-side normalization — protects against partial/stale API
-      // responses (e.g. an old server returning only some fields, or a proxy
-      // dropping the settings block) that would otherwise crash subsequent renders.
-      setSettings(normalizeMealSettings(data.settings));
-      setGlobalTimeFormat(data.globalTimeFormat === '24h' ? '24h' : '12h');
+      const snapshot = await session.load();
+      // A load answered while a save is out is older than that save's answer.
+      if (!session.idle) return;
+      adoptData(snapshot);
+      setSettings(snapshot.settings);
+      setGlobalTimeFormat(snapshot.globalTimeFormat);
     } catch {
       /* silent */
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [session, adoptData]);
 
   /**
-   * Partial write — pass only the half the action actually changed.
+   * Save one edit, written as a function of the copy it applies to (see
+   * `MealEdit`). Return only the half the action changed: assigning a meal to
+   * a slot returns `{ plan }`, editing the library `{ savedMeals }`, deleting a
+   * meal both. The API preserves omitted fields, so an open editor modal and
+   * this phone cannot overwrite each other's untouched half; the revision the
+   * session quotes stops a stale copy of the same half replacing a newer one.
    *
-   * Assigning a meal to a slot sends `{ plan }`; editing the library sends
-   * `{ savedMeals }`; deleting a meal sends both, because it also prunes the
-   * plan entries pointing at it. The API preserves omitted fields, so an open
-   * editor modal and this phone can no longer overwrite each other's untouched
-   * half.
+   * Callers apply their optimistic state first. Once the last queued save is
+   * answered, the hub's copy replaces it; on failure the last loaded copy
+   * does, so the tab never keeps showing an edit that was not saved.
    */
-  const saveData = useCallback(async (changes: MealDataWrite): Promise<boolean> => {
+  const saveData = useCallback(async (edit: MealEdit): Promise<boolean> => {
     try {
-      const res = await editorFetch('/api/meals/data', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mealWriteBody(changes, loadedRef.current)),
-      });
-      if (!res.ok) {
-        setSaveError('Failed to save. Please try again.');
-        return false;
-      }
+      const saved = await session.save(edit);
+      if (session.idle) adoptData(saved);
       return true;
     } catch (err) {
       if (isSessionExpired(err)) return false;
-      setSaveError('Network error. Please try again.');
+      setSaveError(err instanceof MealClientError ? 'Failed to save. Please try again.' : 'Network error. Please try again.');
+      if (session.current && session.idle) adoptData(session.current);
       return false;
     }
-  }, []);
+  }, [session, adoptData]);
 
   /**
    * Settings-only PUT — does not round-trip savedMeals/plan/groceryChecked.

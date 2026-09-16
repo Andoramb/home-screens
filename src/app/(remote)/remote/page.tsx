@@ -1,5 +1,5 @@
 import { readConfig } from '@/lib/config';
-import { readChoreData } from '@/lib/chore-data';
+import { readChoreSnapshot } from '@/lib/chore-data';
 import { getAllScreens, getDisplayProfiles } from '@/lib/display-filter';
 import { resolveChoreModuleConfig } from '@/lib/chore-module-config';
 import RemoteClient from './RemoteClient';
@@ -53,7 +53,7 @@ export default async function RemotePage() {
   // Read shared chore data; assemble a ChoreChartConfig-compatible object.
   // Show chores tab whenever a chore module exists on any display (even with
   // empty data) so users can manage members/chores from mobile.
-  const choreData = await readChoreData();
+  const choreData = await readChoreSnapshot();
   const choreConfig = resolveChoreModuleConfig(config);
 
   // Detect meal and photo modules across every display.

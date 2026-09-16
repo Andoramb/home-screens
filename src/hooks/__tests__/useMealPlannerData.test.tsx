@@ -24,14 +24,19 @@ const SERVER_PAYLOAD = {
   savedMeals: [{ id: 'meal-1', name: 'Tacos' }],
   plan: [{ id: 'plan-1', mealId: 'meal-1' }],
   settings: { slots: [] },
+  revision: 'rev-1',
 };
 
+const ok = (json: unknown) => ({ ok: true, status: 200, json: async () => json });
+
 function mockFetchOk() {
-  return vi.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: async () => SERVER_PAYLOAD,
-  });
+  return vi.fn().mockResolvedValue(ok(SERVER_PAYLOAD));
+}
+
+function putBodies(fetchMock: ReturnType<typeof vi.fn>): Record<string, unknown>[] {
+  return fetchMock.mock.calls
+    .filter(([, opts]) => (opts as RequestInit | undefined)?.method === 'PUT')
+    .map(([, opts]) => JSON.parse((opts as RequestInit).body as string));
 }
 
 beforeEach(() => {
@@ -106,9 +111,7 @@ describe('useMealPlannerData', () => {
   it('rolls back optimistic state and surfaces an error when the PUT fails', async () => {
     const fetchMock = vi
       .fn()
-      // initial GET
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
-      // failing PUT
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
       .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -118,7 +121,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: meals('new', 'new-2') });
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('new', 'new-2') }));
     });
 
     expect(result.current.saveError).not.toBeNull();
@@ -129,7 +132,7 @@ describe('useMealPlannerData', () => {
   it('rolls back and surfaces an error when the PUT throws', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
       .mockRejectedValueOnce(new Error('network down'));
     vi.stubGlobal('fetch', fetchMock);
 
@@ -139,7 +142,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: meals('new') });
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('new') }));
     });
 
     expect(result.current.saveError).not.toBeNull();
@@ -149,7 +152,7 @@ describe('useMealPlannerData', () => {
   it('does not flash an error when the session expired (a login redirect is landing)', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
       // editorFetch turns a 401 into a thrown "Session expired" and redirects
       .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) });
     vi.stubGlobal('fetch', fetchMock);
@@ -160,7 +163,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: meals('new') });
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('new') }));
     });
 
     expect(result.current.saveError).toBeNull();
@@ -171,11 +174,12 @@ describe('useMealPlannerData', () => {
       savedMeals: [{ id: 'server-1' }],
       plan: [{ id: 'server-plan' }],
       settings: { slots: ['dinner'] },
+      revision: 'rev-2',
     };
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => reconciled });
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce(ok(reconciled));
     vi.stubGlobal('fetch', fetchMock);
 
     const { result } = renderHook(() =>
@@ -184,19 +188,19 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: meals('local') });
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('local') }));
     });
 
     expect(result.current.mealData.savedMeals).toEqual(reconciled.savedMeals);
-    expect(result.current.mealData.settings).toEqual(reconciled.settings);
+    expect(result.current.mealData.settings).toEqual(expect.objectContaining({ enabledSlots: expect.any(Array) }));
     expect(result.current.saveError).toBeNull();
   });
 
   it('omits settings from the PUT body so a concurrent settings edit is not clobbered', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD));
     vi.stubGlobal('fetch', fetchMock);
 
     const { result } = renderHook(() =>
@@ -205,14 +209,14 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: meals('x') });
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('x') }));
     });
 
-    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
-    expect(putCall).toBeDefined();
-    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    const [body] = putBodies(fetchMock);
+    expect(body).toBeDefined();
     expect(body).not.toHaveProperty('settings');
     expect(body).toHaveProperty('savedMeals');
+    expect(body.revision).toBe('rev-1');
   });
 
   /* ─── partial writes ─────────────────────
@@ -224,8 +228,8 @@ describe('useMealPlannerData', () => {
   it('sends only the field the modal changed', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD));
     vi.stubGlobal('fetch', fetchMock);
 
     const { result } = renderHook(() =>
@@ -234,11 +238,10 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ plan: entries('plan-2') });
+      await result.current.handleModalUpdate(() => ({ plan: entries('plan-2') }));
     });
 
-    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
-    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    const [body] = putBodies(fetchMock);
     expect(body).not.toHaveProperty('savedMeals');
     expect(body.plan).toEqual([{ id: 'plan-2' }]);
     // The panel still shows both halves — only the request is narrowed.
@@ -248,8 +251,8 @@ describe('useMealPlannerData', () => {
   it('keeps showing the untouched half while a partial write is in flight', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD));
     vi.stubGlobal('fetch', fetchMock);
 
     const { result } = renderHook(() =>
@@ -258,7 +261,7 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ savedMeals: meals('m-1', 'm-2') });
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('m-1', 'm-2') }));
     });
 
     expect(result.current.mealData.plan).toEqual(SERVER_PAYLOAD.plan);
@@ -268,15 +271,13 @@ describe('useMealPlannerData', () => {
    * The server refuses an empty savedMeals/plan against non-empty stored data
    * unless the caller confirms. A combined write slipped past that whenever
    * either half was non-empty; a partial write no longer does, so clearing the
-   * last planned week has to say it meant it. Only a panel that loaded the
-   * stored data first is allowed to: an empty array from a panel whose GET
-   * failed is data it never had.
+   * last planned week has to say it meant it.
    */
-  it('confirms a deliberate clear once the stored data has loaded', async () => {
+  it('confirms a deliberate clear of loaded data', async () => {
     const fetchMock = vi
       .fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD })
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD));
     vi.stubGlobal('fetch', fetchMock);
 
     const { result } = renderHook(() =>
@@ -285,19 +286,24 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(result.current.mealData.plan).toHaveLength(1));
 
     await act(async () => {
-      await result.current.handleModalUpdate({ plan: [] });
+      await result.current.handleModalUpdate(() => ({ plan: [] }));
     });
 
-    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
-    const body = JSON.parse((putCall![1] as RequestInit).body as string);
+    const [body] = putBodies(fetchMock);
     expect(body.force).toBe(true);
   });
 
-  it('does not confirm an empty write from a panel whose load failed', async () => {
+  /* ─── nothing loaded, nothing to edit ─────────────────────
+   * A panel whose GET failed holds empty arrays it never received. It used to
+   * treat an error body as a loaded empty library, after which adding one meal
+   * sent `savedMeals: [thatMeal]`: non-empty, so the guard let it replace the
+   * whole stored library. No load, no write.
+   */
+  it('refuses every write, not just an empty one, when the load answered with an error', async () => {
     const fetchMock = vi
       .fn()
-      .mockRejectedValueOnce(new Error('network down'))
-      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => SERVER_PAYLOAD });
+      .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({ error: 'Cannot read meals' }) })
+      .mockResolvedValue(ok(SERVER_PAYLOAD));
     vi.stubGlobal('fetch', fetchMock);
 
     const { result } = renderHook(() =>
@@ -306,11 +312,71 @@ describe('useMealPlannerData', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalled());
 
     await act(async () => {
-      await result.current.handleModalUpdate({ plan: [] });
+      await result.current.handleModalUpdate((c) => ({ savedMeals: [...c.savedMeals, ...meals('only-one')] }));
+    });
+    await act(async () => {
+      await result.current.handleModalUpdate(() => ({ plan: [] }));
     });
 
-    const putCall = fetchMock.mock.calls.find(([, opts]) => opts?.method === 'PUT');
-    const body = JSON.parse((putCall![1] as RequestInit).body as string);
-    expect(body).not.toHaveProperty('force');
+    expect(putBodies(fetchMock)).toEqual([]);
+    expect(result.current.saveError).not.toBeNull();
+    expect(result.current.mealData.savedMeals).toEqual([]);
+  });
+
+  it('refuses every write when the load failed on the network', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValue(ok(SERVER_PAYLOAD));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    await act(async () => {
+      await result.current.handleModalUpdate(() => ({ savedMeals: meals('only-one') }));
+    });
+
+    expect(putBodies(fetchMock)).toEqual([]);
+    expect(result.current.saveError).not.toBeNull();
+  });
+
+  /* ─── somebody else saved first ─────────────────────
+   * The phone assigned Tuesday's dinner while this modal was open. The modal's
+   * slot assignment quotes the revision it loaded, the hub answers 409 with
+   * the phone's plan, and the edit is re-applied to that: both slots survive.
+   */
+  it('re-applies the edit to the hub copy on a revision conflict', async () => {
+    const theirs = {
+      ...SERVER_PAYLOAD,
+      plan: [...SERVER_PAYLOAD.plan, { id: 'phone-added' }],
+      revision: 'rev-2',
+    };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce({ ok: false, status: 409, json: async () => ({ reason: 'revision', error: 'Somebody else changed the meals.', ...theirs }) })
+      .mockImplementationOnce(async (_url: string, opts: RequestInit) => {
+        const body = JSON.parse(opts.body as string);
+        return ok({ ...theirs, plan: body.plan, revision: 'rev-3' });
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.plan).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.handleModalUpdate((c) => ({ plan: [...c.plan, ...entries('modal-added')] }));
+    });
+
+    const bodies = putBodies(fetchMock);
+    expect(bodies.map((b) => b.revision)).toEqual(['rev-1', 'rev-2']);
+    expect(bodies[1].plan).toEqual([{ id: 'plan-1', mealId: 'meal-1' }, { id: 'phone-added' }, { id: 'modal-added' }]);
+    expect(result.current.mealData.plan).toEqual([{ id: 'plan-1', mealId: 'meal-1' }, { id: 'phone-added' }, { id: 'modal-added' }]);
+    expect(result.current.saveError).toBeNull();
   });
 });

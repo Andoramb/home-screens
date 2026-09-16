@@ -16,6 +16,7 @@ vi.mock('@/lib/reward-data', () => ({ readRewardData: vi.fn(), updateRewardDefin
 import { POST, PUT } from '../route';
 import { readFamilyData } from '@/lib/family-data';
 import { readRewardData, updateRewardDefinitions, creditPoints, debitPoints } from '@/lib/reward-data';
+import { contentRevision } from '@/lib/content-revision';
 
 const reward = { id: 'r1', name: 'Movie', emoji: '', description: '', cost: 2, memberIds: ['m1'], enabled: true };
 const data = { rewards: [reward], balances: { m1: 5 }, redemptions: [] };
@@ -32,25 +33,47 @@ beforeEach(() => {
   vi.mocked(debitPoints).mockResolvedValue(data);
 });
 
+/** The revision a client that loaded the current mock would quote. */
+const revision = contentRevision(data.rewards);
+
 describe('/api/rewards/data family references', () => {
   it('saves reward assignments to current family members', async () => {
-    expect((await PUT(request('PUT', { rewards: [reward] }))).status).toBe(200);
+    const res = await PUT(request('PUT', { rewards: [reward], revision }));
+    expect(res.status).toBe(200);
     expect(updateRewardDefinitions).toHaveBeenCalledWith([reward]);
+    expect((await res.json()).revision).toBe(contentRevision(data.rewards));
   });
 
   it('rejects a stale reward assignment without changing definitions', async () => {
-    expect((await PUT(request('PUT', { rewards: [{ ...reward, memberIds: ['deleted'] }] }))).status).toBe(409);
+    expect((await PUT(request('PUT', { rewards: [{ ...reward, memberIds: ['deleted'] }], revision }))).status).toBe(409);
     expect(updateRewardDefinitions).not.toHaveBeenCalled();
   });
 
   it('rejects malformed member lists before a store write', async () => {
-    expect((await PUT(request('PUT', { rewards: [{ ...reward, memberIds: 'm1' }] }))).status).toBe(400);
+    expect((await PUT(request('PUT', { rewards: [{ ...reward, memberIds: 'm1' }], revision }))).status).toBe(400);
     expect(updateRewardDefinitions).not.toHaveBeenCalled();
   });
 
   it.each([4, -4])('adjusts an existing member balance by %s', async (amount) => {
     expect((await POST(request('POST', { memberId: 'm1', amount }))).status).toBe(200);
     expect(amount > 0 ? creditPoints : debitPoints).toHaveBeenCalledWith('m1', 4);
+  });
+
+  it('refuses a write that quotes no revision', async () => {
+    expect((await PUT(request('PUT', { rewards: [reward] }))).status).toBe(400);
+    expect(updateRewardDefinitions).not.toHaveBeenCalled();
+  });
+
+  /* Two phones both loaded [reward]; the second to save must not drop what
+   * the first added. */
+  it('answers a write built from an older copy with 409 and the current list', async () => {
+    const res = await PUT(request('PUT', { rewards: [], force: true, revision: contentRevision([]) }));
+    const json = await res.json();
+    expect(res.status).toBe(409);
+    expect(json.reason).toBe('revision');
+    expect(json.rewards).toEqual(data.rewards);
+    expect(json.revision).toBe(revision);
+    expect(updateRewardDefinitions).not.toHaveBeenCalled();
   });
 
   it('cannot recreate a removed member balance', async () => {

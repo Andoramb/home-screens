@@ -96,7 +96,8 @@ test.describe('data routes reject malformed bodies', () => {
     expect((await res.json()).error).toBe('rewards must be an array');
 
     // A well-formed follow-up write still succeeds (route stays functional).
-    const ok = await request.put('/api/rewards/data', { data: { rewards: [] } });
+    const { revision } = await (await request.get('/api/rewards')).json() as { revision: string };
+    const ok = await request.put('/api/rewards/data', { data: { rewards: [], revision } });
     expect(ok.ok()).toBe(true);
   });
 

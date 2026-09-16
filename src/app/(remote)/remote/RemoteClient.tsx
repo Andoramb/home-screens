@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import type { DisplayStatus } from '@/lib/display-commands';
 import type { ChoreChartConfig } from '@/types/config';
-import type { ChoreData } from '@/lib/chore-data';
+import type { ChoreSnapshot } from '@/lib/chore-client';
 import { useTranslate } from '@/i18n';
 import { useRemoteStatus, useAllDisplayStatuses, usePendingCommand } from './hooks';
 import {
@@ -50,7 +50,7 @@ interface RemoteInitialData {
   activeProfile: string | undefined;
   choreConfig: ChoreChartConfig | null;
   /** Household members and chores from `data/chores.json`, not module config. */
-  choreData: ChoreData;
+  choreData: ChoreSnapshot;
   /** A To-Do module exists on some screen, so the Lists tab has somewhere to show. */
   hasLists: boolean;
   hasMeals: boolean;

@@ -40,6 +40,12 @@ class DisplayDataCache {
   private cache = new Map<string, CacheEntry>();
   private inflight = new Map<string, Promise<void>>();
   private generation = 0;
+  /**
+   * Per-URL count of `replace` calls. A prefetch that was already out when a
+   * write published its response would otherwise store its older answer over
+   * the newer one; it compares this before storing.
+   */
+  private published = new Map<string, number>();
   private _hits = 0;
   private _misses = 0;
   private _evictions = 0;
@@ -78,8 +84,13 @@ class DisplayDataCache {
    * re-asking, and a bare `set` would leave subscribers on their old copy
    * until each one's next poll. This does neither — subscribers adopt the
    * data on the spot and nothing goes over the wire.
+   *
+   * This is the one publication path for a write's response. `useFetchData`
+   * listens for the event and also supersedes any shared request still out
+   * for the URL, so a poll that started before the write cannot undo it.
    */
   replace(url: string, data: unknown, ttlMs: number): void {
+    this.published.set(url, (this.published.get(url) ?? 0) + 1);
     this.set(url, data, ttlMs);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
@@ -134,6 +145,7 @@ class DisplayDataCache {
     this.generation++;
     this.cache.clear();
     this.inflight.clear();
+    this.published.clear();
     this._hits = 0;
     this._misses = 0;
     this._evictions = 0;
@@ -176,10 +188,13 @@ class DisplayDataCache {
 
   private async doFetch(url: string, ttlMs: number): Promise<void> {
     const gen = this.generation;
+    const published = this.published.get(url) ?? 0;
     try {
       const res = await displayFetch(url);
-      if (res.ok && gen === this.generation) {
-        const data = await res.json();
+      if (!res.ok) return;
+      const data = await res.json();
+      // Checked after the body too: a write can publish while it downloads.
+      if (gen === this.generation && published === (this.published.get(url) ?? 0)) {
         this.set(url, data, ttlMs);
       }
     } catch (err) {

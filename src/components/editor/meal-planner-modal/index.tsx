@@ -20,6 +20,7 @@ import {
   upsertSavedMeal,
   removeSavedMeal,
   toggleSavedMealFavorite,
+  restorePlanEntries,
 } from '@/lib/meal-plan-actions';
 import { useEditorStore } from '@/stores/editor-store';
 import CRUDModalShell from '@/components/editor/CRUDModalShell';
@@ -29,7 +30,7 @@ import SidebarGrocery from './SidebarGrocery';
 import WeekGrid from './WeekGrid';
 import MealPickerPopover from './MealPickerPopover';
 import type { SavedMeal, PlannedMeal, MealSlotType, MealSettings } from '@/types/config';
-import type { MealDataWrite } from '@/lib/meal-write';
+import type { MealEdit } from '@/lib/meal-client';
 import { useTranslate } from '@/i18n';
 
 // ── Props ────────────────────────────────────────────────────
@@ -41,11 +42,13 @@ interface MealPlannerModalProps {
   settings: MealSettings;
   accentColor: string;
   /**
-   * Persist a change. Pass only the half that changed — the store preserves
-   * whatever is omitted, so an unchanged field sent here would overwrite an
-   * edit another surface made in the meantime.
+   * Persist a change, written as a function of the copy it applies to. Return
+   * only the half that changed — the store preserves whatever is omitted, so
+   * an unchanged field sent here would overwrite an edit another surface made
+   * in the meantime. The function may run again against a newer copy when the
+   * hub reports that somebody else saved first.
    */
-  onUpdate: (updates: MealDataWrite) => void;
+  onUpdate: (edit: MealEdit) => void;
   onClose: () => void;
 }
 
@@ -148,7 +151,7 @@ export default function MealPlannerModal({
   }, [t]);
 
   const saveMeal = useCallback((updated: SavedMeal) => {
-    onUpdate({ savedMeals: upsertSavedMeal(savedMeals, updated) });
+    onUpdate((c) => ({ savedMeals: upsertSavedMeal(c.savedMeals, updated) }));
     if (pendingMeal && updated.id === pendingMeal.id) {
       // First save of a new meal — return to the library once it is persisted
       setPendingMeal(null);
@@ -156,7 +159,7 @@ export default function MealPlannerModal({
       setSidebarTab('library');
     }
     showToast(t('mealPlannerModal.toast.changesSaved'));
-  }, [savedMeals, pendingMeal, onUpdate, showToast, t]);
+  }, [pendingMeal, onUpdate, showToast, t]);
 
   const deleteMeal = useCallback((id: string) => {
     if (pendingMeal && id === pendingMeal.id) {
@@ -167,16 +170,16 @@ export default function MealPlannerModal({
     }
     const deletedMeal = savedMeals.find((m) => m.id === id);
     const deletedEntries = plan.filter((p) => p.mealId === id);
-    const { savedMeals: remainingMeals, plan: remainingPlan } = removeSavedMeal(savedMeals, plan, id);
-    onUpdate({ savedMeals: remainingMeals, plan: remainingPlan });
+    onUpdate((c) => removeSavedMeal(c.savedMeals, c.plan, id));
     setSelectedMealId(null);
     setSidebarTab('library');
     if (deletedMeal) {
       showToast(t('mealPlannerModal.toast.mealDeleted', { name: deletedMeal.name }), () => {
-        onUpdate({
-          savedMeals: [...remainingMeals, deletedMeal],
-          plan: [...remainingPlan, ...deletedEntries],
-        });
+        // Put the meal and its slots back on top of whatever is planned now.
+        onUpdate((c) => ({
+          savedMeals: upsertSavedMeal(c.savedMeals, deletedMeal),
+          plan: restorePlanEntries(c.plan, deletedEntries),
+        }));
         setSelectedMealId(deletedMeal.id);
         setSidebarTab('detail');
       });
@@ -188,55 +191,53 @@ export default function MealPlannerModal({
       setPendingMeal({ ...pendingMeal, isFavorite: !pendingMeal.isFavorite });
       return;
     }
-    onUpdate({ savedMeals: toggleSavedMealFavorite(savedMeals, id) });
-  }, [savedMeals, pendingMeal, onUpdate]);
+    onUpdate((c) => ({ savedMeals: toggleSavedMealFavorite(c.savedMeals, id) }));
+  }, [pendingMeal, onUpdate]);
 
   const setSlotMeal = useCallback((date: string, slot: MealSlotType, mealId: string) => {
-    onUpdate({ plan: assignPlanSlot(plan, date, slot, mealId) });
+    onUpdate((c) => ({ plan: assignPlanSlot(c.plan, date, slot, mealId) }));
     setPickerTarget(null);
-  }, [plan, onUpdate]);
+  }, [onUpdate]);
 
   const setSlotTime = useCallback((date: string, slot: MealSlotType, time: string | undefined) => {
-    const newPlan = setPlanSlotTime(plan, date, slot, time);
-    if (newPlan === plan) return; // no meal in that slot, so no time to set
-    onUpdate({ plan: newPlan });
+    if (setPlanSlotTime(plan, date, slot, time) === plan) return; // no meal in that slot, so no time to set
+    onUpdate((c) => ({ plan: setPlanSlotTime(c.plan, date, slot, time) }));
   }, [plan, onUpdate]);
 
   const removeSlotMeal = useCallback((date: string, slot: MealSlotType) => {
     const removed = plan.find((p) => p.date === date && p.slot === slot);
-    const newPlan = clearPlanSlot(plan, date, slot);
-    onUpdate({ plan: newPlan });
+    onUpdate((c) => ({ plan: clearPlanSlot(c.plan, date, slot) }));
     if (removed) {
       showToast(t('mealPlannerModal.toast.mealRemoved'), () => {
-        onUpdate({ plan: [...newPlan, removed] });
+        onUpdate((c) => ({ plan: restorePlanEntries(c.plan, [removed]) }));
       });
     }
   }, [plan, onUpdate, showToast, t]);
 
   const suggestRandom = useCallback(() => {
     if (savedMeals.length === 0) return;
-    onUpdate({ plan: shufflePlanWeek(plan, savedMeals, slots, viewedWeekDates) });
+    onUpdate((c) => ({ plan: shufflePlanWeek(c.plan, c.savedMeals, slots, viewedWeekDates) }));
     showToast(t('mealPlannerModal.toast.randomSuggested'));
-  }, [savedMeals, slots, plan, viewedWeekDates, onUpdate, showToast, t]);
+  }, [savedMeals, slots, viewedWeekDates, onUpdate, showToast, t]);
 
   const copyLastWeek = useCallback(() => {
     const prevStart = new Date(viewingWeekStart);
     prevStart.setDate(prevStart.getDate() - 7);
     const prevWeekDates = getWeekDatesForRange(toISODate(prevStart), weekStartDay);
-    const newPlan = copyPlanWeek(plan, prevWeekDates, viewedWeekDates);
-    if (newPlan === plan) return; // nothing planned last week
-    onUpdate({ plan: newPlan });
+    if (copyPlanWeek(plan, prevWeekDates, viewedWeekDates) === plan) return; // nothing planned last week
+    onUpdate((c) => ({ plan: copyPlanWeek(c.plan, prevWeekDates, viewedWeekDates) }));
     showToast(t('mealPlannerModal.toast.lastWeekCopied'));
   }, [plan, viewingWeekStart, viewedWeekDates, weekStartDay, onUpdate, showToast, t]);
 
   const clearWeek = useCallback(() => {
     if (weekPlan.length === 0) return;
-    const snapshot = [...plan];
-    onUpdate({ plan: clearPlanWeek(plan, viewedWeekDates) });
+    const cleared = [...weekPlan];
+    onUpdate((c) => ({ plan: clearPlanWeek(c.plan, viewedWeekDates) }));
     showToast(t('mealPlannerModal.toast.weekCleared'), () => {
-      onUpdate({ plan: snapshot });
+      // Restore the cleared week on top of whatever is planned now.
+      onUpdate((c) => ({ plan: restorePlanEntries(c.plan, cleared) }));
     });
-  }, [plan, weekPlan, viewedWeekDates, onUpdate, showToast, t]);
+  }, [weekPlan, viewedWeekDates, onUpdate, showToast, t]);
 
   const hasPreviousWeekEntries = useMemo(() => {
     const prevStart = new Date(viewingWeekStart);

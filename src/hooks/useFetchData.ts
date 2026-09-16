@@ -55,12 +55,6 @@ function sharedFetch(url: string): SharedRequest {
   return request;
 }
 
-/** Publish an authoritative mutation response, superseding pre-mutation reads. */
-export function publishFetchData<T>(url: string, data: T, ttlMs: number): void {
-  displayCache.invalidate(url);
-  displayCache.set(url, data, ttlMs);
-  window.dispatchEvent(new CustomEvent('displaycache:replace', { detail: { url, data, at: Date.now() } }));
-}
 
 /**
  * Fetch + poll a display data URL. Returns [data, error, updatedAt].
@@ -167,9 +161,18 @@ export function useFetchData<T>(
       }
       fetchAndCache();
     }
+    // A write's response is newer than any poll still out for this URL. That
+    // poll may have started before the write and answer after it, and its
+    // older snapshot must not land on top of what the write just published.
+    // Superseding is idempotent, so every subscriber may do it.
     function onReplace(event: Event) {
       const replacement = (event as CustomEvent<{ url: string; data: T; at: number }>).detail;
       if (replacement.url !== url) return;
+      const previous = inFlight.get(url);
+      if (previous) {
+        previous.invalidated = true;
+        inFlight.delete(url);
+      }
       setData(replacement.data);
       setError(null);
       setUpdatedAt(replacement.at);

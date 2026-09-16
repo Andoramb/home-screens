@@ -31,7 +31,7 @@ vi.mock('@/lib/display-fetch', () => ({
   },
 }));
 
-import { useFetchData, publishFetchData } from '../useFetchData';
+import { useFetchData } from '../useFetchData';
 
 beforeEach(() => {
   hubUp = true;
@@ -109,7 +109,7 @@ describe('useFetchData across URL changes', () => {
 
 
 describe('useFetchData after a mutation', () => {
-  it('publishes a mutation response immediately to every subscriber while refresh is pending', async () => {
+  it('hands a write response to every subscriber without asking the hub again', async () => {
     const url = '/api/family';
     responses.set(url, { revision: 'before-save' });
     const { result } = renderHook(() => ({
@@ -117,14 +117,36 @@ describe('useFetchData after a mutation', () => {
       second: useFetchData<{ revision: string }>(url, 60000),
     }));
     await waitFor(() => expect(result.current.first[0]?.revision).toBe('before-save'));
-    let finishRefresh!: (value: unknown) => void;
-    heldRequest = new Promise((resolve) => { finishRefresh = resolve; });
-    act(() => publishFetchData(url, { revision: 'saved' }, 60000));
+    expect(requestCount).toBe(1);
+    act(() => displayCache.replace(url, { revision: 'saved' }, 60000));
     expect(result.current.first[0]?.revision).toBe('saved');
     expect(result.current.second[0]?.revision).toBe('saved');
-    await act(async () => { finishRefresh({ revision: 'even-newer' }); });
-    expect(result.current.first[0]?.revision).toBe('even-newer');
-    expect(result.current.second[0]?.revision).toBe('even-newer');
+    expect(requestCount).toBe(1);
+  });
+
+  /* A poll that started before a write and answers after it carries the
+   * pre-write snapshot. Publishing the write's response has to supersede that
+   * poll, or the wall shows the tick, loses it when the poll lands, and gets
+   * it back on the poll after. */
+  it('does not let a poll that was out during the write undo its published response', async () => {
+    const url = '/api/todo/lists';
+    let releaseOld!: (value: unknown) => void;
+    heldRequest = new Promise((resolve) => { releaseOld = resolve; });
+    const { result } = renderHook(() => ({
+      first: useFetchData<{ revision: string }>(url, 60000),
+      second: useFetchData<{ revision: string }>(url, 60000),
+    }));
+    await waitFor(() => expect(requestCount).toBe(1));
+
+    act(() => displayCache.replace(url, { revision: 'saved' }, 60000));
+    expect(result.current.first[0]?.revision).toBe('saved');
+    expect(result.current.second[0]?.revision).toBe('saved');
+
+    await act(async () => { releaseOld({ revision: 'before-save' }); });
+    expect(result.current.first[0]?.revision).toBe('saved');
+    expect(result.current.second[0]?.revision).toBe('saved');
+    expect(displayCache.get<{ revision: string }>(url)?.data.revision).toBe('saved');
+    expect(requestCount).toBe(1);
   });
 
   it('supersedes an old shared request once and cannot let its late result undo the mutation', async () => {

@@ -78,6 +78,7 @@
     "customColorTitle": "Couleur personnalisée"
   },
   "choresTab": {
+    "changedElsewhere": "Quelqu'un d'autre a modifié les tâches. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît.",
     "header": "Tâches",
     "subNav": {
       "today": "Aujourd'hui",
@@ -412,6 +413,7 @@
     "showingNow": "({count} affichées)"
   },
   "rewardsView": {
+    "changedElsewhere": "Quelqu'un d'autre a modifié les récompenses. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît.",
     "nav": {
       "redeem": "Échanger",
       "rewards": "Modifier la liste",

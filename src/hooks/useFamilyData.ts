@@ -1,6 +1,6 @@
 'use client';
 
-import { useFetchData, publishFetchData } from '@/hooks/useFetchData';
+import { useFetchData } from '@/hooks/useFetchData';
 import { displayCache } from '@/lib/display-cache';
 import { familyUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import type { FamilyMember } from '@/types/family';
@@ -14,7 +14,7 @@ const EMPTY_MEMBERS: FamilyMember[] = [];
 
 /** Publish a checked mutation response to every family consumer on this page. */
 export function publishFamilyData(snapshot: FamilySnapshot): void {
-  publishFetchData(familyUrl(), snapshot, FETCH_KEY_REGISTRY.family.ttlMs);
+  displayCache.replace(familyUrl(), snapshot, FETCH_KEY_REGISTRY.family.ttlMs);
 }
 
 export function useFamilyData() {

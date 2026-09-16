@@ -1,5 +1,5 @@
 import { readConfig } from '@/lib/config';
-import { readChoreData } from '@/lib/chore-data';
+import { readChoreSnapshot } from '@/lib/chore-data';
 import { resolveChoreModuleConfig } from '@/lib/chore-module-config';
 import ChoresTab from '../remote/components/ChoresTab';
 import ChoresEmptyState from './ChoresEmptyState';
@@ -11,7 +11,7 @@ export default async function ChoresPage() {
 
   // Show chores page whenever a chore module exists on any display (even with
   // empty data) so users can manage members/chores from mobile
-  const choreData = await readChoreData();
+  const choreData = await readChoreSnapshot();
   const choreConfig = resolveChoreModuleConfig(config);
 
   if (!choreConfig) {

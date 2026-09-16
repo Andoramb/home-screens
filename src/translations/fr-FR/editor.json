@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "Quelqu'un d'autre a modifié les tâches. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît.",
     "title": "Tableau de tâches",
     "subtitleMembersChores": "{members} membres · {chores} tâches",
     "loadError": "Échec du chargement des données de tâches. Les modifications ne seront pas enregistrées.",

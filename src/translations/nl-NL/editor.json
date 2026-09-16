@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "Iemand anders heeft de klusjes gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
     "title": "Klusjeskaart",
     "subtitleMembersChores": "{members} gezinsleden · {chores} klusjes",
     "loadError": "Klusjesgegevens laden mislukt. Wijzigingen worden niet opgeslagen.",

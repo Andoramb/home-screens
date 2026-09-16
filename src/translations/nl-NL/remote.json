@@ -78,6 +78,7 @@
     "customColorTitle": "Eigen kleur"
   },
   "choresTab": {
+    "changedElsewhere": "Iemand anders heeft de klusjes gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
     "header": "Klusjes",
     "subNav": {
       "today": "Vandaag",
@@ -412,6 +413,7 @@
     "showingNow": "({count} nu in beeld)"
   },
   "rewardsView": {
+    "changedElsewhere": "Iemand anders heeft de beloningen gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
     "nav": {
       "redeem": "Inwisselen",
       "rewards": "Lijst bewerken",

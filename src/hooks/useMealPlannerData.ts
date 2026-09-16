@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import { DEFAULT_MEAL_SETTINGS } from '@/lib/meal-constants';
-import { mealWriteBody, type MealDataWrite } from '@/lib/meal-write';
+import { MealSession, type MealEdit, type MealSnapshot } from '@/lib/meal-client';
 import { displayCache } from '@/lib/display-cache';
 import type {
   ModuleInstance,
@@ -12,7 +12,7 @@ import type {
   PlannedMeal,
 } from '@/types/config';
 
-/** Wire type for `/api/meals/data`. */
+/** What the modal renders: the two editable halves plus the shared settings. */
 export interface MealsPayload {
   savedMeals: SavedMeal[];
   plan: PlannedMeal[];
@@ -33,6 +33,10 @@ const LEGACY_EMBEDDED_FIELDS = [
   'previousPlan',
 ] as const;
 
+function view(snapshot: MealSnapshot): MealsPayload {
+  return { savedMeals: snapshot.savedMeals, plan: snapshot.plan, settings: snapshot.settings };
+}
+
 /**
  * Shared meal data plumbing for the two meal-planner config sections.
  *
@@ -42,6 +46,13 @@ const LEGACY_EMBEDDED_FIELDS = [
  * and PUT stale meals), and it stripped only two of the five legacy embedded
  * fields (so a fullscreen module re-persisted meals the server migration had
  * just harvested out). Both behaviours are fixed here, once.
+ *
+ * Loading and saving go through `MealSession` (`lib/meal-client.ts`), which the
+ * phone uses too. Until a load has succeeded there is nothing to edit: the
+ * empty arrays held here were never received, and an edit computed from them
+ * would replace the stored library with its one meal. The session applies an
+ * edit to the loaded copy (waiting for a load still in flight), and refuses
+ * it, reported through `saveError`, when the load failed.
  *
  * Write failures are surfaced through `saveError` rather than swallowed. The
  * previous `catch {}` left the optimistic local state applied, so the editor
@@ -58,31 +69,19 @@ export function useMealPlannerData<C>({
   /** Re-fetch whenever the modal opens or closes so external edits land. */
   showModal: boolean;
 }) {
-  const [mealData, setMealData] = useState<MealsPayload>({
+  const [mealData, setMealData] = useState<MealsPayload>(() => ({
     savedMeals: [],
     plan: [],
     settings: { ...DEFAULT_MEAL_SETTINGS },
-  });
+  }));
   const [saveError, setSaveError] = useState<string | null>(null);
-
-  // True once a GET has actually delivered the stored data. Until then this
-  // hook holds empty arrays it never received, and an empty array it sends is
-  // not the user emptying anything. See `mealWriteBody`.
-  const loadedRef = useRef(false);
+  const [session] = useState(() => new MealSession(editorFetch));
 
   const fetchMealData = useCallback(() => {
-    editorFetch('/api/meals/data')
-      .then((r) => r.json())
-      .then((d) => {
-        loadedRef.current = true;
-        setMealData({
-          savedMeals: d.savedMeals ?? [],
-          plan: d.plan ?? [],
-          settings: d.settings ?? { ...DEFAULT_MEAL_SETTINGS },
-        });
-      })
+    session.load()
+      .then((snapshot) => { if (session.idle) setMealData(view(snapshot)); })
       .catch(() => {});
-  }, []);
+  }, [session]);
 
   useEffect(() => { fetchMealData(); }, [fetchMealData, showModal]);
 
@@ -117,49 +116,37 @@ export function useMealPlannerData<C>({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleModalUpdate = useCallback(async (updates: MealDataWrite) => {
+  /**
+   * Apply one edit optimistically and save it. Only the half the edit changed
+   * goes on the wire; `settings` is never sent, it belongs to /remote and
+   * Settings > Meals. Saves queue in the session, so the panel keeps showing
+   * its optimistic state until the last queued save is answered, then adopts
+   * what the hub has (which may include another surface's edits).
+   */
+  const handleModalUpdate = useCallback(async (edit: MealEdit) => {
     const current = mealDataRef.current;
-    // Send only what the modal changed. The API preserves every omitted field,
-    // so a slot assignment here cannot overwrite a meal the phone added since
-    // this panel last fetched, and vice versa. `settings` is never sent at all:
-    // it belongs to /remote and Settings > Meals, and the cached copy here
-    // could be stale.
-    const optimistic: MealsPayload = {
-      savedMeals: updates.savedMeals ?? current.savedMeals,
-      plan: updates.plan ?? current.plan,
-      settings: current.settings, // local optimistic state only — not sent
-    };
-    setMealData(optimistic);
+    const changes = edit(current);
+    setMealData({
+      savedMeals: changes.savedMeals ?? current.savedMeals,
+      plan: changes.plan ?? current.plan,
+      settings: current.settings,
+    });
     setSaveError(null);
     try {
-      const res = await editorFetch('/api/meals/data', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mealWriteBody(updates, loadedRef.current)),
-      });
-      if (!res.ok) {
-        // Roll back so the panel stops showing an edit the server rejected.
-        setMealData(current);
-        setSaveError('save-failed');
-        return;
-      }
-      const data = await res.json();
-      setMealData({
-        savedMeals: data.savedMeals,
-        plan: data.plan,
-        // Use the server-returned settings (which may have been updated by
-        // another surface in the meantime) so the local cache stays correct.
-        settings: data.settings ?? optimistic.settings,
-      });
-      displayCache.invalidate('/api/meals/data');
+      const saved = await session.save(edit);
+      if (session.idle) setMealData(view(saved));
     } catch (err) {
       // A 401 already triggered a login redirect; don't flash an error at a
       // user who is being navigated away.
       if (isSessionExpired(err)) return;
-      setMealData(current);
+      // Roll back so the panel stops showing an edit the server rejected:
+      // to the loaded copy, or to nothing when there is none.
+      setMealData(session.current
+        ? view(session.current)
+        : { savedMeals: [], plan: [], settings: { ...DEFAULT_MEAL_SETTINGS } });
       setSaveError('save-failed');
     }
-  }, []);
+  }, [session]);
 
   return { mealData, handleModalUpdate, saveError };
 }

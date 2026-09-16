@@ -134,3 +134,13 @@ export function removeSavedMeal(
 export function toggleSavedMealFavorite(savedMeals: SavedMeal[], mealId: string): SavedMeal[] {
   return savedMeals.map((m) => (m.id === mealId ? { ...m, isFavorite: !m.isFavorite } : m));
 }
+
+/**
+ * Put entries back into the plan exactly as they were, replacing whatever has
+ * been planned into their slots since. For undoing a deletion or a cleared
+ * week: `assignPlanSlot` would rebuild them from date, slot and meal alone and
+ * lose the serving time and notes the entries carried.
+ */
+export function restorePlanEntries(plan: PlannedMeal[], entries: PlannedMeal[]): PlannedMeal[] {
+  return entries.reduce((next, entry) => [...clearPlanSlot(next, entry.date, entry.slot), entry], plan);
+}

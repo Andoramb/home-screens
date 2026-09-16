@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { asChoreSnapshot, ChoreSession, type ChoreSnapshot } from '@/lib/chore-client';
 import { editorFetch, isSessionExpired, throwIfNotOk } from '@/lib/editor-fetch';
 import { displayCache } from '@/lib/display-cache';
 import FamilyManager from '@/components/family/FamilyManager';
@@ -700,7 +701,19 @@ export default function ChoreChartModal({
   const [chores, setChores] = useState<ChoreDefinition[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<'failed' | 'conflict' | null>(null);
+  // Saves go through one session (`lib/chore-client.ts`): they run in order,
+  // each quoting the revision the previous one was answered with, so a list
+  // from an older copy cannot overwrite what a phone saved since.
+  const [session] = useState(() => new ChoreSession(editorFetch));
+  // A list the hub handed us (the load, a reload, or a conflict's current
+  // copy) is already saved: the auto-save below must not send it back.
+  const adoptedRef = useRef<ChoreDefinition[] | null>(null);
+  const adoptChores = useCallback((snapshot: ChoreSnapshot) => {
+    adoptedRef.current = snapshot.chores;
+    session.adopt(snapshot);
+    setChores(snapshot.chores);
+  }, [session]);
   const [showAddChore, setShowAddChore] = useState(false);
   const [editingChoreId, setEditingChoreId] = useState<string | null>(null);
   const [choreSearch, setChoreSearch] = useState('');
@@ -711,32 +724,38 @@ export default function ChoreChartModal({
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
-      .then((data) => {
-        setChores(data.chores ?? []);
+      .then((json) => {
+        const snapshot = asChoreSnapshot(json);
+        if (!snapshot) throw new Error('Malformed chore data');
+        adoptChores(snapshot);
         setLoaded(true);
       })
       .catch(() => setLoadError(true));
-  }, []);
+  }, [adoptChores]);
 
   const { flush: flushSave } = useDebouncedSave({
     values: [chores],
     enabled: loaded,
-    save: () =>
-      editorFetch('/api/chores/data', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chores, force: chores.length === 0 }),
-      })
-        .then(throwIfNotOk)
-        .then(() => {
-          setSaveError(false);
-          displayCache.invalidate('/api/chores/data');
-        }),
+    save: async () => {
+      if (chores === adoptedRef.current) return;
+      const outcome = await session.save(chores, chores.length === 0);
+      // Somebody else saved first. Show their list rather than replace it;
+      // the change made here has to be made again on top of it.
+      if (outcome.kind === 'conflict') {
+        adoptChores(outcome.snapshot);
+        setSaveError('conflict');
+        return;
+      }
+      if (outcome.kind === 'superseded') return;
+      setSaveError(null);
+      displayCache.invalidate('/api/chores/data');
+    },
     // The read path above already surfaced failures via `loadError`; the write
-    // path checked nothing, so a 500 left the edit on screen and gone on reload.
+    // path checked nothing (the session now rejects), so a 500 left the edit
+    // on screen and gone on reload.
     onError: (err) => {
       if (isSessionExpired(err)) return;
-      setSaveError(true);
+      setSaveError('failed');
     },
   });
 
@@ -778,7 +797,7 @@ export default function ChoreChartModal({
       )}
       {saveError && (
         <div role="alert" className="mx-4 mt-3 px-3 py-2 rounded-lg bg-hs-danger/10 border border-hs-danger/30 text-hs-danger text-xs">
-          {t('common.saveError')}
+          {saveError === 'conflict' ? t('choreChartModal.changedElsewhere') : t('common.saveError')}
         </div>
       )}
       {/* Nothing is editable until the store is in hand. The columns start
@@ -795,7 +814,11 @@ export default function ChoreChartModal({
       <div className="flex flex-1 min-h-0">
           <div className="w-[300px] shrink-0 overflow-y-auto border-r border-hs-border-strong p-3">
             <FamilyManager chores={chores} onChanged={() => {
-              void editorFetch('/api/chores/data').then(throwIfNotOk).then((res) => res.json()).then((data) => setChores(data.chores ?? [])).catch(() => setLoadError(true));
+              void editorFetch('/api/chores/data').then(throwIfNotOk).then((res) => res.json()).then((json) => {
+                const snapshot = asChoreSnapshot(json);
+                if (!snapshot) throw new Error('Malformed chore data');
+                adoptChores(snapshot);
+              }).catch(() => setLoadError(true));
             }} />
           </div>
           <ChoreColumn

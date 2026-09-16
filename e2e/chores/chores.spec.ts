@@ -1,4 +1,4 @@
-import { seedHouseholdChores } from '../helpers/api';
+import { seedHouseholdChores, seedRewards } from '../helpers/api';
 import { test, expect } from '../fixtures';
 import type { APIRequestContext } from '@playwright/test';
 import { putConfig } from '../helpers/api';
@@ -102,14 +102,10 @@ test('/chores shows the empty state when no chore module is configured', async (
 
 test('kid redeems a reward and the balance decrements with a history entry', async ({ page, request, sandboxDir }) => {
   await seedHouseholdChores(request, sandboxDir, { members: [{ id: 'm-kr', name: 'Remy', emoji: '🦊', color: '#f59e0b' }], chores: [] });
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [{
+  await seedRewards(request, [{
         id: 'rw-kr', name: 'Movie Night', emoji: 'lucide:popcorn', cost: 2,
         description: '', memberIds: [], enabled: true,
-      }],
-    },
-  });
+      }]);
   await request.post('/api/rewards/data', { data: { memberId: 'm-kr', amount: 5 } });
 
   const readRewards = async () => (await (await request.get('/api/rewards')).json());
@@ -141,14 +137,10 @@ test('kid redeems a reward and the balance decrements with a history entry', asy
 
 test('an unaffordable reward is shown disabled in the kid view', async ({ page, request, sandboxDir }) => {
   await seedHouseholdChores(request, sandboxDir, { members: [{ id: 'm-af', name: 'Kai', emoji: '🦊', color: '#f59e0b' }], chores: [] });
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [{
+  await seedRewards(request, [{
         id: 'rw-af', name: 'Theme Park Day', emoji: 'lucide:ticket', cost: 50,
         description: '', memberIds: [], enabled: true,
-      }],
-    },
-  });
+      }]);
   await request.post('/api/rewards/data', { data: { memberId: 'm-af', amount: 3 } }); // well below cost
 
   await page.goto('/chores');
@@ -166,14 +158,10 @@ test('kid sees a previously-redeemed reward in the History tab', async ({ page, 
   // kid can *read back* an existing history entry. Unique IDs keep the redemption
   // out of the other rewards specs (redemptions persist per-worker).
   await seedHouseholdChores(request, sandboxDir, { members: [{ id: 'm-hist', name: 'Pip', emoji: '🦊', color: '#f59e0b' }], chores: [] });
-  await request.put('/api/rewards/data', {
-    data: {
-      rewards: [{
+  await seedRewards(request, [{
         id: 'rw-hist', name: 'Ice Cream Trip', emoji: 'lucide:ice-cream', cost: 2,
         description: '', memberIds: [], enabled: true,
-      }],
-    },
-  });
+      }]);
   await request.post('/api/rewards/data', { data: { memberId: 'm-hist', amount: 5 } }); // balance
   // Redeem through the real POST /api/rewards endpoint — this writes the
   // denormalized redemption record (memberName + rewardName) the History tab reads.

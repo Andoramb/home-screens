@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { publicErrorResponse, parseJsonBody } from '@/lib/api-utils';
 import { readRewardData, redeemReward } from '@/lib/reward-data';
+import { contentRevision } from '@/lib/content-revision';
 import { readFamilyData } from '@/lib/family-data';
 import { withFamilyData } from '@/lib/family-api';
 import { isRewardEligibleFor, canAffordReward } from '@/lib/reward-rules';
@@ -13,11 +14,14 @@ export const dynamic = 'force-dynamic';
 // Admin-only mutations (editing rewards, manual balance adjust) live at
 // /api/rewards/data and are still gated by withAuth.
 
-/** GET — returns rewards, balances, and recent redemptions (display polls this). */
+/**
+ * GET — returns rewards, balances, and recent redemptions (display polls this),
+ * plus the revision a whole-list save of the rewards has to quote back.
+ */
 export const GET = async () => {
   try {
     const data = await readRewardData();
-    return NextResponse.json(data);
+    return NextResponse.json({ ...data, revision: contentRevision(data.rewards) });
   } catch (error) {
     return publicErrorResponse(error, 'Failed to read rewards');
   }

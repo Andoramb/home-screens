@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "Otra persona ha cambiado las tareas. Tu último cambio no se guardó. Inténtalo de nuevo.",
     "title": "Tabla de tareas",
     "subtitleMembersChores": "{members} miembros · {chores} tareas",
     "loadError": "No se pudieron cargar las tareas. Los cambios no se guardarán.",

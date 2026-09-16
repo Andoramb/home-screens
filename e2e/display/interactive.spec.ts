@@ -3,7 +3,7 @@ import { test, expect } from '../fixtures';
 import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
 import { renderOnDisplay } from '../helpers/display';
 import { buildModuleInstance, matrixSettings } from '../helpers/module-fixtures';
-import { seedHouseholdChores, seedMeals, seedTodos, E2E_TODO_LIST_ID } from '../helpers/api';
+import { seedHouseholdChores, seedMeals, seedTodos, E2E_TODO_LIST_ID, seedRewards } from '../helpers/api';
 import { stubModuleData } from '../helpers/stubs';
 import type { CalendarViewMode, FullscreenCalendarView, ModuleInstance } from '@/types/config';
 
@@ -1016,14 +1016,10 @@ test.describe('fullscreen-chore-chart on display', () => {
       }],
     });
     // A reward everyone can redeem (empty memberIds) plus a balance well above cost.
-    await request.put('/api/rewards/data', {
-      data: {
-        rewards: [{
+    await seedRewards(request, [{
           id: 'rwm-reward', name: 'Extra Screen Time', emoji: 'lucide:tv', cost: 2,
           description: '', memberIds: [], enabled: true,
-        }],
-      },
-    });
+        }]);
     await request.post('/api/rewards/data', { data: { memberId: 'rwm-m', amount: 10 } });
 
     const readRewards = async () => (await (await request.get('/api/rewards')).json());

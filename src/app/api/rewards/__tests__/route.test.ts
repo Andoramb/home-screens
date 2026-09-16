@@ -34,7 +34,8 @@ describe('/api/rewards family identities', () => {
   it('keeps rewards available to the public kid view', async () => {
     const response = await GET();
     expect(response.status).toBe(200);
-    expect(await response.json()).toEqual(data);
+    // Plus the revision a whole-list save of the rewards has to quote back.
+    expect(await response.json()).toEqual({ ...data, revision: expect.any(String) });
   });
 
   it('uses the current family name in redemption history', async () => {

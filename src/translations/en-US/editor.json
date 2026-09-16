@@ -2416,6 +2416,7 @@
     }
   },
   "choreChartModal": {
+    "changedElsewhere": "Someone else changed the chores. Your last change wasn't saved. Please try it again.",
     "title": "Chore Chart",
     "subtitleMembersChores": "{members} members · {chores} chores",
     "loadError": "Couldn't load the chore data. Changes won't be saved.",

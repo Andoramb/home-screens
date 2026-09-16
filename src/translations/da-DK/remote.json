@@ -78,6 +78,7 @@
     "customColorTitle": "Brugerdefineret farve"
   },
   "choresTab": {
+    "changedElsewhere": "En anden har ændret pligterne. Din seneste ændring blev ikke gemt. Prøv igen.",
     "header": "Pligter",
     "subNav": {
       "today": "I dag",
@@ -412,6 +413,7 @@
     "showingNow": "({count} vises nu)"
   },
   "rewardsView": {
+    "changedElsewhere": "En anden har ændret belønningerne. Din seneste ændring blev ikke gemt. Prøv igen.",
     "nav": {
       "redeem": "Indløs",
       "rewards": "Rediger listen",

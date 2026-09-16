@@ -64,8 +64,12 @@ export function seedFamily(sandboxDir: string, members: unknown[] = CHORE_DATA.m
 /** Chore definitions only: members belong to seedFamily and /api/family. */
 export async function seedChores(request: APIRequestContext, data: unknown = { chores: CHORE_DATA.chores }): Promise<APIResponse> {
   const d = data as { chores: unknown[] };
+  // A whole-list write quotes the revision it was built from.
+  const current = await request.get('/api/chores/data');
+  expect(current.ok(), `GET /api/chores/data answered ${current.status()}`).toBe(true);
+  const { revision } = await current.json() as { revision: string };
   const res = await request.put('/api/chores/data', {
-    data: { chores: d.chores, force: d.chores.length === 0 },
+    data: { chores: d.chores, force: d.chores.length === 0, revision },
   });
   expect(res.ok(), `PUT /api/chores/data answered ${res.status()}: ${(await res.text()).slice(0, 300)}`).toBe(true);
   return res;
@@ -104,10 +108,28 @@ export async function seedMeals(request: APIRequestContext, data: unknown = meal
   const d = data as { savedMeals?: unknown[]; plan?: unknown[] } | null;
   const isEmpty = Array.isArray(d?.savedMeals) && d.savedMeals.length === 0
     && Array.isArray(d?.plan) && d.plan.length === 0;
+  // A write of savedMeals/plan quotes the revision it was built from.
+  const current = await request.get('/api/meals/data');
+  expect(current.ok()).toBe(true);
+  const { revision } = await current.json() as { revision: string };
   const res = await request.put('/api/meals/data', {
-    data: isEmpty ? { ...d, force: true } : data,
+    data: { ...(d ?? {}), ...(isEmpty ? { force: true } : {}), revision },
   });
   expect(res.ok()).toBe(true);
+}
+
+/**
+ * Replace the reward definitions. A whole-list write quotes the revision it
+ * was built from, which `GET /api/rewards` hands out.
+ */
+export async function seedRewards(request: APIRequestContext, rewards: unknown[]): Promise<void> {
+  const current = await request.get('/api/rewards');
+  expect(current.ok(), `GET /api/rewards answered ${current.status()}`).toBe(true);
+  const { revision } = await current.json() as { revision: string };
+  const res = await request.put('/api/rewards/data', {
+    data: { rewards, force: rewards.length === 0, revision },
+  });
+  expect(res.ok(), `PUT /api/rewards/data answered ${res.status()}: ${(await res.text()).slice(0, 300)}`).toBe(true);
 }
 
 /** The list every todo fixture points at. */

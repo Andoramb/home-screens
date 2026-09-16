@@ -78,6 +78,7 @@
     "customColorTitle": "Color personalizado"
   },
   "choresTab": {
+    "changedElsewhere": "Otra persona ha cambiado las tareas. Tu último cambio no se guardó. Inténtalo de nuevo.",
     "header": "Tareas",
     "subNav": {
       "today": "Hoy",
@@ -412,6 +413,7 @@
     "showingNow": "({count} en pantalla)"
   },
   "rewardsView": {
+    "changedElsewhere": "Otra persona ha cambiado las recompensas. Tu último cambio no se guardó. Inténtalo de nuevo.",
     "nav": {
       "redeem": "Canjear",
       "rewards": "Editar la lista",

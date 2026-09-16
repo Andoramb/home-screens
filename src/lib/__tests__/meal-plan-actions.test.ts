@@ -10,6 +10,7 @@ import {
   upsertSavedMeal,
   removeSavedMeal,
   toggleSavedMealFavorite,
+  restorePlanEntries,
 } from '../meal-plan-actions';
 
 const WEEK = ['2026-09-13', '2026-09-14', '2026-09-15', '2026-09-16', '2026-09-17', '2026-09-18', '2026-09-19'];
@@ -160,5 +161,17 @@ describe('toggleSavedMealFavorite', () => {
   it('leaves the other meals alone', () => {
     const next = toggleSavedMealFavorite([meal('m-1'), meal('m-2')], 'm-2');
     expect(next[0].isFavorite).toBeUndefined();
+  });
+});
+
+describe('restorePlanEntries', () => {
+  /* Undo of a deletion or a cleared week. Rebuilding the entries from date,
+   * slot and meal would drop the serving time and notes they carried. */
+  it('puts entries back whole, replacing what took their slots since', () => {
+    const removed = [entry('2026-09-15', 'm-1', { time: '18:30', notes: 'grandma is coming' })];
+    const meanwhile = [entry('2026-09-15', 'm-2'), entry('2026-09-16', 'm-3')];
+    const next = restorePlanEntries(meanwhile, removed);
+    expect(next).toEqual([entry('2026-09-16', 'm-3'), removed[0]]);
+    expect(find(next, '2026-09-15')?.time).toBe('18:30');
   });
 });
