@@ -336,6 +336,65 @@ FONTCONF
 
 # --- Plymouth boot splash ---
 
+# Make home-screens the default boot theme, by whichever mechanism this distro
+# has. Returns 0 when something changed, 1 when nothing needed doing or the
+# distro offers no way to do it.
+#
+# Debian (so Raspberry Pi OS) ships plymouth-set-default-theme in the plymouth
+# package at /usr/sbin. Ubuntu ships it nowhere at all — the binary is in no
+# noble package at any path — and manages the theme through the
+# default.plymouth alternative instead. This used to call the Debian path
+# literally, so on Ubuntu the boot splash took down `setup-system` under
+# `set -e`: the install died at its last step, and every editor update died
+# after the atomic swap and never restarted the server. A boot splash is
+# decoration. It must never fail the run, so every branch here is tolerant.
+#
+# Usage: hs_set_plymouth_theme <theme_dir> <theme_changed>
+hs_set_plymouth_theme() {
+  local theme_dir="${1}" theme_changed="${2:-false}"
+  local setter current_theme candidate
+
+  # /usr/sbin is not on a non-root PATH on Debian, so look there directly
+  # before asking the shell — `command -v` alone would miss it on the Pi.
+  for candidate in /usr/sbin/plymouth-set-default-theme /usr/bin/plymouth-set-default-theme; do
+    [ -x "${candidate}" ] && { setter="${candidate}"; break; }
+  done
+  [ -z "${setter:-}" ] && setter="$(command -v plymouth-set-default-theme 2>/dev/null || true)"
+
+  if [ -n "${setter:-}" ]; then
+    current_theme=$("${setter}" 2>/dev/null || true)
+    if [ "${current_theme}" = "home-screens" ] && [ "${theme_changed}" != true ]; then
+      return 1
+    fi
+    if sudo "${setter}" home-screens && sudo update-initramfs -u; then
+      return 0
+    fi
+    warn "Could not set the boot splash theme. Continuing — this only affects the picture shown while the device starts up."
+    return 1
+  fi
+
+  # No setter (Ubuntu and anything else that dropped it): register the theme
+  # as the default.plymouth alternative, which is what the Debian helper does
+  # underneath and what Ubuntu's own theme packages do for themselves.
+  if command -v update-alternatives >/dev/null 2>&1 && [ -f "${theme_dir}/home-screens.plymouth" ]; then
+    local link=/usr/share/plymouth/themes/default.plymouth
+    if [ "$(readlink -f "${link}" 2>/dev/null)" = "${theme_dir}/home-screens.plymouth" ] \
+       && [ "${theme_changed}" != true ]; then
+      return 1
+    fi
+    if sudo update-alternatives --install "${link}" default.plymouth "${theme_dir}/home-screens.plymouth" 100 \
+       && sudo update-alternatives --set default.plymouth "${theme_dir}/home-screens.plymouth" \
+       && sudo update-initramfs -u; then
+      return 0
+    fi
+    warn "Could not set the boot splash theme. Continuing — this only affects the picture shown while the device starts up."
+    return 1
+  fi
+
+  warn "This system has no way to set a boot splash theme, so it keeps its own. Everything else is unaffected."
+  return 1
+}
+
 setup_boot_splash() {
   # Idempotent setup of the Home Screens Plymouth boot splash. Safe to call
   # from both the full install (via upgrade.sh setup-system) and the
@@ -389,11 +448,7 @@ setup_boot_splash() {
       [ -f "${theme_src}/dot.png" ] && sudo cp "${theme_src}/dot.png" "${theme_dir}/"
     fi
 
-    local current_theme
-    current_theme=$(/usr/sbin/plymouth-set-default-theme 2>/dev/null || true)
-    if [ "${current_theme}" != "home-screens" ] || [ "${theme_changed}" = true ]; then
-      sudo /usr/sbin/plymouth-set-default-theme home-screens
-      sudo update-initramfs -u
+    if hs_set_plymouth_theme "${theme_dir}" "${theme_changed}"; then
       BOOT_SPLASH_CHANGES="${BOOT_SPLASH_CHANGES}plymouth,"
     fi
   fi

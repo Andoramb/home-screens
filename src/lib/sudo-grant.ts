@@ -13,11 +13,9 @@
  */
 
 import { spawn } from 'child_process';
-import { existsSync } from 'fs';
-import path from 'path';
 import { NextResponse } from 'next/server';
+import { getAppDir, appScriptPath } from './app-dir';
 
-const APP_DIR = process.env.HOME_SCREENS_DIR || '/opt/home-screens/current';
 const SCRIPT_TIMEOUT_MS = 30_000;
 
 export const SUDO_NEEDS_PASSWORD_MESSAGE =
@@ -44,11 +42,10 @@ export function resetSudoCache(): void {
   granted = false;
 }
 
+/** The tree whose upgrade.sh this process may run. Shared with upgrade.ts so
+ *  the two can never disagree about where the app is installed. */
 function scriptPath(): { cwd: string; script: string } {
-  const installed = path.join(APP_DIR, 'scripts', 'upgrade.sh');
-  if (existsSync(installed)) return { cwd: APP_DIR, script: installed };
-  const local = path.join(process.cwd(), 'scripts', 'upgrade.sh');
-  return { cwd: process.cwd(), script: local };
+  return { cwd: getAppDir(), script: appScriptPath('upgrade.sh') };
 }
 
 function parseLastLine(output: string): Record<string, unknown> {

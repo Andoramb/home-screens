@@ -77,7 +77,13 @@ fi
 
 # Apply rotation/resolution in the background. Same flow as the full install.
 if [ -n "${DISPLAY_TRANSFORM}" ] || [ -n "${DISPLAY_MODE}" ]; then
-  OUTPUT=$(wlr-randr 2>/dev/null | head -1 | awk '{print $1}' || echo 'HDMI-A-1')
+  # Pick the first ENABLED output. wlr-randr lists disabled connectors too
+  # ("Enabled: no"), so taking the first line put the rotation on a dark screen
+  # whenever a second port was connected but switched off, including for anyone
+  # who tried `wlr-randr --output X --off` to get out of the way. Falls back to
+  # the first output named, then to HDMI-A-1, so a machine that reports nothing
+  # behaves as it always did.
+  OUTPUT=$(wlr-randr 2>/dev/null | awk '/^[^[:space:]]/{n=$1;if(f=="")f=n}/^[[:space:]]+Enabled: yes/{if(n!=""){print n;d=1;exit}}END{if(!d)print(f!=""?f:"HDMI-A-1")}')
   [ -n "${DISPLAY_TRANSFORM}" ] && (sleep 1 && wlr-randr --output "${OUTPUT}" --transform "${DISPLAY_TRANSFORM}") &
   [ -n "${DISPLAY_MODE}" ] && \
     (sleep 2 && wlr-randr --output "${OUTPUT}" --mode "${DISPLAY_MODE}" 2>/dev/null \

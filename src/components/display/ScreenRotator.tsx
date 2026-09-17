@@ -294,19 +294,36 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     hubTransport: !preview,
   });
 
+  /**
+   * Whether the wall is showing live content a finger may act on.
+   *
+   * Not the same question as `displayState === 'active'`. A standing
+   * brightness from the remote or a Display Control module (1-99) parks the
+   * display in 'dimmed', but that dim is a deliberate brightness choice:
+   * content is drawn normally and no screensaver covers it (see
+   * `brightnessOverride` in useSleepManager, and SleepOverlay). Gating on the
+   * state alone made every tap and flick on such a display do nothing at all,
+   * with the content plainly visible and nothing on screen to explain it.
+   *
+   * Idle dims, scheduled dims and sleep keep the wake-only behaviour: there
+   * the first touch means "wake up", not "press what is under my finger".
+   */
+  const contentIsLive = displayState === 'active'
+    || (displayState === 'dimmed' && brightnessOverride !== null);
+
   // interactionHeld gates both the swipe gesture below and the rotation
   // timer further down: true while an overlay (e.g. an open recipe) is up.
   const interactionHeld = useInteractionHeld();
 
   // Flick navigation. Same triple as remote/plugin nav: navigate, grant the
   // new screen a full dwell, resume a paused rotator. Gated at pointerdown
-  // inside the hook, and only while fully active: a flick on a dimmed or
-  // asleep display should just wake it (the sleep manager's own touch
-  // listener does that) — navigating too would land the waking user on a
-  // screen they never saw change, and would silently discard an explicit
-  // double-tap pause.
+  // inside the hook, and only while the content is live: a flick on an idle-
+  // dimmed, scheduled-dim or asleep display should just wake it (the sleep
+  // manager's own touch listener does that). Navigating too would land the
+  // waking user on a screen they never saw change, and would silently discard
+  // an explicit double-tap pause.
   useSwipeNavigation({
-    enabled: (settings.swipeEnabled ?? true) && displayState === 'active' && !interactionHeld,
+    enabled: (settings.swipeEnabled ?? true) && contentIsLive && !interactionHeld,
     onSwipeLeft: () => { nextScreen(); resetRotation(); clearPause(); },
     onSwipeRight: () => { prevScreen(); resetRotation(); clearPause(); },
   });
@@ -454,6 +471,7 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   // clearPause that hook returns. Waking must never restore a pause set before
   // the display slept.
   const prevDisplayStateRef = useRef(displayState);
+  const prevContentIsLiveRef = useRef(contentIsLive);
   const wakeGuardUntilRef = useRef(0);
   useEffect(() => {
     const prev = prevDisplayStateRef.current;
@@ -462,25 +480,32 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     // Stamp wake transitions for the tap guard below. The sleep manager wakes
     // on a passive touchstart, so by the time the same finger's `click` fires
     // the state often already reads 'active' — the timestamp covers that gap.
-    if (prev !== 'active' && displayState === 'active') {
+    // Keyed on the content becoming live rather than on the state reaching
+    // 'active', so raising a standing brightness back to 100 (which was never
+    // a wake: the content was live and tappable the whole time) does not eat
+    // the next 700ms of taps.
+    const wasLive = prevContentIsLiveRef.current;
+    prevContentIsLiveRef.current = contentIsLive;
+    if (!wasLive && contentIsLive) {
       wakeGuardUntilRef.current = Date.now() + WAKE_TAP_GUARD_MS;
     }
-  }, [displayState, clearPause]);
+  }, [displayState, contentIsLive, clearPause]);
 
-  // A tap on a dimmed or sleeping display should only wake it — the same
-  // touch must not activate whatever tappable module content (event blocks,
-  // chores, todos, recipes) happens to be under the finger. Swipe navigation
-  // already has this gate via its `enabled` flag; this is the click-side
-  // equivalent, applied at capture so it runs before any module handler.
-  const displayStateRef = useRef(displayState);
-  displayStateRef.current = displayState;
+  // A tap on a sleeping display, or one dimmed by idle or by schedule, should
+  // only wake it, and the same touch must not activate whatever tappable module
+  // content (event blocks, chores, todos, recipes) happens to be under the
+  // finger. Swipe navigation already has this gate via its `enabled` flag;
+  // this is the click-side equivalent, applied at capture so it runs before
+  // any module handler.
+  const contentIsLiveRef = useRef(contentIsLive);
+  contentIsLiveRef.current = contentIsLive;
   useEffect(() => {
     function onClickCapture(e: MouseEvent) {
       // Alert controls are never module content: an urgent alert wakes the
       // display itself, and the tap on its Dismiss button seconds later must
       // land, not be eaten as the "wake tap".
       if (e.target instanceof Element && e.target.closest('[data-alert-control]')) return;
-      if (displayStateRef.current !== 'active' || Date.now() < wakeGuardUntilRef.current) {
+      if (!contentIsLiveRef.current || Date.now() < wakeGuardUntilRef.current) {
         e.stopPropagation();
         e.preventDefault();
       }

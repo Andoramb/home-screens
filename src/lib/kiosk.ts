@@ -57,6 +57,38 @@ export async function syncKioskConf(config: ScreenConfiguration): Promise<void> 
   await fs.writeFile(confPath, desired, 'utf-8');
 }
 
+/** Fallback when nothing can be detected: the port a Pi almost always uses. */
+const FALLBACK_OUTPUT = 'HDMI-A-1';
+
+/**
+ * The output name to drive, read out of `wlr-randr`'s report.
+ *
+ * Each output is a block: an unindented name line, then indented properties,
+ * one of which is `Enabled: yes` or `Enabled: no`. Disabled connectors are
+ * listed too, so taking the first line put the rotation on a dark screen
+ * whenever a second port was connected but switched off. The same parse lives
+ * in both kiosk launchers as literal copies (they ship with no lib beside
+ * them); scripts/__tests__/output-detection.test.ts keeps the three in step.
+ *
+ * Still first-past-the-post when several outputs are live: choosing between
+ * two working screens is a setting we do not have yet, not a guess to make
+ * here.
+ */
+export function parseWlrRandrOutput(stdout: string): string {
+  let first = '';
+  let current = '';
+  for (const line of stdout.split('\n')) {
+    if (line.trim() === '') continue;
+    if (!/^\s/.test(line)) {
+      current = line.trim().split(/\s+/)[0] ?? '';
+      if (!first) first = current;
+    } else if (/^\s+Enabled:\s*yes\b/.test(line) && current) {
+      return current;
+    }
+  }
+  return first || FALLBACK_OUTPUT;
+}
+
 /**
  * Detect the Wayland output name via wlr-randr.
  */
@@ -66,10 +98,8 @@ function detectOutput(): Promise<string> {
       env: { ...process.env, XDG_RUNTIME_DIR: `/run/user/${process.getuid?.() ?? 1000}`, WAYLAND_DISPLAY: 'wayland-0' },
       timeout: 5000,
     }, (err, stdout) => {
-      if (err || !stdout) return resolve('HDMI-A-1');
-      const firstLine = stdout.split('\n')[0] ?? '';
-      const output = firstLine.split(' ')[0];
-      resolve(output || 'HDMI-A-1');
+      if (err || !stdout) return resolve(FALLBACK_OUTPUT);
+      resolve(parseWlrRandrOutput(stdout));
     });
   });
 }

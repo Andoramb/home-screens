@@ -53,6 +53,11 @@ const mockFsRename = vi.fn();
 const mockFsRm = vi.fn();
 const mockFsMkdir = vi.fn();
 vi.mock('fs', () => ({
+  // `true` stands in for a device installed the standard way, which is what
+  // app-dir.ts probes for when it resolves the tree whose scripts we run.
+  // These tests assert against that layout (see the process.chdir expectation
+  // below), so the probe has to agree with them.
+  existsSync: () => true,
   promises: {
     access: (...args: unknown[]) => mockFsAccess(...args),
     rename: (...args: unknown[]) => mockFsRename(...args),

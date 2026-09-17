@@ -45,6 +45,45 @@ test('interactive todo: tapping an item checks it off and persists it', async ({
   await expect(row).toHaveAttribute('aria-pressed', 'true');
 });
 
+/**
+ * The same tap, dispatched as a raw CDP touch sequence so it runs through
+ * Chromium's gesture recognizer — the path a physical touchscreen takes and
+ * `page.mouse` never does. Every interactive module on the wall exists for
+ * touchscreens, and until this test only swipe navigation was exercised that
+ * way, so a touch-only break in tap-to-act would have passed CI (the swipe
+ * suite carries two such bugs in its own comments).
+ */
+test.describe('real touch input', () => {
+  test.use({ hasTouch: true });
+
+  test('a real-touch tap checks off a todo item', async ({ page, request, sandboxDir }) => {
+    seedTodos(sandboxDir);
+    const todo = buildModuleInstance('todo', { listId: E2E_TODO_LIST_ID, interactive: true });
+    const display = await renderOnDisplay(page, request, baseConfig({
+      screens: [makeScreen('s1', 'S1', [todo])],
+    }));
+
+    const row = display.module('todo').getByRole('button', { name: /ACTIVE ITEM/ });
+    await expect(row).toHaveAttribute('aria-pressed', 'false');
+    // The touch-action root style lands in ScreenRotator's mount effect; a
+    // touch dispatched before it commits would race the gesture recognizer.
+    await page.waitForFunction(() => document.body.style.touchAction === 'pan-y');
+
+    const box = await row.boundingBox();
+    if (!box) throw new Error('the todo row has no bounding box');
+    const client = await page.context().newCDPSession(page);
+    const touchPoints = [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }];
+
+    const patched = itemPatched(page);
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await patched;
+
+    await expect(row).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => todoItems(request)).toMatchObject({ a: true });
+  });
+});
+
 test('display-control: tapping Next enqueues a next-screen command', async ({ page, request }) => {
   const control = buildModuleInstance('display-control');
   await renderOnDisplay(page, request, baseConfig({

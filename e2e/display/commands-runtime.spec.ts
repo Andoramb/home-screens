@@ -1,7 +1,8 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext, Page } from '@playwright/test';
-import { putConfig } from '../helpers/api';
+import { putConfig, seedTodos, E2E_TODO_LIST_ID } from '../helpers/api';
 import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
+import { buildModuleInstance } from '../helpers/module-fixtures';
 import type { ScreenConfiguration, Screen } from '@/types/config';
 
 /**
@@ -321,6 +322,38 @@ test('brightness dims the display, and brightness 100 restores it', async ({ pag
   // value 100 → active threshold: the overlay unmounts entirely.
   await sendCommand(request, id, 'brightness', { value: 100 });
   await expect(page.locator(OVERLAY)).toHaveCount(0, { timeout: 8000 });
+});
+
+/**
+ * A standing brightness is a working display, not a sleeping one.
+ *
+ * ScreenRotator swallows clicks at capture while the display is dimmed or
+ * asleep, so the touch that wakes a sleeping wall cannot also press whatever
+ * is under the finger. A remote brightness of 1-99 also reports 'dimmed', but
+ * that dim shows normal content with no screensaver over it — and gating on
+ * the state alone made every tap on such a display do nothing, with the
+ * content plainly visible and nothing on screen to explain why.
+ */
+test('a todo still checks off while the display sits at a standing brightness', async ({ page, request, sandboxDir }) => {
+  const id = 'cmd-dim-tap';
+  seedTodos(sandboxDir);
+  const todo = buildModuleInstance('todo', { listId: E2E_TODO_LIST_ID, interactive: true });
+  await openDisplay(
+    page,
+    request,
+    displayConfig(id, [makeScreen('s1', 'S1', [todo])], { screensaver: { mode: 'off' } }),
+    id,
+  );
+
+  const row = page.locator('[data-module-type="todo"]').getByRole('button', { name: /ACTIVE ITEM/ });
+  await expect(row).toHaveAttribute('aria-pressed', 'false');
+
+  await sendCommand(request, id, 'brightness', { value: 50 });
+  await expect(page.locator(OVERLAY)).toBeVisible({ timeout: 8000 });
+
+  // Still readable, so still tappable.
+  await row.click();
+  await expect(row).toHaveAttribute('aria-pressed', 'true');
 });
 
 test('alert renders its title and message; clear-alerts removes it', async ({ page, request }) => {

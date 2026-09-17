@@ -1,14 +1,16 @@
 import { spawn, type ChildProcess } from 'child_process';
+import { existsSync } from 'fs';
 import { createInterface } from 'readline';
 import path from 'path';
 import { readConfig, writeConfig } from './config';
+import { getAppDir } from './app-dir';
 import { withDataTransaction } from './data-transaction';
 import { migrateUp, getLatestSchemaVersion } from './migrations';
 import { hasReleaseTarball, GITHUB_REPO } from './version';
 
 /** Explicit APP_DIR — safe to use after the atomic swap when process.cwd() is stale.
- *  Reads HOME_SCREENS_DIR env var to support non-default install paths. */
-const APP_DIR = process.env.HOME_SCREENS_DIR || '/opt/home-screens/current';
+ *  See app-dir.ts for how a non-default install path is found. */
+const APP_DIR = getAppDir();
 
 type UpgradeStep =
   | 'idle'
@@ -65,6 +67,24 @@ function lastLines(text: string, n: number): string {
 }
 
 /**
+ * Turn a failed spawn into something the person updating a display can act on.
+ *
+ * Node reports both "the working directory does not exist" and "bash is not
+ * installed" as the same `spawn bash ENOENT`, and that string reached users
+ * verbatim ("preflight failed: spawn bash ENOENT"). Which one it is can be
+ * told apart here, and either way the answer is not a syscall name.
+ */
+export function describeSpawnFailure(err: NodeJS.ErrnoException, cwd: string, scriptPath: string): string {
+  if (err.code !== 'ENOENT') return err.message;
+  if (!existsSync(cwd) || !existsSync(scriptPath)) {
+    return `Home Screens could not find its own files. It looked in ${cwd}. `
+      + 'If Home Screens is installed somewhere else, start it with HOME_SCREENS_DIR set to that folder, '
+      + 'or re-run the installer.';
+  }
+  return 'This device has no bash shell, which Home Screens needs to install an update.';
+}
+
+/**
  * Spawn upgrade.sh with the given action and stream stdout/stderr
  * line-by-line via the onLine callback.
  */
@@ -118,7 +138,7 @@ function runUpgradeScript(
       if (!settled) {
         settle();
         clearTimeout(timer);
-        reject(new Error(`${action} failed: ${err.message}`));
+        reject(new Error(`${action} failed: ${describeSpawnFailure(err, cwd, scriptPath)}`));
       }
     });
 
