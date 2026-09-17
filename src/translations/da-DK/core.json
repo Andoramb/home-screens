@@ -243,6 +243,23 @@
       "other": "{name} har {count} tildelte opgaver."
     },
     "hasTimetable": "Har et skema",
-    "removeTimetable": "{name} har et skema, og det bliver også fjernet."
+    "removeTimetable": "{name} har et skema, og det bliver også fjernet.",
+    "groups": {
+      "title": "Grupper",
+      "description": "Sæt folk sammen, så en kalender kan vise \"Børn\" i stedet for fem navne. En person kan være i mere end én gruppe.",
+      "add": "Tilføj gruppe",
+      "edit": "Rediger gruppe",
+      "name": "Gruppenavn",
+      "members": "Hvem er med",
+      "noMembers": "Ingen endnu",
+      "editName": "Rediger {name}",
+      "remove": "Fjern gruppe",
+      "removeTitle": "Fjern {name}?",
+      "removeDescription": "Skærme, der kun viser {name}, viser alle igen. Ingen fjernes fra familien.",
+      "saved": "Grupper gemt.",
+      "saveFailed": "Grupperne kunne ikke gemmes.",
+      "limit": "Du kan have op til {count} grupper.",
+      "hint": "Grupper bruges af kalenderens farvenøgle og dens filter \"Vis kun\". Pligter og belønninger tildeles stadig personer."
+    }
   }
 }

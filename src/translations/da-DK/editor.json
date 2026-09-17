@@ -3217,7 +3217,7 @@
       "separatorsNone": "Ingen",
       "separatorsWeeks": "Uger",
       "separatorsWeeksMonths": "Uger og måneder",
-      "showLegend": "Kildeforklaring",
+      "showLegend": "Farvenøgle",
       "legendOff": "Fra",
       "legendHeader": "Øverst i kalenderen",
       "legendFooter": "Nederst i kalenderen"
@@ -3483,7 +3483,7 @@
       "separatorsNone": "Ingen",
       "separatorsWeeks": "Uger",
       "separatorsWeeksMonths": "Uger og måneder",
-      "showLegend": "Kildeforklaring",
+      "showLegend": "Farvenøgle",
       "legendOff": "Fra",
       "legendHeader": "Øverst i kalenderen",
       "legendFooter": "Nederst i kalenderen",
@@ -4461,10 +4461,16 @@
       "artUploadHint": "Billede eller SVG, op til 10 MB",
       "artUploadFailed": "Billedet kunne ikke tilføjes.",
       "artNames": {
-        "birthday": "Fødselsdag", "christmas": "Jul", "halloween": "Halloween",
-        "new-year": "Nytår", "valentines": "Valentinsdag", "july-4th": "4. juli",
-        "celebrate": "Fest", "starfield": "Stjernehimmel",
-        "snowflakes": "Snefnug", "sprinkles": "Pynt"
+        "birthday": "Fødselsdag",
+        "christmas": "Jul",
+        "halloween": "Halloween",
+        "new-year": "Nytår",
+        "valentines": "Valentinsdag",
+        "july-4th": "4. juli",
+        "celebrate": "Fest",
+        "starfield": "Stjernehimmel",
+        "snowflakes": "Snefnug",
+        "sprinkles": "Pynt"
       },
       "outline": "Indram dagen",
       "badge": "Tilføj et mærke",
@@ -4557,6 +4563,29 @@
       "set": "Placering: {name}",
       "notSet": "Dette modul har brug for din placering.",
       "setUp": "Angiv din placering"
+    },
+    "calendarPeople": {
+      "showNameTags": "Navneskilte",
+      "nameTagsHint": "Sætter hver persons initialer på deres aftaler. Personer kommer fra Indstillinger > Familie; hvem der ejer hvilken kalender sættes under Indstillinger > Kalender > Personer. Delte kalendere beholder en almindelig prik.",
+      "nameTagsNoOwners": "Ingen ejer en kalender endnu, så der er intet at mærke.",
+      "matchCalendars": "Knyt kalendere til personer",
+      "legendMode": "Nøglen viser",
+      "legendModeCalendars": "Kalendere",
+      "legendModePeople": "Personer",
+      "legendModeGroups": "Grupper",
+      "legendModeNeedsPeople": "Personer og Grupper bliver tilgængelige, når kalendere er knyttet til personer.",
+      "peopleFilter": "Vis kun disse personer",
+      "peopleFilterHint": "Lad alt være umarkeret for at vise alle.",
+      "peopleFilterGroups": "Grupper",
+      "peopleFilterPeople": "Personer",
+      "includeShared": "Vis også delte kalendere og helligdage",
+      "peopleFilterEmpty": "Ingen ejer en kalender endnu, og familien har ingen grupper. Denne skærm viser alle kalendere valgt ovenfor.",
+      "peopleFilterNobody": "De valgte grupper har ingen i sig endnu, så denne skærm viser kun delte kalendere.",
+      "peopleFilterShowing": "Viser {names}.",
+      "peopleFilterShowingShared": "Viser {names} samt delte kalendere og helligdage.",
+      "peopleFilterStaleMember": "En, der ikke længere er på familielisten",
+      "peopleFilterStaleGroup": "En gruppe, der er fjernet",
+      "peopleFilterClear": "Vis alle"
     }
   },
   "imageBrowsers": {

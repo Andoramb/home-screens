@@ -227,7 +227,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
 
   // Stable identity while settings are untouched so the memoized module
   // previews don't re-render on unrelated canvas re-renders (polls, clock).
-  const { members: familyMembers, revision: familyRevision, error: familyError } = useFamilyData();
+  const { members: familyMembers, groups: familyGroups, revision: familyRevision, error: familyError } = useFamilyData();
   const settings = config?.settings;
   const previewSettings: PreviewSettings | null = useMemo(() => {
     if (!settings) return null;
@@ -244,9 +244,10 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
       calendarPeople: calendarPeopleForFamily(familyMembers, settings.calendar?.personSources),
       calendarPeopleState: !familyRevision && Object.values(settings.calendar?.personSources ?? {}).some((ids) => ids.length > 0)
         ? familyError ? 'failed' : 'loading' : undefined,
+      calendarGroups: familyGroups,
       calendarConfigured: hasAnyCalendarSource(settings.calendar),
     };
-  }, [settings, familyMembers, familyRevision, familyError]);
+  }, [settings, familyMembers, familyGroups, familyRevision, familyError]);
 
   // One normalized source for every module preview, built with the same
   // adapter contract the display uses. Memoized because ModulePreview is

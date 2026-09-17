@@ -243,6 +243,23 @@
       "other": "{name} heeft {count} toegewezen taken."
     },
     "hasTimetable": "Heeft een rooster",
-    "removeTimetable": "{name} heeft een rooster, en dat wordt ook verwijderd."
+    "removeTimetable": "{name} heeft een rooster, en dat wordt ook verwijderd.",
+    "groups": {
+      "title": "Groepen",
+      "description": "Zet mensen bij elkaar zodat een kalender \"Kinderen\" kan tonen in plaats van vijf namen. Iemand kan in meer dan één groep zitten.",
+      "add": "Groep toevoegen",
+      "edit": "Groep bewerken",
+      "name": "Groepsnaam",
+      "members": "Wie zit erin",
+      "noMembers": "Nog niemand",
+      "editName": "{name} bewerken",
+      "remove": "Groep verwijderen",
+      "removeTitle": "{name} verwijderen?",
+      "removeDescription": "Schermen die alleen {name} tonen, tonen weer iedereen. Niemand wordt uit het gezin verwijderd.",
+      "saved": "Groepen opgeslagen.",
+      "saveFailed": "De groepen konden niet worden opgeslagen.",
+      "limit": "Je kunt maximaal {count} groepen maken.",
+      "hint": "Groepen worden gebruikt door de kleurlegenda van de kalender en het filter \"Alleen tonen\". Taken en beloningen blijven aan personen toegewezen."
+    }
   }
 }

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
-import { readFamilyData, familyRevision, replaceFamilyMembers } from '@/lib/family-data';
+import { readFamilyData, familyResponse, replaceFamilyMembers } from '@/lib/family-data';
 
 export const dynamic = 'force-dynamic';
 
 export const GET = withDisplayAuth(async () => {
   const data = await readFamilyData();
-  return NextResponse.json({ members: data.members, revision: familyRevision(data) });
+  return NextResponse.json(familyResponse(data));
 }, 'Your family could not be loaded. Try again in a moment.');
 
 export const PUT = withAuth(async (request: NextRequest) => {

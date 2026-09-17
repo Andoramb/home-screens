@@ -148,6 +148,23 @@ const UNCLAIMED_CJK_DESC = Array.from({ length: 8 }, (_, i) => ({
   description: '持ち物：水筒、お弁当、帽子、雨具。集合は正門前、八時十五分厳守。',
 }));
 
+/** Three owned-or-shared events tomorrow morning: Alpha's, Beta's and one nobody owns. */
+const PEOPLE_EVENTS = [
+  { id: 'ps1', title: 'ALPHA EVENT', start: localIso(1, 9, 0), end: localIso(1, 10, 0), allDay: false, calendarColor: BLUE, sourceId: 'src-a', sourceName: 'Alpha' },
+  { id: 'ps2', title: 'BETA EVENT', start: localIso(1, 10, 0), end: localIso(1, 11, 0), allDay: false, calendarColor: '#059669', sourceId: 'src-b', sourceName: 'Beta' },
+  { id: 'ps3', title: 'SHARED EVENT', start: localIso(1, 11, 0), end: localIso(1, 12, 0), allDay: false, calendarColor: '#6b7280', sourceId: 'src-shared', sourceName: 'Household' },
+];
+const PEOPLE_ROSTER = [
+  { id: 'p1', name: 'Alpha Person', color: '#db2777' },
+  { id: 'p2', name: 'Beta Person', color: '#059669' },
+  { id: 'p3', name: 'Quiet Person', color: '#2563eb' },
+];
+const PEOPLE_GROUPS = [{ id: 'g-kids', name: 'Kids', memberIds: ['p1'] }];
+const PEOPLE_SETTINGS = { calendar: {
+  googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [], daysAhead: 7,
+  personSources: { p1: ['src-a'], p2: ['src-b'] },
+} };
+
 /** Tomorrow's hero and its later row, both with descriptions: the hero card
  *  and a list row each draw their own. */
 const TOMORROW_MORNING_DESC = [
@@ -1130,5 +1147,91 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     ],
     config: { view: 'rolling', rollingWeeksToShow: 1 },
     expect: lacks('FSC NEAR', 'FSC FARWEEK'),
+  },
+
+  // ================= NAME TAGS, COLOR KEY MODES, PEOPLE FILTER (both modules) =================
+  // Three people on the roster: Alpha owns src-a, Beta owns src-b, Quiet owns
+  // nothing; 'src-shared' belongs to nobody. Kids = Alpha only, so a group
+  // filter proves the roster expansion and not just a member id.
+  {
+    type: 'fullscreen-calendar', name: 'name-tags', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { view: 'agenda', showNameTags: true },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-event-marker="tag"][data-name-tag="p1"]')).toHaveText('AP');
+      await expect(mod.locator('[data-event-marker="tag"][data-name-tag="p2"]')).toHaveText('BP');
+      await expect(mod.locator('[data-event-id="ps3"] [data-event-marker="tag"]')).toHaveCount(0);
+    },
+  },
+  {
+    type: 'fullscreen-calendar', name: 'legend-mode-groups', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { view: 'agenda', showLegend: 'footer', legendMode: 'groups' },
+    expect: async (mod) => {
+      const key = mod.locator('[role="list"][aria-label="Calendar sources"]');
+      await expect(key.locator('[data-legend-kind="group"]')).toContainText('Kids');
+      await expect(key.locator('[data-legend-kind="group"]')).toContainText('AP');
+      await expect(key.locator('[data-legend-kind="person"]')).toContainText('Beta Person');
+      await expect(key.locator('[data-legend-kind="everyone"]')).toContainText('Everyone');
+      await expect(key).not.toContainText('Alpha Person');
+    },
+  },
+  {
+    type: 'fullscreen-calendar', name: 'people-filter-group', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { view: 'agenda', peopleFilter: { memberIds: [], groupIds: ['g-kids'], includeShared: false } },
+    expect: async (mod) => {
+      await has('ALPHA EVENT')(mod);
+      await expect(mod).not.toContainText('BETA EVENT');
+      await expect(mod).not.toContainText('SHARED EVENT');
+    },
+  },
+  {
+    type: 'calendar', name: 'name-tags', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { viewMode: 'agenda', showNameTags: true },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-event-marker="tag"][data-name-tag="p1"]')).toHaveText('AP');
+      await expect(mod.locator('[data-event-id="ps3"] [data-event-marker="tag"]')).toHaveCount(0);
+    },
+  },
+  {
+    type: 'calendar', name: 'legend-mode-people', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { viewMode: 'agenda', showLegend: 'footer', legendMode: 'people' },
+    expect: async (mod) => {
+      const key = mod.locator('[role="list"][aria-label="Calendar sources"]');
+      await expect(key.locator('[data-legend-kind="person"]')).toContainText(['Alpha Person', 'Beta Person']);
+      await expect(key.locator('[data-legend-kind="everyone"]')).toContainText('Everyone');
+    },
+  },
+  {
+    type: 'calendar', name: 'people-filter-shared', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { viewMode: 'agenda', peopleFilter: { memberIds: ['p2'], groupIds: [], includeShared: true } },
+    expect: async (mod) => {
+      await has('BETA EVENT')(mod);
+      await has('SHARED EVENT')(mod);
+      await expect(mod).not.toContainText('ALPHA EVENT');
+    },
+  },
+  {
+    // The per-person views draw only the chosen people, not the whole roster.
+    type: 'fullscreen-calendar', name: 'people-filter-person-views', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { view: 'free-time', peopleFilter: { memberIds: ['p1'], groupIds: [], includeShared: true } },
+    expect: async (mod) => {
+      await has('Alpha Person')(mod);
+      await expect(mod).not.toContainText('Beta Person');
+    },
+  },
+  {
+    // Up Next carries the tag on the hero's source line.
+    type: 'fullscreen-calendar', name: 'up-next-name-tags', kind: 'networked', stubKey: 'calendar',
+    stubBody: PEOPLE_EVENTS, familyMembers: PEOPLE_ROSTER, familyGroups: PEOPLE_GROUPS, settings: PEOPLE_SETTINGS,
+    config: { view: 'up-next', showNameTags: true },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-event-marker="tag"][data-name-tag="p1"]').first()).toBeVisible();
+    },
   },
 ];

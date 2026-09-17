@@ -33,7 +33,7 @@ describe('errorResponse', () => {
   });
 
   it('returns the current family snapshot with a revision conflict', async () => {
-    const current = { members: [], revision: 'current-revision' };
+    const current = { members: [], groups: [], revision: 'current-revision' };
     const response = errorResponse(new FamilyError('Refresh and apply your changes again.', 409, current), 'fallback');
     expect(response.status).toBe(409);
     expect(await response.json()).toEqual({ error: 'Refresh and apply your changes again.', ...current });
@@ -103,7 +103,7 @@ describe('publicErrorResponse', () => {
   it.each([
     new DataTransactionError('/private/install/data/config.json failed recovery'),
     new FamilyMergeError('/private/install/data/family.json has conflicting identities'),
-    new FamilyError('/private/install/data/family.json changed', 409, { members: [], revision: 'private-revision' }),
+    new FamilyError('/private/install/data/family.json changed', 409, { members: [], groups: [], revision: 'private-revision' }),
   ])('keeps typed family status without exposing paths or private state', async (error) => {
     const response = publicErrorResponse(error, 'fallback');
     expect(response.status).toBe(error.status);

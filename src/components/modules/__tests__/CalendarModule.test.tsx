@@ -568,7 +568,7 @@ describe('grid event styling', () => {
     const { container, queryByText } = render(
       <Wrapper><CalendarModule config={multiWeek({})} style={style} events={[timedBlue]} /></Wrapper>,
     );
-    expect(container.querySelector('.w-1\\.5')).toBeTruthy();
+    expect(container.querySelector('[data-event-marker="dot"]')).toBeTruthy();
     expect(queryByText('08:05 AM')).toBeNull();
   });
 

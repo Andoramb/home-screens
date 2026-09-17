@@ -1,4 +1,6 @@
-import type { CalendarEvent, CalendarPerson } from '@/types/config';
+import type { CalendarEvent, CalendarPeopleFilter, CalendarPerson } from '@/types/config';
+import type { FamilyGroup } from '@/types/family';
+import { hasPeopleFilter, resolvePeopleFilterMembers } from '@/lib/family-groups';
 import { eventHoursOnDay } from '@/lib/calendar-event-layout';
 import { isEventOnDay } from '@/lib/calendar-utils';
 import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
@@ -122,6 +124,93 @@ export function eventsForRow(
   }
   const claimed = new Set(rows.flatMap((r) => r.sourceIds ?? []));
   return events.filter((ev) => isUnclaimed(ev, claimed));
+}
+
+// ─── Name tags and the people filter ───
+
+/** The family member an event's calendar belongs to, ready to draw as a tag. */
+export interface EventOwner {
+  id: string;
+  name: string;
+  color: string;
+  initials: string;
+}
+
+/**
+ * Calendar source id -> owner. A source two people both claim goes to the
+ * first person in family order, so the tag is stable and never flickers
+ * between two names. Holidays are never owned.
+ */
+export function ownerBySource(people: readonly CalendarPerson[] | undefined): Map<string, EventOwner> {
+  const owners = new Map<string, EventOwner>();
+  for (const person of people ?? []) {
+    const owner: EventOwner = { id: person.id, name: person.name, color: person.color, initials: initialsOf(person.name) };
+    for (const sourceId of person.sourceIds) if (!owners.has(sourceId)) owners.set(sourceId, owner);
+  }
+  return owners;
+}
+
+/** The owner of one event, or undefined for a shared calendar, a holiday or an unknown source. */
+export function eventOwner(ev: Pick<CalendarEvent, 'sourceId' | 'kind'>, owners: ReadonlyMap<string, EventOwner> | undefined): EventOwner | undefined {
+  if (!owners || !ev.sourceId || ev.kind === 'holiday') return undefined;
+  return owners.get(ev.sourceId);
+}
+
+/** A people filter resolved to calendar sources, for `selectCalendarEvents`. */
+export interface PeopleSelection {
+  /** The family members the filter names once groups are expanded. */
+  memberIds: ReadonlySet<string>;
+  /** Sources owned by the chosen people. */
+  own: ReadonlySet<string>;
+  /** Sources owned by anyone at all; everything else is shared. */
+  claimed: ReadonlySet<string>;
+  includeShared: boolean;
+  /**
+   * The roster has not arrived (or failed), so nothing can be told apart from
+   * shared. Every event is held back rather than shown to the wrong screen.
+   */
+  pending: boolean;
+}
+
+/**
+ * Turn "show only these people" into the sources to keep. Null means no
+ * people filter (nobody chosen), so callers skip the pass entirely. Groups
+ * are expanded here, so a screen pointed at "Kids" follows the roster.
+ * `peopleState` is the roster fetch state while calendar owners exist
+ * (see buildModuleProps): set, the owners are not known yet.
+ */
+export function peopleSelection(
+  filter: CalendarPeopleFilter | undefined,
+  people: readonly CalendarPerson[] | undefined,
+  groups: readonly Pick<FamilyGroup, 'id' | 'memberIds'>[] | undefined,
+  peopleState?: 'loading' | 'failed',
+): PeopleSelection | null {
+  if (!hasPeopleFilter(filter)) return null;
+  const memberIds = resolvePeopleFilterMembers(filter, groups ?? []);
+  const own = new Set<string>();
+  const claimed = new Set<string>();
+  for (const person of people ?? []) {
+    for (const sourceId of person.sourceIds) {
+      claimed.add(sourceId);
+      if (memberIds.has(person.id)) own.add(sourceId);
+    }
+  }
+  const pending = peopleState !== undefined && (people === undefined || people.length === 0);
+  return { memberIds, own, claimed, includeShared: filter.includeShared !== false, pending };
+}
+
+/** The people a per-person view should draw under a filter: only the chosen ones. */
+export function peopleForSelection(people: CalendarPerson[] | undefined, selection: PeopleSelection | null): CalendarPerson[] | undefined {
+  if (!selection || !people) return people;
+  return people.filter((person) => selection.memberIds.has(person.id));
+}
+
+/** Whether one event passes a resolved people filter. */
+export function eventPassesPeople(ev: Pick<CalendarEvent, 'sourceId' | 'kind'>, selection: PeopleSelection): boolean {
+  if (selection.pending) return false;
+  const shared = !ev.sourceId || ev.kind === 'holiday' || !selection.claimed.has(ev.sourceId);
+  if (shared) return selection.includeShared;
+  return selection.own.has(ev.sourceId!);
 }
 
 // ─── Free time ───

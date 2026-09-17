@@ -1,6 +1,9 @@
 import { addDays, startOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import { parseEventWallTime } from '@/lib/calendar-utils';
 import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
+import { EVERYONE_COLOR, initialsOf, type EventOwner } from '@/lib/calendar-people';
+import type { CalendarLegendMode, CalendarPerson } from '@/types/config';
+import type { FamilyGroup } from '@/types/family';
 
 /**
  * Legend construction and view-day-window math shared by both calendar
@@ -71,6 +74,24 @@ export interface LegendSource {
   calendarColor: string;
 }
 
+/** One avatar in a person or group row. */
+export interface LegendAvatar {
+  initials: string;
+  color: string;
+  name: string;
+}
+
+/**
+ * A color key row in any mode. `kind: 'source'` is the classic dot row;
+ * `person` is one avatar; `group` is a stack of avatars; `everyone` is the
+ * neutral row for calendars nobody owns. `sourceIds` are the sources behind
+ * the row, so the failing-feed ring can find it in every mode.
+ */
+export type LegendRow =
+  | { kind: 'source'; id: string; name: string; color: string; sourceIds: string[] }
+  | { kind: 'person' | 'everyone'; id: string; name: string; avatar: LegendAvatar; sourceIds: string[] }
+  | { kind: 'group'; id: string; name: string; avatars: LegendAvatar[]; sourceIds: string[] };
+
 /**
  * The sources to show in a calendar legend: unique per sourceId, in
  * first-seen event order. Callers pass the events they actually render (after
@@ -117,4 +138,76 @@ export function buildLegend(
   return legendSources(scoped).map((s) =>
     s.sourceId === 'holidays' ? { ...s, sourceName: holidaysLabel } : s,
   );
+}
+
+/** Classic rows as `LegendRow`s, so one component renders every mode. */
+export function sourceLegendRows(sources: readonly LegendSource[]): LegendRow[] {
+  return sources.map((s) => ({ kind: 'source', id: s.sourceId, name: s.sourceName, color: s.calendarColor, sourceIds: [s.sourceId] }));
+}
+
+/**
+ * Person or group rows for the events a view draws. Only people with an
+ * event in the window appear (like sources), in family order; a group
+ * appears when any of its members does, and shows just those members.
+ * Members in no group get their own row after the groups. Everyone closes
+ * the list when any drawn event belongs to nobody.
+ */
+export function peopleLegendRows(
+  events: readonly { sourceId?: string; kind?: string }[],
+  mode: 'people' | 'groups',
+  people: readonly CalendarPerson[],
+  groups: readonly Pick<FamilyGroup, 'id' | 'name' | 'memberIds'>[],
+  everyoneLabel: string,
+): LegendRow[] {
+  const owners = new Map<string, EventOwner>();
+  for (const person of people) {
+    const owner: EventOwner = { id: person.id, name: person.name, color: person.color, initials: initialsOf(person.name) };
+    for (const sourceId of person.sourceIds) if (!owners.has(sourceId)) owners.set(sourceId, owner);
+  }
+  const present = new Set<string>();
+  const sharedSources = new Set<string>();
+  let shared = false;
+  for (const ev of events) {
+    const owner = ev.sourceId && ev.kind !== 'holiday' ? owners.get(ev.sourceId) : undefined;
+    if (owner) present.add(owner.id);
+    else { shared = true; if (ev.sourceId) sharedSources.add(ev.sourceId); }
+  }
+  const avatarOf = (p: CalendarPerson): LegendAvatar => ({ initials: initialsOf(p.name), color: p.color, name: p.name });
+  const rows: LegendRow[] = [];
+  const placed = new Set<string>();
+  if (mode === 'groups') {
+    for (const group of groups) {
+      const members = people.filter((p) => group.memberIds.includes(p.id) && present.has(p.id));
+      if (members.length === 0) continue;
+      for (const m of members) placed.add(m.id);
+      rows.push({ kind: 'group', id: group.id, name: group.name, avatars: members.map(avatarOf), sourceIds: members.flatMap((m) => m.sourceIds) });
+    }
+  }
+  for (const person of people) {
+    if (!present.has(person.id) || placed.has(person.id)) continue;
+    rows.push({ kind: 'person', id: person.id, name: person.name, avatar: avatarOf(person), sourceIds: [...person.sourceIds] });
+  }
+  if (shared) rows.push({ kind: 'everyone', id: '__everyone__', name: everyoneLabel, avatar: { initials: initialsOf(everyoneLabel), color: EVERYONE_COLOR, name: everyoneLabel }, sourceIds: [...sharedSources] });
+  return rows;
+}
+
+/**
+ * The rows a module's color key shows, in the configured mode. `people` and
+ * `groups` modes need a roster with calendar owners; without one they fall
+ * back to the classic source rows rather than an empty strip.
+ */
+export function buildLegendRows(
+  events: { start: string; end: string; sourceId?: string; sourceName?: string; calendarColor?: string; kind?: string }[],
+  window: { start: Date; end: Date } | null,
+  timezone: string | undefined,
+  labels: { holidays: string; everyone: string },
+  mode: CalendarLegendMode | undefined,
+  people: readonly CalendarPerson[] | undefined,
+  groups: readonly Pick<FamilyGroup, 'id' | 'name' | 'memberIds'>[] | undefined,
+): LegendRow[] {
+  const scoped = window ? eventsInWindow(events, window.start, window.end, timezone) : events;
+  if ((mode === 'people' || mode === 'groups') && people && people.length > 0) {
+    return peopleLegendRows(scoped, mode, people, groups ?? [], labels.everyone);
+  }
+  return sourceLegendRows(legendSources(scoped).map((s) => (s.sourceId === 'holidays' ? { ...s, sourceName: labels.holidays } : s)));
 }

@@ -4,6 +4,8 @@ import { isSameDay } from 'date-fns';
 import { formatDateSync, useFormattingLocale, useTranslate } from '@/i18n';
 import { birthdayAge } from '@/lib/calendar-utils';
 import { DEFAULT_EVENT_COLOR } from '@/lib/calendar-color';
+import { eventOwner, type EventOwner } from '@/lib/calendar-people';
+import { EventMarker } from '../shared/EventMarker';
 import { eventSurface } from '@/lib/calendar-event-surface';
 import { eventGlyph, eventOpacity } from '@/lib/calendar-rules';
 import type { DayDecor } from '@/lib/calendar-rules';
@@ -35,9 +37,11 @@ export interface GridCellBodyProps {
   today: Date;
   /** Per-day rules decor for this cell; the caller needs it for the wrapper too. */
   decor: DayDecor;
+  /** Name tags (see CalendarViewProps.owners). */
+  owners?: ReadonlyMap<string, EventOwner>;
 }
 
-export function GridCellBody({ day, dayEvents, maxEvents, showMonthName = false, fontSize, scale, config, today, decor }: GridCellBodyProps) {
+export function GridCellBody({ day, dayEvents, maxEvents, showMonthName = false, fontSize, scale, config, today, decor, owners }: GridCellBodyProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const wrapTitles = config.wrapEventTitles === true;
@@ -139,6 +143,7 @@ export function GridCellBody({ day, dayEvents, maxEvents, showMonthName = false,
       {timedEvs.slice(0, maxShow).map(ev => {
         const color = ev.calendarColor ?? DEFAULT_EVENT_COLOR;
         const glyph = eventGlyph(ev);
+        const owner = eventOwner(ev, owners);
         return (
           <div key={ev.id} className="fsc-event-block" data-event-id={ev.id} style={{
             display: 'flex',
@@ -152,18 +157,13 @@ export function GridCellBody({ day, dayEvents, maxEvents, showMonthName = false,
           }}>
             {glyph ? (
               <span aria-hidden="true" style={{ fontSize: fontSize * 0.5, lineHeight: 1, flexShrink: 0 }}><Glyph value={glyph} /></span>
-            ) : scale.eventStyle === 'wash' ? (
+            ) : owner || scale.eventStyle === 'wash' ? (
               // The source-color dot is the only calendar marker a bare
               // `wash` pill has. Under the other styles the surface itself
               // carries the color (a fill or a rule), and a dot would vanish
-              // into it or double it up.
-              <div style={{
-                width: fontSize * 0.35,
-                height: fontSize * 0.35,
-                borderRadius: '50%',
-                background: color,
-                flexShrink: 0,
-              }} />
+              // into it or double it up. A name tag is drawn under every
+              // style: the surface says which calendar, the tag says who.
+              <EventMarker owner={owner} color={color} size={fontSize * 0.35} tagSize={fontSize * 0.8} />
             ) : null}
             <span style={{
               fontSize: fontSize * 0.55,

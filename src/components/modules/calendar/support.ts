@@ -1,3 +1,4 @@
+import type { EventOwner } from '@/lib/calendar-people';
 import { startOfDay } from 'date-fns';
 import { formatDateSync } from '@/i18n';
 import type { TranslateFn } from '@/i18n';
@@ -24,6 +25,8 @@ export interface EventDisplayStyle {
   failingSourceIds?: ReadonlySet<string>;
   /** Tapping a row opens its detail overlay; list rows show a chevron so it reads as tappable. */
   tapDetails?: boolean;
+  /** Name tags: calendar source id -> owner. Absent when tags are off. */
+  owners?: ReadonlyMap<string, EventOwner>;
 }
 
 /** Accent color at a given alpha. ColorPicker's text input accepts any CSS

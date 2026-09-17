@@ -243,6 +243,23 @@
       "other": "{name} hat {count} zugewiesene Aufgaben."
     },
     "hasTimetable": "Hat einen Stundenplan",
-    "removeTimetable": "{name} hat einen Stundenplan, und der wird ebenfalls entfernt."
+    "removeTimetable": "{name} hat einen Stundenplan, und der wird ebenfalls entfernt.",
+    "groups": {
+      "title": "Gruppen",
+      "description": "Fasse Personen zusammen, damit ein Kalender \"Kinder\" statt fünf Namen zeigen kann. Eine Person kann in mehreren Gruppen sein.",
+      "add": "Gruppe hinzufügen",
+      "edit": "Gruppe bearbeiten",
+      "name": "Gruppenname",
+      "members": "Wer gehört dazu",
+      "noMembers": "Noch niemand",
+      "editName": "{name} bearbeiten",
+      "remove": "Gruppe entfernen",
+      "removeTitle": "{name} entfernen?",
+      "removeDescription": "Bildschirme, die nur {name} zeigen, zeigen wieder alle. Niemand wird aus der Familie entfernt.",
+      "saved": "Gruppen gespeichert.",
+      "saveFailed": "Die Gruppen konnten nicht gespeichert werden.",
+      "limit": "Du kannst bis zu {count} Gruppen anlegen.",
+      "hint": "Gruppen werden von der Farblegende des Kalenders und seinem Filter \"Nur anzeigen\" verwendet. Aufgaben und Belohnungen werden weiterhin Personen zugewiesen."
+    }
   }
 }

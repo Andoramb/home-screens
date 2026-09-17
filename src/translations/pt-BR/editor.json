@@ -3217,7 +3217,7 @@
       "separatorsNone": "Nenhum",
       "separatorsWeeks": "Semanas",
       "separatorsWeeksMonths": "Semanas e meses",
-      "showLegend": "Legenda de fontes",
+      "showLegend": "Legenda de cores",
       "legendOff": "Desativada",
       "legendHeader": "Topo do calendário",
       "legendFooter": "Base do calendário"
@@ -3483,7 +3483,7 @@
       "separatorsNone": "Nenhum",
       "separatorsWeeks": "Semanas",
       "separatorsWeeksMonths": "Semanas e meses",
-      "showLegend": "Legenda de fontes",
+      "showLegend": "Legenda de cores",
       "legendOff": "Desativada",
       "legendHeader": "Topo do calendário",
       "legendFooter": "Base do calendário",
@@ -4461,10 +4461,16 @@
       "artUploadHint": "Imagem ou SVG, até 10 MB",
       "artUploadFailed": "Não foi possível adicionar a imagem.",
       "artNames": {
-        "birthday": "Aniversário", "christmas": "Natal", "halloween": "Halloween",
-        "new-year": "Ano Novo", "valentines": "Dia dos Namorados", "july-4th": "4 de julho",
-        "celebrate": "Festejar", "starfield": "Céu estrelado",
-        "snowflakes": "Flocos de neve", "sprinkles": "Granulado"
+        "birthday": "Aniversário",
+        "christmas": "Natal",
+        "halloween": "Halloween",
+        "new-year": "Ano Novo",
+        "valentines": "Dia dos Namorados",
+        "july-4th": "4 de julho",
+        "celebrate": "Festejar",
+        "starfield": "Céu estrelado",
+        "snowflakes": "Flocos de neve",
+        "sprinkles": "Granulado"
       },
       "outline": "Contornar o dia",
       "badge": "Adicionar um selo",
@@ -4557,6 +4563,29 @@
       "set": "Localização: {name}",
       "notSet": "Este módulo precisa da sua localização.",
       "setUp": "Definir sua localização"
+    },
+    "calendarPeople": {
+      "showNameTags": "Etiquetas de nome",
+      "nameTagsHint": "Coloca as iniciais de cada pessoa nos eventos dela. As pessoas vêm de Configurações > Família; de quem é cada calendário é definido em Configurações > Calendário > Pessoas. Calendários compartilhados mantêm um ponto simples.",
+      "nameTagsNoOwners": "Ninguém tem um calendário ainda, então não há o que etiquetar.",
+      "matchCalendars": "Associar calendários a pessoas",
+      "legendMode": "A legenda mostra",
+      "legendModeCalendars": "Calendários",
+      "legendModePeople": "Pessoas",
+      "legendModeGroups": "Grupos",
+      "legendModeNeedsPeople": "Pessoas e Grupos ficam disponíveis quando os calendários forem associados a pessoas.",
+      "peopleFilter": "Mostrar apenas estas pessoas",
+      "peopleFilterHint": "Não marque nada para mostrar todo mundo.",
+      "peopleFilterGroups": "Grupos",
+      "peopleFilterPeople": "Pessoas",
+      "includeShared": "Mostrar também calendários compartilhados e feriados",
+      "peopleFilterEmpty": "Ninguém tem um calendário ainda e a família não tem grupos. Esta tela mostra todos os calendários escolhidos acima.",
+      "peopleFilterNobody": "Os grupos escolhidos ainda não têm ninguém, então esta tela mostra só os calendários compartilhados.",
+      "peopleFilterShowing": "Mostra {names}.",
+      "peopleFilterShowingShared": "Mostra {names}, além dos calendários compartilhados e feriados.",
+      "peopleFilterStaleMember": "Alguém que não está mais na família",
+      "peopleFilterStaleGroup": "Um grupo que foi removido",
+      "peopleFilterClear": "Mostrar todo mundo"
     }
   },
   "imageBrowsers": {

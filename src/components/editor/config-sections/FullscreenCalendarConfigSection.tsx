@@ -12,6 +12,7 @@ import { resolveCalendarAccent } from '@/lib/calendar-event-surface';
 import { useFullscreenThemeTokens } from '@/hooks/useFullscreenThemeTokens';
 import { useTranslate } from '@/i18n';
 import { CalendarSourceFilter, useCalendarSources } from './CalendarSourceFilter';
+import { CalendarPeopleFilter, LegendModeSelect, NameTagsToggle, useCalendarRoster } from './CalendarPeopleControls';
 import { CalendarTitleFilterControl } from './CalendarTitleFilter';
 import { CalendarRulesEditor } from './CalendarRulesEditor';
 import { CalendarGroup, CalendarRulesGroup, useCalendarGroupLabels } from './CalendarSettingsGroups';
@@ -37,6 +38,7 @@ export function FullscreenCalendarConfigSection({ mod, screenId }: { mod: Module
   const { config: c, set } = useModuleConfig<Partial<FullscreenCalendarConfig>>(mod, screenId);
   const view = c.view ?? 'schedule';
   const sourceFilter = c.sourceFilter ?? [];
+  const roster = useCalendarRoster();
   // What the picker shows while accentColor is empty: the accent the module
   // paints with, resolved through the same chain as the display (inherited
   // theme included) so the swatch and the kiosk can never disagree.
@@ -170,6 +172,7 @@ export function FullscreenCalendarConfigSection({ mod, screenId }: { mod: Module
           sourceFilter={sourceFilter}
           onChange={(next) => set({ sourceFilter: next })}
         />
+        <CalendarPeopleFilter value={c.peopleFilter} onChange={(next) => set({ peopleFilter: next })} members={roster.members} groups={roster.groups} owners={roster.owners} />
         <CalendarTitleFilterControl
           keyPrefix="configSections.fullscreen-calendar"
           titleFilter={c.titleFilter}
@@ -181,6 +184,10 @@ export function FullscreenCalendarConfigSection({ mod, screenId }: { mod: Module
           onChange={(v) => set({ showLegend: v })}
           options={LEGEND_OPTIONS}
         />
+        {(c.showLegend ?? 'off') !== 'off' && (
+          <LegendModeSelect value={c.legendMode ?? 'calendars'} onChange={(next) => set({ legendMode: next })} owners={roster.owners} groups={roster.groups} />
+        )}
+        <NameTagsToggle checked={c.showNameTags === true} onChange={(next) => set({ showNameTags: next })} owners={roster.owners} />
       </CalendarGroup>
 
       {/* ── This view: every view-gated field, pooled ── */}

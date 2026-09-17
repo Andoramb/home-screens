@@ -1,6 +1,8 @@
 import { test, expect } from '../fixtures';
 import { getConfig, putConfig, seedFamily } from '../helpers/api';
-import { baseConfig } from '../helpers/config-fixtures';
+import { baseConfig, makeScreen } from '../helpers/config-fixtures';
+import { buildModuleInstance } from '../helpers/module-fixtures';
+import { autosaved, moduleConfig } from '../helpers/editor';
 
 test('Settings Family creates and edits people without a chore module', async ({ page, request, sandboxDir }) => {
   seedFamily(sandboxDir, []);
@@ -75,4 +77,76 @@ test('Calendar assigns sources to the shared family without creating another ros
   expect((await getConfig(request)).settings.calendar.people).toBeUndefined();
   await page.getByRole('link', { name: 'Manage family' }).click();
   await expect(page).toHaveURL(/page=family/);
+});
+
+test('Settings Family creates a group, keeps it in sync when someone leaves, and removes it', async ({ page, request, sandboxDir }) => {
+  seedFamily(sandboxDir, [{ id: 'alex', name: 'Alex', color: '#60a5fa' }, { id: 'sam', name: 'Sam', color: '#fbbf24' }]);
+  await putConfig(request, baseConfig());
+  await page.goto('/editor/settings?section=defaults&page=family');
+  const manager = page.getByTestId('family-manager');
+  const groups = manager.getByTestId('family-groups');
+  await groups.getByRole('button', { name: 'Add group' }).click();
+  await groups.getByLabel('Group name').fill('Kids');
+  await groups.getByRole('checkbox', { name: 'Alex' }).check();
+  await groups.getByRole('checkbox', { name: 'Sam' }).check();
+  await groups.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(manager.getByRole('status')).toHaveText('Groups saved.');
+  await expect(groups.getByTestId('family-group')).toHaveCount(1);
+  await expect(groups.getByTestId('family-group')).toContainText('Alex, Sam');
+  let family = await (await request.get('/api/family')).json();
+  expect(family.groups).toEqual([expect.objectContaining({ name: 'Kids', memberIds: ['alex', 'sam'] })]);
+
+  await manager.getByRole('button', { name: 'Remove Sam?' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Remove person' }).click();
+  await expect(manager.getByRole('status')).toHaveText('Family saved.');
+  await expect(groups.getByTestId('family-group')).toContainText('Alex');
+  await expect(groups.getByTestId('family-group')).not.toContainText('Sam');
+  family = await (await request.get('/api/family')).json();
+  expect(family.groups[0].memberIds).toEqual(['alex']);
+
+  await groups.getByRole('button', { name: 'Remove Kids?' }).click();
+  await page.getByRole('alertdialog').getByRole('button', { name: 'Remove group' }).click();
+  await expect(manager.getByRole('status')).toHaveText('Groups saved.');
+  await expect(groups.getByTestId('family-group')).toHaveCount(0);
+  family = await (await request.get('/api/family')).json();
+  expect(family.groups).toEqual([]);
+  expect(family.members.map((member: { name: string }) => member.name)).toEqual(['Alex']);
+});
+
+test('Settings Family refuses a group saved from a stale roster', async ({ page, request, sandboxDir }) => {
+  seedFamily(sandboxDir, [{ id: 'alex', name: 'Alex', color: '#60a5fa' }]);
+  await putConfig(request, baseConfig());
+  await page.goto('/editor/settings?section=defaults&page=family');
+  const manager = page.getByTestId('family-manager');
+  const groups = manager.getByTestId('family-groups');
+  await groups.getByRole('button', { name: 'Add group' }).click();
+  await groups.getByLabel('Group name').fill('Kids');
+  const before = await (await request.get('/api/family')).json();
+  const added = await request.put('/api/family', { data: { members: [...before.members, { name: 'Sam', color: '#fbbf24' }], revision: before.revision, removedIds: [] } });
+  expect(added.ok()).toBe(true);
+  const conflict = page.waitForResponse((response) => response.url().endsWith('/api/family/groups') && response.request().method() === 'PUT');
+  await groups.getByRole('button', { name: 'Save', exact: true }).click();
+  expect((await conflict).status()).toBe(409);
+  await expect(manager.getByRole('status')).toContainText('Please make your edit again');
+  await expect(manager.getByText('Sam', { exact: true })).toBeVisible();
+  expect((await (await request.get('/api/family')).json()).groups).toEqual([]);
+});
+
+test('a calendar filtered on a deleted group shows the stale choice and can go back to everyone', async ({ page, request, sandboxDir }) => {
+  seedFamily(sandboxDir, [{ id: 'alex', name: 'Alex', color: '#60a5fa' }]);
+  const instance = buildModuleInstance('fullscreen-calendar', { view: 'agenda', peopleFilter: { memberIds: [], groupIds: ['gone-group'], includeShared: true } });
+  await putConfig(request, baseConfig({ screens: [makeScreen('s', 'S', [instance])] }));
+  const config = await getConfig(request);
+  config.settings.calendar.icalSources = [{ id: 'work', name: 'Work', type: 'ical', url: 'https://example.com/work.ics', color: '#60a5fa', enabled: true }];
+  config.settings.calendar.personSources = { alex: ['work'] };
+  await putConfig(request, config);
+  await page.goto('/editor');
+  await expect(page.getByTestId('editor-canvas')).toBeVisible();
+  await page.locator(`[data-module-id="${instance.id}"]`).click();
+  const filter = page.locator('[data-field-id="peopleFilter"]');
+  await expect(filter.locator('[data-stale-selection="group"]')).toBeVisible();
+  await autosaved(page, () => filter.getByRole('button', { name: 'Show everyone' }).click());
+  await expect(filter.locator('[data-stale-selection="group"]')).toHaveCount(0);
+  await expect(filter).toContainText('Leave everything unchecked to show everyone.');
+  expect((await moduleConfig(request, 'fullscreen-calendar')).peopleFilter).toBeUndefined();
 });

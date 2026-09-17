@@ -15,6 +15,8 @@ import type { TranslateFn } from '@/i18n';
 import type { CalendarEvent } from '@/types/config';
 import type { EventDisplayStyle } from './support';
 import Glyph from '@/components/ui/Glyph';
+import { eventOwner } from '@/lib/calendar-people';
+import { EventMarker } from '../shared/EventMarker';
 
 // Memoized: grid views mount hundreds of these and the module re-renders
 // every minute on the timezone clock tick with the same event object refs,
@@ -41,6 +43,7 @@ export const EventCard = memo(function EventCard({ event, textColor: _textColor,
   live?: boolean;
 }) {
   const { timeFormat, gridStyle, pillBackground, timezone, tapDetails } = eventStyle;
+  const owner = eventOwner(event, eventStyle.owners);
   const isAllDay = isAllDayEvent(event);
   // Classic compact pills render only the dot and title — return before
   // parsing dates, since grid views mount hundreds of these per render.
@@ -76,10 +79,7 @@ export const EventCard = memo(function EventCard({ event, textColor: _textColor,
         {glyph ? (
           <span aria-hidden="true" className="shrink-0" style={{ fontSize: '0.7em' }}><Glyph value={glyph} /></span>
         ) : (
-          <div
-            className="w-1.5 h-1.5 rounded-full shrink-0"
-            style={{ backgroundColor: event.calendarColor ?? accentColor }}
-          />
+          <EventMarker owner={owner} color={eventColor} size={6} tagSize="1.05em" />
         )}
         <span className="truncate" style={{ fontSize: '0.7em' }}>{event.title}</span>
       </div>
@@ -140,7 +140,11 @@ export const EventCard = memo(function EventCard({ event, textColor: _textColor,
             )}
           </div>
         )}
-        <p className="font-medium leading-tight line-clamp-2" style={{ fontSize: '0.85em' }}>{event.title}</p>
+        <p className="font-medium leading-tight line-clamp-2" style={{ fontSize: '0.85em' }}>
+          {/* The bar keeps saying which calendar; the tag says who, in front of the title. */}
+          {!glyph && owner && <EventMarker owner={owner} color={event.calendarColor ?? accentColor} size="0.5em" tagSize="1.3em" style={{ verticalAlign: 'middle', marginTop: '-0.15em', marginRight: '0.35em' }} />}
+          {event.title}
+        </p>
         {progress != null && (
           <div
             role="progressbar"

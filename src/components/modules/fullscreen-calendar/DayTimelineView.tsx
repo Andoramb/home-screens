@@ -19,7 +19,9 @@ import { DEFAULT_TIME_FORMAT } from '@/types/config';
 import { formatHourLabel, hourLabelShift, useContainerHeight, HourLines, NowLine, NowBadge, RollingWindowStrip } from './shared-time-grid';
 import { resolveHourWindow } from '@/lib/calendar-hour-window';
 import { eventAriaLabel } from './list-view-bits';
-import Glyph, { GlyphPrefix } from '@/components/ui/Glyph';
+import Glyph from '@/components/ui/Glyph';
+import { eventOwner } from '@/lib/calendar-people';
+import { TagPrefix } from '../shared/EventMarker';
 
 
 // Tinted morning/afternoon/evening bands. Each zone spans [start, end) hours and
@@ -88,7 +90,7 @@ function ZoneBand({
   );
 }
 
-export function DayTimelineView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT }: CalendarViewProps) {
+export function DayTimelineView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const am = t('fullscreen-calendar.am');
@@ -166,6 +168,7 @@ export function DayTimelineView({ events, timezone, config, scale, today, now, t
           {allDayEvs.map(ev => {
             const color = ev.calendarColor ?? DEFAULT_EVENT_COLOR;
             const glyph = eventGlyph(ev);
+            const owner = eventOwner(ev, owners);
             const description = config.dayShowDescription ? sanitizeEventDescription(ev.description) : '';
             return (
               <div key={ev.id} className="fsc-event-block" data-event-id={ev.id} aria-label={eventAriaLabel(t, ev, { allDay: true })} style={{
@@ -176,7 +179,7 @@ export function DayTimelineView({ events, timezone, config, scale, today, now, t
                 marginBottom: scale.bu * 0.2,
                 opacity: ev.opacity,
               }}>
-                <GlyphPrefix value={glyph} />{ev.title}
+                <TagPrefix glyph={glyph} owner={owner} color={color} />{ev.title}
                 {description && (
                   <div style={{
                     fontSize: fontSize * 0.75,
@@ -284,6 +287,7 @@ export function DayTimelineView({ events, timezone, config, scale, today, now, t
               const height = Math.max((evEnd - evStart) * hourHeight, fontSize * 2.5);
               const color = ev.calendarColor ?? DEFAULT_EVENT_COLOR;
               const glyph = eventGlyph(ev);
+              const owner = eventOwner(ev, owners);
               const isPast = isToday && evEnd <= nowHour;
 
               const evStartLabel = formatEventTime(parseEventWallTime(ev.start, timezone), timeFormat, locale);
@@ -324,7 +328,7 @@ export function DayTimelineView({ events, timezone, config, scale, today, now, t
                     fontWeight: 600,
                     color: 'var(--cal-text-primary)',
                   }}>
-                    <GlyphPrefix value={glyph} />{ev.title}
+                    <TagPrefix glyph={glyph} owner={owner} color={color} />{ev.title}
                   </div>
                   <div style={{
                     fontSize: fontSize * 0.8,

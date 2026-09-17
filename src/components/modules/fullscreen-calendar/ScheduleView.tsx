@@ -20,9 +20,11 @@ import { DEFAULT_TIME_FORMAT, type FullscreenCalendarConfig } from '@/types/conf
 import { formatHourLabel, hourLabelShift, useContainerHeight, HourLines, NowLine, NowBadge, RollingWindowStrip } from './shared-time-grid';
 import { resolveHourWindow } from '@/lib/calendar-hour-window';
 import { eventAriaLabel } from './list-view-bits';
-import Glyph, { GlyphPrefix } from '@/components/ui/Glyph';
+import Glyph from '@/components/ui/Glyph';
+import { eventOwner } from '@/lib/calendar-people';
+import { TagPrefix } from '../shared/EventMarker';
 
-export function ScheduleView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather }: CalendarViewProps) {
+export function ScheduleView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const am = t('fullscreen-calendar.am');
@@ -156,7 +158,7 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
       </div>
 
       {/* All-day events row */}
-      <AllDayRow events={events} timezone={timezone} days={days} config={config} scale={scale} gutterWidth={gutterWidth} fontSize={fontSize} today={today} t={t} />
+      <AllDayRow events={events} timezone={timezone} days={days} config={config} scale={scale} gutterWidth={gutterWidth} fontSize={fontSize} today={today} t={t} owners={owners} />
 
       {/* Time grid */}
       <div ref={scrollRef} role="grid" aria-label={t('fullscreen-calendar.ariaLabels.scheduleTimeGrid')} style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
@@ -237,6 +239,7 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
                     const height = Math.max((evEnd - evStart) * hourHeight, fontSize * 1.5);
                     const color = ev.calendarColor ?? DEFAULT_EVENT_COLOR;
                     const glyph = eventGlyph(ev);
+                    const owner = eventOwner(ev, owners);
                     const isPastEvent = isToday && evEnd <= nowHour;
 
                     const evStartLabel = formatEventTime(parseEventWallTime(ev.start, timezone), timeFormat, locale);
@@ -279,7 +282,7 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
                           lineHeight: 1.3,
                           ...clampStyle(wrapTitles),
                         }}>
-                          <GlyphPrefix value={glyph} />{ev.title}
+                          <TagPrefix glyph={glyph} owner={owner} color={color} />{ev.title}
                         </div>
                         {height >= fontSize * 2 && (
                           <div style={{
@@ -360,8 +363,9 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
 
 // ─── All-Day Events Row ───
 
-function AllDayRow({ events, timezone, days, config, scale, gutterWidth, fontSize, today, t }: {
+function AllDayRow({ events, timezone, days, config, scale, gutterWidth, fontSize, today, t, owners }: {
   events: CalendarEvent[];
+  owners?: CalendarViewProps['owners'];
   timezone?: string;
   days: Date[];
   config: FullscreenCalendarConfig;
@@ -420,6 +424,7 @@ function AllDayRow({ events, timezone, days, config, scale, gutterWidth, fontSiz
               {dayAllDay.map(ev => {
                 const color = ev.calendarColor ?? DEFAULT_EVENT_COLOR;
                 const glyph = eventGlyph(ev);
+                const owner = eventOwner(ev, owners);
                 return (
                   <div
                     key={ev.id}
@@ -437,7 +442,7 @@ function AllDayRow({ events, timezone, days, config, scale, gutterWidth, fontSiz
                       opacity: ev.opacity,
                     }}
                   >
-                    <GlyphPrefix value={glyph} />{ev.title}
+                    <TagPrefix glyph={glyph} owner={owner} color={color} />{ev.title}
                   </div>
                 );
               })}

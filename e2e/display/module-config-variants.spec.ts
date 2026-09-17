@@ -35,7 +35,7 @@ async function renderVariant(page: Page, request: APIRequestContext, sandboxDir:
   }
   const stub = await stubModuleData(page, { overrides }); // also blocks external hosts
 
-  if (variant.familyMembers) seedFamily(sandboxDir, variant.familyMembers);
+  if (variant.familyMembers) seedFamily(sandboxDir, variant.familyMembers, variant.familyGroups);
   if (variant.seed === 'chores') await seedHouseholdChores(request, sandboxDir, variant.seedData ?? undefined);
   if (variant.seed === 'meals') await seedMeals(request, variant.seedData ?? undefined);
   if (variant.seed === 'todos') seedTodos(sandboxDir, (variant.seedData as Parameters<typeof seedTodos>[1]) ?? undefined);

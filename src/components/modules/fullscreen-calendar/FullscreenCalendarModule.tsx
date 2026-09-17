@@ -8,7 +8,9 @@ import { useFullscreenDims } from '@/hooks/useFullscreenDims';
 import { useTZClock } from '@/hooks/useTZClock';
 import { rulesNeedNow, selectCalendarEvents } from '@/lib/calendar-rules';
 import { listViewCutoff, weekStartsOnFor } from '@/lib/calendar-utils';
-import { buildLegend } from '@/lib/calendar-legend';
+import { buildLegendRows } from '@/lib/calendar-legend';
+import { ownerBySource, peopleForSelection, peopleSelection, type PeopleSelection } from '@/lib/calendar-people';
+import type { FamilyGroup } from '@/types/family';
 import { effectiveWeatherPlacement, viewTraits } from './view-traits';
 import type { CalendarScale, CalendarViewProps, CalendarWeather } from './view-support';
 import { buildHourlyIndex } from './event-weather';
@@ -92,10 +94,11 @@ export function selectVisibleEvents(
   view: FullscreenCalendarConfig['view'],
   sourceFilter: string[] | undefined,
   now: Date,
-  opts: { timezone?: string; titleFilter?: CalendarTitleFilter; showFinishedToday?: boolean; eventRules?: CalendarEventRule[] } = {},
+  opts: { timezone?: string; titleFilter?: CalendarTitleFilter; showFinishedToday?: boolean; eventRules?: CalendarEventRule[]; peopleSelection?: PeopleSelection | null } = {},
 ): CalendarEvent[] {
   return selectCalendarEvents(events, {
     sourceFilter,
+    peopleSelection: opts.peopleSelection,
     titleFilter: opts.titleFilter,
     eventRules: opts.eventRules,
     timezone: opts.timezone,
@@ -177,6 +180,8 @@ interface FullscreenCalendarModuleProps {
   people?: CalendarPerson[];
   /** Avoid rendering source fallback rows before the configured people arrive. */
   peopleState?: 'loading' | 'failed';
+  /** Family groups, for the color key and the people filter (see buildModuleProps). */
+  groups?: FamilyGroup[];
 }
 
 export default function FullscreenCalendarModule({
@@ -195,6 +200,7 @@ export default function FullscreenCalendarModule({
   calendarSetup,
   people,
   peopleState,
+  groups,
 }: FullscreenCalendarModuleProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
@@ -219,13 +225,23 @@ export default function FullscreenCalendarModule({
   // across ticks — the rules pass mints new event objects, which would
   // thrash every event-keyed memo in the views for nothing on a Pi.
   const selectionNow = config.view === 'agenda' || rulesNeedNow(config.eventRules) ? now : null;
+  // "Show only these people", resolved once per roster change: groups expand
+  // to members here, so a screen pointed at "Kids" follows the family list.
+  const selection = useMemo(() => peopleSelection(config.peopleFilter, people, groups, peopleState), [config.peopleFilter, people, groups, peopleState]);
+  // The per-person views draw only the chosen people, like the events above.
+  const visiblePeople = useMemo(() => peopleForSelection(people, selection), [people, selection]);
   const events = useMemo(
     () => selectVisibleEvents(rawEvents, config.view, config.sourceFilter, selectionNow ?? today, {
       timezone, titleFilter: config.titleFilter, showFinishedToday: config.agendaShowFinishedToday === true,
-      eventRules: config.eventRules,
+      eventRules: config.eventRules, peopleSelection: selection,
     }),
-    [rawEvents, config.view, config.sourceFilter, selectionNow, today, timezone, config.titleFilter, config.agendaShowFinishedToday, config.eventRules],
+    [rawEvents, config.view, config.sourceFilter, selectionNow, today, timezone, config.titleFilter, config.agendaShowFinishedToday, config.eventRules, selection],
   );
+  // Name tags: the owner drawn in place of each event's calendar dot.
+  const owners = useMemo(() => (config.showNameTags === true ? ownerBySource(people) : undefined), [config.showNameTags, people]);
+  // A filtered screen whose roster has not arrived shows nothing rather than
+  // everyone's events; while the roster is loading that reads as loading.
+  const rosterPending = selection?.pending === true;
 
   const themeId = config.theme ?? fullscreenTheme ?? migrateFromDarkMode(config.darkMode);
   const theme = getThemeTokens(themeId);
@@ -266,8 +282,8 @@ export default function FullscreenCalendarModule({
   const legend = useMemo(() => {
     if (legendPlacement === 'off') return [];
     const window = traits.legendWindow({ today, weekStartsOn: weekStartsOnFor(config.startDay), config, scaleWidth: scale.width });
-    return buildLegend(events, window, timezone, t('calendar.publicHolidays'));
-  }, [legendPlacement, events, timezone, today, t, traits, config, scale.width]);
+    return buildLegendRows(events, window, timezone, { holidays: t('calendar.publicHolidays'), everyone: t('fullscreen-calendar.everyone') }, config.legendMode, people, groups);
+  }, [legendPlacement, events, timezone, today, t, traits, config, scale.width, people, groups]);
 
   const currentTemp = hourly?.[0]?.temp;
   const weatherIconId = hourly?.[0]?.icon;
@@ -297,19 +313,19 @@ export default function FullscreenCalendarModule({
   );
 
   const viewProps = useMemo<CalendarViewProps>(
-    () => ({ events, config, scale, today, now, timeFormat, weather, timezone, failingSourceIds, people, extras }),
-    [events, config, scale, today, now, timeFormat, weather, timezone, failingSourceIds, people, extras],
+    () => ({ events, config, scale, today, now, timeFormat, weather, timezone, failingSourceIds, people: visiblePeople, owners, extras }),
+    [events, config, scale, today, now, timeFormat, weather, timezone, failingSourceIds, visiblePeople, owners, extras],
   );
   const hasEvents = events.length > 0;
   // Views with something to say on an empty feed: the family grid and free
   // time still draw every configured person, and a week list can be all
   // meals and chores.
   const hasContent = hasEvents
-    || ((config.view === 'family-grid' || config.view === 'free-time') && (people?.length ?? 0) > 0)
+    || ((config.view === 'family-grid' || config.view === 'free-time') && (visiblePeople?.length ?? 0) > 0)
     || (wantsExtras && hasExtras(extras, weekDates));
   const personView = config.view === 'family-grid' || config.view === 'free-time';
-  const peopleUnavailable = personView && !!peopleState;
-  const isLoading = (loading && !hasContent) || (personView && peopleState === 'loading');
+  const peopleUnavailable = (personView || rosterPending) && !!peopleState;
+  const isLoading = (loading && !hasContent) || ((personView || rosterPending) && peopleState === 'loading');
 
   // Failure ≠ empty: while the shared calendar fetch is failing, the events
   // on screen are the kept last-good payload — badge them as not updating
@@ -432,7 +448,7 @@ export default function FullscreenCalendarModule({
 
       {legendPlacement === 'header' && (
         <CalendarLegend
-          sources={legend}
+          rows={legend}
           label={t('fullscreen-calendar.ariaLabels.legend')}
           style={{ ...legendStripStyle(scale), borderBottom: '1px solid var(--cal-border-subtle)' }}
           failingIds={failingSourceIds}
@@ -487,7 +503,7 @@ export default function FullscreenCalendarModule({
 
       {legendPlacement === 'footer' && (
         <CalendarLegend
-          sources={legend}
+          rows={legend}
           label={t('fullscreen-calendar.ariaLabels.legend')}
           style={{ ...legendStripStyle(scale), borderTop: '1px solid var(--cal-border-subtle)' }}
           failingIds={failingSourceIds}

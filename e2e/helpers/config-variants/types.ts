@@ -42,6 +42,8 @@ export interface ConfigVariant {
   seedData?: unknown;
   /** Household roster for calendar views; persisted separately from settings. */
   familyMembers?: Array<{ id: string; name: string; color: string; emoji?: string }>;
+  /** Family groups seeded with the roster (needs `familyMembers`). */
+  familyGroups?: Array<{ id: string; name: string; memberIds: string[] }>;
   /**
    * Extra modules rendered on the same screen as the variant module — for
    * fields that react to ANOTHER module's runtime output (e.g. greeting's

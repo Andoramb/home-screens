@@ -1,23 +1,23 @@
-import type { LegendSource } from '@/lib/calendar-legend';
+import type { LegendAvatar, LegendRow } from '@/lib/calendar-legend';
 
 /**
- * Source legend for the calendar modules: one dot + name per source that has
- * an event in the rendered window (callers build the list with
- * `legendSources`, so a configured source with nothing visible never
- * appears). Em-based sizing throughout — the caller sets `fontSize`, `color`,
- * padding, and any border via `style`, so the same component serves the
- * fullscreen header row and the small module's strips. Wraps to further
- * lines rather than truncating names.
+ * Color key for the calendar modules, in any mode: one dot + name per
+ * calendar, one avatar + name per family member, or one stack of avatars +
+ * name per family group (callers build the rows with `buildLegendRows`, so a
+ * calendar or person with nothing visible never appears). Em-based sizing
+ * throughout — the caller sets `fontSize`, `color`, padding, and any border
+ * via `style`, so the same component serves the fullscreen header row and
+ * the small module's strips. Wraps to further lines rather than truncating.
  */
-export function CalendarLegend({ sources, style, label, failingIds }: {
-  sources: LegendSource[];
+export function CalendarLegend({ rows, style, label, failingIds }: {
+  rows: LegendRow[];
   style?: React.CSSProperties;
   /** Accessible name for the list ("Calendar sources"). */
   label: string;
-  /** Sources whose feed is currently failing — dot gets a calm amber ring. */
+  /** Sources whose feed is currently failing — the row's marker gets a calm amber ring. */
   failingIds?: ReadonlySet<string>;
 }) {
-  if (sources.length === 0) return null;
+  if (rows.length === 0) return null;
   return (
     <div
       role="list"
@@ -31,12 +31,13 @@ export function CalendarLegend({ sources, style, label, failingIds }: {
         ...style,
       }}
     >
-      {sources.map((s) => {
-        const failing = failingIds?.has(s.sourceId) === true;
+      {rows.map((row) => {
+        const failing = failingIds !== undefined && row.sourceIds.some((id) => failingIds.has(id));
         return (
           <span
             role="listitem"
-            key={s.sourceId}
+            key={`${row.kind}:${row.id}`}
+            data-legend-kind={row.kind}
             data-source-failing={failing ? '' : undefined}
             style={{
               display: 'inline-flex',
@@ -46,21 +47,58 @@ export function CalendarLegend({ sources, style, label, failingIds }: {
               color: failing ? '#d9a441' : undefined,
             }}
           >
-            <span
-              aria-hidden="true"
-              style={{
-                width: '0.7em',
-                height: '0.7em',
-                borderRadius: '50%',
-                background: s.calendarColor,
-                flexShrink: 0,
-                boxShadow: failing ? '0 0 0 2px rgba(217,164,65,0.75)' : undefined,
-              }}
-            />
-            {s.sourceName}
+            {row.kind === 'source' ? (
+              <span
+                aria-hidden="true"
+                style={{
+                  width: '0.7em',
+                  height: '0.7em',
+                  borderRadius: '50%',
+                  background: row.color,
+                  flexShrink: 0,
+                  boxShadow: failing ? '0 0 0 2px rgba(217,164,65,0.75)' : undefined,
+                }}
+              />
+            ) : row.kind === 'group' ? (
+              <span aria-hidden="true" style={{ display: 'inline-flex', flexShrink: 0 }}>
+                {row.avatars.map((avatar, index) => (
+                  <LegendAvatarDot key={avatar.name + index} avatar={avatar} stacked={index > 0} failing={failing} />
+                ))}
+              </span>
+            ) : (
+              <LegendAvatarDot avatar={row.avatar} failing={failing} />
+            )}
+            {row.name}
           </span>
         );
       })}
     </div>
+  );
+}
+
+/** An initials circle sized off the legend font; stacked ones overlap the previous by a third. */
+function LegendAvatarDot({ avatar, stacked, failing }: { avatar: LegendAvatar; stacked?: boolean; failing?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: '1.4em',
+        height: '1.4em',
+        borderRadius: '50%',
+        background: avatar.color,
+        color: '#fff',
+        fontSize: '1em',
+        fontWeight: 700,
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+        marginLeft: stacked ? '-0.45em' : undefined,
+        // The ring separates stacked circles from each other; the amber ring wins while a feed is failing.
+        boxShadow: failing ? '0 0 0 2px rgba(217,164,65,0.75)' : stacked ? '0 0 0 2px var(--cal-legend-bg, var(--cal-bg, #0000))' : undefined,
+      }}
+    >
+      <span style={{ fontSize: avatar.initials.length > 2 ? '0.5em' : '0.62em', lineHeight: 1 }}>{avatar.initials}</span>
+    </span>
   );
 }

@@ -32,3 +32,23 @@ test('remote Settings opens Family without a chore chart and saves a person', as
   await expect(family).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Close settings' })).toBeVisible();
 });
+
+test('remote Settings Family adds a group in a full-screen form', async ({ page, request, sandboxDir }) => {
+  seedFamily(sandboxDir, [{ id: 'alex', name: 'Alex', color: '#60a5fa' }, { id: 'sam', name: 'Sam', color: '#fbbf24' }]);
+  await putConfig(request, baseConfig());
+  await page.goto('/remote');
+  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await page.getByRole('button', { name: /Family.*Manage the people/ }).click();
+  const family = page.getByRole('dialog', { name: 'Family', exact: true });
+  await family.getByRole('button', { name: 'Add group' }).click();
+  const form = family.getByRole('dialog', { name: 'Add group', exact: true });
+  await expect(form).toBeVisible();
+  await form.getByLabel('Group name').fill('Kids');
+  const box = form.getByRole('checkbox', { name: 'Sam' });
+  await box.check();
+  expect((await box.locator('xpath=..').boundingBox())?.height).toBeGreaterThanOrEqual(48);
+  await form.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(family.getByRole('status')).toHaveText('Groups saved.');
+  await expect(family.getByTestId('family-group')).toContainText('Sam');
+  expect((await (await request.get('/api/family')).json()).groups).toEqual([expect.objectContaining({ name: 'Kids', memberIds: ['sam'] })]);
+});

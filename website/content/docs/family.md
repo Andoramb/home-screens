@@ -20,6 +20,12 @@ You can add up to 64 people. Larger lists brought forward from an older version 
 
 If someone saves another change while you are editing, the current list appears with a message asking you to make your edit again. This protects changes made on another phone.
 
+## Groups
+
+Under the members list, **Groups** lets you put people together: "Kids", "Parents", "Older kids". A person can be in more than one group, and a group has no colour of its own; on screen it reads as a stack of its members' avatars. Choose **Add group**, give it a name, tick who is in it and **Save**. Removing someone from the family takes them out of every group. Removing a group removes nobody.
+
+Groups are used by the calendar modules: the colour key can list groups instead of every person, and a screen can be set to show only the people in a group. Adding someone to a group updates every screen that shows that group. Chores and rewards still assign to people.
+
 ## Connect calendars
 
 Open **Settings > Calendar > Whose calendars?** and tick the calendars that belong to each person. A calendar can belong to several people. Calendars assigned to nobody are shared with everyone.

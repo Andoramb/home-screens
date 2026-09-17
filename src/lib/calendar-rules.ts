@@ -1,3 +1,4 @@
+import { eventPassesPeople, type PeopleSelection } from '@/lib/calendar-people';
 import type { CSSProperties } from 'react';
 import { isSameDay } from 'date-fns';
 import type {
@@ -289,6 +290,8 @@ export function selectCalendarEvents(
   events: CalendarEvent[],
   opts: {
     sourceFilter?: string[];
+    /** "Show only these people", already resolved to sources (see `peopleSelection`). */
+    peopleSelection?: PeopleSelection | null;
     titleFilter?: CalendarTitleFilter;
     eventRules?: CalendarEventRule[];
     timezone?: string;
@@ -301,8 +304,10 @@ export function selectCalendarEvents(
   const sourced = !opts.sourceFilter || opts.sourceFilter.length === 0
     ? events
     : events.filter((ev) => !ev.sourceId || opts.sourceFilter!.includes(ev.sourceId));
+  const people = opts.peopleSelection;
+  const peopled = people ? sourced.filter((ev) => eventPassesPeople(ev, people)) : sourced;
   const filtered = applyEventRules(
-    applyTitleFilter(sourced, opts.titleFilter),
+    applyTitleFilter(peopled, opts.titleFilter),
     opts.eventRules,
     { now: opts.now, timezone: opts.timezone },
   );

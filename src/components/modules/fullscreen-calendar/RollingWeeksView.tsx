@@ -20,7 +20,7 @@ import type { CalendarViewProps } from './view-support';
  * derived from each date (not the column), no past or out-of-month days
  * exist, and the 1st of each month crossed renders "MMM d".
  */
-export function RollingWeeksView({ events, timezone, config, scale, today, now }: CalendarViewProps) {
+export function RollingWeeksView({ events, timezone, config, scale, today, now, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const fontSize = scale.bu * scale.typoMul * scale.densityMul;
@@ -115,6 +115,7 @@ export function RollingWeeksView({ events, timezone, config, scale, today, now }
                 config={config}
                 today={today}
                 decor={decor}
+                owners={owners}
               />
             </div>
           );

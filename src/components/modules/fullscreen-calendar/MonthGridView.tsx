@@ -15,7 +15,7 @@ import type { CalendarViewProps } from './view-support';
 import { useContainerHeight } from './shared-time-grid';
 import { GridCellBody } from './grid-view-bits';
 
-export function MonthGridView({ events, timezone, config, scale, today, now }: CalendarViewProps) {
+export function MonthGridView({ events, timezone, config, scale, today, now, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const fontSize = scale.bu * scale.typoMul * scale.densityMul;
@@ -157,6 +157,7 @@ export function MonthGridView({ events, timezone, config, scale, today, now }: C
                   config={config}
                   today={today}
                   decor={decor}
+                  owners={owners}
                 />
               </div>
             </div>

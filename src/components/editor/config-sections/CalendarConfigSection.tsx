@@ -11,10 +11,11 @@ import { clampRollingWeeks, clampWeeksToShow, isGridView, isThemedGridView, defa
 import { DEFAULT_CALENDAR_ACCENT } from '@/lib/calendar-color';
 import { useTranslate } from '@/i18n';
 import { CalendarSourceFilter, useCalendarSources } from './CalendarSourceFilter';
+import { CalendarPeopleFilter, LegendModeSelect, NameTagsToggle, useCalendarRoster } from './CalendarPeopleControls';
 import { CalendarTitleFilterControl } from './CalendarTitleFilter';
 import { CalendarRulesEditor } from './CalendarRulesEditor';
 import { CalendarGroup, CalendarRulesGroup, useCalendarGroupLabels } from './CalendarSettingsGroups';
-import type { CalendarEventRule, CalendarDayRule, AgendaSeparators, CalendarLegendPlacement, CalendarTitleFilter, EventTapStyle, ModuleInstance } from '@/types/config';
+import type { CalendarEventRule, CalendarDayRule, AgendaSeparators, CalendarLegendPlacement, CalendarLegendMode, CalendarPeopleFilter as CalendarPeopleFilterValue, CalendarTitleFilter, EventTapStyle, ModuleInstance } from '@/types/config';
 
 // Stable selector fallback — a literal `?? []` inside a zustand selector
 // re-renders forever when the key is absent (React #185, tab crash).
@@ -50,6 +51,9 @@ export function CalendarConfigSection({ mod, screenId }: { mod: ModuleInstance; 
     emptyDayText?: string;
     agendaSeparators?: AgendaSeparators;
     showLegend?: CalendarLegendPlacement;
+    legendMode?: CalendarLegendMode;
+    showNameTags?: boolean;
+    peopleFilter?: CalendarPeopleFilterValue;
     dimPastEvents?: boolean;
     showNowRule?: boolean;
     eventRules?: CalendarEventRule[];
@@ -57,6 +61,7 @@ export function CalendarConfigSection({ mod, screenId }: { mod: ModuleInstance; 
   }>(mod, screenId);
   const viewMode = c.viewMode ?? 'daily';
   const sourceFilter = c.sourceFilter ?? [];
+  const roster = useCalendarRoster();
   const gridTheme = c.gridTheme ?? 'banner';
   const isThemedGrid = isThemedGridView(viewMode);
   // The modern themes carry their own pill styling; gridEventStyle and the
@@ -144,6 +149,7 @@ export function CalendarConfigSection({ mod, screenId }: { mod: ModuleInstance; 
           sourceFilter={sourceFilter}
           onChange={(next) => set({ sourceFilter: next })}
         />
+        <CalendarPeopleFilter value={c.peopleFilter} onChange={(next) => set({ peopleFilter: next })} members={roster.members} groups={roster.groups} owners={roster.owners} />
         <CalendarTitleFilterControl
           keyPrefix="configSections.calendar"
           titleFilter={c.titleFilter}
@@ -155,6 +161,10 @@ export function CalendarConfigSection({ mod, screenId }: { mod: ModuleInstance; 
           onChange={(v) => set({ showLegend: v })}
           options={LEGEND_OPTIONS}
         />
+        {(c.showLegend ?? 'off') !== 'off' && (
+          <LegendModeSelect value={c.legendMode ?? 'calendars'} onChange={(next) => set({ legendMode: next })} owners={roster.owners} groups={roster.groups} />
+        )}
+        <NameTagsToggle checked={c.showNameTags === true} onChange={(next) => set({ showNameTags: next })} owners={roster.owners} />
       </CalendarGroup>
 
       {/* ── This view: every view-gated field, pooled ── */}

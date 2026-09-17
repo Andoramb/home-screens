@@ -22,11 +22,12 @@ import { DayArtLayer } from '../shared/DayArtLayer';
 import { CountdownPill, EventProgressBar, eventAriaLabel } from './list-view-bits';
 import { DEFAULT_TIME_FORMAT } from '@/types/config';
 import { getMealSlotLabelKey, toISODate } from '@/lib/meal-constants';
-import { EVERYONE_COLOR, initialsOf } from '@/lib/calendar-people';
+import { EVERYONE_COLOR, eventOwner, initialsOf } from '@/lib/calendar-people';
+import { EventMarker } from '../shared/EventMarker';
 import type { DayExtras, ExtrasIndex } from '@/lib/calendar-extras';
 import Glyph from '@/components/ui/Glyph';
 
-export function WeekListView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, failingSourceIds, extras }: CalendarViewProps) {
+export function WeekListView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, failingSourceIds, owners, extras }: CalendarViewProps) {
   const t = useTranslate('modules');
   const tCore = useTranslate('core');
   const locale = useFormattingLocale();
@@ -36,8 +37,8 @@ export function WeekListView({ events, timezone, config, scale, today, now, time
   const { showTodayBg, showTodayMarker } = resolveTodayHighlight(config);
   const emptyDayText = config.emptyDayText?.trim();
   const rowCtx = useMemo<RowCtx>(
-    () => ({ t, locale, timeFormat, timezone, scale, fontSize, config }),
-    [t, locale, timeFormat, timezone, scale, fontSize, config],
+    () => ({ t, locale, timeFormat, timezone, scale, fontSize, config, owners }),
+    [t, locale, timeFormat, timezone, scale, fontSize, config, owners],
   );
 
   const days = useWeekDays(today, weekStartsOnFor(config.startDay));
@@ -278,6 +279,7 @@ function EventRow({ event, segment, rowDate, now, ctx, weather, isAllDay, showDe
     event, failingSourceIds, t,
   );
   const glyph = eventGlyph(event);
+  const owner = eventOwner(event, ctx.owners);
   const kindLabel = eventKindLabel(event, start.getFullYear(), t, 'fullscreen-calendar');
   // `wash` keeps the original bare row (the surface paints nothing for it);
   // every other style fills the row, which then needs inset padding and a
@@ -306,14 +308,7 @@ function EventRow({ event, segment, rowDate, now, ctx, weather, isAllDay, showDe
       {glyph ? (
         <span aria-hidden="true" style={{ width: fontSize * 0.6, textAlign: 'center', flexShrink: 0, marginTop: fontSize * 0.3, fontSize: fontSize * 0.7 }}><Glyph value={glyph} /></span>
       ) : (
-        <div style={{
-          width: fontSize * 0.6,
-          height: fontSize * 0.6,
-          borderRadius: '50%',
-          background: color,
-          flexShrink: 0,
-          marginTop: fontSize * 0.35,
-        }} />
+        <EventMarker owner={owner} color={color} size={fontSize * 0.6} tagSize={fontSize * 1.3} reserve={ctx.owners !== undefined} style={{ marginTop: ctx.owners ? fontSize * 0.05 : fontSize * 0.35 }} />
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{

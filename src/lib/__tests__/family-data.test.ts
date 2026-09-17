@@ -3,7 +3,7 @@ import { promises as fs } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { familyRevision, readFamilyData, replaceFamilyMembers, settleFamilyMigration, type ReplaceFamilyInput } from '../family-data';
+import { familyRevision, readFamilyData, replaceFamilyGroups, replaceFamilyMembers, settleFamilyMigration, type ReplaceFamilyInput } from '../family-data';
 import { withDataTransaction, commitDataTransaction, readTransactionFile, DataTransactionError } from '../data-transaction';
 const now = '2026-09-09T12:00:00.000Z';
 const member = (id: string, name = id) => ({ id, name, color: '#60a5fa', emoji: '🙂', createdAt: now, updatedAt: now });
@@ -337,5 +337,33 @@ describe('transaction recovery', () => {
     expect(await read('a.json')).toEqual({ before: true });
     expect(await fs.readdir(path.join(root, 'data'))).not.toContain('b.json');
     expect(await fs.readdir(path.join(root, 'data'))).not.toContain('family-transaction.json');
+  });
+});
+
+describe('family groups', () => {
+  it('saves groups against the roster revision in family order and refuses unknown people', async () => {
+    await put('family.json', { members: [member('a', 'Ann'), member('b', 'Ben')], migrated: true });
+    const before = await readFamilyData();
+    const saved = await replaceFamilyGroups({ groups: [{ name: ' Kids ', memberIds: ['b', 'a', 'b'] }], revision: familyRevision(before) });
+    expect(saved.groups).toEqual([expect.objectContaining({ name: 'Kids', memberIds: ['a', 'b'] })]);
+    expect(saved.revision).not.toBe(familyRevision(before));
+    expect((await read('family.json')).groups[0].memberIds).toEqual(['a', 'b']);
+    await expect(replaceFamilyGroups({ groups: [{ name: 'Kids', memberIds: ['zed'] }], revision: saved.revision })).rejects.toMatchObject({ status: 409 });
+    await expect(replaceFamilyGroups({ groups: [], revision: 'stale' })).rejects.toMatchObject({ status: 409, current: expect.objectContaining({ groups: saved.groups }) });
+    await expect(replaceFamilyGroups({ groups: [{ name: '', memberIds: [] }], revision: saved.revision })).rejects.toMatchObject({ status: 400 });
+  });
+  it('keeps timestamps for unchanged groups and drops removed people from every group', async () => {
+    await put('family.json', { members: [member('a', 'Ann'), member('b', 'Ben')], migrated: true });
+    const first = await replaceFamilyGroups({ groups: [{ name: 'Kids', memberIds: ['a', 'b'] }], revision: familyRevision(await readFamilyData()) });
+    const kids = first.groups[0];
+    const second = await replaceFamilyGroups({ groups: [{ id: kids.id, name: 'Kids', memberIds: ['a', 'b'] }], revision: first.revision });
+    expect(second.groups[0].updatedAt).toBe(kids.updatedAt);
+    const after = await replaceFamilyMembers({ members: [member('a', 'Ann')], revision: second.revision, removedIds: ['b'] } as ReplaceFamilyInput);
+    expect(after.groups).toEqual([expect.objectContaining({ id: kids.id, memberIds: ['a'] })]);
+    expect((await read('family.json')).groups[0].memberIds).toEqual(['a']);
+  });
+  it('refuses a saved roster whose groups name people who are not on it', async () => {
+    await put('family.json', { members: [member('a', 'Ann')], migrated: true, groups: [{ id: 'g', name: 'Kids', memberIds: ['zed'], createdAt: now, updatedAt: now }] });
+    await expect(readFamilyData()).rejects.toMatchObject({ status: 409 });
   });
 });

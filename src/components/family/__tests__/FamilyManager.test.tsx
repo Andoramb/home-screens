@@ -12,12 +12,12 @@ import type { Timetable } from '@/types/timetables';
 import type { FamilySnapshot } from '@/hooks/useFamilyData';
 
 const state = vi.hoisted(() => ({
-  snapshot: { members: [], revision: 'r1' } as FamilySnapshot,
+  snapshot: { members: [], groups: [], revision: 'r1' } as FamilySnapshot,
   request: vi.fn(),
 }));
 vi.mock('@/hooks/useFamilyData', () => ({
   useFamilyData: () => ({ ...state.snapshot, loading: false, error: null, refresh: vi.fn() }),
-  publishFamilyData: (next: FamilySnapshot) => { state.snapshot = next; },
+  publishFamilyData: (next: Partial<FamilySnapshot>) => { state.snapshot = { groups: [], ...next } as FamilySnapshot; },
 }));
 vi.mock('@/lib/editor-fetch', () => ({ editorFetch: state.request }));
 vi.mock('@/hooks/useFetchData', () => ({ useFetchData: () => [null, false, null] }));
@@ -32,7 +32,7 @@ function person(id: string, name = id) {
 }
 
 beforeEach(() => {
-  state.snapshot = { members: [person('alex', 'Alex')], revision: 'r1' };
+  state.snapshot = { members: [person('alex', 'Alex')], groups: [], revision: 'r1' };
   state.request.mockReset();
 });
 afterEach(cleanup);
@@ -42,7 +42,7 @@ describe('FamilyManager safety', () => {
     const { rerender } = render(<FamilyManager />);
     fireEvent.click(screen.getByRole('button', { name: 'Edit Alex' }));
     fireEvent.change(screen.getByLabelText('Name'), { target: { value: 'Alicia' } });
-    const current = { members: [person('alex', 'Alex'), person('sam', 'Sam')], revision: 'r2' };
+    const current = { members: [person('alex', 'Alex'), person('sam', 'Sam')], groups: [], revision: 'r2' };
     state.snapshot = current;
     rerender(<FamilyManager />);
     state.request.mockResolvedValue({ ok: false, status: 409, json: async () => current });
@@ -85,7 +85,7 @@ describe('FamilyManager safety', () => {
   });
 
   it('marks who has a timetable beside their chore count and says it goes with them', () => {
-    state.snapshot = { members: [person('alex', 'Alex'), person('sam', 'Sam')], revision: 'r1' };
+    state.snapshot = { members: [person('alex', 'Alex'), person('sam', 'Sam')], groups: [], revision: 'r1' };
     const chore: ChoreDefinition = {
       id: 'dishes', name: 'dishes', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [], timeOfDay: 'anytime', rotation: 'fixed', assigneeIds: ['alex'],
     };
@@ -141,7 +141,7 @@ describe('FamilyManager safety', () => {
 
   it('preserves an unchanged grandfathered long name during a color edit', async () => {
     const legacyName = `  ${'Legacy name '.repeat(5)}  `;
-    state.snapshot = { members: [person('legacy', legacyName)], revision: 'r1' };
+    state.snapshot = { members: [person('legacy', legacyName)], groups: [], revision: 'r1' };
     render(<FamilyManager />);
     fireEvent.click(screen.getByRole('button', { name: /^Edit\s+Legacy name/ }));
     fireEvent.change(screen.getByLabelText('Color'), { target: { value: '#fbbf24' } });
@@ -163,7 +163,7 @@ describe('FamilyManager safety', () => {
   });
 
   it('lets an oversized migrated roster reach and edit its final member while disabling additions', async () => {
-    state.snapshot = { members: Array.from({ length: 65 }, (_, index) => person(`member-${index + 1}`)), revision: 'large' };
+    state.snapshot = { members: Array.from({ length: 65 }, (_, index) => person(`member-${index + 1}`)), groups: [], revision: 'large' };
     render(<FamilyManager />);
     expect(screen.getByRole('button', { name: 'Add person' }).hasAttribute('disabled')).toBe(true);
     expect(screen.getAllByTestId('family-member')).toHaveLength(12);

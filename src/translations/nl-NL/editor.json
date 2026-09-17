@@ -3217,7 +3217,7 @@
       "separatorsNone": "Geen",
       "separatorsWeeks": "Weken",
       "separatorsWeeksMonths": "Weken en maanden",
-      "showLegend": "Bronlegenda",
+      "showLegend": "Kleurlegenda",
       "legendOff": "Uit",
       "legendHeader": "Boven in de kalender",
       "legendFooter": "Onder in de kalender"
@@ -3483,7 +3483,7 @@
       "separatorsNone": "Geen",
       "separatorsWeeks": "Weken",
       "separatorsWeeksMonths": "Weken en maanden",
-      "showLegend": "Bronlegenda",
+      "showLegend": "Kleurlegenda",
       "legendOff": "Uit",
       "legendHeader": "Boven in de kalender",
       "legendFooter": "Onder in de kalender",
@@ -4461,10 +4461,16 @@
       "artUploadHint": "Afbeelding of SVG, tot 10 MB",
       "artUploadFailed": "Dit plaatje kon niet worden toegevoegd.",
       "artNames": {
-        "birthday": "Verjaardag", "christmas": "Kerst", "halloween": "Halloween",
-        "new-year": "Nieuwjaar", "valentines": "Valentijn", "july-4th": "4 juli",
-        "celebrate": "Vieren", "starfield": "Sterrenhemel",
-        "snowflakes": "Sneeuwvlokken", "sprinkles": "Sprinkels"
+        "birthday": "Verjaardag",
+        "christmas": "Kerst",
+        "halloween": "Halloween",
+        "new-year": "Nieuwjaar",
+        "valentines": "Valentijn",
+        "july-4th": "4 juli",
+        "celebrate": "Vieren",
+        "starfield": "Sterrenhemel",
+        "snowflakes": "Sneeuwvlokken",
+        "sprinkles": "Sprinkels"
       },
       "outline": "Dag omlijnen",
       "badge": "Badge toevoegen",
@@ -4557,6 +4563,29 @@
       "set": "Locatie: {name}",
       "notSet": "Deze module heeft je locatie nodig.",
       "setUp": "Locatie instellen"
+    },
+    "calendarPeople": {
+      "showNameTags": "Naamlabels",
+      "nameTagsHint": "Zet de initialen van elke persoon bij zijn of haar afspraken. Personen komen uit Instellingen > Gezin; van wie welke kalender is, stel je in onder Instellingen > Kalender > Personen. Gedeelde kalenders houden een gewone stip.",
+      "nameTagsNoOwners": "Nog niemand heeft een kalender, dus er valt niets te labelen.",
+      "matchCalendars": "Kalenders aan personen koppelen",
+      "legendMode": "Legenda toont",
+      "legendModeCalendars": "Kalenders",
+      "legendModePeople": "Personen",
+      "legendModeGroups": "Groepen",
+      "legendModeNeedsPeople": "Personen en Groepen komen beschikbaar zodra kalenders aan personen zijn gekoppeld.",
+      "peopleFilter": "Alleen deze personen tonen",
+      "peopleFilterHint": "Vink niets aan om iedereen te tonen.",
+      "peopleFilterGroups": "Groepen",
+      "peopleFilterPeople": "Personen",
+      "includeShared": "Ook gedeelde kalenders en feestdagen tonen",
+      "peopleFilterEmpty": "Nog niemand heeft een kalender en het gezin heeft geen groepen. Dit scherm toont elke hierboven gekozen kalender.",
+      "peopleFilterNobody": "In de gekozen groepen zit nog niemand, dus dit scherm toont alleen gedeelde kalenders.",
+      "peopleFilterShowing": "Toont {names}.",
+      "peopleFilterShowingShared": "Toont {names}, plus gedeelde kalenders en feestdagen.",
+      "peopleFilterStaleMember": "Iemand die niet meer op de gezinslijst staat",
+      "peopleFilterStaleGroup": "Een verwijderde groep",
+      "peopleFilterClear": "Iedereen tonen"
     }
   },
   "imageBrowsers": {

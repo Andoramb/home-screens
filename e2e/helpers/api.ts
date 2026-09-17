@@ -51,12 +51,13 @@ export const CHORE_DATA = {
 };
 
 /** Seed fixed identities in the worker's isolated store, before navigating. */
-export function seedFamily(sandboxDir: string, members: unknown[] = CHORE_DATA.members): void {
+export function seedFamily(sandboxDir: string, members: unknown[] = CHORE_DATA.members, groups: unknown[] = []): void {
   const now = '2026-01-01T00:00:00.000Z';
   const directory = path.join(sandboxDir, 'data');
   mkdirSync(directory, { recursive: true });
   writeFileSync(path.join(directory, 'family.json'), JSON.stringify({
     members: members.map((member) => ({ createdAt: now, updatedAt: now, ...(member as object) })),
+    ...(groups.length > 0 ? { groups: groups.map((group) => ({ createdAt: now, updatedAt: now, ...(group as object) })) } : {}),
     migrated: true,
   }, null, 2));
 }

@@ -2,13 +2,14 @@ import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { ScreenConfiguration } from '@/types/config';
-import { FAMILY_LIMITS, type FamilyData, type FamilyMember, type FamilyResponse } from '@/types/family';
+import { FAMILY_LIMITS, type FamilyData, type FamilyGroup, type FamilyMember, type FamilyResponse } from '@/types/family';
 import { commitDataTransaction, getDataRoot, onDataTransactionCommit, readTransactionFile, withDataTransaction, type TransactionChange } from './data-transaction';
 import { planFamilyMerge, validateFamilyData, validFamilyColor, validFamilyId, type LegacyCalendarPerson, type LegacyFamilyMember } from './family-merge';
 import { migrateUp } from './migrations';
 import { planConfigMigrationBackup } from './config-migration-backup';
 import { FamilyError } from './family-errors';
 import { MEMBER_REFERENCE_DOMAINS } from './member-references';
+import { pruneGroupMembers } from './family-groups';
 export { FamilyError } from './family-errors';
 
 export { validateFamilyData } from './family-merge';
@@ -21,6 +22,9 @@ export function familyValidationError(value: unknown): string | null {
 }
 export function familyRevision(data: FamilyData): string {
   return createHash('sha256').update(JSON.stringify(data)).digest('hex').slice(0, 24);
+}
+export function familyResponse(data: FamilyData): FamilyResponse {
+  return { members: data.members, groups: data.groups ?? [], revision: familyRevision(data) };
 }
 function parseObject(raw: string | null, fallback: Record<string, unknown>, filename: string): Record<string, unknown> {
   if (raw === null) return fallback;
@@ -181,7 +185,7 @@ export async function replaceFamilyMembers(input: ReplaceFamilyInput): Promise<F
   return withDataTransaction(async () => {
     await settleFamilyMigration();
     const current = await readRawFamily();
-    const snapshot = { members: current.members, revision: familyRevision(current) };
+    const snapshot = familyResponse(current);
     if (!input || typeof input.revision !== 'string' || !input.revision) throw new FamilyError('Refresh the family list before saving. A revision is required.');
     if (input.revision !== snapshot.revision) throw new FamilyError('Someone changed the family list. Refresh and apply your changes again.', 409, snapshot);
     if (!Array.isArray(input.members) || !Array.isArray(input.removedIds) || input.removedIds.some((id) => !validFamilyId(id))
@@ -209,10 +213,58 @@ export async function replaceFamilyMembers(input: ReplaceFamilyInput): Promise<F
     const removedSet = new Set(removed);
     const aliases = Object.fromEntries(Object.entries(current.aliasIds ?? {}).filter(([, target]) => !removedSet.has(target)));
     const family: FamilyData = { ...current, members, aliasIds: aliases, migrated: true };
+    if (current.groups !== undefined) family.groups = pruneGroupMembers(current.groups, removedSet);
     const changes: TransactionChange[] = [{ path: FAMILY_FILE_PATH, before: await readTransactionFile(FAMILY_FILE_PATH), after: json(family) }];
     if (removed.length) await planDeletion(removedSet, changes);
     await commitDataTransaction({ kind: removed.length ? 'family-deletion' : 'family-update', changes });
-    return { members, revision: familyRevision(family) };
+    return familyResponse(family);
+  });
+}
+
+export interface FamilyGroupInput {
+  id?: string;
+  name: string;
+  memberIds: string[];
+}
+export interface ReplaceGroupsInput { groups: FamilyGroupInput[]; revision: string }
+/**
+ * Replace the whole group list against a revision, the same way the member
+ * list is saved. Names are trimmed, unknown members are refused rather than
+ * dropped (a stale phone must not silently shrink a group), and timestamps
+ * move only when a group actually changed.
+ */
+export async function replaceFamilyGroups(input: ReplaceGroupsInput): Promise<FamilyResponse> {
+  return withDataTransaction(async () => {
+    await settleFamilyMigration();
+    const current = await readRawFamily();
+    const snapshot = familyResponse(current);
+    if (!input || typeof input.revision !== 'string' || !input.revision) throw new FamilyError('Refresh the family list before saving. A revision is required.');
+    if (input.revision !== snapshot.revision) throw new FamilyError('Someone changed the family list. Refresh and apply your changes again.', 409, snapshot);
+    if (!Array.isArray(input.groups)) throw new FamilyError('Include the updated group list.');
+    if (input.groups.length > FAMILY_LIMITS.maxGroups) throw new FamilyError(`You can have up to ${FAMILY_LIMITS.maxGroups} groups.`);
+    const memberIds = new Set(current.members.map((member) => member.id));
+    const byId = new Map((current.groups ?? []).map((group) => [group.id, group]));
+    const incomingIds = new Set<string>();
+    const now = new Date().toISOString();
+    const groups: FamilyGroup[] = input.groups.map((item) => {
+      if (!isRecord(item) || (item.id !== undefined && (!validFamilyId(item.id) || incomingIds.has(item.id)))
+        || typeof item.name !== 'string' || !item.name.trim() || !Array.isArray(item.memberIds)
+        || item.memberIds.some((id) => typeof id !== 'string')) throw new FamilyError('Each group needs a unique identity, a name and a list of people.');
+      if (item.name.trim().length > FAMILY_LIMITS.maxGroupNameLength) throw new FamilyError(`Group names can have up to ${FAMILY_LIMITS.maxGroupNameLength} characters.`);
+      const unknown = item.memberIds.find((id) => !memberIds.has(id));
+      if (unknown !== undefined) throw new FamilyError('A group names someone who is not on the family list. Refresh and try again.', 409, snapshot);
+      if (item.id) incomingIds.add(item.id);
+      const name = item.name.trim();
+      // Family order, deduplicated, so a group reads the same everywhere.
+      const ordered = current.members.filter((member) => item.memberIds.includes(member.id)).map((member) => member.id);
+      const existing = item.id ? byId.get(item.id) : undefined;
+      if (!existing) return { id: randomUUID(), name, memberIds: ordered, createdAt: now, updatedAt: now };
+      const changed = name !== existing.name || ordered.join('\n') !== existing.memberIds.join('\n');
+      return { ...existing, name, memberIds: ordered, updatedAt: changed ? now : existing.updatedAt };
+    });
+    const family: FamilyData = { ...current, groups, migrated: true };
+    await commitDataTransaction({ kind: 'family-groups', changes: [{ path: FAMILY_FILE_PATH, before: await readTransactionFile(FAMILY_FILE_PATH), after: json(family) }] });
+    return familyResponse(family);
   });
 }
 

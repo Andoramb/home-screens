@@ -1,5 +1,7 @@
 'use client';
 
+import { eventOwner } from '@/lib/calendar-people';
+import { EventMarker } from '../shared/EventMarker';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   parseEventDate, parseEventWallTime, formatEventTime, formatCountdown, eventProgress, eventKindLabel,
@@ -23,7 +25,7 @@ import { sanitizeEventDescription } from '@/lib/event-description';
  * that day, what already happened today, and tomorrow. The type size is
  * driven by the hero, not a grid, so it reads from across a room.
  */
-export function UpNextView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, failingSourceIds }: CalendarViewProps) {
+export function UpNextView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, failingSourceIds, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const fontSize = scale.bu * scale.typoMul * scale.densityMul;
@@ -31,8 +33,8 @@ export function UpNextView({ events, timezone, config, scale, today, now, timeFo
   const showEarlier = config.upNextShowEarlier !== false;
   const showTomorrow = config.upNextShowTomorrow !== false;
   const rowCtx = useMemo<RowCtx>(
-    () => ({ t, locale, timeFormat, timezone, scale, fontSize, config }),
-    [t, locale, timeFormat, timezone, scale, fontSize, config],
+    () => ({ t, locale, timeFormat, timezone, scale, fontSize, config, owners }),
+    [t, locale, timeFormat, timezone, scale, fontSize, config, owners],
   );
 
   // The hero/later/earlier/tomorrow selection lives in the lib
@@ -302,7 +304,7 @@ function HeroCard({ item, running, heroToday, heroDay, now, ctx, showDescription
       )}
       {ev.sourceName && (
         <div style={{ marginTop: scale.bu * 2, display: 'flex', alignItems: 'center', gap: scale.bu * 0.8, fontSize: fontSize * 1.8, color: 'var(--cal-text-secondary)' }}>
-          <span aria-hidden="true" style={{ width: fontSize * 1.2, height: fontSize * 1.2, borderRadius: '50%', background: bar, flexShrink: 0 }} />
+          <EventMarker owner={eventOwner(ev, ctx.owners)} color={bar} size={fontSize * 1.2} tagSize={fontSize * 2.2} />
           {ev.sourceName}
         </div>
       )}

@@ -25,7 +25,7 @@ import type { FetchError } from '@/lib/fetch-error';
 
 /** Fetch weather + calendar data once, shared across all screen rotations. */
 export function useSharedDisplayData(screens: Screen[], settings: GlobalSettings): SharedDisplayData {
-  const { members: familyMembers, revision: familyRevision, error: familyError } = useFamilyData();
+  const { members: familyMembers, groups: familyGroups, revision: familyRevision, error: familyError } = useFamilyData();
   const familyState = familyRevision ? undefined : familyError ? 'failed' as const : 'loading' as const;
   // Bumped by plugin 'refresh' events to force re-fetch
   const [refreshEpoch, setRefreshEpoch] = useState(0);
@@ -197,7 +197,7 @@ export function useSharedDisplayData(screens: Screen[], settings: GlobalSettings
   // Memoized so consumers (BackgroundProviderLayer is React.memo'd) don't see
   // a new object identity on every ScreenRotator render tick.
   return useMemo(
-    () => ({ owmData, wapiData, pirateData, noaaData, openMeteoData, yrData, smhiData, metofficeData, envcanadaData, weatherErrors, calendarData, calendarStatus, familyMembers, familyState }),
-    [owmData, wapiData, pirateData, noaaData, openMeteoData, yrData, smhiData, metofficeData, envcanadaData, weatherErrors, calendarData, calendarStatus, familyMembers, familyState],
+    () => ({ owmData, wapiData, pirateData, noaaData, openMeteoData, yrData, smhiData, metofficeData, envcanadaData, weatherErrors, calendarData, calendarStatus, familyMembers, familyGroups, familyState }),
+    [owmData, wapiData, pirateData, noaaData, openMeteoData, yrData, smhiData, metofficeData, envcanadaData, weatherErrors, calendarData, calendarStatus, familyMembers, familyGroups, familyState],
   );
 }

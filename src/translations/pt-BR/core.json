@@ -243,6 +243,23 @@
       "other": "{name} tem {count} tarefas atribuídas."
     },
     "hasTimetable": "Tem horário",
-    "removeTimetable": "{name} tem um horário escolar, e ele é removido também."
+    "removeTimetable": "{name} tem um horário escolar, e ele é removido também.",
+    "groups": {
+      "title": "Grupos",
+      "description": "Junte pessoas para que um calendário mostre \"Crianças\" em vez de cinco nomes. Uma pessoa pode estar em mais de um grupo.",
+      "add": "Adicionar grupo",
+      "edit": "Editar grupo",
+      "name": "Nome do grupo",
+      "members": "Quem faz parte",
+      "noMembers": "Ninguém ainda",
+      "editName": "Editar {name}",
+      "remove": "Remover grupo",
+      "removeTitle": "Remover {name}?",
+      "removeDescription": "As telas que mostram só {name} voltam a mostrar todo mundo. Ninguém é removido da família.",
+      "saved": "Grupos salvos.",
+      "saveFailed": "Não foi possível salvar os grupos.",
+      "limit": "Você pode ter até {count} grupos.",
+      "hint": "Os grupos são usados pela legenda de cores do calendário e pelo filtro \"Mostrar apenas\". Tarefas e recompensas continuam atribuídas a pessoas."
+    }
   }
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import { eventOwner } from '@/lib/calendar-people';
+import { EventMarker } from '../shared/EventMarker';
 import { useMemo } from 'react';
 import { addDays, isSameDay, startOfWeek } from 'date-fns';
 import {
@@ -33,7 +35,7 @@ interface DayGroupEvent {
 // row below the fold. Keep only the most recent few finished rows.
 const FINISHED_TODAY_MAX = 3;
 
-export function AgendaView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, failingSourceIds }: CalendarViewProps) {
+export function AgendaView({ events, timezone, config, scale, today, now, timeFormat = DEFAULT_TIME_FORMAT, weather, failingSourceIds, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const tCore = useTranslate('core');
   const locale = useFormattingLocale();
@@ -152,6 +154,7 @@ export function AgendaView({ events, timezone, config, scale, today, now, timeFo
             countdownAllDay: config.countdownAllDay === true,
           });
           const glyph = eventGlyph(ev);
+          const owner = eventOwner(ev, owners);
           const kindLabel = eventKindLabel(ev, start.getFullYear(), t, 'fullscreen-calendar');
 
           if (isAllDayRow) {
@@ -184,7 +187,7 @@ export function AgendaView({ events, timezone, config, scale, today, now, timeFo
                   fontWeight: 600,
                   color: 'var(--cal-text-primary)',
                 }}>
-                  {glyph && <span aria-hidden="true"><Glyph value={glyph} /></span>}
+                  {glyph ? <span aria-hidden="true"><Glyph value={glyph} /></span> : owner && <EventMarker owner={owner} color={color} size={fontSize * 0.5} tagSize={fontSize * 1.2} />}
                   {ev.title}
                 </div>
                 {description && (
@@ -243,7 +246,7 @@ export function AgendaView({ events, timezone, config, scale, today, now, timeFo
                 fontWeight: 600,
                 color: 'var(--cal-text-primary)',
               }}>
-                {glyph && <span aria-hidden="true" style={{ fontSize: '0.8em' }}><Glyph value={glyph} /></span>}
+                {glyph ? <span aria-hidden="true" style={{ fontSize: '0.8em' }}><Glyph value={glyph} /></span> : owner && <EventMarker owner={owner} color={color} size={fontSize * 0.55} tagSize={fontSize * 1.35} />}
                 {ev.title}
               </div>
               {ev.location && (

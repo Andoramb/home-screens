@@ -3217,7 +3217,7 @@
       "separatorsNone": "None",
       "separatorsWeeks": "Weeks",
       "separatorsWeeksMonths": "Weeks and months",
-      "showLegend": "Source legend",
+      "showLegend": "Color key",
       "legendOff": "Off",
       "legendHeader": "Top of calendar",
       "legendFooter": "Bottom of calendar"
@@ -3483,7 +3483,7 @@
       "separatorsNone": "None",
       "separatorsWeeks": "Weeks",
       "separatorsWeeksMonths": "Weeks and months",
-      "showLegend": "Source legend",
+      "showLegend": "Color key",
       "legendOff": "Off",
       "legendHeader": "Top of calendar",
       "legendFooter": "Bottom of calendar",
@@ -4461,10 +4461,16 @@
       "artUploadHint": "Image or SVG, up to 10 MB",
       "artUploadFailed": "Could not add that picture.",
       "artNames": {
-        "birthday": "Birthday", "christmas": "Christmas", "halloween": "Halloween",
-        "new-year": "New Year", "valentines": "Valentine's", "july-4th": "July 4th",
-        "celebrate": "Celebrate", "starfield": "Starfield",
-        "snowflakes": "Snowflakes", "sprinkles": "Sprinkles"
+        "birthday": "Birthday",
+        "christmas": "Christmas",
+        "halloween": "Halloween",
+        "new-year": "New Year",
+        "valentines": "Valentine's",
+        "july-4th": "July 4th",
+        "celebrate": "Celebrate",
+        "starfield": "Starfield",
+        "snowflakes": "Snowflakes",
+        "sprinkles": "Sprinkles"
       },
       "outline": "Outline the day",
       "badge": "Add a badge",
@@ -4557,6 +4563,29 @@
       "set": "Location: {name}",
       "notSet": "This module needs your location.",
       "setUp": "Set your location"
+    },
+    "calendarPeople": {
+      "showNameTags": "Name tags",
+      "nameTagsHint": "Put each person's initials on their events. People come from Settings > Family; which calendar is whose is set under Settings > Calendar > People. Shared calendars keep a plain dot.",
+      "nameTagsNoOwners": "Nobody owns a calendar yet, so there is nothing to tag.",
+      "matchCalendars": "Match calendars to people",
+      "legendMode": "Key lists",
+      "legendModeCalendars": "Calendars",
+      "legendModePeople": "People",
+      "legendModeGroups": "Groups",
+      "legendModeNeedsPeople": "People and Groups become available once calendars are matched to people.",
+      "peopleFilter": "Show only these people",
+      "peopleFilterHint": "Leave everything unchecked to show everyone.",
+      "peopleFilterGroups": "Groups",
+      "peopleFilterPeople": "People",
+      "includeShared": "Also show shared calendars and holidays",
+      "peopleFilterEmpty": "No one owns a calendar yet, and the family has no groups. This screen shows every calendar picked above.",
+      "peopleFilterNobody": "The chosen groups have no one in them yet, so this screen shows only shared calendars.",
+      "peopleFilterShowing": "Shows {names}.",
+      "peopleFilterShowingShared": "Shows {names}, plus shared calendars and holidays.",
+      "peopleFilterStaleMember": "Someone no longer on the family list",
+      "peopleFilterStaleGroup": "A group that was removed",
+      "peopleFilterClear": "Show everyone"
     }
   },
   "imageBrowsers": {

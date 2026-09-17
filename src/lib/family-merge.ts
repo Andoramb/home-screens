@@ -51,6 +51,18 @@ export function validateFamilyData(value: unknown): value is FamilyData {
       if (!validFamilyId(alias) || typeof target !== 'string' || ids.has(alias) || !ids.has(target)) return false;
     }
   }
+  if (value.groups !== undefined) {
+    if (!Array.isArray(value.groups)) return false;
+    const groupIds = new Set<string>();
+    for (const group of value.groups) {
+      if (!record(group) || !validFamilyId(group.id) || groupIds.has(group.id) || typeof group.name !== 'string' || !group.name.trim()
+        || !Array.isArray(group.memberIds) || group.memberIds.some((id: unknown) => typeof id !== 'string' || !ids.has(id))
+        || new Set(group.memberIds).size !== group.memberIds.length
+        || typeof group.createdAt !== 'string' || !Number.isFinite(Date.parse(group.createdAt))
+        || typeof group.updatedAt !== 'string' || !Number.isFinite(Date.parse(group.updatedAt))) return false;
+      groupIds.add(group.id);
+    }
+  }
   return true;
 }
 

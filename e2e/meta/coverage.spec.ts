@@ -694,6 +694,7 @@ const DISCRIMINATOR_UNION_DECISIONS: Record<string, string> = {
   TextWrapMode: 'CSS wrap strategies; field-level row suffices',
   AgendaSeparators: 'boundary-marker density; the weeks-and-months row renders both separator kinds, weeks shares the week-rule path, none is the default matrix render',
   CalendarLegendPlacement: 'placement of one legend row; both modules carry legend-header and legend-footer variant rows, off is the default matrix render',
+  CalendarLegendMode: 'what one key strip lists; the legend-mode-groups (fullscreen) and legend-mode-people (small) rows cover both non-default modes, calendars is the default render',
   TodayHighlightStyle: 'styling intensity levels; field-level row (off) suffices',
   WeatherPlacement: 'placement of one weather readout; the off/days/events rows cover the three render paths, header is the default matrix render and days-and-events unions the days+events paths',
   TodoistGroupBy: 'grouping strategies share the list renderer; field-level row (project) suffices',

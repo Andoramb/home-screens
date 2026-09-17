@@ -3217,7 +3217,7 @@
       "separatorsNone": "Aucun",
       "separatorsWeeks": "Semaines",
       "separatorsWeeksMonths": "Semaines et mois",
-      "showLegend": "Légende des sources",
+      "showLegend": "Légende des couleurs",
       "legendOff": "Désactivée",
       "legendHeader": "En haut du calendrier",
       "legendFooter": "En bas du calendrier"
@@ -3483,7 +3483,7 @@
       "separatorsNone": "Aucun",
       "separatorsWeeks": "Semaines",
       "separatorsWeeksMonths": "Semaines et mois",
-      "showLegend": "Légende des sources",
+      "showLegend": "Légende des couleurs",
       "legendOff": "Désactivée",
       "legendHeader": "En haut du calendrier",
       "legendFooter": "En bas du calendrier",
@@ -4461,10 +4461,16 @@
       "artUploadHint": "Image ou SVG, jusqu'à 10 Mo",
       "artUploadFailed": "Impossible d'ajouter cette image.",
       "artNames": {
-        "birthday": "Anniversaire", "christmas": "Noël", "halloween": "Halloween",
-        "new-year": "Nouvel An", "valentines": "Saint-Valentin", "july-4th": "4 juillet",
-        "celebrate": "Fêter", "starfield": "Ciel étoilé",
-        "snowflakes": "Flocons", "sprinkles": "Paillettes"
+        "birthday": "Anniversaire",
+        "christmas": "Noël",
+        "halloween": "Halloween",
+        "new-year": "Nouvel An",
+        "valentines": "Saint-Valentin",
+        "july-4th": "4 juillet",
+        "celebrate": "Fêter",
+        "starfield": "Ciel étoilé",
+        "snowflakes": "Flocons",
+        "sprinkles": "Paillettes"
       },
       "outline": "Encadrer le jour",
       "badge": "Ajouter un badge",
@@ -4557,6 +4563,29 @@
       "set": "Lieu : {name}",
       "notSet": "Ce module a besoin de votre lieu.",
       "setUp": "Indiquer votre lieu"
+    },
+    "calendarPeople": {
+      "showNameTags": "Étiquettes de nom",
+      "nameTagsHint": "Affiche les initiales de chaque personne sur ses événements. Les personnes viennent de Réglages > Famille ; à qui appartient chaque calendrier se règle dans Réglages > Calendrier > Personnes. Les calendriers partagés gardent un simple point.",
+      "nameTagsNoOwners": "Personne ne possède encore de calendrier, il n'y a donc rien à étiqueter.",
+      "matchCalendars": "Associer les calendriers aux personnes",
+      "legendMode": "La légende liste",
+      "legendModeCalendars": "Calendriers",
+      "legendModePeople": "Personnes",
+      "legendModeGroups": "Groupes",
+      "legendModeNeedsPeople": "Personnes et Groupes deviennent disponibles une fois les calendriers associés à des personnes.",
+      "peopleFilter": "Afficher seulement ces personnes",
+      "peopleFilterHint": "Ne cochez rien pour afficher tout le monde.",
+      "peopleFilterGroups": "Groupes",
+      "peopleFilterPeople": "Personnes",
+      "includeShared": "Afficher aussi les calendriers partagés et les jours fériés",
+      "peopleFilterEmpty": "Personne ne possède encore de calendrier et la famille n'a pas de groupe. Cet écran affiche tous les calendriers choisis ci-dessus.",
+      "peopleFilterNobody": "Les groupes choisis sont encore vides, cet écran n'affiche donc que les calendriers partagés.",
+      "peopleFilterShowing": "Affiche {names}.",
+      "peopleFilterShowingShared": "Affiche {names}, plus les calendriers partagés et les jours fériés.",
+      "peopleFilterStaleMember": "Quelqu'un qui n'est plus dans la famille",
+      "peopleFilterStaleGroup": "Un groupe supprimé",
+      "peopleFilterClear": "Afficher tout le monde"
     }
   },
   "imageBrowsers": {

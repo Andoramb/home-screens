@@ -3217,7 +3217,7 @@
       "separatorsNone": "Keine",
       "separatorsWeeks": "Wochen",
       "separatorsWeeksMonths": "Wochen und Monate",
-      "showLegend": "Quellen-Legende",
+      "showLegend": "Farblegende",
       "legendOff": "Aus",
       "legendHeader": "Oben im Kalender",
       "legendFooter": "Unten im Kalender"
@@ -3483,7 +3483,7 @@
       "separatorsNone": "Keine",
       "separatorsWeeks": "Wochen",
       "separatorsWeeksMonths": "Wochen und Monate",
-      "showLegend": "Quellen-Legende",
+      "showLegend": "Farblegende",
       "legendOff": "Aus",
       "legendHeader": "Oben im Kalender",
       "legendFooter": "Unten im Kalender",
@@ -4461,10 +4461,16 @@
       "artUploadHint": "Bild oder SVG, bis 10 MB",
       "artUploadFailed": "Dieses Bild konnte nicht hinzugefügt werden.",
       "artNames": {
-        "birthday": "Geburtstag", "christmas": "Weihnachten", "halloween": "Halloween",
-        "new-year": "Neujahr", "valentines": "Valentinstag", "july-4th": "4. Juli",
-        "celebrate": "Feiern", "starfield": "Sternenhimmel",
-        "snowflakes": "Schneeflocken", "sprinkles": "Streusel"
+        "birthday": "Geburtstag",
+        "christmas": "Weihnachten",
+        "halloween": "Halloween",
+        "new-year": "Neujahr",
+        "valentines": "Valentinstag",
+        "july-4th": "4. Juli",
+        "celebrate": "Feiern",
+        "starfield": "Sternenhimmel",
+        "snowflakes": "Schneeflocken",
+        "sprinkles": "Streusel"
       },
       "outline": "Tag umranden",
       "badge": "Abzeichen hinzufügen",
@@ -4557,6 +4563,29 @@
       "set": "Standort: {name}",
       "notSet": "Dieses Modul braucht deinen Standort.",
       "setUp": "Standort festlegen"
+    },
+    "calendarPeople": {
+      "showNameTags": "Namensschilder",
+      "nameTagsHint": "Zeigt die Initialen jeder Person an ihren Terminen. Personen kommen aus Einstellungen > Familie; wessen Kalender welcher ist, wird unter Einstellungen > Kalender > Personen festgelegt. Gemeinsame Kalender behalten einen einfachen Punkt.",
+      "nameTagsNoOwners": "Noch niemand hat einen Kalender, also gibt es nichts zu beschriften.",
+      "matchCalendars": "Kalender Personen zuordnen",
+      "legendMode": "Legende zeigt",
+      "legendModeCalendars": "Kalender",
+      "legendModePeople": "Personen",
+      "legendModeGroups": "Gruppen",
+      "legendModeNeedsPeople": "Personen und Gruppen sind verfügbar, sobald Kalender Personen zugeordnet sind.",
+      "peopleFilter": "Nur diese Personen anzeigen",
+      "peopleFilterHint": "Nichts ankreuzen, um alle anzuzeigen.",
+      "peopleFilterGroups": "Gruppen",
+      "peopleFilterPeople": "Personen",
+      "includeShared": "Auch gemeinsame Kalender und Feiertage anzeigen",
+      "peopleFilterEmpty": "Noch niemand hat einen Kalender, und die Familie hat keine Gruppen. Dieser Bildschirm zeigt jeden oben ausgewählten Kalender.",
+      "peopleFilterNobody": "In den gewählten Gruppen ist noch niemand, daher zeigt dieser Bildschirm nur gemeinsame Kalender.",
+      "peopleFilterShowing": "Zeigt {names}.",
+      "peopleFilterShowingShared": "Zeigt {names} sowie gemeinsame Kalender und Feiertage.",
+      "peopleFilterStaleMember": "Jemand, der nicht mehr auf der Familienliste steht",
+      "peopleFilterStaleGroup": "Eine entfernte Gruppe",
+      "peopleFilterClear": "Alle anzeigen"
     }
   },
   "imageBrowsers": {

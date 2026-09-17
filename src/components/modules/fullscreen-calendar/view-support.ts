@@ -1,5 +1,6 @@
 'use client';
 
+import type { EventOwner } from '@/lib/calendar-people';
 import { useMemo, type CSSProperties } from 'react';
 import { addDays, startOfWeek } from 'date-fns';
 import { NO_DECOR, dayDecorFor, rulesNeedNow, type DayDecor } from '@/lib/calendar-rules';
@@ -61,6 +62,8 @@ export interface CalendarViewProps {
   failingSourceIds?: ReadonlySet<string>;
   /** Settings > Calendar > People; absent = the per-person views fall back to one row per source. */
   people?: CalendarPerson[];
+  /** Name tags: calendar source id -> owner. Absent when tags are off or nobody owns a calendar. */
+  owners?: ReadonlyMap<string, EventOwner>;
   /** Week list household rows (planned meals + chore progress), keyed by local ISO date. */
   extras?: ExtrasIndex;
 }
@@ -80,6 +83,8 @@ export interface RowCtx {
   scale: CalendarScale;
   fontSize: number;
   config: FullscreenCalendarConfig;
+  /** Name tags (see CalendarViewProps.owners). */
+  owners?: ReadonlyMap<string, EventOwner>;
 }
 
 export function autoScheduleDays(width: number, density: string): number {

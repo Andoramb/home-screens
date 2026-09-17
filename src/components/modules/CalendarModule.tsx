@@ -9,12 +9,14 @@ import { EventDetailOverlay } from './shared/EventDetailOverlay';
 import { CalendarLegend } from './shared/CalendarLegend';
 import { rulesNeedNow, selectCalendarEvents } from '@/lib/calendar-rules';
 import { isEventUpcoming, listViewCutoff, clampRollingWeeks, clampWeeksToShow, isGridView, weekStartsOnFor } from '@/lib/calendar-utils';
-import { buildLegend, viewDayWindow, type LegendSource } from '@/lib/calendar-legend';
+import { buildLegendRows, viewDayWindow, type LegendRow } from '@/lib/calendar-legend';
+import { ownerBySource, peopleSelection } from '@/lib/calendar-people';
+import type { FamilyGroup } from '@/types/family';
 import { calendarStatusView, useFailingSources, type CalendarSetupNeed } from './shared/useFailingSources';
 import { CalendarSetupCard } from './shared/CalendarSetupCard';
 import { useEventTapDetail } from './shared/useEventTapDetail';
 import { useTranslate, useFormattingLocale } from '@/i18n';
-import { DEFAULT_TIME_FORMAT, type CalendarFetchStatus, type CalendarSourceStatus, type CalendarConfig, type CalendarEvent, type CalendarViewMode, type ModuleStyle, type TimeFormat } from '@/types/config';
+import { DEFAULT_TIME_FORMAT, type CalendarFetchStatus, type CalendarSourceStatus, type CalendarConfig, type CalendarEvent, type CalendarPerson, type CalendarViewMode, type ModuleStyle, type TimeFormat } from '@/types/config';
 import ModuleWrapper from './ModuleWrapper';
 import { TEXT_OPACITY } from '@/lib/constants';
 import type { EventDisplayStyle } from './calendar/support';
@@ -34,6 +36,12 @@ interface CalendarModuleProps {
   sourceStatus?: CalendarSourceStatus[];
   /** Attached only while Settings > Calendar names nothing to fetch (see buildModuleProps). */
   calendarSetup?: CalendarSetupNeed;
+  /** People with assigned calendars from Settings > Family (see buildModuleProps). */
+  people?: CalendarPerson[];
+  /** Family groups, for the color key and the people filter (see buildModuleProps). */
+  groups?: FamilyGroup[];
+  /** Roster fetch state while calendar owners exist; a filtered module holds its events until it settles. */
+  peopleState?: 'loading' | 'failed';
 }
 
 // Stable fallback so the memoized pipeline below doesn't see a fresh array
@@ -57,7 +65,7 @@ const VIEW_COMPONENTS: Record<CalendarViewMode, React.ComponentType<{
   rolling: GridView,
 };
 
-export default function CalendarModule({ config, style, events, timezone, timeFormat, calendarStatus, sourceStatus, calendarSetup }: CalendarModuleProps) {
+export default function CalendarModule({ config, style, events, timezone, timeFormat, calendarStatus, sourceStatus, calendarSetup, people, groups, peopleState }: CalendarModuleProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
   const rawEvents = events ?? EMPTY_EVENTS;
@@ -78,12 +86,16 @@ export default function CalendarModule({ config, style, events, timezone, timeFo
   // the key only when a rule actually reads it.
   const eventRules = config.eventRules;
   const rulesNow = rulesNeedNow(eventRules) ? now : null;
+  // "Show only these people", resolved once per roster change (groups expand to members here).
+  const selection = useMemo(() => peopleSelection(config.peopleFilter, people, groups, peopleState), [config.peopleFilter, people, groups, peopleState]);
   const sourcedEvents = useMemo(
     () => selectCalendarEvents(rawEvents, {
-      sourceFilter, titleFilter: config.titleFilter, eventRules, timezone, now: rulesNow ?? new Date(0),
+      sourceFilter, peopleSelection: selection, titleFilter: config.titleFilter, eventRules, timezone, now: rulesNow ?? new Date(0),
     }),
-    [rawEvents, sourceFilter, config.titleFilter, eventRules, rulesNow, timezone],
+    [rawEvents, sourceFilter, selection, config.titleFilter, eventRules, rulesNow, timezone],
   );
+  // Name tags: the owner drawn in place of each event's calendar dot.
+  const owners = useMemo(() => (config.showNameTags === true ? ownerBySource(people) : undefined), [config.showNameTags, people]);
   const viewMode = config.viewMode ?? 'daily';
   // Grid views (week/month/multi-week) show their full visible range, past days
   // included; list views stay upcoming-only even when the shared fetch
@@ -111,7 +123,7 @@ export default function CalendarModule({ config, style, events, timezone, timeFo
   // filter). Only the view→window mapping lives here; the date math and the
   // holidays-label remap are shared (calendar-legend).
   const legendPlacement = config.showLegend ?? 'off';
-  const legend = useMemo<LegendSource[]>(() => {
+  const legend = useMemo<LegendRow[]>(() => {
     if (legendPlacement === 'off') return [];
     const weekStartsOn = weekStartsOnFor(config.startDay);
     const window =
@@ -121,8 +133,8 @@ export default function CalendarModule({ config, style, events, timezone, timeFo
       : viewMode === 'multi-week' ? viewDayWindow({ kind: 'weeks', today, weekStartsOn, count: clampWeeksToShow(config.weeksToShow) })
       : viewMode === 'rolling' ? viewDayWindow({ kind: 'days', today, weekStartsOn, count: clampRollingWeeks(config.weeksToShow) * 7 })
       : null; // agenda
-    return buildLegend(allEvents, window, timezone, t('calendar.publicHolidays'));
-  }, [legendPlacement, viewMode, config.startDay, config.daysToShow, config.weeksToShow, today, allEvents, timezone, t]);
+    return buildLegendRows(allEvents, window, timezone, { holidays: t('calendar.publicHolidays'), everyone: t('fullscreen-calendar.everyone') }, config.legendMode, people, groups);
+  }, [legendPlacement, viewMode, config.startDay, config.daysToShow, config.weeksToShow, today, allEvents, timezone, t, config.legendMode, people, groups]);
   const ViewComponent = VIEW_COMPONENTS[viewMode];
   const accentColor = config.accentColor ?? DEFAULT_CALENDAR_ACCENT;
   const gridEventStyle = config.gridEventStyle;
@@ -142,8 +154,9 @@ export default function CalendarModule({ config, style, events, timezone, timeFo
       timezone,
       failingSourceIds,
       tapDetails,
+      owners,
     };
-  }, [resolvedTimeFormat, gridEventStyle, gridEventPillBackground, timezone, failingSourceIds, tapDetails]);
+  }, [resolvedTimeFormat, gridEventStyle, gridEventPillBackground, timezone, failingSourceIds, tapDetails, owners]);
   const { detailEvent, onRootClick, close: closeDetail } = useEventTapDetail(allEvents, tapDetails);
 
   // Failure ≠ empty: while the shared calendar fetch is failing, kept
@@ -214,7 +227,7 @@ export default function CalendarModule({ config, style, events, timezone, timeFo
         )}
         {legendPlacement === 'header' && (
           <CalendarLegend
-            sources={legend}
+            rows={legend}
             label={t('calendar.legendLabel')}
             failingIds={failingSourceIds}
             // maxHeight ≈ two wrapped rows: in a small module an unbounded
@@ -227,7 +240,7 @@ export default function CalendarModule({ config, style, events, timezone, timeFo
         </div>
         {legendPlacement === 'footer' && (
           <CalendarLegend
-            sources={legend}
+            rows={legend}
             label={t('calendar.legendLabel')}
             failingIds={failingSourceIds}
             // maxHeight ≈ two wrapped rows: in a small module an unbounded

@@ -1277,6 +1277,21 @@ export type WeatherPlacement = 'off' | 'header' | 'days' | 'events' | 'days-and-
 // Source legend (one dot + name per source with an event in the rendered
 // window): hidden, a row in the module header, or a footer strip.
 export type CalendarLegendPlacement = 'off' | 'header' | 'footer';
+// What the color key lists: one row per calendar, per family member who owns
+// a calendar, or per family group (members in no group get their own row).
+export type CalendarLegendMode = 'calendars' | 'people' | 'groups';
+
+/**
+ * "Show only these people": family member ids and family group ids, resolved
+ * to calendar sources through Settings > Calendar > People at render time.
+ * Empty member and group lists mean no people filter.
+ */
+export interface CalendarPeopleFilter {
+  memberIds: string[];
+  groupIds: string[];
+  /** Keep events from calendars nobody owns (household calendars, holidays). Default true. */
+  includeShared: boolean;
+}
 
 // Case-insensitive substring match against the event title. Empty terms = no filter.
 export interface CalendarTitleFilter {
@@ -1718,6 +1733,29 @@ export interface FullscreenCalendarConfig {
   // Sources present in the rendered window, as dot + name. Default 'off'.
   /** A color key naming each calendar the module is showing: `off`, `header`, or `footer` */
   showLegend?: CalendarLegendPlacement;
+  /**
+   * Name tags: put the owning family member's initials, in their color, where the calendar dot
+   * goes. Who owns which calendar is set in Settings > Calendar > People. Calendars nobody owns
+   * keep a plain dot
+   *
+   * default false
+   */
+  showNameTags?: boolean;
+  /**
+   * What the color key lists: `calendars` (one row per calendar), `people` (one avatar per family
+   * member who owns a calendar with an event in view, plus Everyone for shared calendars) or
+   * `groups` (one row per family group as a stack of avatars, then members in no group, then
+   * Everyone)
+   *
+   * default 'calendars'
+   */
+  legendMode?: CalendarLegendMode;
+  /**
+   * Show only these people: family member ids and family group ids. Groups are expanded and
+   * people are mapped to their calendars when the screen renders, so adding someone to a group
+   * updates every screen that shows it. Applies together with `sourceFilter`
+   */
+  peopleFilter?: CalendarPeopleFilter;
   // Rules engines: per-event looks and per-day looks / badges. Unset = off.
   /**
    * Restyle or hide individual events by what they match. See [Event and day
@@ -1896,6 +1934,29 @@ export interface CalendarConfig {
   // Sources present in the rendered window, as dot + name. Default 'off'.
   /** A color key naming each calendar the module is showing: `off`, `header`, or `footer` */
   showLegend?: CalendarLegendPlacement;
+  /**
+   * Name tags: put the owning family member's initials, in their color, where the calendar dot
+   * goes. Who owns which calendar is set in Settings > Calendar > People. Calendars nobody owns
+   * keep a plain dot
+   *
+   * default false
+   */
+  showNameTags?: boolean;
+  /**
+   * What the color key lists: `calendars` (one row per calendar), `people` (one avatar per family
+   * member who owns a calendar with an event in view, plus Everyone for shared calendars) or
+   * `groups` (one row per family group as a stack of avatars, then members in no group, then
+   * Everyone)
+   *
+   * default 'calendars'
+   */
+  legendMode?: CalendarLegendMode;
+  /**
+   * Show only these people: family member ids and family group ids. Groups are expanded and
+   * people are mapped to their calendars when the screen renders, so adding someone to a group
+   * updates every screen that shows it. Applies together with `sourceFilter`
+   */
+  peopleFilter?: CalendarPeopleFilter;
   // Daily view: dim events in today's column that have already ended.
   // Default off — deliberately different from the fullscreen module's
   // same-named toggle (whole past days, default on).
