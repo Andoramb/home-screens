@@ -324,6 +324,84 @@ describe('displayCache', () => {
     });
   });
 
+  describe('invalidation during prefetch', () => {
+    it.each(['response', 'body'])('discards an invalidated listing while its %s is pending', async (pending) => {
+      let release!: () => void;
+      const ready = new Promise<void>((resolve) => { release = resolve; });
+      vi.stubGlobal('fetch', vi.fn(async () => {
+        if (pending === 'response') await ready;
+        return {
+          ok: true,
+          json: async () => {
+            if (pending === 'body') await ready;
+            return { images: ['deleted.jpg'] };
+          },
+        };
+      }));
+
+      const request = displayCache.prefetch('/api/backgrounds', 60_000);
+      await Promise.resolve();
+      displayCache.invalidate('/api/backgrounds');
+      release();
+      await request;
+
+      expect(displayCache.get('/api/backgrounds')).toBeNull();
+      expect(displayCache.getStats().inflight).toBe(0);
+    });
+
+    it('invalidates cold in-flight URLs by prefix without discarding unrelated data', async () => {
+      let release!: () => void;
+      const ready = new Promise<void>((resolve) => { release = resolve; });
+      vi.stubGlobal('fetch', vi.fn(async () => {
+        await ready;
+        return { ok: true, json: async () => ({ value: 'fetched' }) };
+      }));
+
+      const images = displayCache.prefetch('/api/backgrounds?directory=album', 60_000);
+      const weather = displayCache.prefetch('/api/weather', 60_000);
+      displayCache.invalidateByPrefix('/api/backgrounds');
+      release();
+      await Promise.all([images, weather]);
+
+      expect(displayCache.get('/api/backgrounds?directory=album')).toBeNull();
+      expect(displayCache.get('/api/weather')?.data).toEqual({ value: 'fetched' });
+    });
+
+    it.each(['invalidate', 'clear'])('keeps a replacement request deduplicated after %s', async (action) => {
+      let releaseOld!: () => void;
+      let releaseNew!: () => void;
+      const oldReady = new Promise<void>((resolve) => { releaseOld = resolve; });
+      const newReady = new Promise<void>((resolve) => { releaseNew = resolve; });
+      const mockFetch = vi.fn()
+        .mockImplementationOnce(async () => {
+          await oldReady;
+          return { ok: true, json: async () => ({ images: ['deleted.jpg'] }) };
+        })
+        .mockImplementation(async () => {
+          await newReady;
+          return { ok: true, json: async () => ({ images: [] }) };
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const old = displayCache.prefetch('/api/backgrounds', 60_000);
+      if (action === 'clear') displayCache.clear();
+      else displayCache.invalidate('/api/backgrounds');
+      const replacement = displayCache.prefetch('/api/backgrounds', 60_000);
+
+      releaseOld();
+      await old;
+      const inflightAfterOld = displayCache.getStats().inflight;
+      const subscriber = displayCache.prefetch('/api/backgrounds', 60_000);
+      releaseNew();
+      await Promise.all([replacement, subscriber]);
+
+      expect(inflightAfterOld).toBe(1);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(displayCache.get('/api/backgrounds')?.data).toEqual({ images: [] });
+      expect(displayCache.getStats().inflight).toBe(0);
+    });
+  });
+
   // ── generation counter (clear vs in-flight) ─────────────────────
 
   describe('generation counter', () => {

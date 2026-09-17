@@ -114,7 +114,11 @@ class DisplayDataCache {
     if (!this.isStale(url)) return;
     const existing = this.inflight.get(url);
     if (existing) return existing;
-    const p = this.doFetch(url, ttlMs).finally(() => this.inflight.delete(url));
+    const p: Promise<void> = this.doFetch(url, ttlMs, () => this.inflight.get(url) === p)
+      .finally(() => {
+        // An invalidated request can finish after its replacement has started.
+        if (this.inflight.get(url) === p) this.inflight.delete(url);
+      });
     this.inflight.set(url, p);
     return p;
   }
@@ -122,20 +126,21 @@ class DisplayDataCache {
   /** Invalidate a single URL so subscribers re-fetch immediately. */
   invalidate(url: string): void {
     this.cache.delete(url);
+    this.inflight.delete(url);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('displaycache:invalidate', { detail: url }));
     }
   }
 
   /**
-   * Invalidate every cached URL under a prefix. Editor actions that mutate
+   * Invalidate every cached or in-flight URL under a prefix. Editor actions that mutate
    * the media library (uploads, deletes, iCloud imports) call this with
    * '/api/backgrounds' so canvas module previews re-fetch immediately instead
    * of serving the pre-mutation list for up to a full TTL (useFetchData skips
    * fetching entirely while a cache entry is fresh).
    */
   invalidateByPrefix(prefix: string): void {
-    for (const url of [...this.cache.keys()]) {
+    for (const url of new Set([...this.cache.keys(), ...this.inflight.keys()])) {
       if (url.startsWith(prefix)) this.invalidate(url);
     }
   }
@@ -186,15 +191,16 @@ class DisplayDataCache {
     };
   }
 
-  private async doFetch(url: string, ttlMs: number): Promise<void> {
+  private async doFetch(url: string, ttlMs: number, isCurrent: () => boolean): Promise<void> {
     const gen = this.generation;
     const published = this.published.get(url) ?? 0;
     try {
       const res = await displayFetch(url);
       if (!res.ok) return;
       const data = await res.json();
-      // Checked after the body too: a write can publish while it downloads.
-      if (gen === this.generation && published === (this.published.get(url) ?? 0)) {
+      // Checked after the body too: a write can publish or invalidate while
+      // it downloads. Superseded requests must not warm the cache again.
+      if (isCurrent() && gen === this.generation && published === (this.published.get(url) ?? 0)) {
         this.set(url, data, ttlMs);
       }
     } catch (err) {
