@@ -42,9 +42,19 @@ vi.mock('@/lib/migrations', () => ({
 
 // Mock version
 const mockHasReleaseTarball = vi.fn();
+const mockFetchReleaseByTag = vi.fn();
+const mockGetPackageVersion = vi.fn();
 vi.mock('@/lib/version', () => ({
   hasReleaseTarball: (...args: unknown[]) => mockHasReleaseTarball(...args),
+  fetchReleaseByTag: (...args: unknown[]) => mockFetchReleaseByTag(...args),
+  getPackageVersion: (...args: unknown[]) => mockGetPackageVersion(...args),
   GITHUB_REPO: 'home-screens/home-screens',
+}));
+
+// Mock the family fold the migrate step settles
+const mockSettleFamilyMigration = vi.fn();
+vi.mock('@/lib/family-data', () => ({
+  settleFamilyMigration: (...args: unknown[]) => mockSettleFamilyMigration(...args),
 }));
 
 // Mock fs (dynamic import in upgrade.ts uses `await import('fs')`)
@@ -160,6 +170,10 @@ function resetMockDefaults() {
   mockGetLatestSchemaVersion.mockReturnValue(1);
   mockMigrateUp.mockReturnValue({ config: structuredClone(MOCK_CONFIG), migrationsRun: [] });
   mockHasReleaseTarball.mockResolvedValue(false);
+  // No release body to read by default: the path guard lets the tag through.
+  mockFetchReleaseByTag.mockResolvedValue(null);
+  mockGetPackageVersion.mockResolvedValue('1.0.0');
+  mockSettleFamilyMigration.mockResolvedValue(undefined);
   mockFsAccess.mockResolvedValue(undefined); // .git exists by default
   mockFsRename.mockResolvedValue(undefined);
   mockFsRm.mockResolvedValue(undefined);
@@ -735,6 +749,118 @@ describe('runUpgrade — tarball path', () => {
 });
 
 // ── runRollback ────────────────────────────────────────────────────────────
+
+describe('runUpgrade — install path guard', () => {
+  function release(tag: string, body: string) {
+    return { tag_name: tag, name: tag, body, draft: false, prerelease: false, published_at: '', assets: [] };
+  }
+
+  it('refuses a target whose floor is unmet before any script runs', async () => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+    mockFetchReleaseByTag.mockResolvedValue(release('v2.0.0', '<!-- home-screens-requires: 1.43.0 -->'));
+    mockGetPackageVersion.mockResolvedValue('1.32.0');
+    setupSpawnForSuccess();
+
+    const events: { step: string; error?: string }[] = [];
+    upgradeModule.subscribeToEvents((e) => {
+      if (e.type === 'progress') events.push({ step: e.step, error: e.error });
+    });
+
+    await expect(upgradeModule.runUpgrade('v2.0.0')).rejects.toThrow('v2.0.0 needs v1.43.0 installed first');
+    expect(mockSpawn).not.toHaveBeenCalled();
+    expect(events.at(-1)).toEqual({ step: 'error', error: 'v2.0.0 needs v1.43.0 installed first. Update to v1.43.0, then update again.' });
+  });
+
+  it('lets a target through once its floor is met', async () => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+    mockFetchReleaseByTag.mockResolvedValue(release('v2.0.0', '<!-- home-screens-requires: 1.43.0 -->'));
+    mockGetPackageVersion.mockResolvedValue('1.43.0');
+    setupSpawnForSuccess();
+
+    await upgradeModule.runUpgrade('v2.0.0');
+    expect(scriptAccess.map((s) => s.action)).toContain('download');
+  });
+
+  it('refuses a step back that cannot read the saved settings', async () => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+    mockFetchReleaseByTag.mockResolvedValue(release('v1.43.0', '<!-- home-screens-schema: 13 -->'));
+    mockGetPackageVersion.mockResolvedValue('2.0.0');
+    mockReadConfig.mockResolvedValue({ ...structuredClone(MOCK_CONFIG), version: 20 });
+    setupSpawnForSuccess();
+
+    await expect(upgradeModule.runRollback('v1.43.0')).rejects.toThrow('Going back to v1.43.0 would leave settings that version cannot read.');
+    expect(mockSpawn).not.toHaveBeenCalled();
+  });
+
+  it('lets a step back through when the target reads the same schema', async () => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+    mockFetchReleaseByTag.mockResolvedValue(release('v1.43.0', '<!-- home-screens-schema: 20 -->'));
+    mockGetPackageVersion.mockResolvedValue('2.0.0');
+    mockReadConfig.mockResolvedValue({ ...structuredClone(MOCK_CONFIG), version: 20 });
+    setupSpawnForSuccess();
+
+    await upgradeModule.runRollback('v1.43.0');
+    expect(scriptAccess.map((s) => s.action)).toContain('download');
+  });
+
+  it('stops when the release information cannot be fetched at all', async () => {
+    // hasReleaseTarball has already fallen back to git by now, and git fetch
+    // may succeed, so an unchecked target must not go through.
+    mockHasReleaseTarball.mockResolvedValue(false);
+    mockFetchReleaseByTag.mockRejectedValue(new Error('GitHub API returned 500'));
+    setupSpawnForSuccess();
+
+    await expect(upgradeModule.runUpgrade('v2.0.0')).rejects.toThrow(
+      'Could not check whether v2.0.0 can be installed because the release information could not be fetched. Try again in a few minutes.',
+    );
+    expect(mockSpawn).not.toHaveBeenCalled();
+  });
+
+  it('lets a target through when the tag simply has no release', async () => {
+    mockHasReleaseTarball.mockResolvedValue(false);
+    mockFetchReleaseByTag.mockResolvedValue(null);
+    setupSpawnForSuccess();
+
+    await upgradeModule.runUpgrade('v2.0.0');
+    expect(scriptAccess.map((s) => s.action)).toContain('checkout');
+  });
+
+  it('guards the git path too', async () => {
+    mockHasReleaseTarball.mockResolvedValue(false);
+    mockFetchReleaseByTag.mockResolvedValue(release('v2.0.0', '<!-- home-screens-requires: 1.43.0 -->'));
+    mockGetPackageVersion.mockResolvedValue('1.0.0');
+    setupSpawnForSuccess();
+
+    await expect(upgradeModule.runUpgrade('v2.0.0')).rejects.toThrow('needs v1.43.0 installed first');
+    expect(mockSpawn).not.toHaveBeenCalled();
+  });
+});
+
+describe('migrate step — family fold', () => {
+  it('settles the family fold inside the migrate transaction', async () => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+    setupSpawnForSuccess();
+    let depthWhenSettled = -1;
+    mockSettleFamilyMigration.mockImplementation(async () => { depthWhenSettled = transactionDepth; });
+
+    const lines: string[] = [];
+    upgradeModule.subscribeToEvents((e) => { if (e.type === 'output' && e.step === 'migrate') lines.push(e.line); });
+
+    await upgradeModule.runUpgrade('v1.2.0');
+    expect(mockSettleFamilyMigration).toHaveBeenCalledTimes(1);
+    expect(depthWhenSettled).toBeGreaterThan(0);
+    expect(lines).toContain('Family data is up to date');
+  });
+
+  it('fails the upgrade before deploy when the family fold fails', async () => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+    setupSpawnForSuccess();
+    mockSettleFamilyMigration.mockRejectedValue(new Error('The saved family sources could not be read.'));
+
+    await expect(upgradeModule.runUpgrade('v1.2.0')).rejects.toThrow('The saved family sources could not be read.');
+    expect(scriptAccess.map((s) => s.action)).not.toContain('deploy');
+  });
+});
 
 describe('runRollback', () => {
   it('uses tarball pipeline when tarball is available', async () => {

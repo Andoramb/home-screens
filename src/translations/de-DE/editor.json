@@ -1511,7 +1511,16 @@
         "nightlyTitle": "Test-Build verfügbar: v{version}",
         "downgradeTitle": "Zu v{version} wechseln",
         "downgradeLine": "Du bist auf v{version}, das neuer ist als das, was deine Update-Auswahl anbietet. Beim Wechsel wird die ältere Version installiert.",
-        "switchButton": "Wechseln"
+        "switchButton": "Wechseln",
+        "stepLine": "v{next} braucht zuerst v{version}. Aktualisiere danach noch einmal.",
+        "stepMissingTitle": "v{next} braucht zuerst ein anderes Update",
+        "stepMissingLine": "v{next} braucht zuerst v{version}, und diese Version wurde nicht gefunden. Schau später noch einmal vorbei.",
+        "blockedDowngradeTitle": "Wechsel zu v{version} nicht möglich",
+        "blockedDowngradeLine": "Ein Wechsel zurück zu v{version} würde Einstellungen hinterlassen, die diese Version nicht lesen kann."
+      },
+      "failedUpdate": {
+        "line": "Das Update auf {tag} ist nicht gestartet, deshalb ist dieses Display zu v{version} zurückgekehrt.",
+        "dismiss": "Verstanden"
       },
       "channel": {
         "heading": "Welche Updates du bekommst",
@@ -1553,7 +1562,9 @@
         "rollback": "Hierhin zurück",
         "help": "Zurück zu der Version, auf der du vorher warst. Um stattdessen eine Einstellungsänderung rückgängig zu machen, stelle einen Schnappschuss auf der Seite Sicherungen & Daten wieder her.",
         "showAll": "Alle {count} Versionen anzeigen",
-        "olderWarning": "Ältere Versionen verstehen deine aktuellen Einstellungen möglicherweise nicht."
+        "olderWarning": "Ältere Versionen verstehen deine aktuellen Einstellungen möglicherweise nicht.",
+        "needsFirst": "Braucht zuerst v{version}",
+        "cannotRead": "Kann deine aktuellen Einstellungen nicht lesen"
       },
       "upgradeDialog": {
         "title": "Aktualisieren",

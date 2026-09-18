@@ -44,6 +44,8 @@ export interface SystemActions {
   handleToggleUpdateNotification: (enabled: boolean) => Promise<void>;
   handleUpgrade: (tag: string) => Promise<void>;
   handleRollback: (tag: string) => Promise<void>;
+  /** Clears the "an update was undone" line. Optimistic; the marker is removed in the background. */
+  handleDismissFailedUpdate: () => void;
   handlePowerAction: (action: 'reboot' | 'restart-service') => Promise<void>;
   handleCancelUpgrade: () => Promise<void>;
 }
@@ -168,6 +170,15 @@ export function useSystemActions({ onUpgrade, onRollback }: Options): SystemActi
     await action();
   }
 
+  function handleDismissFailedUpdate() {
+    setVersionInfo((prev) => (prev ? { ...prev, lastFailedUpdate: null } : prev));
+    editorFetch('/api/system/update-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clearFailedUpdate' }),
+    }).catch((err) => log.debug('Failed to clear the failed-update marker:', err));
+  }
+
   async function handleUpgrade(tag: string) {
     await confirmAndRun(
       {
@@ -271,6 +282,7 @@ export function useSystemActions({ onUpgrade, onRollback }: Options): SystemActi
     handleToggleUpdateNotification,
     handleUpgrade,
     handleRollback,
+    handleDismissFailedUpdate,
     handlePowerAction,
     handleCancelUpgrade,
   };

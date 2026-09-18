@@ -1511,7 +1511,16 @@
         "nightlyTitle": "Compilación de prueba disponible: v{version}",
         "downgradeTitle": "Cambiar a la v{version}",
         "downgradeLine": "Estás en la v{version}, más reciente que lo que ofrece tu elección de actualizaciones. Al cambiar se instala la versión anterior.",
-        "switchButton": "Cambiar"
+        "switchButton": "Cambiar",
+        "stepLine": "v{next} necesita primero v{version}. Vuelve a actualizar cuando esta termine.",
+        "stepMissingTitle": "v{next} necesita primero otra actualización",
+        "stepMissingLine": "v{next} necesita primero v{version}, y esa versión no se ha encontrado. Inténtalo más tarde.",
+        "blockedDowngradeTitle": "No se puede cambiar a v{version}",
+        "blockedDowngradeLine": "Volver a v{version} dejaría ajustes que esa versión no puede leer."
+      },
+      "failedUpdate": {
+        "line": "La actualización a {tag} no arrancó, así que esta pantalla volvió a v{version}.",
+        "dismiss": "Entendido"
       },
       "channel": {
         "heading": "Qué actualizaciones recibir",
@@ -1553,7 +1562,9 @@
         "rollback": "Volver a esta",
         "help": "Vuelve a la versión anterior. Para deshacer un cambio de ajustes, restaura una instantánea desde la página Copias y datos.",
         "showAll": "Ver las {count} versiones",
-        "olderWarning": "Las versiones más antiguas puede que no entiendan tus ajustes actuales."
+        "olderWarning": "Las versiones más antiguas puede que no entiendan tus ajustes actuales.",
+        "needsFirst": "Necesita primero v{version}",
+        "cannotRead": "No puede leer tus ajustes actuales"
       },
       "upgradeDialog": {
         "title": "Actualizar",

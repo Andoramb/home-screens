@@ -71,6 +71,9 @@ const VERSION_UP_TO_DATE = {
   latestCommit: null,
   updateAvailable: false,
   isDowngrade: false,
+  requiredStepFor: null,
+  missingStep: null,
+  blockedDowngrade: null,
   installedVia: 'git',
   branch: 'main',
   tags: [
@@ -78,6 +81,48 @@ const VERSION_UP_TO_DATE = {
     { tag: 'v1.2.2', version: '1.2.2', commit: 'def5678' },
   ],
   upgradeRunning: false,
+  lastFailedUpdate: null,
+  localSchema: 13,
+};
+
+/** The newest release declares a floor this device has not reached, so the
+ * floor is what is offered and the newest waits behind it. */
+const VERSION_STEP_REQUIRED = {
+  ...VERSION_UP_TO_DATE,
+  latest: '1.2.5',
+  latestCommit: 'eee1111',
+  updateAvailable: true,
+  requiredStepFor: '2.0.0',
+  tags: [
+    { tag: 'v2.0.0', version: '2.0.0', commit: '', requires: ['1.2.5'], schema: 13 },
+    { tag: 'v1.2.5', version: '1.2.5', commit: 'eee1111', schema: 13 },
+    { tag: 'v1.2.3', version: '1.2.3', commit: 'abc1234' },
+    // An older release that declares it reads a schema below this device's.
+    { tag: 'v1.1.0', version: '1.1.0', commit: 'bbb2222', schema: 9 },
+  ],
+};
+
+/** The floor the newest release needs has no release of its own. */
+const VERSION_STEP_MISSING = {
+  ...VERSION_UP_TO_DATE,
+  requiredStepFor: '2.0.0',
+  missingStep: '1.2.5',
+  tags: [{ tag: 'v2.0.0', version: '2.0.0', commit: '', requires: ['1.2.5'] }],
+};
+
+/** A step back was withheld because that release cannot read the saved settings. */
+const VERSION_DOWNGRADE_BLOCKED = {
+  ...VERSION_UP_TO_DATE,
+  current: '2.0.0',
+  blockedDowngrade: '1.2.3',
+  localSchema: 20,
+  tags: [{ tag: 'v1.2.3', version: '1.2.3', commit: 'abc1234', schema: 13 }],
+};
+
+/** finalize-deploy put the previous tree back after a release never started. */
+const VERSION_AFTER_FAILED_UPDATE = {
+  ...VERSION_UP_TO_DATE,
+  lastFailedUpdate: { tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' },
 };
 
 const VERSION_UPDATE_AVAILABLE = {
@@ -737,6 +782,78 @@ test.describe('Defaults › System', () => {
 
     await expect(page.getByText('Test build available: v1.2.4-dev.20260908')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Install' })).toBeVisible();
+
+    assertNoRealSystemCall(stubs);
+  });
+
+  test('a required step is offered in place of the newest release, and blocked history rows say why', async ({ page, request }) => {
+    await putConfig(request, baseConfig());
+    const stubs = await setupSystemStubs(page, { version: VERSION_STEP_REQUIRED });
+
+    await page.goto('/editor/settings?section=defaults&page=system');
+
+    // The banner offers the step and says what waits behind it.
+    const banner = page.getByTestId('system-update-banner');
+    await expect(banner.getByText('Update available: v1.2.5')).toBeVisible();
+    await expect(banner.getByText('v2.0.0 needs v1.2.5 installed first. Update again after this one finishes.')).toBeVisible();
+
+    // Pressing the button confirms the step's tag, not the newest.
+    await banner.getByRole('button', { name: 'Update Now' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Upgrade to v1.2.5?')).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
+    // The history list: the newest needs the step first, the old release
+    // cannot read the current settings, the step itself is installable.
+    await page.getByRole('button', { name: /Show all/ }).click();
+    const rows = page.locator('[data-field-id="system.rollback"] .font-mono');
+    await expect(rows).toHaveCount(4);
+    const rowFor = (tag: string) => page.locator('[data-field-id="system.rollback"] > div > div', { hasText: tag });
+    await expect(rowFor('v2.0.0').getByText('Needs v1.2.5 first')).toBeVisible();
+    await expect(rowFor('v2.0.0').getByRole('button')).toHaveCount(0);
+    await expect(rowFor('v1.1.0').getByText("Can't read your current settings")).toBeVisible();
+    await expect(rowFor('v1.1.0').getByRole('button')).toHaveCount(0);
+    await expect(rowFor('v1.2.5').getByRole('button', { name: 'Go back to this' })).toBeVisible();
+
+    assertNoRealSystemCall(stubs);
+  });
+
+  test('a missing step and a withheld step back explain instead of offering a button', async ({ page, request }) => {
+    await putConfig(request, baseConfig());
+    const stubs = await setupSystemStubs(page, { version: VERSION_STEP_MISSING });
+
+    await page.goto('/editor/settings?section=defaults&page=system');
+    const withheld = page.getByTestId('system-update-withheld');
+    await expect(withheld.getByText('v2.0.0 needs another update first')).toBeVisible();
+    await expect(withheld.getByText(/v2.0.0 needs v1.2.5 installed first, and that version could not be found/)).toBeVisible();
+    await expect(page.getByTestId('system-update-banner')).toHaveCount(0);
+    await expect(page.getByText("You're on the latest version")).toHaveCount(0);
+
+    await page.route('**/api/system/version**', (route) => route.fulfill({ json: VERSION_DOWNGRADE_BLOCKED }));
+    await page.reload();
+    await expect(page.getByTestId('system-update-withheld').getByText("Can't switch to v1.2.3")).toBeVisible();
+    await expect(page.getByText("Going back to v1.2.3 would leave settings that version can't read.")).toBeVisible();
+
+    assertNoRealSystemCall(stubs);
+  });
+
+  test('an update that was undone is explained once and dismissed', async ({ page, request }) => {
+    await putConfig(request, baseConfig());
+    const stubs = await setupSystemStubs(page, { version: VERSION_AFTER_FAILED_UPDATE });
+    await page.route('**/api/system/update-notification', (route) => {
+      if (route.request().method() === 'POST') {
+        (stubs.posted['/api/system/update-notification'] ??= []).push(route.request().postDataJSON());
+        return route.fulfill({ json: { ok: true } });
+      }
+      return route.fulfill({ json: { lastDismissedVersion: null } });
+    });
+
+    await page.goto('/editor/settings?section=defaults&page=system');
+    const line = page.getByTestId('system-failed-update');
+    await expect(line.getByText('The update to v2.0.0 did not start, so this display went back to v1.2.3.')).toBeVisible();
+    await line.getByRole('button', { name: 'Got it' }).click();
+    await expect(line).toHaveCount(0);
+    expect(stubs.posted['/api/system/update-notification']).toEqual([{ action: 'clearFailedUpdate' }]);
 
     assertNoRealSystemCall(stubs);
   });

@@ -141,8 +141,8 @@ case "${action}" in
       errors="${errors}Low disk space ($(( available_kb / 1024 ))MB available, need 400MB). "
     fi
 
-    # Check network connectivity to GitHub
-    if ! curl -fsSL --head --max-time 10 "https://github.com" >/dev/null 2>&1; then
+    # Check network connectivity to GitHub (or the rig standing in for it)
+    if ! curl -fsSL --head --max-time 10 "${HS_GITHUB_DOWNLOAD_BASE:-https://github.com}" >/dev/null 2>&1; then
       errors="${errors}Cannot reach GitHub (check network connectivity). "
     fi
 
@@ -275,7 +275,10 @@ case "${action}" in
 
     repo="${2:-home-screens/home-screens}"
     asset_name="home-screens-${tag}.tar.gz"
-    download_url="https://github.com/${repo}/releases/download/${tag}/${asset_name}"
+    # HS_GITHUB_DOWNLOAD_BASE lets a test rig serve releases to a real
+    # device; the app's version check honours HS_GITHUB_API_BASE the same way.
+    download_base="${HS_GITHUB_DOWNLOAD_BASE:-https://github.com}"
+    download_url="${download_base}/${repo}/releases/download/${tag}/${asset_name}"
 
     staging_dir="${APP_DIR}.staging"
     rm -rf "${staging_dir}"
@@ -302,7 +305,7 @@ case "${action}" in
     # the checksum rollout lack a sidecar — warn but continue in that case
     # to keep upgrades to older versions working.
     checksum_name="${asset_name}.sha256"
-    checksum_url="https://github.com/${repo}/releases/download/${tag}/${checksum_name}"
+    checksum_url="${download_base}/${repo}/releases/download/${tag}/${checksum_name}"
     if curl -fsSL --max-time 30 -o "${staging_dir}/${checksum_name}" "${checksum_url}" 2>/dev/null; then
       if ! ( cd "${staging_dir}" && sha256sum -c "${checksum_name}" >/dev/null 2>&1 ); then
         rm -rf "${staging_dir}"
@@ -337,6 +340,9 @@ case "${action}" in
       echo '{"ok":false,"error":"No staged upgrade found"}'
       exit 1
     fi
+    # A tree finalize-deploy set aside after a failed start is kept for
+    # diagnosis until the next attempt, which is now.
+    rm -rf "${APP_DIR}.failed"
     echo '{"ok":true}'
     ;;
 
@@ -423,14 +429,23 @@ case "${action}" in
     # then clean up the rollback directory. Designed to run as a detached
     # background job spawned from `restart`, because the orchestrating
     # process is killed by the systemd restart and cannot run cleanup
-    # itself. Leaves the rollback in place if health check fails so the
-    # user can recover via the upgrade UI's rollback action.
+    # itself. When the new release never answers, the previous tree is
+    # put back and restarted, and a marker names the version that did not
+    # take so the System page can say so.
+    #
+    # This runs from the NEW tree's copy of the script (APP_DIR is the new
+    # tree after the swap), which is what makes it a safety net for devices
+    # whose old code could not have known better: a release that refuses
+    # to start on data it cannot read still lands the device back where
+    # it was, with that data untouched.
     #
     # Health check accepts ANY HTTP response code (incl. 401) — when auth
     # is enabled /api/config requires a session or display token, but the
     # 401 still proves the server is bound to the port and processing
     # requests, which is what "healthy" means here. We just want to know
-    # the new release booted successfully.
+    # the new release booted successfully. A release that must not run on
+    # the data it finds has to exit rather than serve errors, or it counts
+    # as healthy here.
     port="${1:-${PORT:-3000}}"
     rollback_dir="${APP_DIR}.rollback"
     if [ ! -d "${rollback_dir}" ]; then
@@ -438,21 +453,44 @@ case "${action}" in
       exit 0
     fi
     attempt=0
-    max_attempts=45  # 45 * 2s = 90s
-    while [ ${attempt} -lt ${max_attempts} ]; do
+    max_attempts="${HS_FINALIZE_ATTEMPTS:-45}"  # 45 * 2s = 90s
+    while [ "${attempt}" -lt "${max_attempts}" ]; do
       # %{http_code} is "000" when curl can't connect at all; any HTTP
-      # response (200, 401, 500, ...) means the server is reachable.
+      # response (200, 401, 500, ...) means the server is reachable. Only a
+      # three-digit status counts. curl prints 000 and ALSO exits non-zero
+      # when it cannot connect, so an `|| echo 000` fallback used to yield
+      # "000000", which is not "000", and a dead server passed as healthy.
       http_code=$(curl -s -o /dev/null --max-time 5 -w "%{http_code}" \
-        "http://localhost:${port}/api/config" 2>/dev/null || echo "000")
-      if [ -n "${http_code}" ] && [ "${http_code}" != "000" ]; then
+        "http://localhost:${port}/api/config" 2>/dev/null || true)
+      if [[ "${http_code}" =~ ^[1-5][0-9][0-9]$ ]]; then
         rm -rf "${rollback_dir}" 2>/dev/null || true
         echo "{\"ok\":true,\"healthy\":true,\"attempts\":${attempt},\"status\":${http_code}}"
         exit 0
       fi
-      sleep 2
+      sleep "${HS_FINALIZE_SLEEP:-2}"
       attempt=$(( attempt + 1 ))
     done
-    echo "{\"ok\":false,\"error\":\"New release did not become healthy within 90s; rollback preserved at ${rollback_dir}\"}"
+
+    # The new release never answered. Put the previous tree back. The
+    # rollback tree still holds the data as it was copied before the swap,
+    # which already includes the old tree's own migrate-step writes, so
+    # nothing the device had is lost; only whatever the new tree wrote in
+    # the seconds it lived, and it never became a version anyone used.
+    failed_dir="${APP_DIR}.failed"
+    failed_version=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' "${APP_DIR}/package.json" 2>/dev/null | head -n 1)
+    [ -n "${failed_version}" ] || failed_version="unknown"
+    echo "New release v${failed_version} did not become healthy within ${max_attempts} attempts; going back to the previous version" >&2
+    sudo systemctl stop "${SERVICE_NAME}" 2>/dev/null || true
+    rm -rf "${failed_dir}"
+    # Two renames, same filesystem. If the process dies between them the
+    # unit's ExecStartPre restores APP_DIR from .rollback on the next start.
+    mv "${APP_DIR}" "${failed_dir}"
+    mv "${rollback_dir}" "${APP_DIR}"
+    mkdir -p "${APP_DIR}/data" 2>/dev/null || true
+    printf '{"tag":"v%s","reason":"did-not-start","at":"%s"}\n' \
+      "${failed_version}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "${APP_DIR}/data/upgrade-failed.json"
+    sudo systemctl start "${SERVICE_NAME}" 2>/dev/null || true
+    echo "{\"ok\":false,\"rolledBack\":true,\"failedVersion\":\"${failed_version}\",\"error\":\"New release did not become healthy; the previous version was put back and the failed tree kept at ${failed_dir}\"}"
     exit 1
     ;;
 
@@ -534,30 +572,51 @@ case "${action}" in
       finalize_port=$( { cat "${APP_DIR}/data/port.conf" 2>/dev/null || echo 3000; } | tr -d '[:space:]' )
       finalize_log="${APP_DIR}/data/upgrade-finalize.log"
       mkdir -p "$(dirname "${finalize_log}")" 2>/dev/null || true
-      # Detached job: restart the service, verify systemd actually replaced
-      # the running process, then finalize by health-checking and cleaning up
-      # the rollback. `setsid` makes it survive the orchestrator's death.
-      #
-      # CRITICAL: this block must short-circuit on ANY failure so finalize-deploy
-      # never runs against a still-living old process. `set -e` aborts on error.
-      # The MainPID check rejects the case where systemctl exits 0 but the
-      # process was not actually replaced (e.g., transient systemd state).
-      nohup setsid bash -c "
-        set -e
-        sleep 3
-        old_pid=\$(systemctl show -p MainPID --value ${SERVICE_NAME} 2>/dev/null || echo 0)
-        sudo systemctl restart ${SERVICE_NAME}
-        # Give systemd time to spawn the replacement process
-        sleep 5
-        new_pid=\$(systemctl show -p MainPID --value ${SERVICE_NAME} 2>/dev/null || echo 0)
-        if [ \"\${new_pid}\" = \"0\" ] || [ \"\${new_pid}\" = \"\${old_pid}\" ]; then
-          echo \"Restart did not produce a new MainPID (old=\${old_pid}, new=\${new_pid}); aborting finalize to preserve rollback\" >&2
-          exit 1
-        fi
-        systemctl is-active --quiet ${SERVICE_NAME}
-        bash '${APP_DIR}/scripts/upgrade.sh' finalize-deploy '${finalize_port}'
-      " > "${finalize_log}" 2>&1 < /dev/null &
-      disown 2>/dev/null || true
+      # A job that restarts the service, checks systemd really replaced the
+      # process, then hands over to finalize-deploy, which drops the rollback
+      # once the new release answers or puts the old tree back when it never
+      # does. Only an unchanged MainPID aborts: that means no restart
+      # happened and the old process is still the one running, so nothing
+      # may be finalized either way. A service that is crash-looping or
+      # failed after the restart is exactly what finalize-deploy is for, so
+      # it must not be filtered out here.
+      # The job is a file, not a command-line string: systemd expands
+      # ${VAR} in the command line of a unit it launches, so an inline
+      # script's own variables reach bash already emptied. The transient
+      # unit's bash opens the file before the restart; a later rename of
+      # the tree does not disturb an open script.
+      finalize_job="${APP_DIR}/data/upgrade-finalize-job.sh"
+      cat > "${finalize_job}" <<EOF_JOB
+exec > '${finalize_log}' 2>&1
+sleep 3
+old_pid=\$(systemctl show -p MainPID --value ${SERVICE_NAME} 2>/dev/null || echo 0)
+sudo systemctl restart ${SERVICE_NAME} || true
+# Give systemd time to spawn the replacement process
+sleep 5
+new_pid=\$(systemctl show -p MainPID --value ${SERVICE_NAME} 2>/dev/null || echo 0)
+if [ "\${new_pid}" != "0" ] && [ "\${new_pid}" = "\${old_pid}" ]; then
+  echo "Restart did not produce a new MainPID (old=\${old_pid}, new=\${new_pid}); aborting finalize to preserve rollback" >&2
+  exit 1
+fi
+bash '${APP_DIR}/scripts/upgrade.sh' finalize-deploy '${finalize_port}'
+EOF_JOB
+      # The job cannot be a child of this process: the service's cgroup is
+      # SIGKILLed once its main process stops (KillMode=mixed), and neither
+      # nohup nor setsid leaves the cgroup. On a real Pi the old detached
+      # child died at the restart every time, which is why rollback trees
+      # were never cleaned up. A transient unit of its own outlives the
+      # restart it triggers. The nohup form stays as the fallback for a
+      # host without systemd-run.
+      if command -v systemd-run &>/dev/null \
+        && sudo -n systemd-run --quiet --collect \
+             --unit="${SERVICE_NAME}-finalize-$(date +%s)" \
+             --property="User=$(id -un)" \
+             bash "${finalize_job}" 2>/dev/null; then
+        :
+      else
+        nohup setsid bash "${finalize_job}" > /dev/null 2>&1 < /dev/null &
+        disown 2>/dev/null || true
+      fi
       echo "{\"ok\":true,\"method\":\"systemctl\"}"
     else
       echo "{\"ok\":true,\"method\":\"manual\",\"message\":\"Service not managed by systemd. Restart manually.\"}"

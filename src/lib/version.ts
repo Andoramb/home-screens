@@ -8,8 +8,23 @@ import {
   type UpdateChannel,
 } from '@/lib/semver';
 import { fetchWithTimeout } from '@/lib/api-utils';
+import type { FailedUpdate } from '@/lib/upgrade-failed-state';
+import {
+  parseReleaseMarkers,
+  resolveInstallTarget,
+  versionOfTag,
+  type InstallTargetResolution,
+} from '@/lib/update-policy';
 
 export const GITHUB_REPO = 'home-screens/home-screens';
+
+/**
+ * Where releases are read from. Overridable so a test rig can stand a fake
+ * GitHub in front of a real device; `scripts/upgrade.sh` honours the
+ * matching `HS_GITHUB_DOWNLOAD_BASE` for the tarball itself. Never set on a
+ * real install.
+ */
+const GITHUB_API_BASE = (process.env.HS_GITHUB_API_BASE ?? 'https://api.github.com').replace(/\/$/, '');
 
 export interface VersionInfo {
   current: string;
@@ -30,6 +45,15 @@ export interface VersionInfo {
   updateAvailable: boolean;
   /** `latest` sorts below `current`, so installing it is a step back. */
   isDowngrade: boolean;
+  /**
+   * When `latest` is a required step rather than the channel's newest, the
+   * version waiting behind it. See `src/lib/update-policy.ts`.
+   */
+  requiredStepFor: string | null;
+  /** The newest release needs this version first and it could not be found. */
+  missingStep: string | null;
+  /** The newest release is a step back that cannot read the local settings. */
+  blockedDowngrade: string | null;
   installedVia: 'git' | 'tarball' | 'unknown';
   /** Git branch for git installs, `release` for tarballs, `unknown` otherwise. */
   branch: string;
@@ -40,6 +64,10 @@ export interface TagInfo {
   version: string;
   commit: string;
   hasTarball?: boolean;
+  /** Floors declared in the release body; absent when it declares none. */
+  requires?: string[];
+  /** Newest config schema the release reads; absent when undeclared. */
+  schema?: number;
 }
 
 /** Wire shape of GET /api/system/version — VersionInfo plus the fields the
@@ -47,6 +75,10 @@ export interface TagInfo {
 export interface VersionResponse extends VersionInfo {
   tags: TagInfo[];
   upgradeRunning: boolean;
+  /** An update that never started and was undone; null once dismissed. */
+  lastFailedUpdate: FailedUpdate | null;
+  /** Schema stamped on the saved config, for judging a step back. Null when unreadable. */
+  localSchema: number | null;
 }
 
 /** One entry in GET /api/system/changelog's `releases` array. Shared with
@@ -249,7 +281,7 @@ class GitHubResource<T> {
 
 /** The newest page of releases, every channel mixed, drafts dropped. */
 const releasePage = new GitHubResource<GitHubRelease[]>(
-  `https://api.github.com/repos/${GITHUB_REPO}/releases?per_page=${RELEASE_PAGE_SIZE}`,
+  `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/releases?per_page=${RELEASE_PAGE_SIZE}`,
   (body) => (body as GitHubRelease[]).filter((r) => !r.draft),
 );
 
@@ -261,7 +293,7 @@ const releasePage = new GitHubResource<GitHubRelease[]>(
  * stop seeing updates without any error.
  */
 const latestStable = new GitHubResource<GitHubRelease | null>(
-  `https://api.github.com/repos/${GITHUB_REPO}/releases/latest`,
+  `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/releases/latest`,
   (body) => {
     const release = body as GitHubRelease;
     return release.draft ? null : release;
@@ -353,50 +385,75 @@ function channelOffers(channel: UpdateChannel, release: GitHubRelease): boolean 
   return channelIncludes(channel, version);
 }
 
-function versionOfTag(tag: string): string {
-  return tag.replace(/^v/, '');
-}
-
 /** @internal Convert GitHub releases to TagInfo array, sorted by semver descending */
 export function releasesToTags(releases: GitHubRelease[]): TagInfo[] {
-  const tags: TagInfo[] = releases.map((r) => ({
+  const tags: TagInfo[] = releases.map(releaseToTag);
+
+  tags.sort((a, b) => compareSemver(b.version, a.version));
+  return tags;
+}
+
+function releaseToTag(r: GitHubRelease): TagInfo {
+  const markers = parseReleaseMarkers(r.body);
+  return {
     tag: r.tag_name,
     version: versionOfTag(r.tag_name),
     commit: '', // GitHub releases don't include commit SHA directly
     hasTarball: r.assets.some((a) => a.name.startsWith('home-screens-') && a.name.endsWith('.tar.gz')),
-  }));
-
-  tags.sort((a, b) => compareSemver(b.version, a.version));
-  return tags;
+    ...(markers.requires.length > 0 ? { requires: markers.requires } : {}),
+    ...(markers.schema !== null ? { schema: markers.schema } : {}),
+  };
 }
 
 function releaseHasTarball(release: GitHubRelease, tag: string): boolean {
   return release.assets.some((a) => a.name === `home-screens-${tag}.tar.gz`);
 }
 
+/** One cached resource per tag looked up directly. Bounded by how many
+ * distinct tags a device ever asks about: the floors it is sent through
+ * and the versions it installs by hand. */
+const releaseByTag = new Map<string, GitHubResource<GitHubRelease | null>>();
+
 /**
- * Check if a specific tag has a pre-built tarball on GitHub Releases. Reads
- * the cached page first; a tag outside it (an older stable behind a run of
- * nightlies, or the stable a nightly user is stepping back to) is looked up
- * directly rather than being declared tarball-less, which would push the
- * upgrade onto the git path and fail every tarball install.
+ * One release by tag. Reads the cached page first; a tag outside it (an
+ * older stable behind a run of nightlies, the stable a nightly user is
+ * stepping back to, or a floor an update must go through) is looked up
+ * directly. Null when the tag has no release or the release is a draft;
+ * throws when GitHub cannot be reached at all.
  */
-export async function hasReleaseTarball(tag: string): Promise<boolean> {
+export async function fetchReleaseByTag(tag: string, options?: { force?: boolean }): Promise<GitHubRelease | null> {
   try {
-    const releases = await fetchGitHubReleases();
+    const releases = await fetchGitHubReleases(options);
     const release = releases.find((r) => r.tag_name === tag);
-    if (release) return releaseHasTarball(release, tag);
+    if (release) return release;
   } catch {
     // Fall through to the direct lookup.
   }
-  try {
-    const res = await fetchWithTimeout(
-      `https://api.github.com/repos/${GITHUB_REPO}/releases/tags/${encodeURIComponent(tag)}`,
-      { headers: { ...GITHUB_HEADERS } },
+  let resource = releaseByTag.get(tag);
+  if (!resource) {
+    resource = new GitHubResource<GitHubRelease | null>(
+      `${GITHUB_API_BASE}/repos/${GITHUB_REPO}/releases/tags/${encodeURIComponent(tag)}`,
+      (body) => {
+        const release = body as GitHubRelease;
+        return release.draft ? null : release;
+      },
+      () => null,
     );
-    if (!res.ok) return false;
-    const release: GitHubRelease = await res.json();
-    return !release.draft && releaseHasTarball(release, tag);
+    releaseByTag.set(tag, resource);
+  }
+  return resource.get(options?.force ?? false);
+}
+
+/**
+ * Check if a specific tag has a pre-built tarball on GitHub Releases. A tag
+ * off the cached page is looked up directly rather than being declared
+ * tarball-less, which would push the upgrade onto the git path and fail
+ * every tarball install.
+ */
+export async function hasReleaseTarball(tag: string): Promise<boolean> {
+  try {
+    const release = await fetchReleaseByTag(tag);
+    return release !== null && releaseHasTarball(release, tag);
   } catch {
     return false;
   }
@@ -458,6 +515,11 @@ async function getGitVersionTags(): Promise<TagInfo[]> {
 export interface VersionLookupOptions {
   force?: boolean;
   channel?: UpdateChannel;
+  /**
+   * The schema version stamped on the local config, for the downgrade rule
+   * in `update-policy.ts`. Omitted means unknown, which never blocks.
+   */
+  localSchema?: number | null;
 }
 
 /** Version tags visible from a channel. Prefers the GitHub API, falls back to git. */
@@ -503,9 +565,15 @@ async function detectInstallMethod(): Promise<'git' | 'tarball' | 'unknown'> {
   }
 }
 
+/** The resolution a caller gets when it has not run the policy: newest wins. */
+function newestWins(tags: TagInfo[]): InstallTargetResolution<TagInfo> {
+  return { target: tags[0] ?? null, requiredStepFor: null, missingStep: null, blockedDowngrade: null };
+}
+
 /**
  * @internal Assemble a VersionInfo result from channel-scoped tags (newest
- * first) and metadata about the running build.
+ * first), metadata about the running build, and the install target the
+ * policy resolved. Without a resolution the newest tag is the target.
  */
 export function buildVersionInfo(
   tags: TagInfo[],
@@ -514,8 +582,9 @@ export function buildVersionInfo(
   installedVia: 'git' | 'tarball' | 'unknown',
   branch: string,
   channel: UpdateChannel,
+  resolution: InstallTargetResolution<TagInfo> = newestWins(tags),
 ): VersionInfo {
-  const latest = tags.length > 0 ? tags[0] : null;
+  const latest = resolution.target;
   const cmp = latest ? compareSemver(latest.version, current) : 0;
 
   return {
@@ -527,14 +596,40 @@ export function buildVersionInfo(
     latestCommit: latest?.commit ?? null,
     updateAvailable: latest !== null && cmp !== 0,
     isDowngrade: latest !== null && cmp < 0,
+    requiredStepFor: resolution.requiredStepFor,
+    missingStep: resolution.missingStep,
+    blockedDowngrade: resolution.blockedDowngrade,
     installedVia,
     branch,
   };
 }
 
+/**
+ * Run the install policy over channel tags, looking floors up by tag. A
+ * floor fetched directly gets the same `channelOffers` check as the page:
+ * a withdrawn release (stable-shaped, marked pre-release) or one outside
+ * the channel is not a step the device may take, so it counts as missing.
+ */
+async function resolveTarget(
+  tags: TagInfo[],
+  current: string,
+  localSchema: number | null,
+  channel: UpdateChannel,
+  force: boolean,
+): Promise<InstallTargetResolution<TagInfo>> {
+  return resolveInstallTarget(current, localSchema, tags, async (tag) => {
+    try {
+      const release = await fetchReleaseByTag(tag, { force });
+      return release && channelOffers(channel, release) ? releaseToTag(release) : null;
+    } catch {
+      return null;
+    }
+  });
+}
+
 /** Get full version info, scoped to a channel */
 export async function getVersionInfo(options?: VersionLookupOptions): Promise<VersionInfo> {
-  const { force = false, channel = 'stable' } = options ?? {};
+  const { force = false, channel = 'stable', localSchema = null } = options ?? {};
   const [current, commit, installedVia] = await Promise.all([
     getPackageVersion(),
     getCurrentCommit(),
@@ -547,7 +642,8 @@ export async function getVersionInfo(options?: VersionLookupOptions): Promise<Ve
     if (releases.length > 0) {
       const tags = releasesToTags(releases);
       const branch = installedVia === 'git' ? await getCurrentBranch() : 'release';
-      return buildVersionInfo(tags, current, commit, installedVia, branch, channel);
+      const resolution = await resolveTarget(tags, current, localSchema, channel, force);
+      return buildVersionInfo(tags, current, commit, installedVia, branch, channel, resolution);
     }
   } catch {
     // GitHub API unavailable, fall through
@@ -556,6 +652,8 @@ export async function getVersionInfo(options?: VersionLookupOptions): Promise<Ve
   // Fallback to git
   if (installedVia === 'git') {
     await fetchRemoteTags();
+    // Git tags carry no release body, so no floor or schema is known here
+    // and the policy offers the newest tag exactly as it always has.
     const tags = (await getGitVersionTags()).filter((t) => channelIncludes(channel, t.version));
     const branch = await getCurrentBranch();
     return buildVersionInfo(tags, current, commit, installedVia, branch, channel);

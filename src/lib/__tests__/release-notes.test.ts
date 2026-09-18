@@ -83,3 +83,14 @@ describe('parseReleaseNotes', () => {
     ]);
   });
 });
+
+describe('stripHtmlComments', () => {
+  it('drops the release markers and any other HTML comment before parsing', async () => {
+    const { parseReleaseNotes, stripHtmlComments } = await import('../release-notes');
+    const body = '<!-- home-screens-schema: 13 -->\n<!-- home-screens-requires: 1.43.0 -->\n\n## New\n\n- A thing <!-- inline\nnote --> here\n';
+    expect(stripHtmlComments(body)).toBe('\n## New\n\n- A thing here\n');
+    const blocks = parseReleaseNotes(body);
+    expect(JSON.stringify(blocks)).not.toContain('home-screens');
+    expect(blocks[0]).toMatchObject({ type: 'heading' });
+  });
+});

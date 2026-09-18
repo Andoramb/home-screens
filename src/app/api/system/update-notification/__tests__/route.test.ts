@@ -140,6 +140,31 @@ describe('POST /api/system/update-notification', () => {
     expect(json).toEqual({ error: 'Invalid version' });
   });
 
+  it('clears the failed-update marker on clearFailedUpdate', async () => {
+    const marker = path.join(tmpDir, 'data', 'upgrade-failed.json');
+    await fs.mkdir(path.dirname(marker), { recursive: true });
+    await fs.writeFile(marker, JSON.stringify({ tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' }));
+
+    const { readFailedUpdate } = await import('@/lib/upgrade-failed-state');
+    expect(await readFailedUpdate()).toEqual({ tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' });
+
+    const res = await POST(makePostRequest({ action: 'clearFailedUpdate' }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(await readFailedUpdate()).toBeNull();
+
+    // Clearing twice is fine; the marker is simply absent.
+    expect((await POST(makePostRequest({ action: 'clearFailedUpdate' }))).status).toBe(200);
+  });
+
+  it('reads a malformed marker as absent', async () => {
+    const marker = path.join(tmpDir, 'data', 'upgrade-failed.json');
+    await fs.mkdir(path.dirname(marker), { recursive: true });
+    await fs.writeFile(marker, '{"reason":"did-not-start"}');
+    const { readFailedUpdate } = await import('@/lib/upgrade-failed-state');
+    expect(await readFailedUpdate()).toBeNull();
+  });
+
   it('returns 400 when the request body is malformed JSON', async () => {
     const req = new NextRequest('http://localhost/api/system/update-notification', {
       method: 'POST',

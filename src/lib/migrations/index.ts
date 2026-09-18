@@ -141,3 +141,19 @@ export function getLatestSchemaVersion(): number {
   const all = getMigrations();
   return all.length > 0 ? all[all.length - 1].version : 1;
 }
+
+/**
+ * Releases a device must have installed before it may install this one.
+ *
+ * Empty while the list above still starts at v1. The day the early
+ * migrations are deleted, name here the last release that still carried
+ * them: the update check then sends every older device through that
+ * release first, so its data arrives at this code already migrated. It is
+ * the floor for this code, not a history. It stays set for the whole line
+ * that dropped the migrations, and the next line replaces it with its own
+ * floor, whose release body still carries this one.
+ *
+ * `scripts/release.sh` writes this into the release body as
+ * `<!-- home-screens-requires: ... -->`; `src/lib/update-policy.ts` reads it.
+ */
+export const REQUIRED_FLOORS: readonly string[] = [];

@@ -67,7 +67,10 @@ export function useUpdateNotification({
   );
 
   const latestVersion = versionInfo?.latest ?? null;
-  const latestTag = versionInfo?.tags?.[0]?.tag ?? null;
+  // The dismissal is keyed on what the toast offers. `latest` can be a
+  // required step below the channel's newest tag (see update-policy.ts), and
+  // dismissing that offer has to stick to the step, not to the tag behind it.
+  const latestTag = latestVersion ? `v${latestVersion}` : null;
   const currentVersion = versionInfo?.current ?? null;
 
   const shouldShow = useMemo(() => {

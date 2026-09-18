@@ -6,7 +6,9 @@ import { readConfig, writeConfig } from './config';
 import { getAppDir } from './app-dir';
 import { withDataTransaction } from './data-transaction';
 import { migrateUp, getLatestSchemaVersion } from './migrations';
-import { hasReleaseTarball, GITHUB_REPO } from './version';
+import { settleFamilyMigration } from './family-data';
+import { assertUpgradePathAllowed, parseReleaseMarkers, UpgradePathError, versionOfTag } from './update-policy';
+import { fetchReleaseByTag, getPackageVersion, hasReleaseTarball, GITHUB_REPO, type GitHubRelease } from './version';
 
 /** Explicit APP_DIR — safe to use after the atomic swap when process.cwd() is stale.
  *  See app-dir.ts for how a non-default install path is found. */
@@ -256,6 +258,46 @@ async function runPipeline(steps: PipelineStep[]): Promise<void> {
 
 // ─── Step Factories ───
 
+/**
+ * Refuse a target the update check would not have offered: one that
+ * declares a floor this device has not reached, or a step back whose
+ * declared schema cannot read the saved settings. The version history list
+ * and the API accept any tag, so the check has to live here as well as in
+ * the picker. A release that cannot be fetched, or declares nothing, is
+ * let through; the download step reports a missing release on its own.
+ */
+function pathGuardStep(progress: number, targetTag: string): PipelineStep {
+  return {
+    step: 'preflight',
+    progress,
+    message: 'Checking this version can be installed...',
+    run: async () => {
+      // A missing release (null) declares nothing and is let through: the git
+      // path installs tags that never had a release. An unreachable GitHub is
+      // different. The tarball check has already fallen back to git by then,
+      // and git fetch can still succeed, so a target with an unmet floor
+      // would install unchecked. Stop instead.
+      let release: GitHubRelease | null;
+      try {
+        release = await fetchReleaseByTag(targetTag);
+      } catch {
+        throw new UpgradePathError(
+          `Could not check whether ${targetTag} can be installed because the release information could not be fetched. Try again in a few minutes.`,
+        );
+      }
+      if (!release) return;
+      const markers = parseReleaseMarkers(release.body);
+      const current = await getPackageVersion();
+      const localSchema = await readConfig().then((config) => config.version ?? null, () => null);
+      assertUpgradePathAllowed(current, localSchema, {
+        version: versionOfTag(targetTag),
+        requires: markers.requires,
+        ...(markers.schema !== null ? { schema: markers.schema } : {}),
+      });
+    },
+  };
+}
+
 function preflightStep(
   progress: number,
   onResult?: (result: Record<string, unknown>) => void,
@@ -301,6 +343,15 @@ function backupStep(progress: number, targetTag: string): PipelineStep {
   };
 }
 
+/**
+ * Bring every file the host owns up to this release's shape before the new
+ * tree takes over. This runs in the old tree, so it is the last chance for
+ * this release's migrations to run at all: a release declared as a floor
+ * (see update-policy.ts) promises that a device passing through it leaves
+ * with migrated data, and a later release may drop the code that did it.
+ * Any new lazy migration the host adds must be settled here too, or that
+ * promise stops being true.
+ */
 function migrateStep(progress: number): PipelineStep {
   return {
     step: 'migrate',
@@ -316,6 +367,10 @@ function migrateStep(progress: number): PipelineStep {
       } else {
         emitOutput('migrate', 'Schema is up to date — no migration needed');
       }
+      // The family fold otherwise waits for the first family read, which a
+      // device updated twice in a row may never make.
+      await settleFamilyMigration();
+      emitOutput('migrate', 'Family data is up to date');
     }),
   };
 }
@@ -535,6 +590,7 @@ async function runTarballUpgrade(targetTag: string): Promise<void> {
   await recoverFromInterruptedDeploy();
 
   const steps: PipelineStep[] = [
+    pathGuardStep(2, targetTag),
     preflightStep(5),
     backupStep(10, targetTag),
     {
@@ -607,6 +663,7 @@ async function runGitUpgrade(targetTag: string): Promise<void> {
   let isDirty = false;
 
   const steps: PipelineStep[] = [
+    pathGuardStep(2, targetTag),
     preflightStep(5, (result) => {
       isDirty = result.dirty as boolean;
     }),
@@ -700,6 +757,7 @@ export async function runRollback(targetTag: string): Promise<void> {
 
   // Legacy git-based rollback
   const steps: PipelineStep[] = [
+    pathGuardStep(2, targetTag),
     {
       step: 'backup',
       progress: 10,

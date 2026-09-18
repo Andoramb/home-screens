@@ -13,7 +13,7 @@ Everyday tasks on the Pi are done in the editor, listed first. The rest of this 
 ## Without a terminal
 
 - **Orientation:** Settings > Screen > Rotation & appearance. The picture turns straight away, no reboot.
-- **Update or roll back:** Settings > System & updates. **Check for Updates** installs the latest release; the list under **If an update caused trouble** goes back to any earlier one.
+- **Update or roll back:** Settings > System & updates. **Check for Updates** installs the latest release; the list under **If an update caused trouble** goes back to any earlier one. Sometimes a big update needs a smaller one installed first. Home Screens offers that one, and then offers the big one when it is done. An earlier version that can no longer read your saved settings is listed but not offered.
 - **Restart:** the same page has **Restart Home Screens** (a few seconds) and **Restart the whole device** (a minute or two).
 - **When something is wrong:** Settings > Status shows the display's state and the Pi's temperature, memory and storage, and its **Diagnostics bundle** button packs up logs and settings, with passwords and keys removed, for a bug report.
 - **Everything else** is in [Troubleshooting](/docs/troubleshooting), which starts every answer from the editor.

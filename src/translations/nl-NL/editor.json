@@ -1511,7 +1511,16 @@
         "nightlyTitle": "Testbuild beschikbaar: v{version}",
         "downgradeTitle": "Overstappen naar v{version}",
         "downgradeLine": "Je gebruikt v{version}, nieuwer dan wat je updatekeuze aanbiedt. Overstappen installeert de oudere versie.",
-        "switchButton": "Overstappen"
+        "switchButton": "Overstappen",
+        "stepLine": "v{next} heeft eerst v{version} nodig. Werk daarna opnieuw bij.",
+        "stepMissingTitle": "v{next} heeft eerst een andere update nodig",
+        "stepMissingLine": "v{next} heeft eerst v{version} nodig, en die versie is niet gevonden. Probeer het later opnieuw.",
+        "blockedDowngradeTitle": "Kan niet overstappen naar v{version}",
+        "blockedDowngradeLine": "Teruggaan naar v{version} zou instellingen achterlaten die deze versie niet kan lezen."
+      },
+      "failedUpdate": {
+        "line": "De update naar {tag} is niet gestart, dus dit scherm is teruggegaan naar v{version}.",
+        "dismiss": "Begrepen"
       },
       "channel": {
         "heading": "Welke updates je krijgt",
@@ -1553,7 +1562,9 @@
         "rollback": "Hiernaar terug",
         "help": "Ga terug naar de versie waar je op zat. Wil je juist een instelling terugdraaien, zet dan een momentopname terug via de pagina Back-ups en gegevens.",
         "showAll": "Alle {count} versies tonen",
-        "olderWarning": "Oudere versies begrijpen je huidige instellingen mogelijk niet."
+        "olderWarning": "Oudere versies begrijpen je huidige instellingen mogelijk niet.",
+        "needsFirst": "Heeft eerst v{version} nodig",
+        "cannotRead": "Kan je huidige instellingen niet lezen"
       },
       "upgradeDialog": {
         "title": "Upgrade",

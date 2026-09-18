@@ -1511,7 +1511,16 @@
         "nightlyTitle": "Build de teste disponível: v{version}",
         "downgradeTitle": "Mudar para a v{version}",
         "downgradeLine": "Você está na v{version}, mais nova do que a sua escolha de atualizações oferece. Mudar instala a versão mais antiga.",
-        "switchButton": "Mudar"
+        "switchButton": "Mudar",
+        "stepLine": "v{next} precisa primeiro da v{version}. Atualize de novo quando esta terminar.",
+        "stepMissingTitle": "v{next} precisa primeiro de outra atualização",
+        "stepMissingLine": "v{next} precisa primeiro da v{version}, e essa versão não foi encontrada. Tente de novo mais tarde.",
+        "blockedDowngradeTitle": "Não é possível mudar para v{version}",
+        "blockedDowngradeLine": "Voltar para v{version} deixaria configurações que essa versão não consegue ler."
+      },
+      "failedUpdate": {
+        "line": "A atualização para {tag} não iniciou, então esta tela voltou para v{version}.",
+        "dismiss": "Entendi"
       },
       "channel": {
         "heading": "Quais atualizações receber",
@@ -1553,7 +1562,9 @@
         "rollback": "Voltar para esta",
         "help": "Volte para a versão anterior. Para desfazer uma mudança de ajustes, restaure um instantâneo na página Backups e dados.",
         "showAll": "Ver todas as {count} versões",
-        "olderWarning": "Versões mais antigas podem não entender seus ajustes atuais."
+        "olderWarning": "Versões mais antigas podem não entender seus ajustes atuais.",
+        "needsFirst": "Precisa primeiro da v{version}",
+        "cannotRead": "Não consegue ler suas configurações atuais"
       },
       "upgradeDialog": {
         "title": "Atualizar",

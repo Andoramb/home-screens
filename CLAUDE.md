@@ -56,6 +56,8 @@ Proxy routes built with `cachedProxyRoute` are the exception to "opens with a gu
 ### Config schema migrations
 `config.json` carries a schema version. `src/lib/migrations/` holds one `vN-to-vN+1.ts` per step and `migrateUp` runs on every read; the latest version is derived from the list, so adding a file is the whole bump. Any change to the shape of `ScreenConfiguration`, `Screen`, `ModuleInstance` or a module config needs a migration, not a read-time shim. Plugin config shapes migrate through `src/lib/plugin-config-migration.ts`.
 
+Releases carry two HTML-comment markers in their GitHub body, stamped by `scripts/release.sh` from code: `home-screens-schema` (the newest schema this release reads, from `getLatestSchemaVersion()`) and `home-screens-requires` (`REQUIRED_FLOORS` in the migrations module, empty until a release drops old migrations). `src/lib/update-policy.ts` turns them into what the update check offers and what `runUpgrade` refuses: a device below a floor is sent to the floor first, and a step back to a release whose schema is below the saved config's is withheld. The pipeline's migrate step in `src/lib/upgrade.ts` is the last place this release's migrations run before the new tree takes over, so any new lazy host migration must be settled there too.
+
 ### Module system
 Built-in module types plus runtime plugins, found through a registry. Adding a built-in module touches these places, and the `meta` E2E project names exactly which ones are still missing:
 

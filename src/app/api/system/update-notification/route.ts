@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { readUpdateNotificationState, writeUpdateNotificationState } from '@/lib/update-notification-state';
+import { clearFailedUpdate } from '@/lib/upgrade-failed-state';
 import { withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
 
 export const dynamic = 'force-dynamic';
@@ -24,6 +25,12 @@ export const POST = withDisplayAuth(async (request: NextRequest) => {
     state.lastDismissedVersion = version;
     await writeUpdateNotificationState(state);
     return NextResponse.json(state);
+  }
+
+  // The System page's "an update was undone" line, dismissed.
+  if (action === 'clearFailedUpdate') {
+    await clearFailedUpdate();
+    return NextResponse.json({ ok: true });
   }
 
   return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

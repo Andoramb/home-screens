@@ -409,6 +409,123 @@ describe('hasReleaseTarball', () => {
 // ---------------------------------------------------------------------------
 // getVersionInfo — integration-style (with mocked deps)
 // ---------------------------------------------------------------------------
+describe('getVersionInfo with a floor', () => {
+  const gated = { ...makeRelease('v2.0.0'), body: '<!-- home-screens-requires: 1.43.0 -->\n<!-- home-screens-schema: 13 -->' };
+
+  it('offers the floor from the page when the newest release needs it', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '1.32.0' }));
+    mockExecFailure();
+    const calls = mockGitHub({
+      page: { status: 200, body: [gated, makeRelease('v1.43.0')] },
+      latest: { status: 200, body: gated },
+    });
+
+    const { getVersionInfo } = await loadModule();
+    const info = await getVersionInfo({ force: true, localSchema: 13 });
+    expect(info.latest).toBe('1.43.0');
+    expect(info.requiredStepFor).toBe('2.0.0');
+    expect(info.updateAvailable).toBe(true);
+    expect(calls.some((url) => url.includes('/releases/tags/'))).toBe(false);
+  });
+
+  it('looks the floor up by tag when it is no longer on the page', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '1.32.0' }));
+    mockExecFailure();
+    const calls = mockGitHub({
+      page: { status: 200, body: [gated] },
+      latest: { status: 200, body: gated },
+      tag: { status: 200, body: makeRelease('v1.43.0', { assets: ['home-screens-v1.43.0.tar.gz'] }) },
+    });
+
+    const { getVersionInfo } = await loadModule();
+    const info = await getVersionInfo({ force: true, localSchema: 13 });
+    expect(info.latest).toBe('1.43.0');
+    expect(info.requiredStepFor).toBe('2.0.0');
+    expect(calls.filter((url) => url.includes('/releases/tags/v1.43.0'))).toHaveLength(1);
+  });
+
+  it('does not offer a withdrawn floor fetched by tag', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '1.32.0' }));
+    mockExecFailure();
+    // v1.43.0 was withdrawn by ticking "pre-release" on a stable-shaped tag.
+    mockGitHub({
+      page: { status: 200, body: [gated] },
+      latest: { status: 200, body: gated },
+      tag: { status: 200, body: makeRelease('v1.43.0', { prerelease: true, assets: ['home-screens-v1.43.0.tar.gz'] }) },
+    });
+
+    const { getVersionInfo } = await loadModule();
+    const info = await getVersionInfo({ force: true, localSchema: 13 });
+    expect(info.latest).toBeNull();
+    expect(info.missingStep).toBe('1.43.0');
+  });
+
+  it('does not send a stable device through a floor its channel does not offer', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '1.32.0' }));
+    mockExecFailure();
+    const gatedOnBeta = { ...makeRelease('v2.0.0'), body: '<!-- home-screens-requires: 1.43.0-beta.1 -->' };
+    mockGitHub({
+      page: { status: 200, body: [gatedOnBeta] },
+      latest: { status: 200, body: gatedOnBeta },
+      tag: { status: 200, body: makeRelease('v1.43.0-beta.1', { prerelease: true }) },
+    });
+
+    const { getVersionInfo } = await loadModule();
+    expect((await getVersionInfo({ force: true, channel: 'stable', localSchema: 13 })).missingStep).toBe('1.43.0-beta.1');
+    expect((await getVersionInfo({ channel: 'beta', localSchema: 13 })).latest).toBe('1.43.0-beta.1');
+  });
+
+  it('offers nothing and names the missing step when the floor has no release', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '1.32.0' }));
+    mockExecFailure();
+    mockGitHub({ page: { status: 200, body: [gated] }, latest: { status: 200, body: gated }, tag: { status: 404 } });
+
+    const { getVersionInfo } = await loadModule();
+    const info = await getVersionInfo({ force: true, localSchema: 13 });
+    expect(info.latest).toBeNull();
+    expect(info.updateAvailable).toBe(false);
+    expect(info.missingStep).toBe('1.43.0');
+    expect(info.requiredStepFor).toBe('2.0.0');
+  });
+
+  it('withholds a step back the target cannot read, and offers it when the local schema is unknown', async () => {
+    await fs.writeFile(path.join(tmpDir, 'package.json'), JSON.stringify({ version: '3.0.0-dev.20270101' }));
+    mockExecFailure();
+    mockGitHub({ page: { status: 200, body: [] }, latest: { status: 200, body: gated } });
+
+    const { getVersionInfo } = await loadModule();
+    const blocked = await getVersionInfo({ force: true, channel: 'stable', localSchema: 20 });
+    expect(blocked.latest).toBeNull();
+    expect(blocked.blockedDowngrade).toBe('2.0.0');
+    const offered = await getVersionInfo({ channel: 'stable' });
+    expect(offered.latest).toBe('2.0.0');
+    expect(offered.isDowngrade).toBe(true);
+  });
+});
+
+describe('fetchReleaseByTag', () => {
+  it('answers from the page without a direct lookup', async () => {
+    const calls = mockGitHub({ page: { status: 200, body: [makeRelease('v1.0.0')] } });
+    const { fetchReleaseByTag } = await loadModule();
+    expect((await fetchReleaseByTag('v1.0.0'))?.tag_name).toBe('v1.0.0');
+    expect(calls.some((url) => url.includes('/releases/tags/'))).toBe(false);
+  });
+
+  it('caches the direct lookup per tag', async () => {
+    const calls = mockGitHub({ page: { status: 200, body: [] }, tag: { status: 200, body: makeRelease('v0.9.0') } });
+    const { fetchReleaseByTag } = await loadModule();
+    expect((await fetchReleaseByTag('v0.9.0'))?.tag_name).toBe('v0.9.0');
+    expect((await fetchReleaseByTag('v0.9.0'))?.tag_name).toBe('v0.9.0');
+    expect(calls.filter((url) => url.includes('/releases/tags/v0.9.0'))).toHaveLength(1);
+  });
+
+  it('returns null for a tag with no release', async () => {
+    mockGitHub({ page: { status: 200, body: [] }, tag: { status: 404 } });
+    const { fetchReleaseByTag } = await loadModule();
+    expect(await fetchReleaseByTag('v99.0.0')).toBeNull();
+  });
+});
+
 describe('getVersionInfo', () => {
   it('returns version info from GitHub API', async () => {
     // Create a package.json in tmp

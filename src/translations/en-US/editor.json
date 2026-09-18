@@ -1511,7 +1511,16 @@
         "nightlyTitle": "Test build available: v{version}",
         "downgradeTitle": "Switch to v{version}",
         "downgradeLine": "You're on v{version}, which is newer than your update choice offers. Switching installs the older version.",
-        "switchButton": "Switch"
+        "switchButton": "Switch",
+        "stepLine": "v{next} needs v{version} installed first. Update again after this one finishes.",
+        "stepMissingTitle": "v{next} needs another update first",
+        "stepMissingLine": "v{next} needs v{version} installed first, and that version could not be found. Check back later.",
+        "blockedDowngradeTitle": "Can't switch to v{version}",
+        "blockedDowngradeLine": "Going back to v{version} would leave settings that version can't read."
+      },
+      "failedUpdate": {
+        "line": "The update to {tag} did not start, so this display went back to v{version}.",
+        "dismiss": "Got it"
       },
       "channel": {
         "heading": "Which updates to get",
@@ -1553,7 +1562,9 @@
         "rollback": "Go back to this",
         "help": "Go back to the version you were on before. To undo a settings change instead, restore a snapshot from the Backups & data page.",
         "showAll": "Show all {count} versions",
-        "olderWarning": "Older versions may not understand your current settings."
+        "olderWarning": "Older versions may not understand your current settings.",
+        "needsFirst": "Needs v{version} first",
+        "cannotRead": "Can't read your current settings"
       },
       "upgradeDialog": {
         "title": "Upgrade",

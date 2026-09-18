@@ -23,6 +23,14 @@ vi.mock('@/lib/upgrade', () => ({
   isUpgradeRunning: vi.fn(() => false),
 }));
 
+vi.mock('@/lib/config', () => ({
+  readConfig: vi.fn(async () => ({ version: 13 })),
+}));
+
+vi.mock('@/lib/upgrade-failed-state', () => ({
+  readFailedUpdate: vi.fn(async () => ({ tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' })),
+}));
+
 import { NextRequest } from 'next/server';
 import { GET } from '../route';
 import { getVersionInfo, getVersionTags } from '@/lib/version';
@@ -64,6 +72,7 @@ describe('GET /api/system/version', () => {
     expect(body.updateAvailable).toBe(true);
     expect(body.tags).toHaveLength(1);
     expect(body.upgradeRunning).toBe(true);
+    expect(body.lastFailedUpdate).toEqual({ tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' });
   });
 
   it('caps the returned tag list at 20', async () => {
@@ -76,15 +85,15 @@ describe('GET /api/system/version', () => {
 
   it('passes force + channel through on check=true&channel=nightly', async () => {
     await GET(getRequest('?check=true&channel=nightly'));
-    expect(mockInfo).toHaveBeenCalledWith({ force: true, channel: 'nightly' });
+    expect(mockInfo).toHaveBeenCalledWith({ force: true, channel: 'nightly', localSchema: 13 });
     expect(mockTags).toHaveBeenCalledWith({ force: true, channel: 'nightly' });
   });
 
   it('maps unknown channel values to stable', async () => {
     await GET(getRequest('?channel=dev'));
-    expect(mockInfo).toHaveBeenCalledWith({ force: false, channel: 'stable' });
+    expect(mockInfo).toHaveBeenCalledWith({ force: false, channel: 'stable', localSchema: 13 });
     await GET(getRequest('?channel=canary'));
-    expect(mockInfo).toHaveBeenLastCalledWith({ force: false, channel: 'stable' });
+    expect(mockInfo).toHaveBeenLastCalledWith({ force: false, channel: 'stable', localSchema: 13 });
   });
 
   it('returns 500 when version lookup throws', async () => {

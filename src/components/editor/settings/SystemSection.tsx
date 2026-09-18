@@ -6,7 +6,8 @@ import Button from '@/components/ui/Button';
 import ChangelogModal from './ChangelogModal';
 import Toggle from '@/components/ui/Toggle';
 import { useFormattingLocale, useTranslate } from '@/i18n';
-import { UPDATE_CHANNELS, classifyVersion, type UpdateChannel } from '@/lib/semver';
+import { UPDATE_CHANNELS, classifyVersion, compareSemver, type UpdateChannel } from '@/lib/semver';
+import { isDowngradeBlocked, lowestUnmetFloor } from '@/lib/update-policy';
 import { useSystemActions } from './useSystemActions';
 
 interface Props {
@@ -41,6 +42,7 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
     handleToggleUpdateNotification,
     handleUpgrade,
     handleRollback,
+    handleDismissFailedUpdate,
     handlePowerAction,
     handleCancelUpgrade,
   } = useSystemActions({ onUpgrade, onRollback });
@@ -88,9 +90,30 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
   const bannerTitle = versionInfo.latest
     ? t(BANNER_TITLE_KEY[bannerTone], { version: versionInfo.latest })
     : '';
+  // A required step says what is waiting behind it, so pressing Update
+  // twice in a row reads as the plan rather than a surprise.
   const bannerLine = bannerTone === 'downgrade'
     ? t('settings.systemPage.updateAvailable.downgradeLine', { version: versionInfo.current })
-    : t('settings.systemPage.updateAvailable.currentLine', { version: versionInfo.current });
+    : versionInfo.requiredStepFor && versionInfo.latest
+      ? t('settings.systemPage.updateAvailable.stepLine', { version: versionInfo.latest, next: versionInfo.requiredStepFor })
+      : t('settings.systemPage.updateAvailable.currentLine', { version: versionInfo.current });
+  // The two cases where the channel has something newer or older but nothing
+  // may be offered: the step it needs is missing, or the step back would
+  // strand the saved settings. Both explain instead of showing a button.
+  const withheld: { title: string; line: string } | null = versionInfo.missingStep && versionInfo.requiredStepFor
+    ? {
+        title: t('settings.systemPage.updateAvailable.stepMissingTitle', { next: versionInfo.requiredStepFor }),
+        line: t('settings.systemPage.updateAvailable.stepMissingLine', { next: versionInfo.requiredStepFor, version: versionInfo.missingStep }),
+      }
+    : versionInfo.blockedDowngrade
+      ? {
+          title: t('settings.systemPage.updateAvailable.blockedDowngradeTitle', { version: versionInfo.blockedDowngrade }),
+          line: t('settings.systemPage.updateAvailable.blockedDowngradeLine', { version: versionInfo.blockedDowngrade }),
+        }
+      : null;
+  // The schema stamped on the saved config is what the running build reads,
+  // so a history row's declared schema is judged against the current build's.
+  const localSchema = versionInfo.localSchema;
   const bannerButton = bannerTone === 'downgrade'
     ? t('settings.systemPage.updateAvailable.switchButton')
     : bannerTone === 'update'
@@ -199,11 +222,42 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
           </div>
         )}
 
-        {!versionInfo.updateAvailable && (
+        {withheld && (
+          <div
+            data-testid="system-update-withheld"
+            className="mt-3 rounded-lg border p-3 bg-hs-warning/20 border-hs-warning/30"
+          >
+            <p className="text-sm font-medium text-hs-warning">{withheld.title}</p>
+            <p className="text-xs mt-0.5 text-hs-warning/70">{withheld.line}</p>
+          </div>
+        )}
+
+        {!versionInfo.updateAvailable && !withheld && (
           <p className="text-xs text-hs-success/80 mt-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-hs-success inline-block" />
             {t('settings.systemPage.upToDate')}
           </p>
+        )}
+
+        {versionInfo.lastFailedUpdate && (
+          <div
+            data-testid="system-failed-update"
+            className="mt-3 rounded-lg border p-3 bg-hs-input border-hs-border flex items-start justify-between gap-3"
+          >
+            <p className="text-xs text-hs-text-secondary">
+              {t('settings.systemPage.failedUpdate.line', {
+                tag: versionInfo.lastFailedUpdate.tag,
+                version: versionInfo.current,
+              })}
+            </p>
+            <button
+              type="button"
+              onClick={handleDismissFailedUpdate}
+              className="text-xs text-hs-text-muted hover:text-hs-text-primary transition-colors shrink-0"
+            >
+              {t('settings.systemPage.failedUpdate.dismiss')}
+            </button>
+          </div>
         )}
       </section>
 
@@ -331,6 +385,16 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
           <div className="space-y-1 max-h-40 overflow-y-auto">
             {visibleTags.map((tagInfo) => {
               const isCurrent = tagInfo.version === versionInfo.current;
+              // Rows the pipeline would refuse (see update-policy.ts) say why
+              // instead of offering a button that fails on the first step.
+              const above = compareSemver(tagInfo.version, versionInfo.current) > 0;
+              const unmetFloor = above ? lowestUnmetFloor(tagInfo, versionInfo.current) : null;
+              const cannotRead = !above && isDowngradeBlocked(tagInfo, localSchema);
+              const blockedText = unmetFloor
+                ? t('settings.systemPage.history.needsFirst', { version: unmetFloor })
+                : cannotRead
+                  ? t('settings.systemPage.history.cannotRead')
+                  : null;
               return (
                 <div
                   key={tagInfo.tag}
@@ -344,7 +408,12 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
                       </span>
                     )}
                   </div>
-                  {!isCurrent && (
+                  {!isCurrent && blockedText && (
+                    <span className="text-xs text-hs-text-faint" data-testid="system-history-blocked">
+                      {blockedText}
+                    </span>
+                  )}
+                  {!isCurrent && !blockedText && (
                     <button
                       onClick={() => handleRollback(tagInfo.tag)}
                       className="text-xs text-hs-text-muted hover:text-hs-warning transition-colors"

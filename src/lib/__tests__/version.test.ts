@@ -163,6 +163,26 @@ describe('releasesToTags', () => {
 // buildVersionInfo
 // ---------------------------------------------------------------------------
 
+describe('releasesToTags markers', () => {
+  function makeRelease(tag_name: string, body: string) {
+    return { tag_name, name: tag_name, body, draft: false, prerelease: false, published_at: '2024-01-01T00:00:00Z', assets: [] };
+  }
+
+  it('carries the floor and schema markers off the release body', () => {
+    const [tag] = releasesToTags([
+      makeRelease('v2.0.0', '## Notes\n<!-- home-screens-requires: 1.43.0 -->\n<!-- home-screens-schema: 13 -->'),
+    ]);
+    expect(tag.requires).toEqual(['1.43.0']);
+    expect(tag.schema).toBe(13);
+  });
+
+  it('leaves both fields absent when the body declares nothing', () => {
+    const [tag] = releasesToTags([makeRelease('v1.0.0', '## Notes')]);
+    expect('requires' in tag).toBe(false);
+    expect('schema' in tag).toBe(false);
+  });
+});
+
 describe('buildVersionInfo', () => {
   const sampleTags = [
     { tag: 'v2.0.0', version: '2.0.0', commit: 'abc1234' },
@@ -217,5 +237,39 @@ describe('buildVersionInfo', () => {
     expect(info.updateChannel).toBe('beta');
     expect(info.current).toBe('1.0.0');
     expect(info.currentCommit).toBe('ccc3456');
+  });
+});
+
+describe('buildVersionInfo with a resolved target', () => {
+  const tags = [
+    { tag: 'v2.0.0', version: '2.0.0', commit: 'abc1234', requires: ['1.43.0'] },
+    { tag: 'v1.43.0', version: '1.43.0', commit: 'def5678' },
+  ];
+
+  it('reports the required step as latest and names what waits behind it', () => {
+    const info = buildVersionInfo(tags, '1.32.0', 'c', 'tarball', 'release', 'stable', {
+      target: tags[1], requiredStepFor: '2.0.0', missingStep: null, blockedDowngrade: null,
+    });
+    expect(info.latest).toBe('1.43.0');
+    expect(info.updateAvailable).toBe(true);
+    expect(info.isDowngrade).toBe(false);
+    expect(info.requiredStepFor).toBe('2.0.0');
+  });
+
+  it('offers nothing when the resolver blocked the newest', () => {
+    const info = buildVersionInfo(tags, '3.0.0', 'c', 'tarball', 'release', 'stable', {
+      target: null, requiredStepFor: null, missingStep: null, blockedDowngrade: '2.0.0',
+    });
+    expect(info.latest).toBeNull();
+    expect(info.updateAvailable).toBe(false);
+    expect(info.blockedDowngrade).toBe('2.0.0');
+  });
+
+  it('defaults to the newest tag with no policy fields set', () => {
+    const info = buildVersionInfo(tags, '1.32.0', 'c', 'git', 'main', 'stable');
+    expect(info.latest).toBe('2.0.0');
+    expect(info.requiredStepFor).toBeNull();
+    expect(info.missingStep).toBeNull();
+    expect(info.blockedDowngrade).toBeNull();
   });
 });

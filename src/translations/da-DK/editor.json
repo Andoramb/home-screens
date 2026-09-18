@@ -1511,7 +1511,16 @@
         "nightlyTitle": "Test-build tilgængelig: v{version}",
         "downgradeTitle": "Skift til v{version}",
         "downgradeLine": "Du kører v{version}, som er nyere end det, dit opdateringsvalg tilbyder. Skift installerer den ældre version.",
-        "switchButton": "Skift"
+        "switchButton": "Skift",
+        "stepLine": "v{next} kræver først v{version}. Opdater igen, når denne er færdig.",
+        "stepMissingTitle": "v{next} kræver først en anden opdatering",
+        "stepMissingLine": "v{next} kræver først v{version}, og den version blev ikke fundet. Prøv igen senere.",
+        "blockedDowngradeTitle": "Kan ikke skifte til v{version}",
+        "blockedDowngradeLine": "At gå tilbage til v{version} ville efterlade indstillinger, som den version ikke kan læse."
+      },
+      "failedUpdate": {
+        "line": "Opdateringen til {tag} startede ikke, så denne skærm gik tilbage til v{version}.",
+        "dismiss": "Forstået"
       },
       "channel": {
         "heading": "Hvilke opdateringer du får",
@@ -1553,7 +1562,9 @@
         "rollback": "Gå tilbage til denne",
         "help": "Gå tilbage til den version, du var på før. Vil du i stedet fortryde en indstilling, så gendan et øjebliksbillede fra siden Sikkerhedskopier og data.",
         "showAll": "Vis alle {count} versioner",
-        "olderWarning": "Ældre versioner forstår måske ikke dine nuværende indstillinger."
+        "olderWarning": "Ældre versioner forstår måske ikke dine nuværende indstillinger.",
+        "needsFirst": "Kræver først v{version}",
+        "cannotRead": "Kan ikke læse dine nuværende indstillinger"
       },
       "upgradeDialog": {
         "title": "Opdatér",

@@ -72,7 +72,9 @@ export function getChangelog(): ChangelogEntry[] {
     const version = `${match[1]}.${match[2]}.${match[3]}`;
     const tag = `v${version}`;
     const fullPath = path.join(RELEASE_NOTES_DIR, file);
-    const content = fs.readFileSync(fullPath, 'utf8');
+    // release.sh stamps update-check markers as HTML comments at the top of
+    // each notes file; they are metadata, not notes.
+    const content = fs.readFileSync(fullPath, 'utf8').replace(/<!--[\s\S]*?-->[ \t]*\n?/g, '');
     const sections = parseSections(content);
     const tagDate = getTagDate(tag);
     const date =

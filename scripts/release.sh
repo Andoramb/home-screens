@@ -99,6 +99,23 @@ else
   echo "Skipping release notes (claude CLI not installed)"
 fi
 
+# Stamp what this release needs and what it can read at the top of the
+# notes, as HTML comments the release page never shows. Devices read them
+# from the GitHub release body (see src/lib/update-policy.ts). A release
+# without notes gets a notes file holding only the markers, so the stamp
+# never depends on the notes generator having run.
+MARKERS="$(npx tsx scripts/print-release-markers.ts)" || {
+  echo "Error: could not compute the release markers" >&2
+  exit 1
+}
+mkdir -p RELEASE_NOTES
+if [ -f "$NOTES_FILE" ] && grep -q 'home-screens-schema:' "$NOTES_FILE"; then
+  echo "Release notes already carry the markers; leaving them as they are."
+else
+  { printf '%s\n\n' "$MARKERS"; [ -f "$NOTES_FILE" ] && cat "$NOTES_FILE"; } > "${NOTES_FILE}.tmp"
+  mv "${NOTES_FILE}.tmp" "$NOTES_FILE"
+fi
+
 # Pause for the human to review (and optionally edit) the release notes
 # before we commit, tag, and push.
 if ! $ASSUME_YES; then

@@ -68,9 +68,19 @@ export function parseInline(text: string): InlineNode[] {
   return nodes;
 }
 
+/**
+ * HTML comments never show on GitHub and carry the release markers the
+ * update check reads (`<!-- home-screens-schema: 13 -->`, see
+ * update-policy.ts). They are metadata, not notes, so they leave before
+ * parsing; a comment spanning lines goes with it.
+ */
+export function stripHtmlComments(markdown: string): string {
+  return markdown.replace(/<!--[\s\S]*?-->[ \t]*\n?/g, '');
+}
+
 export function parseReleaseNotes(markdown: string): ReleaseNoteBlock[] {
   const blocks: ReleaseNoteBlock[] = [];
-  const lines = (markdown ?? '').replace(/\r\n?/g, '\n').split('\n');
+  const lines = stripHtmlComments(markdown ?? '').replace(/\r\n?/g, '\n').split('\n');
 
   let paragraph: string[] = [];
   let list: { ordered: boolean; items: string[] } | null = null;
