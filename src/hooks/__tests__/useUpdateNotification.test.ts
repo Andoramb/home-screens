@@ -3,6 +3,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { useUpdateNotification } from '../useUpdateNotification';
+import { useUpgradeActivityStore } from '@/stores/upgrade-activity-store';
 
 type FetchFn = (url: string, options?: RequestInit) => Promise<Response>;
 
@@ -44,6 +45,7 @@ const VERSION_UPDATE_AVAILABLE = {
 describe('useUpdateNotification', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useUpgradeActivityStore.setState({ active: false });
   });
 
   it('shouldShow is false when enabled is false', async () => {
@@ -110,6 +112,48 @@ describe('useUpdateNotification', () => {
 
     await waitFor(() => expect(result.current.latestVersion).toBe('1.6.0'));
     expect(result.current.shouldShow).toBe(false);
+  });
+
+  it('shouldShow is false while the device is installing an update', async () => {
+    // The wall is mid-upgrade to this very version; offering it again reads
+    // as a failure. Every surface sees this through the polled server flag.
+    const fetchFn = makeFetchMock({
+      '/api/system/version': { ...VERSION_UPDATE_AVAILABLE, upgradeRunning: true },
+      '/api/system/update-notification': { lastDismissedVersion: null },
+    });
+
+    const { result } = renderHook(() =>
+      useUpdateNotification({ enabled: true, fetchFn })
+    );
+
+    await waitFor(() => expect(result.current.latestVersion).toBe('1.6.0'));
+    expect(result.current.shouldShow).toBe(false);
+  });
+
+  it('shouldShow drops immediately when this tab starts the upgrade', async () => {
+    // The version poll only runs hourly, so the tab that pressed the button
+    // cannot wait for `upgradeRunning` to come back from the server.
+    const fetchFn = makeFetchMock({
+      '/api/system/version': VERSION_UPDATE_AVAILABLE,
+      '/api/system/update-notification': { lastDismissedVersion: null },
+    });
+
+    const { result } = renderHook(() =>
+      useUpdateNotification({ enabled: true, fetchFn })
+    );
+
+    await waitFor(() => expect(result.current.shouldShow).toBe(true));
+
+    act(() => {
+      useUpgradeActivityStore.getState().setActive(true);
+    });
+    expect(result.current.shouldShow).toBe(false);
+
+    // Closing the modal without upgrading puts the offer back.
+    act(() => {
+      useUpgradeActivityStore.getState().setActive(false);
+    });
+    expect(result.current.shouldShow).toBe(true);
   });
 
   it('shouldShow is false when the latest tag matches lastDismissedVersion', async () => {

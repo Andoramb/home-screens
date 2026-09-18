@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { usePolledFetch } from '@/hooks/usePolledFetch';
+import { useUpgradeActivityStore } from '@/stores/upgrade-activity-store';
 import type { VersionResponse } from '@/lib/version';
 import type { UpdateChannel } from '@/lib/semver';
 import type { UpdateNotificationState } from '@/lib/update-notification-state';
@@ -34,6 +35,7 @@ export function useUpdateNotification({
 }: UseUpdateNotificationOptions): UseUpdateNotificationResult {
   const [versionInfo, setVersionInfo] = useState<VersionResponse | null>(null);
   const [lastDismissedVersion, setLastDismissedVersion] = useState<string | null>(null);
+  const upgradingHere = useUpgradeActivityStore((s) => s.active);
 
   // Poll version + dismissal together so:
   //  (1) a newly published tag re-surfaces after the user dismissed an older one
@@ -76,10 +78,25 @@ export function useUpdateNotification({
     // not a new release, and neither this toast nor the remote banner has
     // any words for it, so neither announces it.
     if (versionInfo.isDowngrade) return false;
+    // Offering the update the device is in the middle of installing reads as
+    // a failure. `upgradeRunning` is the server's view, which every surface
+    // picks up on its next poll; `upgradingHere` is this tab's own upgrade,
+    // which has to disappear the moment the user presses the button rather
+    // than an hour later.
+    if (versionInfo.upgradeRunning) return false;
+    if (upgradingHere) return false;
     if (latestTag == null) return false;
     if (latestTag === lastDismissedVersion) return false;
     return true;
-  }, [enabled, versionInfo?.updateAvailable, versionInfo?.isDowngrade, latestTag, lastDismissedVersion]);
+  }, [
+    enabled,
+    versionInfo?.updateAvailable,
+    versionInfo?.isDowngrade,
+    versionInfo?.upgradeRunning,
+    upgradingHere,
+    latestTag,
+    lastDismissedVersion,
+  ]);
 
   const handleDismiss = useCallback(() => {
     if (latestTag == null) return;
