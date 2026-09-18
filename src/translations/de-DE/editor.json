@@ -4270,7 +4270,7 @@
       "completedHidden": "Ausgeblendet",
       "showDueDates": "Fälligkeit anzeigen",
       "showAssignees": "Zeigen, für wen",
-      "interactive": "Antippen zum Abhaken"
+      "interactive": "Tippen zum Abhaken (Touchscreen)"
     },
     "todoist": {
       "apiToken": "API-Token",

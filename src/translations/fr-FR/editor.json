@@ -4270,7 +4270,7 @@
       "completedHidden": "Masqués",
       "showDueDates": "Afficher les échéances",
       "showAssignees": "Afficher pour qui",
-      "interactive": "Toucher pour cocher"
+      "interactive": "Toucher pour valider (écran tactile)"
     },
     "todoist": {
       "apiToken": "Jeton API",

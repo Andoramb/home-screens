@@ -4270,7 +4270,7 @@
       "completedHidden": "Skjult",
       "showDueDates": "Vis frister",
       "showAssignees": "Vis hvem",
-      "interactive": "Tryk for at sætte flueben"
+      "interactive": "Tryk for at klare (touchskærm)"
     },
     "todoist": {
       "apiToken": "API-token",

@@ -4270,7 +4270,7 @@
       "completedHidden": "Ocultos",
       "showDueDates": "Mostrar prazos",
       "showAssignees": "Mostrar para quem",
-      "interactive": "Tocar para marcar"
+      "interactive": "Tocar para concluir (tela sensível ao toque)"
     },
     "todoist": {
       "apiToken": "Token de API",

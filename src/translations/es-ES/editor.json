@@ -4270,7 +4270,7 @@
       "completedHidden": "Ocultos",
       "showDueDates": "Mostrar fechas",
       "showAssignees": "Mostrar para quién",
-      "interactive": "Tocar para marcar"
+      "interactive": "Tocar para completar (pantalla táctil)"
     },
     "todoist": {
       "apiToken": "Token de API",

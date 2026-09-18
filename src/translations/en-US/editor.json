@@ -4270,7 +4270,7 @@
       "completedHidden": "Hidden",
       "showDueDates": "Show due dates",
       "showAssignees": "Show who",
-      "interactive": "Tap to check off"
+      "interactive": "Tap to complete (touchscreen)"
     },
     "todoist": {
       "apiToken": "API Token",
