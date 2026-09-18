@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, chmodSync } from 'fs';
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, existsSync, chmodSync, symlinkSync } from 'fs';
 import { execFileSync } from 'child_process';
 import { tmpdir } from 'os';
 import path from 'path';
@@ -29,6 +29,20 @@ interface Host {
   alternatives?: boolean;
   /** The helper exists but fails (no write access, broken plymouth install). */
   setterFails?: boolean;
+}
+
+/**
+ * Symlink a real utility the function legitimately shells out to into the fake
+ * bin, so PATH can hold the fakes and nothing else.
+ */
+function linkRealTool(bin: string, name: string): void {
+  for (const dir of ['/bin', '/usr/bin']) {
+    const real = path.join(dir, name);
+    if (existsSync(real)) {
+      symlinkSync(real, path.join(bin, name));
+      return;
+    }
+  }
 }
 
 /**
@@ -63,12 +77,17 @@ function runTheme(host: Host, themeChanged = true): { rc: number; log: string; o
     if (host.alternatives) {
       fake('update-alternatives', `echo "update-alternatives $*" >> "${log}"`);
     }
+    linkRealTool(bin, 'readlink');
 
+    // PATH is the fakes and nothing else. With a real /usr/bin on it, the
+    // function finds the host's own update-alternatives, so "this host has
+    // neither tool" stops being true on Linux, and the passthrough sudo goes
+    // on to rewrite the host's real alternatives database.
     // `set -euo pipefail` mirrors upgrade.sh: the point of the test is that a
     // missing or broken tool never takes the caller down with it.
     const out = execFileSync('bash', ['-c', `
       set -euo pipefail
-      PATH="${bin}:/usr/bin:/bin"
+      PATH="${bin}"
       source "${COMMON}"
       sudo() { "$@"; }
       hs_set_plymouth_theme "${themeDir}" ${themeChanged ? 'true' : 'false'} && echo "rc=0" || echo "rc=$?"
@@ -121,7 +140,7 @@ describe('hs_set_plymouth_theme', () => {
       chmodSync(p, 0o755);
       const out = execFileSync('bash', ['-c', `
         set -euo pipefail
-        PATH="${bin}:/usr/bin:/bin"
+        PATH="${bin}"
         source "${COMMON}"
         sudo() { "$@"; }
         hs_set_plymouth_theme "${root}" false && echo "rc=0" || echo "rc=$?"
