@@ -331,3 +331,43 @@ test('finishing the last chore celebrates and the ticket balance shows on Today'
   await expect(page.getByText('Great job, Wren!')).toBeVisible();
   await expect(balanceChip).toContainText(`${before + 2} tickets`);
 });
+
+test('a chore given to a group shows for everyone in it, and follows the group when someone joins', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, {
+    members: [
+      { id: 'k1', name: 'Ada', emoji: '', color: '#f472b6' },
+      { id: 'k2', name: 'Bram', emoji: '', color: '#60a5fa' },
+      { id: 'k3', name: 'Cleo', emoji: '', color: '#4ade80' },
+    ],
+    groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['k1', 'k2'] }],
+    chores: [{
+      id: 'gc1', name: 'Tidy the playroom', emoji: '', points: 1, frequency: 'daily',
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeOfDay: 'anytime',
+      assigneeIds: [], assigneeGroupIds: ['g-kids'], rotation: 'fixed',
+    }],
+  });
+
+  await page.goto('/chores');
+  await expect(page.getByText('Tidy the playroom')).toBeVisible();
+  await page.getByRole('button', { name: 'Bram', exact: true }).click();
+  await expect(page.getByText('Tidy the playroom')).toBeVisible();
+  await page.getByRole('button', { name: 'Cleo', exact: true }).click();
+  await expect(page.getByText('Tidy the playroom')).toBeHidden();
+
+  // Each person ticks their own copy.
+  await page.getByRole('button', { name: 'Bram', exact: true }).click();
+  await page.getByText('Tidy the playroom').click();
+  await expect.poll(() => completionExists(request, 'gc1', 'k2', todayISO())).toBe(true);
+  expect(await completionExists(request, 'gc1', 'k1', todayISO())).toBe(false);
+
+  // Cleo joins Kids; nothing about the chore is edited.
+  const family = await (await request.get('/api/family')).json();
+  const saved = await request.put('/api/family/groups', {
+    data: { revision: family.revision, groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['k1', 'k2', 'k3'] }] },
+  });
+  expect(saved.ok()).toBe(true);
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Cleo', exact: true }).click();
+  await expect(page.getByText('Tidy the playroom')).toBeVisible();
+});

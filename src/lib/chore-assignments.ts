@@ -1,4 +1,4 @@
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import { localISODate } from './timezone';
 import type { ChoreDefinition } from '@/types/config';
 
@@ -45,12 +45,48 @@ function dateToUTC(date: string): number {
 const EPOCH_UTC = Date.UTC(2024, 0, 1);
 const MS_PER_DAY = 86_400_000;
 
+/**
+ * Whole weeks since the epoch, which is a Monday, so a week runs Monday to
+ * Sunday. Floored, never rounded: rounding tips over at the half week and
+ * moved every weekly handover to Friday.
+ */
+function weeksSinceEpoch(date: string): number {
+  return Math.floor((dateToUTC(date) - EPOCH_UTC) / (MS_PER_DAY * 7));
+}
+
 // ── Assignment resolution ──────────────────────────────────────────
+
+/** The part of a family group assignment needs: which people it holds. */
+export type ChoreGroup = Pick<FamilyGroup, 'id' | 'memberIds'>;
+
+/**
+ * Everyone a chore can go to: the people it names, then the members of each
+ * group it names, each person once. Groups are expanded here and never at
+ * rest, so someone added to a group later owes its chores too. A group that
+ * no longer exists contributes nobody.
+ *
+ * The people named directly keep their saved order (existing rotations must
+ * not shift), and a group's members follow in the group's own order, which
+ * is family order.
+ */
+export function choreAssigneeIds(
+  chore: Pick<ChoreDefinition, 'assigneeIds' | 'assigneeGroupIds'>,
+  groups: readonly ChoreGroup[],
+): string[] {
+  if (!chore.assigneeGroupIds?.length) return chore.assigneeIds;
+  const ids = new Set(chore.assigneeIds);
+  const byId = new Map(groups.map((group) => [group.id, group]));
+  for (const groupId of chore.assigneeGroupIds) {
+    for (const memberId of byId.get(groupId)?.memberIds ?? []) ids.add(memberId);
+  }
+  return [...ids];
+}
 
 /** Resolve rotation — which member is assigned a chore on a given date */
 export function resolveAssignee(
   chore: ChoreDefinition,
   date: string,
+  groups: readonly ChoreGroup[],
 ): string[] {
   if (chore.rotation === 'schedule') {
     const dayOfWeek = new Date(date + 'T00:00:00').getDay();
@@ -59,25 +95,25 @@ export function resolveAssignee(
       .map(([memberId]) => memberId);
   }
 
-  if (chore.rotation === 'fixed' || chore.assigneeIds.length <= 1) {
-    return chore.assigneeIds;
+  const assigneeIds = choreAssigneeIds(chore, groups);
+  if (chore.rotation === 'fixed' || assigneeIds.length <= 1) {
+    return assigneeIds;
   }
 
   const diffMs = dateToUTC(date) - EPOCH_UTC;
 
   if (chore.rotation === 'rotate-daily') {
     const daysSinceEpoch = Math.round(diffMs / MS_PER_DAY);
-    const idx = daysSinceEpoch % chore.assigneeIds.length;
-    return [chore.assigneeIds[idx]];
+    const idx = daysSinceEpoch % assigneeIds.length;
+    return [assigneeIds[idx]];
   }
 
   if (chore.rotation === 'rotate-weekly') {
-    const weeksSinceEpoch = Math.round(diffMs / (MS_PER_DAY * 7));
-    const idx = weeksSinceEpoch % chore.assigneeIds.length;
-    return [chore.assigneeIds[idx]];
+    const idx = weeksSinceEpoch(date) % assigneeIds.length;
+    return [assigneeIds[idx]];
   }
 
-  return chore.assigneeIds;
+  return assigneeIds;
 }
 
 /** Check if a chore applies on a given day.
@@ -91,8 +127,7 @@ export function choreAppliesToday(chore: ChoreDefinition, dayOfWeek: number, dat
     return false;
   }
   if (chore.frequency === 'biweekly' && date) {
-    const weekNum = Math.round((dateToUTC(date) - EPOCH_UTC) / (7 * MS_PER_DAY));
-    return weekNum % 2 === 0; // applies on even weeks from epoch
+    return weeksSinceEpoch(date) % 2 === 0; // applies on even weeks from epoch
   }
   return true;
 }
@@ -116,9 +151,9 @@ export function isChoreComplete(
 
 /** Whether `chore` applies to `memberId` on `date` — combines the
  *  frequency/day-of-week gate with rotation resolution. */
-export function isAssignedOn(chore: ChoreDefinition, memberId: string, date: string): boolean {
+export function isAssignedOn(chore: ChoreDefinition, memberId: string, date: string, groups: readonly ChoreGroup[]): boolean {
   const dayOfWeek = parseISO(date).getDay();
-  return choreAppliesToday(chore, dayOfWeek, date) && resolveAssignee(chore, date).includes(memberId);
+  return choreAppliesToday(chore, dayOfWeek, date) && resolveAssignee(chore, date, groups).includes(memberId);
 }
 
 /** The subset of `chores` that `memberId` is assigned on `date`. */
@@ -126,8 +161,9 @@ export function choresAssignedTo(
   chores: ChoreDefinition[],
   memberId: string,
   date: string,
+  groups: readonly ChoreGroup[],
 ): ChoreDefinition[] {
-  return chores.filter((c) => isAssignedOn(c, memberId, date));
+  return chores.filter((c) => isAssignedOn(c, memberId, date, groups));
 }
 
 /** Resolve everyone assigned a chore on `date` into flat completion rows.
@@ -138,12 +174,13 @@ export function resolveAssignmentsFor(
   members: FamilyMember[],
   date: string,
   completionSet: Set<string>,
+  groups: readonly ChoreGroup[],
 ): ResolvedAssignment[] {
   const dayOfWeek = parseISO(date).getDay();
   const assignments: ResolvedAssignment[] = [];
   for (const chore of chores) {
     if (!choreAppliesToday(chore, dayOfWeek, date)) continue;
-    for (const memberId of resolveAssignee(chore, date)) {
+    for (const memberId of resolveAssignee(chore, date, groups)) {
       if (!members.some((m) => m.id === memberId)) continue;
       assignments.push({
         chore,

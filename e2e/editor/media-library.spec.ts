@@ -188,9 +188,12 @@ test.describe('Defaults › Pictures & videos', () => {
     await expect(page.getByTestId('media-outcome')).toHaveAttribute('data-ok', 'true');
     const after = await request.get(`/api/backgrounds/serve?file=${encodeURIComponent(`${folder}/e2e-used.png`)}`);
     expect(after.headers()['etag']).not.toBe(etagBefore);
-    // The tile's URL carries the new modified time, so the browser fetches the new picture.
+    // The tile's URL carries the new modified time, so the browser fetches the
+    // new picture. The old URL ends in a modified time too, so wait for it to
+    // go rather than reading the attribute once: the list reloads a beat after
+    // the upload is reported done.
+    await expect(usedTile.locator('img')).not.toHaveAttribute('src', srcBefore!);
     await expect(usedTile.locator('img')).toHaveAttribute('src', /&v=\d+$/);
-    expect(await usedTile.locator('img').getAttribute('src')).not.toBe(srcBefore);
     await expect(usedTile.locator('[data-in-use]')).toContainText('In use');
 
     // A where-used line opens the editor on that screen.

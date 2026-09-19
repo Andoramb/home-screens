@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures';
-import { getConfig, putConfig, seedFamily } from '../helpers/api';
+import { getConfig, putConfig, seedChores, seedFamily } from '../helpers/api';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
 import { autosaved, moduleConfig } from '../helpers/editor';
@@ -111,6 +111,64 @@ test('Settings Family creates a group, keeps it in sync when someone leaves, and
   family = await (await request.get('/api/family')).json();
   expect(family.groups).toEqual([]);
   expect(family.members.map((member: { name: string }) => member.name)).toEqual(['Alex']);
+});
+
+// A chore given to a group names the group, never the people in it, so the
+// group form is the only thing that has to change for the chore to follow.
+test('Settings Family: a group chore follows the group, and removing the group says so and keeps the chore', async ({ page, request, sandboxDir }) => {
+  seedFamily(
+    sandboxDir,
+    [{ id: 'alex', name: 'Alex', color: '#60a5fa' }, { id: 'sam', name: 'Sam', color: '#fbbf24' }],
+    [{ id: 'g-kids', name: 'Kids', memberIds: ['alex'] }],
+  );
+  await putConfig(request, baseConfig());
+  expect((await seedChores(request, { chores: [{
+    id: 'dishes', name: 'Dishes', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+    timeOfDay: 'anytime', assigneeIds: [], assigneeGroupIds: ['g-kids'], rotation: 'fixed',
+  }] })).ok()).toBe(true);
+  const owing = async () => {
+    const today = await (await request.get('/api/chores/today')).json() as { members: Array<{ name: string; chores: unknown[] }> };
+    return today.members.filter((member) => member.chores.length > 0).map((member) => member.name);
+  };
+  expect(await owing()).toEqual(['Alex']);
+
+  await page.goto('/editor/settings?section=defaults&page=family');
+  const manager = page.getByTestId('family-manager');
+  const groups = manager.getByTestId('family-groups');
+  await groups.getByRole('button', { name: 'Edit Kids' }).click();
+  await groups.getByRole('checkbox', { name: 'Sam' }).check();
+  await groups.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(manager.getByRole('status')).toHaveText('Groups saved.');
+  await expect.poll(owing).toEqual(['Alex', 'Sam']);
+
+  await groups.getByRole('button', { name: 'Remove Kids?' }).click();
+  const sheet = page.getByRole('alertdialog');
+  await expect(sheet).toContainText('1 chore goes to Kids');
+  await sheet.getByRole('button', { name: 'Remove group' }).click();
+  await expect(manager.getByRole('status')).toHaveText('Groups saved.');
+  const saved = await (await request.get('/api/chores/data')).json() as { chores: Array<Record<string, unknown>> };
+  expect(saved.chores).toEqual([expect.objectContaining({ id: 'dishes', assigneeIds: [] })]);
+  expect(saved.chores[0]).not.toHaveProperty('assigneeGroupIds');
+  expect(await owing()).toEqual([]);
+});
+
+// A group is picked by name on the chore form and the calendar filter, so
+// two that read the same could not be told apart.
+test('Settings Family will not save a second group with the same name, and says why', async ({ page, request, sandboxDir }) => {
+  seedFamily(sandboxDir, [{ id: 'alex', name: 'Alex', color: '#60a5fa' }], [{ id: 'g-kids', name: 'Kids', memberIds: ['alex'] }]);
+  await putConfig(request, baseConfig());
+  await page.goto('/editor/settings?section=defaults&page=family');
+  const groups = page.getByTestId('family-manager').getByTestId('family-groups');
+  await groups.getByRole('button', { name: 'Add group' }).click();
+  await groups.getByLabel('Group name').fill(' kids');
+  await expect(groups.getByText('You already have a group called kids.')).toBeVisible();
+  await expect(groups.getByRole('button', { name: 'Save', exact: true })).toBeDisabled();
+  await groups.getByLabel('Group name').fill('Teens');
+  await expect(groups.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
+  // Renaming a group to its own name is not a clash.
+  await groups.getByRole('button', { name: 'Cancel' }).click();
+  await groups.getByRole('button', { name: 'Edit Kids' }).click();
+  await expect(groups.getByRole('button', { name: 'Save', exact: true })).toBeEnabled();
 });
 
 test('Settings Family refuses a group saved from a stale roster', async ({ page, request, sandboxDir }) => {

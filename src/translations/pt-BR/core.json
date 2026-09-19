@@ -246,7 +246,7 @@
     "removeTimetable": "{name} tem um horário escolar, e ele é removido também.",
     "groups": {
       "title": "Grupos",
-      "description": "Junte pessoas para que um calendário mostre \"Crianças\" em vez de cinco nomes. Uma pessoa pode estar em mais de um grupo.",
+      "description": "Junte pessoas para que um calendário mostre \"Crianças\" em vez de cinco nomes e para dar uma tarefa a todas de uma vez. Uma pessoa pode estar em mais de um grupo.",
       "add": "Adicionar grupo",
       "edit": "Editar grupo",
       "name": "Nome do grupo",
@@ -254,12 +254,17 @@
       "noMembers": "Ninguém ainda",
       "editName": "Editar {name}",
       "remove": "Remover grupo",
+      "duplicateName": "Você já tem um grupo chamado {name}.",
       "removeTitle": "Remover {name}?",
       "removeDescription": "As telas que mostram só {name} voltam a mostrar todo mundo. Ninguém é removido da família.",
+      "removeChoreCount": {
+        "one": "{count} tarefa vai para {name}. Ela continua na sua lista e espera você escolher alguém se não tiver mais ninguém.",
+        "other": "{count} tarefas vão para {name}. Elas continuam na sua lista, e as que não têm mais ninguém esperam você escolher alguém."
+      },
       "saved": "Grupos salvos.",
       "saveFailed": "Não foi possível salvar os grupos.",
       "limit": "Você pode ter até {count} grupos.",
-      "hint": "Os grupos são usados pela legenda de cores do calendário e pelo filtro \"Mostrar apenas\". Tarefas e recompensas continuam atribuídas a pessoas."
+      "hint": "Os grupos são usados pela legenda de cores do calendário e pelo filtro \"Mostrar apenas\". Uma tarefa também pode ir para um grupo. As recompensas continuam sendo dadas a pessoas."
     }
   }
 }

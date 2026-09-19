@@ -1,6 +1,6 @@
 'use client';
 
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 
 import type { ChoreChartConfig, ChoreDefinition } from '@/types/config';
 import type { ResolvedAssignment, MemberStats } from '../types';
@@ -17,6 +17,7 @@ interface CompactViewProps {
   config: ChoreChartConfig;
   data: {
     members: FamilyMember[];
+    groups: FamilyGroup[];
     chores: ChoreDefinition[];
     todayAssignments: ResolvedAssignment[];
     completionSet: Set<string>;
@@ -107,7 +108,7 @@ export function CompactView({ config, data, width, fontSize }: CompactViewProps)
       {/* Grid */}
       <FitRows>
         {todayChores.map((chore) => {
-          const assignees = active.filter((m) => resolveAssignee(chore, today).includes(m.id));
+          const assignees = active.filter((m) => resolveAssignee(chore, today, data.groups).includes(m.id));
           if (assignees.length === 0) return null;
           return (
             <div

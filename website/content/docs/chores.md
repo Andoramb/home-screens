@@ -37,16 +37,16 @@ You can add up to 64 people. Existing larger families are preserved. With five o
 Still under **Manage**, add a chore with a name, an emoji, and how many **tickets** it is worth. Then decide when and who:
 
 - **When:** every day, certain days of the week, or once on a date. Each chore also has a time of day (morning, afternoon, evening, or anytime), which is how the wall groups the list and highlights what is due now.
-- **Who:** one person, or several. With several people you choose how it is shared:
+- **Who:** one person, several, or a [group](/docs/family#groups) such as "Kids". Give a chore to a group and everyone in it gets it, each with their own tick. Add somebody to the group later and they get it too. With several people you choose how it is shared:
   - **Fixed**: everyone listed does it every time.
   - **Rotate daily** or **rotate weekly**: it passes from one person to the next.
-  - **Schedule**: a small grid, one row per person and seven day columns. Tap a cell to give that person that day. A note underneath says which days still have nobody.
+  - **Schedule**: a small grid, one row per person and seven day columns. Tap a cell to give that person that day. A note underneath says which days still have nobody. A schedule is for people you pick one by one, so it is not offered while a group is ticked.
 
 {% screenshot name="remote-chores" phone=true caption="The family remote's Chores tab. Today, Manage, and Rewards." /%}
 
 ## 4. Checking things off
 
-Kids check off chores in three places: on the wall if it is a touchscreen, on the kids' page, or on the family remote's **Today** tab. A finished chore gets a strike-through and its tickets are added to that person's balance. Finishing the last chore of the day gets a short celebration.
+Kids check off chores in three places: on the wall if it is a touchscreen, on the kids' page, or on the family remote's **Today** tab. A finished chore gets a strike-through and its tickets are added to that person's balance. Finishing the last chore of the day gets a short celebration. On the Full-Screen Chore Chart a chore given to a group shows the group's name next to one ring per person, so everybody still ticks their own.
 
 {% screenshot name="kid-view" phone=true caption="The kids' page. Pick your name, check things off. Yesterday can be looked at but not changed." /%}
 

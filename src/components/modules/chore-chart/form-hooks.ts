@@ -1,6 +1,6 @@
 'use client';
 
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 
 import { useMemo, useState } from 'react';
 import type {
@@ -10,8 +10,10 @@ import type {
   ChoreRotation,
 } from '@/types/config';
 import type { TranslateFn } from '@/i18n';
-import { todayStr } from './types';
+import { choreAssigneeIds, todayStr } from './types';
 import {
+  canChoreRotate,
+  finalizeChoreAssignment,
   getChoreValidationHintKind,
   type ChoreValidationHintKind,
 } from './chore-form-presentation';
@@ -36,8 +38,18 @@ export interface ChoreFormState {
   specificDate: string;
   timeOfDay: ChoreTimeOfDay;
   assigneeIds: string[];
+  /** The picked groups that still exist. */
+  assigneeGroupIds: string[];
   rotation: ChoreRotation;
   schedule: Record<string, number[]>;
+  /** Who already has the chore through a picked group, with the names of those groups. */
+  coveredByGroup: Map<string, string[]>;
+  /** A group is picked but nobody is in it (and nobody is picked directly): the chore would go to no one. */
+  goesToNobody: boolean;
+  /** Whether the form asks how the chore is shared: two or more people, a group, or a schedule. */
+  canRotate: boolean;
+  /** A per-person schedule has no row for whoever joins a group later, so it is off while a group is picked. */
+  scheduleAllowed: boolean;
 
   setName: (v: string) => void;
   setEmoji: (v: string) => void;
@@ -51,6 +63,7 @@ export interface ChoreFormState {
   setRotation: (v: ChoreRotation) => void;
   toggleDay: (d: number) => void;
   toggleAssignee: (id: string) => void;
+  toggleGroup: (id: string) => void;
   toggleScheduleDay: (memberId: string, day: number) => void;
   addMemberToSchedule: (memberId: string) => void;
 
@@ -66,6 +79,13 @@ export interface ChoreFormState {
 export function useChoreForm(
   initial: ChoreDefinition | undefined,
   members: FamilyMember[],
+  groups: FamilyGroup[],
+  /**
+   * Whether `members` and `groups` are the real family list. While it is
+   * still loading, or never arrived, both are empty, and an empty group list
+   * says nothing about which groups exist.
+   */
+  familyReady: boolean,
 ): ChoreFormState {
   const [name, setName] = useState(initial?.name ?? '');
   const [emoji, setEmoji] = useState(initial?.emoji ?? DEFAULT_CHORE_ICON);
@@ -75,10 +95,27 @@ export function useChoreForm(
   const [specificDate, setSpecificDate] = useState<string>(initial?.specificDate ?? todayStr());
   const [timeOfDay, setTimeOfDay] = useState<ChoreTimeOfDay>(initial?.timeOfDay ?? 'anytime');
   const [assigneeIds, setAssigneeIds] = useState<string[]>(initial?.assigneeIds ?? []);
+  const [pickedGroupIds, setPickedGroupIds] = useState<string[]>(initial?.assigneeGroupIds ?? []);
   const [rotation, setRotation] = useState<ChoreRotation>(initial?.rotation ?? 'fixed');
   const [schedule, setSchedule] = useState<Record<string, number[]>>(initial?.schedule ?? {});
 
+  // A group deleted since the chore was saved drops out here, so the form
+  // never counts it and never saves it back. Only a loaded family list can
+  // say a group is gone: until then every picked group is kept, and saving
+  // waits, so a quick rename cannot quietly take a chore away from its group.
+  const assigneeGroupIds = familyReady ? pickedGroupIds.filter((id) => groups.some((group) => group.id === id)) : pickedGroupIds;
+  const assigneeCount = choreAssigneeIds({ assigneeIds, assigneeGroupIds }, groups).length;
+  const scheduleAllowed = assigneeGroupIds.length === 0;
+  const coveredByGroup = new Map<string, string[]>();
+  for (const group of groups) {
+    if (!assigneeGroupIds.includes(group.id)) continue;
+    for (const memberId of group.memberIds) coveredByGroup.set(memberId, [...(coveredByGroup.get(memberId) ?? []), group.name]);
+  }
+  const goesToNobody = familyReady && rotation !== 'schedule' && assigneeGroupIds.length > 0 && assigneeCount === 0;
+  const canRotate = canChoreRotate({ assigneeCount, assigneeGroupIdsLength: assigneeGroupIds.length, rotation });
+
   const switchToSchedule = () => {
+    if (!scheduleAllowed) return;
     setRotation('schedule');
     if (Object.keys(schedule).length === 0) {
       const seeded: Record<string, number[]> = {};
@@ -126,6 +163,12 @@ export function useChoreForm(
     setAssigneeIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   };
 
+  const toggleGroup = (id: string) => {
+    const adding = !pickedGroupIds.includes(id);
+    setPickedGroupIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    if (adding && rotation === 'schedule') switchFromSchedule('fixed');
+  };
+
   const scheduleHasAssignment = rotation === 'schedule'
     ? Object.values(schedule).some((days) => days.length > 0)
     : true;
@@ -134,15 +177,15 @@ export function useChoreForm(
     rotation,
     scheduleHasAssignment,
     assigneeIdsLength: assigneeIds.length,
+    assigneeGroupIdsLength: assigneeGroupIds.length,
+    hasGroups: groups.length > 0,
+    familyReady,
   });
   const canSave = validationHintKind === null;
 
   const submit = (onSubmit: (data: Omit<ChoreDefinition, 'id'>) => void) => {
     if (!canSave) return;
     const isSchedule = rotation === 'schedule';
-    const finalAssigneeIds = isSchedule
-      ? Object.entries(schedule).filter(([, d]) => d.length > 0).map(([id]) => id)
-      : assigneeIds;
     const finalDaysOfWeek = isSchedule
       ? [...new Set(Object.values(schedule).flat())].sort((a, b) => a - b)
       : daysOfWeek;
@@ -153,8 +196,7 @@ export function useChoreForm(
       frequency,
       daysOfWeek: finalDaysOfWeek,
       timeOfDay,
-      assigneeIds: finalAssigneeIds,
-      rotation: finalAssigneeIds.length <= 1 && !isSchedule ? 'fixed' : rotation,
+      ...finalizeChoreAssignment({ rotation, schedule, assigneeIds, assigneeGroupIds, groups }),
       ...(isSchedule ? { schedule: Object.fromEntries(Object.entries(schedule).filter(([, d]) => d.length > 0)) } : {}),
       ...(frequency === 'once' ? { specificDate } : {}),
     });
@@ -162,10 +204,10 @@ export function useChoreForm(
 
   return {
     name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay,
-    assigneeIds, rotation, schedule,
+    assigneeIds, assigneeGroupIds, rotation, schedule, canRotate, scheduleAllowed, coveredByGroup, goesToNobody,
     setName, setEmoji, setPoints, setFrequency, setSpecificDate, setTimeOfDay,
     switchToSchedule, switchFromSchedule, setRotation,
-    toggleDay, toggleAssignee, toggleScheduleDay, addMemberToSchedule,
+    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule,
     scheduleMembers, scheduleDays, unscheduledMembers,
     canSave, validationHintKind, submit,
   };

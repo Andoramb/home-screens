@@ -341,7 +341,7 @@ A chore tracking module for families or housemates. Assign chores to members wit
 
 {% fields /%}
 
-**Members and chores are shared household data**, not module options. Members live in `data/family.json` and chores in `data/chores.json`. The family roster is available under **Settings > Family** even without a chore chart. Both are also edited from the editor's **Edit chore chart** button or from `/remote` > Chores, so every chore module on every display shows the same people and the same list. Each member has an `id`, `name`, `emoji`, and `color`. Each chore has an `id`, `name`, `emoji`, `points`, `frequency` (`daily`, `weekly`, `biweekly`, or `once`), `daysOfWeek`, `timeOfDay`, `specificDate` (YYYY-MM-DD, required when `frequency` is `once`), `assigneeIds`, `rotation`, and, when `rotation` is `schedule`, a `schedule` map of member ID to days-of-week.
+**Members and chores are shared household data**, not module options. Members live in `data/family.json` and chores in `data/chores.json`. The family roster is available under **Settings > Family** even without a chore chart. Both are also edited from the editor's **Edit chore chart** button or from `/remote` > Chores, so every chore module on every display shows the same people and the same list. Each member has an `id`, `name`, `emoji`, and `color`. Each chore has an `id`, `name`, `emoji`, `points`, `frequency` (`daily`, `weekly`, `biweekly`, or `once`), `daysOfWeek`, `timeOfDay`, `specificDate` (YYYY-MM-DD, required when `frequency` is `once`), `assigneeIds`, an optional `assigneeGroupIds`, `rotation`, and, when `rotation` is `schedule`, a `schedule` map of member ID to days-of-week.
 
 **View details:**
 
@@ -353,12 +353,14 @@ A chore tracking module for families or housemates. Assign chores to members wit
 
 **Rotation modes:**
 
-Each chore has a `rotation` field that controls how the `assigneeIds` list is resolved each day.
+A chore goes to the people in `assigneeIds` plus everyone in the [family groups](/docs/family#groups) named by `assigneeGroupIds`, each person counted once. Groups are looked up every time the chore is resolved and are never copied into `assigneeIds`, so somebody added to a group later gets its chores without the chore being edited. People named directly come first in their saved order, then each group's members.
 
-- **fixed**: Everyone in `assigneeIds` is responsible for the chore every time it appears. Use this for chores a single person always owns.
-- **rotate-daily**: Cycles through `assigneeIds` one day at a time, so Alice handles it today, Bob handles it tomorrow, and so on.
-- **rotate-weekly**: Same as daily rotation but the handoff happens at the start of each week.
-- **schedule**: Per-day assignment via a `schedule` map of `memberId → number[]` (days-of-week, 0 = Sunday through 6 = Saturday). Lets you say "Alice on Mon/Wed, Bob on Tue/Thu, everyone on Fri–Sun" without creating separate chores. The editor and the remote both render a weekly grid UI for editing the schedule, and any day not covered by the schedule simply has no one assigned. A chore in schedule mode also shows a small **(schedule)** label in the board when resolved to a single assignee, so you can tell it apart from a fixed one-person chore at a glance.
+Each chore has a `rotation` field that controls how that combined list is resolved each day.
+
+- **fixed**: Everyone on the list is responsible for the chore every time it appears. Use this for chores a single person always owns.
+- **rotate-daily**: Cycles through the list one day at a time, so Alice handles it today, Bob handles it tomorrow, and so on.
+- **rotate-weekly**: Same as daily rotation but the handoff happens on Monday, whatever day the chart's week starts on.
+- **schedule**: Per-day assignment via a `schedule` map of `memberId → number[]` (days-of-week, 0 = Sunday through 6 = Saturday). Lets you say "Alice on Mon/Wed, Bob on Tue/Thu, everyone on Fri–Sun" without creating separate chores. The editor and the remote both render a weekly grid UI for editing the schedule, and any day not covered by the schedule simply has no one assigned. A schedule is for people picked one by one and does not combine with `assigneeGroupIds`. A chore in schedule mode also shows a small **(schedule)** label in the board when resolved to a single assignee, so you can tell it apart from a fixed one-person chore at a glance.
 
 Chore ticket values can be any non-negative integer, `0` is allowed and is useful for tracking routines that do not earn rewards.
 {% /module %}

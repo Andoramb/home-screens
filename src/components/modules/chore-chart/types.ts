@@ -4,7 +4,7 @@ import type {
   ChoreTimeOfDay,
 } from '@/types/config';
 import { uuid } from '@/lib/uuid';
-import { choresAssignedTo, isChoreComplete, localDateStr, parseISO, type ResolvedAssignment } from '@/lib/chore-assignments';
+import { choresAssignedTo, isChoreComplete, localDateStr, parseISO, type ChoreGroup, type ResolvedAssignment } from '@/lib/chore-assignments';
 
 // ── Assignment / completion core (re-exported from the lib layer) ──
 //
@@ -14,10 +14,10 @@ import { choresAssignedTo, isChoreComplete, localDateStr, parseISO, type Resolve
 // components keep one import site.
 
 export {
-  choreAppliesToday, choresAssignedTo, completionKey, isAssignedOn, isChoreComplete,
+  choreAppliesToday, choreAssigneeIds, choresAssignedTo, completionKey, isAssignedOn, isChoreComplete,
   localDateStr, parseISO, resolveAssignee, resolveAssignmentsFor, todayStr,
 } from '@/lib/chore-assignments';
-export type { ResolvedAssignment } from '@/lib/chore-assignments';
+export type { ChoreGroup, ResolvedAssignment } from '@/lib/chore-assignments';
 
 export interface MemberStats {
   total: number;
@@ -159,8 +159,9 @@ export function isDayFullyComplete(
   memberId: string,
   date: string,
   completionSet: Set<string>,
+  groups: readonly ChoreGroup[],
 ): boolean {
-  const assigned = choresAssignedTo(chores, memberId, date);
+  const assigned = choresAssignedTo(chores, memberId, date, groups);
   if (assigned.length === 0) return false;
   return assigned.every((c) => isChoreComplete(completionSet, c.id, memberId, date));
 }
@@ -196,6 +197,7 @@ export function computeDayEntries(
   members: FamilyMember[],
   chores: ChoreDefinition[],
   completionSet: Set<string>,
+  groups: readonly ChoreGroup[],
 ): DayEntry[] {
   const list: DayEntry[] = [];
   let cursor = earliestDate;
@@ -207,7 +209,7 @@ export function computeDayEntries(
     let earned = 0;
     let anyDone = false;
     for (const member of members) {
-      const assigned = choresAssignedTo(chores, member.id, cursor);
+      const assigned = choresAssignedTo(chores, member.id, cursor, groups);
       if (assigned.length === 0) continue; // vacation days aren't punished
       total += 1;
       let allDone = true;
@@ -243,11 +245,12 @@ export function computeWeeklyPoints(
   memberId: string,
   weekDates: string[],
   completionSet: Set<string>,
+  groups: readonly ChoreGroup[],
 ): { earned: number; total: number } {
   let earned = 0;
   let total = 0;
   for (const date of weekDates) {
-    for (const chore of choresAssignedTo(chores, memberId, date)) {
+    for (const chore of choresAssignedTo(chores, memberId, date, groups)) {
       total += chore.points;
       if (isChoreComplete(completionSet, chore.id, memberId, date)) {
         earned += chore.points;
@@ -262,9 +265,10 @@ export function countWeekAssignments(
   chores: ChoreDefinition[],
   memberId: string,
   weekDates: string[],
+  groups: readonly ChoreGroup[],
 ): number {
   let n = 0;
-  for (const date of weekDates) n += choresAssignedTo(chores, memberId, date).length;
+  for (const date of weekDates) n += choresAssignedTo(chores, memberId, date, groups).length;
   return n;
 }
 
@@ -277,13 +281,14 @@ export function computeStreak(
   memberId: string,
   today: string,
   completionSet: Set<string>,
+  groups: readonly ChoreGroup[],
 ): number {
   let streak = 0;
   const sd = parseISO(today);
   sd.setDate(sd.getDate() - 1); // start from yesterday
   for (let i = 0; i < 30; i++) {
     const date = localDateStr(sd);
-    const assigned = choresAssignedTo(chores, memberId, date);
+    const assigned = choresAssignedTo(chores, memberId, date, groups);
 
     if (assigned.length === 0) {
       // No chores assigned — skip day without breaking streak
@@ -301,7 +306,7 @@ export function computeStreak(
   }
 
   // Include today if all today's chores are done
-  if (isDayFullyComplete(chores, memberId, today, completionSet)) {
+  if (isDayFullyComplete(chores, memberId, today, completionSet, groups)) {
     streak++;
   }
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type { ChoreDefinition, ChoreCompletion, ChoreToggleRequest, ChoreToggleResponse } from '@/types/config';
 import { useFamilyData } from '@/hooks/useFamilyData';
 import { useFetchData } from '@/hooks/useFetchData';
@@ -58,6 +58,8 @@ interface RewardsResponse {
 
 interface ChoreDataState {
   members: FamilyMember[];
+  /** Family groups, which a chore's `assigneeGroupIds` are resolved against. */
+  groups: FamilyGroup[];
   chores: ChoreDefinition[];
   rewards: RewardDefinition[];
   todayAssignments: ResolvedAssignment[];
@@ -93,7 +95,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
   // override window just long enough for the next poll to catch up.
   const rewardsOverrideUntil = useRef<number>(0);
 
-  const { members, loading: familyLoading, error: familyError } = useFamilyData();
+  const { members, groups, loading: familyLoading, error: familyError } = useFamilyData();
   const chores = useMemo(() => fetchedChoreData?.chores ?? [], [fetchedChoreData]);
 
   useEffect(() => {
@@ -119,8 +121,8 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
   }, [completions]);
 
   const todayAssignments = useMemo(
-    () => resolveAssignmentsFor(chores, members, todayStr(), completionSet),
-    [chores, members, completionSet],
+    () => resolveAssignmentsFor(chores, members, todayStr(), completionSet, groups),
+    [chores, members, completionSet, groups],
   );
 
   // Per-member stats (streaks computed client-side with config context)
@@ -139,8 +141,9 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
         member.id,
         weekDates,
         completionSet,
+        groups,
       );
-      const streak = computeStreak(chores, member.id, today, completionSet);
+      const streak = computeStreak(chores, member.id, today, completionSet, groups);
 
       stats.set(member.id, {
         total,
@@ -150,12 +153,12 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
         weeklyPoints,
         weeklyPointsTotal,
         rewardBalance: rewards?.balances?.[member.id] ?? 0,
-        weekAssigned: countWeekAssignments(chores, member.id, weekDates),
+        weekAssigned: countWeekAssignments(chores, member.id, weekDates, groups),
       });
     }
 
     return stats;
-  }, [members, chores, todayAssignments, completionSet, config.weekStartDay, rewards]);
+  }, [members, groups, chores, todayAssignments, completionSet, config.weekStartDay, rewards]);
 
   // Week data for star chart — aligned to configured week start day
   const weekData = useMemo(() => {
@@ -171,8 +174,8 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
 
       for (const member of members) {
         // A star is earned when ALL assigned chores for that day are completed
-        memberStars[member.id] = isDayFullyComplete(chores, member.id, date, completionSet);
-        memberAssigned[member.id] = choresAssignedTo(chores, member.id, date).length > 0;
+        memberStars[member.id] = isDayFullyComplete(chores, member.id, date, completionSet, groups);
+        memberAssigned[member.id] = choresAssignedTo(chores, member.id, date, groups).length > 0;
       }
 
       days.push({
@@ -186,7 +189,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
     }
 
     return days;
-  }, [members, chores, completionSet, config.weekStartDay, dayNames]);
+  }, [members, groups, chores, completionSet, config.weekStartDay, dayNames]);
 
   const toggleComplete = useCallback(async (choreId: string, memberId: string) => {
     const today = todayStr();
@@ -245,6 +248,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
 
   return {
     members,
+    groups,
     chores,
     rewards: rewards?.rewards ?? [],
     todayAssignments,

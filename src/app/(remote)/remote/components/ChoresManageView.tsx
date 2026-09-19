@@ -2,16 +2,17 @@
 
 import { useState } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type { ChoreDefinition } from '@/types/config';
 import {
+  choreAssigneeIds,
   addChoreToList,
   updateChoreInList,
   removeChoreFromList,
 } from '@/components/modules/chore-chart/types';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { useTranslate } from '@/i18n';
-import { buildChoreSummaryLine } from '@/components/modules/chore-chart/chore-form-presentation';
+import { buildChoreAssigneeLine, buildChoreSummaryLine, getChoreRotationSummaryKey } from '@/components/modules/chore-chart/chore-form-presentation';
 import { DEFAULT_CHORE_ICON } from '@/lib/chore-constants';
 import FamilyManager from '@/components/family/FamilyManager';
 import ChoreFormOverlay from './ChoreFormOverlay';
@@ -20,6 +21,8 @@ import ChoreFormOverlay from './ChoreFormOverlay';
 
 interface ChoresManageViewProps {
   members: FamilyMember[];
+  groups: FamilyGroup[];
+  familyReady: boolean;
   chores: ChoreDefinition[];
   onFamilyChanged: () => void;
   onChoresChange: (chores: ChoreDefinition[]) => void;
@@ -27,6 +30,8 @@ interface ChoresManageViewProps {
 
 export default function ChoresManageView({
   members,
+  groups,
+  familyReady,
   chores,
   onFamilyChanged,
   onChoresChange,
@@ -138,12 +143,8 @@ export default function ChoresManageView({
           )}
 
           {chores.map((chore) => {
-            let rotationLabel: string | null = null;
-            if ((chore.rotation !== 'fixed' && chore.assigneeIds.length > 1) || chore.rotation === 'schedule') {
-              if (chore.rotation === 'rotate-daily') rotationLabel = tModules('chore-chart.choreSummary.rotationDaily');
-              else if (chore.rotation === 'rotate-weekly') rotationLabel = tModules('chore-chart.choreSummary.rotationWeekly');
-              else rotationLabel = tModules('chore-chart.choreSummary.rotationSchedule');
-            }
+            const rotationKey = getChoreRotationSummaryKey(chore, groups);
+            const rotationLabel = rotationKey ? tModules(rotationKey) : null;
             return (
               <button
                 key={chore.id}
@@ -191,9 +192,10 @@ export default function ChoresManageView({
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--hs-text-faint)', marginTop: 2 }}>
                     &rarr;{' '}
-                    {chore.assigneeIds
-                      .map((id) => members.find((m) => m.id === id)?.name ?? tModules('chore-chart.unknownAssignee'))
-                      .join(', ')}
+                    {/* A chore nobody has is a thing to fix, so it does not sit in the same quiet grey. */}
+                    <span style={choreAssigneeIds(chore, groups).length === 0 && chore.rotation !== 'schedule' ? { color: 'var(--hs-warning)' } : undefined}>
+                      {buildChoreAssigneeLine({ chore, members, groups, unknownLabel: tModules('chore-chart.unknownAssignee'), nobodyLabel: tModules('chore-chart.choreSummary.nobody') })}
+                    </span>
                     {rotationLabel && (
                       <span> ({rotationLabel})</span>
                     )}
@@ -242,6 +244,8 @@ export default function ChoresManageView({
           key={overlay.chore?.id ?? 'new'}
           initial={overlay.chore}
           members={members}
+          groups={groups}
+          familyReady={familyReady}
           onSubmit={(data) =>
             overlay.chore
               ? updateChore(overlay.chore.id, data)

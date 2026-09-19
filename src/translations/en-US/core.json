@@ -246,7 +246,7 @@
     "removeTimetable": "{name} has a school timetable, and it is removed as well.",
     "groups": {
       "title": "Groups",
-      "description": "Put people together so a calendar can show \"Kids\" instead of five names. A person can be in more than one group.",
+      "description": "Put people together so a calendar can show \"Kids\" instead of five names, and a chore can go to all of them at once. A person can be in more than one group.",
       "add": "Add group",
       "edit": "Edit group",
       "name": "Group name",
@@ -254,12 +254,17 @@
       "noMembers": "No one yet",
       "editName": "Edit {name}",
       "remove": "Remove group",
+      "duplicateName": "You already have a group called {name}.",
       "removeTitle": "Remove {name}?",
       "removeDescription": "Screens that show only {name} go back to showing everyone. Nobody is removed from the family.",
+      "removeChoreCount": {
+        "one": "{count} chore goes to {name}. It stays in your list, and waits for you to pick someone if nobody else is on it.",
+        "other": "{count} chores go to {name}. They stay in your list, and any with nobody else on them wait for you to pick someone."
+      },
       "saved": "Groups saved.",
       "saveFailed": "Could not save your groups.",
       "limit": "You can have up to {count} groups.",
-      "hint": "Groups are used by the calendar's color key and its \"show only\" filter. Chores and rewards still assign to people."
+      "hint": "Groups are used by the calendar's color key and its \"show only\" filter. A chore can go to a group too. Rewards still assign to people."
     }
   }
 }

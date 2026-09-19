@@ -586,15 +586,25 @@
       "rotationDaily": "rotate daily",
       "rotationWeekly": "rotate weekly",
       "rotationSchedule": "schedule",
+      "nobody": "Nobody yet",
       "rotatedShort": "← rot",
       "arrow": "→"
     },
     "choreForm": {
       "coverageUncovered": "{days} uncovered",
+      "groupsLabel": "Groups",
+      "peopleLabel": "People",
+      "groupsHint": "Everyone in a group gets the chore. Add someone to the group later and they get it too.",
+      "groupMemberNote": "In {group}",
+      "emptyGroupNote": "Nobody is in the group you picked yet, so nobody gets this chore until you add someone to it.",
+      "scheduleNeedsPeople": "A schedule is for people you pick one by one, so it is not offered with a group.",
+      "groupsNeedOtherRotation": "To give this chore to a group, change this from \"Schedule\" to something else. A schedule is for people you pick one by one.",
       "validation": {
         "enterName": "Enter a chore name",
         "addPersonToSchedule": "Add at least one person to the schedule",
-        "selectAtLeastOnePerson": "Select at least one person"
+        "selectAtLeastOnePerson": "Select at least one person",
+        "selectAtLeastOnePersonOrGroup": "Select at least one person or group",
+        "familyNotReady": "Your family is still loading. Try again in a moment."
       }
     },
     "unknownAssignee": "?"

@@ -19,10 +19,12 @@ describe('family groups', () => {
     expect(pruneGroupMembers(undefined, new Set(['x']))).toEqual([]);
   });
   it('refuses a blank name, an overlong name and unknown members', () => {
-    expect(groupDraftProblem({ name: '  ', memberIds: [] }, members)).toBe('name');
-    expect(groupDraftProblem({ name: 'x'.repeat(41), memberIds: [] }, members)).toBe('nameLength');
-    expect(groupDraftProblem({ name: 'Kids', memberIds: ['ella', 'nobody'] }, members)).toBe('members');
-    expect(groupDraftProblem({ name: 'Kids', memberIds: [] }, members)).toBeNull();
+    expect(groupDraftProblem({ name: '  ', memberIds: [] }, members, [])).toBe('name');
+    expect(groupDraftProblem({ name: 'x'.repeat(41), memberIds: [] }, members, [])).toBe('nameLength');
+    expect(groupDraftProblem({ name: 'Kids', memberIds: ['ella', 'nobody'] }, members, [])).toBe('members');
+    expect(groupDraftProblem({ name: 'Kids', memberIds: [] }, members, ['Parents'])).toBeNull();
+    // Picked by name on the chore form, so two that read the same cannot be told apart.
+    expect(groupDraftProblem({ name: ' kids ', memberIds: [] }, members, ['Parents', 'Kids'])).toBe('duplicate');
   });
   it('treats an empty people filter as no filter', () => {
     expect(hasPeopleFilter(undefined)).toBe(false);

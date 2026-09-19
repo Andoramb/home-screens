@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type {
   ChoreDefinition,
   ChoreResetFrequency,
@@ -11,6 +11,7 @@ import type {
 } from '@/types/config';
 import { getTimeOfDayLabelKey } from '@/components/modules/chore-chart/types';
 import { getLocalizedDayNames } from '@/lib/meal-constants';
+import { groupMembers } from '@/lib/family-groups';
 import FamilyManager from '@/components/family/FamilyManager';
 import ChoreIcon, { CHORE_ICONS } from '@/components/modules/chore-chart/ChoreIcon';
 import IconPicker from '@/components/modules/chore-chart/IconPicker';
@@ -21,6 +22,37 @@ import { useTranslate, useFormattingLocale } from '@/i18n';
 import FormOverlay from './FormOverlay';
 import { useFormDirty } from '@/hooks/useFormDirty';
 import ConfirmSheet from './ConfirmSheet';
+
+const SUB_LABEL_STYLE = { fontSize: 12, fontWeight: 600, color: 'var(--hs-text-faint)', margin: '0 0 6px' } as const;
+
+/** How many faces a group row shows before the rest become "+N". */
+const STACK_LIMIT = 4;
+
+/** The people in a group as overlapping initials; a group has no color of its own. */
+function GroupAvatarStack({ members }: { members: FamilyMember[] }) {
+  const shown = members.slice(0, STACK_LIMIT);
+  const extra = members.length - shown.length;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }} title={members.map((m) => m.name).join(', ')}>
+      {shown.map((m, i) => (
+        <span
+          key={m.id}
+          style={{
+            width: 24, height: 24, borderRadius: '50%', marginLeft: i === 0 ? 0 : -8,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: m.color, color: '#fff', fontSize: 11, fontWeight: 700,
+            border: '2px solid var(--hs-bg-panel)',
+          }}
+        >
+          {m.name[0]}
+        </span>
+      ))}
+      {extra > 0 && (
+        <span style={{ marginLeft: 4, fontSize: 12, fontWeight: 600, color: 'var(--hs-text-faint)' }}>+{extra}</span>
+      )}
+    </div>
+  );
+}
 
 /**
  * Create/edit one chore from the phone.
@@ -35,12 +67,17 @@ import ConfirmSheet from './ConfirmSheet';
 export default function ChoreFormOverlay({
   initial,
   members,
+  groups,
+  familyReady,
   onSubmit,
   onDelete,
   onBack,
 }: {
   initial?: ChoreDefinition;
   members: FamilyMember[];
+  groups: FamilyGroup[];
+  /** False until the family list has loaded; the form holds saves until then. */
+  familyReady: boolean;
   onSubmit: (data: Omit<ChoreDefinition, 'id'>) => void;
   onDelete?: () => void;
   onBack: () => void;
@@ -56,18 +93,18 @@ export default function ChoreFormOverlay({
     [formattingLocale],
   );
 
-  const f = useChoreForm(initial, members);
+  const f = useChoreForm(initial, members, groups, familyReady);
   const {
     name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay,
-    assigneeIds, rotation, schedule,
+    assigneeIds, assigneeGroupIds, rotation, schedule, canRotate, scheduleAllowed, coveredByGroup, goesToNobody,
     setName, setEmoji, setPoints, setFrequency, setSpecificDate, setTimeOfDay,
     switchToSchedule, switchFromSchedule, setRotation,
-    toggleDay, toggleAssignee, toggleScheduleDay, addMemberToSchedule,
+    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule,
     scheduleMembers, scheduleDays, unscheduledMembers,
     canSave, validationHintKind,
   } = f;
   const dirty = useFormDirty([
-    name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay, assigneeIds, rotation, schedule,
+    name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay, assigneeIds, assigneeGroupIds, rotation, schedule,
   ]);
   // "Enter a chore name" on a form nobody has touched yet reads as an error
   // before anything went wrong. Latch on the first edit and leave it on, so
@@ -198,6 +235,65 @@ export default function ChoreFormOverlay({
         {rotation !== 'schedule' && (
           <div style={{ marginBottom: 24 }}>
             <div style={LABEL_STYLE}>{t('choresManage.choreForm.assignToLabel')}</div>
+            {/* A household that never made a group sees the form it always had. */}
+            {groups.length > 0 && (
+              <>
+                <div style={SUB_LABEL_STYLE}>{tModules('chore-chart.choreForm.groupsLabel')}</div>
+                <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--hs-border)', marginBottom: 6 }}>
+                  {groups.map((group, i) => {
+                    const isPicked = assigneeGroupIds.includes(group.id);
+                    const inGroup = groupMembers(group, members);
+                    return (
+                      <button
+                        key={group.id}
+                        type="button"
+                        aria-pressed={isPicked}
+                        onClick={() => toggleGroup(group.id)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '12px 16px',
+                          minHeight: 48,
+                          background: 'var(--hs-bg-panel)',
+                          border: 'none',
+                          borderBottom: i < groups.length - 1 ? '1px solid var(--hs-border)' : 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          color: 'inherit',
+                          textAlign: 'left' as const,
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 22,
+                            height: 22,
+                            borderRadius: 6,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            border: isPicked ? 'none' : '2px solid var(--hs-border-strong)',
+                            background: isPicked ? '#f59e0b' : 'transparent',
+                          }}
+                        >
+                          {isPicked && <Check size={14} color="white" strokeWidth={3} />}
+                        </div>
+                        <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--hs-text-body)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {group.name}
+                        </span>
+                        <GroupAvatarStack members={inGroup} />
+                      </button>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize: 12, color: goesToNobody ? 'var(--hs-warning)' : 'var(--hs-text-faint)', margin: '0 0 14px' }}>
+                  {tModules(goesToNobody ? 'chore-chart.choreForm.emptyGroupNote' : 'chore-chart.choreForm.groupsHint')}
+                </p>
+                <div style={SUB_LABEL_STYLE}>{tModules('chore-chart.choreForm.peopleLabel')}</div>
+              </>
+            )}
             <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--hs-border)' }}>
               {members.map((m, i) => {
                 const isAssigned = assigneeIds.includes(m.id);
@@ -258,6 +354,12 @@ export default function ChoreFormOverlay({
                     <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--hs-text-body)', flex: 1 }}>
                       {m.name}
                     </span>
+                    {/* Ticking a group does not tick its people, so say who it already covers. */}
+                    {coveredByGroup.has(m.id) && (
+                      <span style={{ fontSize: 12, color: 'var(--hs-text-faint)', flexShrink: 0 }}>
+                        {tModules('chore-chart.choreForm.groupMemberNote', { group: coveredByGroup.get(m.id)!.join(', ') })}
+                      </span>
+                    )}
                   </button>
                 );
               })}
@@ -377,7 +479,7 @@ export default function ChoreFormOverlay({
           </div>
         )}
 
-        {frequency !== 'once' && (assigneeIds.length >= 2 || rotation === 'schedule') && (
+        {frequency !== 'once' && canRotate && (
           <div style={{ marginBottom: 24 }}>
             <div style={LABEL_STYLE}>{t('choresManage.choreForm.rotationLabel')}</div>
             <select
@@ -390,10 +492,22 @@ export default function ChoreFormOverlay({
               }}
               style={SELECT_STYLE}
             >
-              {CHORE_ROTATIONS.map((opt) => (
+              {CHORE_ROTATIONS.filter((opt) => opt.value !== 'schedule' || scheduleAllowed).map((opt) => (
                 <option key={opt.value} value={opt.value}>{rotationLabelMap[opt.value]}</option>
               ))}
             </select>
+            {!scheduleAllowed && (
+              <p style={{ fontSize: 12, color: 'var(--hs-text-faint)', margin: '8px 0 0' }}>
+                {tModules('chore-chart.choreForm.scheduleNeedsPeople')}
+              </p>
+            )}
+            {/* The other direction: a schedule hides the group picker along with
+                the people list, so say where it went and how to get it back. */}
+            {rotation === 'schedule' && groups.length > 0 && (
+              <p style={{ fontSize: 12, color: 'var(--hs-text-faint)', margin: '8px 0 0' }}>
+                {tModules('chore-chart.choreForm.groupsNeedOtherRotation')}
+              </p>
+            )}
           </div>
         )}
 

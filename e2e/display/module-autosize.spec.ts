@@ -92,24 +92,33 @@ async function renderAt(page: Page, request: Parameters<typeof renderOnDisplay>[
 }
 
 /**
- * `largestType` twice in a row with the same answer.
+ * `largestType` once it has held still for several polls in a row.
  *
  * The type follows the box through a ResizeObserver callback, so there is a
  * frame between "the card is 900px now" and "the text is sized for 900px". A
  * single read can land in it, and the fill polls below cannot catch that: they
  * divide the stale font size by the NEW box height, and the floor they check
  * (4%) is low enough for the stale value to clear it. That is exactly how
- * word-of-day once reported 44.8px in the 900px box and 52.1px in the 220px
- * one, the small box's reading was the settled one, the large box's was not.
+ * word-of-day reported 44.8px in the 900px box and 52.1px in the 220px one,
+ * the small box's reading was the settled one, the large box's was not.
+ *
+ * Two equal reads are not enough. The first two happen microseconds apart, so
+ * on a loaded machine both land before the callback has run and agree with
+ * each other. The reading has to stay the same across STABLE_READS polls,
+ * which Playwright spaces out (100ms, 250ms, 500ms...), so it has held for
+ * a good third of a second of real time before it is believed.
  */
+const STABLE_READS = 3;
+
 async function settledType(page: Page, type: ModuleType): Promise<{ max: number; boxH: number }> {
-  let previous = await largestType(page, type);
-  let current = previous;
+  let current = await largestType(page, type);
+  let stable = 0;
   await expect
     .poll(async () => {
-      previous = current;
-      current = await largestType(page, type);
-      return current.max === previous.max && current.boxH === previous.boxH && current.boxH > 0;
+      const next = await largestType(page, type);
+      stable = next.max === current.max && next.boxH === current.boxH && next.boxH > 0 ? stable + 1 : 0;
+      current = next;
+      return stable >= STABLE_READS;
     }, { message: `${type} never stopped resizing its type` })
     .toBe(true);
   return current;

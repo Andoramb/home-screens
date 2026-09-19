@@ -6,7 +6,7 @@ import type { FamilyMember } from '@/types/family';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { useTranslate } from '@/i18n';
 import AssigneeDot from './AssigneeDot';
-import { dotGap, TOD_ICONS, type ChoreRow, type ToggleParams } from './helpers';
+import { dotGap, dotRunWidth, groupPillMetrics, groupPillPadY, TOD_ICONS, type ChoreRow, type ToggleParams } from './helpers';
 
 interface ChoreRowItemProps {
   row: ChoreRow;
@@ -92,7 +92,10 @@ export default function ChoreRowItem({
   const gap = fontSize * 0.5;
   const padX = fontSize * 0.3;
   const dotCount = row.assignees.length;
-  const dotsWidth = dotCount * dotSize + (dotCount - 1) * dotGap(dotSize);
+  const pill = row.groupLabel ? groupPillMetrics(row.groupLabel, fontSize, dotSize, row.groupExtra) : null;
+  const dotsWidth = dotRunWidth(dotSize, dotCount) + (pill?.extra ?? 0);
+  // A stacked row grows for its pill; a flat row is a fixed height, so the pill's padding gives way to fit it.
+  const pillPadY = groupPillPadY(fontSize, dotSize, stacked ? undefined : rowHeight);
   const tagSize = fontSize * 0.62;
   const tagWidth = ticketLabel ? textWidth(ticketLabel, tagSize) + gap : 0;
   const todWidth = showTimeOfDay ? fontSize * 0.8 + gap : 0;
@@ -161,27 +164,53 @@ export default function ChoreRowItem({
       <ChoreIcon value={row.choreEmoji} size={iconSize} color="var(--fcc-text-2)" bare />
     </span>
   );
+  const dotsFor = (assignees: ChoreRow['assignees']) => assignees.map((a) => {
+    const member = memberMap.get(a.memberId);
+    if (!member) return null;
+    return (
+      <AssigneeDot
+        key={a.memberId}
+        memberId={a.memberId}
+        isCompleted={a.isCompleted}
+        dotSize={dotSize}
+        choreId={row.choreId}
+        choreName={row.choreName}
+        memberName={member.name}
+        memberColor={member.color}
+        initial={showInitials ? (initialsMap.get(a.memberId) ?? member.name[0]) : ''}
+        allowTouch={allowTouch}
+        onToggle={onToggle}
+      />
+    );
+  });
+  // A chore that goes to a family group keeps every ring (each is that
+  // person's own tick and tap target) and wraps the group's rings in one
+  // labelled pill; anyone named on top of the group follows outside it.
   const dots = (
     <div style={{ display: 'flex', alignItems: 'center', gap: dotGap(dotSize), flexShrink: 0 }}>
-      {row.assignees.map((a) => {
-        const member = memberMap.get(a.memberId);
-        if (!member) return null;
-        return (
-          <AssigneeDot
-            key={a.memberId}
-            memberId={a.memberId}
-            isCompleted={a.isCompleted}
-            dotSize={dotSize}
-            choreId={row.choreId}
-            choreName={row.choreName}
-            memberName={member.name}
-            memberColor={member.color}
-            initial={showInitials ? (initialsMap.get(a.memberId) ?? member.name[0]) : ''}
-            allowTouch={allowTouch}
-            onToggle={onToggle}
-          />
-        );
-      })}
+      {pill ? (
+        <>
+          <div
+            data-testid="fcc-group-pill"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: dotGap(dotSize),
+              padding: `${pillPadY}px ${pill.padRight}px ${pillPadY}px ${pill.padLeft}px`,
+              border: '1px solid var(--fcc-border)',
+              borderRadius: 999,
+              background: 'var(--fcc-surface)',
+            }}
+          >
+            <span style={{ display: 'flex', fontSize: pill.labelSize, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--fcc-text-2)', whiteSpace: 'nowrap' }}>
+              <span style={{ maxWidth: pill.nameMax, overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.groupLabel}</span>
+              {!!row.groupExtra && <span>{`\u00a0+${row.groupExtra}`}</span>}
+            </span>
+            {dotsFor(row.assignees.filter((a) => a.viaGroup))}
+          </div>
+          {dotsFor(row.assignees.filter((a) => !a.viaGroup))}
+        </>
+      ) : dotsFor(row.assignees)}
     </div>
   );
 

@@ -4,7 +4,7 @@ import { readChoreData, readChoreSnapshot, writeChoreData } from '@/lib/chore-da
 import { contentRevision } from '@/lib/content-revision';
 import type { ChoreDefinition } from '@/types/config';
 import { withAuth, withDisplayAuth, guardEmptyOverwrite, assertRequiredArrays, parseJsonBody } from '@/lib/api-utils';
-import { withFamilyData, validateMemberReferences } from '@/lib/family-api';
+import { withFamilyData, validateGroupReferences, validateMemberReferences } from '@/lib/family-api';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,13 +31,11 @@ export const PUT = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Reload the page and try again.' }, { status: 400 });
   }
   return withFamilyData(async () => {
-    if (chores.some((chore) => !chore || !Array.isArray(chore.assigneeIds))) {
-      return NextResponse.json({ error: 'Each chore needs an assignee list.' }, { status: 400 });
+    const stringList = (value: unknown) => Array.isArray(value) && value.every((id) => typeof id === 'string');
+    if (chores.some((chore) => !chore || !stringList(chore.assigneeIds)
+      || (chore.assigneeGroupIds !== undefined && !stringList(chore.assigneeGroupIds)))) {
+      return NextResponse.json({ error: 'Each chore needs a list of who it goes to.' }, { status: 400 });
     }
-    const references = await validateMemberReferences(chores.flatMap((chore) => [
-      ...chore.assigneeIds, ...Object.keys(chore.schedule ?? {}),
-    ]));
-    if (references) return references;
     // A list that cannot be read has nothing to compare against; the write is
     // what repairs it, and the empty guard below keeps its own reading.
     let current: ChoreDefinition[] | null = null;
@@ -50,6 +48,17 @@ export const PUT = withAuth(async (request: NextRequest) => {
         revision: contentRevision(current),
       }, { status: 409 });
     }
+    // Both reference checks come after the revision check on purpose.
+    // Removing a person or a group takes them off every chore in the same
+    // commit, so a page still naming one holds an old chore list: it must get
+    // the current list back above, which is what lets it recover, rather than
+    // a refusal it can never save its way out of.
+    const references = await validateMemberReferences(chores.flatMap((chore) => [
+      ...chore.assigneeIds, ...Object.keys(chore.schedule ?? {}),
+    ]));
+    if (references) return references;
+    const groupReferences = await validateGroupReferences(chores.flatMap((chore) => chore.assigneeGroupIds ?? []));
+    if (groupReferences) return groupReferences;
     const guard = await guardEmptyOverwrite([chores], async () => [current ?? []], 'chore', force);
     if (guard) return guard;
     await writeChoreData({ chores });

@@ -246,7 +246,7 @@
     "removeTimetable": "{name} har et skema, og det bliver også fjernet.",
     "groups": {
       "title": "Grupper",
-      "description": "Sæt folk sammen, så en kalender kan vise \"Børn\" i stedet for fem navne. En person kan være i mere end én gruppe.",
+      "description": "Sæt folk sammen, så en kalender kan vise \"Børn\" i stedet for fem navne, og en pligt kan gå til dem alle på én gang. En person kan være i mere end én gruppe.",
       "add": "Tilføj gruppe",
       "edit": "Rediger gruppe",
       "name": "Gruppenavn",
@@ -254,12 +254,17 @@
       "noMembers": "Ingen endnu",
       "editName": "Rediger {name}",
       "remove": "Fjern gruppe",
+      "duplicateName": "Du har allerede en gruppe, der hedder {name}.",
       "removeTitle": "Fjern {name}?",
       "removeDescription": "Skærme, der kun viser {name}, viser alle igen. Ingen fjernes fra familien.",
+      "removeChoreCount": {
+        "one": "{count} pligt går til {name}. Den bliver på din liste og venter på, at du vælger nogen, hvis der ikke er andre på den.",
+        "other": "{count} pligter går til {name}. De bliver på din liste, og dem, som ingen andre er på, venter, til du vælger nogen."
+      },
       "saved": "Grupper gemt.",
       "saveFailed": "Grupperne kunne ikke gemmes.",
       "limit": "Du kan have op til {count} grupper.",
-      "hint": "Grupper bruges af kalenderens farvenøgle og dens filter \"Vis kun\". Pligter og belønninger tildeles stadig personer."
+      "hint": "Grupper bruges af kalenderens farvenøgle og dens filter \"Vis kun\". En pligt kan også gives til en gruppe. Belønninger tildeles stadig personer."
     }
   }
 }

@@ -202,6 +202,26 @@ describe('family restore final state', () => {
     expect((await read('rewards.json')).redemptions).toEqual(redemptions);
   });
 
+  it('restores a backup whose chores go to its own groups, onto a device that has none of them', async () => {
+    const kids = { id: 'kids', name: 'Kids', memberIds: ['b'], createdAt: now, updatedAt: now };
+    const crew = { ...chore('crew', []), assigneeGroupIds: ['kids'] };
+    await restore({ family: { members: [member('b')], groups: [kids], migrated: true }, chores: { chores: [crew] } });
+    expect((await read('family.json')).groups).toEqual([kids]);
+    expect((await read('chores.json')).chores).toEqual([crew]);
+  });
+
+  it('stops a restore whose chores go to a group the restored family does not have', async () => {
+    const crew = { ...chore('crew', []), assigneeGroupIds: ['kids'] };
+    await expect(restore({ family: { members: [member('b')], migrated: true }, chores: { chores: [crew] } }))
+      .rejects.toThrow(/assigneeGroupIds: "kids"/);
+    expect((await read('family.json')).members.map((person: { id: string }) => person.id)).toEqual(['a']);
+  });
+
+  it('checks chores kept on the device against the groups a family-only restore brings', async () => {
+    await put('chores.json', { chores: [{ ...chore('crew', []), assigneeGroupIds: ['kids'] }] });
+    await expect(restore({ family: { members: [member('a')], migrated: true } })).rejects.toThrow(/assigneeGroupIds: "kids"/);
+  });
+
   it('does not rewrite untouched config or add empty calendar mappings', async () => {
     const before = await fs.readFile(path.join(root, 'data/config.json'), 'utf8');
     const planned = await restore({ family: { members: [member('a', 'Edited')], migrated: true } });

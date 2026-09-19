@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import { useFamilyData } from '@/hooks/useFamilyData';
 import { useDebouncedSave } from '@/hooks/useDebouncedSave';
 import { Sunrise, Sun, Sunset, Clock, Settings } from 'lucide-react';
@@ -68,11 +68,11 @@ function rememberMember(id: string) {
 }
 
 /** The first member who actually has something to do on `day`, else the first member. */
-function defaultMemberFor(members: FamilyMember[], chores: ChoreDefinition[], day: string): string {
+function defaultMemberFor(members: FamilyMember[], groups: FamilyGroup[], chores: ChoreDefinition[], day: string): string {
   const dayOfWeek = new Date(day + 'T00:00:00').getDay();
   for (const member of members) {
     const hasChore = chores.some(
-      (c) => choreAppliesToday(c, dayOfWeek, day) && resolveAssignee(c, day).includes(member.id),
+      (c) => choreAppliesToday(c, dayOfWeek, day) && resolveAssignee(c, day, groups).includes(member.id),
     );
     if (hasChore) return member.id;
   }
@@ -97,7 +97,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   const t = useTranslate('remote');
   const tModules = useTranslate('modules');
   // ── Lifted state (shared between Today + Manage views) ──
-  const { members } = useFamilyData();
+  const { members, groups, revision: familyRevision } = useFamilyData();
   const [chores, setChores] = useState<ChoreDefinition[]>(choreData.chores ?? []);
   // Saves go through one session (`lib/chore-client.ts`): they run in order,
   // each quoting the revision the previous one was answered with, so a list
@@ -127,7 +127,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   // Shared with the Rewards view: the kid who checked off their chores is the
   // kid whose tickets Rewards shows, without picking themselves twice.
   const [selectedMemberId, setSelectedMemberId] = useState(
-    () => defaultMemberFor(members, chores, initialDate),
+    () => defaultMemberFor(members, groups, chores, initialDate),
   );
   const [completions, setCompletions] = useState<ChoreCompletion[]>([]);
   const [toggling, setToggling] = useState<Set<string>>(new Set());
@@ -209,9 +209,9 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   useEffect(() => {
     if (members.length > 0 && !members.find((m) => m.id === selectedMemberId)) {
       const remembered = readRememberedMember();
-      setSelectedMemberId(remembered && members.some((m) => m.id === remembered) ? remembered : defaultMemberFor(members, chores, initialDate));
+      setSelectedMemberId(remembered && members.some((m) => m.id === remembered) ? remembered : defaultMemberFor(members, groups, chores, initialDate));
     }
-  }, [members, selectedMemberId, chores, initialDate]);
+  }, [members, groups, selectedMemberId, chores, initialDate]);
 
   // Fetch completions
   const fetchCompletions = useCallback(async () => {
@@ -302,7 +302,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
 
     for (const chore of chores) {
       if (!choreAppliesToday(chore, dayOfWeek, day)) continue;
-      const assignees = resolveAssignee(chore, day);
+      const assignees = resolveAssignee(chore, day, groups);
       if (!assignees.includes(selectedMemberId)) continue;
 
       assignments.push({
@@ -318,7 +318,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
     return assignments.sort(
       (a, b) => TIME_OF_DAY_META[a.timeOfDay].order - TIME_OF_DAY_META[b.timeOfDay].order,
     );
-  }, [chores, viewingDate, selectedMemberId, completionSet]);
+  }, [chores, groups, viewingDate, selectedMemberId, completionSet]);
 
   // Group by time of day
   const grouped = useMemo(() => {
@@ -344,14 +344,14 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       let done = 0;
       for (const c of chores) {
         if (!choreAppliesToday(c, dayOfWeek, day)) continue;
-        if (!resolveAssignee(c, day).includes(member.id)) continue;
+        if (!resolveAssignee(c, day, groups).includes(member.id)) continue;
         total++;
         if (completionSet.has(completionKey(c.id, member.id, day))) done++;
       }
       stats[member.id] = { total, done };
     }
     return stats;
-  }, [members, chores, viewingDate, completionSet]);
+  }, [members, groups, chores, viewingDate, completionSet]);
 
   const selectedMember = members.find((m) => m.id === selectedMemberId);
 
@@ -522,6 +522,8 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       ) : subView === 'manage' && isAdmin ? (
         <ChoresManageView
           members={members}
+          groups={groups}
+          familyReady={familyRevision !== null}
           chores={chores}
           onFamilyChanged={() => {
             void editorFetch('/api/chores/data').then(throwIfNotOk).then((res) => res.json()).then((json) => {
@@ -573,6 +575,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
               viewingDate={viewingDate}
               realToday={realToday}
               members={members}
+              groups={groups}
               chores={chores}
               completionSet={completionSet}
               accentColor={accentColor}

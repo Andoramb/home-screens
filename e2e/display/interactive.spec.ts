@@ -1015,6 +1015,82 @@ test.describe('chore-chart tap-to-complete across views', () => {
  * value drifts).
  */
 test.describe('fullscreen-chore-chart on display', () => {
+  // A chore that goes to a family group keeps one ring per person (each is
+  // that person's own tick and tap target) and wraps the group's rings in a
+  // labelled pill; somebody named on top of the group sits outside it.
+  test('chores view: a group chore draws its rings in a labelled pill and each ring still ticks its own person', async ({ page, request, sandboxDir }) => {
+    await seedHouseholdChores(request, sandboxDir, {
+      members: [
+        { id: 'g-a', name: 'Ada', emoji: '', color: '#f472b6' },
+        { id: 'g-b', name: 'Bram', emoji: '', color: '#60a5fa' },
+        { id: 'g-m', name: 'Mom', emoji: '', color: '#94a3b8' },
+      ],
+      groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['g-a', 'g-b'] }],
+      chores: [
+        { id: 'g-c1', name: 'Brush teeth', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeOfDay: 'anytime', assigneeIds: ['g-m'], assigneeGroupIds: ['g-kids'], rotation: 'fixed' },
+        { id: 'g-c2', name: 'Water the plants', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeOfDay: 'anytime', assigneeIds: ['g-a', 'g-m'], rotation: 'fixed' },
+      ],
+    });
+    const chart = buildModuleInstance('fullscreen-chore-chart', { allowDisplayComplete: true });
+    const display = await renderOnDisplay(page, request, baseConfig({
+      screens: [makeScreen('s1', 'S1', [chart])],
+    }));
+    const mod = display.module('fullscreen-chore-chart');
+
+    // Only the group chore gets a pill; listing people by hand draws plain rings.
+    const pill = mod.getByTestId('fcc-group-pill');
+    await expect(pill).toHaveCount(1);
+    await expect(pill).toContainText('Kids');
+    await expect(pill.getByRole('button')).toHaveCount(2);
+    await expect(pill.getByRole('button', { name: 'Complete Brush teeth for Mom' })).toHaveCount(0);
+    await expect(mod.getByRole('button', { name: 'Complete Brush teeth for Mom' })).toBeVisible();
+
+    const posted = page.waitForResponse(
+      (r) => r.url().includes('/api/chores') && r.request().method() === 'POST' && r.ok(),
+    );
+    await pill.getByRole('button', { name: 'Complete Brush teeth for Bram' }).click();
+    await posted;
+    await expect
+      .poll(() => readCompletions(request))
+      .toContainEqual(expect.objectContaining({ choreId: 'g-c1', memberId: 'g-b' }));
+    expect(await readCompletions(request)).not.toContainEqual(expect.objectContaining({ choreId: 'g-c1', memberId: 'g-a' }));
+  });
+
+  // A flat row's height comes from how many rows have to fit, and on a dense
+  // chart the ring is allowed nearly the whole row. The pill is taller than
+  // its rings by its own padding and border, so the row has to allow for it
+  // or neighbouring pills run into each other and cover each other's rings.
+  test('chores view: group pills on a dense chart never run into each other', async ({ page, request, sandboxDir }) => {
+    const kids = ['Ada', 'Bram', 'Cleo', 'Dax', 'Esme'].map((name, i) => ({ id: `d-${i}`, name, emoji: '', color: ['#f472b6', '#60a5fa', '#4ade80', '#fbbf24', '#a78bfa'][i] }));
+    await seedHouseholdChores(request, sandboxDir, {
+      members: kids,
+      groups: [{ id: 'd-kids', name: 'Kids', memberIds: kids.map((k) => k.id) }],
+      chores: Array.from({ length: 16 }, (_, i) => ({
+        id: `d-c${i}`, name: `Chore number ${i + 1}`, emoji: '', points: 1, frequency: 'daily',
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeOfDay: 'anytime', assigneeIds: [], assigneeGroupIds: ['d-kids'], rotation: 'fixed',
+      })),
+    });
+    const chart = buildModuleInstance('fullscreen-chore-chart', { allowDisplayComplete: true });
+    chart.position = { x: 0, y: 0 };
+    chart.size = { w: 720, h: 1280 };
+    const display = await renderOnDisplay(page, request, baseConfig({ screens: [makeScreen('s1', 'S1', [chart])] }));
+    const pills = display.module('fullscreen-chore-chart').getByTestId('fcc-group-pill');
+    await expect(pills.first()).toBeVisible();
+    await expect.poll(() => pills.count()).toBeGreaterThan(8);
+
+    const geometry = await pills.evaluateAll((els) => els.map((el) => {
+      const pill = el.getBoundingClientRect();
+      const row = el.closest('[data-testid="fcc-row"]')!.getBoundingClientRect();
+      const ring = el.querySelector('button, [role="button"], [data-member-id]')?.getBoundingClientRect();
+      return { top: pill.top, bottom: pill.bottom, rowTop: row.top, rowBottom: row.bottom, ring: ring?.height ?? 0 };
+    }));
+    for (const [i, pill] of geometry.entries()) {
+      expect(pill.top, `pill ${i} starts above its own row`).toBeGreaterThanOrEqual(pill.rowTop - 0.5);
+      expect(pill.bottom, `pill ${i} runs past the bottom of its own row`).toBeLessThanOrEqual(pill.rowBottom + 0.5);
+      if (i > 0) expect(pill.top, `pill ${i} overlaps the pill above it`).toBeGreaterThanOrEqual(geometry[i - 1].bottom);
+    }
+  });
+
   test('chores view: tapping an assignee dot persists the completion', async ({ page, request, sandboxDir }) => {
     await seedHouseholdChores(request, sandboxDir, {
       members: [{ id: 'fcc-m', name: 'Wren', emoji: '🦉', color: '#f59e0b' }],

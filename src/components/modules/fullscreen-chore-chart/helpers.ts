@@ -1,5 +1,5 @@
 
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import { Sunrise, Sun, Sunset, Clock } from 'lucide-react';
 import type { ChoreTimeOfDay } from '@/types/config';
 import { TIME_OF_DAY_META, type ResolvedAssignment } from '@/components/modules/chore-chart/types';
@@ -10,7 +10,12 @@ export interface ChoreRow {
   choreEmoji: string;
   timeOfDay: ChoreTimeOfDay;
   points: number;
-  assignees: { memberId: string; isCompleted: boolean }[];
+  /** `viaGroup` marks the people who have the chore through a family group; they sit first, inside the group pill. */
+  assignees: { memberId: string; isCompleted: boolean; viaGroup?: boolean }[];
+  /** The first family group the chore goes to, by name. Set only when someone on the row has it through a group. */
+  groupLabel?: string;
+  /** How many further groups the chore goes to; the pill shows them as "+1" rather than more names. */
+  groupExtra?: number;
 }
 
 export interface ToggleParams {
@@ -77,23 +82,31 @@ export function getCurrentTimeOfDay(hour: number): ChoreTimeOfDay | null {
  * Group today's assignments by time-of-day, then deduplicate chores (a chore
  * assigned to 3 people becomes one row with 3 assignee dots). Dots keep the
  * household's member order whatever their state: a kid's ring stays in the
- * same column all day and does not jump when someone else finishes.
+ * same column all day and does not jump when someone else finishes. On a
+ * chore that goes to a family group, the group's people come first so their
+ * rings sit together in one labelled pill, and anyone named on top of the
+ * group follows outside it.
  */
-export function buildChoreRows(assignments: ResolvedAssignment[], memberOrder?: Map<string, number>): Map<ChoreTimeOfDay, ChoreRow[]> {
+export function buildChoreRows(assignments: ResolvedAssignment[], memberOrder?: Map<string, number>, familyGroups: readonly FamilyGroup[] = []): Map<ChoreTimeOfDay, ChoreRow[]> {
   const choreMap = new Map<string, ChoreRow>();
+  const viaGroup = new Map<string, Set<string>>();
 
   for (const a of assignments) {
     const existing = choreMap.get(a.chore.id);
     if (existing) {
-      existing.assignees.push({ memberId: a.memberId, isCompleted: a.isCompleted });
+      existing.assignees.push({ memberId: a.memberId, isCompleted: a.isCompleted, viaGroup: viaGroup.get(a.chore.id)?.has(a.memberId) });
     } else {
+      const named = (a.chore.assigneeGroupIds ?? []).flatMap((id) => familyGroups.find((group) => group.id === id) ?? []);
+      const inGroup = new Set(named.flatMap((group) => group.memberIds));
+      viaGroup.set(a.chore.id, inGroup);
       choreMap.set(a.chore.id, {
         choreId: a.chore.id,
         choreName: a.chore.name,
         choreEmoji: a.chore.emoji,
         timeOfDay: a.chore.timeOfDay,
         points: a.chore.points,
-        assignees: [{ memberId: a.memberId, isCompleted: a.isCompleted }],
+        assignees: [{ memberId: a.memberId, isCompleted: a.isCompleted, viaGroup: inGroup.has(a.memberId) }],
+        ...(named.length > 0 ? { groupLabel: named[0].name, groupExtra: named.length - 1 } : {}),
       });
     }
   }
@@ -104,6 +117,9 @@ export function buildChoreRows(assignments: ResolvedAssignment[], memberOrder?: 
     if (memberOrder) {
       row.assignees.sort((a, b) => (memberOrder.get(a.memberId) ?? 0) - (memberOrder.get(b.memberId) ?? 0));
     }
+    // Stable, so household order holds inside the pill and after it.
+    row.assignees.sort((a, b) => Number(!!b.viaGroup) - Number(!!a.viaGroup));
+    if (!row.assignees.some((a) => a.viaGroup)) { delete row.groupLabel; delete row.groupExtra; }
     existing.push(row);
     groups.set(row.timeOfDay, existing);
   }
@@ -198,6 +214,53 @@ export function dotGap(dotSize: number): number {
   return Math.max(dotSize * 0.2, 8);
 }
 
+/** Longest group name a pill shows in full, in characters. */
+const GROUP_LABEL_CHARS = 10;
+
+/**
+ * The labelled pill a group's rings sit in. Everything but the ring gap is a
+ * fraction of the chore-name size, so the width it adds can be known before
+ * a column settles its dot size.
+ */
+export function groupPillMetrics(label: string, nameSize: number, dotSize: number, extraGroups = 0) {
+  const labelSize = nameSize * 0.62;
+  const padLeft = nameSize * 0.5;
+  const padRight = nameSize * 0.32;
+  // Bold capitals with tracking run wide of the chore-name glyph estimate.
+  const glyph = labelSize * 0.78;
+  // A group name can run to forty characters. Past this many it is cut off
+  // with an ellipsis: every ring in the column shrinks to make room for the
+  // widest pill, and the rings are what people tap.
+  const nameMax = GROUP_LABEL_CHARS * glyph;
+  const labelWidth = Math.min(label.length * glyph, nameMax) + (extraGroups > 0 ? 3 * glyph : 0);
+  return { labelSize, padLeft, padRight, nameMax, extra: labelWidth + dotGap(dotSize) + padLeft + padRight + 2 };
+}
+
+/** Top and bottom border of a pill, plus a hair so two pills in neighbouring rows never touch. */
+const PILL_EDGES = 4;
+
+/** The least padding a pill keeps above and below its rings when a row is tight. */
+function groupPillMinPadY(nameSize: number): number {
+  return nameSize * 0.1;
+}
+
+/**
+ * The shortest row a pill fits in. A flat row's height comes from how many
+ * rows have to fit, and on a dense chart the ring may take nine tenths of it,
+ * so a row holding a pill has to be at least this tall or the pill runs into
+ * the rows above and below and covers their rings.
+ */
+export function groupPillMinRow(nameSize: number, dotSize: number): number {
+  return dotSize + groupPillMinPadY(nameSize) * 2 + PILL_EDGES;
+}
+
+/** A pill's top and bottom padding in a row of `rowHeight`: the full amount when there is room, squeezed when there is not. */
+export function groupPillPadY(nameSize: number, dotSize: number, rowHeight: number | undefined): number {
+  const full = nameSize * 0.26;
+  if (rowHeight === undefined) return full;
+  return Math.max(groupPillMinPadY(nameSize), Math.min(full, (rowHeight - dotSize - PILL_EDGES) / 2));
+}
+
 /** Width a run of `count` dots takes on one line. */
 export function dotRunWidth(dotSize: number, count: number): number {
   if (count <= 0) return 0;
@@ -223,11 +286,12 @@ export function fitDotsInRoom(dotSize: number, count: number, room: number): num
  * Whether a stack of rows should put its dots on their own line under the
  * name. The decision is per column, not per row, so every row in a column
  * has the same shape: a column stacks when its widest row's dots would take
- * more than two fifths of the width beside the name.
+ * more than two fifths of the width beside the name. `extra` is what a
+ * group pill adds around the dots.
  */
-export function shouldStack(widestDots: number, dotSize: number, rowWidth: number): boolean {
+export function shouldStack(widestDots: number, dotSize: number, rowWidth: number, extra = 0): boolean {
   if (widestDots <= 1 || rowWidth <= 0) return false;
-  return dotRunWidth(dotSize, widestDots) > rowWidth * 0.4;
+  return dotRunWidth(dotSize, widestDots) + extra > rowWidth * 0.4;
 }
 
 /**

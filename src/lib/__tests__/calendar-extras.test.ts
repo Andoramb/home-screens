@@ -19,7 +19,7 @@ describe('buildExtrasIndex', () => {
     const index = buildExtrasIndex({
       dates,
       meals: null,
-      chores: { members, chores, completions: [{ choreId: 'c1', memberId: 'm1', date: '2026-08-24' }] },
+      chores: { members, groups: [], chores, completions: [{ choreId: 'c1', memberId: 'm1', date: '2026-08-24' }] },
     });
     expect(index.byDate['2026-08-24'].chores).toEqual({ total: 3, done: 1, memberIds: ['m1', 'm2'] });
     expect(index.byDate['2026-08-25'].chores).toEqual({ total: 2, done: 0, memberIds: ['m1', 'm2'] });
@@ -51,7 +51,7 @@ describe('buildExtrasIndex', () => {
   });
 
   it('hasExtras reports whether any listed date has content', () => {
-    const index = buildExtrasIndex({ dates, meals: null, chores: { members, chores, completions: [] } });
+    const index = buildExtrasIndex({ dates, meals: null, chores: { members, groups: [], chores, completions: [] } });
     expect(hasExtras(index, dates)).toBe(true);
     expect(hasExtras(index, ['2026-09-01'])).toBe(false);
     expect(hasExtras(EMPTY_EXTRAS, dates)).toBe(false);

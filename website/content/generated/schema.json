@@ -9719,6 +9719,15 @@
           "description": "Family members it can go to"
         },
         {
+          "name": "assigneeGroupIds",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Family groups it goes to, expanded to their members when the chore is resolved"
+        },
+        {
           "name": "rotation",
           "optional": false,
           "type": {
@@ -9731,7 +9740,7 @@
               "schedule"
             ]
           },
-          "description": "How it is shared among `assigneeIds`: everyone every time (`fixed`), taking turns by day or by week, or by `schedule`"
+          "description": "How it is shared among the people it goes to: everyone every time (`fixed`), taking turns by day or by week, or by `schedule`. `schedule` is people only and never combines with `assigneeGroupIds`."
         },
         {
           "name": "schedule",

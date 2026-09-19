@@ -36,14 +36,16 @@ export interface MemberReferenceDomain {
    * may repair what its policy allows (and record it as evidence), refuse a
    * record it cannot make sense of by throwing, or report the assignments
    * that name missing people so the restore can stop with all of them named.
+   * `groups` is the restored family's group ids, for a store that can hand
+   * something to a group as well as to a person.
    */
-  planRestore(doc: Doc, members: ReadonlySet<string>): RestorePlan;
+  planRestore(doc: Doc, members: ReadonlySet<string>, groups: ReadonlySet<string>): RestorePlan;
 }
 
 export interface RestorePlan {
   /** The document to write instead of the input, when a repair changed it. */
   doc?: Doc;
-  /** Assignments naming people the restored family does not have. Any entry stops the restore. */
+  /** Assignments naming people or groups the restored family does not have. Any entry stops the restore. */
   missing: string[];
   /**
    * Records for the migration evidence file, keyed as they appear there.

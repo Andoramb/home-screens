@@ -4,6 +4,9 @@ import {
   getUniqueInitials,
   getCurrentTimeOfDay,
   buildChoreRows,
+  groupPillMetrics,
+  groupPillMinRow,
+  groupPillPadY,
   buildMemberRows,
   fitRowHeight,
   fitDotSize,
@@ -325,5 +328,62 @@ describe('buildMemberRows', () => {
   it('keeps a done row where it was so a tap never moves it', () => {
     const rows = buildMemberRows(members, [makeAssignment(bed, 'a', true), makeAssignment(dishes, 'a')], true);
     expect(rows.get('a')!.map((r) => r.choreId)).toEqual(['bed', 'dishes']);
+  });
+});
+
+describe('buildChoreRows with a family group', () => {
+  const stamp = '2026-01-01T00:00:00.000Z';
+  const kids = { id: 'kids', name: 'Kids', memberIds: ['ann', 'ben'], createdAt: stamp, updatedAt: stamp };
+  const order = new Map([['mom', 0], ['ann', 1], ['ben', 2]]);
+
+  it('labels the row and puts the group first, in household order, with anyone extra after it', () => {
+    const chore = makeChore({ id: 'teeth', name: 'Brush teeth', timeOfDay: 'evening', assigneeIds: ['mom'], assigneeGroupIds: ['kids'] });
+    const rows = buildChoreRows(['mom', 'ben', 'ann'].map((id) => makeAssignment(chore, id, false)), order, [kids]);
+    const row = rows.get('evening')![0];
+    expect(row.groupLabel).toBe('Kids');
+    expect(row.assignees.map((a) => [a.memberId, !!a.viaGroup])).toEqual([['ann', true], ['ben', true], ['mom', false]]);
+  });
+
+  it('leaves a row alone when the chore names people only, or its group is gone', () => {
+    const plain = makeChore({ id: 'plain', name: 'Beds', timeOfDay: 'evening', assigneeIds: ['ann', 'mom'] });
+    const orphan = makeChore({ id: 'orphan', name: 'Bins', timeOfDay: 'evening', assigneeIds: ['ann'], assigneeGroupIds: ['gone'] });
+    const rows = buildChoreRows([makeAssignment(plain, 'ann', false), makeAssignment(plain, 'mom', false), makeAssignment(orphan, 'ann', false)], order, [kids]).get('evening')!;
+    expect(rows.map((row) => row.groupLabel)).toEqual([undefined, undefined]);
+    expect(rows[0].assignees.map((a) => a.memberId)).toEqual(['mom', 'ann']);
+  });
+
+  it('names the first group and counts the rest, so two groups do not make a pill twice as wide', () => {
+    const adults = { id: 'adults', name: 'Grown-ups', memberIds: ['mom'], createdAt: stamp, updatedAt: stamp };
+    const chore = makeChore({ id: 'tidy', name: 'Tidy up', timeOfDay: 'evening', assigneeIds: [], assigneeGroupIds: ['kids', 'adults'] });
+    const row = buildChoreRows(['mom', 'ann'].map((id) => makeAssignment(chore, id, false)), order, [kids, adults]).get('evening')![0];
+    expect([row.groupLabel, row.groupExtra]).toEqual(['Kids', 1]);
+    expect(row.assignees.every((a) => a.viaGroup)).toBe(true);
+  });
+
+  it('stops growing the pill for a very long group name', () => {
+    const long = groupPillMetrics('Grandparents, aunts, uncles and cousins', 30, 50).extra;
+    expect(long).toBe(groupPillMetrics('Grandparents', 30, 50).extra);
+    expect(long).toBeLessThan(groupPillMetrics('Kids', 30, 50).extra * 2.2);
+  });
+
+  it('sets aside more width for a longer group name, and stacks sooner for it', () => {
+    expect(groupPillMetrics('Grown-ups', 30, 50).extra).toBeGreaterThan(groupPillMetrics('Kids', 30, 50).extra);
+    expect(shouldStack(5, 50, 800)).toBe(false);
+    expect(shouldStack(5, 50, 800, groupPillMetrics('Grown-ups', 30, 50).extra)).toBe(true);
+  });
+
+  // The dense case: a 37.3px row whose ring is 33.6px leaves under 4px, and
+  // the pill's full padding and border need about 14.
+  it('never lets a pill be taller than its row', () => {
+    const name = 20, dot = 33.6;
+    const pillHeight = (row: number) => dot + groupPillPadY(name, dot, row) * 2 + 2;
+    const tight = groupPillMinRow(name, dot);
+    expect(tight).toBeGreaterThan(37.3);
+    expect(pillHeight(tight)).toBeLessThanOrEqual(tight);
+    // With room to spare the padding stops at its full size rather than filling the row.
+    expect(groupPillPadY(name, dot, 200)).toBeCloseTo(name * 0.26);
+    expect(groupPillPadY(name, dot, undefined)).toBeCloseTo(name * 0.26);
+    // Squeezed, but never to nothing: the rings must not touch the pill's edge.
+    expect(groupPillPadY(name, dot, 10)).toBeCloseTo(name * 0.1);
   });
 });

@@ -63,8 +63,11 @@ export interface PreviewSettings {
   /** Settings > Family, for the per-person calendar views. */
   calendarPeople: CalendarPerson[] | undefined;
   calendarPeopleState?: 'loading' | 'failed';
-  /** Family groups, for the calendar's color key and people filter. */
-  calendarGroups: FamilyGroup[] | undefined;
+  /**
+   * Family groups. Only the calendar modules are handed them as a prop (color
+   * key and people filter); the chore surfaces read them from `useFamilyData`.
+   */
+  familyGroups: FamilyGroup[] | undefined;
   /** Whether Settings > Calendar names anything to fetch (see `hasAnyCalendarSource`). */
   calendarConfigured: boolean;
 }
@@ -127,7 +130,7 @@ export interface ModuleDataSource {
   calendarPeople: CalendarPerson[] | null;
   calendarPeopleState?: 'loading' | 'failed';
   /** Family groups; null when there are none. */
-  calendarGroups: FamilyGroup[] | null;
+  familyGroups: FamilyGroup[] | null;
   /**
    * False when Settings > Calendar names nothing to fetch. The shared fetch
    * never starts in that case, so without this flag a calendar module could
@@ -235,8 +238,8 @@ export function buildModuleProps(
   if (needsCalendar && source.calendarPeople && source.calendarPeople.length > 0) {
     props.people = source.calendarPeople;
   }
-  if (needsCalendar && source.calendarGroups && source.calendarGroups.length > 0) {
-    props.groups = source.calendarGroups;
+  if (needsCalendar && source.familyGroups && source.familyGroups.length > 0) {
+    props.groups = source.familyGroups;
   }
 
   if (needsWeather) {
@@ -352,7 +355,7 @@ export function toDisplaySource(
       : null,
     calendarPeople: calendarPeopleForFamily(sharedData.familyMembers ?? [], settings.calendar?.personSources),
     calendarPeopleState: Object.values(settings.calendar?.personSources ?? {}).some((ids) => ids.length > 0) ? sharedData.familyState : undefined,
-    calendarGroups: sharedData.familyGroups ?? null,
+    familyGroups: sharedData.familyGroups ?? null,
     calendarConfigured: hasAnyCalendarSource(settings.calendar),
     availableDisplays,
     renderDisplayId: address.renderDisplayId,
@@ -400,7 +403,7 @@ export function toEditorSource(
     calendarSourceStatus: previewData.calendarSourceStatus,
     calendarPeople: settings?.calendarPeople ?? null,
     calendarPeopleState: settings?.calendarPeopleState,
-    calendarGroups: settings?.calendarGroups ?? null,
+    familyGroups: settings?.familyGroups ?? null,
     // No settings yet means the editor is still loading, not that the
     // household has no calendars: never flash the setup card over that.
     calendarConfigured: settings ? settings.calendarConfigured : true,

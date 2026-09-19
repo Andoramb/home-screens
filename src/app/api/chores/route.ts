@@ -146,7 +146,8 @@ export const POST = async (request: NextRequest) => {
     rewards = move.data;
     if (!wasAdded && move.wentNegative) {
       const memberName = family.members.find((m) => m.id === memberId)?.name ?? 'They';
-      warning = `${memberName}'s balance is now ${move.balance} — they'll need to earn ${Math.abs(move.balance)} points before redeeming again.`;
+      const owed = Math.abs(move.balance);
+      warning = `${memberName} already spent those tickets, so the balance is now ${move.balance}. ${owed === 1 ? '1 more ticket has' : `${owed} more tickets have`} to be earned before the next reward.`;
     }
   }
 

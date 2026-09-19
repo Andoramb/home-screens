@@ -329,6 +329,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|displayHero.stateOffline',
   ]),
   'de-DE': new Set([
+    // "In {group}": the preposition "in" is the same word in this language.
+    'modules|chore-chart.choreForm.groupMemberNote',
     // "(optional)" is the German word too.
     'editor|timetableModal.dates.optional',
     // 'Name' is the German word too
@@ -618,6 +620,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|timers.stepMinutes',
   ]),
   'nl-NL': new Set([
+    // "In {group}": the preposition "in" is the same word in this language.
+    'modules|chore-chart.choreForm.groupMemberNote',
     'remote|lists.itemSheet.textLabel',
     // 'Focus', 'Compact', 'Item' and 'Week' are the Dutch words too
     'editor|configSections.todo.viewFocus',

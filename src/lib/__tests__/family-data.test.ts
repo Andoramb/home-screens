@@ -362,6 +362,39 @@ describe('family groups', () => {
     expect(after.groups).toEqual([expect.objectContaining({ id: kids.id, memberIds: ['a'] })]);
     expect((await read('family.json')).groups[0].memberIds).toEqual(['a']);
   });
+  it('takes a removed group off the chores that named it, and keeps a chore it leaves with nobody', async () => {
+    const group = (id: string, name: string) => ({ id, name, memberIds: ['a'], createdAt: now, updatedAt: now });
+    await put('family.json', { members: [member('a', 'Ann'), member('b', 'Ben')], migrated: true, groups: [group('kids', 'Kids'), group('teens', 'Teens')] });
+    await put('chores.json', { chores: [
+      { id: 'only', name: 'Dishes', assigneeIds: [], assigneeGroupIds: ['kids'] },
+      { id: 'both', name: 'Bins', assigneeIds: ['b'], assigneeGroupIds: ['kids', 'teens'] },
+      { id: 'plain', name: 'Beds', assigneeIds: ['b'] },
+    ] });
+    const before = await readFamilyData();
+    await replaceFamilyGroups({ groups: [{ id: 'teens', name: 'Teens', memberIds: ['a'] }], revision: familyRevision(before) });
+    expect((await read('chores.json')).chores).toEqual([
+      { id: 'only', name: 'Dishes', assigneeIds: [] },
+      { id: 'both', name: 'Bins', assigneeIds: ['b'], assigneeGroupIds: ['teens'] },
+      { id: 'plain', name: 'Beds', assigneeIds: ['b'] },
+    ]);
+    // The unassigned chore is nobody's, so removing somebody else does not delete it.
+    const current = await readFamilyData();
+    await replaceFamilyMembers({ members: [member('a', 'Ann')], revision: familyRevision(current), removedIds: ['b'] } as ReplaceFamilyInput);
+    expect((await read('chores.json')).chores.map((chore: { id: string }) => chore.id)).toEqual(['only', 'both']);
+  });
+  it('leaves the chore file alone when a group save removes nothing', async () => {
+    await put('family.json', { members: [member('a', 'Ann')], migrated: true });
+    await put('chores.json', { chores: [{ id: 'plain', assigneeIds: ['a'] }] });
+    const raw = await fs.readFile(path.join(root, 'data', 'chores.json'), 'utf8');
+    await replaceFamilyGroups({ groups: [{ name: 'Kids', memberIds: ['a'] }], revision: familyRevision(await readFamilyData()) });
+    expect(await fs.readFile(path.join(root, 'data', 'chores.json'), 'utf8')).toBe(raw);
+  });
+  it('refuses two groups that read as the same name', async () => {
+    await put('family.json', { members: [member('a', 'Ann')], migrated: true });
+    const revision = familyRevision(await readFamilyData());
+    await expect(replaceFamilyGroups({ groups: [{ name: 'Kids', memberIds: ['a'] }, { name: ' kids ', memberIds: [] }], revision })).rejects.toMatchObject({ status: 400 });
+    expect((await read('family.json')).groups).toBeUndefined();
+  });
   it('refuses a saved roster whose groups name people who are not on it', async () => {
     await put('family.json', { members: [member('a', 'Ann')], migrated: true, groups: [{ id: 'g', name: 'Kids', memberIds: ['zed'], createdAt: now, updatedAt: now }] });
     await expect(readFamilyData()).rejects.toMatchObject({ status: 409 });

@@ -22,8 +22,14 @@ const CASES: Record<string, { doc: Doc; afterRemoval: Doc; restore: { missing: n
     doc: { chores: [
       { id: 'solo', assigneeIds: ['gone'] },
       { id: 'pair', assigneeIds: ['gone', 'kept'], rotation: 'schedule', daysOfWeek: [1, 2], schedule: { gone: [1], kept: [2] } },
+      // Goes to a group and names nobody directly: an empty `assigneeIds` is
+      // how it is saved, not a chore nobody is left on.
+      { id: 'crew', assigneeIds: [], assigneeGroupIds: ['kids'] },
     ] },
-    afterRemoval: { chores: [{ id: 'pair', assigneeIds: ['kept'], rotation: 'fixed', daysOfWeek: [2] }] },
+    afterRemoval: { chores: [
+      { id: 'pair', assigneeIds: ['kept'], rotation: 'fixed', daysOfWeek: [2] },
+      { id: 'crew', assigneeIds: [], assigneeGroupIds: ['kids'] },
+    ] },
     // Two assignee lists and one schedule name the missing person.
     restore: { missing: 3 },
   },
@@ -81,6 +87,23 @@ const CASES: Record<string, { doc: Doc; afterRemoval: Doc; restore: { missing: n
   },
 };
 
+describe('chores handed to a group', () => {
+  const domain = MEMBER_REFERENCE_DOMAINS.find((entry) => entry.path === 'data/chores.json')!;
+
+  it('stops a restore that names a group the restored family does not have', () => {
+    const doc = { chores: [{ id: 'crew', name: 'Dishes', assigneeIds: [], assigneeGroupIds: ['kids', 'teens'] }] };
+    const plan = domain.planRestore(doc, new Set(['kept']), new Set(['kids']));
+    expect(plan.missing).toHaveLength(1);
+    expect(plan.missing[0]).toContain('assigneeGroupIds');
+    expect(plan.missing[0]).toContain('"teens"');
+    expect(plan.missing[0]).not.toContain('"kids"');
+  });
+
+  it('refuses a removal when a saved group list is not a list of ids', () => {
+    expect(() => domain.removeMembers({ chores: [{ id: 'crew', assigneeIds: [], assigneeGroupIds: 'kids' }] }, new Set(['gone']))).toThrow();
+  });
+});
+
 describe('member reference registry', () => {
   it('lists every file this suite knows about, and nothing else', () => {
     expect(MEMBER_REFERENCE_DOMAINS.map((domain) => domain.path)).toEqual(Object.keys(CASES));
@@ -96,6 +119,7 @@ describe('member reference registry', () => {
     const { doc, afterRemoval, restore } = CASES[path];
     const gone = new Set(['gone']);
     const family = new Set(['kept']);
+    const groups = new Set(['kids']);
 
     it('removes a person the way its policy says, without touching the input', () => {
       const before = JSON.stringify(doc);
@@ -109,7 +133,7 @@ describe('member reference registry', () => {
 
     it('plans a restore the way its policy says, without touching the input', () => {
       const before = JSON.stringify(doc);
-      const plan = domain.planRestore(doc, family);
+      const plan = domain.planRestore(doc, family, groups);
       expect(plan.missing).toHaveLength(restore.missing);
       for (const entry of plan.missing) expect(entry).toContain('"gone"');
       expect(plan.doc).toEqual(restore.doc);
@@ -118,14 +142,14 @@ describe('member reference registry', () => {
     });
 
     it('has nothing to repair or refuse when everyone is present', () => {
-      expect(domain.planRestore(doc, new Set(['gone', 'kept']))).toEqual({ missing: [], evidence: {} });
+      expect(domain.planRestore(doc, new Set(['gone', 'kept']), groups)).toEqual({ missing: [], evidence: {} });
     });
 
     it(`treats a document in another shape as "${domain.unreadable}" says`, () => {
       const stranger: Doc = { unrelated: true };
       if (domain.unreadable === 'skip') {
         expect(domain.removeMembers(stranger, gone)).toBe(stranger);
-        expect(domain.planRestore(stranger, family)).toEqual({ missing: [], evidence: {} });
+        expect(domain.planRestore(stranger, family, groups)).toEqual({ missing: [], evidence: {} });
       } else {
         expect(() => domain.removeMembers(stranger, gone)).toThrow(FamilyError);
         let status: unknown;

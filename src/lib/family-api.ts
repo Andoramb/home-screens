@@ -16,3 +16,11 @@ export async function validateMemberReferences(ids: readonly string[]): Promise<
     ? NextResponse.json({ error: 'Someone in this selection was removed. Refresh and choose again.' }, { status: 409 })
     : null;
 }
+
+/** The same check for family groups, so a stale page cannot hand something to a group that was just removed. */
+export async function validateGroupReferences(ids: readonly string[]): Promise<NextResponse | null> {
+  const groups = new Set(((await readFamilyData()).groups ?? []).map((group) => group.id));
+  return ids.some((id) => !groups.has(id))
+    ? NextResponse.json({ error: 'A group in this selection was removed. Refresh and choose again.' }, { status: 409 })
+    : null;
+}

@@ -133,9 +133,12 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
                       >
                         {chore.name}
                       </span>
-                      {member && member.emoji && (
-                        <span className="shrink-0" title={member.name}>
-                          <ChoreIcon value={member.emoji} size={16} color={member.color} />
+                      {/* Everyone on a shared chore gets their own row with the same
+                          name, so each row says whose it is: their icon, or their
+                          initial when they have none. */}
+                      {member && (
+                        <span className="shrink-0" title={member.name} style={{ color: member.color, fontWeight: 700 }}>
+                          {member.emoji ? <ChoreIcon value={member.emoji} size={16} color={member.color} /> : member.name[0]}
                         </span>
                       )}
                       {allowTouch ? (

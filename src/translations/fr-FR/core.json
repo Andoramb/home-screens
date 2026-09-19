@@ -246,7 +246,7 @@
     "removeTimetable": "{name} a un emploi du temps, et il est supprimé également.",
     "groups": {
       "title": "Groupes",
-      "description": "Regroupez des personnes pour qu'un calendrier affiche « Enfants » au lieu de cinq prénoms. Une personne peut faire partie de plusieurs groupes.",
+      "description": "Regroupez des personnes pour qu'un calendrier affiche « Enfants » au lieu de cinq prénoms, et pour donner une tâche à tout le groupe d'un coup. Une personne peut faire partie de plusieurs groupes.",
       "add": "Ajouter un groupe",
       "edit": "Modifier le groupe",
       "name": "Nom du groupe",
@@ -254,12 +254,17 @@
       "noMembers": "Personne pour l'instant",
       "editName": "Modifier {name}",
       "remove": "Supprimer le groupe",
+      "duplicateName": "Vous avez déjà un groupe qui s'appelle {name}.",
       "removeTitle": "Supprimer {name} ?",
       "removeDescription": "Les écrans qui n'affichent que {name} affichent de nouveau tout le monde. Personne n'est retiré de la famille.",
+      "removeChoreCount": {
+        "one": "{count} tâche est donnée à {name}. Elle reste dans votre liste et attend que vous choisissiez quelqu'un si personne d'autre ne s'en occupe.",
+        "other": "{count} tâches sont données à {name}. Elles restent dans votre liste, et celles dont personne d'autre ne s'occupe attendent que vous choisissiez quelqu'un."
+      },
       "saved": "Groupes enregistrés.",
       "saveFailed": "Impossible d'enregistrer vos groupes.",
       "limit": "Vous pouvez créer jusqu'à {count} groupes.",
-      "hint": "Les groupes servent à la légende des couleurs du calendrier et à son filtre « Afficher seulement ». Les tâches et les récompenses restent attribuées à des personnes."
+      "hint": "Les groupes servent à la légende des couleurs du calendrier et à son filtre « Afficher seulement ». Une tâche peut aussi être donnée à un groupe. Les récompenses restent attribuées à des personnes."
     }
   }
 }

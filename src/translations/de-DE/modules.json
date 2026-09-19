@@ -586,15 +586,25 @@
       "rotationDaily": "täglich abwechseln",
       "rotationWeekly": "wöchentlich abwechseln",
       "rotationSchedule": "Plan",
+      "nobody": "Noch niemand",
       "rotatedShort": "← Wechsel",
       "arrow": "→"
     },
     "choreForm": {
       "coverageUncovered": "{days} offen",
+      "groupsLabel": "Gruppen",
+      "peopleLabel": "Personen",
+      "groupsHint": "Alle in einer Gruppe bekommen die Aufgabe. Wer später zur Gruppe kommt, bekommt sie auch.",
+      "groupMemberNote": "In {group}",
+      "emptyGroupNote": "In der gewählten Gruppe ist noch niemand. Bis du jemanden hinzufügst, bekommt niemand diese Aufgabe.",
+      "scheduleNeedsPeople": "Ein Plan gilt für Personen, die du einzeln auswählst. Mit einer Gruppe gibt es ihn deshalb nicht.",
+      "groupsNeedOtherRotation": "Um die Aufgabe einer Gruppe zu geben, wähle hier etwas anderes als \"Plan\". Ein Plan gilt für Personen, die du einzeln auswählst.",
       "validation": {
         "enterName": "Gib der Aufgabe einen Namen",
         "addPersonToSchedule": "Trag mindestens eine Person in den Plan ein",
-        "selectAtLeastOnePerson": "Wähle mindestens eine Person aus"
+        "selectAtLeastOnePerson": "Wähle mindestens eine Person aus",
+        "selectAtLeastOnePersonOrGroup": "Wähle mindestens eine Person oder Gruppe aus",
+        "familyNotReady": "Deine Familie wird noch geladen. Versuch es gleich noch einmal."
       }
     },
     "unknownAssignee": "?"

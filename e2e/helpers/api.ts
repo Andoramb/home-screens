@@ -78,8 +78,8 @@ export async function seedChores(request: APIRequestContext, data: unknown = { c
 
 /** Seed the two stores together while keeping deterministic fixture references. */
 export async function seedHouseholdChores(request: APIRequestContext, sandboxDir: string, data: unknown = CHORE_DATA): Promise<APIResponse> {
-  const d = data as { members: unknown[]; chores: unknown[] };
-  seedFamily(sandboxDir, d.members);
+  const d = data as { members: unknown[]; chores: unknown[]; groups?: unknown[] };
+  seedFamily(sandboxDir, d.members, d.groups ?? []);
   return seedChores(request, { chores: d.chores });
 }
 

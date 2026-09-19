@@ -586,15 +586,25 @@
       "rotationDaily": "rodízio diário",
       "rotationWeekly": "rodízio semanal",
       "rotationSchedule": "agenda",
+      "nobody": "Ninguém ainda",
       "rotatedShort": "← rod",
       "arrow": "→"
     },
     "choreForm": {
       "coverageUncovered": "{days} sem cobertura",
+      "groupsLabel": "Grupos",
+      "peopleLabel": "Pessoas",
+      "groupsHint": "Todos em um grupo recebem a tarefa. Quem entrar no grupo depois também recebe.",
+      "groupMemberNote": "Em {group}",
+      "emptyGroupNote": "Ainda não há ninguém no grupo que você escolheu, então ninguém recebe esta tarefa até você adicionar alguém.",
+      "scheduleNeedsPeople": "Uma agenda é para pessoas que você escolhe uma a uma, por isso não aparece junto com um grupo.",
+      "groupsNeedOtherRotation": "Para dar esta tarefa a um grupo, escolha aqui outra opção que não seja \"Agenda\". Uma agenda é para pessoas que você escolhe uma a uma.",
       "validation": {
         "enterName": "Digite um nome para a tarefa",
         "addPersonToSchedule": "Adicione pelo menos uma pessoa à agenda",
-        "selectAtLeastOnePerson": "Selecione pelo menos uma pessoa"
+        "selectAtLeastOnePerson": "Selecione pelo menos uma pessoa",
+        "selectAtLeastOnePersonOrGroup": "Selecione pelo menos uma pessoa ou um grupo",
+        "familyNotReady": "Sua família ainda está carregando. Tente de novo em instantes."
       }
     },
     "unknownAssignee": "?"

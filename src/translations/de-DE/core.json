@@ -246,7 +246,7 @@
     "removeTimetable": "{name} hat einen Stundenplan, und der wird ebenfalls entfernt.",
     "groups": {
       "title": "Gruppen",
-      "description": "Fasse Personen zusammen, damit ein Kalender \"Kinder\" statt fünf Namen zeigen kann. Eine Person kann in mehreren Gruppen sein.",
+      "description": "Fasse Personen zusammen, damit ein Kalender \"Kinder\" statt fünf Namen zeigen kann und eine Aufgabe an alle auf einmal gehen kann. Eine Person kann in mehreren Gruppen sein.",
       "add": "Gruppe hinzufügen",
       "edit": "Gruppe bearbeiten",
       "name": "Gruppenname",
@@ -254,12 +254,17 @@
       "noMembers": "Noch niemand",
       "editName": "{name} bearbeiten",
       "remove": "Gruppe entfernen",
+      "duplicateName": "Du hast schon eine Gruppe mit dem Namen {name}.",
       "removeTitle": "{name} entfernen?",
       "removeDescription": "Bildschirme, die nur {name} zeigen, zeigen wieder alle. Niemand wird aus der Familie entfernt.",
+      "removeChoreCount": {
+        "one": "{count} Aufgabe geht an {name}. Sie bleibt in deiner Liste und wartet, bis du jemanden auswählst, falls sonst niemand eingetragen ist.",
+        "other": "{count} Aufgaben gehen an {name}. Sie bleiben in deiner Liste, und Aufgaben, bei denen sonst niemand eingetragen ist, warten, bis du jemanden auswählst."
+      },
       "saved": "Gruppen gespeichert.",
       "saveFailed": "Die Gruppen konnten nicht gespeichert werden.",
       "limit": "Du kannst bis zu {count} Gruppen anlegen.",
-      "hint": "Gruppen werden von der Farblegende des Kalenders und seinem Filter \"Nur anzeigen\" verwendet. Aufgaben und Belohnungen werden weiterhin Personen zugewiesen."
+      "hint": "Gruppen werden von der Farblegende des Kalenders und seinem Filter \"Nur anzeigen\" verwendet. Auch eine Aufgabe kann an eine Gruppe gehen. Belohnungen werden weiterhin Personen zugewiesen."
     }
   }
 }

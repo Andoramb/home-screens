@@ -65,7 +65,7 @@ const previewSettings: PreviewSettings = {
   fullscreenTheme: 'midnight',
   timeFormat: undefined,
   calendarPeople: undefined,
-  calendarGroups: undefined,
+  familyGroups: undefined,
   calendarConfigured: true,
 };
 

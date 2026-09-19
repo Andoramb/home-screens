@@ -244,7 +244,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
       calendarPeople: calendarPeopleForFamily(familyMembers, settings.calendar?.personSources),
       calendarPeopleState: !familyRevision && Object.values(settings.calendar?.personSources ?? {}).some((ids) => ids.length > 0)
         ? familyError ? 'failed' : 'loading' : undefined,
-      calendarGroups: familyGroups,
+      familyGroups,
       calendarConfigured: hasAnyCalendarSource(settings.calendar),
     };
   }, [settings, familyMembers, familyGroups, familyRevision, familyError]);

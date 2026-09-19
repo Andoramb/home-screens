@@ -18,6 +18,7 @@ import { uuid } from '@/lib/uuid';
 import { useTranslate } from '@/i18n';
 import { FAMILY_LIMITS, MEMBER_COLORS, type FamilyGroup, type FamilyMember } from '@/types/family';
 import { groupDraftProblem, groupMembers } from '@/lib/family-groups';
+import { choreAssigneeIds } from '@/lib/chore-assignments';
 import { initialsOf } from '@/lib/calendar-people';
 
 const PAGE_SIZE = 12;
@@ -64,14 +65,14 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores, 
   const { members, groups, revision, loading, error, refresh } = useFamilyData();
   const [choreData] = useFetchData<{ chores: ChoreDefinition[] }>(chores ? '' : choresDataUrl(), 60_000);
   const definitions = chores ?? choreData?.chores;
-  const choreCounts = useMemo(() => definitions && new Map(members.map((member) => [member.id, definitions.filter((chore) => chore.assigneeIds.includes(member.id) || Object.hasOwn(chore.schedule ?? {}, member.id)).length])), [members, definitions]);
+  const choreCounts = useMemo(() => definitions && new Map(members.map((member) => [member.id, definitions.filter((chore) => choreAssigneeIds(chore, groups).includes(member.id) || Object.hasOwn(chore.schedule ?? {}, member.id)).length])), [members, groups, definitions]);
   const [timetableData] = useFetchData<{ data: TimetableData }>(timetables ? '' : timetablesUrl(), 60_000);
   const savedTimetables = timetables ?? timetableData?.data?.timetables;
   const hasTimetable = useMemo(() => savedTimetables && new Set(savedTimetables.map((timetable) => timetable.memberId)), [savedTimetables]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [deleting, setDeleting] = useState<{ member: FamilyMember; baseline: FamilySnapshot; choreCount?: number; hasTimetable?: boolean } | null>(null);
   const [groupDraft, setGroupDraft] = useState<GroupDraft | null>(null);
-  const [deletingGroup, setDeletingGroup] = useState<{ group: FamilyGroup; baseline: FamilySnapshot } | null>(null);
+  const [deletingGroup, setDeletingGroup] = useState<{ group: FamilyGroup; baseline: FamilySnapshot; choreCount: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [page, setPage] = useState(0);
@@ -182,7 +183,7 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores, 
         </div>
       </form> : null;
 
-  const groupProblem = groupDraft ? groupDraftProblem(groupDraft.group, members) : null;
+  const groupProblem = groupDraft ? groupDraftProblem(groupDraft.group, members, groupDraft.baseline.groups.filter((group) => group.id !== groupDraft.group.id).map((group) => group.name)) : null;
   const groupForm = groupDraft ? <form data-testid="family-group-form" className={variant === 'mobile' ? 'space-y-5 [&_input]:text-base' : 'space-y-4 rounded-xl border border-hs-border-strong bg-hs-card p-4'} onSubmit={(event) => {
         event.preventDefault();
         if (busy || groupProblem) return;
@@ -193,7 +194,8 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores, 
         {variant === 'desktop' && <h3 className="text-sm font-semibold text-hs-text-primary">{t(groupDraft.isNew ? 'family.groups.add' : 'family.groups.edit')}</h3>}
         <div>
           <label className="mb-1 block text-sm text-hs-text-muted" htmlFor={`${formId}-group-name`}>{t('family.groups.name')}</label>
-          <input id={`${formId}-group-name`} disabled={busy} autoFocus required maxLength={FAMILY_LIMITS.maxGroupNameLength} value={groupDraft.group.name} onChange={(event) => setGroupDraft({ ...groupDraft, group: { ...groupDraft.group, name: event.target.value } })} className="min-h-12 w-full rounded-lg border border-hs-border-strong bg-hs-panel px-3 text-hs-text-primary" />
+          <input id={`${formId}-group-name`} disabled={busy} autoFocus required maxLength={FAMILY_LIMITS.maxGroupNameLength} value={groupDraft.group.name} onChange={(event) => setGroupDraft({ ...groupDraft, group: { ...groupDraft.group, name: event.target.value } })} className="min-h-12 w-full rounded-lg border border-hs-border-strong bg-hs-panel px-3 text-hs-text-primary" aria-describedby={groupProblem === 'duplicate' ? `${formId}-group-name-problem` : undefined} />
+          {groupProblem === 'duplicate' && <p id={`${formId}-group-name-problem`} role="status" className="mt-1 text-sm text-hs-warning">{t('family.groups.duplicateName', { name: groupDraft.group.name.trim() })}</p>}
         </div>
         <fieldset disabled={busy} className="min-w-0">
           <legend className="mb-1 text-sm text-hs-text-muted">{t('family.groups.members')}</legend>
@@ -268,7 +270,7 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores, 
                   </div>
                   <div className="flex shrink-0">
                     <Button variant="ghost" className="min-h-12 min-w-12 px-1" disabled={!editable} aria-label={t('family.groups.editName', { name: group.name })} onClick={() => beginGroupEdit(group)}><Pencil size={16} /></Button>
-                    <Button variant="ghost" className="min-h-12 min-w-12 px-1 text-hs-danger" disabled={!editable} aria-label={t('family.groups.removeTitle', { name: group.name })} onClick={() => { const baseline = snapshot(); if (baseline) setDeletingGroup({ group, baseline }); }}><Trash2 size={16} /></Button>
+                    <Button variant="ghost" className="min-h-12 min-w-12 px-1 text-hs-danger" disabled={!editable} aria-label={t('family.groups.removeTitle', { name: group.name })} onClick={() => { const baseline = snapshot(); if (baseline) setDeletingGroup({ group, baseline, choreCount: definitions?.filter((chore) => chore.assigneeGroupIds?.includes(group.id)).length ?? 0 }); }}><Trash2 size={16} /></Button>
                   </div>
                 </div>
               );
@@ -287,7 +289,7 @@ export default function FamilyManager({ onChanged, variant = 'desktop', chores, 
         onConfirm={() => void save(deleting.baseline, deleting.baseline.members.filter((member) => member.id !== deleting.member.id), [deleting.member.id])} />}
       {deletingGroup && <ConfirmRemove
         title={t('family.groups.removeTitle', { name: deletingGroup.group.name })}
-        body={t('family.groups.removeDescription', { name: deletingGroup.group.name })}
+        body={[deletingGroup.choreCount > 0 && t('family.groups.removeChoreCount', { name: deletingGroup.group.name, count: deletingGroup.choreCount }), t('family.groups.removeDescription', { name: deletingGroup.group.name })].filter(Boolean).join(' ')}
         confirmLabel={t('family.groups.remove')}
         variant={variant} busy={busy} onCancel={() => setDeletingGroup(null)}
         onConfirm={() => void saveGroups(deletingGroup.baseline, deletingGroup.baseline.groups.filter((group) => group.id !== deletingGroup.group.id))} />}

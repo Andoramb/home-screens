@@ -35,6 +35,9 @@ import {
   fitRowHeight,
   fitDotSize,
   fitDotsInRoom,
+  groupPillMetrics,
+  groupPillMinRow,
+  groupPillPadY,
   shouldStack,
   splitInOrder,
 } from './helpers';
@@ -122,7 +125,7 @@ export default function FullscreenChoreChartModule({
   const pad = 40 * k * d;
   const weekProgress = config.weekProgress ?? 'chips';
 
-  const { todayAssignments, memberStats, weekData, members, chores, rewards, recentRedemptions, allRedemptions, toggleComplete } = useChoreData(config);
+  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete } = useChoreData(config);
   const allowTouch = config.allowDisplayComplete ?? true;
   const byPerson = (config.layout ?? 'by-time') === 'by-person';
   // Who is on the chart: chips for people with chores today, one line for a
@@ -204,7 +207,7 @@ export default function FullscreenChoreChartModule({
 
   // Build chore rows grouped by time-of-day; dots keep household order.
   const memberOrder = useMemo(() => new Map(members.map((m, i) => [m.id, i])), [members]);
-  const choreGroups = useMemo(() => buildChoreRows(todayAssignments, memberOrder), [todayAssignments, memberOrder]);
+  const choreGroups = useMemo(() => buildChoreRows(todayAssignments, memberOrder, groups), [todayAssignments, memberOrder, groups]);
 
   // Overall completion
   const totalChores = todayAssignments.length;
@@ -352,15 +355,29 @@ export default function FullscreenChoreChartModule({
   // the fitted height for its second line, and the cell scrolls if it must.
   const cellShapes = cells.map((cell) => {
     let widest = 0;
-    for (const sec of cell) for (const row of sec.rows) widest = Math.max(widest, row.assignees.length);
+    // A group pill adds its label and padding around the dots; the widest
+    // one in the cell is set aside before the dots are sized.
+    let pillExtra = 0;
+    for (const sec of cell) for (const row of sec.rows) {
+      widest = Math.max(widest, row.assignees.length);
+      if (row.groupLabel) pillExtra = Math.max(pillExtra, groupPillMetrics(row.groupLabel, nameSize, dotBase, row.groupExtra).extra);
+    }
     // A wide column keeps dots beside the name and shrinks them to fit; only
     // a narrow column stacks.
-    const stacked = columnWidth < STACK_COLUMN_REF * k && shouldStack(widest, dotBase, rowWidth - iconRoom);
+    const stacked = columnWidth < STACK_COLUMN_REF * k && shouldStack(widest, dotBase, rowWidth - iconRoom, pillExtra);
     const dotSize = stacked
-      ? fitDotsInRoom(dotBase, widest, rowWidth - nameSize * 0.6 - iconRoom)
-      : fitDotsInRoom(dotBase, widest, (rowWidth - iconRoom) * 0.4);
-    const stackedNeed = nameSize * 1.15 + nameSize * 0.35 + dotSize + nameSize * 0.8;
-    const cellRowHeight = stacked ? Math.max(rowHeight, stackedNeed) : rowHeight;
+      ? fitDotsInRoom(dotBase, widest, rowWidth - nameSize * 0.6 - iconRoom - pillExtra)
+      // Beside the name, a pill's label and padding come out of the name's
+      // share, not the dots': the rings are the tap targets and stay full
+      // size, and a long name wraps. Only when dots and pill together would
+      // pass three fifths of the row do the dots give way too.
+      : fitDotsInRoom(dotBase, widest, Math.min((rowWidth - iconRoom) * 0.4, (rowWidth - iconRoom) * 0.6 - pillExtra));
+    // A pill is taller than its dots by its own top and bottom padding.
+    const stackedNeed = nameSize * 1.15 + nameSize * 0.35 + dotSize + (pillExtra > 0 ? groupPillPadY(nameSize, dotSize, undefined) * 2 + 2 : 0) + nameSize * 0.8;
+    // A flat row holding a pill is never shorter than the pill: on a dense
+    // chart the ring alone may take nine tenths of the fitted row.
+    const flatNeed = pillExtra > 0 ? Math.max(rowHeight, groupPillMinRow(nameSize, dotSize)) : rowHeight;
+    const cellRowHeight = stacked ? Math.max(rowHeight, stackedNeed) : flatNeed;
     // On a light day the rows stop at the cap and the slack goes between the
     // bands (up to three gaps' worth each); what is left stays at the bottom.
     const rows = cell.reduce((sum, sec) => sum + sec.rows.length, 0);

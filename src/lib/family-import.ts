@@ -114,7 +114,7 @@ export async function planFamilyRestore(body: FamilyRestoreContent): Promise<{ c
   }
   const configTransformed = sourceConfig !== json(nextConfig);
   if (configTransformed) files.set('data/config.json', nextConfig);
-  const referenceEvidence = await validateRestoredReferences(files, new Set(merged.family.members.map((member) => member.id)));
+  const referenceEvidence = await validateRestoredReferences(files, new Set(merged.family.members.map((member) => member.id)), new Set((merged.family.groups ?? []).map((group) => group.id)));
   const changes: TransactionChange[] = configTransformed && sourceConfigRaw !== null ? [planConfigMigrationBackup(sourceConfigRaw)] : [];
   for (const [path, value] of files) {
     const before = await readTransactionFile(path);
@@ -159,7 +159,7 @@ function parseSavedObject(raw: string | null, fallback: Record<string, unknown>,
  * disk when the bundle carries none), applies the plan and gathers evidence.
  * Only the in-memory after-images change here; nothing is written.
  */
-async function validateRestoredReferences(files: Map<string, unknown>, members: Set<string>) {
+async function validateRestoredReferences(files: Map<string, unknown>, members: Set<string>, groups: Set<string>) {
   const evidence: Record<string, Record<string, unknown>> = {};
   const missing: string[] = [];
   for (const domain of MEMBER_REFERENCE_DOMAINS) {
@@ -179,7 +179,7 @@ async function validateRestoredReferences(files: Map<string, unknown>, members: 
       if (domain.unreadable === 'skip') continue;
       throw new Error(`${domain.path} must contain an object.`);
     }
-    const plan = domain.planRestore(value, members);
+    const plan = domain.planRestore(value, members, groups);
     if (plan.doc) files.set(domain.path, plan.doc);
     missing.push(...plan.missing);
     // Domains that share a policy share a key (chore history and reward
@@ -187,7 +187,7 @@ async function validateRestoredReferences(files: Map<string, unknown>, members: 
     for (const [key, records] of Object.entries(plan.evidence)) evidence[key] = { ...evidence[key], ...records };
   }
   if (missing.length > 0) throw new FamilyError(
-    `Restore stopped because these assignments name people missing from the restored family:\n${missing.join('\n')}\nRestore a backup containing their family records, or remove these assignments from the named records and retry.`,
+    `Restore stopped because these assignments name people or groups missing from the restored family:\n${missing.join('\n')}\nRestore a backup containing their family records, or remove these assignments from the named records and retry.`,
   );
   return evidence;
 }

@@ -33,9 +33,6 @@ export const PUT = withAuth(async (request: NextRequest) => withFamilyData(async
   if (rewards.some((reward) => !reward || !Array.isArray(reward.memberIds))) {
     return NextResponse.json({ error: 'Each reward needs a member list.' }, { status: 400 });
   }
-  const references = await validateMemberReferences(rewards.flatMap((reward) => reward.memberIds));
-  if (references) return references;
-
   // A list that cannot be read has nothing to compare against; the write is
   // what repairs it, and the empty guard below keeps its own reading.
   let current: RewardDefinition[] | null = null;
@@ -48,6 +45,13 @@ export const PUT = withAuth(async (request: NextRequest) => withFamilyData(async
       revision: contentRevision(current),
     }, { status: 409 });
   }
+
+  // After the revision check on purpose. Removing a person takes them off
+  // every reward in the same commit, so a page still naming them holds an old
+  // list: it must get the current one back above, which is what lets it
+  // recover, rather than a refusal it can never save its way out of.
+  const references = await validateMemberReferences(rewards.flatMap((reward) => reward.memberIds));
+  if (references) return references;
 
   const guard = await guardEmptyOverwrite([rewards], async () => [current ?? []], 'reward', force);
   if (guard) return guard;

@@ -21,10 +21,21 @@ export function pruneGroupMembers(groups: readonly FamilyGroup[] | undefined, re
   });
 }
 
-/** Why a group draft cannot be saved, or null when it can. */
-export function groupDraftProblem(draft: { name: string; memberIds: readonly string[] }, members: readonly FamilyMember[]): 'name' | 'nameLength' | 'members' | null {
+/** Two group names a person would read as the same one: spacing and capitals aside. */
+export function sameGroupName(a: string, b: string): boolean {
+  const fold = (name: string) => name.trim().replace(/\s+/g, ' ').toLocaleLowerCase();
+  return fold(a) === fold(b);
+}
+
+/**
+ * Why a group draft cannot be saved, or null when it can. `otherNames` are
+ * the household's other groups: a group is picked by name on the chore form
+ * and the calendar filter, so two called "Kids" cannot be told apart.
+ */
+export function groupDraftProblem(draft: { name: string; memberIds: readonly string[] }, members: readonly FamilyMember[], otherNames: readonly string[]): 'name' | 'nameLength' | 'duplicate' | 'members' | null {
   if (!draft.name.trim()) return 'name';
   if (draft.name.trim().length > FAMILY_LIMITS.maxGroupNameLength) return 'nameLength';
+  if (otherNames.some((name) => sameGroupName(name, draft.name))) return 'duplicate';
   const known = new Set(members.map((member) => member.id));
   if (draft.memberIds.some((id) => !known.has(id))) return 'members';
   return null;

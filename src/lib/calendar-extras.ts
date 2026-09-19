@@ -1,6 +1,6 @@
 import type { FamilyMember } from '@/types/family';
 import type { ChoreCompletion, ChoreDefinition, MealSettings, MealSlotType, PlannedMeal, SavedMeal } from '@/types/config';
-import { completionKey, resolveAssignmentsFor } from '@/lib/chore-assignments';
+import { completionKey, resolveAssignmentsFor, type ChoreGroup } from '@/lib/chore-assignments';
 import { SLOT_ORDER, resolveMealWithEntry } from '@/lib/meal-constants';
 
 /**
@@ -47,6 +47,7 @@ export interface MealsSource {
 
 export interface ChoresSource {
   members: FamilyMember[];
+  groups: ChoreGroup[];
   chores: ChoreDefinition[];
   completions: ChoreCompletion[];
 }
@@ -78,7 +79,7 @@ export function buildExtrasIndex(opts: {
     }
     let chores: DayChoreExtra | null = null;
     if (opts.chores) {
-      const assignments = resolveAssignmentsFor(opts.chores.chores, opts.chores.members, date, completionSet);
+      const assignments = resolveAssignmentsFor(opts.chores.chores, opts.chores.members, date, completionSet, opts.chores.groups);
       if (assignments.length > 0) {
         const seen = new Set(assignments.map((a) => a.memberId));
         chores = {

@@ -212,4 +212,64 @@ describe('PUT /api/chores/data', () => {
     expect(writeChoreData).not.toHaveBeenCalled();
   });
 
+  describe('chores handed to a group', () => {
+    const member = { id: 'm1', name: 'Alice', color: '#ff0000', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' };
+    const kids = { id: 'kids', name: 'Kids', memberIds: ['m1'], createdAt: member.createdAt, updatedAt: member.updatedAt };
+    const groupChore = { id: 'c1', name: 'Dishes', emoji: 'dish', frequency: 'daily', assigneeIds: [], assigneeGroupIds: ['kids'] };
+
+    it('saves a chore that names a group and nobody directly', async () => {
+      vi.mocked(readFamilyData).mockResolvedValue({ members: [member], groups: [kids] });
+      const res = await PUT(await makeCurrentPutRequest({ chores: [groupChore] }));
+      expect(res.status).toBe(200);
+      expect(writeChoreData).toHaveBeenCalledWith({ chores: [groupChore] });
+    });
+
+    it('refuses a chore newly pointed at a group that was removed', async () => {
+      const res = await PUT(await makeCurrentPutRequest({ chores: [groupChore] }));
+      expect(res.status).toBe(409);
+      expect(writeChoreData).not.toHaveBeenCalled();
+    });
+
+    it('hands a page holding an old chore list the current one, even when it names a removed group', async () => {
+      const current = [{ ...groupChore, assigneeGroupIds: undefined }];
+      vi.mocked(readChoreData).mockResolvedValue({ chores: current } as never);
+      const stale = new NextRequest('http://localhost/api/chores/data', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chores: [groupChore], revision: contentRevision([groupChore]) }),
+      });
+      const res = await PUT(stale);
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ reason: 'revision', revision: contentRevision(current) });
+    });
+
+    it('hands a page holding an old chore list the current one, even when it names a removed person', async () => {
+      const current = [{ id: 'c1', name: 'Dishes', emoji: 'dish', frequency: 'daily', assigneeIds: ['m1'] }];
+      const held = [{ ...current[0], assigneeIds: ['m1', 'gone'] }];
+      vi.mocked(readChoreData).mockResolvedValue({ chores: current } as never);
+      const res = await PUT(new NextRequest('http://localhost/api/chores/data', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chores: held, revision: contentRevision(held) }),
+      }));
+      expect(res.status).toBe(409);
+      expect(await res.json()).toMatchObject({ reason: 'revision', chores: current });
+    });
+
+    it('still refuses a removed person on a save built from the current list', async () => {
+      const res = await PUT(await makeCurrentPutRequest({ chores: [{ id: 'c1', name: 'Dishes', emoji: 'dish', frequency: 'daily', assigneeIds: ['gone'] }] }));
+      expect(res.status).toBe(409);
+      expect((await res.json()).reason).toBeUndefined();
+      expect(writeChoreData).not.toHaveBeenCalled();
+    });
+
+    it('saves a chore that a removed group left with nobody', async () => {
+      const res = await PUT(await makeCurrentPutRequest({ chores: [{ ...groupChore, assigneeGroupIds: undefined }] }));
+      expect(res.status).toBe(200);
+    });
+
+    it('refuses a group list that is not a list of ids', async () => {
+      const res = await PUT(await makeCurrentPutRequest({ chores: [{ ...groupChore, assigneeGroupIds: 'kids' }] }));
+      expect(res.status).toBe(400);
+    });
+  });
+
 });

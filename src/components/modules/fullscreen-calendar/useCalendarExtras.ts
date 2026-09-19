@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import { useFetchData } from '@/hooks/useFetchData';
 import { choresDataUrl, choresUrl, familyUrl, mealsDataUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { normalizeMealSettings } from '@/lib/meal-constants';
@@ -10,7 +10,7 @@ import type { ChoreCompletion, ChoreDefinition, PlannedMeal, SavedMeal } from '@
 
 interface MealsResponse { savedMeals?: SavedMeal[]; plan?: PlannedMeal[]; settings?: unknown }
 interface ChoreDataResponse { chores?: ChoreDefinition[] }
-interface FamilyResponse { members?: FamilyMember[] }
+interface FamilyResponse { members?: FamilyMember[]; groups?: FamilyGroup[] }
 interface CompletionsResponse { completions?: ChoreCompletion[] }
 
 /**
@@ -50,7 +50,7 @@ export function useCalendarExtras(
         ? { plan: meals.plan ?? [], savedMeals: meals.savedMeals ?? [], settings: normalizeMealSettings(meals.settings) }
         : null,
       chores: enabled.chores && choreData
-        ? { members: family?.members ?? [], chores: choreData.chores ?? [], completions: completions?.completions ?? [] }
+        ? { members: family?.members ?? [], groups: family?.groups ?? [], chores: choreData.chores ?? [], completions: completions?.completions ?? [] }
         : null,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- meals/choreData/completions are represented by contentKey

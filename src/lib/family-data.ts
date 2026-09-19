@@ -9,7 +9,8 @@ import { migrateUp } from './migrations';
 import { planConfigMigrationBackup } from './config-migration-backup';
 import { FamilyError } from './family-errors';
 import { MEMBER_REFERENCE_DOMAINS } from './member-references';
-import { pruneGroupMembers } from './family-groups';
+import { removeChoreGroups } from './member-references/chores';
+import { pruneGroupMembers, sameGroupName } from './family-groups';
 export { FamilyError } from './family-errors';
 
 export { validateFamilyData } from './family-merge';
@@ -231,7 +232,9 @@ export interface ReplaceGroupsInput { groups: FamilyGroupInput[]; revision: stri
  * Replace the whole group list against a revision, the same way the member
  * list is saved. Names are trimmed, unknown members are refused rather than
  * dropped (a stale phone must not silently shrink a group), and timestamps
- * move only when a group actually changed.
+ * move only when a group actually changed. A group that is gone comes off
+ * the chores that named it in the same commit, so no chore is ever left
+ * pointing at a group that does not exist.
  */
 export async function replaceFamilyGroups(input: ReplaceGroupsInput): Promise<FamilyResponse> {
   return withDataTransaction(async () => {
@@ -262,8 +265,20 @@ export async function replaceFamilyGroups(input: ReplaceGroupsInput): Promise<Fa
       const changed = name !== existing.name || ordered.join('\n') !== existing.memberIds.join('\n');
       return { ...existing, name, memberIds: ordered, updatedAt: changed ? now : existing.updatedAt };
     });
+    // A group is picked by name, so two that read the same cannot be told apart.
+    const repeated = groups.find((group, index) => groups.some((other, at) => at < index && sameGroupName(other.name, group.name)));
+    if (repeated) throw new FamilyError(`You already have a group called ${repeated.name}.`);
     const family: FamilyData = { ...current, groups, migrated: true };
-    await commitDataTransaction({ kind: 'family-groups', changes: [{ path: FAMILY_FILE_PATH, before: await readTransactionFile(FAMILY_FILE_PATH), after: json(family) }] });
+    const changes: TransactionChange[] = [{ path: FAMILY_FILE_PATH, before: await readTransactionFile(FAMILY_FILE_PATH), after: json(family) }];
+    const kept = new Set(groups.map((group) => group.id));
+    const removed = new Set([...byId.keys()].filter((id) => !kept.has(id)));
+    const choreRaw = removed.size > 0 ? await readTransactionFile('data/chores.json') : null;
+    if (choreRaw !== null) {
+      const before = parseObject(choreRaw, {}, 'chores.json');
+      const next = removeChoreGroups(before, removed);
+      if (next !== before) changes.push({ path: 'data/chores.json', before: choreRaw, after: json(next) });
+    }
+    await commitDataTransaction({ kind: 'family-groups', changes });
     return familyResponse(family);
   });
 }

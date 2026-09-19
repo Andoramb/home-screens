@@ -441,13 +441,13 @@ Every member appears, including those with no chores that day (empty `chores` ar
 
 ### GET /api/chores/data
 
-Returns `{ "chores": [...] }` from `data/chores.json`. Display access. Each definition contains `id`, `name`, `emoji`, `points`, frequency fields, `assigneeIds`, rotation and an optional schedule. Member IDs refer to the roster returned by `/api/family`.
+Returns `{ "chores": [...], "revision": "..." }` from `data/chores.json`. Display access. A save has to quote the `revision` back. Each definition contains `id`, `name`, `emoji`, `points`, frequency fields, `assigneeIds`, an optional `assigneeGroupIds`, rotation and an optional schedule. Member IDs and group IDs refer to the `members` and `groups` returned by `/api/family`. `GET /api/chores/today` already expands groups for you.
 
 ### PUT /api/chores/data
 
-Replaces the chore definitions. Requires a valid session. Send `{ "chores": [...] }`. An empty replacement of non-empty chore data requires `force: true`. Payloads containing the former `members` field are rejected with a refresh-required error; use `/api/family` for family edits. Assignments must refer to current family members.
+Replaces the chore definitions. Requires a valid session. Send `{ "chores": [...], "revision": "..." }` with the revision the edit started from; a save without one is answered with `400`. An empty replacement of non-empty chore data requires `force: true`. Payloads containing the former `members` field are rejected with a refresh-required error; use `/api/family` for family edits. Assignments must refer to current family members and groups; one that does not is answered with `409`. A list built from an older copy is also answered with `409`, with `reason: "revision"` and the current list, so reload and apply the change again.
 
-**Response:** The saved `{ "chores": [...] }` object.
+**Response:** The saved `{ "chores": [...], "revision": "..." }`, where `revision` is the one to quote on the next save.
 
 ---
 

@@ -46,10 +46,11 @@ export const GET = withDisplayAuth(async (request: NextRequest) => withFamilyDat
     ),
   );
 
+  const groups = family.groups ?? [];
   const members = family.members.map((m) => ({
     id: m.id,
     name: m.name,
-    chores: choresAssignedTo(data.chores, m.id, date).map((c) => ({
+    chores: choresAssignedTo(data.chores, m.id, date, groups).map((c) => ({
       id: c.id,
       name: c.name,
       points: c.points,

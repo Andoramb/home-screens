@@ -246,7 +246,7 @@
     "removeTimetable": "{name} heeft een rooster, en dat wordt ook verwijderd.",
     "groups": {
       "title": "Groepen",
-      "description": "Zet mensen bij elkaar zodat een kalender \"Kinderen\" kan tonen in plaats van vijf namen. Iemand kan in meer dan één groep zitten.",
+      "description": "Zet mensen bij elkaar zodat een kalender \"Kinderen\" kan tonen in plaats van vijf namen, en een taak in één keer naar hen allemaal kan gaan. Iemand kan in meer dan één groep zitten.",
       "add": "Groep toevoegen",
       "edit": "Groep bewerken",
       "name": "Groepsnaam",
@@ -254,12 +254,17 @@
       "noMembers": "Nog niemand",
       "editName": "{name} bewerken",
       "remove": "Groep verwijderen",
+      "duplicateName": "Je hebt al een groep die {name} heet.",
       "removeTitle": "{name} verwijderen?",
       "removeDescription": "Schermen die alleen {name} tonen, tonen weer iedereen. Niemand wordt uit het gezin verwijderd.",
+      "removeChoreCount": {
+        "one": "{count} taak gaat naar {name}. Hij blijft in je lijst staan en wacht tot je iemand kiest als er verder niemand op staat.",
+        "other": "{count} taken gaan naar {name}. Ze blijven in je lijst staan, en taken waar verder niemand op staat wachten tot je iemand kiest."
+      },
       "saved": "Groepen opgeslagen.",
       "saveFailed": "De groepen konden niet worden opgeslagen.",
       "limit": "Je kunt maximaal {count} groepen maken.",
-      "hint": "Groepen worden gebruikt door de kleurlegenda van de kalender en het filter \"Alleen tonen\". Taken en beloningen blijven aan personen toegewezen."
+      "hint": "Groepen worden gebruikt door de kleurlegenda van de kalender en het filter \"Alleen tonen\". Een taak kan ook naar een groep gaan. Beloningen geef je nog steeds aan personen."
     }
   }
 }

@@ -12,7 +12,7 @@ import CRUDModalShell from '@/components/editor/CRUDModalShell';
 import { MODAL_INPUT_CLASS } from '@/components/ui/input-classes';
 import { useTranslate, useFormattingLocale } from '@/i18n';
 import { useConfirmStore } from '@/stores/confirm-store';
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type {
   ChoreDefinition,
   ChoreResetFrequency,
@@ -22,6 +22,7 @@ import type {
 import {
   getOrderedDays,
   resolveAssignee,
+  choreAssigneeIds,
   choreAppliesToday,
   localDateStr,
   addChoreToList,
@@ -35,7 +36,8 @@ import ChoreIcon, {
 } from '@/components/modules/chore-chart/ChoreIcon';
 import IconPicker from '@/components/modules/chore-chart/IconPicker';
 import { useChoreForm, useChoreLabelMaps } from '@/components/modules/chore-chart/form-hooks';
-import { buildChoreSummaryLine } from '@/components/modules/chore-chart/chore-form-presentation';
+import { buildChoreAssigneeLine, buildChoreSummaryLine, getChoreRotationSummaryKey } from '@/components/modules/chore-chart/chore-form-presentation';
+import { groupMembers } from '@/lib/family-groups';
 import { CHORE_FREQUENCIES, CHORE_ROTATIONS } from '@/lib/chore-constants';
 
 // ── Props ─────────────────────────────────────────────────────────
@@ -51,12 +53,17 @@ interface ChoreChartModalProps {
 function ChoreForm({
   initial,
   members,
+  groups,
+  familyReady,
   submitLabel,
   onSubmit,
   onCancel,
 }: {
   initial?: ChoreDefinition;
   members: FamilyMember[];
+  groups: FamilyGroup[];
+  /** False until the family list has loaded; the form holds saves until then. */
+  familyReady: boolean;
   submitLabel: string;
   onSubmit: (data: Omit<ChoreDefinition, 'id'>) => void;
   onCancel: () => void;
@@ -73,13 +80,13 @@ function ChoreForm({
     [formattingLocale],
   );
 
-  const f = useChoreForm(initial, members);
+  const f = useChoreForm(initial, members, groups, familyReady);
   const {
     name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay,
-    assigneeIds, rotation, schedule,
+    assigneeIds, assigneeGroupIds, rotation, schedule, canRotate, scheduleAllowed, coveredByGroup, goesToNobody,
     setName, setEmoji, setPoints, setFrequency, setSpecificDate, setTimeOfDay,
     switchToSchedule, switchFromSchedule, setRotation,
-    toggleDay, toggleAssignee, toggleScheduleDay, addMemberToSchedule,
+    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule,
     scheduleMembers, scheduleDays, unscheduledMembers,
     canSave, validationHintKind,
   } = f;
@@ -184,16 +191,50 @@ function ChoreForm({
           {/* Assignees */}
           <div className="space-y-1.5">
             <span className="text-xs text-hs-text-muted">{t('choreChartModal.choreForm.assignToLabel')}</span>
+            {/* A household that never made a group sees the form it always had. */}
+            {groups.length > 0 && (
+              <>
+                <div className="text-[11px] text-hs-text-faint">{tModules('chore-chart.choreForm.groupsLabel')}</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {groups.map((group) => (
+                    <button
+                      key={group.id}
+                      type="button"
+                      aria-pressed={assigneeGroupIds.includes(group.id)}
+                      title={groupMembers(group, members).map((m) => m.name).join(', ')}
+                      onClick={() => toggleGroup(group.id)}
+                      className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all ${
+                        assigneeGroupIds.includes(group.id)
+                          ? 'bg-hs-accent-soft text-hs-accent ring-1 ring-hs-accent/30'
+                          : 'bg-hs-card text-hs-text-faint hover:bg-hs-hover'
+                      }`}
+                    >
+                      <span>{group.name}</span>
+                      <span className="opacity-70">{groupMembers(group, members).length}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className={`text-[11px] ${goesToNobody ? 'text-hs-warning' : 'text-hs-text-faint'}`}>
+                  {tModules(goesToNobody ? 'chore-chart.choreForm.emptyGroupNote' : 'chore-chart.choreForm.groupsHint')}
+                </p>
+                <div className="text-[11px] text-hs-text-faint">{tModules('chore-chart.choreForm.peopleLabel')}</div>
+              </>
+            )}
             <div className="flex flex-wrap gap-1.5">
               {members.map((m) => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => toggleAssignee(m.id)}
+                  // Ticking a group does not tick its people, so show who it already covers.
+                  title={coveredByGroup.has(m.id) ? tModules('chore-chart.choreForm.groupMemberNote', { group: coveredByGroup.get(m.id)!.join(', ') }) : undefined}
+                  data-covered-by-group={coveredByGroup.has(m.id) || undefined}
                   className={`flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all ${
                     assigneeIds.includes(m.id)
                       ? 'bg-hs-accent-soft text-hs-accent ring-1 ring-hs-accent/30'
-                      : 'bg-hs-card text-hs-text-faint hover:bg-hs-hover'
+                      : coveredByGroup.has(m.id)
+                        ? 'bg-hs-card text-hs-text-secondary outline-dashed outline-1 outline-hs-accent/50 hover:bg-hs-hover'
+                        : 'bg-hs-card text-hs-text-faint hover:bg-hs-hover'
                   }`}
                 >
                   {m.emoji && <ChoreIcon value={m.emoji} size={14} color="currentColor" />}
@@ -289,7 +330,7 @@ function ChoreForm({
       {members.length === 0 && <FamilyManager />}
 
       {/* Rotation (only when 2+ assignees and not a one-time chore) */}
-      {frequency !== 'once' && (assigneeIds.length >= 2 || rotation === 'schedule') && (
+      {frequency !== 'once' && canRotate && (
         <label className="flex flex-col gap-0.5">
           <span className="text-xs text-hs-text-muted">{t('fields.rotation')}</span>
           <select
@@ -302,10 +343,13 @@ function ChoreForm({
             }}
             className={MODAL_INPUT_CLASS}
           >
-            {CHORE_ROTATIONS.map((opt) => (
+            {CHORE_ROTATIONS.filter((opt) => opt.value !== 'schedule' || scheduleAllowed).map((opt) => (
               <option key={opt.value} value={opt.value}>{rotationLabelMap[opt.value]}</option>
             ))}
           </select>
+          {!scheduleAllowed && <span className="text-[11px] text-hs-text-faint">{tModules('chore-chart.choreForm.scheduleNeedsPeople')}</span>}
+          {/* The other direction: a schedule hides the group picker along with the people list. */}
+          {rotation === 'schedule' && groups.length > 0 && <span className="text-[11px] text-hs-text-faint">{tModules('chore-chart.choreForm.groupsNeedOtherRotation')}</span>}
         </label>
       )}
 
@@ -331,11 +375,13 @@ function ChoreForm({
 function WeeklyPreview({
   chores,
   members,
+  groups,
   weekStartDay,
   accentColor,
 }: {
   chores: ChoreDefinition[];
   members: FamilyMember[];
+  groups: FamilyGroup[];
   weekStartDay: 'sunday' | 'monday';
   accentColor: string;
 }) {
@@ -375,7 +421,7 @@ function WeeklyPreview({
 
       for (const chore of chores) {
         if (!choreAppliesToday(chore, day, dateStr)) continue;
-        const assignees = resolveAssignee(chore, dateStr);
+        const assignees = resolveAssignee(chore, dateStr, groups);
         for (const aid of assignees) {
           if (counts[aid]) {
             counts[aid].chores++;
@@ -387,7 +433,7 @@ function WeeklyPreview({
 
     return counts;
   // eslint-disable-next-line react-hooks/exhaustive-deps -- getWeekDate is stable within a render (depends only on weekStartDow)
-  }, [chores, members, days]);
+  }, [chores, members, groups, days]);
 
   return (
     <div className="space-y-3">
@@ -414,8 +460,8 @@ function WeeklyPreview({
               <div className="text-[11px] text-hs-text-faint pl-2">{t('choreChartModal.preview.noChores')}</div>
             ) : (
               dayChores.map((chore) => {
-                const assignees = resolveAssignee(chore, dateStr);
-                const isRotated = chore.rotation !== 'fixed' && chore.assigneeIds.length > 1;
+                const assignees = resolveAssignee(chore, dateStr, groups);
+                const isRotated = chore.rotation !== 'fixed' && choreAssigneeIds(chore, groups).length > 1;
                 return (
                   <div
                     key={chore.id}
@@ -475,6 +521,7 @@ function WeeklyPreview({
 interface ChoreColumnProps {
   chores: ChoreDefinition[];
   members: FamilyMember[];
+  groups: FamilyGroup[];
   choreSearch: string;
   showAddChore: boolean;
   editingChoreId: string | null;
@@ -487,6 +534,7 @@ interface ChoreColumnProps {
 function ChoreColumn({
   chores,
   members,
+  groups,
   choreSearch,
   showAddChore,
   editingChoreId,
@@ -542,12 +590,8 @@ function ChoreColumn({
         {chores
           .filter((c) => !choreSearch || c.name.toLowerCase().includes(choreSearch.toLowerCase()))
           .map((chore) => {
-            let rotationSuffix: string | null = null;
-            if ((chore.rotation !== 'fixed' && chore.assigneeIds.length > 1) || chore.rotation === 'schedule') {
-              if (chore.rotation === 'rotate-daily') rotationSuffix = tModules('chore-chart.choreSummary.rotationDaily');
-              else if (chore.rotation === 'rotate-weekly') rotationSuffix = tModules('chore-chart.choreSummary.rotationWeekly');
-              else rotationSuffix = tModules('chore-chart.choreSummary.rotationSchedule');
-            }
+            const rotationKey = getChoreRotationSummaryKey(chore, groups);
+            const rotationSuffix = rotationKey ? tModules(rotationKey) : null;
             return (
             <div
               key={chore.id}
@@ -573,9 +617,9 @@ function ChoreColumn({
                 </div>
                 <div className="text-[11px] text-hs-text-muted mt-0.5">
                   {tModules('chore-chart.choreSummary.arrow')}{' '}
-                  {chore.assigneeIds
-                    .map((id) => members.find((m) => m.id === id)?.name ?? '?')
-                    .join(', ')}
+                  <span className={choreAssigneeIds(chore, groups).length === 0 && chore.rotation !== 'schedule' ? 'text-hs-warning' : undefined}>
+                    {buildChoreAssigneeLine({ chore, members, groups, unknownLabel: tModules('chore-chart.unknownAssignee'), nobodyLabel: tModules('chore-chart.choreSummary.nobody') })}
+                  </span>
                   {rotationSuffix && (
                     <span className="text-hs-text-faint">
                       {' '}({rotationSuffix})
@@ -617,6 +661,8 @@ function ChoreColumn({
 interface PreviewColumnProps {
   chores: ChoreDefinition[];
   members: FamilyMember[];
+  groups: FamilyGroup[];
+  familyReady: boolean;
   showAddChore: boolean;
   editingChoreId: string | null;
   weekStartDay: 'sunday' | 'monday';
@@ -630,6 +676,8 @@ interface PreviewColumnProps {
 function PreviewColumn({
   chores,
   members,
+  groups,
+  familyReady,
   showAddChore,
   editingChoreId,
   weekStartDay,
@@ -656,6 +704,8 @@ function PreviewColumn({
         {showAddChore ? (
           <ChoreForm
             members={members}
+            groups={groups}
+            familyReady={familyReady}
             submitLabel={t('choreChartModal.choreForm.addSubmit')}
             onSubmit={addChore}
             onCancel={() => setShowAddChore(false)}
@@ -665,6 +715,8 @@ function PreviewColumn({
             key={editingChoreId}
             initial={chores.find((c) => c.id === editingChoreId)}
             members={members}
+            groups={groups}
+            familyReady={familyReady}
             submitLabel={t('choreChartModal.choreForm.saveSubmit')}
             onSubmit={(data) => updateChore(editingChoreId, data)}
             onCancel={() => setEditingChoreId(null)}
@@ -679,6 +731,7 @@ function PreviewColumn({
           <WeeklyPreview
             chores={chores}
             members={members}
+            groups={groups}
             weekStartDay={weekStartDay}
             accentColor={accentColor}
           />
@@ -697,7 +750,7 @@ export default function ChoreChartModal({
 }: ChoreChartModalProps) {
   const t = useTranslate('editor');
   const tCore = useTranslate('core');
-  const { members } = useFamilyData();
+  const { members, groups, revision: familyRevision } = useFamilyData();
   const [chores, setChores] = useState<ChoreDefinition[]>([]);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -824,6 +877,7 @@ export default function ChoreChartModal({
           <ChoreColumn
             chores={chores}
             members={members}
+            groups={groups}
             choreSearch={choreSearch}
             showAddChore={showAddChore}
             editingChoreId={editingChoreId}
@@ -835,6 +889,8 @@ export default function ChoreChartModal({
           <PreviewColumn
             chores={chores}
             members={members}
+            groups={groups}
+            familyReady={familyRevision !== null}
             showAddChore={showAddChore}
             editingChoreId={editingChoreId}
             weekStartDay={weekStartDay}

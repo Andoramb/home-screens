@@ -56,10 +56,18 @@ async function getChoreData(request: APIRequestContext) {
   };
 }
 
-/** Enter Chores tab → Manage sub-view (admin-only). */
-async function openManage(page: Page) {
+/**
+ * Enter Chores tab → Manage sub-view (admin-only).
+ *
+ * Pass `members` (how many people the test seeded) whenever the test goes on
+ * to tap "Add Chore". That button sends you to Members while the family list
+ * is still empty, so a tap that beats the list never opens the chore form and
+ * the spec times out filling a name field that is not there.
+ */
+async function openManage(page: Page, members?: number) {
   await page.getByRole('button', { name: 'Chores', exact: true }).click();
   await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  if (members !== undefined) await expect(page.getByRole('button', { name: `Members ${members}`, exact: true })).toBeVisible();
 }
 
 test.beforeEach(async ({ request }) => {
@@ -150,7 +158,7 @@ test('admin adds a chore assigned to a member and it round-trips', async ({ page
   // "Add Chore" is a no-op with zero members, so seed one first.
   await seedHouseholdChores(request, sandboxDir, ONE_MEMBER);
   await page.goto('/remote');
-  await openManage(page);
+  await openManage(page, 1);
 
   await page.getByRole('button', { name: 'Add Chore' }).first().click();
   await page.getByPlaceholder('Chore name...').fill('Water the plants');
@@ -163,6 +171,123 @@ test('admin adds a chore assigned to a member and it round-trips', async ({ page
       return chore?.assigneeIds ?? null;
     })
     .toEqual(['m1']);
+});
+
+// A group is saved as a group, never as the people in it: storing the
+// expansion is what would stop a later group member from getting the chore.
+test('admin gives a chore to a group and it is saved as the group, with its rotation kept', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, {
+    ...TWO_MEMBERS,
+    groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['m1', 'm2'] }],
+  });
+  await page.goto('/remote');
+  await openManage(page, 2);
+
+  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await page.getByPlaceholder('Chore name...').fill('Empty the dishwasher');
+  await page.getByRole('button', { name: /^Kids/ }).click();
+
+  // One group of two is two people, so taking turns is on offer; a per-person
+  // schedule is not, since whoever joins the group later would have no row.
+  const rotation = page.locator('select').filter({ has: page.locator('option[value="rotate-weekly"]') });
+  await expect(rotation.locator('option[value="schedule"]')).toHaveCount(0);
+  await expect(page.getByText('A schedule is for people you pick one by one, so it is not offered with a group.')).toBeVisible();
+  // Ticking the group does not tick its people, so each one says the group has them.
+  await expect(page.getByText('In Kids', { exact: true })).toHaveCount(2);
+  await rotation.selectOption('rotate-weekly');
+  await page.getByRole('button', { name: 'Add Chore' }).last().click();
+
+  await expect
+    .poll(async () => {
+      const chore = (await getChoreData(request)).chores.find((c) => c.name === 'Empty the dishwasher') as
+        { assigneeIds: string[]; assigneeGroupIds?: string[]; rotation: string } | undefined;
+      return chore ? [chore.assigneeIds, chore.assigneeGroupIds, chore.rotation] : null;
+    })
+    .toEqual([[], ['g-kids'], 'rotate-weekly']);
+
+  // The list names the group, not a blank "who" line.
+  await expect(page.getByRole('button', { name: 'Edit Empty the dishwasher' })).toContainText('Kids');
+});
+
+test('removing a group says how many chores go to it and leaves them in the list with nobody on them', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, {
+    ...TWO_MEMBERS,
+    groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['m1', 'm2'] }],
+    chores: [{
+      id: 'gc1', name: 'Empty the dishwasher', emoji: '', points: 1, frequency: 'daily',
+      daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeOfDay: 'anytime',
+      assigneeIds: [], assigneeGroupIds: ['g-kids'], rotation: 'fixed',
+    }],
+  });
+  await page.goto('/remote');
+  await openManage(page, 2);
+  await page.getByRole('button', { name: 'Members 2', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Remove Kids?' }).click();
+  const sheet = page.getByRole('alertdialog');
+  await expect(sheet).toContainText('1 chore goes to Kids');
+  await sheet.getByRole('button', { name: 'Remove group' }).click();
+
+  await expect
+    .poll(async () => (await getChoreData(request)).chores.find((c) => c.id === 'gc1'))
+    .toEqual(expect.not.objectContaining({ assigneeGroupIds: expect.anything() }));
+
+  // The chore list picked up the change, so a later chore save is not refused
+  // as stale, and the row says nobody has it rather than showing a blank.
+  await page.getByRole('button', { name: /^Chores 1/ }).click();
+  await expect(page.getByRole('button', { name: 'Edit Empty the dishwasher' })).toContainText('Nobody yet');
+  await page.getByRole('button', { name: 'Edit Empty the dishwasher' }).click();
+  await page.getByRole('button', { name: 'Avery' }).click();
+  await page.getByRole('button', { name: 'Save Chore' }).click();
+  await expect
+    .poll(async () => (await getChoreData(request)).chores.find((c) => c.id === 'gc1')?.assigneeIds)
+    .toEqual(['m1']);
+});
+
+test('picking a group nobody is in yet warns that the chore would go to no one', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, { ...ONE_MEMBER, groups: [{ id: 'g-cousins', name: 'Cousins', memberIds: [] }] });
+  await page.goto('/remote');
+  await openManage(page, 1);
+  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await page.getByPlaceholder('Chore name...').fill('Walk the dog');
+  await expect(page.getByText('Everyone in a group gets the chore.', { exact: false })).toBeVisible();
+  await page.getByRole('button', { name: /^Cousins/ }).click();
+  await expect(page.getByText('Nobody is in the group you picked yet', { exact: false })).toBeVisible();
+  // Naming a person as well means somebody has it, so the warning goes.
+  await page.getByRole('button', { name: /Avery$/ }).click();
+  await expect(page.getByText('Nobody is in the group you picked yet', { exact: false })).toHaveCount(0);
+});
+
+// A schedule hides the group picker along with the people list, so the form
+// has to say where it went: otherwise it just looks like groups are missing.
+test('a chore on a schedule says how to give it to a group instead', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, {
+    ...TWO_MEMBERS,
+    groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['m1', 'm2'] }],
+    chores: [{
+      id: 'sc1', name: 'Dishes', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [1, 2],
+      timeOfDay: 'anytime', assigneeIds: ['m1', 'm2'], rotation: 'schedule', schedule: { m1: [1], m2: [2] },
+    }],
+  });
+  await page.goto('/remote');
+  await openManage(page, 2);
+  await page.getByRole('button', { name: 'Edit Dishes' }).click();
+  await expect(page.getByRole('button', { name: /^Kids/ })).toHaveCount(0);
+  await expect(page.getByText('To give this chore to a group, change this from "Schedule" to something else.', { exact: false })).toBeVisible();
+
+  // Taking it off the schedule brings the group picker back.
+  await page.locator('select').filter({ has: page.locator('option[value="schedule"]') }).selectOption('fixed');
+  await expect(page.getByRole('button', { name: /^Kids/ })).toBeVisible();
+  await expect(page.getByText('To give this chore to a group', { exact: false })).toHaveCount(0);
+});
+
+test('a household with no groups sees no Groups block on the chore form', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, ONE_MEMBER);
+  await page.goto('/remote');
+  await openManage(page, 1);
+  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await expect(page.getByRole('button', { name: 'Avery' })).toBeVisible();
+  await expect(page.getByText('Groups', { exact: true })).toHaveCount(0);
 });
 
 test('admin edits a chore name and it round-trips', async ({ page, request, sandboxDir }) => {
@@ -268,7 +393,7 @@ for (const [label, reloadBody] of [['malformed', {}], ['empty', { chores: [] }]]
 test('a single-assignee chore saves as fixed rotation', async ({ page, request, sandboxDir }) => {
   await seedHouseholdChores(request, sandboxDir, ONE_MEMBER);
   await page.goto('/remote');
-  await openManage(page);
+  await openManage(page, 1);
 
   await page.getByRole('button', { name: 'Add Chore' }).first().click();
   await page.getByPlaceholder('Chore name...').fill('Solo chore');
@@ -290,7 +415,7 @@ test('a single-assignee chore saves as fixed rotation', async ({ page, request, 
 test('a multi-assignee chore can be set to rotate daily and it round-trips', async ({ page, request, sandboxDir }) => {
   await seedHouseholdChores(request, sandboxDir, TWO_MEMBERS);
   await page.goto('/remote');
-  await openManage(page);
+  await openManage(page, 2);
 
   await page.getByRole('button', { name: 'Add Chore' }).first().click();
   await page.getByPlaceholder('Chore name...').fill('Take out trash');

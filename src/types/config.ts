@@ -3880,8 +3880,16 @@ export interface ChoreDefinition {
   /** Family members it can go to */
   assigneeIds: string[];
   /**
-   * How it is shared among `assigneeIds`: everyone every time (`fixed`), taking turns by day or by
-   * week, or by `schedule`
+   * Family groups it goes to, expanded to their members when the chore is resolved
+   *
+   * Kept apart from `assigneeIds` and never merged into it when saved, so someone added to a group
+   * later gets the chore too.
+   */
+  assigneeGroupIds?: string[];
+  /**
+   * How it is shared among the people it goes to: everyone every time (`fixed`), taking turns by
+   * day or by week, or by `schedule`. `schedule` is people only and never combines with
+   * `assigneeGroupIds`.
    */
   rotation: ChoreRotation;
   /** With `rotation` set to `schedule`: each member ID to the days (0 to 6) they have the chore */

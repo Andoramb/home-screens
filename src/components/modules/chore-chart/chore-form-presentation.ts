@@ -1,6 +1,7 @@
 import type { ChoreDefinition, ChoreRotation } from '@/types/config';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type { TranslateFn } from '@/i18n';
-import { getTimeOfDayLabelKey } from './types';
+import { choreAssigneeIds, getTimeOfDayLabelKey } from './types';
 
 /**
  * Discriminated kind for the chore-form validation hint. Computed
@@ -10,20 +11,29 @@ import { getTimeOfDayLabelKey } from './types';
 export type ChoreValidationHintKind =
   | 'enterName'
   | 'addPersonToSchedule'
-  | 'selectAtLeastOnePerson';
+  | 'selectAtLeastOnePerson'
+  | 'selectAtLeastOnePersonOrGroup'
+  | 'familyNotReady';
 
 export function getChoreValidationHintKind(args: {
   name: string;
   rotation: ChoreRotation;
   scheduleHasAssignment: boolean;
   assigneeIdsLength: number;
+  /** Groups picked on the form. A chore is valid with people, groups or both. */
+  assigneeGroupIdsLength: number;
+  /** Whether the household has any groups to pick; without them the hint never mentions one. */
+  hasGroups: boolean;
+  /** False while the family list has not loaded; nothing about people or groups can be judged until it has. */
+  familyReady: boolean;
 }): ChoreValidationHintKind | null {
+  if (!args.familyReady) return 'familyNotReady';
   if (!args.name.trim()) return 'enterName';
   if (args.rotation === 'schedule' && !args.scheduleHasAssignment) {
     return 'addPersonToSchedule';
   }
-  if (args.rotation !== 'schedule' && args.assigneeIdsLength === 0) {
-    return 'selectAtLeastOnePerson';
+  if (args.rotation !== 'schedule' && args.assigneeIdsLength === 0 && args.assigneeGroupIdsLength === 0) {
+    return args.hasGroups ? 'selectAtLeastOnePersonOrGroup' : 'selectAtLeastOnePerson';
   }
   return null;
 }
@@ -59,4 +69,64 @@ export function buildChoreSummaryLine(args: {
     : t('chore-chart.choreSummary.ticketCountPlural', { count: chore.points });
 
   return `${frequencyLabel} · ${timeOfDayLabel} · ${ticketsLabel}`;
+}
+
+/**
+ * Who a chore goes to, for the chore lists: its groups by name, then the
+ * people it names directly. A chore with nobody on it (what a removed group
+ * leaves behind) says so rather than showing a blank line.
+ */
+export function buildChoreAssigneeLine(args: {
+  chore: ChoreDefinition;
+  members: readonly FamilyMember[];
+  groups: readonly FamilyGroup[];
+  unknownLabel: string;
+  nobodyLabel: string;
+}): string {
+  const { chore, members, groups, unknownLabel, nobodyLabel } = args;
+  const groupNames = (chore.assigneeGroupIds ?? []).flatMap((id) => groups.find((group) => group.id === id)?.name ?? []);
+  const memberNames = chore.assigneeIds.map((id) => members.find((member) => member.id === id)?.name ?? unknownLabel);
+  return [...groupNames, ...memberNames].join(', ') || nobodyLabel;
+}
+
+/** The "(rotate weekly)" suffix key for a chore list row, or null when everyone has it every time. */
+export function getChoreRotationSummaryKey(chore: ChoreDefinition, groups: readonly FamilyGroup[]): string | null {
+  if (chore.rotation === 'schedule') return 'chore-chart.choreSummary.rotationSchedule';
+  if (chore.rotation === 'fixed' || choreAssigneeIds(chore, groups).length <= 1) return null;
+  return chore.rotation === 'rotate-daily'
+    ? 'chore-chart.choreSummary.rotationDaily'
+    : 'chore-chart.choreSummary.rotationWeekly';
+}
+
+/**
+ * Who a saved chore goes to and how it is shared, from what the form holds.
+ * A schedule is people only, so it saves no groups. Rotation falls back to
+ * `fixed` when nobody is left to take turns with, counted after groups are
+ * expanded: one group of five is five people, not one. A chore that goes to
+ * a group keeps its rotation however small the group is today, because the
+ * group can grow and the turns should start when it does.
+ */
+export function finalizeChoreAssignment(args: {
+  rotation: ChoreRotation;
+  schedule: Record<string, number[]>;
+  assigneeIds: string[];
+  assigneeGroupIds: string[];
+  groups: readonly FamilyGroup[];
+}): Pick<ChoreDefinition, 'assigneeIds' | 'assigneeGroupIds' | 'rotation'> {
+  const isSchedule = args.rotation === 'schedule';
+  const assigneeIds = isSchedule
+    ? Object.entries(args.schedule).filter(([, days]) => days.length > 0).map(([id]) => id)
+    : args.assigneeIds;
+  const assigneeGroupIds = isSchedule ? [] : args.assigneeGroupIds;
+  const count = choreAssigneeIds({ assigneeIds, assigneeGroupIds }, args.groups).length;
+  return {
+    assigneeIds,
+    ...(assigneeGroupIds.length > 0 ? { assigneeGroupIds } : {}),
+    rotation: canChoreRotate({ assigneeCount: count, assigneeGroupIdsLength: assigneeGroupIds.length, rotation: args.rotation }) ? args.rotation : 'fixed',
+  };
+}
+
+/** Whether "how is it shared" is a real question for this chore, which is also when the form asks it. */
+export function canChoreRotate(args: { assigneeCount: number; assigneeGroupIdsLength: number; rotation: ChoreRotation }): boolean {
+  return args.assigneeCount >= 2 || args.assigneeGroupIdsLength > 0 || args.rotation === 'schedule';
 }

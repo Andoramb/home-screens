@@ -37,6 +37,9 @@ import { readCompletions } from '@/lib/chore-completion-data';
 import { resolveAssignee } from '@/components/modules/chore-chart/types';
 import type { ChoreDefinition } from '@/types/config';
 
+/** No family groups: these cases name their people directly. */
+const NO_GROUPS: [] = [];
+
 // 2026-08-03 is a Monday (dayOfWeek 1).
 const DATE = '2026-08-03';
 
@@ -114,7 +117,7 @@ describe('GET /api/chores/today', () => {
     const res = await GET(request(`?date=${DATE}`));
     const body = (await res.json()) as TodayResponse;
 
-    const expected = resolveAssignee(trash, DATE);
+    const expected = resolveAssignee(trash, DATE, NO_GROUPS);
     expect(expected).toHaveLength(1);
     const holders = body.members.filter((m) => m.chores.some((c) => c.id === 'chore-trash'));
     expect(holders.map((m) => m.id)).toEqual(expected);

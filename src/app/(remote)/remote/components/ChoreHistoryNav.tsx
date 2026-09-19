@@ -1,6 +1,6 @@
 'use client';
 
-import type { FamilyMember } from '@/types/family';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronLeft } from 'lucide-react';
@@ -26,6 +26,7 @@ interface ChoreHistoryNavProps {
   /** Real "today" as YYYY-MM-DD, flipped at midnight by the parent. */
   realToday: string;
   members: FamilyMember[];
+  groups: FamilyGroup[];
   chores: ChoreDefinition[];
   completionSet: Set<string>;
   accentColor: string;
@@ -44,6 +45,7 @@ export default function ChoreHistoryNav({
   viewingDate,
   realToday,
   members,
+  groups,
   chores,
   completionSet,
   accentColor,
@@ -92,8 +94,8 @@ export default function ChoreHistoryNav({
   }, [realToday, windowDays, viewingDate]);
 
   const days = useMemo<DayEntry[]>(
-    () => computeDayEntries(earliestDate, realToday, members, chores, completionSet),
-    [earliestDate, realToday, members, chores, completionSet],
+    () => computeDayEntries(earliestDate, realToday, members, chores, completionSet, groups),
+    [earliestDate, realToday, members, chores, completionSet, groups],
   );
 
   // Pre-compute presentation labels once per data change so the tile render loop

@@ -49,6 +49,16 @@ describe('/api/rewards/data family references', () => {
     expect(updateRewardDefinitions).not.toHaveBeenCalled();
   });
 
+  // Removing a person rewrites rewards.json, so a page still naming them is
+  // holding an old list and needs the current one back, not a bare refusal.
+  it('hands a page holding an old reward list the current one, even when it names a removed person', async () => {
+    const held = [{ ...reward, memberIds: ['m1', 'deleted'] }];
+    const res = await PUT(request('PUT', { rewards: held, revision: contentRevision(held) }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ reason: 'revision', rewards: data.rewards, revision });
+    expect(updateRewardDefinitions).not.toHaveBeenCalled();
+  });
+
   it('rejects malformed member lists before a store write', async () => {
     expect((await PUT(request('PUT', { rewards: [{ ...reward, memberIds: 'm1' }], revision }))).status).toBe(400);
     expect(updateRewardDefinitions).not.toHaveBeenCalled();

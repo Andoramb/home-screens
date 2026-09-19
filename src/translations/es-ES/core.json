@@ -246,7 +246,7 @@
     "removeTimetable": "{name} tiene un horario escolar, y también se elimina.",
     "groups": {
       "title": "Grupos",
-      "description": "Junta personas para que un calendario muestre \"Niños\" en lugar de cinco nombres. Una persona puede estar en más de un grupo.",
+      "description": "Junta personas para que un calendario muestre \"Niños\" en lugar de cinco nombres y para dar una tarea a todas a la vez. Una persona puede estar en más de un grupo.",
       "add": "Añadir grupo",
       "edit": "Editar grupo",
       "name": "Nombre del grupo",
@@ -254,12 +254,17 @@
       "noMembers": "Nadie todavía",
       "editName": "Editar {name}",
       "remove": "Quitar grupo",
+      "duplicateName": "Ya tienes un grupo que se llama {name}.",
       "removeTitle": "¿Quitar {name}?",
       "removeDescription": "Las pantallas que solo muestran {name} vuelven a mostrar a todos. No se quita a nadie de la familia.",
+      "removeChoreCount": {
+        "one": "{count} tarea es para {name}. Se queda en tu lista y espera a que elijas a alguien si no tiene a nadie más.",
+        "other": "{count} tareas son para {name}. Se quedan en tu lista, y las que no tienen a nadie más esperan a que elijas a alguien."
+      },
       "saved": "Grupos guardados.",
       "saveFailed": "No se pudieron guardar los grupos.",
       "limit": "Puedes tener hasta {count} grupos.",
-      "hint": "Los grupos se usan en la leyenda de colores del calendario y en su filtro \"Mostrar solo\". Las tareas y las recompensas se siguen asignando a personas."
+      "hint": "Los grupos se usan en la leyenda de colores del calendario y en su filtro \"Mostrar solo\". Una tarea también se puede dar a un grupo. Las recompensas se siguen asignando a personas."
     }
   }
 }
