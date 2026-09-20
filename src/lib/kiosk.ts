@@ -5,6 +5,7 @@
 import { promises as fs } from 'fs';
 import { execFile } from 'child_process';
 import path from 'path';
+import { DISPLAY_TRANSFORMS, findMainDisplay } from '@/lib/display-filter';
 import type { ScreenConfiguration } from '@/types/config';
 
 const KIOSK_CONF = 'data/kiosk.conf';
@@ -13,24 +14,58 @@ function getKioskConfPath(): string {
   return path.join(process.cwd(), KIOSK_CONF);
 }
 
+export interface HubPanel {
+  width: number;
+  height: number;
+  transform: (typeof DISPLAY_TRANSFORMS)[number];
+}
+
+/**
+ * The size and rotation of the screen plugged into this machine.
+ *
+ * Once a displays registry exists, the hub's own screen is the display that
+ * `/display` renders (`findMainDisplay`), and the editor edits its size and
+ * rotation on that node; the global values are hidden there and go stale.
+ * Reading the globals regardless left the page laid out for a rotation the
+ * compositor never applied. Each field falls back on its own, in the order
+ * `filterConfigForDisplay` merges them: the node, the node's `settings`, the
+ * globals. Without a registry the globals are the only source.
+ *
+ * kiosk.conf is sourced by bash, so a value outside the four real rotations
+ * never leaves here: it reads as `normal`, which is also how the page treats
+ * it. Saves refuse such a value too, but config.json can be edited by hand.
+ *
+ * The generator inside upgrade.sh's setup-system is a literal copy of this
+ * rule (it runs with no lib beside it); scripts/__tests__/kiosk-conf.test.ts
+ * keeps the two in step.
+ */
+export function resolveHubPanel(config: ScreenConfiguration): HubPanel {
+  const s = config.settings;
+  const hub = findMainDisplay(config.displays);
+  const transform = hub?.displayTransform ?? hub?.settings?.displayTransform ?? s.displayTransform;
+  return {
+    width: hub?.displayWidth ?? hub?.settings?.displayWidth ?? s.displayWidth ?? 0,
+    height: hub?.displayHeight ?? hub?.settings?.displayHeight ?? s.displayHeight ?? 0,
+    transform: DISPLAY_TRANSFORMS.find((t) => t === transform) ?? 'normal',
+  };
+}
+
 /**
  * Generate kiosk.conf content from config settings.
  * The file is pure shell key=value pairs, readable without node.
  */
-function buildKioskConf(config: ScreenConfiguration): string {
-  const s = config.settings;
+export function buildKioskConf(config: ScreenConfiguration): string {
   const raw = config as unknown as Record<string, unknown>;
   const rawSettings = (raw.settings ?? {}) as Record<string, unknown>;
 
-  const w = s.displayWidth || 0;
-  const h = s.displayHeight || 0;
-  const mw = Math.max(w, h);
-  const mh = Math.min(w, h);
+  const panel = resolveHubPanel(config);
+  const mw = Math.max(panel.width, panel.height);
+  const mh = Math.min(panel.width, panel.height);
 
   const lines: string[] = [];
   if (mw && mh) lines.push(`DISPLAY_MODE="${mw}x${mh}"`);
-  if (s.displayTransform && s.displayTransform !== 'normal') {
-    lines.push(`DISPLAY_TRANSFORM="${s.displayTransform}"`);
+  if (panel.transform !== 'normal') {
+    lines.push(`DISPLAY_TRANSFORM="${panel.transform}"`);
   }
   // piVariant is set by install scripts but not in the TypeScript types.
   // Validate to prevent shell injection since kiosk.conf is sourced by bash.
@@ -135,21 +170,16 @@ export function applyDisplaySettings(config: ScreenConfiguration): Promise<boole
 }
 
 async function doApplyDisplaySettings(config: ScreenConfiguration): Promise<boolean> {
-  const s = config.settings;
+  const { width: w, height: h, transform } = resolveHubPanel(config);
 
   // Detect the connected output name
   const output = await detectOutput();
   let applied = false;
 
   // Apply transform (rotation) — independent of mode
-  const transform = (s.displayTransform && s.displayTransform !== 'normal')
-    ? s.displayTransform
-    : 'normal';
   applied = await wlrRandr('--output', output, '--transform', transform);
 
   // Apply mode (best-effort: try EDID mode, then custom-mode, then skip)
-  const w = s.displayWidth || 0;
-  const h = s.displayHeight || 0;
   if (w && h) {
     const mw = Math.max(w, h);
     const mh = Math.min(w, h);

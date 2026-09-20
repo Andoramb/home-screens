@@ -24,6 +24,21 @@ export const INVALID_CONFIGS: { name: string; config: unknown; error: RegExp }[]
     error: /Duplicate display id/,
   },
   {
+    name: 'a display rotation that is not one of the four real ones',
+    config: { ...base, displays: [{ id: 'kitchen', screens: [], displayTransform: '$(id)' }] },
+    error: /Display "kitchen" rotation must be one of/,
+  },
+  {
+    name: 'a display rotation override that is not one of the four real ones',
+    config: { ...base, displays: [{ id: 'kitchen', screens: [], settings: { displayTransform: '45' } }] },
+    error: /Display "kitchen" rotation must be one of/,
+  },
+  {
+    name: 'a screen rotation in the shared settings that is not one of the four real ones',
+    config: { ...base, settings: { ...base.settings, displayTransform: '90"; id; "' } },
+    error: /Screen rotation must be one of/,
+  },
+  {
     name: 'a screen schedule with a day outside 0-6',
     config: { ...base, screens: [{ id: 's1', name: 'Main', modules: [], schedule: { daysOfWeek: [9] } }] },
     error: /daysOfWeek/,

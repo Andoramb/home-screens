@@ -1018,13 +1018,24 @@ ExecStart=-/sbin/agetty --autologin ${USER} --noclear %I \$TERM"
       DESIRED_KIOSK=$(node <<GENEOF
 var c = JSON.parse(require("fs").readFileSync("${CONFIG_FILE}", "utf-8"));
 var s = c.settings || {};
-var w = s.displayWidth || 0;
-var h = s.displayHeight || 0;
+// The screen plugged into this machine: the display that /display renders
+// once a displays list exists (main, else the first), each field falling back
+// to the global. Literal copy of resolveHubPanel in src/lib/kiosk.ts. No
+// apostrophes in here: older bash misreads one inside a command substitution.
+var ds = Array.isArray(c.displays) ? c.displays : [];
+var hub = ds.filter(function (d) { return d && d.id === "main"; })[0] || ds[0] || {};
+var hs = hub.settings || {};
+var pick = function () { for (var i = 0; i < arguments.length; i++) if (arguments[i] != null) return arguments[i]; };
+var w = pick(hub.displayWidth, hs.displayWidth, s.displayWidth) || 0;
+var h = pick(hub.displayHeight, hs.displayHeight, s.displayHeight) || 0;
+var t = pick(hub.displayTransform, hs.displayTransform, s.displayTransform);
+// kiosk.conf is sourced by bash: only the four real rotations get written.
+if (["normal", "90", "180", "270"].indexOf(t) === -1) t = "normal";
 var mw = Math.max(w, h);
 var mh = Math.min(w, h);
 var lines = [];
 if (mw && mh) lines.push('DISPLAY_MODE="' + mw + 'x' + mh + '"');
-if (s.displayTransform && s.displayTransform !== "normal") lines.push('DISPLAY_TRANSFORM="' + s.displayTransform + '"');
+if (t !== "normal") lines.push('DISPLAY_TRANSFORM="' + t + '"');
 if (s.piVariant) lines.push('PI_VARIANT="' + s.piVariant + '"');
 console.log(lines.join("\\n"));
 GENEOF

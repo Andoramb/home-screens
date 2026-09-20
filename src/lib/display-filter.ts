@@ -828,6 +828,25 @@ export function validateAllSchedules(config: ScreenConfiguration): string | null
   return null;
 }
 
+/** The rotations a screen can have. */
+export const DISPLAY_TRANSFORMS = ['normal', '90', '180', '270'] as const;
+
+/**
+ * A rotation that is unset or one of the four real ones. The value ends up in
+ * kiosk.conf, which bash sources at boot, so anything else is refused when a
+ * config is saved rather than only when that file is written.
+ */
+export function isValidDisplayTransform(value: unknown): boolean {
+  return value == null || (DISPLAY_TRANSFORMS as readonly unknown[]).includes(value);
+}
+
+function validateDisplayTransform(display: DisplayNode): string | null {
+  if (!isValidDisplayTransform(display.displayTransform) || !isValidDisplayTransform(display.settings?.displayTransform)) {
+    return `Display "${display.id}" rotation must be one of: ${DISPLAY_TRANSFORMS.join(', ')}`;
+  }
+  return null;
+}
+
 function validateDisplayDimensions(display: DisplayNode): string | null {
   for (const field of ['displayWidth', 'displayHeight'] as const) {
     const value = display[field];
@@ -886,6 +905,9 @@ export function validateDisplays(config: ScreenConfiguration): string | null {
 
     const dimError = validateDisplayDimensions(display);
     if (dimError) return dimError;
+
+    const transformError = validateDisplayTransform(display);
+    if (transformError) return transformError;
   }
 
   return null;

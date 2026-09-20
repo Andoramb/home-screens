@@ -369,6 +369,30 @@ describe('validateDisplays', () => {
     expect(validateDisplays(config)).toMatch(/too many screens/);
   });
 
+  describe('per-display rotation', () => {
+    it('accepts each real rotation, on the display or in its overrides, and an unset one', () => {
+      for (const displayTransform of ['normal', '90', '180', '270', undefined] as const) {
+        expect(validateDisplays(makeConfig({
+          screens: [],
+          displays: [{ id: 'kitchen', name: 'K', screens: [], displayTransform, settings: { displayTransform } }],
+        }))).toBeNull();
+      }
+    });
+
+    it('rejects a rotation outside the four real ones', () => {
+      for (const bad of ['$(id)', '45', '', 90]) {
+        expect(validateDisplays(makeConfig({
+          screens: [],
+          displays: [{ id: 'kitchen', name: 'K', screens: [], displayTransform: bad as never }],
+        }))).toMatch(/Display "kitchen" rotation must be one of/);
+        expect(validateDisplays(makeConfig({
+          screens: [],
+          displays: [{ id: 'kitchen', name: 'K', screens: [], settings: { displayTransform: bad as never } }],
+        }))).toMatch(/Display "kitchen" rotation must be one of/);
+      }
+    });
+  });
+
   describe('per-display dimensions', () => {
     it('accepts positive integer dimensions', () => {
       const config = makeConfig({

@@ -29,7 +29,8 @@ vi.mock('@/lib/config-cache', () => ({
   __resetConfigReadCacheForTests: vi.fn(),
 }));
 
-vi.mock('@/lib/kiosk', () => ({
+vi.mock('@/lib/kiosk', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/kiosk')>()),
   syncKioskConf: vi.fn().mockResolvedValue(undefined),
   applyDisplaySettings: vi.fn().mockResolvedValue(true),
 }));
@@ -42,6 +43,7 @@ import { GET, PUT } from '@/app/api/config/route';
 import { readConfig, writeConfig, updateConfigAtomic, configRevision } from '@/lib/config';
 import { CONFIG_REVISION_HEADER } from '@/lib/config-revision';
 import { withDataTransaction } from '@/lib/data-transaction';
+import { applyDisplaySettings } from '@/lib/kiosk';
 import { INVALID_CONFIGS } from '@/lib/__tests__/invalid-config-matrix';
 
 const dummyConfig = {
@@ -193,6 +195,19 @@ describe('PUT /api/config', () => {
     expect(res.status).toBe(200);
     expect(writeConfig).toHaveBeenCalledWith(dummyConfig);
     expect(json.screens).toHaveLength(1);
+  });
+
+  it('re-applies the screen rotation when it changes on the main display', async () => {
+    const main = { id: 'main', name: 'Main', screens: dummyConfig.screens, displayWidth: 1080, displayHeight: 1920 };
+    const before = { ...dummyConfig, displays: [{ ...main, displayTransform: '90' }] };
+    const after = { ...dummyConfig, displays: [{ ...main, displayTransform: '270' }] };
+    vi.mocked(readConfig).mockResolvedValue(before as never);
+
+    expect((await PUT(makePutRequest(before))).status).toBe(200);
+    expect(applyDisplaySettings).not.toHaveBeenCalled();
+
+    expect((await PUT(makePutRequest(after))).status).toBe(200);
+    expect(applyDisplaySettings).toHaveBeenCalledOnce();
   });
 
   it('saves when the sent revision matches the config on disk', async () => {

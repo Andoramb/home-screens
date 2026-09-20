@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server';
 import { CONFIG_REVISION_HEADER } from '@/lib/config-revision';
 
 vi.mock('@/lib/auth', () => ({ requireSession: vi.fn(async () => {}), requireDisplayAuth: vi.fn(async () => {}) }));
-vi.mock('@/lib/kiosk', () => ({ syncKioskConf: vi.fn(async () => {}), applyDisplaySettings: vi.fn(async () => {}) }));
+vi.mock('@/lib/kiosk', async (importOriginal) => ({ ...(await importOriginal<typeof import('@/lib/kiosk')>()), syncKioskConf: vi.fn(async () => {}), applyDisplaySettings: vi.fn(async () => {}) }));
 vi.mock('@/lib/telemetry', () => ({ maybeSendBeacon: vi.fn(async () => {}) }));
 
 import { PUT } from '../route';

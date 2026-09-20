@@ -9,7 +9,7 @@ import { readTransactionFile, withDataTransaction } from '@/lib/data-transaction
 import { settleFamilyMigration } from '@/lib/family-data';
 import { withFamilyData, validateMemberReferences } from '@/lib/family-api';
 import { getAllScreens } from '@/lib/display-filter';
-import { syncKioskConf, applyDisplaySettings } from '@/lib/kiosk';
+import { syncKioskConf, applyDisplaySettings, resolveHubPanel } from '@/lib/kiosk';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
 import { maybeSendBeacon } from '@/lib/telemetry';
 import { validateConfigForWrite } from '@/lib/config-validation';
@@ -141,11 +141,14 @@ async function saveConfig(request: NextRequest, config: ScreenConfiguration): Pr
 
     // Apply display rotation/mode immediately via wlr-randr (no reboot needed).
     // Only attempt when display settings actually changed.
-    const before = seen.prev;
+    // Compared as the hub's resolved screen, not the raw globals: in a
+    // multi-display config the rotation is edited on the main display's node.
+    const before = seen.prev ? resolveHubPanel(seen.prev) : null;
+    const after = resolveHubPanel(saved);
     const displayChanged = !before
-      || before.settings.displayTransform !== config.settings.displayTransform
-      || before.settings.displayWidth !== config.settings.displayWidth
-      || before.settings.displayHeight !== config.settings.displayHeight;
+      || before.transform !== after.transform
+      || before.width !== after.width
+      || before.height !== after.height;
     if (displayChanged) {
       applyDisplaySettings(saved).catch(() => {});
     }
