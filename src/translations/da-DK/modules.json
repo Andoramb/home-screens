@@ -631,6 +631,10 @@
         "other": "{count} billetter. {member} har {left} tilbage."
       },
       "notNow": "Ikke nu"
+    },
+    "ariaLabels": {
+      "completeChore": "Markér {chore} som klaret for {member}",
+      "undoChore": "Fortryd {chore} for {member}"
     }
   },
   "fullscreen-chore-chart": {

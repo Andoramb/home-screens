@@ -631,6 +631,10 @@
         "other": "{count} tickets. A {member} le quedarán {left}."
       },
       "notNow": "Ahora no"
+    },
+    "ariaLabels": {
+      "completeChore": "Marcar {chore} para {member}",
+      "undoChore": "Deshacer {chore} para {member}"
     }
   },
   "fullscreen-chore-chart": {

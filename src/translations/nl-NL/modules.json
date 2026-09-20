@@ -631,6 +631,10 @@
         "other": "{count} tickets. {member} houdt er {left} over."
       },
       "notNow": "Nu niet"
+    },
+    "ariaLabels": {
+      "completeChore": "{chore} afvinken voor {member}",
+      "undoChore": "{chore} voor {member} ongedaan maken"
     }
   },
   "fullscreen-chore-chart": {

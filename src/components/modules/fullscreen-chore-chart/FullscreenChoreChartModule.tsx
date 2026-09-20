@@ -24,15 +24,13 @@ import StarChart from './StarChart';
 import WeekStrip from './WeekStrip';
 import { RewardsStoreView } from './RewardsStoreView';
 import { RewardHistoryView, type RewardHistoryVariant } from './RewardHistoryView';
+import { type ChoreRow, buildChoreRows, getUniqueInitials } from '@/lib/chore-rows';
 import {
-  type ChoreRow,
   type ToggleParams,
   TOD_ORDER,
   ROW_HEIGHT_FLOOR,
   getOrientation,
-  getUniqueInitials,
   getCurrentTimeOfDay,
-  buildChoreRows,
   buildMemberRows,
   fitRowHeight,
   fitDotSize,

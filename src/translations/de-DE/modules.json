@@ -631,6 +631,10 @@
         "other": "{count} Tickets. {member} hat dann noch {left}."
       },
       "notNow": "Jetzt nicht"
+    },
+    "ariaLabels": {
+      "completeChore": "{chore} für {member} abhaken",
+      "undoChore": "{chore} für {member} rückgängig machen"
     }
   },
   "fullscreen-chore-chart": {

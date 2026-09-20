@@ -67,8 +67,13 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
       return { rows: Math.min(data.allRedemptions.length, resolveHistoryLimit(config.historyLimit)), sections: 0 };
     }
     if (view === 'today') {
+      // One row per chore, however many people share it: the view draws the
+      // assignees as a run of dots on that single row.
       const times = new Set(assignments.map((a) => a.chore.timeOfDay));
-      return { rows: assignments.length, sections: config.showTimeOfDay === false ? 0 : times.size };
+      return {
+        rows: new Set(assignments.map((a) => a.chore.id)).size,
+        sections: config.showTimeOfDay === false ? 0 : times.size,
+      };
     }
     if (view === 'star-chart') {
       // A row per charted member, and the legend under it wraps the same

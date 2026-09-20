@@ -120,7 +120,7 @@ const STAR_LEGEND_TOP_PX = 8;
 const STAR_LEGEND_GAP_PX = 4;
 
 /** Padding a row adds around its tap target, in em, per view. */
-const ROW_PADDING_EM: Record<string, number> = { today: 1.0, compact: 0.5, board: 1.35 };
+const ROW_PADDING_EM: Record<string, number> = { today: 0.7, compact: 0.5, board: 1.35 };
 
 /**
  * Views whose rows carry no tap target, so a row is a plain line of text: its
@@ -159,12 +159,21 @@ const CHROME_EM: Record<string, number> = { today: 3.7, compact: 9, board: 3.7, 
 const MORE_PILL_EM = 1.7;
 
 /**
+ * The smallest the pill's own text may be. Its 0.62em would otherwise follow
+ * the chart down to 6.8px on a chart pinned at the font floor, which is the
+ * one moment the pill has something to say. The strip reserved above is
+ * `MORE_PILL_EM` of a font that is itself never below `CHORE_FONT_FLOOR`, so a
+ * floored pill still fits the space budgeted for it.
+ */
+export const MORE_PILL_FLOOR_PX = CHORE_FONT_FLOOR;
+
+/**
  * The font size a view can actually draw at inside its box.
  *
  * The chart is authored in `em` off the module's font size, so nothing about
  * it followed the box: a 10-chore day at the 24px default needs 62px rows and
- * 780px of height, and the module's own 500x650 default cut the last three
- * chores off mid-row. This solves for the size where the day fits instead.
+ * 780px of height, and a card that size cut the last three chores off
+ * mid-row. This solves for the size where the day fits instead.
  *
  * The module font size is a ceiling, not a target, so a chart that already
  * fits is left exactly as it was and only an overfull one shrinks.
@@ -202,9 +211,13 @@ export function fitChoreFontSize({ width, height, requested, rows, sections, vie
   // view's own padding, and the tap target has a floor of its own, so rows
   // stop shrinking before the type does: solving this in closed form gets the
   // last chore wrong every time, which is why it is searched instead.
-  const rowTall = (f: number) => (view in PLAIN_ROW_EM
-    ? PLAIN_ROW_EM[view] * f + PLAIN_ROW_RULE_PX
-    : choreTapSize(f) + ROW_PADDING_EM[view] * f);
+  // A `today` row carries one dot per assignee rather than a single tap box,
+  // and the dot is what sets its height.
+  const rowTall = (f: number) => {
+    if (view in PLAIN_ROW_EM) return PLAIN_ROW_EM[view] * f + PLAIN_ROW_RULE_PX;
+    const target = view === 'today' ? choreDotSize(f) : choreTapSize(f);
+    return target + ROW_PADDING_EM[view] * f;
+  };
   const tall = (f: number) =>
     rows * rowTall(f)
     + sections * SECTION_EM * f
@@ -242,6 +255,29 @@ function search(tall: (f: number) => number, budget: number, hi: number, floor =
  */
 export function choreTapSize(fontSize: number): number {
   return Math.round(Math.max(24, Math.min(TAP_CHECKBOX_SIZE, fontSize * 1.6)));
+}
+
+/**
+ * An assignee dot on a `today` row. Every person on a shared chore gets one,
+ * and each is its own tap target, so it keeps a fingertip floor of its own and
+ * stops growing before a row of five dots takes the width the chore name needs.
+ */
+export function choreDotSize(fontSize: number): number {
+  return Math.round(Math.max(24, Math.min(40, fontSize * 1.5)));
+}
+
+/** The gap between dots in a run, in px. */
+export function choreDotGap(dotSize: number): number {
+  return Math.max(3, Math.round(dotSize * 0.16));
+}
+
+/**
+ * Width a run of `count` dots needs, gaps included. The `today` row uses it to
+ * decide how much of the line is left for the chore name.
+ */
+export function choreDotRunWidth(dotSize: number, count: number): number {
+  if (count <= 0) return 0;
+  return count * dotSize + (count - 1) * choreDotGap(dotSize);
 }
 
 /**

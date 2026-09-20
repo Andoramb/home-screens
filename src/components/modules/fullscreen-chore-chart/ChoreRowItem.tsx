@@ -6,7 +6,8 @@ import type { FamilyMember } from '@/types/family';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { useTranslate } from '@/i18n';
 import AssigneeDot from './AssigneeDot';
-import { dotGap, dotRunWidth, groupPillMetrics, groupPillPadY, TOD_ICONS, type ChoreRow, type ToggleParams } from './helpers';
+import { dotGap, dotRunWidth, groupPillMetrics, groupPillPadY, TOD_ICONS, type ToggleParams } from './helpers';
+import type { ChoreRow } from '@/lib/chore-rows';
 
 interface ChoreRowItemProps {
   row: ChoreRow;

@@ -3,6 +3,7 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { useTranslate } from '@/i18n';
 import { useHiddenRowCount } from '../shared/useHiddenRowCount';
+import { MORE_PILL_FLOOR_PX } from './layout';
 
 /** Rows this box counts. Views stamp it on each chore row. */
 export const CHORE_ROW_ATTR = 'data-chore-row';
@@ -55,7 +56,10 @@ export function FitRows({ children, className = '', style }: FitRowsProps) {
           <span
             className="font-semibold"
             style={{
-              fontSize: '0.62em',
+              // Floored in px, not em: a chart squeezed to its own font floor
+              // drew this at 6.8px on a 1080px wall, which tells a family
+              // nothing. A list that cannot fit has to be able to say so.
+              fontSize: `max(0.62em, ${MORE_PILL_FLOOR_PX}px)`,
               padding: '0.18em 0.7em',
               borderRadius: 999,
               background: 'rgba(120,120,120,0.30)',

@@ -1,7 +1,7 @@
 
 import type { FamilyMember } from '@/types/family';
 import { describe, it, expect } from 'vitest';
-import { balanceRows, choreTapSize, fitChoreFontSize, fitPerRow, fitStoreFontSize, partitionMembers, resolveHistoryLimit, starIconSize, storeRailEm, storeRailShowsBalances, storeTileColumns, storeUsesRail, weekMembers, type StoreFitInput } from '../layout';
+import { balanceRows, choreDotGap, choreDotRunWidth, choreDotSize, choreTapSize, fitChoreFontSize, fitPerRow, fitStoreFontSize, partitionMembers, resolveHistoryLimit, starIconSize, storeRailEm, storeRailShowsBalances, storeTileColumns, storeUsesRail, weekMembers, type StoreFitInput } from '../layout';
 import type { MemberStats } from '../types';
 
 
@@ -76,6 +76,34 @@ describe('partitionMembers', () => {
   });
 });
 
+describe('assignee dots on a today row', () => {
+  it('keeps a fingertip floor however small the chart is fitted', () => {
+    expect(choreDotSize(11)).toBe(24);
+    expect(choreDotSize(4)).toBe(24);
+  });
+
+  it('stops growing, so five dots never take the width the chore name needs', () => {
+    expect(choreDotSize(40)).toBe(40);
+    expect(choreDotSize(200)).toBe(40);
+  });
+
+  it('scales with the fitted type between those bounds', () => {
+    expect(choreDotSize(22)).toBe(33);
+  });
+
+  it('measures a run of dots with its gaps, and nothing for an empty run', () => {
+    const size = choreDotSize(22);
+    const gap = choreDotGap(size);
+    expect(choreDotRunWidth(size, 0)).toBe(0);
+    expect(choreDotRunWidth(size, 1)).toBe(size);
+    expect(choreDotRunWidth(size, 5)).toBe(5 * size + 4 * gap);
+  });
+
+  it('keeps the gap visible at the smallest dot, so five rings do not read as one blob', () => {
+    expect(choreDotGap(choreDotSize(11))).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe('fitChoreFontSize', () => {
   const day = { width: 476, height: 626, requested: 24, rows: 10, sections: 4, view: 'today' };
 
@@ -84,19 +112,20 @@ describe('fitChoreFontSize', () => {
     // is 650. Before this the last three were cut off mid-row.
     const fitted = fitChoreFontSize(day);
     expect(fitted).toBeLessThan(24);
-    // The list, at the size it settled on, fits the box it was given.
-    const rowPx = choreTapSize(fitted) + fitted;
+    // The list, at the size it settled on, fits the box it was given. A
+    // `today` row is its assignee dot plus the view's own 0.7em of padding.
+    const rowPx = choreDotSize(fitted) + 0.7 * fitted;
     const gaps = (day.sections - 1) * 8;
     expect(day.rows * rowPx + day.sections * 1.9 * fitted + 3.7 * fitted + gaps)
       .toBeLessThanOrEqual(day.height);
   });
 
   it('accounts for the tap target refusing to shrink past its own floor', () => {
-    // Rows stop shrinking with the type once the target hits its 24px floor,
+    // Rows stop shrinking with the type once the dot hits its 24px floor,
     // so the fit has to search rather than divide: at 14 chores a closed-form
     // solve returns a size whose rows still overflow.
     const fitted = fitChoreFontSize({ ...day, rows: 12, sections: 4 });
-    const rowPx = choreTapSize(fitted) + fitted;
+    const rowPx = choreDotSize(fitted) + 0.7 * fitted;
     expect(12 * rowPx + 4 * 1.9 * fitted + 3.7 * fitted + 24).toBeLessThanOrEqual(day.height);
   });
 

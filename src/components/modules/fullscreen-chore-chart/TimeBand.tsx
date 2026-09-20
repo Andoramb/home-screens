@@ -5,7 +5,8 @@ import type { FamilyMember } from '@/types/family';
 import type { ChoreTimeOfDay } from '@/types/config';
 import { useTranslate } from '@/i18n';
 import ChoreRowItem from './ChoreRowItem';
-import { TOD_ICONS, type ChoreRow, type ToggleParams } from './helpers';
+import { TOD_ICONS, type ToggleParams } from './helpers';
+import type { ChoreRow } from '@/lib/chore-rows';
 
 interface TimeBandHeaderProps {
   tod: ChoreTimeOfDay;

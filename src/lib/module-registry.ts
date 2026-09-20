@@ -1105,7 +1105,11 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
       historyLimit: 5,
       storeLayout: 'list',
     },
-    defaultSize: { w: 500, h: 650 },
+    // Wide by default: the board view gives every member a column, and at 500
+    // a five-kid household wrapped into a ragged 3 + 2 grid of columns too
+    // narrow for a chore name. 1000 is the width at which a seventh member
+    // still gets a column of their own.
+    defaultSize: { w: 1000, h: 560 },
     defaultStyle: { fontSize: 24 },
   },
   {

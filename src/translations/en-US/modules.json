@@ -631,6 +631,10 @@
         "other": "{count} tickets. {member} will have {left} left."
       },
       "notNow": "Not now"
+    },
+    "ariaLabels": {
+      "completeChore": "Complete {chore} for {member}",
+      "undoChore": "Undo {chore} for {member}"
     }
   },
   "fullscreen-chore-chart": {

@@ -1,22 +1,9 @@
 
-import type { FamilyGroup, FamilyMember } from '@/types/family';
+import type { FamilyMember } from '@/types/family';
 import { Sunrise, Sun, Sunset, Clock } from 'lucide-react';
 import type { ChoreTimeOfDay } from '@/types/config';
 import { TIME_OF_DAY_META, type ResolvedAssignment } from '@/components/modules/chore-chart/types';
-
-export interface ChoreRow {
-  choreId: string;
-  choreName: string;
-  choreEmoji: string;
-  timeOfDay: ChoreTimeOfDay;
-  points: number;
-  /** `viaGroup` marks the people who have the chore through a family group; they sit first, inside the group pill. */
-  assignees: { memberId: string; isCompleted: boolean; viaGroup?: boolean }[];
-  /** The first family group the chore goes to, by name. Set only when someone on the row has it through a group. */
-  groupLabel?: string;
-  /** How many further groups the chore goes to; the pill shows them as "+1" rather than more names. */
-  groupExtra?: number;
-}
+import type { ChoreRow } from '@/lib/chore-rows';
 
 export interface ToggleParams {
   choreId: string;
@@ -40,90 +27,11 @@ export function getOrientation(w: number, h: number): 'portrait' | 'landscape' {
   return h > w ? 'portrait' : 'landscape';
 }
 
-/** Compute shortest unique initial for each member. Uses first letter when
- *  unique; extends to 2–3 characters only where collisions exist. */
-export function getUniqueInitials(memberList: { id: string; name: string }[]): Map<string, string> {
-  const result = new Map<string, string>();
-  let remaining = [...memberList];
-
-  for (let len = 1; len <= 3 && remaining.length > 0; len++) {
-    const groups = new Map<string, typeof remaining>();
-    for (const m of remaining) {
-      const prefix = m.name.slice(0, len);
-      const group = groups.get(prefix) ?? [];
-      group.push(m);
-      groups.set(prefix, group);
-    }
-
-    const next: typeof remaining = [];
-    for (const [prefix, group] of groups) {
-      if (group.length === 1) {
-        result.set(group[0].id, prefix);
-      } else {
-        next.push(...group);
-      }
-    }
-    remaining = next;
-  }
-  for (const m of remaining) {
-    result.set(m.id, m.name.slice(0, 3));
-  }
-  return result;
-}
-
 export function getCurrentTimeOfDay(hour: number): ChoreTimeOfDay | null {
   if (hour < 12) return 'morning';
   if (hour < 17) return 'afternoon';
   if (hour < 24) return 'evening';
   return null;
-}
-
-/**
- * Group today's assignments by time-of-day, then deduplicate chores (a chore
- * assigned to 3 people becomes one row with 3 assignee dots). Dots keep the
- * household's member order whatever their state: a kid's ring stays in the
- * same column all day and does not jump when someone else finishes. On a
- * chore that goes to a family group, the group's people come first so their
- * rings sit together in one labelled pill, and anyone named on top of the
- * group follows outside it.
- */
-export function buildChoreRows(assignments: ResolvedAssignment[], memberOrder?: Map<string, number>, familyGroups: readonly FamilyGroup[] = []): Map<ChoreTimeOfDay, ChoreRow[]> {
-  const choreMap = new Map<string, ChoreRow>();
-  const viaGroup = new Map<string, Set<string>>();
-
-  for (const a of assignments) {
-    const existing = choreMap.get(a.chore.id);
-    if (existing) {
-      existing.assignees.push({ memberId: a.memberId, isCompleted: a.isCompleted, viaGroup: viaGroup.get(a.chore.id)?.has(a.memberId) });
-    } else {
-      const named = a.groupIds.flatMap((id) => familyGroups.find((group) => group.id === id) ?? []);
-      const inGroup = new Set(named.flatMap((group) => group.memberIds));
-      viaGroup.set(a.chore.id, inGroup);
-      choreMap.set(a.chore.id, {
-        choreId: a.chore.id,
-        choreName: a.chore.name,
-        choreEmoji: a.chore.emoji,
-        timeOfDay: a.chore.timeOfDay,
-        points: a.chore.points,
-        assignees: [{ memberId: a.memberId, isCompleted: a.isCompleted, viaGroup: inGroup.has(a.memberId) }],
-        ...(named.length > 0 ? { groupLabel: named[0].name, groupExtra: named.length - 1 } : {}),
-      });
-    }
-  }
-
-  const groups = new Map<ChoreTimeOfDay, ChoreRow[]>();
-  for (const row of choreMap.values()) {
-    const existing = groups.get(row.timeOfDay) ?? [];
-    if (memberOrder) {
-      row.assignees.sort((a, b) => (memberOrder.get(a.memberId) ?? 0) - (memberOrder.get(b.memberId) ?? 0));
-    }
-    // Stable, so household order holds inside the pill and after it.
-    row.assignees.sort((a, b) => Number(!!b.viaGroup) - Number(!!a.viaGroup));
-    if (!row.assignees.some((a) => a.viaGroup)) { delete row.groupLabel; delete row.groupExtra; }
-    existing.push(row);
-    groups.set(row.timeOfDay, existing);
-  }
-  return groups;
 }
 
 /**

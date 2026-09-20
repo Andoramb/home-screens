@@ -8,7 +8,8 @@ import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { Flame, Star, Ticket } from 'lucide-react';
 import ChoreRowItem from './ChoreRowItem';
 import type { MemberChipDetail } from './MemberStrip';
-import type { ChoreRow, ToggleParams } from './helpers';
+import type { ToggleParams } from './helpers';
+import type { ChoreRow } from '@/lib/chore-rows';
 
 interface MemberBandHeaderProps {
   member: FamilyMember;

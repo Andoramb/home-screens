@@ -1,16 +1,18 @@
 'use client';
 
-import type { FamilyMember } from '@/types/family';
+import { useMemo } from 'react';
+import type { FamilyGroup, FamilyMember } from '@/types/family';
 
 import type { ChoreChartConfig, ChoreTimeOfDay} from '@/types/config';
 import type { ResolvedAssignment, MemberStats } from '../types';
 import { TIME_OF_DAY_META, getCurrentTimeOfDay } from '../types';
+import { buildChoreRows, getUniqueInitials, type ChoreRow } from '@/lib/chore-rows';
 import { TEXT_OPACITY, DIVIDER, ink } from '@/lib/constants';
 import { createTZDate, formatDateInTZ } from '@/lib/timezone';
 import { useTranslate, useFormattingLocale } from '@/i18n';
 import ChoreIcon from '../ChoreIcon';
-import { TapCheckbox } from '../../shared/TapCheckbox';
-import { choreTapSize } from '../layout';
+import MemberDot from '../../shared/MemberDot';
+import { choreDotGap, choreDotSize } from '../layout';
 import { CHORE_ROW_ATTR, FitRows } from '../FitRows';
 import { usePressedKey } from '../../shared/usePressedKey';
 import { useHoldToUncheck } from '@/hooks/useHoldToUncheck';
@@ -20,12 +22,13 @@ interface TodayViewProps {
   config: ChoreChartConfig;
   data: {
     members: FamilyMember[];
+    groups?: readonly FamilyGroup[];
     todayAssignments: ResolvedAssignment[];
     memberStats: Map<string, MemberStats>;
     toggleComplete: (choreId: string, memberId: string) => Promise<void>;
   };
   timezone?: string;
-  /** Fitted module font size: the row's tap target scales with it. */
+  /** Fitted module font size: the row's dots scale with it. */
   fontSize: number;
 }
 
@@ -54,13 +57,116 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
   const totalAssigned = todayAssignments.length;
   const totalDone = todayAssignments.filter((a) => a.isCompleted).length;
 
-  const byTime = new Map<ChoreTimeOfDay, ResolvedAssignment[]>();
-  for (const section of TIME_SECTIONS) {
-    byTime.set(section, []);
+  const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
+  const memberOrder = useMemo(() => new Map(members.map((m, i) => [m.id, i])), [members]);
+  const initials = useMemo(() => getUniqueInitials(members), [members]);
+  // One row per chore with a dot per person, rather than one row per person
+  // per chore: five kids on "Make your bed" is one row, not five.
+  const byTime = useMemo(
+    () => buildChoreRows(todayAssignments, memberOrder, data.groups ?? []),
+    [todayAssignments, memberOrder, data.groups],
+  );
+
+  const dotSize = choreDotSize(fontSize);
+  const gap = choreDotGap(dotSize);
+
+  function renderDot(row: ChoreRow, assignee: ChoreRow['assignees'][number]) {
+    const member = memberMap.get(assignee.memberId);
+    if (!member) return null;
+    const key = `${row.choreId}:${assignee.memberId}`;
+    // A finished dot is the one a passing tap must not undo.
+    const holdMode = allowTouch && assignee.isCompleted;
+    const handlers = allowTouch
+      ? hold.rowHandlers(key, holdMode, () => { void press(key, () => toggleComplete(row.choreId, assignee.memberId)); })
+      : undefined;
+
+    return (
+      <MemberDot
+        key={key}
+        {...handlers}
+        data-testid="chore-assignee-dot"
+        role={allowTouch ? 'button' : undefined}
+        tabIndex={allowTouch ? 0 : undefined}
+        aria-pressed={allowTouch ? assignee.isCompleted : undefined}
+        aria-label={allowTouch
+          ? t(assignee.isCompleted ? 'chore-chart.ariaLabels.undoChore' : 'chore-chart.ariaLabels.completeChore',
+              { chore: row.choreName, member: member.name })
+          : undefined}
+        title={member.name}
+        size={dotSize}
+        color={member.color}
+        initial={initials.get(member.id) ?? member.name.slice(0, 1)}
+        isCompleted={assignee.isCompleted}
+        style={{
+          cursor: allowTouch ? 'pointer' : 'default',
+          transform: pressedKey === key ? 'scale(0.92)' : undefined,
+          transition: 'transform 80ms ease-out',
+          // A long press must not select the dot or open the browser's copy sheet.
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          WebkitTouchCallout: 'none',
+          touchAction: 'pan-y',
+        }}
+      />
+    );
   }
-  for (const a of todayAssignments) {
-    const time = a.chore.timeOfDay;
-    byTime.get(time)?.push(a);
+
+  function renderRow(row: ChoreRow, i: number) {
+    // The group's people sit together inside one labelled pill; anyone named
+    // on top of the group follows outside it.
+    const inGroup = row.assignees.filter((a) => a.viaGroup);
+    const named = row.assignees.filter((a) => !a.viaGroup);
+    const holdingHere = row.assignees.some((a) => hold.hintKey === `${row.choreId}:${a.memberId}`);
+    const holding = row.assignees.find((a) => hold.holdingKey === `${row.choreId}:${a.memberId}`);
+    const holdColor = holding ? memberMap.get(holding.memberId)?.color ?? accentColor : accentColor;
+
+    return (
+      <div
+        key={row.choreId}
+        {...{ [CHORE_ROW_ATTR]: '' }}
+        className="w-full flex items-center"
+        style={{
+          position: 'relative',
+          padding: '0.35em 0.6em',
+          gap: '0.5em',
+          borderTop: i > 0 ? `1px solid ${DIVIDER.subtle}` : 'none',
+        }}
+      >
+        {holding && <HoldProgress progress={hold.progress} color={holdColor} />}
+        {row.choreEmoji && (
+          <span className="shrink-0"><ChoreIcon value={row.choreEmoji} size={Math.round(fontSize * 0.9)} color="currentColor" /></span>
+        )}
+        <span
+          className="flex-1 truncate"
+          style={{ opacity: row.assignees.every((a) => a.isCompleted) && !holdingHere ? 0.45 : 1 }}
+        >
+          {holdingHere ? <HoldHint color={holdColor} /> : row.choreName}
+        </span>
+        {showsTicketValue(config.showPoints, row.points) && <TicketValue points={row.points} />}
+        <span className="shrink-0 flex items-center" style={{ gap }}>
+          {inGroup.length > 0 && (
+            <span
+              className="flex items-center"
+              style={{
+                gap,
+                backgroundColor: ink(0.09),
+                borderRadius: 999,
+                padding: `${Math.round(dotSize * 0.09)}px ${Math.round(dotSize * 0.11)}px`,
+              }}
+            >
+              <span
+                className="shrink-0 uppercase"
+                style={{ fontSize: '0.5em', fontWeight: 700, letterSpacing: '0.08em', opacity: TEXT_OPACITY.secondary, paddingLeft: '0.3em' }}
+              >
+                {row.groupLabel}{row.groupExtra ? ` +${row.groupExtra}` : ''}
+              </span>
+              {inGroup.map((a) => renderDot(row, a))}
+            </span>
+          )}
+          {named.map((a) => renderDot(row, a))}
+        </span>
+      </div>
+    );
   }
 
   return (
@@ -76,12 +182,12 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
       {/* Time sections */}
       <FitRows className="space-y-2">
         {TIME_SECTIONS.map((section) => {
-          const items = byTime.get(section) ?? [];
-          if (items.length === 0) return null;
+          const rows = byTime.get(section) ?? [];
+          if (rows.length === 0) return null;
 
           const meta = TIME_OF_DAY_META[section];
           const isCurrent = section === currentTime;
-          const sectionDone = items.every((a) => a.isCompleted);
+          const sectionDone = rows.every((row) => row.assignees.every((a) => a.isCompleted));
           const isPast = meta.order < TIME_OF_DAY_META[currentTime].order;
 
           return (
@@ -106,72 +212,7 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
                 className="rounded-lg overflow-hidden"
                 style={{ backgroundColor: ink(0.04) }}
               >
-                {items.map((assignment, i) => {
-                  const { chore, memberId, isCompleted } = assignment;
-                  const member = members.find((m) => m.id === memberId);
-                  const key = `${chore.id}:${memberId}`;
-                  const rowColor = member?.color ?? accentColor;
-                  // A finished row is the one a passing tap must not undo.
-                  const holdMode = allowTouch && isCompleted;
-                  const handlers = allowTouch
-                    ? hold.rowHandlers(key, holdMode, () => { void press(key, () => toggleComplete(chore.id, memberId)); })
-                    : undefined;
-
-                  return (
-                    <button
-                      key={`${chore.id}-${memberId}`}
-                      {...{ [CHORE_ROW_ATTR]: '' }}
-                      type="button"
-                      {...handlers}
-                      disabled={!allowTouch}
-                      aria-pressed={allowTouch ? isCompleted : undefined}
-                      className="w-full flex items-center gap-2 transition-all"
-                      style={{
-                        position: 'relative',
-                        padding: '0.5em 0.6em',
-                        fontSize: '1em',
-                        opacity: isCompleted ? 0.45 : 1,
-                        cursor: allowTouch ? 'pointer' : 'default',
-                        background: 'none',
-                        border: 'none',
-                        borderTop: i > 0 ? `1px solid ${DIVIDER.subtle}` : 'none',
-                        color: 'inherit',
-                        textAlign: 'left',
-                        // A long press must not select the row's text or open
-                        // the browser's copy sheet.
-                        userSelect: 'none',
-                        WebkitUserSelect: 'none',
-                        WebkitTouchCallout: 'none',
-                        touchAction: 'pan-y',
-                      }}
-                    >
-                      {hold.holdingKey === key && <HoldProgress progress={hold.progress} color={rowColor} />}
-                      {chore.emoji && <span className="shrink-0"><ChoreIcon value={chore.emoji} size={18} color="currentColor" /></span>}
-                      <span
-                        className="flex-1 truncate"
-                        style={{ textDecoration: isCompleted && hold.hintKey !== key ? 'line-through' : 'none' }}
-                      >
-                        {hold.hintKey === key ? <HoldHint color={rowColor} /> : chore.name}
-                      </span>
-                      {showsTicketValue(config.showPoints, chore.points) && <TicketValue points={chore.points} />}
-                      {/* Everyone on a shared chore gets their own row with the same
-                          name, so each row says whose it is: their icon, or their
-                          initial when they have none. */}
-                      {member && (
-                        <span className="shrink-0" title={member.name} style={{ color: member.color, fontWeight: 700 }}>
-                          {member.emoji ? <ChoreIcon value={member.emoji} size={16} color={member.color} /> : member.name[0]}
-                        </span>
-                      )}
-                      {allowTouch ? (
-                        <TapCheckbox checked={isCompleted} pressed={pressedKey === `${chore.id}:${memberId}`} color={member?.color ?? accentColor} size={choreTapSize(fontSize)} />
-                      ) : (
-                        <span style={{ fontSize: '1.3em' }}>
-                          {isCompleted ? '\u2705' : '\u2610'}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                {rows.map(renderRow)}
               </div>
             </div>
           );
