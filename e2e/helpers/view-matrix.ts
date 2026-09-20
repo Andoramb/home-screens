@@ -53,7 +53,8 @@ export const VIEW_MATRIX: ViewSpec[] = [
     'schedule', 'week-list', 'month-grid', 'day-timeline', 'agenda', 'family-grid', 'up-next', 'free-time', 'rolling'] },
   { type: 'chore-chart', key: 'view', kind: 'local-data', seed: 'chores', views: [
     'board', 'star-chart', 'today', 'progress', 'compact', 'reward-history'] },
-  { type: 'fullscreen-chore-chart', key: 'view', kind: 'local-data', seed: 'chores', views: ['chores', 'rewards-store'] },
+  { type: 'fullscreen-chore-chart', key: 'view', kind: 'local-data', seed: 'chores', views: [
+    'chores', 'rewards-store', 'reward-history', 'reward-totals', 'reward-spotlight'] },
   { type: 'meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'next-meal', 'compact', 'list'] },
   { type: 'fullscreen-meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'menu-board', 'next-meal'] },
   { type: 'fullscreen-weather', key: 'view', kind: 'networked', stubKey: 'weather', views: ['panorama', 'strip', 'almanac', 'ambient', 'week', 'hourly'] },

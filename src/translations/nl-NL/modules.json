@@ -693,6 +693,39 @@
       "redeemedBody": {
         "one": "{member} heeft 1 ticket besteed aan {reward}",
         "other": "{member} heeft {count} tickets besteed aan {reward}"
+      },
+      "history": "Geschiedenis"
+    },
+    "rewardHistory": {
+      "subtitle": "Waar het gezin tickets aan heeft uitgegeven",
+      "lastDays": "Laatste {count} dagen",
+      "ticketsUnit": {
+        "one": "ticket",
+        "other": "tickets"
+      },
+      "rewardsUnit": {
+        "one": "beloning",
+        "other": "beloningen"
+      },
+      "spentByFamily": "uitgegeven door het gezin",
+      "redeemed": "ingewisseld",
+      "favorite": {
+        "one": "de favoriet, {count} keer gekozen",
+        "other": "de favoriet, {count} keer gekozen"
+      },
+      "latest": "Nieuwste beloning",
+      "latestLine": {
+        "one": "{member} gaf {count} ticket uit, {when}",
+        "other": "{member} gaf {count} tickets uit, {when}"
+      },
+      "beforeThat": "Daarvoor",
+      "latestList": "Nieuwste",
+      "emptyHint": "Beloningen verschijnen hier zodra iemand tickets uitgeeft",
+      "bucket": {
+        "today": "Vandaag",
+        "yesterday": "Gisteren",
+        "thisWeek": "Deze week",
+        "earlier": "Eerder"
       }
     }
   },

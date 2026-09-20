@@ -3,7 +3,7 @@
 import type { FamilyMember } from '@/types/family';
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { ArrowLeft, Ticket, Users } from 'lucide-react';
+import { ArrowLeft, History, Ticket, Users } from 'lucide-react';
 
 import type { RewardDefinition, RewardRedemption } from '@/lib/reward-data';
 import { displayFetch } from '@/lib/display-fetch';
@@ -40,6 +40,8 @@ interface RewardsStoreViewProps {
   accentColor?: string;
   theme: FullscreenThemeTokens;
   onBack?: () => void;
+  /** Opens the family's reward history in place of the store. */
+  onShowHistory?: () => void;
   idleTimeoutMs?: number;
 }
 
@@ -64,6 +66,7 @@ export function RewardsStoreView({
   accentColor,
   theme,
   onBack,
+  onShowHistory,
   idleTimeoutMs,
 }: RewardsStoreViewProps) {
   // Ink that reads on top of the accent (Redeem, Yes!, the redeemed bar).
@@ -239,33 +242,43 @@ export function RewardsStoreView({
   const feedRows = memberRedemptions.slice(0, fit.feedRows);
   const moreCount = hiddenBelow(visibleRewards.length, fit, scrollTop, scrollerSize.height - moreStripHeight);
 
+  const headerPill: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 8 * k,
+    padding: `${8 * k}px ${20 * k}px`,
+    minHeight: 44 * k,
+    borderRadius: 999,
+    border: '1px solid var(--fcc-border)',
+    background: 'var(--fcc-surface)',
+    color: 'var(--fcc-accent)',
+    fontSize: 22 * k,
+    fontWeight: 700,
+    cursor: 'pointer',
+    boxShadow: 'var(--fcc-card-shadow)',
+    flexShrink: 0,
+    whiteSpace: 'nowrap',
+    outline: 'none',
+    fontFamily: 'inherit',
+  };
+  // Only once there is a history to look at; the whole family's, not the picked person's.
+  const historyButton = onShowHistory && localRedemptions.length > 0 && (
+    <button data-testid="fcc-store-history" onClick={onShowHistory} style={headerPill}>
+      <History size={22 * k} strokeWidth={2.5} aria-hidden="true" />
+      {t('fullscreen-chore-chart.rewardsStore.history')}
+    </button>
+  );
   const backButton = onBack && (
-    <button
-      data-testid="fcc-store-back"
-      onClick={onBack}
-      style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: 8 * k,
-        padding: `${8 * k}px ${20 * k}px`,
-        minHeight: 44 * k,
-        borderRadius: 999,
-        border: '1px solid var(--fcc-border)',
-        background: 'var(--fcc-surface)',
-        color: 'var(--fcc-accent)',
-        fontSize: 22 * k,
-        fontWeight: 700,
-        cursor: 'pointer',
-        boxShadow: 'var(--fcc-card-shadow)',
-        flexShrink: 0,
-        whiteSpace: 'nowrap',
-        outline: 'none',
-        fontFamily: 'inherit',
-      }}
-    >
+    <button data-testid="fcc-store-back" onClick={onBack} style={headerPill}>
       <ArrowLeft size={22 * k} strokeWidth={2.5} aria-hidden="true" />
       {t('fullscreen-chore-chart.rewardsStore.backToChores')}
     </button>
+  );
+  const headerButtons = (historyButton || backButton) && (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12 * k, flexShrink: 0 }}>
+      {historyButton}
+      {backButton}
+    </div>
   );
 
   const picker = showPicker && (
@@ -415,7 +428,7 @@ export function RewardsStoreView({
               {t('fullscreen-chore-chart.rewardsStore.subtitle')}
             </div>
           </div>
-          {backButton}
+          {headerButtons}
         </div>
 
         {hasMembers && (isLandscape ? (

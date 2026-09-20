@@ -192,7 +192,7 @@ describe('fitChoreFontSize, reward history', () => {
   });
 
   it('holds the type to what four columns of words can fit across the card', () => {
-    expect(fitChoreFontSize({ ...card, rows: 5 })).toBeCloseTo(476 / 22, 5);
+    expect(fitChoreFontSize({ ...card, rows: 5 })).toBeCloseTo(476 / 24, 5);
   });
 
   it('shrinks a long history so every row it promises fits the card', () => {

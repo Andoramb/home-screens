@@ -3553,7 +3553,10 @@
       "tapToComplete": "Tik om af te ronden (display)",
       "membersCount": "{count} leden",
       "choresCount": "{count} klusjes",
-      "editChoreChart": "Klusjeslijst bewerken"
+      "editChoreChart": "Klusjeslijst bewerken",
+      "viewRewardHistory": "Beloningsgeschiedenis (dag voor dag)",
+      "viewRewardTotals": "Beloningsgeschiedenis (totalen)",
+      "viewRewardSpotlight": "Beloningsgeschiedenis (in de schijnwerper)"
     },
     "fullscreen-meal-planner": {
       "themeDefault": "Standaard (uit Instellingen)",

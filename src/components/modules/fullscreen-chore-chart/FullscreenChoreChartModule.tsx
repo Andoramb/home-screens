@@ -23,6 +23,7 @@ import { Star } from 'lucide-react';
 import StarChart from './StarChart';
 import WeekStrip from './WeekStrip';
 import { RewardsStoreView } from './RewardsStoreView';
+import { RewardHistoryView, type RewardHistoryVariant } from './RewardHistoryView';
 import {
   type ChoreRow,
   type ToggleParams,
@@ -52,6 +53,13 @@ interface FullscreenChoreChartModuleProps {
 
 /** Width the block sizes below are authored against. */
 const REF_W = 1080;
+/** The configured views that are a reward history, and which one each draws. */
+const HISTORY_VARIANTS: Partial<Record<FullscreenChoreChartConfig['view'], RewardHistoryVariant>> = {
+  'reward-history': 'days',
+  'reward-totals': 'totals',
+  'reward-spotlight': 'spotlight',
+};
+
 /** Chore name size at `medium` on the standard kiosk; `typographySize` multiplies it. */
 const NAME_REF = 30;
 /** A chore name is never drawn smaller than this, whatever the panel. */
@@ -126,7 +134,7 @@ export default function FullscreenChoreChartModule({
   const pad = 40 * k * d;
   const weekProgress = config.weekProgress ?? 'chips';
 
-  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, overspentNotice, isLoading, error } = useChoreData(config);
+  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, overspentNotice, isLoading, error, rewardsLoading, rewardsError } = useChoreData(config);
   // Un-ticking hands tickets back that may already have been spent. The card
   // chart says so at its foot; here it rides in the toast strip.
   const overspentMessage = useOverspentMessage(overspentNotice);
@@ -184,6 +192,12 @@ export default function FullscreenChoreChartModule({
   const [showRewardsOverride, setShowRewardsOverride] = useState(false);
 
   const effectiveView = showRewardsOverride ? 'rewards-store' : (config.view ?? 'chores');
+  // The store's own History pill: the totals view, opened in place.
+  const [showStoreHistory, setShowStoreHistory] = useState(false);
+  const closeStoreHistory = useCallback(() => setShowStoreHistory(false), []);
+  const historyVariant: RewardHistoryVariant | null = effectiveView === 'rewards-store'
+    ? (showStoreHistory ? 'totals' : null)
+    : HISTORY_VARIANTS[effectiveView] ?? null;
 
   const rewardBalances = useMemo(() => {
     const b: Record<string, number> = {};
@@ -615,7 +629,32 @@ export default function FullscreenChoreChartModule({
         }
       `}</style>
 
-      {effectiveView === 'rewards-store' ? (
+      {historyVariant ? (
+        // The history is drawn from the rewards fetch alone, so "not arrived"
+        // and "could not be read" must not read as "nothing redeemed yet".
+        isPending || rewardsLoading || rewardsError ? (
+          <div
+            data-testid={error || rewardsError ? 'module-not-updating' : 'fcc-loading'}
+            aria-live="polite"
+            style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fcc-text-2)', fontSize: 40 * tc, textAlign: 'center', padding: pad }}
+          >
+            {t(error || rewardsError ? 'common.notUpdating' : 'chore-chart.loading')}
+          </div>
+        ) : (
+          <RewardHistoryView
+            variant={historyVariant}
+            members={members}
+            redemptions={allRedemptions}
+            k={k}
+            typoMul={typoMul}
+            density={config.density}
+            isLandscape={isLandscape}
+            onBack={showStoreHistory ? closeStoreHistory : undefined}
+            backLabel={t('fullscreen-chore-chart.rewardsStore.title')}
+            idleTimeoutMs={showStoreHistory ? 60_000 : undefined}
+          />
+        )
+      ) : effectiveView === 'rewards-store' ? (
         <RewardsStoreView
           members={members}
           rewards={rewards}
@@ -629,6 +668,7 @@ export default function FullscreenChoreChartModule({
           accentColor={config.accentColor}
           theme={theme}
           onBack={showRewardsOverride ? () => setShowRewardsOverride(false) : undefined}
+          onShowHistory={() => setShowStoreHistory(true)}
           idleTimeoutMs={showRewardsOverride ? 60_000 : undefined}
         />
       ) : isLandscape ? (

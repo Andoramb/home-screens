@@ -3972,7 +3972,14 @@ export interface ChoreChartConfig {
   historyLimit?: number;
 }
 
-export type FullscreenChoreChartView = 'chores' | 'rewards-store';
+/**
+ * - `chores`           the daily chore board
+ * - `rewards-store`    browse and redeem rewards
+ * - `reward-history`   what the family redeemed, grouped by how long ago
+ * - `reward-totals`    the last 30 days summed up, over a one-line list
+ * - `reward-spotlight` the newest redemption as a hero, the rest under it
+ */
+export type FullscreenChoreChartView = 'chores' | 'rewards-store' | 'reward-history' | 'reward-totals' | 'reward-spotlight';
 
 /**
  * How the week's stars are shown on the fullscreen chore board.
@@ -3990,7 +3997,11 @@ export type FullscreenChoreChartWeekProgress = 'chips' | 'strip' | 'grid' | 'off
 export type FullscreenChoreChartLayout = 'by-time' | 'by-person';
 
 export interface FullscreenChoreChartConfig {
-  /** Display mode: `chores` (daily chore board) or `rewards-store` (browse and redeem rewards) */
+  /**
+   * Display mode: `chores` (daily chore board), `rewards-store` (browse and redeem rewards), or one
+   * of the read-only reward histories: `reward-history` (day by day), `reward-totals` (30-day totals
+   * over a list) or `reward-spotlight` (the newest reward up top)
+   */
   view: FullscreenChoreChartView;
   /** Show a toggle button in the chore board header to switch to the rewards store view */
   showRewardsButton: boolean;

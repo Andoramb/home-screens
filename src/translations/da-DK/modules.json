@@ -693,6 +693,39 @@
       "redeemedBody": {
         "one": "{member} brugte 1 billet på {reward}",
         "other": "{member} brugte {count} billetter på {reward}"
+      },
+      "history": "Historik"
+    },
+    "rewardHistory": {
+      "subtitle": "Det har familien brugt billetter på",
+      "lastDays": "Seneste {count} dage",
+      "ticketsUnit": {
+        "one": "billet",
+        "other": "billetter"
+      },
+      "rewardsUnit": {
+        "one": "belønning",
+        "other": "belønninger"
+      },
+      "spentByFamily": "brugt af familien",
+      "redeemed": "indløst",
+      "favorite": {
+        "one": "favoritten, valgt {count} gang",
+        "other": "favoritten, valgt {count} gange"
+      },
+      "latest": "Seneste belønning",
+      "latestLine": {
+        "one": "{member} brugte {count} billet, {when}",
+        "other": "{member} brugte {count} billetter, {when}"
+      },
+      "beforeThat": "Før det",
+      "latestList": "Seneste",
+      "emptyHint": "Belønninger vises her, når nogen bruger deres billetter",
+      "bucket": {
+        "today": "I dag",
+        "yesterday": "I går",
+        "thisWeek": "Denne uge",
+        "earlier": "Tidligere"
       }
     }
   },

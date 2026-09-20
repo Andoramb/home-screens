@@ -693,6 +693,39 @@
       "redeemedBody": {
         "one": "{member} hat 1 Ticket für {reward} ausgegeben",
         "other": "{member} hat {count} Tickets für {reward} ausgegeben"
+      },
+      "history": "Verlauf"
+    },
+    "rewardHistory": {
+      "subtitle": "Wofür die Familie Tickets ausgegeben hat",
+      "lastDays": "Letzte {count} Tage",
+      "ticketsUnit": {
+        "one": "Ticket",
+        "other": "Tickets"
+      },
+      "rewardsUnit": {
+        "one": "Belohnung",
+        "other": "Belohnungen"
+      },
+      "spentByFamily": "von der Familie ausgegeben",
+      "redeemed": "eingelöst",
+      "favorite": {
+        "one": "der Liebling, {count}-mal gewählt",
+        "other": "der Liebling, {count}-mal gewählt"
+      },
+      "latest": "Neueste Belohnung",
+      "latestLine": {
+        "one": "{member} hat {count} Ticket ausgegeben, {when}",
+        "other": "{member} hat {count} Tickets ausgegeben, {when}"
+      },
+      "beforeThat": "Davor",
+      "latestList": "Neueste",
+      "emptyHint": "Hier erscheinen Belohnungen, sobald jemand Tickets ausgibt",
+      "bucket": {
+        "today": "Heute",
+        "yesterday": "Gestern",
+        "thisWeek": "Diese Woche",
+        "earlier": "Früher"
       }
     }
   },

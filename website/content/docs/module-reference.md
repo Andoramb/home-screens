@@ -66,6 +66,14 @@ A fullscreen ambient chore chart display designed to fill the entire screen. Rea
 **Rewards store view:**
 
 The `rewards-store` view displays a fullscreen rewards browsing and redemption interface. A member picker at the top shows each member's ticket balance. The main area shows a grid of available rewards with ticket costs and eligibility indicators. Members can redeem rewards directly from the display when they have enough tickets. When `showRewardsButton` is enabled, a toggle button in the chore board header lets users switch between the chore board and rewards store without changing the module config.
+
+**Reward history views:**
+
+Three read-only views of what the family has redeemed, newest first, covering the 90 days the hub keeps. When the history runs past the screen the list scrolls by touch and says how many more are below.
+
+- **reward-history**: Grouped under Today, Yesterday, This week and Earlier. Each row leads with the reward, with the person under it.
+- **reward-totals**: Three tiles for the last 30 days (tickets spent, rewards redeemed, the family's favorite) over a one-line list, which fits the most history. The rewards store's **History** button opens this view and returns to the store after a minute without a touch.
+- **reward-spotlight**: The newest redemption as a large card, with the rest listed under it.
 {% /module %}
 
 {% module type="fullscreen-meal-planner" %}

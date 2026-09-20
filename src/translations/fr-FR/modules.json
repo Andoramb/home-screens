@@ -693,6 +693,39 @@
       "redeemedBody": {
         "one": "{member} a dépensé 1 ticket pour {reward}",
         "other": "{member} a dépensé {count} tickets pour {reward}"
+      },
+      "history": "Historique"
+    },
+    "rewardHistory": {
+      "subtitle": "Ce que la famille a acheté avec ses tickets",
+      "lastDays": "{count} derniers jours",
+      "ticketsUnit": {
+        "one": "ticket",
+        "other": "tickets"
+      },
+      "rewardsUnit": {
+        "one": "récompense",
+        "other": "récompenses"
+      },
+      "spentByFamily": "dépensés par la famille",
+      "redeemed": "échangées",
+      "favorite": {
+        "one": "la préférée, choisie {count} fois",
+        "other": "la préférée, choisie {count} fois"
+      },
+      "latest": "Dernière récompense",
+      "latestLine": {
+        "one": "{member} a dépensé {count} ticket, {when}",
+        "other": "{member} a dépensé {count} tickets, {when}"
+      },
+      "beforeThat": "Avant ça",
+      "latestList": "Les dernières",
+      "emptyHint": "Les récompenses s'affichent ici dès que quelqu'un dépense ses tickets",
+      "bucket": {
+        "today": "Aujourd'hui",
+        "yesterday": "Hier",
+        "thisWeek": "Cette semaine",
+        "earlier": "Plus tôt"
       }
     }
   },

@@ -21,6 +21,10 @@ interface RewardHistoryViewProps {
   fontSize: number;
 }
 
+/** Who, what, cost, when. The last two take what their widest row needs. */
+const LIST_WITH_COST = 'grid gap-x-[0.7em] [grid-template-columns:minmax(0,1.5fr)_minmax(0,2fr)_auto_auto]';
+const LIST_WITHOUT_COST = 'grid gap-x-[0.7em] [grid-template-columns:minmax(0,1.5fr)_minmax(0,2fr)_auto]';
+
 export function RewardHistoryView({
   config,
   data,
@@ -75,7 +79,10 @@ export function RewardHistoryView({
           {t('chore-chart.noRewardHistory')}
         </div>
       ) : (
-        <FitRows>
+        // One grid for the whole list, with each row a subgrid of it: rows that
+        // sized their own columns put "12 tickets" and "6 tickets" at different
+        // widths, and the reward names wandered from row to row.
+        <FitRows className={config.showPoints !== false ? LIST_WITH_COST : LIST_WITHOUT_COST}>
           {redemptions.map((redemption) => {
             const member = memberMap.get(redemption.memberId);
             const memberName = member?.name ?? redemption.memberName;
@@ -84,17 +91,12 @@ export function RewardHistoryView({
               <div
                 key={redemption.id}
                 {...{ [CHORE_ROW_ATTR]: '' }}
-                className="grid items-center border-b last:border-b-0"
+                className="col-span-full grid grid-cols-subgrid items-center border-b last:border-b-0"
                 style={{
                   // All in em, and a fixed line height, so a row is exactly the
                   // height `fitChoreFontSize` budgets for it (PLAIN_ROW_EM).
                   padding: '0.35em 0.4em',
-                  columnGap: '0.7em',
                   lineHeight: 1.3,
-                  gridTemplateColumns:
-                    config.showPoints !== false
-                      ? 'minmax(0, 1.3fr) minmax(0, 2fr) auto auto'
-                      : 'minmax(0, 1.3fr) minmax(0, 2fr) auto',
                   borderColor: DIVIDER.visible,
                 }}
               >

@@ -56,11 +56,17 @@ for (const chart of CHARTS) {
  * views treat as optional. Until it lands, or when it fails, the card must not
  * tell a family with redemptions that nobody has redeemed anything.
  */
-test.describe('chore-chart reward history before its rewards arrive', () => {
+const HISTORIES = [
+  { type: 'chore-chart', config: { view: 'reward-history' }, loading: 'Loading chores' },
+  { type: 'fullscreen-chore-chart', config: { view: 'reward-history' }, loading: 'Loading chores' },
+  { type: 'fullscreen-chore-chart', config: { view: 'reward-totals' }, loading: 'Loading chores' },
+] as const;
+
+for (const history of HISTORIES) test.describe(`${history.type} ${history.config.view} before its rewards arrive`, () => {
   test.beforeEach(async ({ request, sandboxDir }) => {
     await seedHouseholdChores(request, sandboxDir, CHORE_DATA);
     seedRedemptions(sandboxDir);
-    const mod = buildModuleInstance('chore-chart', { view: 'reward-history' });
+    const mod = buildModuleInstance(history.type, history.config);
     mod.id = 'chart';
     await putConfig(request, baseConfig({ screens: [makeScreen('s1', 'S1', [mod])], settings: matrixSettings() }));
   });
@@ -75,7 +81,7 @@ test.describe('chore-chart reward history before its rewards arrive', () => {
 
     await page.goto('/display');
     const mod = page.locator('[data-module-id="chart"]');
-    await expect(mod).toContainText('Loading chores');
+    await expect(mod).toContainText(history.loading);
     await expect(mod).not.toContainText('No rewards redeemed yet');
 
     release();

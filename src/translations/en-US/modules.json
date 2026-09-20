@@ -693,6 +693,39 @@
       "redeemedBody": {
         "one": "{member} spent 1 ticket on {reward}",
         "other": "{member} spent {count} tickets on {reward}"
+      },
+      "history": "History"
+    },
+    "rewardHistory": {
+      "subtitle": "What the family has spent tickets on",
+      "lastDays": "Last {count} days",
+      "ticketsUnit": {
+        "one": "ticket",
+        "other": "tickets"
+      },
+      "rewardsUnit": {
+        "one": "reward",
+        "other": "rewards"
+      },
+      "spentByFamily": "spent by the family",
+      "redeemed": "redeemed",
+      "favorite": {
+        "one": "the favorite, picked {count} time",
+        "other": "the favorite, picked {count} times"
+      },
+      "latest": "Latest reward",
+      "latestLine": {
+        "one": "{member} spent {count} ticket, {when}",
+        "other": "{member} spent {count} tickets, {when}"
+      },
+      "beforeThat": "Before that",
+      "latestList": "Latest",
+      "emptyHint": "Rewards show up here once someone spends their tickets",
+      "bucket": {
+        "today": "Today",
+        "yesterday": "Yesterday",
+        "thisWeek": "This week",
+        "earlier": "Earlier"
       }
     }
   },

@@ -3553,7 +3553,10 @@
       "tapToComplete": "Tippen zum Abhaken (Display)",
       "membersCount": "{count} Personen",
       "choresCount": "{count} Aufgaben",
-      "editChoreChart": "Aufgabenplan bearbeiten"
+      "editChoreChart": "Aufgabenplan bearbeiten",
+      "viewRewardHistory": "Belohnungsverlauf (Tag für Tag)",
+      "viewRewardTotals": "Belohnungsverlauf (Summen)",
+      "viewRewardSpotlight": "Belohnungsverlauf (Im Rampenlicht)"
     },
     "fullscreen-meal-planner": {
       "themeDefault": "Standard (aus Einstellungen)",

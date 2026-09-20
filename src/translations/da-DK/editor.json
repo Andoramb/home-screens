@@ -3553,7 +3553,10 @@
       "tapToComplete": "Tryk for at klare (på skærmen)",
       "membersCount": "{count} medlemmer",
       "choresCount": "{count} pligter",
-      "editChoreChart": "Redigér pligtskema"
+      "editChoreChart": "Redigér pligtskema",
+      "viewRewardHistory": "Belønningshistorik (dag for dag)",
+      "viewRewardTotals": "Belønningshistorik (totaler)",
+      "viewRewardSpotlight": "Belønningshistorik (i rampelyset)"
     },
     "fullscreen-meal-planner": {
       "themeDefault": "Standard (fra Indstillinger)",

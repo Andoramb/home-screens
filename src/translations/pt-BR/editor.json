@@ -3553,7 +3553,10 @@
       "tapToComplete": "Tocar para concluir (na tela)",
       "membersCount": "{count} membros",
       "choresCount": "{count} tarefas",
-      "editChoreChart": "Editar quadro de tarefas"
+      "editChoreChart": "Editar quadro de tarefas",
+      "viewRewardHistory": "Histórico de recompensas (dia a dia)",
+      "viewRewardTotals": "Histórico de recompensas (totais)",
+      "viewRewardSpotlight": "Histórico de recompensas (destaque)"
     },
     "fullscreen-meal-planner": {
       "themeDefault": "Padrão (das configurações)",

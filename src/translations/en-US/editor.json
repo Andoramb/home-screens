@@ -3553,7 +3553,10 @@
       "tapToComplete": "Tap to Complete (Display)",
       "membersCount": "{count} members",
       "choresCount": "{count} chores",
-      "editChoreChart": "Edit Chore Chart"
+      "editChoreChart": "Edit Chore Chart",
+      "viewRewardHistory": "Reward History (Day by Day)",
+      "viewRewardTotals": "Reward History (Totals)",
+      "viewRewardSpotlight": "Reward History (Spotlight)"
     },
     "fullscreen-meal-planner": {
       "themeDefault": "Default (from Settings)",

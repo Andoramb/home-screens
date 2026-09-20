@@ -730,10 +730,13 @@
             "text": "FullscreenChoreChartView",
             "values": [
               "chores",
-              "rewards-store"
+              "rewards-store",
+              "reward-history",
+              "reward-totals",
+              "reward-spotlight"
             ]
           },
-          "description": "Display mode: `chores` (daily chore board) or `rewards-store` (browse and redeem rewards)",
+          "description": "Display mode: `chores` (daily chore board), `rewards-store` (browse and redeem rewards), or one of the read-only reward histories: `reward-history` (day by day), `reward-totals` (30-day totals over a list) or `reward-spotlight` (the newest reward up top)",
           "default": "chores"
         },
         {
@@ -895,7 +898,10 @@
       ],
       "views": [
         "chores",
-        "rewards-store"
+        "rewards-store",
+        "reward-history",
+        "reward-totals",
+        "reward-spotlight"
       ]
     },
     {

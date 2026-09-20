@@ -39,6 +39,9 @@ export function FullscreenChoreChartConfigSection({ mod, screenId }: { mod: Modu
   const VIEW_OPTIONS: { value: FullscreenChoreChartView; label: string }[] = [
     { value: 'chores', label: t('configSections.fullscreen-chore-chart.viewChoreBoard') },
     { value: 'rewards-store', label: t('configSections.fullscreen-chore-chart.viewRewardsStore') },
+    { value: 'reward-history', label: t('configSections.fullscreen-chore-chart.viewRewardHistory') },
+    { value: 'reward-totals', label: t('configSections.fullscreen-chore-chart.viewRewardTotals') },
+    { value: 'reward-spotlight', label: t('configSections.fullscreen-chore-chart.viewRewardSpotlight') },
   ];
 
   const DENSITY_OPTIONS = [

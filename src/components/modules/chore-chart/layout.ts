@@ -138,7 +138,7 @@ const PLAIN_ROW_RULE_PX = 1;
  * needs far more than a chore row: at 13 a name was cut to "Ta...".
  */
 const LIST_WIDTH_EM = 13;
-const LIST_WIDTH_EM_BY_VIEW: Record<string, number> = { 'reward-history': 22 };
+const LIST_WIDTH_EM_BY_VIEW: Record<string, number> = { 'reward-history': 24 };
 
 /** A time-of-day header: its 0.85em line plus its margins. */
 const SECTION_EM = 1.9;
