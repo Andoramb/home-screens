@@ -15,6 +15,7 @@ import {
   canChoreRotate,
   finalizeChoreAssignment,
   getChoreValidationHintKind,
+  scheduleDaysCovered,
   type ChoreValidationHintKind,
 } from './chore-form-presentation';
 import { DEFAULT_CHORE_ICON } from '@/lib/chore-constants';
@@ -42,14 +43,14 @@ export interface ChoreFormState {
   assigneeGroupIds: string[];
   rotation: ChoreRotation;
   schedule: Record<string, number[]>;
+  /** The schedule's group rows that still exist: everyone in the group has the chore on those days. */
+  groupSchedule: Record<string, number[]>;
   /** Who already has the chore through a picked group, with the names of those groups. */
   coveredByGroup: Map<string, string[]>;
-  /** A group is picked but nobody is in it (and nobody is picked directly): the chore would go to no one. */
+  /** A group is picked, or has days on the schedule, but nobody is in it and nobody else is picked: the chore would go to no one. */
   goesToNobody: boolean;
   /** Whether the form asks how the chore is shared: two or more people, a group, or a schedule. */
   canRotate: boolean;
-  /** A per-person schedule has no row for whoever joins a group later, so it is off while a group is picked. */
-  scheduleAllowed: boolean;
 
   setName: (v: string) => void;
   setEmoji: (v: string) => void;
@@ -66,10 +67,16 @@ export interface ChoreFormState {
   toggleGroup: (id: string) => void;
   toggleScheduleDay: (memberId: string, day: number) => void;
   addMemberToSchedule: (memberId: string) => void;
+  toggleGroupScheduleDay: (groupId: string, day: number) => void;
+  addGroupToSchedule: (groupId: string) => void;
+  removeMemberFromSchedule: (memberId: string) => void;
+  removeGroupFromSchedule: (groupId: string) => void;
 
   scheduleMembers: string[];
+  scheduleGroups: FamilyGroup[];
   scheduleDays: number[];
   unscheduledMembers: FamilyMember[];
+  unscheduledGroups: FamilyGroup[];
 
   canSave: boolean;
   validationHintKind: ChoreValidationHintKind | null;
@@ -98,62 +105,76 @@ export function useChoreForm(
   const [pickedGroupIds, setPickedGroupIds] = useState<string[]>(initial?.assigneeGroupIds ?? []);
   const [rotation, setRotation] = useState<ChoreRotation>(initial?.rotation ?? 'fixed');
   const [schedule, setSchedule] = useState<Record<string, number[]>>(initial?.schedule ?? {});
+  const [pickedGroupSchedule, setPickedGroupSchedule] = useState<Record<string, number[]>>(initial?.groupSchedule ?? {});
 
   // A group deleted since the chore was saved drops out here, so the form
   // never counts it and never saves it back. Only a loaded family list can
   // say a group is gone: until then every picked group is kept, and saving
   // waits, so a quick rename cannot quietly take a chore away from its group.
-  const assigneeGroupIds = familyReady ? pickedGroupIds.filter((id) => groups.some((group) => group.id === id)) : pickedGroupIds;
+  // The same goes for a deleted group's row on the schedule.
+  const groupLives = (id: string) => !familyReady || groups.some((group) => group.id === id);
+  const assigneeGroupIds = pickedGroupIds.filter(groupLives);
+  const groupSchedule = Object.fromEntries(Object.entries(pickedGroupSchedule).filter(([id]) => groupLives(id)));
   const assigneeCount = choreAssigneeIds({ assigneeIds, assigneeGroupIds }, groups).length;
-  const scheduleAllowed = assigneeGroupIds.length === 0;
   const coveredByGroup = new Map<string, string[]>();
   for (const group of groups) {
     if (!assigneeGroupIds.includes(group.id)) continue;
     for (const memberId of group.memberIds) coveredByGroup.set(memberId, [...(coveredByGroup.get(memberId) ?? []), group.name]);
   }
-  const goesToNobody = familyReady && rotation !== 'schedule' && assigneeGroupIds.length > 0 && assigneeCount === 0;
+  const saved = finalizeChoreAssignment({ rotation, schedule, groupSchedule, assigneeIds, assigneeGroupIds, groups });
+  const goesToNobody = familyReady && (saved.assigneeGroupIds?.length ?? 0) > 0 && choreAssigneeIds(saved, groups).length === 0;
   const canRotate = canChoreRotate({ assigneeCount, assigneeGroupIdsLength: assigneeGroupIds.length, rotation });
 
+  // Whoever is picked when the grid opens starts with a row on the chore's
+  // days, people and groups alike. A grid that already has rows is left alone.
   const switchToSchedule = () => {
-    if (!scheduleAllowed) return;
     setRotation('schedule');
-    if (Object.keys(schedule).length === 0) {
-      const seeded: Record<string, number[]> = {};
-      for (const id of assigneeIds) {
-        seeded[id] = [...daysOfWeek];
-      }
-      setSchedule(seeded);
+    if (Object.keys(schedule).length === 0 && Object.keys(groupSchedule).length === 0) {
+      setSchedule(Object.fromEntries(assigneeIds.map((id) => [id, [...daysOfWeek]])));
+      setPickedGroupSchedule(Object.fromEntries(assigneeGroupIds.map((id) => [id, [...daysOfWeek]])));
     }
   };
 
+  // The way back: every row with a day becomes a picked person or group.
   const switchFromSchedule = (newRotation: ChoreRotation) => {
-    const ids = Object.entries(schedule).filter(([, d]) => d.length > 0).map(([id]) => id);
-    const days = [...new Set(Object.values(schedule).flat())].sort((a, b) => a - b);
-    if (ids.length > 0) setAssigneeIds(ids);
+    const left = finalizeChoreAssignment({ rotation: 'schedule', schedule, groupSchedule, assigneeIds, assigneeGroupIds, groups });
+    const days = scheduleDaysCovered(schedule, groupSchedule);
+    if (left.assigneeIds.length > 0 || left.assigneeGroupIds) {
+      setAssigneeIds(left.assigneeIds);
+      setPickedGroupIds(left.assigneeGroupIds ?? []);
+    }
     if (days.length > 0) setDaysOfWeek(days);
     setRotation(newRotation);
   };
 
-  const toggleScheduleDay = (memberId: string, day: number) => {
-    setSchedule((prev) => {
-      const current = prev[memberId] ?? [];
-      const next = current.includes(day) ? current.filter((d) => d !== day) : [...current, day];
-      if (next.length === 0) {
-        const rest = { ...prev };
-        delete rest[memberId];
-        return rest;
-      }
-      return { ...prev, [memberId]: next };
-    });
+  // A row left with no days stays on the grid (it is not saved) so it does
+  // not vanish from under a finger; taking a row off is its own button.
+  const toggledRow = (rows: Record<string, number[]>, id: string, day: number) => {
+    const current = rows[id] ?? [];
+    return { ...rows, [id]: current.includes(day) ? current.filter((d) => d !== day) : [...current, day] };
   };
+  const withoutRow = (rows: Record<string, number[]>, id: string) => {
+    const { [id]: _row, ...rest } = rows;
+    return rest;
+  };
+
+  const toggleScheduleDay = (memberId: string, day: number) => setSchedule((prev) => toggledRow(prev, memberId, day));
+  const toggleGroupScheduleDay = (groupId: string, day: number) => setPickedGroupSchedule((prev) => toggledRow(prev, groupId, day));
+  const removeMemberFromSchedule = (memberId: string) => setSchedule((prev) => withoutRow(prev, memberId));
+  const removeGroupFromSchedule = (groupId: string) => setPickedGroupSchedule((prev) => withoutRow(prev, groupId));
 
   const addMemberToSchedule = (memberId: string) => {
     setSchedule((prev) => ({ ...prev, [memberId]: [] }));
   };
+  const addGroupToSchedule = (groupId: string) => {
+    setPickedGroupSchedule((prev) => ({ ...prev, [groupId]: [] }));
+  };
 
   const scheduleMembers = Object.keys(schedule);
-  const scheduleDays = [...new Set(Object.values(schedule).flat())].sort((a, b) => a - b);
+  const scheduleGroups = groups.filter((group) => Object.hasOwn(groupSchedule, group.id));
+  const scheduleDays = scheduleDaysCovered(schedule, groupSchedule);
   const unscheduledMembers = members.filter((m) => !scheduleMembers.includes(m.id));
+  const unscheduledGroups = groups.filter((group) => !Object.hasOwn(groupSchedule, group.id));
 
   const toggleDay = (d: number) => {
     setDaysOfWeek((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
@@ -164,14 +185,10 @@ export function useChoreForm(
   };
 
   const toggleGroup = (id: string) => {
-    const adding = !pickedGroupIds.includes(id);
     setPickedGroupIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    if (adding && rotation === 'schedule') switchFromSchedule('fixed');
   };
 
-  const scheduleHasAssignment = rotation === 'schedule'
-    ? Object.values(schedule).some((days) => days.length > 0)
-    : true;
+  const scheduleHasAssignment = rotation !== 'schedule' || scheduleDays.length > 0;
   const validationHintKind = getChoreValidationHintKind({
     name,
     rotation,
@@ -185,30 +202,26 @@ export function useChoreForm(
 
   const submit = (onSubmit: (data: Omit<ChoreDefinition, 'id'>) => void) => {
     if (!canSave) return;
-    const isSchedule = rotation === 'schedule';
-    const finalDaysOfWeek = isSchedule
-      ? [...new Set(Object.values(schedule).flat())].sort((a, b) => a - b)
-      : daysOfWeek;
     onSubmit({
       name: name.trim(),
       emoji,
       points: Number.isNaN(parseInt(points)) ? 1 : parseInt(points),
       frequency,
-      daysOfWeek: finalDaysOfWeek,
+      daysOfWeek: rotation === 'schedule' ? scheduleDays : daysOfWeek,
       timeOfDay,
-      ...finalizeChoreAssignment({ rotation, schedule, assigneeIds, assigneeGroupIds, groups }),
-      ...(isSchedule ? { schedule: Object.fromEntries(Object.entries(schedule).filter(([, d]) => d.length > 0)) } : {}),
+      ...saved,
       ...(frequency === 'once' ? { specificDate } : {}),
     });
   };
 
   return {
     name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay,
-    assigneeIds, assigneeGroupIds, rotation, schedule, canRotate, scheduleAllowed, coveredByGroup, goesToNobody,
+    assigneeIds, assigneeGroupIds, rotation, schedule, groupSchedule, canRotate, coveredByGroup, goesToNobody,
     setName, setEmoji, setPoints, setFrequency, setSpecificDate, setTimeOfDay,
     switchToSchedule, switchFromSchedule, setRotation,
-    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule,
-    scheduleMembers, scheduleDays, unscheduledMembers,
+    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule, toggleGroupScheduleDay, addGroupToSchedule,
+    removeMemberFromSchedule, removeGroupFromSchedule,
+    scheduleMembers, scheduleGroups, scheduleDays, unscheduledMembers, unscheduledGroups,
     canSave, validationHintKind, submit,
   };
 }

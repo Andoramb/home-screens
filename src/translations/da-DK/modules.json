@@ -597,11 +597,11 @@
       "groupsHint": "Alle i en gruppe får pligten. Hvis nogen kommer med i gruppen senere, får de den også.",
       "groupMemberNote": "I {group}",
       "emptyGroupNote": "Der er endnu ingen i den gruppe, du har valgt, så ingen får pligten, før du tilføjer nogen.",
-      "scheduleNeedsPeople": "Et skema er til personer, du vælger én ad gangen, så det kan ikke bruges sammen med en gruppe.",
-      "groupsNeedOtherRotation": "Vil du give pligten til en gruppe? Vælg noget andet end \"Skema\" her. Et skema er til personer, du vælger én ad gangen.",
+      "removeFromSchedule": "Fjern {name} fra skemaet",
       "validation": {
         "enterName": "Tilføj et navn på en pligt",
         "addPersonToSchedule": "Tilføj mindst én person til skemaet",
+        "addPersonOrGroupToSchedule": "Tilføj mindst én person eller gruppe til skemaet",
         "selectAtLeastOnePerson": "Vælg mindst én person",
         "selectAtLeastOnePersonOrGroup": "Vælg mindst én person eller gruppe",
         "familyNotReady": "Din familie indlæses stadig. Prøv igen om lidt."

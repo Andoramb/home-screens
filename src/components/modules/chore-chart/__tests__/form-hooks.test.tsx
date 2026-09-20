@@ -27,31 +27,88 @@ function submitted(form: ReturnType<typeof useChoreForm>): Omit<ChoreDefinition,
 }
 
 describe('useChoreForm with family groups', () => {
-  it('offers rotation for a group, and no schedule while one is picked', () => {
+  it('offers rotation for a group', () => {
     const { result } = renderHook(() => useChoreForm(saved({}), members, [kids], true));
     expect(result.current.canRotate).toBe(false);
     act(() => result.current.toggleGroup('kids'));
     expect(result.current.assigneeGroupIds).toEqual(['kids']);
     expect(result.current.canRotate).toBe(true);
-    expect(result.current.scheduleAllowed).toBe(false);
   });
 
-  it('refuses to switch to a schedule while a group is picked', () => {
-    const { result } = renderHook(() => useChoreForm(saved({ assigneeGroupIds: ['kids'] }), members, [kids], true));
+  it('opens a schedule with a row for the picked group and the picked people, on the chore days', () => {
+    const { result } = renderHook(() => useChoreForm(saved({ assigneeIds: ['cal'], assigneeGroupIds: ['kids'] }), members, [kids, solo], true));
     act(() => result.current.switchToSchedule());
-    expect(result.current.rotation).toBe('fixed');
-    expect(result.current.schedule).toEqual({});
+    expect(result.current.rotation).toBe('schedule');
+    expect(result.current.groupSchedule).toEqual({ kids: [1, 2] });
+    expect(result.current.schedule).toEqual({ cal: [1, 2] });
+    expect(result.current.scheduleGroups).toEqual([kids]);
+    expect(result.current.unscheduledGroups).toEqual([solo]);
   });
 
-  it('leaves schedule mode when a group is picked, keeping the scheduled people and days', () => {
-    const chore = saved({ rotation: 'schedule', assigneeIds: ['ann', 'ben'], schedule: { ann: [1], ben: [3] } });
+  it('saves a group row as the group with its days, and the days it adds to the week', () => {
+    const chore = saved({ rotation: 'schedule', assigneeIds: ['ann'], schedule: { ann: [1] } });
     const { result } = renderHook(() => useChoreForm(chore, members, [kids], true));
-    act(() => result.current.toggleGroup('kids'));
-    expect(result.current.rotation).toBe('fixed');
-    expect(result.current.assigneeIds).toEqual(['ann', 'ben']);
+    act(() => result.current.addGroupToSchedule('kids'));
+    act(() => result.current.toggleGroupScheduleDay('kids', 5));
+    act(() => result.current.toggleGroupScheduleDay('kids', 3));
+    expect(result.current.scheduleDays).toEqual([1, 3, 5]);
+    expect(submitted(result.current)).toMatchObject({
+      rotation: 'schedule', assigneeIds: ['ann'], assigneeGroupIds: ['kids'],
+      schedule: { ann: [1] }, groupSchedule: { kids: [5, 3] }, daysOfWeek: [1, 3, 5],
+    });
+  });
+
+  it('keeps a row whose last day was unticked, saves nothing for it, and takes it off only when asked', () => {
+    const chore = saved({ rotation: 'schedule', assigneeIds: ['ann'], assigneeGroupIds: ['kids'], schedule: { ann: [1] }, groupSchedule: { kids: [2] } });
+    const { result } = renderHook(() => useChoreForm(chore, members, [kids], true));
+    act(() => result.current.toggleGroupScheduleDay('kids', 2));
+    act(() => result.current.toggleScheduleDay('ann', 1));
+    expect(result.current.scheduleGroups).toEqual([kids]);
+    expect(result.current.scheduleMembers).toEqual(['ann']);
+    expect(result.current.validationHintKind).toBe('addPersonOrGroupToSchedule');
+
+    act(() => result.current.removeGroupFromSchedule('kids'));
+    act(() => result.current.removeMemberFromSchedule('ann'));
+    expect(result.current.scheduleGroups).toEqual([]);
+    expect(result.current.scheduleMembers).toEqual([]);
+    expect(result.current.unscheduledGroups).toEqual([kids]);
+
+    act(() => result.current.addMemberToSchedule('ben'));
+    act(() => result.current.toggleScheduleDay('ben', 4));
+    const out = submitted(result.current);
+    expect(out).toMatchObject({ assigneeIds: ['ben'], schedule: { ben: [4] }, daysOfWeek: [4] });
+    expect(out).not.toHaveProperty('groupSchedule');
+  });
+
+  it('leaving a schedule keeps its groups and people picked, on the days the rows covered', () => {
+    const chore = saved({ rotation: 'schedule', assigneeIds: ['ann'], assigneeGroupIds: ['kids'], schedule: { ann: [1] }, groupSchedule: { kids: [3] } });
+    const { result } = renderHook(() => useChoreForm(chore, members, [kids], true));
+    act(() => result.current.switchFromSchedule('rotate-weekly'));
     expect(result.current.daysOfWeek).toEqual([1, 3]);
-    expect(submitted(result.current)).toMatchObject({ assigneeIds: ['ann', 'ben'], assigneeGroupIds: ['kids'], rotation: 'fixed' });
-    expect(submitted(result.current)).not.toHaveProperty('schedule');
+    const out = submitted(result.current);
+    expect(out).toMatchObject({ assigneeIds: ['ann'], assigneeGroupIds: ['kids'], rotation: 'rotate-weekly' });
+    expect(out).not.toHaveProperty('schedule');
+    expect(out).not.toHaveProperty('groupSchedule');
+  });
+
+  it('warns when the only row is a group nobody is in', () => {
+    const empty: FamilyGroup = { ...solo, id: 'empty', memberIds: [] };
+    const chore = saved({ rotation: 'schedule', assigneeGroupIds: ['empty'], groupSchedule: { empty: [1] } });
+    const { result } = renderHook(() => useChoreForm(chore, members, [empty], true));
+    expect(result.current.goesToNobody).toBe(true);
+    expect(result.current.canSave).toBe(true);
+    act(() => result.current.addMemberToSchedule('ann'));
+    act(() => result.current.toggleScheduleDay('ann', 4));
+    expect(result.current.goesToNobody).toBe(false);
+  });
+
+  it('drops the row of a group that no longer exists', () => {
+    const chore = saved({ rotation: 'schedule', assigneeIds: ['ann'], assigneeGroupIds: ['gone'], schedule: { ann: [1] }, groupSchedule: { gone: [2] } });
+    const { result } = renderHook(() => useChoreForm(chore, members, [kids], true));
+    const out = submitted(result.current);
+    expect(out).toMatchObject({ assigneeIds: ['ann'], daysOfWeek: [1] });
+    expect(out).not.toHaveProperty('groupSchedule');
+    expect(out).not.toHaveProperty('assigneeGroupIds');
   });
 
   it('saves the group and not the people in it', () => {

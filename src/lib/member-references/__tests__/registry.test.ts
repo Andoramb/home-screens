@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { MEMBER_REFERENCE_DOMAINS, type Doc, type RestorePlan } from '@/lib/member-references';
 import { FamilyError } from '@/lib/family-errors';
+import { removeChoreGroups } from '@/lib/member-references/chores';
 
 const now = '2026-01-01T00:00:00.000Z';
 
@@ -97,6 +98,41 @@ describe('chores handed to a group', () => {
     expect(plan.missing[0]).toContain('assigneeGroupIds');
     expect(plan.missing[0]).toContain('"teens"');
     expect(plan.missing[0]).not.toContain('"kids"');
+  });
+
+  it('stops a restore whose schedule has a row for a group the restored family does not have', () => {
+    const doc = { chores: [{ id: 'crew', name: 'Dishes', assigneeIds: [], assigneeGroupIds: ['kids'], rotation: 'schedule', groupSchedule: { kids: [1], teens: [2] } }] };
+    const plan = domain.planRestore(doc, new Set(['kept']), new Set(['kids']));
+    expect(plan.missing).toHaveLength(1);
+    expect(plan.missing[0]).toContain('groupSchedule');
+    expect(plan.missing[0]).toContain('"teens"');
+    expect(() => domain.planRestore({ chores: [{ id: 'crew', assigneeIds: [], groupSchedule: { kids: [9] } }] }, new Set(), new Set(['kids']))).toThrow(FamilyError);
+  });
+
+  it('keeps a schedule with a group row when the last person on it leaves', () => {
+    const chore = { id: 'mix', assigneeIds: ['gone'], assigneeGroupIds: ['kids'], rotation: 'schedule', daysOfWeek: [1, 2], schedule: { gone: [1] }, groupSchedule: { kids: [2] } };
+    expect(domain.removeMembers({ chores: [chore] }, new Set(['gone']))).toEqual({ chores: [
+      { id: 'mix', assigneeIds: [], assigneeGroupIds: ['kids'], rotation: 'schedule', daysOfWeek: [2], groupSchedule: { kids: [2] } },
+    ] });
+  });
+
+  it('takes a removed group off the schedule, along with the days only it covered', () => {
+    const base = { assigneeGroupIds: ['kids'], rotation: 'schedule', daysOfWeek: [1, 2, 3], groupSchedule: { kids: [3] } };
+    const doc = { chores: [
+      { id: 'pair', ...base, assigneeIds: ['ann', 'ben'], schedule: { ann: [1], ben: [2] } },
+      // One person left alone goes back to a fixed chore on that person's days.
+      { id: 'one', ...base, assigneeIds: ['ann'], schedule: { ann: [1] } },
+      // Nobody left: the chore stays, fixed, so its name and days are not lost.
+      { id: 'none', ...base, assigneeIds: [] },
+      { id: 'other', assigneeIds: [], assigneeGroupIds: ['teens'], rotation: 'schedule', daysOfWeek: [4], groupSchedule: { teens: [4] } },
+    ] };
+    expect(removeChoreGroups(doc, new Set(['kids']))).toEqual({ chores: [
+      { id: 'pair', assigneeIds: ['ann', 'ben'], rotation: 'schedule', daysOfWeek: [1, 2], schedule: { ann: [1], ben: [2] } },
+      { id: 'one', assigneeIds: ['ann'], rotation: 'fixed', daysOfWeek: [1] },
+      { id: 'none', assigneeIds: [], rotation: 'fixed', daysOfWeek: [1, 2, 3] },
+      doc.chores[3],
+    ] });
+    expect(removeChoreGroups(doc, new Set(['nobody']))).toBe(doc);
   });
 
   it('refuses a removal when a saved group list is not a list of ids', () => {

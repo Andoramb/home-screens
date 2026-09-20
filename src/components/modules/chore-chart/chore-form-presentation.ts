@@ -11,6 +11,7 @@ import { choreAssigneeIds, getTimeOfDayLabelKey } from './types';
 export type ChoreValidationHintKind =
   | 'enterName'
   | 'addPersonToSchedule'
+  | 'addPersonOrGroupToSchedule'
   | 'selectAtLeastOnePerson'
   | 'selectAtLeastOnePersonOrGroup'
   | 'familyNotReady';
@@ -30,7 +31,7 @@ export function getChoreValidationHintKind(args: {
   if (!args.familyReady) return 'familyNotReady';
   if (!args.name.trim()) return 'enterName';
   if (args.rotation === 'schedule' && !args.scheduleHasAssignment) {
-    return 'addPersonToSchedule';
+    return args.hasGroups ? 'addPersonOrGroupToSchedule' : 'addPersonToSchedule';
   }
   if (args.rotation !== 'schedule' && args.assigneeIdsLength === 0 && args.assigneeGroupIdsLength === 0) {
     return args.hasGroups ? 'selectAtLeastOnePersonOrGroup' : 'selectAtLeastOnePerson';
@@ -98,31 +99,46 @@ export function getChoreRotationSummaryKey(chore: ChoreDefinition, groups: reado
     : 'chore-chart.choreSummary.rotationWeekly';
 }
 
+/** The rows of a schedule grid that have at least one day; a row with none is not saved. */
+function rowsWithDays(rows: Record<string, number[]>): Record<string, number[]> {
+  return Object.fromEntries(Object.entries(rows).filter(([, days]) => days.length > 0));
+}
+
+/** Every day some row of a schedule covers, in week order. */
+export function scheduleDaysCovered(schedule: Record<string, number[]>, groupSchedule: Record<string, number[]>): number[] {
+  return [...new Set([...Object.values(schedule), ...Object.values(groupSchedule)].flat())].sort((a, b) => a - b);
+}
+
 /**
  * Who a saved chore goes to and how it is shared, from what the form holds.
- * A schedule is people only, so it saves no groups. Rotation falls back to
- * `fixed` when nobody is left to take turns with, counted after groups are
- * expanded: one group of five is five people, not one. A chore that goes to
- * a group keeps its rotation however small the group is today, because the
- * group can grow and the turns should start when it does.
+ * On a schedule the people and groups are whoever has a row with a day in it,
+ * so `assigneeIds` and `assigneeGroupIds` always say who the chore can reach
+ * whichever way it is shared. Rotation falls back to `fixed` when nobody is
+ * left to take turns with, counted after groups are expanded: one group of
+ * five is five people, not one. A chore that goes to a group keeps its
+ * rotation however small the group is today, because the group can grow and
+ * the turns should start when it does.
  */
 export function finalizeChoreAssignment(args: {
   rotation: ChoreRotation;
   schedule: Record<string, number[]>;
+  groupSchedule: Record<string, number[]>;
   assigneeIds: string[];
   assigneeGroupIds: string[];
   groups: readonly FamilyGroup[];
-}): Pick<ChoreDefinition, 'assigneeIds' | 'assigneeGroupIds' | 'rotation'> {
+}): Pick<ChoreDefinition, 'assigneeIds' | 'assigneeGroupIds' | 'rotation' | 'schedule' | 'groupSchedule'> {
   const isSchedule = args.rotation === 'schedule';
-  const assigneeIds = isSchedule
-    ? Object.entries(args.schedule).filter(([, days]) => days.length > 0).map(([id]) => id)
-    : args.assigneeIds;
-  const assigneeGroupIds = isSchedule ? [] : args.assigneeGroupIds;
+  const schedule = rowsWithDays(args.schedule);
+  const groupSchedule = rowsWithDays(args.groupSchedule);
+  const assigneeIds = isSchedule ? Object.keys(schedule) : args.assigneeIds;
+  const assigneeGroupIds = isSchedule ? Object.keys(groupSchedule) : args.assigneeGroupIds;
   const count = choreAssigneeIds({ assigneeIds, assigneeGroupIds }, args.groups).length;
   return {
     assigneeIds,
     ...(assigneeGroupIds.length > 0 ? { assigneeGroupIds } : {}),
     rotation: canChoreRotate({ assigneeCount: count, assigneeGroupIdsLength: assigneeGroupIds.length, rotation: args.rotation }) ? args.rotation : 'fixed',
+    ...(isSchedule ? { schedule } : {}),
+    ...(isSchedule && assigneeGroupIds.length > 0 ? { groupSchedule } : {}),
   };
 }
 

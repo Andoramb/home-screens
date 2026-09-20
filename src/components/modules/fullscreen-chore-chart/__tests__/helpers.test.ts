@@ -38,7 +38,7 @@ function makeAssignment(
   memberId: string,
   isCompleted = false,
 ): ResolvedAssignment {
-  return { chore, memberId, isCompleted };
+  return { chore, memberId, isCompleted, groupIds: chore.assigneeGroupIds ?? [] };
 }
 
 describe('getOrientation', () => {
@@ -350,6 +350,14 @@ describe('buildChoreRows with a family group', () => {
     const rows = buildChoreRows([makeAssignment(plain, 'ann', false), makeAssignment(plain, 'mom', false), makeAssignment(orphan, 'ann', false)], order, [kids]).get('evening')!;
     expect(rows.map((row) => row.groupLabel)).toEqual([undefined, undefined]);
     expect(rows[0].assignees.map((a) => a.memberId)).toEqual(['mom', 'ann']);
+  });
+
+  it('on a schedule, draws the pill only on the days the group has the chore', () => {
+    const chore = makeChore({ id: 'dishes', name: 'Dishes', timeOfDay: 'evening', assigneeIds: ['ann'], assigneeGroupIds: ['kids'], rotation: 'schedule', schedule: { ann: [2] }, groupSchedule: { kids: [1] } });
+    const ownDay = buildChoreRows([{ ...makeAssignment(chore, 'ann'), groupIds: [] }], order, [kids]).get('evening')![0];
+    expect([ownDay.groupLabel, ownDay.assignees[0].viaGroup]).toEqual([undefined, false]);
+    const groupDay = buildChoreRows(['ann', 'ben'].map((id) => makeAssignment(chore, id)), order, [kids]).get('evening')![0];
+    expect(groupDay.groupLabel).toBe('Kids');
   });
 
   it('names the first group and counts the rest, so two groups do not make a pill twice as wide', () => {

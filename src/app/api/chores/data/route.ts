@@ -36,6 +36,14 @@ export const PUT = withAuth(async (request: NextRequest) => {
       || (chore.assigneeGroupIds !== undefined && !stringList(chore.assigneeGroupIds)))) {
       return NextResponse.json({ error: 'Each chore needs a list of who it goes to.' }, { status: 400 });
     }
+    // A group's row only counts through `assigneeGroupIds`: that list is what
+    // removing a group, the chore counts and the chore lists all read.
+    const dayRows = (value: unknown) => value === undefined || (typeof value === 'object' && value !== null && !Array.isArray(value)
+      && Object.values(value).every((days) => Array.isArray(days) && days.every((day) => Number.isInteger(day) && day >= 0 && day <= 6)));
+    if (chores.some((chore) => !dayRows(chore.schedule) || !dayRows(chore.groupSchedule)
+      || Object.keys(chore.groupSchedule ?? {}).some((id) => !chore.assigneeGroupIds?.includes(id)))) {
+      return NextResponse.json({ error: 'A chore schedule needs days for each person or group on it.' }, { status: 400 });
+    }
     // A list that cannot be read has nothing to compare against; the write is
     // what repairs it, and the empty guard below keeps its own reading.
     let current: ChoreDefinition[] | null = null;

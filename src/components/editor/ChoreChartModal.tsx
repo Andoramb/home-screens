@@ -34,6 +34,7 @@ import { getLocalizedDayNames } from '@/lib/meal-constants';
 import ChoreIcon, {
   CHORE_ICONS,
 } from '@/components/modules/chore-chart/ChoreIcon';
+import { Users, X } from 'lucide-react';
 import IconPicker from '@/components/modules/chore-chart/IconPicker';
 import { useChoreForm, useChoreLabelMaps } from '@/components/modules/chore-chart/form-hooks';
 import { buildChoreAssigneeLine, buildChoreSummaryLine, getChoreRotationSummaryKey } from '@/components/modules/chore-chart/chore-form-presentation';
@@ -83,11 +84,12 @@ function ChoreForm({
   const f = useChoreForm(initial, members, groups, familyReady);
   const {
     name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay,
-    assigneeIds, assigneeGroupIds, rotation, schedule, canRotate, scheduleAllowed, coveredByGroup, goesToNobody,
+    assigneeIds, assigneeGroupIds, rotation, schedule, groupSchedule, canRotate, coveredByGroup, goesToNobody,
     setName, setEmoji, setPoints, setFrequency, setSpecificDate, setTimeOfDay,
     switchToSchedule, switchFromSchedule, setRotation,
-    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule,
-    scheduleMembers, scheduleDays, unscheduledMembers,
+    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule, toggleGroupScheduleDay, addGroupToSchedule,
+    removeMemberFromSchedule, removeGroupFromSchedule,
+    scheduleMembers, scheduleGroups, scheduleDays, unscheduledMembers, unscheduledGroups,
     canSave, validationHintKind,
   } = f;
   const submit = () => f.submit(onSubmit);
@@ -251,7 +253,7 @@ function ChoreForm({
         <div className="space-y-1.5">
           <span className="text-xs text-hs-text-muted">{t('choreChartModal.choreForm.weeklyScheduleLabel')}</span>
           {/* Day headers */}
-          <div className="flex gap-0.5" style={{ paddingLeft: 72 }}>
+          <div className="flex gap-0.5" style={{ paddingLeft: 125, paddingRight: 33 }}>
             {[0, 1, 2, 3, 4, 5, 6].map((d) => (
               <div key={d} className="flex-1 text-center text-[10px] font-semibold text-hs-text-faint">
                 {dayNamesShort[d][0]}
@@ -260,19 +262,59 @@ function ChoreForm({
           </div>
           {/* Member rows */}
           <div className="rounded-lg border border-hs-border-strong overflow-hidden">
+            {/* A group's row is everyone in it, whoever that is on the day. */}
+            {scheduleGroups.map((group) => {
+              const groupDays = groupSchedule[group.id] ?? [];
+              return (
+                <div key={group.id} data-testid={`schedule-group-${group.id}`} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1.5 border-b border-hs-border last:border-b-0">
+                  <div className="w-6 h-6 rounded-md flex items-center justify-center bg-hs-accent-soft text-hs-accent shrink-0">
+                    <Users size={14} aria-hidden />
+                  </div>
+                  <span className="text-xs font-medium text-hs-text-body w-20 truncate shrink-0" title={`${group.name}: ${groupMembers(group, members).map((m) => m.name).join(', ')}`}>{group.name}</span>
+                  <div className="flex gap-0.5 flex-1">
+                    {[0, 1, 2, 3, 4, 5, 6].map((d) => {
+                      const isOn = groupDays.includes(d);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          aria-pressed={isOn}
+                          aria-label={`${group.name}, ${dayNamesShort[d]}`}
+                          onClick={() => toggleGroupScheduleDay(group.id, d)}
+                          className={`flex-1 aspect-square rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                            isOn ? 'bg-hs-accent text-white' : 'bg-hs-card text-hs-text-faint'
+                          }`}
+                        >
+                          {dayNamesShort[d][0]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <button
+                    type="button"
+                    aria-label={tModules('chore-chart.choreForm.removeFromSchedule', { name: group.name })}
+                    title={tModules('chore-chart.choreForm.removeFromSchedule', { name: group.name })}
+                    onClick={() => removeGroupFromSchedule(group.id)}
+                    className="w-5 h-5 shrink-0 rounded flex items-center justify-center text-hs-text-faint hover:text-hs-danger hover:bg-hs-hover transition-colors"
+                  >
+                    <X size={12} aria-hidden />
+                  </button>
+                </div>
+              );
+            })}
             {scheduleMembers.map((memberId) => {
               const member = members.find((m) => m.id === memberId);
               if (!member) return null;
               const memberDays = schedule[memberId] ?? [];
               return (
-                <div key={memberId} className="flex items-center gap-1.5 px-2 py-1.5 border-b border-hs-border last:border-b-0">
+                <div key={memberId} className="flex items-center gap-1.5 pl-2 pr-1.5 py-1.5 border-b border-hs-border last:border-b-0">
                   <div
                     className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-bold text-white shrink-0"
                     style={{ background: member.color }}
                   >
                     {member.emoji ? <ChoreIcon value={member.emoji} size={14} color="white" /> : member.name[0]}
                   </div>
-                  <span className="text-xs font-medium text-hs-text-body w-12 truncate shrink-0">{member.name}</span>
+                  <span className="text-xs font-medium text-hs-text-body w-20 truncate shrink-0">{member.name}</span>
                   <div className="flex gap-0.5 flex-1">
                     {[0, 1, 2, 3, 4, 5, 6].map((d) => {
                       const isOn = memberDays.includes(d);
@@ -291,13 +333,34 @@ function ChoreForm({
                       );
                     })}
                   </div>
+                  <button
+                    type="button"
+                    aria-label={tModules('chore-chart.choreForm.removeFromSchedule', { name: member.name })}
+                    title={tModules('chore-chart.choreForm.removeFromSchedule', { name: member.name })}
+                    onClick={() => removeMemberFromSchedule(memberId)}
+                    className="w-5 h-5 shrink-0 rounded flex items-center justify-center text-hs-text-faint hover:text-hs-danger hover:bg-hs-hover transition-colors"
+                  >
+                    <X size={12} aria-hidden />
+                  </button>
                 </div>
               );
             })}
           </div>
-          {/* Add member buttons */}
-          {unscheduledMembers.length > 0 && (
+          {goesToNobody && <p className="text-[11px] text-hs-warning">{tModules('chore-chart.choreForm.emptyGroupNote')}</p>}
+          {/* Add group and member buttons */}
+          {unscheduledMembers.length + unscheduledGroups.length > 0 && (
             <div className="flex flex-wrap gap-1">
+              {unscheduledGroups.map((group) => (
+                <button
+                  key={group.id}
+                  type="button"
+                  title={groupMembers(group, members).map((m) => m.name).join(', ')}
+                  onClick={() => addGroupToSchedule(group.id)}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs bg-hs-card text-hs-text-faint hover:bg-hs-hover border border-dashed border-hs-border transition-all max-w-full"
+                >
+                  <span>+</span> <Users size={12} aria-hidden /> <span className="truncate">{group.name}</span>
+                </button>
+              ))}
               {unscheduledMembers.map((m) => (
                 <button
                   key={m.id}
@@ -343,13 +406,10 @@ function ChoreForm({
             }}
             className={MODAL_INPUT_CLASS}
           >
-            {CHORE_ROTATIONS.filter((opt) => opt.value !== 'schedule' || scheduleAllowed).map((opt) => (
+            {CHORE_ROTATIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>{rotationLabelMap[opt.value]}</option>
             ))}
           </select>
-          {!scheduleAllowed && <span className="text-[11px] text-hs-text-faint">{tModules('chore-chart.choreForm.scheduleNeedsPeople')}</span>}
-          {/* The other direction: a schedule hides the group picker along with the people list. */}
-          {rotation === 'schedule' && groups.length > 0 && <span className="text-[11px] text-hs-text-faint">{tModules('chore-chart.choreForm.groupsNeedOtherRotation')}</span>}
         </label>
       )}
 
@@ -617,7 +677,7 @@ function ChoreColumn({
                 </div>
                 <div className="text-[11px] text-hs-text-muted mt-0.5">
                   {tModules('chore-chart.choreSummary.arrow')}{' '}
-                  <span className={choreAssigneeIds(chore, groups).length === 0 && chore.rotation !== 'schedule' ? 'text-hs-warning' : undefined}>
+                  <span className={choreAssigneeIds(chore, groups).length === 0 ? 'text-hs-warning' : undefined}>
                     {buildChoreAssigneeLine({ chore, members, groups, unknownLabel: tModules('chore-chart.unknownAssignee'), nobodyLabel: tModules('chore-chart.choreSummary.nobody') })}
                   </span>
                   {rotationSuffix && (

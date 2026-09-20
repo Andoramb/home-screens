@@ -597,11 +597,11 @@
       "groupsHint": "Iedereen in een groep krijgt het klusje. Wie later bij de groep komt, krijgt het ook.",
       "groupMemberNote": "In {group}",
       "emptyGroupNote": "Er zit nog niemand in de groep die je hebt gekozen, dus niemand krijgt dit klusje tot je er iemand aan toevoegt.",
-      "scheduleNeedsPeople": "Een schema is voor mensen die je één voor één kiest, daarom kan het niet samen met een groep.",
-      "groupsNeedOtherRotation": "Wil je dit klusje aan een groep geven? Kies hier dan iets anders dan \"Schema\". Een schema is voor mensen die je één voor één kiest.",
+      "removeFromSchedule": "{name} uit het schema halen",
       "validation": {
         "enterName": "Geef het klusje een naam",
         "addPersonToSchedule": "Voeg minstens één persoon toe aan het schema",
+        "addPersonOrGroupToSchedule": "Voeg minstens één persoon of groep toe aan het schema",
         "selectAtLeastOnePerson": "Kies minstens één persoon",
         "selectAtLeastOnePersonOrGroup": "Kies minstens één persoon of groep",
         "familyNotReady": "Je gezin wordt nog geladen. Probeer het zo nog eens."

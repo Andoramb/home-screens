@@ -597,11 +597,11 @@
       "groupsHint": "Todos em um grupo recebem a tarefa. Quem entrar no grupo depois também recebe.",
       "groupMemberNote": "Em {group}",
       "emptyGroupNote": "Ainda não há ninguém no grupo que você escolheu, então ninguém recebe esta tarefa até você adicionar alguém.",
-      "scheduleNeedsPeople": "Uma agenda é para pessoas que você escolhe uma a uma, por isso não aparece junto com um grupo.",
-      "groupsNeedOtherRotation": "Para dar esta tarefa a um grupo, escolha aqui outra opção que não seja \"Agenda\". Uma agenda é para pessoas que você escolhe uma a uma.",
+      "removeFromSchedule": "Tirar {name} da agenda",
       "validation": {
         "enterName": "Digite um nome para a tarefa",
         "addPersonToSchedule": "Adicione pelo menos uma pessoa à agenda",
+        "addPersonOrGroupToSchedule": "Adicione pelo menos uma pessoa ou um grupo à agenda",
         "selectAtLeastOnePerson": "Selecione pelo menos uma pessoa",
         "selectAtLeastOnePersonOrGroup": "Selecione pelo menos uma pessoa ou um grupo",
         "familyNotReady": "Sua família ainda está carregando. Tente de novo em instantes."

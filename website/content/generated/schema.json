@@ -9740,7 +9740,7 @@
               "schedule"
             ]
           },
-          "description": "How it is shared among the people it goes to: everyone every time (`fixed`), taking turns by day or by week, or by `schedule`. `schedule` is people only and never combines with `assigneeGroupIds`."
+          "description": "How it is shared among the people it goes to: everyone every time (`fixed`), taking turns by day or by week, or by `schedule`, where each person and each group has its own days."
         },
         {
           "name": "schedule",
@@ -9750,6 +9750,15 @@
             "text": "Record<string, number[]>"
           },
           "description": "With `rotation` set to `schedule`: each member ID to the days (0 to 6) they have the chore"
+        },
+        {
+          "name": "groupSchedule",
+          "optional": true,
+          "type": {
+            "kind": "object",
+            "text": "Record<string, number[]>"
+          },
+          "description": "With `rotation` set to `schedule`: each family group ID to the days (0 to 6) everyone in it has the chore"
         }
       ]
     },

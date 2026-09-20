@@ -7,6 +7,7 @@ import {
   finalizeChoreAssignment,
   getChoreRotationSummaryKey,
   getChoreValidationHintKind,
+  scheduleDaysCovered,
 } from '../chore-form-presentation';
 
 // Translate stub that echoes the key plus any vars in a predictable shape so
@@ -201,7 +202,7 @@ describe('chores handed to a group', () => {
   const kids = { id: 'kids', name: 'Kids', memberIds: ['ann', 'ben', 'cal'], createdAt: stamp, updatedAt: stamp };
   const solo = { id: 'solo', name: 'Just Ann', memberIds: ['ann'], createdAt: stamp, updatedAt: stamp };
   const members = ['ann', 'ben', 'cal'].map((id) => ({ id, name: id.toUpperCase(), color: '#000000', createdAt: stamp, updatedAt: stamp }));
-  const base = { rotation: 'rotate-weekly' as const, schedule: {}, assigneeIds: [], assigneeGroupIds: ['kids'], groups: [kids, solo] };
+  const base = { rotation: 'rotate-weekly' as const, schedule: {}, groupSchedule: {}, assigneeIds: [], assigneeGroupIds: ['kids'], groups: [kids, solo] };
 
   it('accepts a group with no people picked, and asks for a person or group when there is neither', () => {
     const args = { name: 'Dishes', rotation: 'fixed' as const, scheduleHasAssignment: true, assigneeIdsLength: 0, familyReady: true };
@@ -223,10 +224,27 @@ describe('chores handed to a group', () => {
     expect(finalizeChoreAssignment({ ...base, assigneeIds: ['ann'], assigneeGroupIds: [] }).rotation).toBe('fixed');
   });
 
-  it('saves no groups with a schedule, and no group field when none is picked', () => {
+  it('saves a schedule from its rows, never from the ticked groups, and no group field when none has a row', () => {
     const scheduled = finalizeChoreAssignment({ ...base, rotation: 'schedule', schedule: { ann: [1], ben: [] } });
-    expect(scheduled).toEqual({ assigneeIds: ['ann'], rotation: 'schedule' });
+    expect(scheduled).toEqual({ assigneeIds: ['ann'], rotation: 'schedule', schedule: { ann: [1] } });
     expect(finalizeChoreAssignment({ ...base, assigneeIds: ['ann', 'ben'], assigneeGroupIds: [] })).toEqual({ assigneeIds: ['ann', 'ben'], rotation: 'rotate-weekly' });
+  });
+
+  it('saves a group row as the group, and drops a row with no days', () => {
+    const scheduled = finalizeChoreAssignment({ ...base, assigneeGroupIds: [], rotation: 'schedule', schedule: { cal: [6] }, groupSchedule: { kids: [1, 3], solo: [] } });
+    expect(scheduled).toEqual({ assigneeIds: ['cal'], assigneeGroupIds: ['kids'], rotation: 'schedule', schedule: { cal: [6] }, groupSchedule: { kids: [1, 3] } });
+    expect(scheduleDaysCovered({ cal: [6] }, { kids: [3, 1] })).toEqual([1, 3, 6]);
+  });
+
+  it('keeps a schedule made of one group row and nobody else', () => {
+    const scheduled = finalizeChoreAssignment({ ...base, assigneeGroupIds: [], rotation: 'schedule', groupSchedule: { solo: [2] } });
+    expect(scheduled).toEqual({ assigneeIds: [], assigneeGroupIds: ['solo'], rotation: 'schedule', schedule: {}, groupSchedule: { solo: [2] } });
+  });
+
+  it('asks for a person or group on an empty schedule only when the household has groups', () => {
+    const args = { name: 'Dishes', rotation: 'schedule' as const, scheduleHasAssignment: false, assigneeIdsLength: 0, assigneeGroupIdsLength: 0, familyReady: true };
+    expect(getChoreValidationHintKind({ ...args, hasGroups: true })).toBe('addPersonOrGroupToSchedule');
+    expect(getChoreValidationHintKind({ ...args, hasGroups: false })).toBe('addPersonToSchedule');
   });
 
   it('names groups before people in a chore row and leaves out a removed group', () => {

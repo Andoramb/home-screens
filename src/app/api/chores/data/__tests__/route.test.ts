@@ -266,6 +266,15 @@ describe('PUT /api/chores/data', () => {
       expect(res.status).toBe(200);
     });
 
+    it('saves a schedule with a group row, and refuses a row for a group the chore does not name', async () => {
+      vi.mocked(readFamilyData).mockResolvedValue({ members: [member], groups: [kids] });
+      const scheduled = { ...groupChore, rotation: 'schedule', groupSchedule: { kids: [1, 3] } };
+      expect((await PUT(await makeCurrentPutRequest({ chores: [scheduled] }))).status).toBe(200);
+      expect(writeChoreData).toHaveBeenCalledWith({ chores: [scheduled] });
+      expect((await PUT(await makeCurrentPutRequest({ chores: [{ ...scheduled, assigneeGroupIds: undefined }] }))).status).toBe(400);
+      expect((await PUT(await makeCurrentPutRequest({ chores: [{ ...scheduled, groupSchedule: { kids: [7] } }] }))).status).toBe(400);
+    });
+
     it('refuses a group list that is not a list of ids', async () => {
       const res = await PUT(await makeCurrentPutRequest({ chores: [{ ...groupChore, assigneeGroupIds: 'kids' }] }));
       expect(res.status).toBe(400);

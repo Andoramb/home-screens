@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext, Page } from '@playwright/test';
+import type { ChoreDefinition } from '@/types/config';
 import { putConfig, seedChores, seedHouseholdChores, seedRewards } from '../helpers/api';
 import { confirmSheet } from '../helpers/remote';
 import { baseConfig, choreChartModule, makeScreen } from '../helpers/config-fixtures';
@@ -187,11 +188,8 @@ test('admin gives a chore to a group and it is saved as the group, with its rota
   await page.getByPlaceholder('Chore name...').fill('Empty the dishwasher');
   await page.getByRole('button', { name: /^Kids/ }).click();
 
-  // One group of two is two people, so taking turns is on offer; a per-person
-  // schedule is not, since whoever joins the group later would have no row.
+  // One group of two is two people, so taking turns is on offer.
   const rotation = page.locator('select').filter({ has: page.locator('option[value="rotate-weekly"]') });
-  await expect(rotation.locator('option[value="schedule"]')).toHaveCount(0);
-  await expect(page.getByText('A schedule is for people you pick one by one, so it is not offered with a group.')).toBeVisible();
   // Ticking the group does not tick its people, so each one says the group has them.
   await expect(page.getByText('In Kids', { exact: true })).toHaveCount(2);
   await rotation.selectOption('rotate-weekly');
@@ -258,9 +256,9 @@ test('picking a group nobody is in yet warns that the chore would go to no one',
   await expect(page.getByText('Nobody is in the group you picked yet', { exact: false })).toHaveCount(0);
 });
 
-// A schedule hides the group picker along with the people list, so the form
-// has to say where it went: otherwise it just looks like groups are missing.
-test('a chore on a schedule says how to give it to a group instead', async ({ page, request, sandboxDir }) => {
+// A group gets a row of its own on a schedule, saved as the group: storing
+// its people as rows is what would leave a later group member with no days.
+test('a group gets its own row on a schedule and is saved with its days', async ({ page, request, sandboxDir }) => {
   await seedHouseholdChores(request, sandboxDir, {
     ...TWO_MEMBERS,
     groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['m1', 'm2'] }],
@@ -272,13 +270,61 @@ test('a chore on a schedule says how to give it to a group instead', async ({ pa
   await page.goto('/remote');
   await openManage(page, 2);
   await page.getByRole('button', { name: 'Edit Dishes' }).click();
-  await expect(page.getByRole('button', { name: /^Kids/ })).toHaveCount(0);
-  await expect(page.getByText('To give this chore to a group, change this from "Schedule" to something else.', { exact: false })).toBeVisible();
 
-  // Taking it off the schedule brings the group picker back.
+  await page.getByRole('button', { name: '+ Kids' }).click();
+  const row = page.getByTestId('schedule-group-g-kids');
+  await row.getByRole('button', { name: 'Kids, Wed' }).click();
+  await row.getByRole('button', { name: 'Kids, Fri' }).click();
+  await expect(row.getByRole('button', { name: 'Kids, Wed' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Save Chore' }).click();
+
+  await expect
+    .poll(async () => {
+      const chore = (await getChoreData(request)).chores.find((c) => c.id === 'sc1') as ChoreDefinition | undefined;
+      return chore && { groups: chore.assigneeGroupIds, rows: chore.groupSchedule, people: chore.schedule, days: chore.daysOfWeek };
+    })
+    .toEqual({ groups: ['g-kids'], rows: { 'g-kids': [3, 5] }, people: { m1: [1], m2: [2] }, days: [1, 2, 3, 5] });
+  await expect(page.getByText('Kids, Avery, Blair', { exact: false })).toBeVisible();
+
+  // Taking it off the schedule keeps the group picked rather than dropping it.
+  await page.getByRole('button', { name: 'Edit Dishes' }).click();
   await page.locator('select').filter({ has: page.locator('option[value="schedule"]') }).selectOption('fixed');
-  await expect(page.getByRole('button', { name: /^Kids/ })).toBeVisible();
-  await expect(page.getByText('To give this chore to a group', { exact: false })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Kids/ })).toHaveAttribute('aria-pressed', 'true');
+});
+
+// A group row's days are edits like any other: leaving has to ask first, and
+// taking the last day away has to say why Save went grey.
+test('changing only a group row on a schedule counts as an unsaved change', async ({ page, request, sandboxDir }) => {
+  await seedHouseholdChores(request, sandboxDir, {
+    ...TWO_MEMBERS,
+    groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['m1', 'm2'] }],
+    chores: [{
+      id: 'sc1', name: 'Dishes', emoji: '', points: 1, frequency: 'daily', daysOfWeek: [3],
+      timeOfDay: 'anytime', assigneeIds: [], assigneeGroupIds: ['g-kids'], rotation: 'schedule', groupSchedule: { 'g-kids': [3] },
+    }],
+  });
+  await page.goto('/remote');
+  await openManage(page, 2);
+  await page.getByRole('button', { name: 'Edit Dishes' }).click();
+
+  // An untouched form offers Back; one with an edit offers Cancel and asks first.
+  await expect(page.getByRole('button', { name: 'Back' })).toBeVisible();
+  await page.getByTestId('schedule-group-g-kids').getByRole('button', { name: 'Kids, Fri' }).click();
+  await page.getByRole('button', { name: 'Cancel' }).click();
+  await expect(page.getByText('Discard changes?')).toBeVisible();
+  await page.getByRole('button', { name: 'Keep editing' }).click();
+
+  const row = page.getByTestId('schedule-group-g-kids');
+  await row.getByRole('button', { name: 'Kids, Fri' }).click();
+  await row.getByRole('button', { name: 'Kids, Wed' }).click();
+  await expect(page.getByText('Add at least one person or group to the schedule')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Save Chore' })).toBeDisabled();
+
+  // Unticking the last day leaves the row where it was; taking it off is its own button.
+  await expect(row).toBeVisible();
+  await page.getByRole('button', { name: 'Take Kids off the schedule' }).click();
+  await expect(row).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '+ Kids' })).toBeVisible();
 });
 
 test('a household with no groups sees no Groups block on the chore form', async ({ page, request, sandboxDir }) => {
@@ -797,6 +843,29 @@ test('admin deletes a reward through the reward form and it round-trips', async 
 // throwIfNotOk pairing, so one surface is enough to pin the behavior.
 
 /** Today as the YYYY-MM-DD key the completion store uses (local time, like todayStr). */
+// The sentence is built on the phone from its own dictionary; the route only
+// sends the numbers. It used to arrive as English text whatever the language.
+for (const [locale, tab, sentence] of [
+  ['en-US', 'Chores', 'Avery already spent those tickets, so the balance is now -3. 3 more tickets have to be earned before the next reward.'],
+  ['de-DE', 'Aufgaben', 'Avery hat diese Tickets schon ausgegeben, deshalb steht das Ticketkonto jetzt bei -3. Vor der nächsten Belohnung müssen noch 3 Tickets verdient werden.'],
+] as const) {
+  test(`un-ticking a chore after its tickets were spent warns in ${locale}`, async ({ page, request, sandboxDir }) => {
+    await putConfig(request, baseConfig({
+      screens: [makeScreen('s1', 'S1', [choreChartModule()])],
+      settings: { locale },
+    }));
+    await seedHouseholdChores(request, sandboxDir, MEMBER_AND_CHORE);
+    await seedRewards(request, [{ id: 'r1', name: 'Movie Night', emoji: '🎬', cost: 3, description: '', memberIds: [], enabled: true }]);
+    expect((await request.post('/api/chores', { data: { choreId: 'c1', memberId: 'm1', date: todayISO() } })).ok()).toBe(true);
+    expect((await request.post('/api/rewards', { data: { rewardId: 'r1', memberId: 'm1' } })).ok()).toBe(true);
+
+    await page.goto('/remote');
+    await page.getByRole('button', { name: tab, exact: true }).click();
+    await page.getByRole('button', { name: /Feed the dog/ }).click();
+    await expect(page.getByText(sentence, { exact: true })).toBeVisible();
+  });
+}
+
 function todayISO(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

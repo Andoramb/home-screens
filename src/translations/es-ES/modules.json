@@ -597,11 +597,11 @@
       "groupsHint": "Todas las personas de un grupo reciben la tarea. Si añades a alguien al grupo más tarde, también la recibe.",
       "groupMemberNote": "En {group}",
       "emptyGroupNote": "Todavía no hay nadie en el grupo que has elegido, así que nadie recibe esta tarea hasta que añadas a alguien.",
-      "scheduleNeedsPeople": "Un calendario es para personas que eliges una a una, por eso no se ofrece con un grupo.",
-      "groupsNeedOtherRotation": "Para dar esta tarea a un grupo, elige aquí otra opción que no sea \"Calendario\". Un calendario es para personas que eliges una a una.",
+      "removeFromSchedule": "Quitar a {name} del calendario",
       "validation": {
         "enterName": "Pon un nombre a la tarea",
         "addPersonToSchedule": "Añade al menos una persona al calendario",
+        "addPersonOrGroupToSchedule": "Añade al menos una persona o un grupo al calendario",
         "selectAtLeastOnePerson": "Selecciona al menos una persona",
         "selectAtLeastOnePersonOrGroup": "Selecciona al menos una persona o un grupo",
         "familyNotReady": "Tu familia todavía se está cargando. Inténtalo de nuevo en un momento."

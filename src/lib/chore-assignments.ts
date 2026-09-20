@@ -18,6 +18,8 @@ export interface ResolvedAssignment {
   chore: ChoreDefinition;
   memberId: string;
   isCompleted: boolean;
+  /** The groups the chore goes to on that date, which on a schedule is not every group it names. */
+  groupIds: string[];
 }
 
 // ── Date plumbing ──────────────────────────────────────────────────
@@ -82,6 +84,21 @@ export function choreAssigneeIds(
   return [...ids];
 }
 
+/**
+ * The groups a chore goes to on `date`. On a schedule that is only the groups
+ * whose row has that day; otherwise it is every group the chore names.
+ */
+export function choreGroupIdsOn(
+  chore: Pick<ChoreDefinition, 'rotation' | 'assigneeGroupIds' | 'groupSchedule'>,
+  date: string,
+): string[] {
+  if (chore.rotation !== 'schedule') return chore.assigneeGroupIds ?? [];
+  const dayOfWeek = parseISO(date).getDay();
+  return Object.entries(chore.groupSchedule ?? {})
+    .filter(([, days]) => days.includes(dayOfWeek))
+    .map(([groupId]) => groupId);
+}
+
 /** Resolve rotation — which member is assigned a chore on a given date */
 export function resolveAssignee(
   chore: ChoreDefinition,
@@ -89,10 +106,13 @@ export function resolveAssignee(
   groups: readonly ChoreGroup[],
 ): string[] {
   if (chore.rotation === 'schedule') {
-    const dayOfWeek = new Date(date + 'T00:00:00').getDay();
-    return Object.entries(chore.schedule ?? {})
+    // A person with a row of their own who is also in a scheduled group has
+    // the chore on either set of days, once.
+    const dayOfWeek = parseISO(date).getDay();
+    const assigneeIds = Object.entries(chore.schedule ?? {})
       .filter(([, days]) => days.includes(dayOfWeek))
       .map(([memberId]) => memberId);
+    return choreAssigneeIds({ assigneeIds, assigneeGroupIds: choreGroupIdsOn(chore, date) }, groups);
   }
 
   const assigneeIds = choreAssigneeIds(chore, groups);
@@ -180,12 +200,14 @@ export function resolveAssignmentsFor(
   const assignments: ResolvedAssignment[] = [];
   for (const chore of chores) {
     if (!choreAppliesToday(chore, dayOfWeek, date)) continue;
+    const groupIds = choreGroupIdsOn(chore, date);
     for (const memberId of resolveAssignee(chore, date, groups)) {
       if (!members.some((m) => m.id === memberId)) continue;
       assignments.push({
         chore,
         memberId,
         isCompleted: isChoreComplete(completionSet, chore.id, memberId, date),
+        groupIds,
       });
     }
   }

@@ -397,7 +397,7 @@ Toggles a chore completion. If the completion already exists for the given chore
 }
 ```
 
-The `date` field must be a real `YYYY-MM-DD` calendar date within the last 90 days. Future dates, invalid calendar dates (e.g. `2026-02-30`), and dates outside the retention window are rejected with `400`. Toggling a chore with a non-zero point value also credits or debits the member's reward balance; if removing a past completion would drive the balance negative, the response includes a `warning` string explaining the deficit.
+The `date` field must be a real `YYYY-MM-DD` calendar date within the last 90 days. Future dates, invalid calendar dates (e.g. `2026-02-30`), and dates outside the retention window are rejected with `400`. Toggling a chore with a non-zero point value also credits or debits the member's reward balance; if removing a past completion would drive the balance negative, the response includes `overspent` with the `memberId` and the new negative `balance`, and the client words the message in its own language.
 
 `direction` is optional. Omitted, the call is the flip described above. Set to `"complete"` or `"uncomplete"`, the call only ever moves the chore in that direction and is a no-op when it's already there, so a repeated "mark it done" (a voice assistant, a retried request) can never accidentally un-complete a chore and take the points back. Any other value is rejected with `400`.
 
@@ -407,11 +407,11 @@ The `date` field must be a real `YYYY-MM-DD` calendar date within the last 90 da
   "completions": [ ... ],
   "changed": true,
   "rewards": { "rewards": [ ... ], "balances": { "member-1": 122 }, "redemptions": [ ... ] },
-  "warning": "..."
+  "overspent": { "memberId": "member-1", "balance": -2 }
 }
 ```
 
-`changed` reports whether this call actually flipped anything, `false` means the directional request found the chore already in the requested state (and no points moved). `rewards` is the full updated reward state and is included whenever the toggled chore is worth more than zero points, so the client doesn't have to re-fetch `/api/rewards`. It is omitted for zero-point chores. `warning` is only present in the deficit case described above.
+`changed` reports whether this call actually flipped anything, `false` means the directional request found the chore already in the requested state (and no points moved). `rewards` is the full updated reward state and is included whenever the toggled chore is worth more than zero points, so the client doesn't have to re-fetch `/api/rewards`. It is omitted for zero-point chores. `overspent` is only present in the deficit case described above.
 
 ### GET /api/chores/today
 
@@ -441,7 +441,7 @@ Every member appears, including those with no chores that day (empty `chores` ar
 
 ### GET /api/chores/data
 
-Returns `{ "chores": [...], "revision": "..." }` from `data/chores.json`. Display access. A save has to quote the `revision` back. Each definition contains `id`, `name`, `emoji`, `points`, frequency fields, `assigneeIds`, an optional `assigneeGroupIds`, rotation and an optional schedule. Member IDs and group IDs refer to the `members` and `groups` returned by `/api/family`. `GET /api/chores/today` already expands groups for you.
+Returns `{ "chores": [...], "revision": "..." }` from `data/chores.json`. Display access. A save has to quote the `revision` back. Each definition contains `id`, `name`, `emoji`, `points`, frequency fields, `assigneeIds`, an optional `assigneeGroupIds`, rotation and, for a scheduled chore, a `schedule` map of member ID to days plus an optional `groupSchedule` map of group ID to days. A save is refused with a 400 when a `groupSchedule` row names a group that is not in the chore's `assigneeGroupIds`. Member IDs and group IDs refer to the `members` and `groups` returned by `/api/family`. `GET /api/chores/today` already expands groups for you.
 
 ### PUT /api/chores/data
 

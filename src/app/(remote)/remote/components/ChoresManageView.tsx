@@ -193,7 +193,7 @@ export default function ChoresManageView({
                   <div style={{ fontSize: 11, color: 'var(--hs-text-faint)', marginTop: 2 }}>
                     &rarr;{' '}
                     {/* A chore nobody has is a thing to fix, so it does not sit in the same quiet grey. */}
-                    <span style={choreAssigneeIds(chore, groups).length === 0 && chore.rotation !== 'schedule' ? { color: 'var(--hs-warning)' } : undefined}>
+                    <span style={choreAssigneeIds(chore, groups).length === 0 ? { color: 'var(--hs-warning)' } : undefined}>
                       {buildChoreAssigneeLine({ chore, members, groups, unknownLabel: tModules('chore-chart.unknownAssignee'), nobodyLabel: tModules('chore-chart.choreSummary.nobody') })}
                     </span>
                     {rotationLabel && (

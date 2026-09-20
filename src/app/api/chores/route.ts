@@ -3,7 +3,6 @@ import type { NextRequest } from 'next/server';
 import type { ChoreCompletion, ChoreToggleRequest } from '@/types/config';
 import { publicErrorResponse, parseJsonBody, isValidISODate } from '@/lib/api-utils';
 import { readChoreData } from '@/lib/chore-data';
-import { readFamilyData } from '@/lib/family-data';
 import { withFamilyData, validateMemberReferences } from '@/lib/family-api';
 import { commitDataTransaction, type TransactionChange } from '@/lib/data-transaction';
 import { planPointsMove } from '@/lib/reward-data';
@@ -91,7 +90,6 @@ export const POST = async (request: NextRequest) => {
 
   const references = await validateMemberReferences([memberId]);
   if (references) return references;
-  const family = await readFamilyData();
 
   // Read chore data in parallel with toggle (needed for point value lookup)
   const choreDataPromise = readChoreData();
@@ -132,7 +130,7 @@ export const POST = async (request: NextRequest) => {
   // power cut between them recorded the chore and credited nothing.
   const choreData = await choreDataPromise;
   const chore = choreData.chores.find((c) => c.id === choreId);
-  let warning: string | undefined;
+  let overspent: { memberId: string; balance: number } | undefined;
   // The post-write RewardData comes from the plan itself rather than a re-read.
   // Nothing can interleave: the whole handler holds the cross-file coordinator,
   // which is also what lets the two plans be committed as one unit.
@@ -144,11 +142,7 @@ export const POST = async (request: NextRequest) => {
     const move = await planPointsMove(memberId, wasAdded ? chore.points : -chore.points);
     if (move.change) changes.push(move.change);
     rewards = move.data;
-    if (!wasAdded && move.wentNegative) {
-      const memberName = family.members.find((m) => m.id === memberId)?.name ?? 'They';
-      const owed = Math.abs(move.balance);
-      warning = `${memberName} already spent those tickets, so the balance is now ${move.balance}. ${owed === 1 ? '1 more ticket has' : `${owed} more tickets have`} to be earned before the next reward.`;
-    }
+    if (!wasAdded && move.wentNegative) overspent = { memberId, balance: move.balance };
   }
 
   // One journal commit: the completion and the points it moved both land, or
@@ -164,7 +158,7 @@ export const POST = async (request: NextRequest) => {
     completions: result.completions,
     changed,
     ...(rewards ? { rewards } : {}),
-    ...(warning ? { warning } : {}),
+    ...(overspent ? { overspent } : {}),
   });
   });
   } catch (error) {

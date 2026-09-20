@@ -93,6 +93,9 @@
       "setUpButton": "Tilføj pligter"
     },
     "warningDismissAriaLabel": "Ignorér advarsel",
+    "overspentOne": "{name} har allerede brugt de billetter, så saldoen er nu {balance}. Der skal tjenes 1 billet mere før den næste belønning.",
+    "overspentMany": "{name} har allerede brugt de billetter, så saldoen er nu {balance}. Der skal tjenes {owed} billetter mere før den næste belønning.",
+    "overspentSomeone": "Nogen",
     "memberAriaLabel": "{name}",
     "memberAriaLabelAllDone": "{name} (afsluttet)",
     "history": {

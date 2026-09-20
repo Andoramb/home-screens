@@ -93,6 +93,9 @@
       "setUpButton": "Klusjes instellen"
     },
     "warningDismissAriaLabel": "Waarschuwing sluiten",
+    "overspentOne": "{name} heeft die tickets al gebruikt, dus het saldo is nu {balance}. Er moet nog 1 ticket worden verdiend voor de volgende beloning.",
+    "overspentMany": "{name} heeft die tickets al gebruikt, dus het saldo is nu {balance}. Er moeten nog {owed} tickets worden verdiend voor de volgende beloning.",
+    "overspentSomeone": "Iemand",
     "memberAriaLabel": "{name}",
     "memberAriaLabelAllDone": "{name} (alles klaar)",
     "history": {

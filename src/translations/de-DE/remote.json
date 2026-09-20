@@ -93,6 +93,9 @@
       "setUpButton": "Aufgaben einrichten"
     },
     "warningDismissAriaLabel": "Hinweis schließen",
+    "overspentOne": "{name} hat diese Tickets schon ausgegeben, deshalb steht das Ticketkonto jetzt bei {balance}. Vor der nächsten Belohnung muss noch 1 Ticket verdient werden.",
+    "overspentMany": "{name} hat diese Tickets schon ausgegeben, deshalb steht das Ticketkonto jetzt bei {balance}. Vor der nächsten Belohnung müssen noch {owed} Tickets verdient werden.",
+    "overspentSomeone": "Jemand",
     "memberAriaLabel": "{name}",
     "memberAriaLabelAllDone": "{name} (alles geschafft)",
     "history": {

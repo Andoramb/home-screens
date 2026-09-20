@@ -3888,12 +3888,18 @@ export interface ChoreDefinition {
   assigneeGroupIds?: string[];
   /**
    * How it is shared among the people it goes to: everyone every time (`fixed`), taking turns by
-   * day or by week, or by `schedule`. `schedule` is people only and never combines with
-   * `assigneeGroupIds`.
+   * day or by week, or by `schedule`, where each person and each group has its own days.
    */
   rotation: ChoreRotation;
   /** With `rotation` set to `schedule`: each member ID to the days (0 to 6) they have the chore */
   schedule?: Record<string, number[]>;
+  /**
+   * With `rotation` set to `schedule`: each family group ID to the days (0 to 6) everyone in it has the chore
+   *
+   * The group is expanded to its members when the chore is resolved, so someone who joins the group
+   * later has the chore on those days too. Every group here is also named in `assigneeGroupIds`.
+   */
+  groupSchedule?: Record<string, number[]>;
 }
 
 export interface ChoreCompletion {
@@ -3926,9 +3932,10 @@ export interface ChoreToggleResponse {
   /** Present on POST responses so the client can update its rewards cache
    *  instantly after toggling, instead of waiting for the next rewards poll. */
   rewards?: RewardData;
-  /** Set when an admin un-completes a chore whose points were already spent —
-   *  the balance went negative as a result. UI should surface a warning. */
-  warning?: string;
+  /** Set when a chore is un-ticked after its tickets were already spent, which
+   *  left the balance below zero. Numbers only: whoever shows it builds the
+   *  sentence in their own language. */
+  overspent?: { memberId: string; balance: number };
   /** POST only: false when a directional request was a no-op (already in the
    *  requested state), so callers can tell "just done" from "already done". */
   changed?: boolean;

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Check } from 'lucide-react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Check, Users, X } from 'lucide-react';
 import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type {
   ChoreDefinition,
@@ -27,6 +27,74 @@ const SUB_LABEL_STYLE = { fontSize: 12, fontWeight: 600, color: 'var(--hs-text-f
 
 /** How many faces a group row shows before the rest become "+N". */
 const STACK_LIMIT = 4;
+
+/**
+ * One row of the weekly schedule, a person or a group. Two lines, because
+ * seven thumb-sized day buttons, a name and a remove button do not fit on one
+ * at phone width: who it is and the way to take them off, then the days.
+ */
+function ScheduleRow({ testId, name, color, days, dayNames, removeLabel, onToggle, onRemove, leading, trailing }: {
+  testId: string;
+  name: string;
+  color: string;
+  days: number[];
+  dayNames: string[];
+  removeLabel: string;
+  onToggle: (day: number) => void;
+  onRemove: () => void;
+  leading?: ReactNode;
+  trailing?: ReactNode;
+}) {
+  return (
+    <div data-testid={testId} style={{ padding: '6px 6px 12px 14px', background: 'var(--hs-bg-panel)', borderTop: '1px solid var(--hs-border)', marginTop: -1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {leading}
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--hs-text-body)', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {name}
+        </span>
+        {trailing}
+        <button
+          type="button"
+          className="press-scale-xs"
+          aria-label={removeLabel}
+          onClick={onRemove}
+          style={{
+            width: 44, height: 44, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            background: 'transparent', border: 'none', color: 'var(--hs-text-faint)', cursor: 'pointer',
+          }}
+        >
+          <X size={18} aria-hidden />
+        </button>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4, paddingRight: 8 }}>
+        {[0, 1, 2, 3, 4, 5, 6].map((d) => {
+          const isOn = days.includes(d);
+          return (
+            <button
+              key={d}
+              type="button"
+              className="press-scale-xs"
+              aria-pressed={isOn}
+              aria-label={`${name}, ${dayNames[d]}`}
+              onClick={() => onToggle(d)}
+              style={{
+                width: 40, height: 40, borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, flexShrink: 0,
+                border: isOn ? 'none' : '1px solid var(--hs-border)',
+                background: isOn ? color : 'var(--hs-bg-panel)',
+                color: isOn ? '#fff' : 'var(--hs-text-faint)',
+                cursor: 'pointer', transition: 'all 0.15s',
+              }}
+            >
+              {dayNames[d][0]}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 /** The people in a group as overlapping initials; a group has no color of its own. */
 function GroupAvatarStack({ members }: { members: FamilyMember[] }) {
@@ -96,15 +164,16 @@ export default function ChoreFormOverlay({
   const f = useChoreForm(initial, members, groups, familyReady);
   const {
     name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay,
-    assigneeIds, assigneeGroupIds, rotation, schedule, canRotate, scheduleAllowed, coveredByGroup, goesToNobody,
+    assigneeIds, assigneeGroupIds, rotation, schedule, groupSchedule, canRotate, coveredByGroup, goesToNobody,
     setName, setEmoji, setPoints, setFrequency, setSpecificDate, setTimeOfDay,
     switchToSchedule, switchFromSchedule, setRotation,
-    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule,
-    scheduleMembers, scheduleDays, unscheduledMembers,
+    toggleDay, toggleAssignee, toggleGroup, toggleScheduleDay, addMemberToSchedule, toggleGroupScheduleDay, addGroupToSchedule,
+    removeMemberFromSchedule, removeGroupFromSchedule,
+    scheduleMembers, scheduleGroups, scheduleDays, unscheduledMembers, unscheduledGroups,
     canSave, validationHintKind,
   } = f;
   const dirty = useFormDirty([
-    name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay, assigneeIds, assigneeGroupIds, rotation, schedule,
+    name, emoji, points, frequency, daysOfWeek, specificDate, timeOfDay, assigneeIds, assigneeGroupIds, rotation, schedule, groupSchedule,
   ]);
   // "Enter a chore name" on a form nobody has touched yet reads as an error
   // before anything went wrong. Latch on the first edit and leave it on, so
@@ -370,80 +439,81 @@ export default function ChoreFormOverlay({
         {rotation === 'schedule' && (
           <div style={{ marginBottom: 24 }}>
             <div style={LABEL_STYLE}>{t('choresManage.choreForm.weeklyScheduleLabel')}</div>
-            <div style={{ display: 'flex', gap: 4, marginBottom: 4, paddingLeft: 70 }}>
-              {[0, 1, 2, 3, 4, 5, 6].map((d) => (
-                <div key={d} style={{ width: 36, textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--hs-text-faint)', letterSpacing: '0.04em' }}>
-                  {dayNamesShort[d][0]}
-                </div>
-              ))}
-            </div>
             <div style={{ borderRadius: 14, overflow: 'hidden', border: '1px solid var(--hs-border)' }}>
-              {scheduleMembers.map((memberId, i) => {
+              {/* A group's row is everyone in it, whoever that is on the day. */}
+              {scheduleGroups.map((group) => (
+                <ScheduleRow
+                  key={group.id}
+                  testId={`schedule-group-${group.id}`}
+                  name={group.name}
+                  color="#f59e0b"
+                  days={groupSchedule[group.id] ?? []}
+                  dayNames={dayNamesShort}
+                  removeLabel={tModules('chore-chart.choreForm.removeFromSchedule', { name: group.name })}
+                  onToggle={(d) => toggleGroupScheduleDay(group.id, d)}
+                  onRemove={() => removeGroupFromSchedule(group.id)}
+                  trailing={<GroupAvatarStack members={groupMembers(group, members)} />}
+                />
+              ))}
+              {scheduleMembers.map((memberId) => {
                 const member = members.find((m) => m.id === memberId);
                 if (!member) return null;
-                const memberDays = schedule[memberId] ?? [];
                 return (
-                  <div
+                  <ScheduleRow
                     key={memberId}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '10px 14px',
-                      background: 'var(--hs-bg-panel)',
-                      borderBottom: i < scheduleMembers.length - 1 ? '1px solid var(--hs-border)' : 'none',
-                      minHeight: 48,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 28, height: 28, borderRadius: 8,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0, background: `color-mix(in srgb, ${member.color} 15%, transparent)`,
-                      }}
-                    >
-                      {member.emoji ? (
-                        <ChoreIcon value={member.emoji} size={16} color={member.color} />
-                      ) : (
-                        <span style={{ fontSize: 13, fontWeight: 600, color: member.color }}>{member.name[0]}</span>
-                      )}
-                    </div>
-                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--hs-text-body)', minWidth: 20, flexShrink: 0 }}>
-                      {member.name}
-                    </span>
-                    {/* Seven day toggles have to share one row next to a name, so
-                        they can't each be 44px wide; 36px keeps them thumb-sized
-                        without pushing the row into a horizontal scroller. */}
-                    <div style={{ display: 'flex', gap: 4, flex: 1, justifyContent: 'flex-end' }}>
-                      {[0, 1, 2, 3, 4, 5, 6].map((d) => {
-                        const isOn = memberDays.includes(d);
-                        return (
-                          <button
-                            key={d}
-                            type="button"
-                            className="press-scale-xs"
-                            onClick={() => toggleScheduleDay(memberId, d)}
-                            style={{
-                              width: 36, height: 36, borderRadius: '50%',
-                              display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              fontSize: 12, fontWeight: 700, flexShrink: 0,
-                              border: isOn ? 'none' : '1px solid var(--hs-border)',
-                              background: isOn ? member.color : 'var(--hs-bg-panel)',
-                              color: isOn ? '#fff' : 'var(--hs-text-faint)',
-                              cursor: 'pointer', transition: 'all 0.15s',
-                            }}
-                          >
-                            {dayNamesShort[d][0]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                    testId={`schedule-member-${memberId}`}
+                    name={member.name}
+                    color={member.color}
+                    days={schedule[memberId] ?? []}
+                    dayNames={dayNamesShort}
+                    removeLabel={tModules('chore-chart.choreForm.removeFromSchedule', { name: member.name })}
+                    onToggle={(d) => toggleScheduleDay(memberId, d)}
+                    onRemove={() => removeMemberFromSchedule(memberId)}
+                    leading={
+                      <div
+                        style={{
+                          width: 28, height: 28, borderRadius: 8,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          flexShrink: 0, background: `color-mix(in srgb, ${member.color} 15%, transparent)`,
+                        }}
+                      >
+                        {member.emoji ? (
+                          <ChoreIcon value={member.emoji} size={16} color={member.color} />
+                        ) : (
+                          <span style={{ fontSize: 13, fontWeight: 600, color: member.color }}>{member.name[0]}</span>
+                        )}
+                      </div>
+                    }
+                  />
                 );
               })}
             </div>
-            {unscheduledMembers.length > 0 && (
+            {goesToNobody && (
+              <p style={{ fontSize: 12, color: 'var(--hs-warning)', margin: '8px 0 0' }}>
+                {tModules('chore-chart.choreForm.emptyGroupNote')}
+              </p>
+            )}
+            {unscheduledMembers.length + unscheduledGroups.length > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {unscheduledGroups.map((group) => (
+                  <button
+                    key={group.id}
+                    type="button"
+                    className="press-scale-xs"
+                    onClick={() => addGroupToSchedule(group.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '8px 12px', minHeight: 44, borderRadius: 10, maxWidth: '100%',
+                      background: 'var(--hs-bg-panel)',
+                      border: '1px dashed var(--hs-border)',
+                      color: 'var(--hs-text-faint)', fontSize: 13, cursor: 'pointer',
+                    }}
+                  >
+                    <span style={{ fontSize: 14 }}>+</span>
+                    <Users size={14} aria-hidden />
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{group.name}</span>
+                  </button>
+                ))}
                 {unscheduledMembers.map((m) => (
                   <button
                     key={m.id}
@@ -492,22 +562,10 @@ export default function ChoreFormOverlay({
               }}
               style={SELECT_STYLE}
             >
-              {CHORE_ROTATIONS.filter((opt) => opt.value !== 'schedule' || scheduleAllowed).map((opt) => (
+              {CHORE_ROTATIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>{rotationLabelMap[opt.value]}</option>
               ))}
             </select>
-            {!scheduleAllowed && (
-              <p style={{ fontSize: 12, color: 'var(--hs-text-faint)', margin: '8px 0 0' }}>
-                {tModules('chore-chart.choreForm.scheduleNeedsPeople')}
-              </p>
-            )}
-            {/* The other direction: a schedule hides the group picker along with
-                the people list, so say where it went and how to get it back. */}
-            {rotation === 'schedule' && groups.length > 0 && (
-              <p style={{ fontSize: 12, color: 'var(--hs-text-faint)', margin: '8px 0 0' }}>
-                {tModules('chore-chart.choreForm.groupsNeedOtherRotation')}
-              </p>
-            )}
           </div>
         )}
 

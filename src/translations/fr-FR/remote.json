@@ -93,6 +93,9 @@
       "setUpButton": "Configurer les tâches"
     },
     "warningDismissAriaLabel": "Fermer l'avertissement",
+    "overspentOne": "{name} a déjà dépensé ces tickets, le solde est donc maintenant de {balance}. Il faut encore gagner 1 ticket avant la prochaine récompense.",
+    "overspentMany": "{name} a déjà dépensé ces tickets, le solde est donc maintenant de {balance}. Il faut encore gagner {owed} tickets avant la prochaine récompense.",
+    "overspentSomeone": "Quelqu'un",
     "memberAriaLabel": "{name}",
     "memberAriaLabelAllDone": "{name} (tout est fait)",
     "history": {

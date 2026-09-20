@@ -418,7 +418,7 @@ describe('POST /api/chores', () => {
     expect(planPointsMove).not.toHaveBeenCalled();
   });
 
-  it('surfaces a warning when the debit sends the balance negative', async () => {
+  it('reports the member and balance when the debit sends the balance negative', async () => {
     vi.mocked(planPointsMove).mockResolvedValue(plannedMove({} as never, -3, true));
 
     const today = daysAgo(0);
@@ -433,9 +433,9 @@ describe('POST /api/chores', () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json.warning).toBeDefined();
-    expect(typeof json.warning).toBe('string');
-    expect(json.warning).toContain('-3');
+    // Numbers only; the sentence is the client's, in its own language.
+    expect(json.overspent).toEqual({ memberId: 'kid-1', balance: -3 });
+    expect(json).not.toHaveProperty('warning');
   });
 
   it('embeds the planned rewards snapshot in the POST response', async () => {
@@ -523,7 +523,7 @@ describe('POST /api/chores', () => {
     const json = await res.json();
 
     expect(res.status).toBe(200);
-    expect(json.warning).toBeUndefined();
+    expect(json.overspent).toBeUndefined();
   });
 });
 

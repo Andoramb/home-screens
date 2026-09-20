@@ -96,7 +96,7 @@ export function buildChoreRows(assignments: ResolvedAssignment[], memberOrder?: 
     if (existing) {
       existing.assignees.push({ memberId: a.memberId, isCompleted: a.isCompleted, viaGroup: viaGroup.get(a.chore.id)?.has(a.memberId) });
     } else {
-      const named = (a.chore.assigneeGroupIds ?? []).flatMap((id) => familyGroups.find((group) => group.id === id) ?? []);
+      const named = a.groupIds.flatMap((id) => familyGroups.find((group) => group.id === id) ?? []);
       const inGroup = new Set(named.flatMap((group) => group.memberIds));
       viaGroup.set(a.chore.id, inGroup);
       choreMap.set(a.chore.id, {

@@ -93,6 +93,9 @@
       "setUpButton": "Set Up Chores"
     },
     "warningDismissAriaLabel": "Dismiss warning",
+    "overspentOne": "{name} already spent those tickets, so the balance is now {balance}. 1 more ticket has to be earned before the next reward.",
+    "overspentMany": "{name} already spent those tickets, so the balance is now {balance}. {owed} more tickets have to be earned before the next reward.",
+    "overspentSomeone": "Someone",
     "memberAriaLabel": "{name}",
     "memberAriaLabelAllDone": "{name} (all done)",
     "history": {

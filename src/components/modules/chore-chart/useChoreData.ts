@@ -228,11 +228,9 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
         displayCache.set(rewardsUrl(), data.rewards, choreChartTtl);
         rewardsOverrideUntil.current = Date.now() + choreChartTtl;
       }
-      // Surface server warnings (e.g. balance went negative on un-complete) so they're
-      // at least visible in the kiosk console — display modules don't have a UI for
-      // these alerts, but the admin viewing dev tools can see them.
-      if (data.warning) {
-        log.warn(data.warning);
+      // The wall has no place to show this, so it at least reaches the kiosk console.
+      if (data.overspent) {
+        log.warn(`Un-ticked after the tickets were spent: ${data.overspent.memberId} is now at ${data.overspent.balance}`);
       }
     } catch {
       setCompletions(snapshot);

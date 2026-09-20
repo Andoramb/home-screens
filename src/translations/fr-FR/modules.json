@@ -597,11 +597,11 @@
       "groupsHint": "Tous les membres d'un groupe reçoivent la tâche. Si quelqu'un rejoint le groupe plus tard, il la reçoit aussi.",
       "groupMemberNote": "Dans {group}",
       "emptyGroupNote": "Il n'y a encore personne dans le groupe choisi, donc personne ne reçoit cette tâche tant que tu n'y ajoutes personne.",
-      "scheduleNeedsPeople": "Un planning se fait avec des personnes choisies une par une, il n'est donc pas proposé avec un groupe.",
-      "groupsNeedOtherRotation": "Pour donner cette tâche à un groupe, choisis ici autre chose que « Planning ». Un planning se fait avec des personnes choisies une par une.",
+      "removeFromSchedule": "Retirer {name} du planning",
       "validation": {
         "enterName": "Saisis un nom de tâche",
         "addPersonToSchedule": "Ajoute au moins une personne au planning",
+        "addPersonOrGroupToSchedule": "Ajoute au moins une personne ou un groupe au planning",
         "selectAtLeastOnePerson": "Sélectionne au moins une personne",
         "selectAtLeastOnePersonOrGroup": "Sélectionne au moins une personne ou un groupe",
         "familyNotReady": "Ta famille est encore en cours de chargement. Réessaie dans un instant."

@@ -31,7 +31,7 @@ function chore(id: string): ChoreDefinition {
  */
 function heavyAssignments(id: string, count: number) {
   return Array.from({ length: count }, (_, i) => ({
-    chore: chore(`${id}-${i}`), memberId: id, isCompleted: false,
+    chore: chore(`${id}-${i}`), memberId: id, isCompleted: false, groupIds: [],
   }));
 }
 

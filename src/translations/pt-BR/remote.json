@@ -93,6 +93,9 @@
       "setUpButton": "Configurar tarefas"
     },
     "warningDismissAriaLabel": "Dispensar aviso",
+    "overspentOne": "{name} já gastou esses tickets, então o saldo agora é {balance}. Falta ganhar 1 ticket antes da próxima recompensa.",
+    "overspentMany": "{name} já gastou esses tickets, então o saldo agora é {balance}. Falta ganhar {owed} tickets antes da próxima recompensa.",
+    "overspentSomeone": "Alguém",
     "memberAriaLabel": "{name}",
     "memberAriaLabelAllDone": "{name} (tudo pronto)",
     "history": {

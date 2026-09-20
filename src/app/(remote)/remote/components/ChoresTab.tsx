@@ -402,9 +402,14 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       if (!isMountedRef.current) return;
       setCompletions(data.completions ?? []);
       if (data.rewards?.balances) setBalances(data.rewards.balances);
-      if (data.warning) {
-        log.warn(data.warning);
-        setLastWarning(data.warning);
+      if (data.overspent) {
+        const { memberId, balance } = data.overspent;
+        const owed = Math.abs(balance);
+        setLastWarning(t(owed === 1 ? 'choresTab.overspentOne' : 'choresTab.overspentMany', {
+          name: members.find((m) => m.id === memberId)?.name ?? t('choresTab.overspentSomeone'),
+          balance,
+          owed,
+        }));
       }
     } catch {
       if (isMountedRef.current) fetchCompletions();
