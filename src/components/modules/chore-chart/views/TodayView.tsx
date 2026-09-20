@@ -13,6 +13,8 @@ import { TapCheckbox } from '../../shared/TapCheckbox';
 import { choreTapSize } from '../layout';
 import { CHORE_ROW_ATTR, FitRows } from '../FitRows';
 import { usePressedKey } from '../../shared/usePressedKey';
+import { useHoldToUncheck } from '@/hooks/useHoldToUncheck';
+import { HoldHint, HoldProgress, TicketValue, showsTicketValue } from '../ChoreRowExtras';
 
 interface TodayViewProps {
   config: ChoreChartConfig;
@@ -33,6 +35,9 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
   const { todayAssignments, members, toggleComplete } = data;
   const allowTouch = config.allowDisplayComplete;
   const [pressedKey, press] = usePressedKey();
+  // Ticking is one tap; un-ticking takes a press and hold, the same gesture
+  // the kid tablet asks for.
+  const hold = useHoldToUncheck();
   const accentColor = config.accentColor ?? '#f59e0b';
   const t = useTranslate('modules');
   const tCore = useTranslate('core');
@@ -104,17 +109,25 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
                 {items.map((assignment, i) => {
                   const { chore, memberId, isCompleted } = assignment;
                   const member = members.find((m) => m.id === memberId);
+                  const key = `${chore.id}:${memberId}`;
+                  const rowColor = member?.color ?? accentColor;
+                  // A finished row is the one a passing tap must not undo.
+                  const holdMode = allowTouch && isCompleted;
+                  const handlers = allowTouch
+                    ? hold.rowHandlers(key, holdMode, () => { void press(key, () => toggleComplete(chore.id, memberId)); })
+                    : undefined;
 
                   return (
                     <button
                       key={`${chore.id}-${memberId}`}
                       {...{ [CHORE_ROW_ATTR]: '' }}
                       type="button"
-                      onClick={allowTouch ? () => { void press(`${chore.id}:${memberId}`, () => toggleComplete(chore.id, memberId)); } : undefined}
+                      {...handlers}
                       disabled={!allowTouch}
                       aria-pressed={allowTouch ? isCompleted : undefined}
                       className="w-full flex items-center gap-2 transition-all"
                       style={{
+                        position: 'relative',
                         padding: '0.5em 0.6em',
                         fontSize: '1em',
                         opacity: isCompleted ? 0.45 : 1,
@@ -124,15 +137,23 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
                         borderTop: i > 0 ? `1px solid ${DIVIDER.subtle}` : 'none',
                         color: 'inherit',
                         textAlign: 'left',
+                        // A long press must not select the row's text or open
+                        // the browser's copy sheet.
+                        userSelect: 'none',
+                        WebkitUserSelect: 'none',
+                        WebkitTouchCallout: 'none',
+                        touchAction: 'pan-y',
                       }}
                     >
+                      {hold.holdingKey === key && <HoldProgress progress={hold.progress} color={rowColor} />}
                       {chore.emoji && <span className="shrink-0"><ChoreIcon value={chore.emoji} size={18} color="currentColor" /></span>}
                       <span
                         className="flex-1 truncate"
-                        style={{ textDecoration: isCompleted ? 'line-through' : 'none' }}
+                        style={{ textDecoration: isCompleted && hold.hintKey !== key ? 'line-through' : 'none' }}
                       >
-                        {chore.name}
+                        {hold.hintKey === key ? <HoldHint color={rowColor} /> : chore.name}
                       </span>
+                      {showsTicketValue(config.showPoints, chore.points) && <TicketValue points={chore.points} />}
                       {/* Everyone on a shared chore gets their own row with the same
                           name, so each row says whose it is: their icon, or their
                           initial when they have none. */}

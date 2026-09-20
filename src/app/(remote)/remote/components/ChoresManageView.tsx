@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ChevronRight, Plus } from 'lucide-react';
 import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type { ChoreDefinition } from '@/types/config';
@@ -11,7 +11,8 @@ import {
   removeChoreFromList,
 } from '@/components/modules/chore-chart/types';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
-import { useTranslate } from '@/i18n';
+import { useTranslate, useFormattingLocale } from '@/i18n';
+import { getLocalizedDayNames } from '@/lib/meal-constants';
 import { buildChoreAssigneeLine, buildChoreSummaryLine, getChoreRotationSummaryKey } from '@/components/modules/chore-chart/chore-form-presentation';
 import { DEFAULT_CHORE_ICON } from '@/lib/chore-constants';
 import FamilyManager from '@/components/family/FamilyManager';
@@ -38,6 +39,9 @@ export default function ChoresManageView({
 }: ChoresManageViewProps) {
   const t = useTranslate('remote');
   const tModules = useTranslate('modules');
+  // Day names on a chore row follow the formatting locale, not the UI language.
+  const formattingLocale = useFormattingLocale();
+  const dayNamesShort = useMemo(() => getLocalizedDayNames(formattingLocale, 'short'), [formattingLocale]);
   const [section, setSection] = useState<'members' | 'chores'>('chores');
   const [overlay, setOverlay] = useState<
     | { type: 'chore-form'; chore?: ChoreDefinition }
@@ -188,7 +192,7 @@ export default function ChoresManageView({
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--hs-text-body)' }}>{chore.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--hs-text-faint)', marginTop: 2 }}>
-                    {buildChoreSummaryLine({ chore, t: tModules })}
+                    {buildChoreSummaryLine({ chore, t: tModules, dayNames: dayNamesShort })}
                   </div>
                   <div style={{ fontSize: 11, color: 'var(--hs-text-faint)', marginTop: 2 }}>
                     &rarr;{' '}

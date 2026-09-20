@@ -177,6 +177,7 @@
       "namePlaceholder": "Titel på pligt...",
       "iconLabel": "Ikon",
       "ticketsLabel": "Billetter",
+      "ticketsHint": "Så mange billetter tjener et barn for denne pligt. Billetter kan byttes til belønninger.",
       "frequencyLabel": "Frekvens",
       "timeOfDayLabel": "Tid på dagen",
       "dateLabel": "Dato",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "Slet \"{name}\"?",
-      "description": "Denne pligt og hele dens historik vil blive fjernet.",
+      "description": "Pligten forsvinder. Billetter, som børnene allerede har tjent for den, bliver på deres kort.",
       "confirmLabel": "Slet pligt"
     }
   },

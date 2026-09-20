@@ -8,6 +8,11 @@ import { useTranslate } from '@/i18n';
 import { logger } from '@/lib/logger';
 import type { ChangelogRelease, VersionResponse } from '@/lib/version';
 import { parseUpdateChannel, type UpdateChannel } from '@/lib/semver';
+import {
+  versionChangeDialogKeys,
+  versionChangeDirection,
+  type VersionChangeDirection,
+} from '@/lib/version-change-dialog';
 
 const log = logger('system-settings');
 
@@ -179,26 +184,41 @@ export function useSystemActions({ onUpgrade, onRollback }: Options): SystemActi
     }).catch((err) => log.debug('Failed to clear the failed-update marker:', err));
   }
 
-  async function handleUpgrade(tag: string) {
+  /**
+   * Confirm a version change with the dialog that matches its direction. The
+   * banner installs whatever the chosen channel offers, which is sometimes an
+   * older release, and a step backwards has to be asked for in those terms.
+   */
+  async function confirmVersionChange(
+    tag: string,
+    direction: VersionChangeDirection,
+    install: () => void,
+  ) {
+    const keys = versionChangeDialogKeys(direction);
     await confirmAndRun(
       {
-        title: t('settings.systemPage.upgradeDialog.title'),
-        message: t('settings.systemPage.upgradeDialog.message', { tag }),
-        confirmLabel: t('settings.systemPage.upgradeDialog.confirm'),
-        variant: 'primary',
+        title: t(keys.titleKey, { tag }),
+        message: t(keys.messageKey, { tag }),
+        confirmLabel: t(keys.confirmKey, { tag }),
+        ...(keys.variant ? { variant: keys.variant } : {}),
       },
-      async () => { onUpgrade(tag, versionInfo?.current ?? null); },
+      async () => { install(); },
+    );
+  }
+
+  async function handleUpgrade(tag: string) {
+    await confirmVersionChange(
+      tag,
+      versionChangeDirection(versionInfo?.isDowngrade),
+      () => onUpgrade(tag, versionInfo?.current ?? null),
     );
   }
 
   async function handleRollback(tag: string) {
-    await confirmAndRun(
-      {
-        title: t('settings.systemPage.rollbackDialog.title', { tag }),
-        message: t('settings.systemPage.rollbackDialog.message', { tag }),
-        confirmLabel: t('settings.systemPage.rollbackDialog.confirm', { tag }),
-      },
-      async () => { onRollback(tag, versionInfo?.current ?? null); },
+    await confirmVersionChange(
+      tag,
+      'downgrade',
+      () => onRollback(tag, versionInfo?.current ?? null),
     );
   }
 

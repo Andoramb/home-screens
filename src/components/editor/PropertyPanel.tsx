@@ -23,6 +23,7 @@ import { stackExtremes } from '@/lib/module-utils';
 import type { BuiltinModuleType, ModuleInstance } from '@/types/config';
 import { usePluginStore } from '@/stores/plugin-store';
 import { getModuleDefinition, resolveModuleDescription, resolveModuleLabel, styleReachesModule } from '@/lib/module-registry';
+import { buildModuleDeleteConfirm } from '@/lib/delete-confirmations';
 import { moduleDocsUrl } from '@/lib/module-docs';
 import { useTranslate, type TranslateFn } from '@/i18n';
 import PluginConfigRenderer from './PluginConfigRenderer';
@@ -519,6 +520,7 @@ export default function PropertyPanel({
   onCollapse?: () => void;
 } = {}) {
   const t = useTranslate('editor');
+  const tCore = useTranslate('core');
   const { config, selectedDisplayId, selectedScreenId, selectedModuleId, selectModule, removeModule, duplicateModule, updateModule, reorderModule } = useEditorStore();
   const pluginMap = usePluginStore((s) => s.plugins);
   // Same clock and live values the canvas badges use, so the chip here and the
@@ -888,7 +890,9 @@ export default function PropertyPanel({
             <Button
               variant="danger"
               onClick={async () => {
-                if (await useConfirmStore.getState().confirm(t('propertyPanel.actions.confirmDelete'))) {
+                if (await useConfirmStore.getState().confirm(
+                  buildModuleDeleteConfirm(moduleLabel, t, tCore),
+                )) {
                   removeModule(selectedScreenId, selectedModule.id);
                 }
               }}

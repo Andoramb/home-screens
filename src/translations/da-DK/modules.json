@@ -443,6 +443,12 @@
     },
     "todaysCompletion": "Klaret i dag",
     "rewardBalances": "Billetsaldi",
+    "holdToUncheckHint": "Hold nede for at fjerne fluebenet",
+    "overspent": {
+      "one": "{name} har allerede brugt de billetter, så saldoen er nu {balance}. Der mangler 1 billet.",
+      "other": "{name} har allerede brugt de billetter, så saldoen er nu {balance}. Der mangler {count} billetter."
+    },
+    "overspentSomeone": "Nogen",
     "ticketsCount": {
       "one": "{count} billet",
       "other": "{count} billetter"
@@ -607,6 +613,7 @@
         "addPersonOrGroupToSchedule": "Tilføj mindst én person eller gruppe til skemaet",
         "selectAtLeastOnePerson": "Vælg mindst én person",
         "selectAtLeastOnePersonOrGroup": "Vælg mindst én person eller gruppe",
+        "selectAtLeastOneDay": "Vælg mindst én dag",
         "familyNotReady": "Din familie indlæses stadig. Prøv igen om lidt."
       }
     },

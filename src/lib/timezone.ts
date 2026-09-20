@@ -167,6 +167,21 @@ export function localISODate(d: Date = new Date()): string {
   return `${y}-${m}-${day}`;
 }
 
+/**
+ * A Date's own calendar day and clock time as `YYYY-MM-DDTHH:mm`: the value an
+ * `<input type="datetime-local">` reads and writes.
+ *
+ * Always use this to seed or fill a date or datetime input.
+ * `toISOString().slice(0, 16)` looks like the same string but is UTC, and the
+ * input reads it back as local time: a countdown created at 10:24 PM in
+ * Chicago opened on tomorrow's date at 3:24 AM.
+ */
+export function localISODateTime(d: Date = new Date()): string {
+  const h = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${localISODate(d)}T${h}:${min}`;
+}
+
 export function createTZDate(timezone?: string): Date {
   return toTZWallTime(new Date(), timezone);
 }

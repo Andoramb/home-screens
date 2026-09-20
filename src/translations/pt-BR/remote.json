@@ -177,6 +177,7 @@
       "namePlaceholder": "Nome da tarefa...",
       "iconLabel": "Ícone",
       "ticketsLabel": "Tickets",
+      "ticketsHint": "Quantos tickets uma criança ganha por fazer esta tarefa. Tickets valem recompensas.",
       "frequencyLabel": "Frequência",
       "timeOfDayLabel": "Hora do dia",
       "dateLabel": "Data",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "Excluir \"{name}\"?",
-      "description": "Esta tarefa e todo o histórico de conclusão serão removidos.",
+      "description": "A tarefa some. Os tickets que as crianças já ganharam com ela ficam no cartão delas.",
       "confirmLabel": "Excluir tarefa"
     }
   },

@@ -2,8 +2,9 @@
 import type { FamilyMember } from '@/types/family';
 // @vitest-environment jsdom
 
-import { describe, it, expect } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { UNCHECK_HOLD_MS } from '@/hooks/useHoldToUncheck';
 import { I18nProvider } from '@/i18n/provider';
 import enUSModules from '@/translations/en-US/modules.json';
 import { BoardView } from '../views/BoardView';
@@ -91,5 +92,60 @@ describe('BoardView row wrapping', () => {
 
     const grid = container.querySelector('[style*="grid-template-rows"]');
     expect(grid!.getAttribute('style')).toMatch(/grid-template-rows:\s*repeat\(1,/);
+  });
+});
+
+describe('BoardView un-ticking', () => {
+  // The tests above leave their markup in the document; start from a clean one.
+  beforeEach(() => { cleanup(); vi.useFakeTimers(); });
+  afterEach(() => { vi.useRealTimers(); cleanup(); });
+
+  function board(isCompleted: boolean) {
+    const toggleComplete = vi.fn(async () => {});
+    const members = [member('solo')];
+    const todayAssignments = [{ chore: chore('solo'), memberId: 'solo', isCompleted, groupIds: [] }];
+    const memberStats = new Map<string, MemberStats>([
+      ['solo', { total: 1, completed: isCompleted ? 1 : 0, percentage: 0, streak: 0, weeklyPoints: 0, weeklyPointsTotal: 0, rewardBalance: 0, weekAssigned: 1 }],
+    ]);
+    render(wrap(
+      <BoardView
+        config={{ view: 'board', weekStartDay: 'monday', showPoints: true, showStreaks: true, showTimeOfDay: true, allowDisplayComplete: true, accentColor: '#8b5cf6' }}
+        data={{ members, todayAssignments, completionSet: new Set(), memberStats, toggleComplete }}
+        width={900}
+        fontSize={24}
+        authoredFontSize={24}
+      />,
+    ));
+    return { toggleComplete, card: screen.getByRole('button', { name: /Chore solo/ }) };
+  }
+
+  it('ignores a plain tap on a finished card', () => {
+    const { toggleComplete, card } = board(true);
+
+    fireEvent.pointerDown(card);
+    fireEvent.pointerUp(card);
+    fireEvent.click(card, { detail: 1 });
+
+    expect(toggleComplete).not.toHaveBeenCalled();
+    expect(screen.getByRole('status').textContent).toBe('Press and hold to un-check');
+  });
+
+  it('un-ticks on a press and hold', () => {
+    const { toggleComplete, card } = board(true);
+
+    fireEvent.pointerDown(card);
+    act(() => { vi.advanceTimersByTime(UNCHECK_HOLD_MS); });
+
+    expect(toggleComplete).toHaveBeenCalledWith('solo', 'solo');
+  });
+
+  it('still ticks an unfinished card off on a single tap', () => {
+    const { toggleComplete, card } = board(false);
+
+    fireEvent.pointerDown(card);
+    fireEvent.pointerUp(card);
+    fireEvent.click(card, { detail: 1 });
+
+    expect(toggleComplete).toHaveBeenCalledWith('solo', 'solo');
   });
 });

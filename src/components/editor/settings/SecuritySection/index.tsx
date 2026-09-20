@@ -153,10 +153,10 @@ export default function SecuritySection() {
         {/* The display token, the signed-in devices and the IP allowlist are
             one subject: which machines get in without typing the password.
             They were three always-open panels carrying CIDR errors, an
-            IPv6 caveat and an X-Forwarded-For spoofing warning, which is a
-            lot of network administration to scroll past on the way to
-            "change my password". The warnings stay, next to the toggles they
-            describe. */}
+            IPv6 caveat and a warning about relayed traffic hiding the real
+            device, which is a lot of network administration to scroll past
+            on the way to "change my password". The warnings stay, next to
+            the toggles they describe. */}
         {status?.authEnabled && (
           <details
             className="group rounded-lg border border-hs-border-strong bg-hs-card/40 px-3 py-2.5 transition-colors hover:border-hs-text-faint"

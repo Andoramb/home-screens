@@ -27,10 +27,31 @@ describe('formatScheduleDays', () => {
 });
 
 describe('formatScheduleTime', () => {
-  it('reads a half-set window as all day, because that is how it behaves', () => {
-    expect(formatScheduleTime({ startTime: '07:00' }, t, 'en-US', '12h')).toBe('all day');
-    expect(formatScheduleTime({ endTime: '09:00' }, t, 'en-US', '12h')).toBe('all day');
+  it('says all day only when neither end of the window is set', () => {
     expect(formatScheduleTime({}, t, 'en-US', '12h')).toBe('all day');
+    expect(formatScheduleTime(undefined, t, 'en-US', '12h')).toBe('all day');
+    expect(formatScheduleTime({ daysOfWeek: [1, 2, 3] }, t, 'en-US', '12h')).toBe('all day');
+  });
+
+  it('names a one-sided window, which really does gate most of the day', () => {
+    // 6 PM with no end is hidden from midnight to 6 PM, not "all day".
+    expect(formatScheduleTime({ startTime: '18:00' }, t, 'en-US', '12h')).toBe('from 6:00 PM');
+    expect(formatScheduleTime({ endTime: '09:00' }, t, 'en-US', '12h')).toBe('until 9:00 AM');
+  });
+
+  it('follows the household clock preference on a one-sided window too', () => {
+    expect(formatScheduleTime({ startTime: '18:00' }, t, 'en-US', '24h')).toBe('from 18:00');
+    expect(formatScheduleTime({ endTime: '09:00' }, t, 'en-US', '24h')).toBe('until 09:00');
+  });
+
+  it('fills the open end the way the display does when the window also spans days', () => {
+    // No end means "to the end of the day", so a span of 1 closes at the
+    // midnight two days on.
+    expect(formatScheduleTime({ startTime: '18:00', endDayOffset: 1 }, t, 'en-US', '24h'))
+      .toBe('18:00 until 00:00 2 days later');
+    // No start means "from midnight".
+    expect(formatScheduleTime({ endTime: '09:00', endDayOffset: 2 }, t, 'en-US', '24h'))
+      .toBe('00:00 until 09:00 2 days later');
   });
 
   it('follows the household clock preference', () => {
@@ -86,5 +107,25 @@ describe('describeSchedule', () => {
   it('describes the just-enabled default as the no-op it is', () => {
     expect(describeSchedule({ daysOfWeek: [0, 1, 2, 3, 4, 5, 6] }, t, 'en-US', '12h').sentence)
       .toBe('Shows every day, all day.');
+    expect(describeSchedule({ daysOfWeek: [1, 2, 3, 4, 5] }, t, 'en-US', '12h').sentence)
+      .toBe('Shows Mon to Fri, all day.');
+  });
+
+  it('carries a one-sided window into both the chip and the sentence', () => {
+    const { short, sentence } = describeSchedule(
+      { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: '18:00' },
+      t,
+      'en-US',
+      '12h',
+    );
+    expect(short).toBe('every day, from 6:00 PM');
+    expect(sentence).toBe('Shows every day, from 6:00 PM.');
+  });
+
+  it('flips a one-sided window in the inverted sentence', () => {
+    expect(
+      describeSchedule({ daysOfWeek: [0, 6], endTime: '09:00', invert: true }, t, 'en-US', '12h')
+        .sentence,
+    ).toBe('Hidden Sat and Sun, until 9:00 AM. Shown the rest of the time.');
   });
 });

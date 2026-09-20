@@ -42,7 +42,7 @@
     "waiting": "Waiting for display…",
     "unreachable": "Display unreachable",
     "notConnectedTitle": "This display hasn't connected yet",
-    "notConnectedHint": "Make sure it's turned on, or finish setting it up in the editor under Per display.",
+    "notConnectedHint": "Make sure it's turned on, or open Home Screens on a computer to finish setting it up.",
     "theDisplay": "The display",
     "allHeading": "All displays",
     "rowNotConnected": "Hasn't connected yet",
@@ -177,6 +177,7 @@
       "namePlaceholder": "Chore name...",
       "iconLabel": "Icon",
       "ticketsLabel": "Tickets",
+      "ticketsHint": "How many tickets a kid earns for doing this chore. Tickets buy rewards.",
       "frequencyLabel": "Frequency",
       "timeOfDayLabel": "Time of Day",
       "dateLabel": "Date",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "Delete \"{name}\"?",
-      "description": "This chore and all its completion history will be removed.",
+      "description": "The chore goes away. Tickets the kids have already earned for it stay on their cards.",
       "confirmLabel": "Delete Chore"
     }
   },
@@ -660,7 +661,7 @@
     "firstList": {
       "title": "Make your first list",
       "placeholder": "Name your first list",
-      "body": "Groceries, a packing list, things to do before school. Once it exists, pick it for the To-Do module in the editor."
+      "body": "Groceries, a packing list, things to do before school. Once it exists, open Home Screens on a computer to choose it for the to-do list on your wall."
     },
     "newList": {
       "title": "New list",
@@ -736,7 +737,7 @@
     },
     "lists": {
       "title": "No to-do list yet",
-      "body": "Lists show up here once a To-Do module is on one of your screens."
+      "body": "Lists show up here once a to-do list is on one of your screens."
     },
     "meals": {
       "title": "No meal planner yet",

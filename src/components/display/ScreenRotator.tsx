@@ -6,6 +6,7 @@ import ScreenRenderer from './ScreenRenderer';
 import BackgroundProviderLayer from './BackgroundProviderLayer';
 import EmptyDisplayHint from './EmptyDisplayHint';
 import { isScreenEmpty } from '@/lib/display-filter';
+import { selectRotatingScreens } from '@/lib/rotating-screens';
 import PluginServiceLayer from './PluginServiceLayer';
 import SleepOverlay from './SleepOverlay';
 import AlertOverlay from './AlertOverlay';
@@ -138,8 +139,16 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     return filtered.length > 0 ? filtered : enabledScreens;
   }, [enabledScreens, now]);
 
+  // Last filter before the rotation list is final: a screen nobody has put
+  // anything on yet does not get a turn on the wall (see selectRotatingScreens
+  // for what counts as empty, and for the all-empty case the watermark owns).
+  // The dots, the rotation timer, prefetch and the screen count reported to
+  // the hub all read this same list, so a skipped screen leaves no dot behind
+  // and no gap in "2 of 3".
   const screens = useMemo(
-    () => resolveProfileScreens(scheduledScreens, profiles, settings.activeProfile, now),
+    () => selectRotatingScreens(
+      resolveProfileScreens(scheduledScreens, profiles, settings.activeProfile, now),
+    ),
     [scheduledScreens, profiles, settings.activeProfile, now],
   );
 
@@ -556,6 +565,10 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   // a failed install. The setup watermark prints this hub's own address;
   // `setupHintEnabled: false` (global, or overridden for this display)
   // leaves the panel black instead.
+  //
+  // Only ALL of them being empty reaches here: one empty screen among full
+  // ones never joins the rotation in the first place (selectRotatingScreens),
+  // which is why the watermark cannot be triggered by a half-built config.
   //
   // A rule takeover wins over the watermark: an alert screen pinned by a
   // `showScreen` rule is usually excluded from rotation, so "every rotating

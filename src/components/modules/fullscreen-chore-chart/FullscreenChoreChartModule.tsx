@@ -9,6 +9,7 @@ import type { FullscreenChoreChartConfig, ModuleStyle, ChoreTimeOfDay} from '@/t
 import { getThemeTokens, migrateFromDarkMode, getTypoMultiplier, getDensityMultiplier, buildThemeCSSVars, resolveFullscreenAccent } from '@/lib/fullscreen-themes';
 import { DEFAULT_ACCENT_COLOR } from '@/lib/meal-constants';
 import { useChoreData } from '@/components/modules/chore-chart/useChoreData';
+import { useOverspentMessage } from '@/components/modules/chore-chart/ChoreOverspentNotice';
 import { partitionMembers, weekMembers } from '@/components/modules/chore-chart/layout';
 import { createTZDate, formatDateInTZ } from '@/lib/timezone';
 import { useTranslate, useFormattingLocale } from '@/i18n';
@@ -125,7 +126,10 @@ export default function FullscreenChoreChartModule({
   const pad = 40 * k * d;
   const weekProgress = config.weekProgress ?? 'chips';
 
-  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, isLoading, error } = useChoreData(config);
+  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, overspentNotice, isLoading, error } = useChoreData(config);
+  // Un-ticking hands tickets back that may already have been spent. The card
+  // chart says so at its foot; here it rides in the toast strip.
+  const overspentMessage = useOverspentMessage(overspentNotice);
   const allowTouch = config.allowDisplayComplete ?? true;
   const byPerson = (config.layout ?? 'by-time') === 'by-person';
   // Who is on the chart: chips for people with chores today, one line for a
@@ -725,7 +729,7 @@ export default function FullscreenChoreChartModule({
       )}
 
       {/* Touch completion toasts — always rendered */}
-      {allowTouch && <ChoreToast toasts={toasts} onDismiss={dismissToast} onUndo={handleUndo} scale={tc} bottom={footer ? 96 * k : 20 * k} />}
+      {allowTouch && <ChoreToast toasts={toasts} onDismiss={dismissToast} onUndo={handleUndo} notice={overspentMessage} scale={tc} bottom={footer ? 96 * k : 20 * k} />}
     </div>
   );
 }

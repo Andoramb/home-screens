@@ -11,6 +11,8 @@ import { useTranslate } from '@/i18n';
 import ChoreIcon from '../ChoreIcon';
 import { TapCheckbox } from '../../shared/TapCheckbox';
 import { usePressedKey } from '../../shared/usePressedKey';
+import { useHoldToUncheck } from '@/hooks/useHoldToUncheck';
+import { HoldHint, HoldProgress } from '../ChoreRowExtras';
 
 interface BoardViewProps {
   config: ChoreChartConfig;
@@ -79,6 +81,9 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
   const { todayAssignments, members, memberStats, toggleComplete } = data;
   const allowTouch = config.allowDisplayComplete;
   const [pressedKey, press] = usePressedKey();
+  // Ticking is one tap; un-ticking takes a press and hold, the same gesture
+  // the kid tablet asks for.
+  const hold = useHoldToUncheck();
   const t = useTranslate('modules');
 
   // Members with no chores at all this week are not on the board. A member
@@ -135,28 +140,43 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
                   <div className="flex-1 min-h-0 overflow-y-auto space-y-1" style={{ scrollbarWidth: 'none' }}>
                     {sorted.map((assignment) => {
                       const { chore, isCompleted } = assignment;
+                      const key = `${chore.id}:${member.id}`;
+                      // A finished card is the one a passing tap must not undo.
+                      const holdMode = allowTouch && isCompleted;
+                      const handlers = allowTouch
+                        ? hold.rowHandlers(key, holdMode, () => { void press(key, () => toggleComplete(chore.id, member.id)); })
+                        : undefined;
+                      const hinting = hold.hintKey === key;
                       return (
                         <button
                           key={chore.id}
                           type="button"
-                          onClick={allowTouch ? () => { void press(`${chore.id}:${member.id}`, () => toggleComplete(chore.id, member.id)); } : undefined}
+                          {...handlers}
                           disabled={!allowTouch}
                           aria-pressed={allowTouch ? isCompleted : undefined}
                           className={`w-full text-left rounded-md transition-all flex gap-1.5 ${allowTouch ? 'items-center' : 'items-start'}`}
                           style={{
+                            position: 'relative',
                             padding: '0.3em 0.4em',
                             fontSize: '0.8em',
                             lineHeight: 1.25,
                             opacity: isCompleted ? 0.45 : 1,
-                            textDecoration: isCompleted ? 'line-through' : 'none',
+                            textDecoration: isCompleted && !hinting ? 'line-through' : 'none',
                             backgroundColor: isCompleted ? ink(0.03) : ink(0.06),
                             cursor: allowTouch ? 'pointer' : 'default',
                             border: 'none',
                             color: 'inherit',
+                            // A long press must not select the card's text or
+                            // open the browser's copy sheet.
+                            userSelect: 'none',
+                            WebkitUserSelect: 'none',
+                            WebkitTouchCallout: 'none',
+                            touchAction: 'pan-y',
                           }}
                         >
+                          {hold.holdingKey === key && <HoldProgress progress={hold.progress} color={member.color} />}
                           {allowTouch ? (
-                            <TapCheckbox checked={isCompleted} pressed={pressedKey === `${chore.id}:${member.id}`} color={member.color} size={choreTapSize(fontSize)} />
+                            <TapCheckbox checked={isCompleted} pressed={pressedKey === key} color={member.color} size={choreTapSize(fontSize)} />
                           ) : (
                             <span className="shrink-0" style={{ fontSize: '1.15em', lineHeight: 1.1 }}>{isCompleted ? '✅' : '☐'}</span>
                           )}
@@ -167,7 +187,7 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
                             className="min-w-0"
                             style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
                           >
-                            {chore.name}
+                            {hinting ? <HoldHint color={member.color} /> : chore.name}
                           </span>
                         </button>
                       );

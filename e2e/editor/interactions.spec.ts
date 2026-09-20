@@ -160,7 +160,7 @@ test.describe('module lifecycle', () => {
 
     await page.locator('[data-module-id="del"]').click();
     await page.getByRole('button', { name: 'Delete Module' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
 
     await pollConfig(request, (c) => c.screens[0].modules.length).then((p) => p.toBe(0));
     await expect(page.locator('[data-module-id="del"]')).toBeHidden();
@@ -174,7 +174,7 @@ test.describe('module lifecycle', () => {
 
     await page.locator('[data-module-id="u1"]').click();
     await page.getByRole('button', { name: 'Delete Module' }).click();
-    await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
     await pollConfig(request, (c) => c.screens[0].modules.length).then((p) => p.toBe(0));
 
     // Blur the delete button so the undo shortcut isn't swallowed by a control.
@@ -561,7 +561,7 @@ test.describe('canvas keyboard shortcuts', () => {
     await page.locator('[data-module-id="keyed"]').click();
 
     await page.keyboard.press('Delete');
-    await page.getByRole('dialog').getByRole('button', { name: 'Confirm' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Delete', exact: true }).click();
 
     await pollConfig(request, (c) => c.screens[0].modules.length).then((p) => p.toBe(0));
   });

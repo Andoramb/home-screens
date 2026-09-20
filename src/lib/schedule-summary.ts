@@ -33,7 +33,13 @@ export function formatScheduleDays(
 }
 
 /**
- * "all day" when either end of the window is unset, else "7:00 AM to 9:00 AM".
+ * "all day" only when BOTH ends are unset, else "7:00 AM to 9:00 AM",
+ * "from 6:00 PM" or "until 9:00 AM".
+ *
+ * One open end is a real gate, not all day: the matcher fills a missing start
+ * with midnight and a missing end with the end of the day, so "From 6:00 PM,
+ * Until empty" hides the module for eighteen hours. Saying "all day" there
+ * described the opposite of what the display does.
  *
  * A window that closes on a later day says so: "4:00 PM until 8:00 AM the next
  * day", "8:00 AM until 8:00 PM 3 days later". The editor shows this only to
@@ -48,20 +54,40 @@ export function formatScheduleTime(
 ): string {
   const start = schedule?.startTime;
   const end = schedule?.endTime;
-  if (!start || !end) return t('scheduleEditor.summary.allDay');
+  if (!start && !end) return t('scheduleEditor.summary.allDay');
 
-  const parts = {
-    start: formatClock(start, formattingLocale, timeFormat),
-    end: formatClock(end, formattingLocale, timeFormat),
-  };
   const span = resolveSpanDays(schedule);
-  if (span === 0) return t('scheduleEditor.summary.window', parts);
+
+  // A one-sided window that stays inside its own day reads best open-ended:
+  // "from 6:00 PM" already says it runs to midnight, and "until 9:00 AM" that
+  // it starts there.
+  if (span === 0 && !end) {
+    return t('scheduleEditor.summary.fromOnly', {
+      start: formatClock(start as string, formattingLocale, timeFormat),
+    });
+  }
+  if (span === 0 && !start) {
+    return t('scheduleEditor.summary.untilOnly', {
+      end: formatClock(end as string, formattingLocale, timeFormat),
+    });
+  }
+
+  // Once days are involved the open end has to be named, or the reader cannot
+  // tell which midnight it closes on. A missing end is the end of its day,
+  // which is the next day's midnight, so it counts one more day than the
+  // stored span.
+  const parts = {
+    start: formatClock(start ?? '00:00', formattingLocale, timeFormat),
+    end: formatClock(end ?? '00:00', formattingLocale, timeFormat),
+  };
+  const spanDays = end ? span : span + 1;
+  if (spanDays === 0) return t('scheduleEditor.summary.window', parts);
   return t('scheduleEditor.summary.windowSpanned', {
     ...parts,
     span:
-      span === 1
+      spanDays === 1
         ? t('scheduleEditor.endsNextDay')
-        : t('scheduleEditor.endsDaysLater', { count: span }),
+        : t('scheduleEditor.endsDaysLater', { count: spanDays }),
   });
 }
 

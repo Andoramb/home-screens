@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Screen-Optionen",
     "screenOptionsAriaLabel": "Optionen für {name}",
     "deleteTabAriaLabel": "{name} löschen",
-    "removeConfirmMessage": "„{name}“ entfernen?",
+    "deleteConfirmTitle": "„{name}“ löschen?",
+    "deleteConfirmDetail": {
+      "zero": "Dieser Screen ist leer. Du kannst das rückgängig machen.",
+      "one": "{count} Modul und seine Einstellungen verschwinden mit. Du kannst das rückgängig machen.",
+      "other": "{count} Module und ihre Einstellungen verschwinden mit. Du kannst das rückgängig machen."
+    },
     "scrollLeftAriaLabel": "Tabs nach links scrollen",
     "scrollLeftTitle": "Tabs nach links scrollen",
     "scrollRightAriaLabel": "Tabs nach rechts scrollen",
@@ -233,6 +238,8 @@
       "weekdays": "Mo bis Fr",
       "weekends": "Sa und So",
       "allDay": "ganztägig",
+      "fromOnly": "ab {start}",
+      "untilOnly": "bis {end}",
       "window": "{start} bis {end}",
       "windowSpanned": "{start} bis {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Alles sichern, wiederherstellen oder mit einer Vorlage neu anfangen.",
       "restoreConfirm": {
         "title": "Aus einer Datei wiederherstellen?",
-        "message": "Das ersetzt alle deine Einstellungen, Bildschirme, Aufgaben und Essenspläne durch den Inhalt der Datei. Alles, was du seit dieser Datei geändert hast, ist weg. Vorher wird ein Schnappschuss deiner aktuellen Einrichtung gesichert, das lässt sich also rückgängig machen.",
+        "message": "Das ersetzt alle deine Einstellungen, Bildschirme, Aufgaben und Essenspläne durch den Inhalt der Datei. Alles, was du seit dieser Datei geändert hast, ist weg. Das lässt sich nicht rückgängig machen, sichere also vorher ein Backup, falls du die heutige Einrichtung zurückhaben möchtest.",
         "confirm": "Datei auswählen…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Jedes Display lädt einmal neu, um den neuen Schlüssel zu übernehmen.",
         "errorRegenerate": "Neuer Schlüssel konnte nicht erstellt werden",
         "errorCopy": "Kopieren fehlgeschlagen; bitte manuell auswählen und kopieren",
-        "phoneHintPart1": "Für Lesezeichen am Telefon hänge ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " an die Befehls-URLs an."
+        "phoneHintIntro": "Um ein Display vom Telefon aus zu steuern, setze ein Lesezeichen auf einen Link wie diesen:",
+        "phoneHintOutro": "Zeige den Schlüssel oben zuerst an, damit der Link ihn enthält. Tausche sleep gegen wake, reload, next-screen oder prev-screen, um die anderen Befehle zu bekommen.",
+        "phoneHintDisplayNote": "Dieser zeigt auf {name}. Tausche {display} gegen die ID eines anderen Displays, um auf dieses zu zielen."
       },
       "ipAllowlist": {
         "heading": "Zugelassene Netzwerke",
         "bypassAuth": {
-          "label": "Diese Netzwerke ohne Passwort hereinlassen",
-          "help": "Displays in diesen Netzwerken kommen ohne Schlüssel hinein"
+          "label": "Displays in diesen Netzwerken ohne Schlüssel hereinlassen",
+          "help": "Der Editor und die Familien-Fernbedienung fragen weiterhin nach dem Passwort."
         },
         "restrictAccess": {
           "label": "Nur diese Netzwerke zulassen",
@@ -1838,10 +1845,8 @@
           "part2": " meldet, passt zu keinem Eintrag hier und wird blockiert. Prüfe oben „Deine IP“: Stehen darin Doppelpunkte, sperrt dich diese Einstellung aus."
         },
         "trustedNetworksWarning": {
-          "strong": "Nur vertrauenswürdige Netzwerke.",
-          "part1": " Diese Prüfung liest den ",
-          "header": "X-Forwarded-For",
-          "part2": "-Header. Ist Home Screens ohne vertrauenswürdigen Proxy davor aus dem Internet erreichbar, kann jemand diesen Header fälschen und daran vorbeikommen."
+          "strong": "Prüfe oben „Deine IP“.",
+          "part1": " Home Screens ermittelt die Herkunft einer Anfrage über die Netzwerkverbindung selbst, nicht über das, was der Aufrufer mitschickt. Ein Telefon kann sich also nicht auf diese Liste reden. Etwas, das den Verkehr auf dem Weg weiterreicht, etwa ein Router mit Portweiterleitung oder ein Proxy, verdeckt allerdings das echte Gerät: Dann kommt jede Anfrage mit dieser einen Adresse an, und diese Liste passt auf alle oder auf niemanden. Steht bei „Deine IP“ auf deinem Telefon dasselbe wie hier, ist genau das der Fall."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Klicken Sie oben auf ",
       "emptyBullet1Suffix": ", um einen neuen Bildschirm hinzuzufügen. Geben Sie ihm einen Namen, eine Auflösung und Drehung, und gestalten Sie sein Layout im Editor.",
-      "emptyBullet2Prefix": "Oder flashen Sie einen weiteren Pi mit ",
-      "emptyBullet2Middle": ". Sobald er bootet, erscheint er unten als ",
-      "emptyBullet2Suffix": ", die mit einem Klick hinzugefügt werden kann.",
+      "emptyBullet2": "Oder flashe einen weiteren Pi mit {command}. Sobald er bootet, erscheint er unten als {label}, und ein Klick fügt ihn hinzu.",
       "unadoptedLabel": "Anzeige, die auf das Hinzufügen wartet",
       "unadoptedWaiting": {
         "one": "{count} Anzeige wartet auf das Hinzufügen",
@@ -2229,8 +2232,8 @@
       "formErrorId": "Die ID darf nur Kleinbuchstaben, Ziffern und Bindestriche enthalten (z. B. „kitchen“)",
       "formErrorIdReserved": "„{id}“ hat beim Senden von Befehlen an Displays bereits eine besondere Bedeutung. Bitte wähle eine andere ID, z. B. „kitchen“ oder „bedroom-tv“",
       "formErrorIdTaken": "Eine Anzeige mit der ID „{id}“ existiert bereits",
-      "formErrorWidth": "Die Breite muss eine positive Ganzzahl ≤ {max} sein",
-      "formErrorHeight": "Die Höhe muss eine positive Ganzzahl ≤ {max} sein",
+      "formErrorWidth": "Die Breite muss zwischen {min} und {max} liegen. Prüfe, ob eine Ziffer fehlt: die meisten Bildschirme sind 1080 oder 1920 breit.",
+      "formErrorHeight": "Die Höhe muss zwischen {min} und {max} liegen. Prüfe, ob eine Ziffer fehlt: die meisten Bildschirme sind 1080 oder 1920 hoch.",
       "softwareUpdateWaiting": "Update steht an",
       "softwareNeedsSetup": "Einrichtung nötig"
     },
@@ -2965,7 +2968,8 @@
       "sendToBack": "Nach hinten",
       "duplicate": "Duplizieren",
       "delete": "Modul löschen",
-      "confirmDelete": "Dieses Modul löschen?"
+      "confirmDeleteTitle": "„{name}“ löschen?",
+      "confirmDeleteDetail": "Du kannst das rückgängig machen."
     },
     "visibility": {
       "enabledLabel": "Auf Display anzeigen",

@@ -10,6 +10,14 @@ test.describe('editor canvas', () => {
     await expect(page.getByTestId('editor-canvas')).toBeVisible();
   });
 
+  test('paints the same ground the wall does, so card styling can be judged here', async ({ page }) => {
+    // The canvas used to be navy while the wall is black, so a translucent
+    // card read as a visible panel in the editor and as almost nothing on the
+    // display.
+    await expect(page.getByTestId('editor-canvas'))
+      .toHaveCSS('background-color', 'rgb(0, 0, 0)');
+  });
+
   test('drag a module from the palette onto the canvas, autosaved', async ({ page, request }) => {
     await page.getByPlaceholder('Search modules…').fill('text');
     const item = page.getByTestId('palette-text');

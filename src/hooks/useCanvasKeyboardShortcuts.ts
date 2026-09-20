@@ -5,6 +5,8 @@ import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import { useConfirmStore } from '@/stores/confirm-store';
 import { GRID_SIZE } from '@/lib/constants';
 import { isDialogOpen, isMenuOpen, isTypingTarget } from '@/lib/editor-keyboard';
+import { resolveModuleLabel } from '@/lib/module-registry';
+import { buildModuleDeleteConfirm } from '@/lib/delete-confirmations';
 import { useTranslate } from '@/i18n';
 
 const ARROW_DELTAS: Record<string, readonly [number, number]> = {
@@ -23,6 +25,7 @@ const ARROW_DELTAS: Record<string, readonly [number, number]> = {
  */
 export function useCanvasKeyboardShortcuts() {
   const t = useTranslate('editor');
+  const tCore = useTranslate('core');
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -49,8 +52,16 @@ export function useCanvasKeyboardShortcuts() {
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault();
+        // The keyboard path is the one with no other hint about which module
+        // is about to go, so the dialog has to name it.
+        const doomed = store.config
+          ? getActiveScreens(store.config, store.selectedDisplayId)
+            .find((s) => s.id === selectedScreenId)
+            ?.modules.find((m) => m.id === selectedModuleId)
+          : undefined;
+        if (!doomed) return;
         void useConfirmStore.getState()
-          .confirm(t('propertyPanel.actions.confirmDelete'))
+          .confirm(buildModuleDeleteConfirm(resolveModuleLabel(doomed.type, t), t, tCore))
           .then((ok) => {
             if (ok) useEditorStore.getState().removeModule(selectedScreenId, selectedModuleId);
           });
@@ -76,5 +87,5 @@ export function useCanvasKeyboardShortcuts() {
 
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [t]);
+  }, [t, tCore]);
 }

@@ -71,9 +71,14 @@ test('the display token can be revealed and regenerated', async ({ page }) => {
   await page.goto(SECURITY_URL);
 
   await page.getByText('Advanced network access').click();
-  // The token <code> uniquely carries the `select-all` class.
-  const tokenCode = page.locator('code.select-all');
+  // The panel shows two code blocks, the key and the example bookmark link,
+  // so each carries its own test id. Styling classes are not an address.
+  const tokenCode = page.getByTestId('display-key-value');
   await expect(tokenCode).toBeVisible();
+
+  // The other code block is the example bookmark link. Asserted here so the
+  // key's locator can never quietly start resolving to it again.
+  await expect(page.getByTestId('display-key-bookmark-url')).toContainText('/api/display/sleep?');
 
   await page.getByRole('button', { name: 'Reveal' }).click();
   const before = await tokenCode.innerText();

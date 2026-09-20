@@ -2,6 +2,18 @@
 export const DEFAULT_DISPLAY_WIDTH = 1080;
 export const DEFAULT_DISPLAY_HEIGHT = 1920;
 
+/**
+ * The ground a screen is painted on when no background image covers it: the
+ * wall's own black, and the colour the editor canvas stands in for it with.
+ *
+ * Shared by ScreenRenderer and EditorCanvas because the editor exists to judge
+ * how a card's transparency, border and text colour will look on the wall, and
+ * it cannot do that over a different ground. The canvas used to paint a navy,
+ * which made a 40%-black card read as a visible panel in the editor and as
+ * almost nothing on the display.
+ */
+export const DISPLAY_BACKGROUND = '#000';
+
 // Orientation-agnostic resolution presets.
 // `short` is the smaller dimension, `long` is the larger.
 // Portrait: width = short, height = long.  Landscape: width = long, height = short.

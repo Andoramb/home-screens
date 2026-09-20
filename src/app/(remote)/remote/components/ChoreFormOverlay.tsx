@@ -273,7 +273,11 @@ export default function ChoreFormOverlay({
           variant="mobile"
         />
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 24 }}>
+        {/* The hint sits under the whole row rather than in the narrow left
+            column, where it would wrap to four lines at phone width. It names
+            the field it explains so it cannot be read as being about the
+            frequency next to it. */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 6 }}>
           <div>
             <div style={LABEL_STYLE}>{t('choresManage.choreForm.ticketsLabel')}</div>
             <input
@@ -298,6 +302,9 @@ export default function ChoreFormOverlay({
             </select>
           </div>
         </div>
+        <p style={{ fontSize: 12, color: 'var(--hs-text-faint)', margin: '0 0 24px' }}>
+          {t('choresManage.choreForm.ticketsHint')}
+        </p>
 
         {members.length === 0 && <div style={{ marginBottom: 24 }}><FamilyManager variant="mobile" /></div>}
 
@@ -593,6 +600,11 @@ export default function ChoreFormOverlay({
                       key={d}
                       type="button"
                       className="press-scale-xs"
+                      // The circle shows one letter, and two pairs of days
+                      // share theirs. Name the day and say whether it is on,
+                      // the way the schedule rows do.
+                      aria-pressed={isOn}
+                      aria-label={dayNamesShort[d]}
                       onClick={() => toggleDay(d)}
                       style={{
                         width: 44,

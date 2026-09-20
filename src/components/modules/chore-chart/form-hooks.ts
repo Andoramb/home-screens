@@ -13,6 +13,7 @@ import type { TranslateFn } from '@/i18n';
 import { choreAssigneeIds, todayStr } from './types';
 import {
   canChoreRotate,
+  defaultChoreDays,
   finalizeChoreAssignment,
   getChoreValidationHintKind,
   scheduleDaysCovered,
@@ -97,8 +98,12 @@ export function useChoreForm(
   const [name, setName] = useState(initial?.name ?? '');
   const [emoji, setEmoji] = useState(initial?.emoji ?? DEFAULT_CHORE_ICON);
   const [points, setPoints] = useState(initial?.points?.toString() ?? '1');
-  const [frequency, setFrequency] = useState<ChoreResetFrequency>(initial?.frequency ?? 'daily');
-  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(initial?.daysOfWeek ?? [0, 1, 2, 3, 4, 5, 6]);
+  const [frequency, setFrequencyState] = useState<ChoreResetFrequency>(initial?.frequency ?? 'daily');
+  const [daysOfWeek, setDaysOfWeek] = useState<number[]>(initial?.daysOfWeek ?? defaultChoreDays(initial?.frequency ?? 'daily'));
+  // Whether the days on the row are somebody's choice rather than the row the
+  // frequency filled in. A chore being edited arrives with its days already
+  // chosen, so changing its frequency must never wipe them.
+  const [daysPicked, setDaysPicked] = useState(initial !== undefined);
   const [specificDate, setSpecificDate] = useState<string>(initial?.specificDate ?? todayStr());
   const [timeOfDay, setTimeOfDay] = useState<ChoreTimeOfDay>(initial?.timeOfDay ?? 'anytime');
   const [assigneeIds, setAssigneeIds] = useState<string[]>(initial?.assigneeIds ?? []);
@@ -125,6 +130,15 @@ export function useChoreForm(
   const goesToNobody = familyReady && (saved.assigneeGroupIds?.length ?? 0) > 0 && choreAssigneeIds(saved, groups).length === 0;
   const canRotate = canChoreRotate({ assigneeCount, assigneeGroupIdsLength: assigneeGroupIds.length, rotation });
 
+  // Changing how often a chore comes around changes what its day row means:
+  // daily is every day, weekly and every-other-week are "pick which days" and
+  // start with none on. Days somebody actually picked are theirs and survive
+  // the change.
+  const setFrequency = (next: ChoreResetFrequency) => {
+    setFrequencyState(next);
+    if (!daysPicked) setDaysOfWeek(defaultChoreDays(next));
+  };
+
   // Whoever is picked when the grid opens starts with a row on the chore's
   // days, people and groups alike. A grid that already has rows is left alone.
   const switchToSchedule = () => {
@@ -143,7 +157,10 @@ export function useChoreForm(
       setAssigneeIds(left.assigneeIds);
       setPickedGroupIds(left.assigneeGroupIds ?? []);
     }
-    if (days.length > 0) setDaysOfWeek(days);
+    if (days.length > 0) {
+      setDaysOfWeek(days);
+      setDaysPicked(true);
+    }
     setRotation(newRotation);
   };
 
@@ -177,6 +194,7 @@ export function useChoreForm(
   const unscheduledGroups = groups.filter((group) => !Object.hasOwn(groupSchedule, group.id));
 
   const toggleDay = (d: number) => {
+    setDaysPicked(true);
     setDaysOfWeek((prev) => (prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d]));
   };
 
@@ -197,6 +215,8 @@ export function useChoreForm(
     assigneeGroupIdsLength: assigneeGroupIds.length,
     hasGroups: groups.length > 0,
     familyReady,
+    frequency,
+    daysOfWeekLength: daysOfWeek.length,
   });
   const canSave = validationHintKind === null;
 

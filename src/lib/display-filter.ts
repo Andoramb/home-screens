@@ -424,6 +424,25 @@ export const RESERVED_DISPLAY_IDS: ReadonlySet<string> = new Set(['all', '__defa
  */
 export const MAX_DISPLAY_DIMENSION = 16384;
 
+/**
+ * Hard lower bound on per-display canvas dimensions. 320 is the short edge of
+ * the smallest panel anyone drives from a Pi (a 3.5 inch 480x320 screen); the
+ * official touch display is 800x480, and every built-in module's default size
+ * is larger than 300x200. Below this there is no canvas to lay anything out
+ * on, and the value is almost certainly a resolution typed with a digit
+ * missing: 192x108 for 1920x1080 builds a canvas about 85x50 screen pixels,
+ * which cannot even show its own "Drag a module here" placeholder.
+ */
+export const MIN_DISPLAY_DIMENSION = 320;
+
+/** The one rule for a canvas dimension, shared by the forms and the config validator. */
+export function isSupportedDisplayDimension(value: unknown): value is number {
+  return typeof value === 'number'
+    && Number.isInteger(value)
+    && value >= MIN_DISPLAY_DIMENSION
+    && value <= MAX_DISPLAY_DIMENSION;
+}
+
 const MAX_DISPLAYS = 64;
 const MAX_SCREENS_PER_DISPLAY = 256;
 
@@ -850,8 +869,8 @@ function validateDisplayTransform(display: DisplayNode): string | null {
 function validateDisplayDimensions(display: DisplayNode): string | null {
   for (const field of ['displayWidth', 'displayHeight'] as const) {
     const value = display[field];
-    if (value != null && (!Number.isInteger(value) || value <= 0 || value > MAX_DISPLAY_DIMENSION)) {
-      return `Display "${display.id}" ${field} must be a positive integer ≤ ${MAX_DISPLAY_DIMENSION}`;
+    if (value != null && !isSupportedDisplayDimension(value)) {
+      return `Display "${display.id}" ${field} must be a whole number between ${MIN_DISPLAY_DIMENSION} and ${MAX_DISPLAY_DIMENSION}`;
     }
   }
   return null;
@@ -871,7 +890,8 @@ function validateDisplayDimensions(display: DisplayNode): string | null {
  * - Each display.screens is at most 256 entries
  * - Owned screens are self-contained and validated separately
  * - `activeProfile`, when set, must reference an existing profile
- * - Per-display dimensions, when set, must be positive integers
+ * - Per-display dimensions, when set, must be whole numbers a screen could
+ *   actually have (see `isSupportedDisplayDimension`)
  *
  * Internally this dispatches to a set of focused sub-validators so each
  * rule is readable on its own and individually testable. The top-level

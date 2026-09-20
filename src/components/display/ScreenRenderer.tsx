@@ -6,6 +6,7 @@ import { getModuleComponent } from '@/lib/module-components';
 import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 import { buildModuleProps, toDisplaySource, type SharedDisplayData } from '@/lib/module-props';
 import { isModuleEnabled, isModuleVisible, evaluateVisibility, collectConditionSourceKeys } from '@/lib/schedule';
+import { DISPLAY_BACKGROUND } from '@/lib/constants';
 import type { SharedStateEntry } from '@/lib/shared-state-types';
 import { useSharedStateKeys } from '@/hooks/useSharedStateKeys';
 import { useTZClock } from '@/hooks/useTZClock';
@@ -150,7 +151,7 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
         height: displayH,
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: '#000',
+        backgroundColor: DISPLAY_BACKGROUND,
         // Use zoom instead of transform: scale() so that backdrop-filter
         // works in Firefox. transform creates an isolated compositing layer
         // that blocks backdrop-filter from sampling pixels behind it (FF Bug 1782876).

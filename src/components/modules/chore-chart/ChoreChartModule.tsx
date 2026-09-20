@@ -16,6 +16,7 @@ const STAR_LEGEND_GAP = 12;
 import ModuleWrapper from '../ModuleWrapper';
 import FamilyEmptyState from '../FamilyEmptyState';
 import { ModuleLoadingState } from '../ModuleStates';
+import { ChoreOverspentNotice } from './ChoreOverspentNotice';
 import { useChoreData } from './useChoreData';
 import { BoardView } from './views/BoardView';
 import { StarChartView } from './views/StarChartView';
@@ -117,13 +118,21 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
 
   return (
     <ModuleWrapper style={style}>
-      <div ref={frameRef} className="w-full h-full min-h-0" style={{ fontSize: `${fontSize}px` }}>
-        {view === 'board' && <BoardView {...viewProps} authoredFontSize={style.fontSize} />}
-        {view === 'star-chart' && <StarChartView {...viewProps} />}
-        {view === 'today' && <TodayView {...viewProps} timezone={timezone} />}
-        {view === 'progress' && <ProgressView {...viewProps} />}
-        {view === 'compact' && <CompactView {...viewProps} />}
-        {view === 'reward-history' && <RewardHistoryView {...viewProps} />}
+      <div ref={frameRef} className="w-full h-full min-h-0 flex flex-col" style={{ fontSize: `${fontSize}px` }}>
+        <div className="flex-1 min-h-0">
+          {view === 'board' && <BoardView {...viewProps} authoredFontSize={style.fontSize} />}
+          {view === 'star-chart' && <StarChartView {...viewProps} />}
+          {view === 'today' && <TodayView {...viewProps} timezone={timezone} />}
+          {view === 'progress' && <ProgressView {...viewProps} />}
+          {view === 'compact' && <CompactView {...viewProps} />}
+          {view === 'reward-history' && <RewardHistoryView {...viewProps} />}
+        </div>
+        {/* Un-ticking takes back tickets that may already be spent. The chart
+            gives the balance up a little room rather than letting it go
+            negative with nothing on screen. */}
+        {data.overspentNotice && (
+          <ChoreOverspentNotice notice={data.overspentNotice} accentColor={config.accentColor ?? '#f59e0b'} />
+        )}
       </div>
     </ModuleWrapper>
   );

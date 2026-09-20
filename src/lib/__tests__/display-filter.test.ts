@@ -418,7 +418,7 @@ describe('validateDisplays', () => {
           displayWidth: 1080.5,
         }],
       });
-      expect(validateDisplays(config)).toMatch(/displayWidth must be a positive integer/);
+      expect(validateDisplays(config)).toMatch(/displayWidth must be a whole number/);
     });
 
     it('rejects zero or negative height', () => {
@@ -431,7 +431,7 @@ describe('validateDisplays', () => {
           displayHeight: 0,
         }],
       });
-      expect(validateDisplays(config)).toMatch(/displayHeight must be a positive integer/);
+      expect(validateDisplays(config)).toMatch(/displayHeight must be a whole number/);
     });
 
     it('rejects unreasonably large width', () => {

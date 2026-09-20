@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Indstillinger for skærm",
     "screenOptionsAriaLabel": "Indstillinger for {name}",
     "deleteTabAriaLabel": "Slet {name}",
-    "removeConfirmMessage": "Fjern “{name}”?",
+    "deleteConfirmTitle": "Slet “{name}”?",
+    "deleteConfirmDetail": {
+      "zero": "Denne skærm er tom. Du kan fortryde det.",
+      "one": "Det {count} modul og dets indstillinger ryger med. Du kan fortryde det.",
+      "other": "De {count} moduler og deres indstillinger ryger med. Du kan fortryde det."
+    },
     "scrollLeftAriaLabel": "Rul faner til venstre",
     "scrollLeftTitle": "Rul faner til venstre",
     "scrollRightAriaLabel": "Rul faner til højre",
@@ -233,6 +238,8 @@
       "weekdays": "man. til fre.",
       "weekends": "lør. og søn.",
       "allDay": "hele dagen",
+      "fromOnly": "fra {start}",
+      "untilOnly": "til {end}",
       "window": "{start} til {end}",
       "windowSpanned": "{start} til {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Gem en kopi af det hele, læg den tilbage, eller start fra en skabelon.",
       "restoreConfirm": {
         "title": "Gendan fra en fil?",
-        "message": "Det erstatter alle dine indstillinger, skærme, pligter og madplaner med det, der står i filen. Alt, du har ændret, siden filen blev lavet, er væk. Der gemmes først et øjebliksbillede af din nuværende opsætning, så det kan fortrydes.",
+        "message": "Det erstatter alle dine indstillinger, skærme, pligter og madplaner med det, der står i filen. Alt, du har ændret, siden filen blev lavet, er væk. Det kan ikke fortrydes, så gem en sikkerhedskopi først, hvis du måske vil have dagens opsætning tilbage.",
         "confirm": "Vælg en fil…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Hver skærm genindlæser én gang for at bruge den nye nøgle.",
         "errorRegenerate": "Kunne ikke lave en ny nøgle",
         "errorCopy": "Kopieringen mislykkedes; markér og kopiér selv",
-        "phoneHintPart1": "Til bogmærker på telefonen: tilføj ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " til kommando-URL'erne."
+        "phoneHintIntro": "Vil du styre en skærm fra telefonen, så gem et bogmærke med et link som dette:",
+        "phoneHintOutro": "Vis nøglen ovenfor først, så linket får den med. Byt sleep ud med wake, reload, next-screen eller prev-screen for de andre kommandoer.",
+        "phoneHintDisplayNote": "Dette peger på {name}. Byt {display} ud med en anden skærms id for at ramme den."
       },
       "ipAllowlist": {
         "heading": "Tilladte netværk",
         "bypassAuth": {
-          "label": "Luk disse netværk ind uden adgangskode",
-          "help": "Skærme på disse netværk kommer ind uden nøglen"
+          "label": "Luk skærme på disse netværk ind uden nøglen",
+          "help": "Editoren og familiefjernbetjeningen spørger stadig efter adgangskoden."
         },
         "restrictAccess": {
           "label": "Tillad kun disse netværk",
@@ -1838,10 +1845,8 @@
           "part2": " passer ikke til noget her og bliver blokeret. Tjek \"Din IP\" ovenfor: står der kolon i den, låser det her dig ude."
         },
         "trustedNetworksWarning": {
-          "strong": "Kun betroede netværk.",
-          "part1": " Dette tjek læser ",
-          "header": "X-Forwarded-For",
-          "part2": "-headeren. Kan Home Screens nås fra internettet uden en betroet proxy foran, kan nogen forfalske den header og komme uden om det her."
+          "strong": "Tjek \"Din IP\" ovenfor.",
+          "part1": " Home Screens finder ud af, hvor en forespørgsel kommer fra, ud fra selve netværksforbindelsen og ikke ud fra det, afsenderen sender med, så en telefon kan ikke snakke sig ind på denne liste. Det, der skjuler den rigtige enhed, er noget, der sender trafikken videre undervejs, for eksempel en router med portvideresendelse eller en proxy: så ankommer hver forespørgsel med den ene adresse, og listen passer på alle eller på ingen. Står der det samme under \"Din IP\" på din telefon som her, er det dét, der sker."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Klik på ",
       "emptyBullet1Suffix": " ovenfor for at tilføje en ny skærm. Giv den et navn, en opløsning og en retning, og design så dens eget layout i editoren.",
-      "emptyBullet2Prefix": "Eller flash en anden Pi med ",
-      "emptyBullet2Middle": ". Når den starter op, dukker den op herunder som et ",
-      "emptyBullet2Suffix": ", der venter på at blive tilføjet med ét klik.",
+      "emptyBullet2": "Eller flash en anden Pi med {command}. Når den starter op, dukker den op herunder som et {label}, og ét klik tilføjer den.",
       "unadoptedLabel": "display, der venter på at blive tilføjet",
       "unadoptedWaiting": {
         "one": "{count} display venter på at blive tilføjet",
@@ -2229,8 +2232,8 @@
       "formErrorId": "Id'et må kun indeholde små bogstaver, tal og bindestreger (fx \"koekken\")",
       "formErrorIdReserved": "\"{id}\" har allerede en særlig betydning, når der sendes kommandoer til skærme. Vælg et andet ID, f.eks. \"kitchen\" eller \"bedroom-tv\"",
       "formErrorIdTaken": "Der findes allerede et display med id'et \"{id}\"",
-      "formErrorWidth": "Bredden skal være et positivt heltal ≤ {max}",
-      "formErrorHeight": "Højden skal være et positivt heltal ≤ {max}",
+      "formErrorWidth": "Bredden skal være mellem {min} og {max}. Se efter et manglende ciffer: de fleste skærme er 1080 eller 1920 brede.",
+      "formErrorHeight": "Højden skal være mellem {min} og {max}. Se efter et manglende ciffer: de fleste skærme er 1080 eller 1920 høje.",
       "softwareUpdateWaiting": "Opdatering venter",
       "softwareNeedsSetup": "Skal sættes op"
     },
@@ -2965,7 +2968,8 @@
       "sendToBack": "Flyt bagerst",
       "duplicate": "Duplikér",
       "delete": "Slet modul",
-      "confirmDelete": "Vil du slette dette modul?"
+      "confirmDeleteTitle": "Slet “{name}”?",
+      "confirmDeleteDetail": "Du kan fortryde det."
     },
     "visibility": {
       "enabledLabel": "Vis på skærmen",

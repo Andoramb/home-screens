@@ -27,10 +27,12 @@ import {
 import { choresAssignedTo } from '@/lib/chore-assignments';
 import { getLocalizedDayNames } from '@/lib/meal-constants';
 import { useFormattingLocale } from '@/i18n';
-import { logger } from '@/lib/logger';
+import { planChoreToggle, readOverspentNotice, type OverspentNotice } from './chore-toggle';
 
-const log = logger('chores');
 const EMPTY_REDEMPTIONS: RewardRedemption[] = [];
+
+/** How long the overspent message stays on the wall before it clears itself. */
+const OVERSPENT_NOTICE_MS = 12_000;
 
 /** Display-only settings accepted by useChoreData — no members/chores,
  *  those are fetched separately from /api/family and /api/chores/data. */
@@ -78,6 +80,8 @@ interface ChoreDataState {
   /** Set only while a source has no data at all; a failed refresh of good data is not an error here. */
   error: FetchError | null;
   toggleComplete: (choreId: string, memberId: string) => Promise<void>;
+  /** An un-tick that took someone below zero tickets, until it clears itself. */
+  overspentNotice: OverspentNotice | null;
 }
 
 export function useChoreData(config: ChoreDataConfig): ChoreDataState {
@@ -100,6 +104,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
   // carry a pre-credit balance. We silence those stale polls during an
   // override window just long enough for the next poll to catch up.
   const rewardsOverrideUntil = useRef<number>(0);
+  const [overspentNotice, setOverspentNotice] = useState<OverspentNotice | null>(null);
 
   const { members, groups, loading: familyLoading, loaded: familyLoaded, error: familyError } = useFamilyData();
   const chores = useMemo(() => fetchedChoreData?.chores ?? [], [fetchedChoreData]);
@@ -209,22 +214,18 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
 
   const toggleComplete = useCallback(async (choreId: string, memberId: string) => {
     const today = todayStr();
-    let snapshot: ChoreCompletion[] = [];
+    // One plan drives both the optimistic update and the direction the server
+    // is told, so the screen and the request can never disagree. It is worked
+    // out here rather than inside a state updater: React may run an updater
+    // during the next render instead of at the call, and the direction has to
+    // be known now, for the request going out on this line.
+    const snapshot = completions;
+    const plan = planChoreToggle(snapshot, choreId, memberId, today);
 
-    // Optimistic update — capture snapshot inside updater to avoid dep on completions
-    setCompletions((prev) => {
-      snapshot = prev;
-      const existing = prev.findIndex(
-        (c) => c.choreId === choreId && c.memberId === memberId && c.date === today,
-      );
-      if (existing >= 0) {
-        return prev.filter((_, i) => i !== existing);
-      }
-      return [...prev, { choreId, memberId, date: today }];
-    });
+    setCompletions(plan.completions);
 
     try {
-      const reqBody: ChoreToggleRequest = { choreId, memberId, date: today };
+      const reqBody: ChoreToggleRequest = { choreId, memberId, date: today, direction: plan.direction };
       const res = await displayFetch(choresUrl(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -244,14 +245,22 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
         displayCache.set(rewardsUrl(), data.rewards, choreChartTtl);
         rewardsOverrideUntil.current = Date.now() + choreChartTtl;
       }
-      // The wall has no place to show this, so it at least reaches the kiosk console.
-      if (data.overspent) {
-        log.warn(`Un-ticked after the tickets were spent: ${data.overspent.memberId} is now at ${data.overspent.balance}`);
-      }
+      // Un-ticking takes the tickets back, and they may already be spent. The
+      // screen says so rather than leaving a kid to find a negative balance
+      // later with nothing to explain it.
+      setOverspentNotice(readOverspentNotice(data.overspent, members));
     } catch {
       setCompletions(snapshot);
     }
-  }, [choreChartTtl]);
+  }, [choreChartTtl, members, completions]);
+
+  // The notice is a passing message, not a state of the world: it clears
+  // itself so a wall display is not left holding it for the rest of the day.
+  useEffect(() => {
+    if (!overspentNotice) return;
+    const id = setTimeout(() => setOverspentNotice(null), OVERSPENT_NOTICE_MS);
+    return () => clearTimeout(id);
+  }, [overspentNotice]);
 
   const recentRedemptions = useMemo(() => {
     const list = rewards?.redemptions;
@@ -276,5 +285,6 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
     rewardsError,
     error,
     toggleComplete,
+    overspentNotice,
   };
 }

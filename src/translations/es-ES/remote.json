@@ -177,6 +177,7 @@
       "namePlaceholder": "Nombre de la tarea...",
       "iconLabel": "Icono",
       "ticketsLabel": "Tickets",
+      "ticketsHint": "Cuántos tickets gana un niño por hacer esta tarea. Los tickets sirven para conseguir premios.",
       "frequencyLabel": "Frecuencia",
       "timeOfDayLabel": "Momento del día",
       "dateLabel": "Fecha",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "¿Eliminar «{name}»?",
-      "description": "Se eliminará esta tarea y todo su historial.",
+      "description": "La tarea desaparece. Los tickets que los niños ya han ganado con ella se quedan en su tarjeta.",
       "confirmLabel": "Eliminar tarea"
     }
   },

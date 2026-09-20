@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { snapToGrid, GRID_SIZE, RESOLUTION_PRESETS, deriveDisplayTransform } from '../constants';
+import { readFileSync } from 'fs';
+import {
+  snapToGrid,
+  GRID_SIZE,
+  RESOLUTION_PRESETS,
+  deriveDisplayTransform,
+  DISPLAY_BACKGROUND,
+} from '../constants';
 
 describe('snapToGrid', () => {
   it('snaps exact multiples to themselves', () => {
@@ -40,6 +47,33 @@ describe('RESOLUTION_PRESETS', () => {
   it('has unique short values (used as select keys)', () => {
     const shorts = RESOLUTION_PRESETS.map((p) => p.short);
     expect(new Set(shorts).size).toBe(shorts.length);
+  });
+});
+
+describe('DISPLAY_BACKGROUND', () => {
+  const CANVAS = 'src/components/editor/EditorCanvas.tsx';
+  const RENDERER = 'src/components/display/ScreenRenderer.tsx';
+
+  it('is the black the wall actually paints', () => {
+    expect(DISPLAY_BACKGROUND).toBe('#000');
+  });
+
+  // The editor canvas painted a navy while the wall painted black, so every
+  // transparency and text-colour judgement was made against a ground the wall
+  // does not have. Both now read this constant; a literal creeping back into
+  // either file is how they drift apart again.
+  it('is what the editor canvas and the screen renderer both paint', () => {
+    for (const file of [CANVAS, RENDERER]) {
+      expect(readFileSync(file, 'utf8')).toContain('DISPLAY_BACKGROUND');
+    }
+  });
+
+  it('leaves no hard-coded ground colour behind in either file', () => {
+    for (const file of [CANVAS, RENDERER]) {
+      const source = readFileSync(file, 'utf8');
+      expect(source).not.toContain('#0f172a');
+      expect(source).not.toMatch(/backgroundColor:\s*['"]#/);
+    }
   });
 });
 

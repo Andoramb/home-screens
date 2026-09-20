@@ -177,6 +177,7 @@
       "namePlaceholder": "Nom de la tâche…",
       "iconLabel": "Icône",
       "ticketsLabel": "Tickets",
+      "ticketsHint": "Le nombre de tickets gagnés pour cette tâche. Les tickets servent à obtenir des récompenses.",
       "frequencyLabel": "Fréquence",
       "timeOfDayLabel": "Moment de la journée",
       "dateLabel": "Date",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "Supprimer « {name} » ?",
-      "description": "Cette tâche et tout son historique seront supprimés.",
+      "description": "La tâche disparaît. Les tickets que les enfants ont déjà gagnés pour elle restent sur leur carte.",
       "confirmLabel": "Supprimer la tâche"
     }
   },

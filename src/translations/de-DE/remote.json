@@ -177,6 +177,7 @@
       "namePlaceholder": "Name der Aufgabe…",
       "iconLabel": "Symbol",
       "ticketsLabel": "Tickets",
+      "ticketsHint": "So viele Tickets verdient ein Kind für diese Aufgabe. Mit Tickets gibt es Belohnungen.",
       "frequencyLabel": "Häufigkeit",
       "timeOfDayLabel": "Tageszeit",
       "dateLabel": "Datum",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "„{name}“ löschen?",
-      "description": "Diese Aufgabe und der gesamte Verlauf werden entfernt.",
+      "description": "Die Aufgabe verschwindet. Tickets, die die Kinder dafür schon verdient haben, bleiben auf ihren Karten.",
       "confirmLabel": "Aufgabe löschen"
     }
   },

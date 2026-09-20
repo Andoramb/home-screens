@@ -21,6 +21,7 @@ import { useSortableSensors } from '@/hooks/useDndSensors';
 import { useLayoutFileImport } from '@/hooks/useLayoutFileImport';
 import { useOutsidePointerDown } from '@/hooks/useOutsidePointerDown';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
+import { buildScreenDeleteConfirm } from '@/lib/delete-confirmations';
 import type { LayoutExport } from '@/types/layout-export';
 import LayoutExportModal from './LayoutExportModal';
 import LayoutImportModal from './LayoutImportModal';
@@ -141,11 +142,9 @@ export default function ScreenTabs() {
                     onCancelEditing={cancelEditing}
                     onDelete={async (e) => {
                       e.stopPropagation();
-                      if (await useConfirmStore.getState().confirm({
-                        message: t('screenTabs.removeConfirmMessage', { name: screen.name }),
-                        confirmLabel: tCore('actions.remove'),
-                        variant: 'danger',
-                      })) {
+                      if (await useConfirmStore.getState().confirm(
+                        buildScreenDeleteConfirm(screen, t, tCore),
+                      )) {
                         removeScreen(screen.id);
                       }
                     }}
@@ -329,13 +328,12 @@ export default function ScreenTabs() {
               <button
                 className="w-full px-3 py-1.5 text-left text-sm text-hs-danger hover:bg-hs-card"
                 onClick={async () => {
-                  const screenName = screens.find((s) => s.id === contextMenu.screenId)?.name ?? '';
+                  const screen = screens.find((s) => s.id === contextMenu.screenId);
                   setContextMenu(null);
-                  if (await useConfirmStore.getState().confirm({
-                    message: t('screenTabs.removeConfirmMessage', { name: screenName }),
-                    confirmLabel: tCore('actions.delete'),
-                    variant: 'danger',
-                  })) {
+                  if (!screen) return;
+                  if (await useConfirmStore.getState().confirm(
+                    buildScreenDeleteConfirm(screen, t, tCore),
+                  )) {
                     removeScreen(contextMenu.screenId);
                   }
                 }}

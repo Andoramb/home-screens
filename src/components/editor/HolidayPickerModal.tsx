@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Button from '@/components/ui/Button';
 import { editorFetch } from '@/lib/editor-fetch';
 import { getSupplementalHolidays } from '@/lib/supplemental-holidays';
+import { localISODate } from '@/lib/timezone';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import type { CountdownEvent } from '@/types/config';
 import { useTranslate } from '@/i18n';
@@ -83,7 +84,9 @@ export default function HolidayPickerModal({
       // Deduplicate by title (same holiday across years) — keep the next upcoming
       const seen = new Map<string, HolidayInfo>();
       for (const h of [...h1, ...h2, ...supplemental]) {
-        if (h.start >= new Date().toISOString().slice(0, 10) && !seen.has(h.title)) {
+        // Today on the household's own calendar. A UTC "today" drops a holiday
+        // that is happening right now once the evening puts UTC on tomorrow.
+        if (h.start >= localISODate() && !seen.has(h.title)) {
           seen.set(h.title, h);
         }
       }

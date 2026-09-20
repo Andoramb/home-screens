@@ -443,6 +443,12 @@
     },
     "todaysCompletion": "Today's completion",
     "rewardBalances": "Reward balances",
+    "holdToUncheckHint": "Press and hold to un-check",
+    "overspent": {
+      "one": "{name} already spent those tickets, so the balance is now {balance}. 1 more ticket to earn.",
+      "other": "{name} already spent those tickets, so the balance is now {balance}. {count} more tickets to earn."
+    },
+    "overspentSomeone": "Someone",
     "ticketsCount": {
       "one": "{count} ticket",
       "other": "{count} tickets"
@@ -607,6 +613,7 @@
         "addPersonOrGroupToSchedule": "Add at least one person or group to the schedule",
         "selectAtLeastOnePerson": "Select at least one person",
         "selectAtLeastOnePersonOrGroup": "Select at least one person or group",
+        "selectAtLeastOneDay": "Select at least one day",
         "familyNotReady": "Your family is still loading. Try again in a moment."
       }
     },

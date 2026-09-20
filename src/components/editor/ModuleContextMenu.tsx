@@ -7,6 +7,8 @@ import { useOutsidePointerDown } from '@/hooks/useOutsidePointerDown';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import { useTranslate } from '@/i18n';
 import { stackExtremes, stackOrder } from '@/lib/module-utils';
+import { resolveModuleLabel } from '@/lib/module-registry';
+import { buildModuleDeleteConfirm } from '@/lib/delete-confirmations';
 import type { ModuleInstance } from '@/types/config';
 
 export interface ModuleMenuState {
@@ -40,6 +42,7 @@ export default function ModuleContextMenu({
   onClose: () => void;
 }) {
   const t = useTranslate('editor');
+  const tCore = useTranslate('core');
   const ref = useRef<HTMLDivElement>(null);
   const { reorderModule, duplicateModule, updateModule, removeModule, selectModule } = useEditorStore();
   useOutsidePointerDown(true, [ref], onClose);
@@ -92,7 +95,9 @@ export default function ModuleContextMenu({
         className="w-full px-3 py-1.5 text-left text-sm text-hs-danger hover:bg-hs-card"
         onClick={async () => {
           onClose();
-          if (await useConfirmStore.getState().confirm(t('propertyPanel.actions.confirmDelete'))) {
+          if (await useConfirmStore.getState().confirm(
+            buildModuleDeleteConfirm(resolveModuleLabel(mod.type, t), t, tCore),
+          )) {
             removeModule(screenId, mod.id);
           }
         }}

@@ -6,6 +6,7 @@ import { LayoutDashboard, Monitor, Plus, Copy } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
 import {
+  DISPLAY_BACKGROUND,
   GRID_SIZE,
   MAX_PAGINATION_DOTS,
   PAGINATION_DOT_PX,
@@ -453,7 +454,10 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
           className="flex items-center justify-center"
           style={{ width: 'max-content', minWidth: '100%', minHeight: '100%', padding: 16, paddingBottom: 16 + CANVAS_TOOLBAR_RESERVE_PX }}
         >
-          {/* Frame uses hardcoded dark colors to mimic the actual display appearance */}
+          {/* The canvas paints the same ground the wall does, so a card's
+              transparency, border and text colour can be judged here and look
+              the same on the display. The ring around it is editor chrome and
+              is deliberately a different colour. */}
           <div
             ref={(node) => {
               setNodeRef(node);
@@ -461,10 +465,11 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
               if (canvasRef) (canvasRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
             }}
             data-testid="editor-canvas"
-            className="relative bg-[#0f172a] ring-[6px] ring-[#1e293b] overflow-hidden shrink-0"
+            className="relative ring-[6px] ring-[#1e293b] overflow-hidden shrink-0"
             style={{
               width: canvasW,
               height: canvasH,
+              background: DISPLAY_BACKGROUND,
               borderRadius: 8,
               // Contain module zIndexes (incl. the selected-module lift) so
               // they can't compete with editor chrome outside the canvas.

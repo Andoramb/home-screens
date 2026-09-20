@@ -13,6 +13,7 @@ import type { ModuleInstance, CountdownEvent, CountdownView, CountdownConfig, Co
 import { selectCountdownUnits } from '@/components/modules/countdown/countdown-utils';
 import type { TimeRemaining } from '@/components/modules/countdown/types';
 import { formatDuration } from '@/lib/duration-format';
+import { localISODateTime } from '@/lib/timezone';
 import HolidayPickerModal from '@/components/editor/HolidayPickerModal';
 import ImageBrowserModal from '@/components/editor/ImageBrowserModal';
 
@@ -62,7 +63,9 @@ export function CountdownConfigSection({ mod, screenId }: { mod: ModuleInstance;
     events,
     'events',
     set,
-    { name: t('configSections.countdown.defaultEventName'), date: new Date().toISOString().slice(0, 16) }
+    // Local time, not UTC: the date field below reads its value as local, so a
+    // UTC seed opens a new event on the wrong day at an hour nobody chose.
+    { name: t('configSections.countdown.defaultEventName'), date: localISODateTime() }
   );
 
   const [showHolidayPicker, setShowHolidayPicker] = useState(false);

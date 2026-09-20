@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest';
+import { readdirSync, readFileSync } from 'fs';
 import {
   createTZDate,
+  localISODate,
+  localISODateTime,
   formatTimeInTZ,
   formatDateInTZ,
   parseDateInTZ,
@@ -99,6 +102,56 @@ describe('createTZDate', () => {
     expect(result.getTime()).toBeLessThanOrEqual(after + 1);
   });
 });
+
+describe('localISODate / localISODateTime', () => {
+  it('spells a date the way a date input reads it back', () => {
+    expect(localISODate(new Date(2026, 8, 19, 22, 24))).toBe('2026-09-19');
+    expect(localISODateTime(new Date(2026, 8, 19, 22, 24))).toBe('2026-09-19T22:24');
+  });
+
+  it('pads single-digit months, days, hours and minutes', () => {
+    expect(localISODateTime(new Date(2026, 0, 5, 3, 7))).toBe('2026-01-05T03:07');
+  });
+
+  // The bug this exists to stop: seeding a datetime-local input from
+  // toISOString() hands it UTC wall-clock text, which the input then reads as
+  // local time. Late evening west of Greenwich that is tomorrow, at an hour
+  // nobody chose.
+  it('stays on the local calendar day when UTC has already moved on', () => {
+    const lateEvening = new Date(2026, 8, 19, 22, 24);
+    expect(localISODateTime(lateEvening).slice(0, 10)).toBe(localISODate(lateEvening));
+    expect(localISODateTime(lateEvening)).toBe(
+      `${lateEvening.getFullYear()}-09-19T${String(lateEvening.getHours()).padStart(2, '0')}:24`,
+    );
+  });
+
+  it('defaults to now', () => {
+    const now = new Date();
+    expect(localISODateTime()).toBe(localISODateTime(now));
+    expect(localISODate()).toBe(localISODateTime(now).slice(0, 10));
+  });
+
+  // Every editor file that owns a date or datetime field, found by the field
+  // itself rather than by a list that would go stale. A UTC string in one of
+  // them is the countdown bug again in a new place.
+  it('is what every editor date field is filled from', () => {
+    const offenders: string[] = [];
+    for (const file of walk('src/components/editor')) {
+      if (!/\.tsx?$/.test(file)) continue;
+      const source = readFileSync(file, 'utf8');
+      if (!/type=["']date(time-local)?["']/.test(source)) continue;
+      if (/toISOString\(\)\s*\.\s*(slice|substring)/.test(source)) offenders.push(file);
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
+function walk(dir: string): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = `${dir}/${entry.name}`;
+    return entry.isDirectory() ? walk(full) : [full];
+  });
+}
 
 describe('formatTimeInTZ', () => {
   it('returns "—" (em dash) for an invalid/NaN Date', () => {

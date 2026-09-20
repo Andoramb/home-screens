@@ -12,6 +12,8 @@ import { useTranslate } from '@/i18n';
 import ChoreIcon from '../ChoreIcon';
 import { TapCheckbox } from '../../shared/TapCheckbox';
 import { usePressedKey } from '../../shared/usePressedKey';
+import { useHoldToUncheck } from '@/hooks/useHoldToUncheck';
+import { HoldHint, HoldProgress, TicketValue, showsTicketValue } from '../ChoreRowExtras';
 
 interface CompactViewProps {
   config: ChoreChartConfig;
@@ -46,6 +48,9 @@ export function CompactView({ config, data, width, fontSize }: CompactViewProps)
   const allowTouch = config.allowDisplayComplete;
   const t = useTranslate('modules');
   const [pressedKey, press] = usePressedKey();
+  // Ticking is one tap; un-ticking takes a press and hold, the same gesture
+  // the kid tablet asks for.
+  const hold = useHoldToUncheck();
   // Tappable boxes are fixed-size touch targets; read-only glyphs scale with the text.
   const columnWidth: string | number = allowTouch ? touchColumnPx(fontSize) : `${COLUMN_EM}em`;
 
@@ -71,21 +76,30 @@ export function CompactView({ config, data, width, fontSize }: CompactViewProps)
   const checkbox = (chore: ChoreDefinition, member: FamilyMember) => {
     const done = completionSet.has(completionKey(chore.id, member.id, today));
     const key = `${chore.id}:${member.id}`;
+    // A ticked box is the one a passing tap must not clear.
+    const holdMode = allowTouch && done;
+    const handlers = allowTouch
+      ? hold.rowHandlers(key, holdMode, () => { void press(key, () => toggleComplete(chore.id, member.id)); })
+      : undefined;
     return (
       <button
         key={member.id}
         type="button"
-        onClick={allowTouch ? () => { void press(key, () => toggleComplete(chore.id, member.id)); } : undefined}
+        {...handlers}
         disabled={!allowTouch}
         aria-label={`${chore.name}: ${member.name}`}
         aria-pressed={allowTouch ? done : undefined}
         className={allowTouch ? 'flex items-center justify-center shrink-0' : undefined}
-        style={{ width: columnWidth, textAlign: 'center', cursor: allowTouch ? 'pointer' : 'default', background: 'none', border: 'none', color: 'inherit', padding: 0, fontSize: allowTouch ? undefined : '1.2em', minHeight: allowTouch ? touchColumnPx(fontSize) : undefined }}
+        style={{ position: 'relative', width: columnWidth, textAlign: 'center', cursor: allowTouch ? 'pointer' : 'default', background: 'none', border: 'none', color: 'inherit', padding: 0, fontSize: allowTouch ? undefined : '1.2em', minHeight: allowTouch ? touchColumnPx(fontSize) : undefined, userSelect: 'none', WebkitUserSelect: 'none', WebkitTouchCallout: 'none', touchAction: 'pan-y' }}
       >
+        {hold.holdingKey === key && <HoldProgress progress={hold.progress} color={member.color} />}
         {allowTouch ? <TapCheckbox checked={done} pressed={pressedKey === key} color={member.color} size={tapSize} /> : (done ? '✅' : '☐')}
       </button>
     );
   };
+
+  /** The row this key belongs to, so a hinted cell can say so where there is room for words. */
+  const choreOfKey = (key: string | null) => (key ? key.split(':')[0] : null);
 
   return (
     <div className="flex flex-col h-full" style={{ fontSize: 'inherit' }}>
@@ -110,6 +124,9 @@ export function CompactView({ config, data, width, fontSize }: CompactViewProps)
         {todayChores.map((chore) => {
           const assignees = active.filter((m) => resolveAssignee(chore, today, data.groups).includes(m.id));
           if (assignees.length === 0) return null;
+          // A checkbox column is too narrow for words, so the hint from a tap
+          // on any of this chore's boxes lands where the name is.
+          const hinting = choreOfKey(hold.hintKey) === chore.id;
           return (
             <div
               key={chore.id}
@@ -119,8 +136,9 @@ export function CompactView({ config, data, width, fontSize }: CompactViewProps)
             >
               {chore.emoji && <span className="shrink-0"><ChoreIcon value={chore.emoji} size={16} color="currentColor" /></span>}
               <span className="flex-1 truncate" style={{ opacity: TEXT_OPACITY.heading }}>
-                {chore.name}
+                {hinting ? <HoldHint color={config.accentColor ?? '#f59e0b'} /> : chore.name}
               </span>
+              {showsTicketValue(config.showPoints, chore.points) && <TicketValue points={chore.points} />}
               {aggregate ? (
                 // One cell per chore. A chore with one person keeps its
                 // checkbox (still tappable); a shared chore reads "2/6".

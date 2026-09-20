@@ -443,6 +443,12 @@
     },
     "todaysCompletion": "Heute geschafft",
     "rewardBalances": "Tickets übrig",
+    "holdToUncheckHint": "Gedrückt halten, um den Haken zu entfernen",
+    "overspent": {
+      "one": "{name} hat diese Tickets schon ausgegeben, das Ticketkonto steht jetzt bei {balance}. Noch 1 Ticket verdienen.",
+      "other": "{name} hat diese Tickets schon ausgegeben, das Ticketkonto steht jetzt bei {balance}. Noch {count} Tickets verdienen."
+    },
+    "overspentSomeone": "Jemand",
     "ticketsCount": {
       "one": "{count} Ticket",
       "other": "{count} Tickets"
@@ -607,6 +613,7 @@
         "addPersonOrGroupToSchedule": "Trag mindestens eine Person oder Gruppe in den Plan ein",
         "selectAtLeastOnePerson": "Wähle mindestens eine Person aus",
         "selectAtLeastOnePersonOrGroup": "Wähle mindestens eine Person oder Gruppe aus",
+        "selectAtLeastOneDay": "Wähle mindestens einen Tag aus",
         "familyNotReady": "Deine Familie wird noch geladen. Versuch es gleich noch einmal."
       }
     },

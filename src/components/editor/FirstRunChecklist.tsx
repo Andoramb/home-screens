@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Check, Circle, X } from 'lucide-react';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import { getLocation } from '@/lib/location';
-import { isScreenEmpty } from '@/lib/display-filter';
+import { resolveFirstRunChecklist } from '@/lib/first-run-checklist';
 import { settingsPath } from '@/lib/settings-route';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useTranslate } from '@/i18n';
@@ -21,14 +21,22 @@ function readDismissed(): boolean {
 }
 
 /**
- * The four things a new install needs, shown in the property panel while
- * every screen on the selected display is still empty. It disappears on its
- * own once a module exists, and the close button hides it for good in this
+ * Whether the hub has a password, cached for the life of the page. PropertyPanel
+ * remounts this component on every deselect, and the answer cannot change
+ * without leaving the editor for the Security page, so one request per page
+ * load is enough.
+ */
+let cachedPasswordSet: boolean | null = null;
+
+/**
+ * The four things a new install needs, shown in the property panel until they
+ * are done or the person closes it. The close button hides it for good in this
  * browser (a checklist that comes back after being dismissed is nagging).
  *
- * "Done" state is read from what is actually configured — a real location, a
- * password on the hub — never from whether the link was clicked, so a user
- * who set things up from another device sees the right ticks.
+ * "Done" state is read from what is actually configured (a module on the
+ * display, a real location, a password on the hub) and never from whether the
+ * link was clicked, so a user who set things up from another device sees the
+ * right ticks. `resolveFirstRunChecklist` holds that rule.
  */
 export default function FirstRunChecklist() {
   const t = useTranslate('editor');
@@ -36,34 +44,36 @@ export default function FirstRunChecklist() {
   const selectedDisplayId = useEditorStore((s) => s.selectedDisplayId);
   const selectedScreenId = useEditorStore((s) => s.selectedScreenId);
   const [dismissed, setDismissed] = useState(true);
-  const [passwordSet, setPasswordSet] = useState<boolean | null>(null);
+  const [passwordSet, setPasswordSet] = useState<boolean | null>(cachedPasswordSet);
 
   // Read after mount so the server-rendered panel matches the first client
   // paint (localStorage is not available during render on the server).
   useEffect(() => { setDismissed(readDismissed()); }, []);
 
-  // PropertyPanel mounts this on every deselect, so the checklist decides
-  // whether it is needed BEFORE touching the network: a set-up hub must
-  // never pay an /api/auth/status round-trip for a component that renders
-  // nothing.
-  const screens = config ? getActiveScreens(config, selectedDisplayId) : [];
-  // `every` is vacuously true for a display with no screens at all (a
-  // freshly added secondary display), which is not a fresh install.
-  const needed = !dismissed && config != null && screens.length > 0 && screens.every(isScreenEmpty);
+  const screens = config ? getActiveScreens(config, selectedDisplayId) : null;
+  const locationSet = config ? getLocation(config.settings) != null : false;
+  const { show, steps } = resolveFirstRunChecklist({ dismissed, screens, locationSet, passwordSet });
+
+  // A dismissed checklist asks the hub nothing. Otherwise the password answer
+  // is needed to decide whether to render at all, so it cannot wait behind
+  // that decision.
+  const asksHub = !dismissed && config != null && cachedPasswordSet === null;
 
   useEffect(() => {
-    if (!needed) return;
+    if (!asksHub) return;
     let cancelled = false;
     editorFetch('/api/auth/status')
       .then((r) => r.json())
-      .then((d: { authEnabled?: boolean }) => { if (!cancelled) setPasswordSet(!!d.authEnabled); })
+      .then((d: { authEnabled?: boolean }) => {
+        cachedPasswordSet = !!d.authEnabled;
+        if (!cancelled) setPasswordSet(cachedPasswordSet);
+      })
       .catch(() => { if (!cancelled) setPasswordSet(null); });
     return () => { cancelled = true; };
-  }, [needed]);
+  }, [asksHub]);
 
-  if (!needed || !config) return null;
+  if (!show || !config || !screens) return null;
 
-  const locationSet = getLocation(config.settings) != null;
   const emptyScreenId = screens.find((s) => s.id === selectedScreenId)?.id ?? screens[0]?.id;
 
   const dismiss = () => {
@@ -93,28 +103,32 @@ export default function FirstRunChecklist() {
         </button>
       </div>
       <ol className="space-y-2">
-        <ChecklistItem done={false} label={t('firstRun.steps.template')}>
-          <StartFromTemplateButton
-            replaceEmptyScreenId={emptyScreenId}
-            label={t('firstRun.steps.templateButton')}
-            size="sm"
-            className="inline-flex items-center gap-1"
-          />
+        <ChecklistItem done={steps.template} label={t('firstRun.steps.template')}>
+          {!steps.template && (
+            <StartFromTemplateButton
+              replaceEmptyScreenId={emptyScreenId}
+              label={t('firstRun.steps.templateButton')}
+              size="sm"
+              className="inline-flex items-center gap-1"
+            />
+          )}
         </ChecklistItem>
-        <ChecklistItem done={locationSet} label={t('firstRun.steps.location')}>
-          {!locationSet && (
+        <ChecklistItem done={steps.location} label={t('firstRun.steps.location')}>
+          {!steps.location && (
             <a href={settingsPath({ kind: 'defaults', page: 'location' })} className="text-xs text-hs-accent hover:underline">
               {t('firstRun.steps.locationLink')}
             </a>
           )}
         </ChecklistItem>
-        <ChecklistItem done={false} label={t('firstRun.steps.phone')}>
+        {/* No tick: nothing on the hub records that the phone surface was
+            opened, and a tick from clicking the link would be a guess. */}
+        <ChecklistItem done={steps.phone} label={t('firstRun.steps.phone')}>
           <a href={settingsPath({ kind: 'defaults', page: 'phone' })} className="text-xs text-hs-accent hover:underline">
             {t('firstRun.steps.phoneLink')}
           </a>
         </ChecklistItem>
-        <ChecklistItem done={passwordSet === true} label={t('firstRun.steps.password')}>
-          {passwordSet !== true && (
+        <ChecklistItem done={steps.password} label={t('firstRun.steps.password')}>
+          {!steps.password && (
             <a href={settingsPath({ kind: 'defaults', page: 'security' })} className="text-xs text-hs-accent hover:underline">
               {t('firstRun.steps.passwordLink')}
             </a>

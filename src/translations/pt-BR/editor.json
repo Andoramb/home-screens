@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Opções da tela",
     "screenOptionsAriaLabel": "Opções de {name}",
     "deleteTabAriaLabel": "Excluir {name}",
-    "removeConfirmMessage": "Remover \"{name}\"?",
+    "deleteConfirmTitle": "Excluir \"{name}\"?",
+    "deleteConfirmDetail": {
+      "one": "O {count} módulo dela e os ajustes vão junto. Dá para desfazer.",
+      "other": "Os {count} módulos dela e os ajustes vão junto. Dá para desfazer.",
+      "zero": "Esta tela está vazia. Dá para desfazer."
+    },
     "scrollLeftAriaLabel": "Rolar abas para a esquerda",
     "scrollLeftTitle": "Rolar abas para a esquerda",
     "scrollRightAriaLabel": "Rolar abas para a direita",
@@ -233,6 +238,8 @@
       "weekdays": "de segunda a sexta",
       "weekends": "sábado e domingo",
       "allDay": "o dia todo",
+      "fromOnly": "a partir das {start}",
+      "untilOnly": "até {end}",
       "window": "das {start} às {end}",
       "windowSpanned": "{start} até {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Salve uma cópia de tudo, restaure ou comece a partir de um modelo.",
       "restoreConfirm": {
         "title": "Restaurar de um arquivo?",
-        "message": "Isto substitui todos os seus ajustes, telas, tarefas e cardápios pelo que está no arquivo. Tudo que você mudou desde que esse arquivo foi criado será perdido. Antes disso é guardado um instantâneo da configuração atual, então dá para desfazer.",
+        "message": "Isto substitui todos os seus ajustes, telas, tarefas e cardápios pelo que está no arquivo. Tudo que você mudou desde que esse arquivo foi criado será perdido. Não dá para desfazer, então salve um backup antes se quiser a configuração de hoje de volta.",
         "confirm": "Escolher um arquivo…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Cada tela recarrega uma vez para pegar a chave nova.",
         "errorRegenerate": "Não foi possível criar uma chave nova",
         "errorCopy": "Falha ao copiar; selecione e copie manualmente",
-        "phoneHintPart1": "Para favoritos no celular, anexe ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " às URLs de comando."
+        "phoneHintIntro": "Para controlar um display pelo celular, salve nos favoritos um link como este:",
+        "phoneHintOutro": "Mostre antes a chave acima para que o link a leve junto. Troque sleep por wake, reload, next-screen ou prev-screen para os outros comandos.",
+        "phoneHintDisplayNote": "Este aponta para {name}. Troque {display} pelo id de outro display para mirar nele."
       },
       "ipAllowlist": {
         "heading": "Redes permitidas",
         "bypassAuth": {
-          "label": "Deixar essas redes entrarem sem a senha",
-          "help": "Telas nessas redes entram sem a chave"
+          "label": "Deixar os displays dessas redes entrarem sem a chave",
+          "help": "O editor e o controle da família continuam pedindo a senha."
         },
         "restrictAccess": {
           "label": "Permitir apenas essas redes",
@@ -1838,10 +1845,8 @@
           "part2": " não vai combinar com nada aqui e será bloqueado. Veja \"Seu IP\" acima: se tiver dois-pontos, ligar isto vai te deixar de fora."
         },
         "trustedNetworksWarning": {
-          "strong": "Apenas redes confiáveis.",
-          "part1": " Esta verificação lê o cabeçalho ",
-          "header": "X-Forwarded-For",
-          "part2": ". Se o Home Screens puder ser alcançado pela internet sem um proxy confiável na frente, alguém pode falsificar esse cabeçalho e passar por aqui."
+          "strong": "Veja \"Seu IP\" acima.",
+          "part1": " O Home Screens descobre de onde veio um pedido pela própria conexão de rede, não pelo que quem chama envia, então um celular não consegue se enfiar nesta lista. O que esconde o aparelho de verdade é algo que repassa o tráfego no caminho, como um roteador redirecionando uma porta ou um proxy: aí todo pedido chega com aquele único endereço e esta lista serve para todos ou para ninguém. Se \"Seu IP\" no seu celular for igual ao daqui, é isso que está acontecendo."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Clique em ",
       "emptyBullet1Suffix": " acima para adicionar uma nova tela. Dê um nome, resolução e rotação, e depois desenhe o layout dela no editor.",
-      "emptyBullet2Prefix": "Ou grave outro Pi com ",
-      "emptyBullet2Middle": ". Quando ele iniciar, aparecerá abaixo como um ",
-      "emptyBullet2Suffix": " aguardando para ser adicionado com um clique.",
+      "emptyBullet2": "Ou grave outro Pi com {command}. Quando ele iniciar, aparecerá abaixo como um {label}, e basta um clique para adicioná-lo.",
       "unadoptedLabel": "display aguardando ser adicionado",
       "unadoptedWaiting": {
         "one": "{count} display aguardando ser adicionado",
@@ -2229,8 +2232,8 @@
       "formErrorId": "O ID deve conter apenas letras minúsculas, dígitos e hifens (por ex. \"kitchen\")",
       "formErrorIdReserved": "\"{id}\" já tem um significado especial ao enviar comandos para as telas. Escolha outro ID, por ex. \"kitchen\" ou \"bedroom-tv\"",
       "formErrorIdTaken": "Já existe um display com ID \"{id}\"",
-      "formErrorWidth": "A largura deve ser um inteiro positivo ≤ {max}",
-      "formErrorHeight": "A altura deve ser um inteiro positivo ≤ {max}",
+      "formErrorWidth": "A largura precisa ficar entre {min} e {max}. Veja se faltou um dígito: a maioria das telas tem 1080 ou 1920 de largura.",
+      "formErrorHeight": "A altura precisa ficar entre {min} e {max}. Veja se faltou um dígito: a maioria das telas tem 1080 ou 1920 de altura.",
       "softwareUpdateWaiting": "Atualização pendente",
       "softwareNeedsSetup": "Precisa de ajuste"
     },
@@ -2965,7 +2968,8 @@
       "sendToBack": "Para trás",
       "duplicate": "Duplicar",
       "delete": "Excluir módulo",
-      "confirmDelete": "Excluir este módulo?"
+      "confirmDeleteTitle": "Excluir \"{name}\"?",
+      "confirmDeleteDetail": "Dá para desfazer."
     },
     "visibility": {
       "enabledLabel": "Mostrar no display",

@@ -1689,7 +1689,7 @@ test.describe('PropertyPanel Style', () => {
 
     // Slider default 12; End jumps to max (50) deterministically.
     await autosaved(page, async () => {
-      const slider = page.getByRole('slider', { name: 'Border Radius' });
+      const slider = page.getByRole('slider', { name: 'Corner rounding' });
       await slider.focus();
       await slider.press('End');
     });
@@ -1703,7 +1703,7 @@ test.describe('PropertyPanel Style', () => {
 
     // Slider default 1 (max). Home → 0, then 10 steps of 0.05 → 0.5.
     await autosaved(page, async () => {
-      const slider = page.getByRole('slider', { name: 'Opacity' });
+      const slider = page.getByRole('slider', { name: 'Solid' });
       await slider.focus();
       await slider.press('Home');
       for (let i = 0; i < 10; i++) await slider.press('ArrowRight');
@@ -1767,7 +1767,7 @@ test.describe('PropertyPanel Style', () => {
 
     // Default position is 400 (Default); End jumps to max (900).
     await autosaved(page, async () => {
-      const slider = page.getByRole('slider', { name: 'Font Weight' });
+      const slider = page.getByRole('slider', { name: 'Text thickness' });
       await slider.focus();
       await slider.press('End');
     });
@@ -1792,7 +1792,7 @@ test.describe('PropertyPanel Style', () => {
     await selectStyledGreeting(page, request);
 
     await autosaved(page, async () => {
-      const slider = page.getByRole('slider', { name: 'Font Weight' });
+      const slider = page.getByRole('slider', { name: 'Text thickness' });
       await slider.focus();
       await slider.press('End');
     });

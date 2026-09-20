@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Schermopties",
     "screenOptionsAriaLabel": "Opties voor {name}",
     "deleteTabAriaLabel": "{name} verwijderen",
-    "removeConfirmMessage": "\"{name}\" verwijderen?",
+    "deleteConfirmTitle": "\"{name}\" verwijderen?",
+    "deleteConfirmDetail": {
+      "zero": "Dit scherm is leeg. Je kunt dit ongedaan maken.",
+      "one": "De {count} module erop en de instellingen gaan mee. Je kunt dit ongedaan maken.",
+      "other": "De {count} modules erop en hun instellingen gaan mee. Je kunt dit ongedaan maken."
+    },
     "scrollLeftAriaLabel": "Tabbladen naar links scrollen",
     "scrollLeftTitle": "Tabbladen naar links scrollen",
     "scrollRightAriaLabel": "Tabbladen naar rechts scrollen",
@@ -233,6 +238,8 @@
       "weekdays": "ma t/m vr",
       "weekends": "za en zo",
       "allDay": "de hele dag",
+      "fromOnly": "vanaf {start}",
+      "untilOnly": "tot {end}",
       "window": "{start} tot {end}",
       "windowSpanned": "{start} tot {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Bewaar een kopie van alles, zet die terug of begin met een sjabloon.",
       "restoreConfirm": {
         "title": "Terugzetten uit een bestand?",
-        "message": "Dit vervangt al je instellingen, schermen, klusjes en maaltijdplannen door wat er in het bestand staat. Alles wat je sinds dat bestand hebt gewijzigd, is weg. Er wordt eerst een momentopname van je huidige opzet bewaard, dus dit kan ongedaan worden gemaakt.",
+        "message": "Dit vervangt al je instellingen, schermen, klusjes en maaltijdplannen door wat er in het bestand staat. Alles wat je sinds dat bestand hebt gewijzigd, is weg. Dit kan niet ongedaan worden gemaakt, dus maak eerst een back-up als je de opzet van vandaag misschien terug wilt.",
         "confirm": "Bestand kiezen…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Elk display herlaadt één keer om de nieuwe sleutel op te pikken.",
         "errorRegenerate": "Nieuwe sleutel maken is niet gelukt",
         "errorCopy": "Kopiëren mislukt; selecteer en kopieer handmatig",
-        "phoneHintPart1": "Voor bladwijzers op je telefoon: voeg ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " toe aan command-URL's."
+        "phoneHintIntro": "Wil je een display vanaf je telefoon bedienen, maak dan een bladwijzer van een link als deze:",
+        "phoneHintOutro": "Toon eerst de sleutel hierboven, zodat de link hem meeneemt. Vervang sleep door wake, reload, next-screen of prev-screen voor de andere opdrachten.",
+        "phoneHintDisplayNote": "Deze wijst naar {name}. Vervang {display} door de id van een ander display om daarop te mikken."
       },
       "ipAllowlist": {
         "heading": "Toegestane netwerken",
         "bypassAuth": {
-          "label": "Deze netwerken zonder wachtwoord binnenlaten",
-          "help": "Displays op deze netwerken komen binnen zonder de sleutel"
+          "label": "Displays op deze netwerken zonder de sleutel binnenlaten",
+          "help": "De editor en de gezinsafstandsbediening blijven om het wachtwoord vragen."
         },
         "restrictAccess": {
           "label": "Alleen deze netwerken toestaan",
@@ -1838,10 +1845,8 @@
           "part2": " past bij niets hier en wordt geblokkeerd. Controleer \"Jouw IP\" hierboven: staan er dubbele punten in, dan sluit dit jou buiten."
         },
         "trustedNetworksWarning": {
-          "strong": "Alleen vertrouwde netwerken.",
-          "part1": " Deze controle leest de ",
-          "header": "X-Forwarded-For",
-          "part2": "-header. Is Home Screens vanaf internet bereikbaar zonder vertrouwde proxy ervoor, dan kan iemand die header vervalsen en hier langs komen."
+          "strong": "Controleer \"Jouw IP\" hierboven.",
+          "part1": " Home Screens bepaalt waar een verzoek vandaan komt aan de hand van de netwerkverbinding zelf, niet aan de hand van wat de beller meestuurt, dus een telefoon kan zich niet op deze lijst praten. Wat het echte apparaat wel verbergt, is iets dat het verkeer onderweg doorgeeft, zoals een router die een poort doorstuurt of een proxy: elk verzoek komt dan met dat ene adres binnen en deze lijst past op iedereen of op niemand. Staat bij \"Jouw IP\" op je telefoon hetzelfde als hier, dan is dat wat er gebeurt."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Klik hierboven op ",
       "emptyBullet1Suffix": " om een nieuw scherm toe te voegen. Geef het een naam, resolutie en rotatie, en ontwerp dan zijn eigen lay-out in de editor.",
-      "emptyBullet2Prefix": "Of flash een andere Pi met ",
-      "emptyBullet2Middle": ". Zodra hij start, verschijnt hij hieronder als een ",
-      "emptyBullet2Suffix": " die met één klik kan worden toegevoegd.",
+      "emptyBullet2": "Of flash een andere Pi met {command}. Zodra hij start, verschijnt hij hieronder als een {label}, en met één klik voeg je hem toe.",
       "unadoptedLabel": "scherm dat wacht om toegevoegd te worden",
       "unadoptedWaiting": {
         "one": "{count} scherm wacht om toegevoegd te worden",
@@ -2229,8 +2232,8 @@
       "formErrorId": "ID mag alleen kleine letters, cijfers en koppeltekens bevatten (bijv. \"kitchen\")",
       "formErrorIdReserved": "\"{id}\" heeft al een speciale betekenis bij het sturen van opdrachten naar schermen. Kies een ander ID, bijv. \"kitchen\" of \"bedroom-tv\"",
       "formErrorIdTaken": "Er bestaat al een scherm met ID \"{id}\"",
-      "formErrorWidth": "Breedte moet een positief geheel getal ≤ {max} zijn",
-      "formErrorHeight": "Hoogte moet een positief geheel getal ≤ {max} zijn",
+      "formErrorWidth": "Breedte moet tussen {min} en {max} liggen. Kijk of er een cijfer ontbreekt: de meeste schermen zijn 1080 of 1920 breed.",
+      "formErrorHeight": "Hoogte moet tussen {min} en {max} liggen. Kijk of er een cijfer ontbreekt: de meeste schermen zijn 1080 of 1920 hoog.",
       "softwareUpdateWaiting": "Update staat klaar",
       "softwareNeedsSetup": "Instellen nodig"
     },
@@ -2965,7 +2968,8 @@
       "sendToBack": "Naar achteren",
       "duplicate": "Dupliceren",
       "delete": "Module verwijderen",
-      "confirmDelete": "Deze module verwijderen?"
+      "confirmDeleteTitle": "\"{name}\" verwijderen?",
+      "confirmDeleteDetail": "Je kunt dit ongedaan maken."
     },
     "visibility": {
       "enabledLabel": "Tonen op display",

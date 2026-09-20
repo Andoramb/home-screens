@@ -26,6 +26,94 @@ function submitted(form: ReturnType<typeof useChoreForm>): Omit<ChoreDefinition,
   return onSubmit.mock.calls[0][0];
 }
 
+describe('useChoreForm day picking', () => {
+  it('starts a new chore on every day, because a new chore is daily', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    expect(result.current.frequency).toBe('daily');
+    expect(result.current.daysOfWeek).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  // The whole point of item: tapping T and F on a fresh weekly chore used to
+  // save every OTHER day, because all seven arrived already on.
+  it('empties the days row when a new chore turns weekly, so the days tapped are the days saved', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    act(() => result.current.setName('Vacuum'));
+    act(() => result.current.setFrequency('weekly'));
+    expect(result.current.daysOfWeek).toEqual([]);
+
+    act(() => result.current.toggleDay(2));
+    act(() => result.current.toggleDay(5));
+    act(() => result.current.toggleAssignee('ann'));
+    expect(submitted(result.current).daysOfWeek).toEqual([2, 5]);
+  });
+
+  it('empties the days row for every other week too', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    act(() => result.current.setFrequency('biweekly'));
+    expect(result.current.daysOfWeek).toEqual([]);
+  });
+
+  it('keeps the days someone picked when they change their mind about the frequency', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    act(() => result.current.setFrequency('weekly'));
+    act(() => result.current.toggleDay(3));
+    act(() => result.current.setFrequency('biweekly'));
+    expect(result.current.daysOfWeek).toEqual([3]);
+    act(() => result.current.setFrequency('daily'));
+    expect(result.current.daysOfWeek).toEqual([3]);
+  });
+
+  it('never wipes the days of a chore being edited', () => {
+    const { result } = renderHook(() => useChoreForm(saved({ frequency: 'weekly', daysOfWeek: [1, 2], assigneeIds: ['ann'] }), members, [], true));
+    act(() => result.current.setFrequency('biweekly'));
+    expect(result.current.daysOfWeek).toEqual([1, 2]);
+    expect(submitted(result.current).daysOfWeek).toEqual([1, 2]);
+  });
+
+  it('refuses to save a recurring chore with no days, and says which row needs a tap', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    act(() => result.current.setName('Vacuum'));
+    act(() => result.current.toggleAssignee('ann'));
+    act(() => result.current.setFrequency('weekly'));
+    expect(result.current.validationHintKind).toBe('selectAtLeastOneDay');
+    expect(result.current.canSave).toBe(false);
+    const onSubmit = vi.fn();
+    result.current.submit(onSubmit);
+    expect(onSubmit).not.toHaveBeenCalled();
+
+    act(() => result.current.toggleDay(4));
+    expect(result.current.canSave).toBe(true);
+  });
+
+  it('still saves a one-time chore, which picks a date instead of days', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    act(() => result.current.setName('Rake leaves'));
+    act(() => result.current.toggleAssignee('ann'));
+    act(() => result.current.setFrequency('once'));
+    act(() => result.current.setSpecificDate('2026-10-31'));
+    expect(result.current.canSave).toBe(true);
+    expect(submitted(result.current)).toMatchObject({ frequency: 'once', specificDate: '2026-10-31' });
+  });
+
+  it('seeds a schedule from the days that are actually on', () => {
+    const { result } = renderHook(() => useChoreForm(undefined, members, [], true));
+    act(() => result.current.setFrequency('weekly'));
+    act(() => result.current.toggleDay(1));
+    act(() => result.current.toggleAssignee('ann'));
+    act(() => result.current.toggleAssignee('ben'));
+    act(() => result.current.switchToSchedule());
+    expect(result.current.schedule).toEqual({ ann: [1], ben: [1] });
+  });
+
+  it('treats days brought back from a schedule as picked, so a frequency change leaves them alone', () => {
+    const chore = saved({ frequency: 'weekly', rotation: 'schedule', assigneeIds: ['ann'], schedule: { ann: [1, 3] } });
+    const { result } = renderHook(() => useChoreForm(chore, members, [], true));
+    act(() => result.current.switchFromSchedule('fixed'));
+    act(() => result.current.setFrequency('biweekly'));
+    expect(result.current.daysOfWeek).toEqual([1, 3]);
+  });
+});
+
 describe('useChoreForm with family groups', () => {
   it('offers rotation for a group', () => {
     const { result } = renderHook(() => useChoreForm(saved({}), members, [kids], true));

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
+// Imported, not read from disk: this file mocks `fs`.
+import editorCopy from '@/translations/en-US/editor.json';
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 
@@ -941,6 +943,33 @@ describe('runRollback', () => {
       (e) => e.type === 'progress' && e.step === 'complete',
     );
     expect(completeEvent?.message).toBe('Rolled back to v0.7.0 successfully!');
+  });
+
+  /**
+   * The confirmation the user reads before going back a version promises "A
+   * snapshot of your current setup is saved first, so you can come back". That
+   * sentence is only true while both rollback pipelines run the `backup`
+   * script action before anything replaces the tree: it copies
+   * data/config.json into data/backups/ (see the `backup` case in
+   * scripts/upgrade.sh, covered by scripts/__tests__/backup-rotation.test.ts).
+   *
+   * Restoring a backup is the sibling path that makes no such copy, and its
+   * confirmation says so instead; see
+   * src/app/api/backup/__tests__/route.restore-is-final.test.ts.
+   */
+  it.each([
+    { tarball: true, replaces: 'deploy' },
+    { tarball: false, replaces: 'rollback' },
+  ])('saves a config snapshot before anything replaces the tree (tarball: $tarball)', async ({ tarball, replaces }) => {
+    mockHasReleaseTarball.mockResolvedValue(tarball);
+    setupSpawnForSuccess();
+
+    await upgradeModule.runRollback('v0.9.0');
+
+    const actions = mockSpawn.mock.calls.map((call: unknown[]) => (call[1] as string[])[1]);
+    expect(actions).toContain('backup');
+    expect(actions.indexOf('backup')).toBeLessThan(actions.indexOf(replaces));
+    expect(editorCopy.settings.systemPage.rollbackDialog.message).toMatch(/snapshot/i);
   });
 
   it('does not include migrate step in git rollback pipeline', async () => {

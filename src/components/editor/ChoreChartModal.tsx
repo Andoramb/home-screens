@@ -605,6 +605,9 @@ function ChoreColumn({
 }: ChoreColumnProps) {
   const t = useTranslate('editor');
   const tModules = useTranslate('modules');
+  // Day names on a chore row follow the formatting locale, not the UI language.
+  const formattingLocale = useFormattingLocale();
+  const dayNamesShort = useMemo(() => getLocalizedDayNames(formattingLocale, 'short'), [formattingLocale]);
   return (
     <div className="flex-1 border-r border-hs-border-strong flex flex-col min-w-0">
       <div className="flex items-center justify-between px-3 py-2 border-b border-hs-border-strong/50">
@@ -673,7 +676,7 @@ function ChoreColumn({
                   {chore.name}
                 </div>
                 <div className="text-[11px] text-hs-text-muted mt-0.5">
-                  {buildChoreSummaryLine({ chore, t: tModules })}
+                  {buildChoreSummaryLine({ chore, t: tModules, dayNames: dayNamesShort })}
                 </div>
                 <div className="text-[11px] text-hs-text-muted mt-0.5">
                   {tModules('chore-chart.choreSummary.arrow')}{' '}

@@ -876,6 +876,14 @@ test.describe('Defaults › System', () => {
     await expect(banner.getByRole('button', { name: 'Switch' })).toBeVisible();
     await expect(page.getByText("You're on the latest version")).toHaveCount(0);
 
+    // And the confirmation behind it is asked in the same terms: going back,
+    // with what that costs, not three more uses of the word upgrade.
+    await banner.getByRole('button', { name: 'Switch' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Go back to v1.2.3?')).toBeVisible();
+    await expect(dialog.getByText(/Settings you changed since then may not work in v1\.2\.3/)).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
+
     assertNoRealSystemCall(stubs);
   });
 

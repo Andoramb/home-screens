@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useEditorStore } from '@/stores/editor-store';
-import { MAX_DISPLAY_DIMENSION, orientDimensions } from '@/lib/display-filter';
+import { isSupportedDisplayDimension, orientDimensions } from '@/lib/display-filter';
 import { DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT } from '@/lib/constants';
 import type { DisplayNode, GlobalSettings } from '@/types/config';
 
@@ -38,16 +38,18 @@ export function useCanvasDimensionDrafts(display: DisplayNode, settings: GlobalS
     String(display.displayHeight ?? settings.displayHeight ?? DEFAULT_DISPLAY_HEIGHT),
   );
 
-  // On blur / Enter, commit the parsed draft back to the store if it's
-  // a valid positive integer within the MAX_DISPLAY_DIMENSION cap. Invalid or
-  // empty input snaps the visible draft back to the last committed value
-  // rather than silently discarding the edit — without this, clearing
+  // On blur / Enter, commit the parsed draft back to the store if it is a
+  // resolution a screen could actually have (see isSupportedDisplayDimension).
+  // Invalid or empty input snaps the visible draft back to the last committed
+  // value rather than silently discarding the edit. Without this, clearing
   // the field leaves the input blank while the store still holds the
-  // old value, which looks like a UI bug to the user.
+  // old value, which looks like a UI bug to the user. A resolution typed with
+  // a digit missing snaps back the same way instead of shrinking the canvas
+  // to something nothing fits on.
   const commitWidth = async () => {
     const n = parseInt(widthDraft, 10);
     const current = display.displayWidth ?? settings.displayWidth ?? DEFAULT_DISPLAY_WIDTH;
-    if (Number.isFinite(n) && n > 0 && n <= MAX_DISPLAY_DIMENSION) {
+    if (isSupportedDisplayDimension(n)) {
       if (n !== current) {
         updateDisplay(display.id, { displayWidth: n });
         await saveConfig();
@@ -59,7 +61,7 @@ export function useCanvasDimensionDrafts(display: DisplayNode, settings: GlobalS
   const commitHeight = async () => {
     const n = parseInt(heightDraft, 10);
     const current = display.displayHeight ?? settings.displayHeight ?? DEFAULT_DISPLAY_HEIGHT;
-    if (Number.isFinite(n) && n > 0 && n <= MAX_DISPLAY_DIMENSION) {
+    if (isSupportedDisplayDimension(n)) {
       if (n !== current) {
         updateDisplay(display.id, { displayHeight: n });
         await saveConfig();

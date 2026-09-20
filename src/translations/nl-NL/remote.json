@@ -177,6 +177,7 @@
       "namePlaceholder": "Naam van het klusje…",
       "iconLabel": "Pictogram",
       "ticketsLabel": "Tickets",
+      "ticketsHint": "Zoveel tickets verdient een kind met dit klusje. Met tickets koop je beloningen.",
       "frequencyLabel": "Frequentie",
       "timeOfDayLabel": "Tijdstip",
       "dateLabel": "Datum",
@@ -191,7 +192,7 @@
     },
     "choreDelete": {
       "title": "\"{name}\" verwijderen?",
-      "description": "Dit klusje en al zijn geschiedenis worden verwijderd.",
+      "description": "Het klusje verdwijnt. Tickets die de kinderen er al mee verdiend hebben, blijven op hun kaart staan.",
       "confirmLabel": "Klusje verwijderen"
     }
   },

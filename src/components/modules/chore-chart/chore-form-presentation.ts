@@ -1,4 +1,4 @@
-import type { ChoreDefinition, ChoreRotation } from '@/types/config';
+import type { ChoreDefinition, ChoreResetFrequency, ChoreRotation } from '@/types/config';
 import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type { TranslateFn } from '@/i18n';
 import { choreAssigneeIds, getTimeOfDayLabelKey } from './types';
@@ -14,7 +14,24 @@ export type ChoreValidationHintKind =
   | 'addPersonOrGroupToSchedule'
   | 'selectAtLeastOnePerson'
   | 'selectAtLeastOnePersonOrGroup'
+  | 'selectAtLeastOneDay'
   | 'familyNotReady';
+
+/** Every day of the week, Sunday first, matching `ChoreDefinition.daysOfWeek`. */
+const EVERY_DAY = [0, 1, 2, 3, 4, 5, 6];
+
+/**
+ * The days a chore's day row starts on before anyone has picked any.
+ *
+ * Daily means every day, so the row arrives full. Weekly and every-other-week
+ * are a question ("which days?"), so the row arrives empty and a tap turns a
+ * day on. A row that arrives full under those frequencies turns the two days
+ * you tap OFF and saves the other five. A one-time chore picks a date instead
+ * and never reads its days.
+ */
+export function defaultChoreDays(frequency: ChoreResetFrequency): number[] {
+  return frequency === 'daily' ? [...EVERY_DAY] : [];
+}
 
 export function getChoreValidationHintKind(args: {
   name: string;
@@ -27,6 +44,10 @@ export function getChoreValidationHintKind(args: {
   hasGroups: boolean;
   /** False while the family list has not loaded; nothing about people or groups can be judged until it has. */
   familyReady: boolean;
+  /** A one-time chore answers "when" with a date, so it is never asked for days. */
+  frequency: ChoreResetFrequency;
+  /** Days on the day row. A recurring chore with none reads as "never" and is not saved. */
+  daysOfWeekLength: number;
 }): ChoreValidationHintKind | null {
   if (!args.familyReady) return 'familyNotReady';
   if (!args.name.trim()) return 'enterName';
@@ -36,11 +57,15 @@ export function getChoreValidationHintKind(args: {
   if (args.rotation !== 'schedule' && args.assigneeIdsLength === 0 && args.assigneeGroupIdsLength === 0) {
     return args.hasGroups ? 'selectAtLeastOnePersonOrGroup' : 'selectAtLeastOnePerson';
   }
+  // On a schedule the days live in the grid, which has already been checked.
+  if (args.rotation !== 'schedule' && args.frequency !== 'once' && args.daysOfWeekLength === 0) {
+    return 'selectAtLeastOneDay';
+  }
   return null;
 }
 
 /**
- * Compose the per-chore secondary line ("Daily · Morning · 2 tickets").
+ * Compose the per-chore secondary line ("Weekly · Tue, Fri · Morning · 2 tickets").
  *
  * Both the editor (`ChoreChartModal`) and /remote (`ChoresManageView`)
  * read the same `chore-chart.choreSummary.*` keys, which live in the
@@ -49,12 +74,20 @@ export function getChoreValidationHintKind(args: {
  * bound to `useTranslate('modules')`. Frequency, time-of-day, and ticket
  * pluralization each route through `t()` independently and the joiner ("·")
  * stays a verbatim glyph.
+ *
+ * The days are named whenever a chore does not run every day, because
+ * otherwise a chore saved on the wrong days reads exactly like one saved on
+ * the right ones, and nobody finds out until it fails to appear. A chore that
+ * does run every day, and a one-time chore that shows its date, leave them out
+ * so the line stays one phone-width line.
  */
 export function buildChoreSummaryLine(args: {
   chore: ChoreDefinition;
   t: TranslateFn;
+  /** Weekday names for the formatting locale, Sunday first, from `getLocalizedDayNames`. */
+  dayNames: readonly string[];
 }): string {
-  const { chore, t } = args;
+  const { chore, t, dayNames } = args;
   let frequencyLabel: string;
   if (chore.frequency === 'daily') frequencyLabel = t('chore-chart.choreSummary.daily');
   else if (chore.frequency === 'biweekly') frequencyLabel = t('chore-chart.choreSummary.biweekly');
@@ -64,12 +97,17 @@ export function buildChoreSummaryLine(args: {
       : t('chore-chart.choreSummary.onceNoDate');
   } else frequencyLabel = t('chore-chart.choreSummary.weekly');
 
+  const showDays = chore.frequency !== 'once' && chore.daysOfWeek.length > 0 && chore.daysOfWeek.length < EVERY_DAY.length;
+  const daysLabel = showDays
+    ? [...chore.daysOfWeek].sort((a, b) => a - b).map((d) => dayNames[d]).join(', ')
+    : null;
+
   const timeOfDayLabel = t(getTimeOfDayLabelKey(chore.timeOfDay));
   const ticketsLabel = chore.points === 1
     ? t('chore-chart.choreSummary.ticketCountSingular', { count: chore.points })
     : t('chore-chart.choreSummary.ticketCountPlural', { count: chore.points });
 
-  return `${frequencyLabel} · ${timeOfDayLabel} · ${ticketsLabel}`;
+  return [frequencyLabel, daysLabel, timeOfDayLabel, ticketsLabel].filter(Boolean).join(' · ');
 }
 
 /**

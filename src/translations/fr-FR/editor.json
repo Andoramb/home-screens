@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Options de l'écran",
     "screenOptionsAriaLabel": "Options pour {name}",
     "deleteTabAriaLabel": "Supprimer {name}",
-    "removeConfirmMessage": "Supprimer « {name} » ?",
+    "deleteConfirmTitle": "Supprimer « {name} » ?",
+    "deleteConfirmDetail": {
+      "one": "Son {count} module et ses réglages partent avec. Vous pouvez annuler.",
+      "other": "Ses {count} modules et leurs réglages partent avec. Vous pouvez annuler.",
+      "zero": "Cet écran est vide. Vous pouvez annuler."
+    },
     "scrollLeftAriaLabel": "Faire défiler les onglets à gauche",
     "scrollLeftTitle": "Faire défiler les onglets à gauche",
     "scrollRightAriaLabel": "Faire défiler les onglets à droite",
@@ -233,6 +238,8 @@
       "weekdays": "du lundi au vendredi",
       "weekends": "le samedi et le dimanche",
       "allDay": "toute la journée",
+      "fromOnly": "à partir de {start}",
+      "untilOnly": "jusqu’à {end}",
       "window": "de {start} à {end}",
       "windowSpanned": "{start} jusqu’à {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Sauvegardez tout, restaurez une sauvegarde ou repartez d'un modèle.",
       "restoreConfirm": {
         "title": "Restaurer depuis un fichier ?",
-        "message": "Cela remplace tous vos réglages, écrans, tâches et menus par ce que contient le fichier. Tout ce que vous avez modifié depuis la création de ce fichier sera perdu. Un instantané de votre configuration actuelle est conservé au préalable, l'opération est donc réversible.",
+        "message": "Cela remplace tous vos réglages, écrans, tâches et menus par ce que contient le fichier. Tout ce que vous avez modifié depuis la création de ce fichier sera perdu. L'opération est irréversible : enregistrez d'abord une sauvegarde si vous voulez pouvoir revenir à la configuration d'aujourd'hui.",
         "confirm": "Choisir un fichier…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Chaque affichage se recharge une fois pour prendre la nouvelle clé.",
         "errorRegenerate": "Impossible de créer une nouvelle clé",
         "errorCopy": "Échec de la copie ; sélectionne et copie manuellement",
-        "phoneHintPart1": "Pour les favoris du téléphone, ajoute ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " aux URL de commande."
+        "phoneHintIntro": "Pour piloter un affichage depuis ton téléphone, mets en favori un lien comme celui-ci :",
+        "phoneHintOutro": "Affiche d'abord la clé ci-dessus pour que le lien la contienne. Remplace sleep par wake, reload, next-screen ou prev-screen pour les autres commandes.",
+        "phoneHintDisplayNote": "Celui-ci vise {name}. Remplace {display} par l'id d'un autre affichage pour viser celui-là."
       },
       "ipAllowlist": {
         "heading": "Réseaux autorisés",
         "bypassAuth": {
-          "label": "Laisser entrer ces réseaux sans mot de passe",
-          "help": "Les affichages sur ces réseaux entrent sans la clé"
+          "label": "Laisser entrer les affichages de ces réseaux sans la clé",
+          "help": "L'éditeur et la télécommande familiale demandent toujours le mot de passe."
         },
         "restrictAccess": {
           "label": "N’autoriser que ces réseaux",
@@ -1838,10 +1845,8 @@
           "part2": " ne correspondra à rien ici et sera bloqué. Vérifie « Ton IP » ci-dessus : si elle contient des deux-points, activer ceci te bloquera."
         },
         "trustedNetworksWarning": {
-          "strong": "Réseaux de confiance uniquement.",
-          "part1": " Cette vérification lit l'en-tête ",
-          "header": "X-Forwarded-For",
-          "part2": ". Si Home Screens est accessible depuis Internet sans proxy de confiance devant lui, quelqu'un peut falsifier cet en-tête et passer outre."
+          "strong": "Vérifie « Ton IP » ci-dessus.",
+          "part1": " Home Screens détermine l'origine d'une requête à partir de la connexion réseau elle-même, pas de ce que l'appelant envoie : un téléphone ne peut donc pas s'inviter dans cette liste. En revanche, tout ce qui relaie le trafic en chemin, un routeur qui redirige un port ou un proxy, masque l'appareil réel : chaque requête arrive alors avec cette seule adresse, et cette liste correspond à tout le monde ou à personne. Si « Ton IP » affiche la même chose sur ton téléphone qu'ici, c'est ce qui se passe."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Cliquez sur ",
       "emptyBullet1Suffix": " ci-dessus pour ajouter un nouvel écran. Donnez-lui un nom, une résolution et une rotation, puis concevez sa propre disposition dans l’éditeur.",
-      "emptyBullet2Prefix": "Ou flashez un autre Pi avec ",
-      "emptyBullet2Middle": ". Une fois démarré, il apparaîtra ci-dessous comme un ",
-      "emptyBullet2Suffix": " en attente d’être ajouté en un clic.",
+      "emptyBullet2": "Ou flashe un autre Pi avec {command}. Une fois démarré, il apparaîtra ci-dessous comme un {label}, et un clic l’ajoute.",
       "unadoptedLabel": "écran en attente d’ajout",
       "unadoptedWaiting": {
         "one": "{count} écran en attente d’ajout",
@@ -2229,8 +2232,8 @@
       "formErrorId": "L’ID ne doit contenir que des lettres minuscules, des chiffres et des tirets (par ex. « kitchen »)",
       "formErrorIdReserved": "« {id} » a déjà une signification particulière lors de l’envoi de commandes aux écrans. Veuillez choisir un autre ID, par ex. « kitchen » ou « bedroom-tv »",
       "formErrorIdTaken": "Un écran avec l’ID « {id} » existe déjà",
-      "formErrorWidth": "La largeur doit être un entier positif ≤ {max}",
-      "formErrorHeight": "La hauteur doit être un entier positif ≤ {max}",
+      "formErrorWidth": "La largeur doit être comprise entre {min} et {max}. Vérifie qu'il ne manque pas un chiffre : la plupart des écrans font 1080 ou 1920 de large.",
+      "formErrorHeight": "La hauteur doit être comprise entre {min} et {max}. Vérifie qu'il ne manque pas un chiffre : la plupart des écrans font 1080 ou 1920 de haut.",
       "softwareUpdateWaiting": "Mise à jour en attente",
       "softwareNeedsSetup": "Configuration requise"
     },
@@ -2965,7 +2968,8 @@
       "sendToBack": "Arrière-plan",
       "duplicate": "Dupliquer",
       "delete": "Supprimer le module",
-      "confirmDelete": "Supprimer ce module ?"
+      "confirmDeleteTitle": "Supprimer « {name} » ?",
+      "confirmDeleteDetail": "Vous pouvez annuler."
     },
     "visibility": {
       "enabledLabel": "Afficher sur l'écran",

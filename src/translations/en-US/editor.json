@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Screen options",
     "screenOptionsAriaLabel": "Options for {name}",
     "deleteTabAriaLabel": "Delete {name}",
-    "removeConfirmMessage": "Remove “{name}”?",
+    "deleteConfirmTitle": "Delete “{name}”?",
+    "deleteConfirmDetail": {
+      "zero": "This screen is empty. You can undo this.",
+      "one": "Its {count} module and its settings go too. You can undo this.",
+      "other": "Its {count} modules and their settings go too. You can undo this."
+    },
     "scrollLeftAriaLabel": "Scroll tabs left",
     "scrollLeftTitle": "Scroll tabs left",
     "scrollRightAriaLabel": "Scroll tabs right",
@@ -213,8 +218,8 @@
     "statusTitle": "Status",
     "enableLabel": "Only show at certain times",
     "repeatTitle": "How it repeats",
-    "shapeRepeat": "Every day I pick",
-    "shapeSpan": "One stretch",
+    "shapeRepeat": "The same hours on each day I pick",
+    "shapeSpan": "One stretch that can run across days",
     "weekPreviewTitle": "Your week",
     "timeWindowTitle": "Time window",
     "fromLabel": "From",
@@ -233,6 +238,8 @@
       "weekdays": "Mon to Fri",
       "weekends": "Sat and Sun",
       "allDay": "all day",
+      "fromOnly": "from {start}",
+      "untilOnly": "until {end}",
       "window": "{start} to {end}",
       "windowSpanned": "{start} until {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Save a copy of everything, put it back, or start from a template.",
       "restoreConfirm": {
         "title": "Restore from a file?",
-        "message": "This replaces all of your settings, screens, chores and meal plans with what is in the file. Anything you have changed since that file was made is gone. A snapshot of your current setup is kept first, so this can be undone.",
+        "message": "This replaces all of your settings, screens, chores and meal plans with what is in the file. Anything you have changed since that file was made is gone. This cannot be undone, so save a backup first if you might want today's setup back.",
         "confirm": "Choose a file…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Each display reloads once to pick up the new key.",
         "errorRegenerate": "Couldn't make a new key",
         "errorCopy": "Copy failed; select and copy manually",
-        "phoneHintPart1": "For phone bookmarks, append ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " to command URLs."
+        "phoneHintIntro": "To control a display from a phone, bookmark a link like this one:",
+        "phoneHintOutro": "Reveal the key above first so the link carries it. Swap sleep for wake, reload, next-screen or prev-screen to get the other commands.",
+        "phoneHintDisplayNote": "This one points at {name}. Swap {display} for another display's id to aim at that one."
       },
       "ipAllowlist": {
         "heading": "Allowed networks",
         "bypassAuth": {
-          "label": "Let these networks in without the password",
-          "help": "Displays on these networks get in without the key"
+          "label": "Let displays on these networks in without the key",
+          "help": "The editor and the family remote still ask for the password."
         },
         "restrictAccess": {
           "label": "Only allow these networks",
@@ -1838,10 +1845,8 @@
           "part2": " won't match anything here and will be blocked. Check \"Your IP\" above: if it has colons in it, turning this on locks you out."
         },
         "trustedNetworksWarning": {
-          "strong": "Trusted networks only.",
-          "part1": " This check reads the ",
-          "header": "X-Forwarded-For",
-          "part2": " header. If Home Screens is reachable from the internet without a trusted proxy in front of it, someone can fake that header and get past this."
+          "strong": "Check \"Your IP\" above.",
+          "part1": " Home Screens works out where a request came from using the network connection itself, not anything the caller sends, so a phone cannot talk its way onto this list. Something that relays traffic on the way in, like a router forwarding a port or a proxy, does hide the real device: every request then arrives with that one address, and this list matches everyone or no one. If \"Your IP\" reads the same on your phone as it does here, that is what is happening."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Click ",
       "emptyBullet1Suffix": " above to add a new screen. Give it a name, resolution, and rotation, then design its own layout in the editor.",
-      "emptyBullet2Prefix": "Or flash another Pi with ",
-      "emptyBullet2Middle": ". Once it boots, it will appear below as an ",
-      "emptyBullet2Suffix": " waiting to be added with one click.",
+      "emptyBullet2": "Or flash another Pi with {command}. Once it boots it will appear below as a {label}, and one click adds it.",
       "unadoptedLabel": "display waiting to be added",
       "unadoptedWaiting": {
         "one": "{count} display waiting to be added",
@@ -2229,8 +2232,8 @@
       "formErrorId": "ID must be lowercase letters, digits, and hyphens (e.g. \"kitchen\")",
       "formErrorIdReserved": "\"{id}\" already has a special meaning when sending commands to displays. Please pick a different ID, like \"kitchen\" or \"bedroom-tv\"",
       "formErrorIdTaken": "A display with ID \"{id}\" already exists",
-      "formErrorWidth": "Width must be a positive integer ≤ {max}",
-      "formErrorHeight": "Height must be a positive integer ≤ {max}",
+      "formErrorWidth": "Width must be between {min} and {max}. Check for a missing digit: most screens are 1080 or 1920 across.",
+      "formErrorHeight": "Height must be between {min} and {max}. Check for a missing digit: most screens are 1080 or 1920 tall.",
       "softwareUpdateWaiting": "Update waiting",
       "softwareNeedsSetup": "Needs setup"
     },
@@ -2939,10 +2942,10 @@
       "y": "Y",
       "w": "W",
       "h": "H",
-      "borderRadius": "Border Radius",
-      "padding": "Padding",
+      "borderRadius": "Corner rounding",
+      "padding": "Space inside",
       "borderWidth": "Border Width",
-      "opacity": "Opacity",
+      "opacity": "Solid",
       "backdropBlur": "Frosted glass",
       "shadowSize": "Shadow Size",
       "background": "Background",
@@ -2950,7 +2953,7 @@
       "textColor": "Text Color",
       "textScale": "Text size",
       "textScaleHint": "100% is this module's normal text size. Slide to make it bigger or smaller.",
-      "fontWeight": "Font Weight",
+      "fontWeight": "Text thickness",
       "fontWeightDefault": "Default",
       "fontWeightReset": "Reset to default",
       "title": "Title",
@@ -2965,7 +2968,8 @@
       "sendToBack": "Send to Back",
       "duplicate": "Duplicate",
       "delete": "Delete Module",
-      "confirmDelete": "Delete this module?"
+      "confirmDeleteTitle": "Delete “{name}”?",
+      "confirmDeleteDetail": "You can undo this."
     },
     "visibility": {
       "enabledLabel": "Show on display",

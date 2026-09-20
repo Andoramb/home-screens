@@ -1,9 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState, type MouseEvent } from 'react';
 import { Check, Lock } from 'lucide-react';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
-import { useHoldConfirm } from '@/hooks/useHoldConfirm';
+import { useHoldToUncheck } from '@/hooks/useHoldToUncheck';
 import { useTranslate } from '@/i18n';
 
 /** Minimal shape the row renders from — the parent's assignment carries more fields. */
@@ -33,10 +32,6 @@ interface ChoreRowProps {
   onToggle: () => void;
 }
 
-/** How long the hold takes. Long enough to be deliberate, short enough not to feel stuck. */
-export const UNCHECK_HOLD_MS = 700;
-const HINT_MS = 1800;
-
 /**
  * A single chore card in the Today list. The read-only branch (kids viewing a
  * past day) renders a non-interactive div with a locked chip rather than a
@@ -53,62 +48,14 @@ export default function ChoreRow({
 }: ChoreRowProps) {
   const t = useTranslate('remote');
   const done = assignment.isCompleted;
-  const holdMode = holdToUncheck && done && !readOnly;
+  const holdMode = holdToUncheck && done && !readOnly && !isToggling;
 
-  // ── Press-and-hold to un-check ──
-  // `firedRef` tells pointerup whether the hold ran to completion (toggle
-  // already happened) or was released early (show the hint). The trailing
-  // click event that follows a completed hold has to be swallowed too:
-  // by then the row has re-rendered as "not done", and a click there would
-  // check the chore straight back off.
-  const firedRef = useRef(false);
-  const swallowClickRef = useRef(false);
-  const [hint, setHint] = useState(false);
-  const hintTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(hintTimer.current), []);
-
-  const hold = useHoldConfirm({
-    durationMs: UNCHECK_HOLD_MS,
-    onConfirm: () => {
-      firedRef.current = true;
-      swallowClickRef.current = true;
-      setHint(false);
-      onToggle();
-    },
-  });
-
-  const showHint = () => {
-    setHint(true);
-    clearTimeout(hintTimer.current);
-    hintTimer.current = setTimeout(() => setHint(false), HINT_MS);
-  };
-
-  const handlePointerDown = () => {
-    // A new gesture: whatever the last one left behind no longer applies.
-    swallowClickRef.current = false;
-    if (!holdMode || isToggling) return;
-    firedRef.current = false;
-    hold.onPointerDown();
-  };
-  const handlePointerUp = () => {
-    if (!holdMode) return;
-    hold.onPointerUp();
-    if (!firedRef.current) showHint();
-  };
-  const handlePointerCancel = () => {
-    if (!holdMode) return;
-    hold.onPointerCancel();
-  };
-  const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-    if (swallowClickRef.current) {
-      swallowClickRef.current = false;
-      return;
-    }
-    // Keyboard activation (Enter/Space) arrives as a click with detail 0; a
-    // keyboard user cannot hold, so it toggles directly.
-    if (holdMode && e.detail !== 0) return;
-    onToggle();
-  };
+  // The gesture itself lives in the hook, shared with the wall chart so the
+  // two surfaces cannot drift apart on what a tap and a hold each mean.
+  const hold = useHoldToUncheck();
+  const handlers = hold.rowHandlers(assignment.choreId, holdMode, onToggle);
+  const holding = hold.holdingKey === assignment.choreId;
+  const hint = hold.hintKey === assignment.choreId;
 
   const rowStyle = {
     width: '100%',
@@ -173,7 +120,7 @@ export default function ChoreRow({
       }}
     >
       {/* Hold progress: the fill drains from the checkbox as the hold runs. */}
-      {holdMode && hold.isHolding && (
+      {holding && (
         <div
           aria-hidden="true"
           style={{
@@ -246,12 +193,7 @@ export default function ChoreRow({
   return (
     <button
       className="press-scale"
-      onClick={handleClick}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
-      onPointerLeave={handlePointerCancel}
-      onContextMenu={holdMode ? (e) => e.preventDefault() : undefined}
+      {...handlers}
       disabled={isToggling}
       aria-label={
         done

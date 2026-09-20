@@ -443,6 +443,12 @@
     },
     "todaysCompletion": "Fait aujourd'hui",
     "rewardBalances": "Tickets restants",
+    "holdToUncheckHint": "Appuie longuement pour décocher",
+    "overspent": {
+      "one": "{name} a déjà dépensé ces tickets, le solde est donc de {balance}. Encore 1 ticket à gagner.",
+      "other": "{name} a déjà dépensé ces tickets, le solde est donc de {balance}. Encore {count} tickets à gagner."
+    },
+    "overspentSomeone": "Quelqu'un",
     "ticketsCount": {
       "one": "{count} ticket",
       "other": "{count} tickets"
@@ -607,6 +613,7 @@
         "addPersonOrGroupToSchedule": "Ajoute au moins une personne ou un groupe au planning",
         "selectAtLeastOnePerson": "Sélectionne au moins une personne",
         "selectAtLeastOnePersonOrGroup": "Sélectionne au moins une personne ou un groupe",
+        "selectAtLeastOneDay": "Sélectionne au moins un jour",
         "familyNotReady": "Ta famille est encore en cours de chargement. Réessaie dans un instant."
       }
     },

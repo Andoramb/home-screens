@@ -4,11 +4,15 @@ import type { TranslateFn } from '@/i18n';
 import {
   buildChoreAssigneeLine,
   buildChoreSummaryLine,
+  defaultChoreDays,
   finalizeChoreAssignment,
   getChoreRotationSummaryKey,
   getChoreValidationHintKind,
   scheduleDaysCovered,
 } from '../chore-form-presentation';
+
+/** Sunday-first weekday names, the shape `getLocalizedDayNames(locale, 'short')` returns. */
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // Translate stub that echoes the key plus any vars in a predictable shape so
 // assertions can verify both the chosen key and the param plumbing without
@@ -39,6 +43,7 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ frequency: 'daily', points: 2 }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toBe(
       '[chore-chart.choreSummary.daily] · [chore-chart.timeOfDay.morning] · [chore-chart.choreSummary.ticketCountPlural count=2]',
@@ -49,6 +54,7 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ frequency: 'weekly', points: 3, timeOfDay: 'afternoon' }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toContain('[chore-chart.choreSummary.weekly]');
     expect(out).toContain('[chore-chart.timeOfDay.afternoon]');
@@ -58,6 +64,7 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ frequency: 'biweekly', points: 4 }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toContain('[chore-chart.choreSummary.biweekly]');
   });
@@ -66,6 +73,7 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ frequency: 'once', specificDate: '2026-06-01', points: 1 }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toBe(
       '[chore-chart.choreSummary.once date=2026-06-01] · [chore-chart.timeOfDay.morning] · [chore-chart.choreSummary.ticketCountSingular count=1]',
@@ -76,6 +84,7 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ frequency: 'once', specificDate: undefined, points: 5 }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toContain('[chore-chart.choreSummary.onceNoDate]');
   });
@@ -84,6 +93,7 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ points: 1 }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toContain('[chore-chart.choreSummary.ticketCountSingular count=1]');
   });
@@ -92,8 +102,85 @@ describe('buildChoreSummaryLine', () => {
     const out = buildChoreSummaryLine({
       chore: makeChore({ points: 7 }),
       t: fakeT,
+      dayNames: DAY_NAMES,
     });
     expect(out).toContain('[chore-chart.choreSummary.ticketCountPlural count=7]');
+  });
+});
+
+describe('the days a chore starts with', () => {
+  it('fills in every day for a daily chore', () => {
+    expect(defaultChoreDays('daily')).toEqual([0, 1, 2, 3, 4, 5, 6]);
+  });
+
+  it('starts weekly and every-other-week empty, so a tap turns a day on instead of off', () => {
+    expect(defaultChoreDays('weekly')).toEqual([]);
+    expect(defaultChoreDays('biweekly')).toEqual([]);
+  });
+
+  it('starts a one-time chore empty, since it carries a date instead of days', () => {
+    expect(defaultChoreDays('once')).toEqual([]);
+  });
+});
+
+describe('buildChoreSummaryLine, the days', () => {
+  it('names the days a weekly chore runs on', () => {
+    const out = buildChoreSummaryLine({
+      chore: makeChore({ frequency: 'weekly', daysOfWeek: [2, 5] }),
+      t: fakeT,
+      dayNames: DAY_NAMES,
+    });
+    expect(out).toBe(
+      '[chore-chart.choreSummary.weekly] · Tue, Fri · [chore-chart.timeOfDay.morning] · [chore-chart.choreSummary.ticketCountPlural count=2]',
+    );
+  });
+
+  it('takes the weekday names from the locale rather than spelling them out', () => {
+    const out = buildChoreSummaryLine({
+      chore: makeChore({ frequency: 'weekly', daysOfWeek: [1] }),
+      t: fakeT,
+      dayNames: ['Son', 'Mon', 'Die', 'Mit', 'Don', 'Fre', 'Sam'],
+    });
+    expect(out).toContain('Mon');
+    expect(out).not.toContain('Tue');
+  });
+
+  it('puts the days in week order however they were tapped', () => {
+    const out = buildChoreSummaryLine({
+      chore: makeChore({ frequency: 'weekly', daysOfWeek: [5, 0, 2] }),
+      t: fakeT,
+      dayNames: DAY_NAMES,
+    });
+    expect(out).toContain('Sun, Tue, Fri');
+  });
+
+  it('leaves the days out of a chore that runs every day', () => {
+    const out = buildChoreSummaryLine({
+      chore: makeChore({ frequency: 'daily', daysOfWeek: [0, 1, 2, 3, 4, 5, 6] }),
+      t: fakeT,
+      dayNames: DAY_NAMES,
+    });
+    expect(out).toBe(
+      '[chore-chart.choreSummary.daily] · [chore-chart.timeOfDay.morning] · [chore-chart.choreSummary.ticketCountPlural count=2]',
+    );
+  });
+
+  it('names the days of a daily chore that does not run every day', () => {
+    const out = buildChoreSummaryLine({
+      chore: makeChore({ frequency: 'daily', daysOfWeek: [1, 2, 3, 4, 5] }),
+      t: fakeT,
+      dayNames: DAY_NAMES,
+    });
+    expect(out).toContain('Mon, Tue, Wed, Thu, Fri');
+  });
+
+  it('leaves the days out of a one-time chore, which shows its date', () => {
+    const out = buildChoreSummaryLine({
+      chore: makeChore({ frequency: 'once', specificDate: '2026-06-01', daysOfWeek: [2] }),
+      t: fakeT,
+      dayNames: DAY_NAMES,
+    });
+    expect(out).not.toContain('Tue');
   });
 });
 
@@ -107,7 +194,9 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 1,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBe('enterName');
   });
@@ -121,7 +210,9 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 2,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBe('enterName');
   });
@@ -135,7 +226,9 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 0,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBe('addPersonToSchedule');
   });
@@ -149,7 +242,9 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 3,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBe('addPersonToSchedule');
   });
@@ -163,7 +258,9 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 0,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBe('selectAtLeastOnePerson');
   });
@@ -177,7 +274,9 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 1,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBeNull();
   });
@@ -191,9 +290,45 @@ describe('getChoreValidationHintKind', () => {
         assigneeIdsLength: 0,
         assigneeGroupIdsLength: 0,
         hasGroups: false,
-      familyReady: true,
+        familyReady: true,
+        frequency: 'daily',
+        daysOfWeekLength: 7,
       }),
     ).toBeNull();
+  });
+});
+
+describe('getChoreValidationHintKind, the days row', () => {
+  const base = {
+    name: 'Sweep',
+    rotation: 'fixed' as const,
+    scheduleHasAssignment: true,
+    assigneeIdsLength: 1,
+    assigneeGroupIdsLength: 0,
+    hasGroups: false,
+    familyReady: true,
+  };
+
+  it('asks for a day when a recurring chore has none, so it cannot be saved with an empty days row', () => {
+    expect(getChoreValidationHintKind({ ...base, frequency: 'weekly', daysOfWeekLength: 0 })).toBe('selectAtLeastOneDay');
+    expect(getChoreValidationHintKind({ ...base, frequency: 'biweekly', daysOfWeekLength: 0 })).toBe('selectAtLeastOneDay');
+    expect(getChoreValidationHintKind({ ...base, frequency: 'daily', daysOfWeekLength: 0 })).toBe('selectAtLeastOneDay');
+  });
+
+  it('is happy once one day is on', () => {
+    expect(getChoreValidationHintKind({ ...base, frequency: 'weekly', daysOfWeekLength: 1 })).toBeNull();
+  });
+
+  it('never asks a one-time chore for days, since it carries a date', () => {
+    expect(getChoreValidationHintKind({ ...base, frequency: 'once', daysOfWeekLength: 0 })).toBeNull();
+  });
+
+  it('leaves the day question to the grid when the chore is on a schedule', () => {
+    expect(getChoreValidationHintKind({ ...base, rotation: 'schedule', frequency: 'weekly', daysOfWeekLength: 0 })).toBeNull();
+  });
+
+  it('asks who does the chore before it asks which days', () => {
+    expect(getChoreValidationHintKind({ ...base, assigneeIdsLength: 0, frequency: 'weekly', daysOfWeekLength: 0 })).toBe('selectAtLeastOnePerson');
   });
 });
 
@@ -205,7 +340,7 @@ describe('chores handed to a group', () => {
   const base = { rotation: 'rotate-weekly' as const, schedule: {}, groupSchedule: {}, assigneeIds: [], assigneeGroupIds: ['kids'], groups: [kids, solo] };
 
   it('accepts a group with no people picked, and asks for a person or group when there is neither', () => {
-    const args = { name: 'Dishes', rotation: 'fixed' as const, scheduleHasAssignment: true, assigneeIdsLength: 0, familyReady: true };
+    const args = { name: 'Dishes', rotation: 'fixed' as const, scheduleHasAssignment: true, assigneeIdsLength: 0, familyReady: true, frequency: 'daily' as const, daysOfWeekLength: 7 };
     expect(getChoreValidationHintKind({ ...args, assigneeIdsLength: 1, assigneeGroupIdsLength: 0, hasGroups: false, familyReady: false })).toBe('familyNotReady');
     expect(getChoreValidationHintKind({ ...args, assigneeGroupIdsLength: 1, hasGroups: true })).toBeNull();
     expect(getChoreValidationHintKind({ ...args, assigneeGroupIdsLength: 0, hasGroups: true })).toBe('selectAtLeastOnePersonOrGroup');
@@ -242,7 +377,7 @@ describe('chores handed to a group', () => {
   });
 
   it('asks for a person or group on an empty schedule only when the household has groups', () => {
-    const args = { name: 'Dishes', rotation: 'schedule' as const, scheduleHasAssignment: false, assigneeIdsLength: 0, assigneeGroupIdsLength: 0, familyReady: true };
+    const args = { name: 'Dishes', rotation: 'schedule' as const, scheduleHasAssignment: false, assigneeIdsLength: 0, assigneeGroupIdsLength: 0, familyReady: true, frequency: 'daily' as const, daysOfWeekLength: 7 };
     expect(getChoreValidationHintKind({ ...args, hasGroups: true })).toBe('addPersonOrGroupToSchedule');
     expect(getChoreValidationHintKind({ ...args, hasGroups: false })).toBe('addPersonToSchedule');
   });

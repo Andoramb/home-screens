@@ -278,10 +278,6 @@ export default function IpAllowlistPanel({ initial }: IpAllowlistPanelProps) {
             {t('settings.securityPage.ipAllowlist.trustedNetworksWarning.strong')}
           </strong>
           {t('settings.securityPage.ipAllowlist.trustedNetworksWarning.part1')}
-          <code className="text-hs-text-faint">
-            {t('settings.securityPage.ipAllowlist.trustedNetworksWarning.header')}
-          </code>
-          {t('settings.securityPage.ipAllowlist.trustedNetworksWarning.part2')}
         </p>
       </div>
     </div>

@@ -9,8 +9,10 @@ import Button from '@/components/ui/Button';
 import {
   declaredCanvasDimensions,
   isMainDisplay,
+  isSupportedDisplayDimension,
   isValidDisplayId,
   MAX_DISPLAY_DIMENSION,
+  MIN_DISPLAY_DIMENSION,
   orientDimensions,
   RESERVED_DISPLAY_IDS,
 } from '@/lib/display-filter';
@@ -95,6 +97,79 @@ export function collapseReports(reports: ViewportReport[]): CollapsedReport[] {
   return [...grouped.values()].sort((a, b) => b.lastSeen - a.lastSeen);
 }
 
+/** One piece of a translated sentence: literal text, or a slot to render into. */
+export type SentencePart = { text: string } | { name: string };
+
+/**
+ * Split a translated sentence on its named `{slots}` so the caller can render
+ * something other than text in them (a code sample, a styled label) without
+ * chopping the sentence into several keys. Splicing keys around the styled
+ * piece is what produced "appear below as an display waiting to be added
+ * waiting to be added", and it cannot survive a translation that puts the
+ * pieces in a different order. Braces that are not named slots stay as text.
+ */
+export function splitPlaceholders(template: string, names: string[]): SentencePart[] {
+  const pattern = new RegExp(`\\{(${names.join('|')})\\}`, 'g');
+  const parts: SentencePart[] = [];
+  let cursor = 0;
+  for (const match of template.matchAll(pattern)) {
+    if (match.index > cursor) parts.push({ text: template.slice(cursor, match.index) });
+    parts.push({ name: match[1] });
+    cursor = match.index + match[0].length;
+  }
+  if (cursor < template.length) parts.push({ text: template.slice(cursor) });
+  return parts;
+}
+
+/** Which field an add/edit form complaint belongs to, so it can be pointed at. */
+export type DisplayFormField = 'name' | 'id' | 'width' | 'height';
+
+export interface DisplayFormProblem {
+  field: DisplayFormField;
+  messageKey: string;
+  params?: Record<string, string | number>;
+}
+
+/**
+ * The first thing wrong with what is typed into the add/edit display form, or
+ * null when it can be saved. Pure, and the only place the form's rules live:
+ * a resolution that slips through here reaches the canvas, and a canvas built
+ * from a resolution with a digit missing is too small to lay anything out on.
+ */
+export function displayFormProblem(input: {
+  name: string;
+  id: string;
+  width: number;
+  height: number;
+  /** An existing display keeps its own id, so it is not a conflict with itself. */
+  isEdit: boolean;
+  takenIds: Set<string>;
+}): DisplayFormProblem | null {
+  if (!input.name.trim()) {
+    return { field: 'name', messageKey: 'settings.displaysIndex.formErrorName' };
+  }
+  // Checked ahead of isValidDisplayId, which folds the reserved set into its
+  // boolean: without this, a reserved id gets the format message even though
+  // its format is fine.
+  if (RESERVED_DISPLAY_IDS.has(input.id)) {
+    return { field: 'id', messageKey: 'settings.displaysIndex.formErrorIdReserved', params: { id: input.id } };
+  }
+  if (!isValidDisplayId(input.id)) {
+    return { field: 'id', messageKey: 'settings.displaysIndex.formErrorId' };
+  }
+  if (!input.isEdit && input.takenIds.has(input.id)) {
+    return { field: 'id', messageKey: 'settings.displaysIndex.formErrorIdTaken', params: { id: input.id } };
+  }
+  const bounds = { min: MIN_DISPLAY_DIMENSION, max: MAX_DISPLAY_DIMENSION };
+  if (!isSupportedDisplayDimension(input.width)) {
+    return { field: 'width', messageKey: 'settings.displaysIndex.formErrorWidth', params: bounds };
+  }
+  if (!isSupportedDisplayDimension(input.height)) {
+    return { field: 'height', messageKey: 'settings.displaysIndex.formErrorHeight', params: bounds };
+  }
+  return null;
+}
+
 function slugify(input: string): string {
   return input
     .toLowerCase()
@@ -156,7 +231,11 @@ function DisplayForm({ initial, prefilledId, prefilledViewport, onCancel, onSubm
   const [height, setHeight] = useState<number>(initialOriented.height);
   const [transform, setTransform] = useState<'normal' | '90' | '180' | '270'>(initialTransform);
 
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ field: DisplayFormField; message: string } | null>(null);
+
+  /** Outline the field the message is about, so a four-digit typo is findable. */
+  const fieldBorder = (field: DisplayFormField) =>
+    (error?.field === field ? 'border-hs-danger' : 'border-hs-border-strong');
 
   /**
    * Change the rotation and auto-swap the dimensions if the new orientation
@@ -180,31 +259,9 @@ function DisplayForm({ initial, prefilledId, prefilledViewport, onCancel, onSubm
   const handleSubmit = () => {
     setError(null);
     const trimmedName = name.trim();
-    if (!trimmedName) {
-      setError(t('settings.displaysIndex.formErrorName'));
-      return;
-    }
-    // Checked ahead of isValidDisplayId, which folds the reserved set into its
-    // boolean: without this, a reserved id gets the format message even though
-    // its format is fine.
-    if (RESERVED_DISPLAY_IDS.has(id)) {
-      setError(t('settings.displaysIndex.formErrorIdReserved', { id }));
-      return;
-    }
-    if (!isValidDisplayId(id)) {
-      setError(t('settings.displaysIndex.formErrorId'));
-      return;
-    }
-    if (!initial && takenIds.has(id)) {
-      setError(t('settings.displaysIndex.formErrorIdTaken', { id }));
-      return;
-    }
-    if (!Number.isInteger(width) || width <= 0 || width > MAX_DISPLAY_DIMENSION) {
-      setError(t('settings.displaysIndex.formErrorWidth', { max: MAX_DISPLAY_DIMENSION }));
-      return;
-    }
-    if (!Number.isInteger(height) || height <= 0 || height > MAX_DISPLAY_DIMENSION) {
-      setError(t('settings.displaysIndex.formErrorHeight', { max: MAX_DISPLAY_DIMENSION }));
+    const problem = displayFormProblem({ name, id, width, height, isEdit: !!initial, takenIds });
+    if (problem) {
+      setError({ field: problem.field, message: t(problem.messageKey, problem.params) });
       return;
     }
 
@@ -251,7 +308,7 @@ function DisplayForm({ initial, prefilledId, prefilledViewport, onCancel, onSubm
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder={t('settings.displaysIndex.formNamePlaceholder')}
-          className="mt-1 block w-full rounded-md bg-hs-panel border border-hs-border-strong text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent"
+          className={`mt-1 block w-full rounded-md bg-hs-panel border ${fieldBorder('name')} text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent`}
         />
       </label>
 
@@ -271,7 +328,7 @@ function DisplayForm({ initial, prefilledId, prefilledViewport, onCancel, onSubm
             setIdTouched(true);
           }}
           placeholder={t('settings.displaysIndex.formIdPlaceholder')}
-          className="mt-1 block w-full rounded-md bg-hs-panel border border-hs-border-strong text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent font-mono disabled:opacity-50"
+          className={`mt-1 block w-full rounded-md bg-hs-panel border ${fieldBorder('id')} text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent font-mono disabled:opacity-50`}
         />
         {prefilledId && !initial && (
           <p className="text-[11px] text-hs-text-faint mt-1">
@@ -295,22 +352,22 @@ function DisplayForm({ initial, prefilledId, prefilledViewport, onCancel, onSubm
             <span className="text-[11px] text-hs-text-faint">{t('settings.displaysIndex.formWidth')}</span>
             <input
               type="number"
-              min={1}
+              min={MIN_DISPLAY_DIMENSION}
               max={MAX_DISPLAY_DIMENSION}
               value={width}
               onChange={(e) => setWidth(Number(e.target.value) || 0)}
-              className="mt-1 block w-full rounded-md bg-hs-panel border border-hs-border-strong text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent tabular-nums"
+              className={`mt-1 block w-full rounded-md bg-hs-panel border ${fieldBorder('width')} text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent tabular-nums`}
             />
           </label>
           <label className="block">
             <span className="text-[11px] text-hs-text-faint">{t('settings.displaysIndex.formHeight')}</span>
             <input
               type="number"
-              min={1}
+              min={MIN_DISPLAY_DIMENSION}
               max={MAX_DISPLAY_DIMENSION}
               value={height}
               onChange={(e) => setHeight(Number(e.target.value) || 0)}
-              className="mt-1 block w-full rounded-md bg-hs-panel border border-hs-border-strong text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent tabular-nums"
+              className={`mt-1 block w-full rounded-md bg-hs-panel border ${fieldBorder('height')} text-sm text-hs-text-body px-3 py-2 focus:outline-none focus:border-hs-accent tabular-nums`}
             />
           </label>
         </div>
@@ -339,8 +396,8 @@ function DisplayForm({ initial, prefilledId, prefilledViewport, onCancel, onSubm
       </label>
 
       {error && (
-        <div className="rounded-md bg-hs-danger/10 border border-hs-danger/30 px-3 py-2 text-xs text-hs-danger">
-          {error}
+        <div className="rounded-md bg-hs-danger/10 border border-hs-danger/30 px-3 py-2 text-xs text-hs-danger" role="alert">
+          {error.message}
         </div>
       )}
 
@@ -541,13 +598,21 @@ export default function DisplaysIndexPage() {
               <li className="flex gap-2">
                 <span className="text-hs-text-faint shrink-0">→</span>
                 <span>
-                  {t('settings.displaysIndex.emptyBullet2Prefix')}
-                  <code className="text-[12px] px-1 py-0.5 rounded bg-hs-card text-hs-text-secondary">
-                    install.sh --display-only --backend http://&lt;this-pi&gt;:3000
-                  </code>
-                  {t('settings.displaysIndex.emptyBullet2Middle')}
-                  <span className="text-hs-warning">{t('settings.displaysIndex.unadoptedLabel')}</span>
-                  {t('settings.displaysIndex.emptyBullet2Suffix')}
+                  {splitPlaceholders(t('settings.displaysIndex.emptyBullet2'), ['command', 'label']).map((part, i) => {
+                    if ('text' in part) return <span key={i}>{part.text}</span>;
+                    if (part.name === 'command') {
+                      return (
+                        <code key={i} className="text-[12px] px-1 py-0.5 rounded bg-hs-card text-hs-text-secondary">
+                          install.sh --display-only --backend http://&lt;this-pi&gt;:3000
+                        </code>
+                      );
+                    }
+                    return (
+                      <span key={i} className="text-hs-warning">
+                        {t('settings.displaysIndex.unadoptedLabel')}
+                      </span>
+                    );
+                  })}
                 </span>
               </li>
             </ul>

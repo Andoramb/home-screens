@@ -443,6 +443,12 @@
     },
     "todaysCompletion": "Vandaag gedaan",
     "rewardBalances": "Tickets over",
+    "holdToUncheckHint": "Houd ingedrukt om het vinkje weg te halen",
+    "overspent": {
+      "one": "{name} heeft die tickets al gebruikt, dus het saldo is nu {balance}. Nog 1 ticket verdienen.",
+      "other": "{name} heeft die tickets al gebruikt, dus het saldo is nu {balance}. Nog {count} tickets verdienen."
+    },
+    "overspentSomeone": "Iemand",
     "ticketsCount": {
       "one": "{count} ticket",
       "other": "{count} tickets"
@@ -607,6 +613,7 @@
         "addPersonOrGroupToSchedule": "Voeg minstens één persoon of groep toe aan het schema",
         "selectAtLeastOnePerson": "Kies minstens één persoon",
         "selectAtLeastOnePersonOrGroup": "Kies minstens één persoon of groep",
+        "selectAtLeastOneDay": "Kies minstens één dag",
         "familyNotReady": "Je gezin wordt nog geladen. Probeer het zo nog eens."
       }
     },

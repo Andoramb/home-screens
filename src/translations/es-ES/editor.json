@@ -155,7 +155,12 @@
     "screenOptionsTitle": "Opciones de la pantalla",
     "screenOptionsAriaLabel": "Opciones de {name}",
     "deleteTabAriaLabel": "Eliminar {name}",
-    "removeConfirmMessage": "¿Quitar «{name}»?",
+    "deleteConfirmTitle": "¿Eliminar «{name}»?",
+    "deleteConfirmDetail": {
+      "zero": "Esta pantalla está vacía. Puedes deshacerlo.",
+      "one": "Su {count} módulo y sus ajustes se van con ella. Puedes deshacerlo.",
+      "other": "Sus {count} módulos y sus ajustes se van con ella. Puedes deshacerlo."
+    },
     "scrollLeftAriaLabel": "Desplazar pestañas a la izquierda",
     "scrollLeftTitle": "Desplazar pestañas a la izquierda",
     "scrollRightAriaLabel": "Desplazar pestañas a la derecha",
@@ -233,6 +238,8 @@
       "weekdays": "de lunes a viernes",
       "weekends": "sábados y domingos",
       "allDay": "todo el día",
+      "fromOnly": "a partir de {start}",
+      "untilOnly": "hasta {end}",
       "window": "de {start} a {end}",
       "windowSpanned": "{start} hasta {end} {span}"
     },
@@ -695,7 +702,7 @@
       "description": "Guarda una copia de todo, restáurala o empieza desde una plantilla.",
       "restoreConfirm": {
         "title": "¿Restaurar desde un archivo?",
-        "message": "Esto sustituye todos tus ajustes, pantallas, tareas y menús por lo que haya en el archivo. Todo lo que hayas cambiado desde que se creó ese archivo se perderá. Antes se guarda una instantánea de tu configuración actual, así que se puede deshacer.",
+        "message": "Esto sustituye todos tus ajustes, pantallas, tareas y menús por lo que haya en el archivo. Todo lo que hayas cambiado desde que se creó ese archivo se perderá. Esto no se puede deshacer, así que guarda antes una copia de seguridad si quieres poder recuperar la configuración de hoy.",
         "confirm": "Elegir un archivo…"
       }
     },
@@ -1793,15 +1800,15 @@
         "regenerateWarning": "Cada pantalla se recarga una vez para tomar la clave nueva.",
         "errorRegenerate": "No se pudo crear una clave nueva",
         "errorCopy": "No se pudo copiar; selecciona y copia manualmente",
-        "phoneHintPart1": "Para marcadores en el teléfono, añade ",
-        "phoneHintCode": "?token=TOKEN",
-        "phoneHintPart2": " a las URLs de comando."
+        "phoneHintIntro": "Para controlar un display desde el teléfono, guarda un marcador con un enlace como este:",
+        "phoneHintOutro": "Muestra antes la clave de arriba para que el enlace la lleve. Cambia sleep por wake, reload, next-screen o prev-screen para las demás órdenes.",
+        "phoneHintDisplayNote": "Este apunta a {name}. Cambia {display} por el id de otro display para apuntar a ese."
       },
       "ipAllowlist": {
         "heading": "Redes permitidas",
         "bypassAuth": {
-          "label": "Dejar entrar a estas redes sin contraseña",
-          "help": "Los displays en estas redes entran sin la clave"
+          "label": "Dejar entrar a los displays de estas redes sin la clave",
+          "help": "El editor y el mando familiar siguen pidiendo la contraseña."
         },
         "restrictAccess": {
           "label": "Permitir solo estas redes",
@@ -1838,10 +1845,8 @@
           "part2": " no coincidirá con nada de aquí y será bloqueado. Comprueba «Tu IP» arriba: si lleva dos puntos, activar esto te dejará fuera."
         },
         "trustedNetworksWarning": {
-          "strong": "Solo redes de confianza.",
-          "part1": " Esta comprobación lee la cabecera ",
-          "header": "X-Forwarded-For",
-          "part2": ". Si se puede llegar a Home Screens desde internet sin un proxy de confianza delante, alguien puede falsificar esa cabecera y saltarse esto."
+          "strong": "Comprueba «Tu IP» arriba.",
+          "part1": " Home Screens averigua de dónde viene una petición por la propia conexión de red, no por lo que envíe quien llama, así que un teléfono no puede colarse en esta lista. Lo que sí tapa el aparato real es algo que retransmita el tráfico por el camino, como un router que redirige un puerto o un proxy: entonces todas las peticiones llegan con esa única dirección y esta lista vale para todos o para nadie. Si «Tu IP» es la misma en tu teléfono que aquí, eso es lo que está pasando."
         }
       },
       "modal": {
@@ -2174,9 +2179,7 @@
       "mainLabel": "Main",
       "emptyBullet1Prefix": "Haz clic en ",
       "emptyBullet1Suffix": " arriba para añadir una nueva pantalla. Dale nombre, resolución y rotación, y luego diseña su disposición en el editor.",
-      "emptyBullet2Prefix": "O graba otra Pi con ",
-      "emptyBullet2Middle": ". Cuando arranque, aparecerá abajo como una ",
-      "emptyBullet2Suffix": " esperando a ser añadida con un clic.",
+      "emptyBullet2": "O graba otra Pi con {command}. Cuando arranque, aparecerá abajo como una {label}, y se añade con un clic.",
       "unadoptedLabel": "pantalla esperando a ser añadida",
       "unadoptedWaiting": {
         "one": "{count} pantalla esperando a ser añadida",
@@ -2229,8 +2232,8 @@
       "formErrorId": "El ID solo puede contener letras minúsculas, dígitos y guiones (p. ej. «kitchen»)",
       "formErrorIdReserved": "«{id}» ya tiene un significado especial al enviar comandos a las pantallas. Elige otro ID, p. ej. «kitchen» o «bedroom-tv»",
       "formErrorIdTaken": "Ya existe una pantalla con el ID «{id}»",
-      "formErrorWidth": "El ancho debe ser un entero positivo ≤ {max}",
-      "formErrorHeight": "El alto debe ser un entero positivo ≤ {max}",
+      "formErrorWidth": "El ancho tiene que estar entre {min} y {max}. Mira si falta un dígito: la mayoría de las pantallas miden 1080 o 1920 de ancho.",
+      "formErrorHeight": "El alto tiene que estar entre {min} y {max}. Mira si falta un dígito: la mayoría de las pantallas miden 1080 o 1920 de alto.",
       "softwareUpdateWaiting": "Actualización pendiente",
       "softwareNeedsSetup": "Requiere configuración"
     },
@@ -2965,7 +2968,8 @@
       "sendToBack": "Al fondo",
       "duplicate": "Duplicar",
       "delete": "Eliminar módulo",
-      "confirmDelete": "¿Eliminar este módulo?"
+      "confirmDeleteTitle": "¿Eliminar «{name}»?",
+      "confirmDeleteDetail": "Puedes deshacerlo."
     },
     "visibility": {
       "enabledLabel": "Mostrar en pantalla",

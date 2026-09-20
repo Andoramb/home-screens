@@ -89,7 +89,7 @@ test.describe('palette drag-to-add', () => {
 });
 
 test.describe('first-run checklist', () => {
-  test('shows while every screen is empty, reflects what is configured, and stays hidden once dismissed', async ({ page, request }) => {
+  test('shows while a step is outstanding, reflects what is configured, and stays hidden once dismissed', async ({ page, request }) => {
     await putConfig(request, EMPTY_INSTALL());
     await openEditor(page);
     const checklist = page.getByTestId('first-run-checklist');
@@ -115,10 +115,34 @@ test.describe('first-run checklist', () => {
     await expect(page.getByTestId('first-run-checklist')).toBeHidden();
   });
 
-  test('is not shown once a screen has content', async ({ page, request }) => {
+  test('survives placing modules, so the later steps stay reachable', async ({ page, request }) => {
+    // Step one's own button places modules. That used to unmount the whole
+    // card, taking the location and password nudges with it before either
+    // could be read.
+    await putConfig(request, EMPTY_INSTALL());
+    await openEditor(page);
+    const checklist = page.getByTestId('first-run-checklist');
+    await expect(checklist).toBeVisible();
+
+    await dragPaletteToCanvas(page, 'clock');
+    await expect(page.locator('[data-module-id]')).toHaveCount(1);
+    // Dropping a module selects it, and the panel then belongs to that module.
+    // The checklist lives in the no-selection panel, so deselect the way a
+    // person does before asking whether the card survived the placement.
+    await page.keyboard.press('Escape');
+    await expect(checklist).toBeVisible();
+    // The template step is ticked off the module that now exists, and the
+    // remaining nudges are still there to act on.
+    await expect(checklist.getByRole('button', { name: 'Choose a template' })).toHaveCount(0);
+    await expect(checklist.getByRole('link', { name: 'Open Location & language' })).toBeVisible();
+    await expect(checklist.getByRole('link', { name: 'Open Security' })).toBeVisible();
+  });
+
+  test('a screen with content is not on its own a finished set-up', async ({ page, request }) => {
+    // baseConfig has modules but no location and no password.
     await putConfig(request, baseConfig());
     await openEditor(page);
-    await expect(page.getByTestId('first-run-checklist')).toHaveCount(0);
+    await expect(page.getByTestId('first-run-checklist')).toBeVisible();
   });
 });
 

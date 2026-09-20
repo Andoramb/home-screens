@@ -1,6 +1,6 @@
 'use client';
 
-import { MAX_DISPLAY_DIMENSION } from '@/lib/display-filter';
+import { MAX_DISPLAY_DIMENSION, MIN_DISPLAY_DIMENSION } from '@/lib/display-filter';
 import { useTranslate } from '@/i18n';
 import { useCanvasDimensionDrafts } from './useCanvasDimensionDrafts';
 import type { DisplayNode, ScreenConfiguration } from '@/types/config';
@@ -48,7 +48,7 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
             <input
               type="number"
               value={widthDraft}
-              min={1}
+              min={MIN_DISPLAY_DIMENSION}
               max={MAX_DISPLAY_DIMENSION}
               onChange={(e) => setWidthDraft(e.target.value)}
               onBlur={commitWidth}
@@ -57,7 +57,7 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
             <input
               type="number"
               value={heightDraft}
-              min={1}
+              min={MIN_DISPLAY_DIMENSION}
               max={MAX_DISPLAY_DIMENSION}
               onChange={(e) => setHeightDraft(e.target.value)}
               onBlur={commitHeight}

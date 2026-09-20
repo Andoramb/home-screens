@@ -24,6 +24,7 @@ import {
   getTimeOfDayLabelKey,
   getCurrentTimeOfDay,
 } from '@/components/modules/chore-chart/types';
+import { planChoreToggle } from '@/components/modules/chore-chart/chore-toggle';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { editorFetch, isSessionExpired, throwIfNotOk } from '@/lib/editor-fetch';
 import { useTranslate, useFormattingLocale } from '@/i18n';
@@ -375,22 +376,23 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       celebrationTimer.current = setTimeout(() => setCelebration(null), CELEBRATION_MS);
     }
 
+    // One plan drives both the optimistic update and the direction the server
+    // is told. Sending the direction makes the write idempotent, so two people
+    // reaching for one chore at the same moment no longer flip it twice and
+    // leave it undone. Worked out here rather than inside a state updater:
+    // React may run an updater during the next render instead of at the call,
+    // and the direction has to be known now, for the request below.
+    const plan = planChoreToggle(completions, choreId, selectedMemberId, day);
+
     // Optimistic update
-    setCompletions((prev) => {
-      const idx = prev.findIndex(
-        (c) => c.choreId === choreId && c.memberId === selectedMemberId && c.date === day,
-      );
-      if (idx >= 0) {
-        return prev.filter((_, i) => i !== idx);
-      }
-      return [...prev, { choreId, memberId: selectedMemberId, date: day }];
-    });
+    setCompletions(plan.completions);
 
     try {
       const reqBody: ChoreToggleRequest = {
         choreId,
         memberId: selectedMemberId,
         date: day,
+        direction: plan.direction,
       };
       const res = await editorFetch('/api/chores', {
         method: 'POST',
