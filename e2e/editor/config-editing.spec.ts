@@ -915,6 +915,16 @@ test('chore-chart: moving History Limit persists', async ({ page, request }) => 
   expect((await moduleConfig(request, 'chore-chart')).historyLimit).toBe(12);
 });
 
+test('chore-chart: switching Store Layout persists', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('chore-chart', { view: 'rewards-store' }));
+
+  await autosaved(page, async () => {
+    await page.getByLabel('Store Layout').selectOption('price-list');
+  });
+
+  expect((await moduleConfig(request, 'chore-chart')).storeLayout).toBe('price-list');
+});
+
 test('timetable: switching Layout to Stacked persists', async ({ page, request, sandboxDir }) => {
   // The panel is built around the family roster: with nobody in it every
   // control below the picker is disabled, so the people come first. The

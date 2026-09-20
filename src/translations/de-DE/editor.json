@@ -3253,7 +3253,13 @@
       "accentColor": "Akzentfarbe",
       "membersCount": "{count} Personen",
       "choresCount": "{count} Aufgaben",
-      "editChoreChart": "Aufgabenplan bearbeiten"
+      "editChoreChart": "Aufgabenplan bearbeiten",
+      "viewRewardsStore": "Belohnungs-Shop",
+      "storeLayout": "Shop-Layout",
+      "storeLayoutList": "Liste",
+      "storeLayoutTiles": "Kacheln",
+      "storeLayoutPriceList": "Preisliste",
+      "tapToRedeem": "Zum Einlösen tippen"
     },
     "timezoneUseDisplay": "Display-Einstellung verwenden ({timezone})",
     "timezoneUseDisplayNoZone": "Display-Einstellung verwenden",

@@ -617,7 +617,21 @@
         "familyNotReady": "Je gezin wordt nog geladen. Probeer het zo nog eens."
       }
     },
-    "unknownAssignee": "?"
+    "unknownAssignee": "?",
+    "store": {
+      "canGetIt": {
+        "one": "{count} kan het halen",
+        "other": "{count} kunnen het halen"
+      },
+      "nobodyYet": "nog niemand",
+      "whoFor": "Voor wie is {reward}?",
+      "confirmTitle": "{reward} voor {member}?",
+      "confirmBody": {
+        "one": "{count} ticket. {member} houdt er {left} over.",
+        "other": "{count} tickets. {member} houdt er {left} over."
+      },
+      "notNow": "Nu niet"
+    }
   },
   "fullscreen-chore-chart": {
     "rewardsButton": "Beloningen",

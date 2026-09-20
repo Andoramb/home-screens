@@ -1,7 +1,7 @@
 
 import type { FamilyMember } from '@/types/family';
 import { describe, it, expect } from 'vitest';
-import { balanceRows, choreTapSize, fitChoreFontSize, fitPerRow, partitionMembers, resolveHistoryLimit, starIconSize, weekMembers } from '../layout';
+import { balanceRows, choreTapSize, fitChoreFontSize, fitPerRow, fitStoreFontSize, partitionMembers, resolveHistoryLimit, starIconSize, storeRailEm, storeRailShowsBalances, storeTileColumns, storeUsesRail, weekMembers, type StoreFitInput } from '../layout';
 import type { MemberStats } from '../types';
 
 
@@ -214,5 +214,80 @@ describe('resolveHistoryLimit', () => {
     expect(resolveHistoryLimit(5.5)).toBe(5);
     expect(resolveHistoryLimit(0)).toBe(1);
     expect(resolveHistoryLimit(500)).toBe(50);
+  });
+});
+
+describe('fitStoreFontSize', () => {
+  const card: StoreFitInput = { width: 468, height: 618, requested: 24, layout: 'list', count: 8, showTitle: true, showPicker: true, members: 6, showBalance: true, readOnly: false };
+
+  it('shrinks the type until the rewards fit under the picker', () => {
+    const fitted = fitStoreFontSize({ ...card, count: 7 });
+    expect(fitted).toBeLessThan(24);
+    expect(fitted).toBeGreaterThan(18);
+  });
+
+  it('leaves a short list at the size the household asked for', () => {
+    expect(fitStoreFontSize({ ...card, count: 3 })).toBe(24);
+  });
+
+  it('lets a read-only list keep shrinking to show everything, where pills would stop and scroll', () => {
+    const readOnly = fitStoreFontSize({ ...card, count: 12, readOnly: true });
+    expect(readOnly).toBeGreaterThan(11);
+    expect(readOnly).toBeLessThan(18);
+    expect(fitStoreFontSize({ ...card, count: 12 })).toBe(18);
+  });
+
+  it('stops at a floor that still reads beside a 44px pill, and lower when there are no pills', () => {
+    expect(fitStoreFontSize({ ...card, count: 40 })).toBe(18);
+    expect(fitStoreFontSize({ ...card, count: 40, readOnly: true })).toBe(11);
+  });
+
+  it('never lifts the type above what the household asked for', () => {
+    expect(fitStoreFontSize({ ...card, requested: 14, count: 40 })).toBe(14);
+  });
+
+  it('gives the rewards the whole height once the picker moves to the rail', () => {
+    const wide = { ...card, width: 868, height: 328, count: 4 };
+    expect(storeUsesRail(wide.width, wide.height)).toBe(true);
+    expect(fitStoreFontSize(wide)).toBeGreaterThan(20);
+    // The same four rewards under a stacked picker bottom out.
+    expect(fitStoreFontSize({ ...wide, width: 600 })).toBe(18);
+  });
+
+  it('shrinks for the rail too: seven people beside one reward in a very short card', () => {
+    // One reward fits 208px at any size, so the type used to stay at 24px and
+    // the third row of avatars and the balance ran off the bottom of the card.
+    const short = { ...card, width: 868, height: 228, count: 1, members: 7 };
+    const fitted = fitStoreFontSize(short);
+    expect(fitted).toBeLessThan(24);
+    expect(fitted).toBeGreaterThan(18);
+    expect((1.5 + 0.5 + storeRailEm(7, false)) * fitted).toBeLessThanOrEqual(228 + 0.01);
+    // At that size there is no room for a balance under each avatar as well.
+    expect(storeRailShowsBalances(7, 228, fitted, true)).toBe(false);
+    expect(storeRailShowsBalances(3, 328, 20, true)).toBe(true);
+    // Shorter still and it stops at the floor that keeps avatars tappable;
+    // the rail scrolls from there, with the balance at its top.
+    expect(fitStoreFontSize({ ...short, height: 180 })).toBe(18);
+  });
+
+  it('keeps the authored size until the box has been measured', () => {
+    expect(fitStoreFontSize({ ...card, width: 0, height: 0 })).toBe(24);
+  });
+});
+
+describe('storeTileColumns', () => {
+  it('goes three across in the default card and never below two or above four', () => {
+    expect(storeTileColumns(468, 18)).toBe(3);
+    expect(storeTileColumns(200, 24)).toBe(2);
+    expect(storeTileColumns(2000, 12)).toBe(4);
+  });
+});
+
+describe('storeUsesRail', () => {
+  it('is for wide, short cards only', () => {
+    expect(storeUsesRail(468, 618)).toBe(false);
+    expect(storeUsesRail(868, 328)).toBe(true);
+    // Wide in shape but too narrow to give up 13em.
+    expect(storeUsesRail(500, 250)).toBe(false);
   });
 });

@@ -1103,6 +1103,7 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
       accentColor: DEFAULT_ACCENT_COLOR,
       showTitle: true,
       historyLimit: 5,
+      storeLayout: 'list',
     },
     defaultSize: { w: 500, h: 650 },
     defaultStyle: { fontSize: 24 },

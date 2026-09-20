@@ -20,7 +20,7 @@ All three read the same list, so a chore checked off on a phone disappears from 
 
 ## 1. Put a chore chart on a screen
 
-In the editor, drag **Chore Chart** from the **Personal** group onto a screen. Its six views are in the module's settings: a **board** with one column per person, a **star chart** for the week, **today** only, a **progress** view with one bar per person, a **compact** list, and a **reward history** of what has been redeemed lately. The **Full-Screen Chore Chart** fills the whole screen and adds a **rewards store** view where kids browse what their tickets can buy. It also has three **reward history** views that show what the family has redeemed: day by day, as 30-day totals over a list, or with the newest reward in the spotlight. The store has a **History** button that opens the totals.
+In the editor, drag **Chore Chart** from the **Personal** group onto a screen. Its seven views are in the module's settings: a **board** with one column per person, a **star chart** for the week, **today** only, a **progress** view with one bar per person, a **compact** list, a **reward history** of what has been redeemed lately, and a **rewards store** where kids spend their tickets right on the card (as a list, as tiles, or as a price list). The **Full-Screen Chore Chart** fills the whole screen and has a bigger **rewards store** view of its own. It also has three **reward history** views that show what the family has redeemed: day by day, as 30-day totals over a list, or with the newest reward in the spotlight. The store has a **History** button that opens the totals.
 
 {% screenshot name="display-chores" caption="The chore board on the wall, with the week's dinners underneath." /%}
 

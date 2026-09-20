@@ -5026,10 +5026,11 @@
               "today",
               "progress",
               "compact",
-              "reward-history"
+              "reward-history",
+              "rewards-store"
             ]
           },
-          "description": "Display style: `board`, `star-chart`, `today`, `progress`, `compact`, or `reward-history`",
+          "description": "Display style: `board`, `star-chart`, `today`, `progress`, `compact`, `reward-history`, or `rewards-store`",
           "default": "board"
         },
         {
@@ -5115,6 +5116,21 @@
           },
           "description": "Maximum number of redemptions shown in Reward History. Omitted = 5.",
           "default": 5
+        },
+        {
+          "name": "storeLayout",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "ChoreChartStoreLayout",
+            "values": [
+              "list",
+              "tiles",
+              "price-list"
+            ]
+          },
+          "description": "Rewards Store layout: `list`, `tiles`, or `price-list`. Omitted = `list`.",
+          "default": "list"
         }
       ],
       "views": [
@@ -5123,7 +5139,8 @@
         "today",
         "progress",
         "compact",
-        "reward-history"
+        "reward-history",
+        "rewards-store"
       ]
     },
     {

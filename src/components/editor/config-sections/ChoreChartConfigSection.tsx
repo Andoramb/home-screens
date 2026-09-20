@@ -30,6 +30,7 @@ type Config = {
   accentColor?: string;
   showTitle?: boolean;
   historyLimit?: number;
+  storeLayout?: string;
 };
 
 export function ChoreChartConfigSection({ mod, screenId }: { mod: ModuleInstance; screenId: string }) {
@@ -48,7 +49,16 @@ export function ChoreChartConfigSection({ mod, screenId }: { mod: ModuleInstance
     { value: 'progress', label: t('configSections.chore-chart.viewProgress') },
     { value: 'compact', label: t('configSections.chore-chart.viewCompact') },
     { value: 'reward-history', label: t('configSections.chore-chart.viewRewardHistory') },
+    { value: 'rewards-store', label: t('configSections.chore-chart.viewRewardsStore') },
   ];
+
+  const STORE_LAYOUT_OPTIONS = [
+    { value: 'list', label: t('configSections.chore-chart.storeLayoutList') },
+    { value: 'tiles', label: t('configSections.chore-chart.storeLayoutTiles') },
+    { value: 'price-list', label: t('configSections.chore-chart.storeLayoutPriceList') },
+  ];
+  // The two reward views have no chores on them, so the chore settings go.
+  const isChoreView = c.view !== 'reward-history' && c.view !== 'rewards-store';
 
   const WEEK_START_OPTIONS = [
     { value: 'sunday' as const, label: tCore('days.sunday') },
@@ -74,7 +84,7 @@ export function ChoreChartConfigSection({ mod, screenId }: { mod: ModuleInstance
       />
 
       {/* Week Start */}
-      {c.view !== 'reward-history' && (
+      {isChoreView && (
         <LabeledSelect
           label={t('configSections.chore-chart.weekStartsOn')}
           value={c.weekStartDay ?? 'monday'}
@@ -93,13 +103,24 @@ export function ChoreChartConfigSection({ mod, screenId }: { mod: ModuleInstance
         />
       )}
 
+      {c.view === 'rewards-store' && (
+        <LabeledSelect
+          label={t('configSections.chore-chart.storeLayout')}
+          value={c.storeLayout ?? 'list'}
+          onChange={(v) => set({ storeLayout: v })}
+          options={STORE_LAYOUT_OPTIONS}
+        />
+      )}
+
       {/* Display Toggles */}
-      <Toggle
-        label={t('configSections.chore-chart.showTickets')}
-        checked={c.showPoints ?? true}
-        onChange={(v) => set({ showPoints: v })}
-      />
-      {c.view !== 'reward-history' && (
+      {c.view !== 'rewards-store' && (
+        <Toggle
+          label={t('configSections.chore-chart.showTickets')}
+          checked={c.showPoints ?? true}
+          onChange={(v) => set({ showPoints: v })}
+        />
+      )}
+      {isChoreView && (
         <>
           <Toggle
             label={t('configSections.chore-chart.showStreaks')}
@@ -111,12 +132,14 @@ export function ChoreChartConfigSection({ mod, screenId }: { mod: ModuleInstance
             checked={c.showTimeOfDay ?? true}
             onChange={(v) => set({ showTimeOfDay: v })}
           />
-          <Toggle
-            label={t('configSections.chore-chart.tapToComplete')}
-            checked={c.allowDisplayComplete ?? true}
-            onChange={(v) => set({ allowDisplayComplete: v })}
-          />
         </>
+      )}
+      {c.view !== 'reward-history' && (
+        <Toggle
+          label={t(c.view === 'rewards-store' ? 'configSections.chore-chart.tapToRedeem' : 'configSections.chore-chart.tapToComplete')}
+          checked={c.allowDisplayComplete ?? true}
+          onChange={(v) => set({ allowDisplayComplete: v })}
+        />
       )}
 
       {/* Accent Color */}

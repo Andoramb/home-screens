@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { ChoreChartConfig, ModuleStyle } from '@/types/config';
 import { useTranslate } from '@/i18n';
 import { useElementBox } from '@/hooks/useElementBox';
-import { balanceRows, fitChoreFontSize, fitPerRow, resolveHistoryLimit, weekMembers } from './layout';
+import { balanceRows, fitChoreFontSize, fitPerRow, fitStoreFontSize, resolveHistoryLimit, weekMembers } from './layout';
 
 /** Mirrors BoardView's own column sizing, for the height estimate. */
 const BOARD_COLUMN_EM = 6;
@@ -24,6 +24,7 @@ import { TodayView } from './views/TodayView';
 import { ProgressView } from './views/ProgressView';
 import { CompactView } from './views/CompactView';
 import { RewardHistoryView } from './views/RewardHistoryView';
+import { StoreView, resolveStoreLayout } from './views/StoreView';
 
 interface ChoreChartModuleProps {
   config: ChoreChartConfig;
@@ -35,6 +36,7 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
   const view = config.view ?? 'board';
   const data = useChoreData(config);
   const t = useTranslate('modules');
+  const drawsFromRewards = view === 'reward-history' || view === 'rewards-store';
   // The per-member views (board columns, compact checkbox columns, progress
   // rings) lay themselves out from the box width and the module font size:
   // a family of seven in a 500px card needs rows, not seven 70px columns.
@@ -86,16 +88,16 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
   if (data.isLoading || data.error) {
     return <ModuleLoadingState style={style} message={t('chore-chart.loading')} error={data.error} />;
   }
-  // The reward history is drawn from the rewards fetch alone, which the other
-  // views treat as optional. Here "not arrived" must not read as "no rewards
+  // The reward history and the store are drawn from the rewards fetch, which
+  // the other views treat as optional. Here "not arrived" must not read as "no rewards
   // redeemed yet".
-  if (view === 'reward-history' && (data.rewardsLoading || data.rewardsError)) {
+  if (drawsFromRewards && (data.rewardsLoading || data.rewardsError)) {
     return <ModuleLoadingState style={style} message={t('chore-chart.loading')} error={data.rewardsError} />;
   }
 
   // Family data lives on the phone, not in the editor: the empty state sends
   // people to /remote and says which tab.
-  if (data.members.length === 0 || (view !== 'reward-history' && data.chores.length === 0)) {
+  if (data.members.length === 0 || (!drawsFromRewards && data.chores.length === 0)) {
     return (
       <ModuleWrapper style={style}>
         <FamilyEmptyState
@@ -111,9 +113,24 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
   // number for their column maths, so the fitted size has to be set on the
   // frame as well as passed down. The frame fills the wrapper either way, so
   // setting its font size cannot feed back into the measurement.
-  const fontSize = fitChoreFontSize({
-    width: box.width, height: box.height, requested: style.fontSize, rows, sections, view,
-  });
+  const storeLayout = resolveStoreLayout(config.storeLayout);
+  const fontSize = view === 'rewards-store'
+    ? fitStoreFontSize({
+      width: box.width,
+      height: box.height,
+      requested: style.fontSize,
+      layout: storeLayout,
+      // Every reward switched on: the most any one person can be offered.
+      count: data.rewards.filter((r) => r.enabled).length,
+      showTitle: config.showTitle !== false,
+      showPicker: storeLayout !== 'price-list' && data.members.length > 1,
+      members: data.members.length,
+      showBalance: storeLayout !== 'price-list',
+      readOnly: config.allowDisplayComplete === false,
+    })
+    : fitChoreFontSize({
+      width: box.width, height: box.height, requested: style.fontSize, rows, sections, view,
+    });
   const viewProps = { config, data, width: box.width, fontSize };
 
   return (
@@ -126,6 +143,7 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
           {view === 'progress' && <ProgressView {...viewProps} />}
           {view === 'compact' && <CompactView {...viewProps} />}
           {view === 'reward-history' && <RewardHistoryView {...viewProps} />}
+          {view === 'rewards-store' && <StoreView {...viewProps} height={box.height} />}
         </div>
         {/* Un-ticking takes back tickets that may already be spent. The chart
             gives the balance up a little room rather than letting it go

@@ -3253,7 +3253,13 @@
       "accentColor": "Accentfarve",
       "membersCount": "{count} medlemmer",
       "choresCount": "{count} pligter",
-      "editChoreChart": "Redigér pligtskema"
+      "editChoreChart": "Redigér pligtskema",
+      "viewRewardsStore": "Belønningsbutik",
+      "storeLayout": "Butikslayout",
+      "storeLayoutList": "Liste",
+      "storeLayoutTiles": "Fliser",
+      "storeLayoutPriceList": "Prisliste",
+      "tapToRedeem": "Tryk for at indløse"
     },
     "timezoneUseDisplay": "Brug display-indstillingen ({timezone})",
     "timezoneUseDisplayNoZone": "Brug display-indstillingen",

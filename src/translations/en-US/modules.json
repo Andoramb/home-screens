@@ -617,7 +617,21 @@
         "familyNotReady": "Your family is still loading. Try again in a moment."
       }
     },
-    "unknownAssignee": "?"
+    "unknownAssignee": "?",
+    "store": {
+      "canGetIt": {
+        "one": "{count} can get it",
+        "other": "{count} can get it"
+      },
+      "nobodyYet": "nobody yet",
+      "whoFor": "Who is {reward} for?",
+      "confirmTitle": "{reward} for {member}?",
+      "confirmBody": {
+        "one": "{count} ticket. {member} will have {left} left.",
+        "other": "{count} tickets. {member} will have {left} left."
+      },
+      "notNow": "Not now"
+    }
   },
   "fullscreen-chore-chart": {
     "rewardsButton": "Rewards",

@@ -219,8 +219,8 @@ export function fitChoreFontSize({ width, height, requested, rows, sections, vie
  * shrink past their own minimums (tap targets, member icons) make the height
  * a bent line, not a straight one.
  */
-function search(tall: (f: number) => number, budget: number, hi: number): number {
-  const lo0 = CHORE_FONT_FLOOR;
+function search(tall: (f: number) => number, budget: number, hi: number, floor = CHORE_FONT_FLOOR): number {
+  const lo0 = floor;
   if (hi <= lo0) return lo0;
   if (tall(hi) <= budget) return hi;
   let lo = lo0;
@@ -268,4 +268,129 @@ export const HISTORY_LIMIT = { min: 1, max: 50, fallback: 5 } as const;
 export function resolveHistoryLimit(raw: unknown): number {
   if (typeof raw !== 'number' || !Number.isFinite(raw)) return HISTORY_LIMIT.fallback;
   return Math.max(HISTORY_LIMIT.min, Math.min(HISTORY_LIMIT.max, Math.floor(raw)));
+}
+
+// ── Rewards store ─────────────────────────────────────────────────────
+
+export type StoreLayout = 'list' | 'tiles' | 'price-list';
+
+/** The smallest thing on the store a finger has to hit, whatever the type does. */
+export const STORE_TAP_PX = 44;
+/** A tile's Redeem pill. Smaller than a row's: the whole tile is the target. */
+export const STORE_TILE_PILL_PX = 36;
+/**
+ * Where a store with pills stops shrinking. Below this the words sit beside a
+ * 44px pill nearly three times their height, so it scrolls sooner instead.
+ */
+export const STORE_FONT_FLOOR = 18;
+/** The picker rail beside the rewards on a wide, short card, in em. */
+export const STORE_RAIL_EM = 13;
+
+const STORE_TITLE_EM = 1.5;
+/** Avatar strip: its margin, the chip padding and the avatar, then the balance under it. */
+const STORE_PICKER_EM = 2.55;
+const STORE_PICKER_BALANCE_EM = 1.1;
+/** The picked person's tickets: a 1.5em number and its margins. */
+const STORE_BALANCE_EM = 2.4;
+const STORE_ROW_PAD_EM = 0.84;
+const STORE_ROW_LINE_EM = 1.5;
+/** A tile without its pill: padding, icon, two lines of name, cost, gaps. */
+const STORE_TILE_EM = 5.9;
+const STORE_TILE_GAP_EM = 0.45;
+const STORE_TILE_MIN_WIDTH_EM = 7.2;
+
+/** Avatars across the rail. */
+export const STORE_RAIL_PER_ROW = 3;
+/** One row of rail avatars: chip padding, avatar and the gap under it. */
+const STORE_RAIL_CHIP_EM = 2.4;
+
+/**
+ * How tall the rail's own content is, in em: the picked person's tickets, then
+ * the avatars in rows of three, with or without a balance under each.
+ */
+export function storeRailEm(members: number, withBalances: boolean): number {
+  const rows = Math.ceil(Math.max(0, members) / STORE_RAIL_PER_ROW);
+  return STORE_BALANCE_EM + rows * (STORE_RAIL_CHIP_EM + (withBalances ? STORE_PICKER_BALANCE_EM : 0));
+}
+
+/**
+ * Whether the rail has the height to put a balance under every avatar. When
+ * it does not they go first: the picked person's tickets are still in the big
+ * number, and an avatar row that fits beats one that is clipped.
+ */
+export function storeRailShowsBalances(members: number, height: number, fontSize: number, showTitle: boolean): boolean {
+  return ((showTitle ? STORE_TITLE_EM : 0) + 0.5 + storeRailEm(members, true)) * fontSize <= height;
+}
+
+/**
+ * A wide, short card puts the picker in a rail beside the rewards instead of
+ * on top of them, where it would take a third of the height.
+ */
+export function storeUsesRail(width: number, height: number): boolean {
+  return width >= 640 && width / Math.max(1, height) >= 1.8;
+}
+
+/** How many tiles go across, between two and four. */
+export function storeTileColumns(width: number, fontSize: number): number {
+  const gap = STORE_TILE_GAP_EM * fontSize;
+  return Math.max(2, Math.min(4, Math.floor((width + gap) / (STORE_TILE_MIN_WIDTH_EM * fontSize + gap))));
+}
+
+export interface StoreFitInput {
+  width: number;
+  height: number;
+  requested: number;
+  layout: StoreLayout;
+  /** Rewards on offer. */
+  count: number;
+  showTitle: boolean;
+  /** The avatar strip: list and tiles, with more than one person. */
+  showPicker: boolean;
+  /** People in the picker, which sets how tall the rail is. */
+  members: number;
+  /** The picked person's ticket line: list and tiles. */
+  showBalance: boolean;
+  /** No Redeem pills, so rows are as short as their text. */
+  readOnly: boolean;
+}
+
+/**
+ * The type size at which the store's rewards fit the card, never below the
+ * chart's readable floor. Same idea as `fitChoreFontSize`, but the pieces that
+ * refuse to shrink here are the 44px pills, and tiles change their column
+ * count as the type changes, so the height is searched rather than solved.
+ */
+export function fitStoreFontSize(input: StoreFitInput): number {
+  const { width, height, requested, layout, count, showTitle, showPicker, members, showBalance, readOnly } = input;
+  if (height <= 0 || width <= 0) return requested;
+  const rail = layout !== 'price-list' && storeUsesRail(width, height);
+
+  const tall = (f: number) => {
+    const title = (showTitle ? STORE_TITLE_EM : 0) * f;
+    const head = title
+      + (rail ? 0 : (showPicker ? (STORE_PICKER_EM + STORE_PICKER_BALANCE_EM) * f : 0) + (showBalance ? STORE_BALANCE_EM * f : 0));
+    // The rail is a column of its own beside the rewards, and the card has to
+    // hold whichever is taller. Counted without the avatars' balances, which
+    // the view drops before it lets the type shrink for them.
+    const railTall = rail ? title + (0.5 + storeRailEm(showPicker ? members : 0, false)) * f : 0;
+    let rewards: number;
+    if (layout === 'tiles') {
+      const listWidth = rail ? width - (STORE_RAIL_EM + 1) * f : width;
+      const rows = Math.ceil(count / storeTileColumns(listWidth, f));
+      const tile = STORE_TILE_EM * f + (readOnly ? 0 : STORE_TILE_PILL_PX);
+      rewards = rows * tile + Math.max(0, rows - 1) * STORE_TILE_GAP_EM * f;
+    } else {
+      const line = STORE_ROW_LINE_EM * f;
+      rewards = count * ((readOnly ? line : Math.max(STORE_TAP_PX, line)) + STORE_ROW_PAD_EM * f + 1);
+    }
+    return Math.max(railTall, head + rewards + MORE_PILL_EM * f);
+  };
+
+  // The price list adds "4 can get it" and its dots to every row.
+  const rowEm = layout === 'price-list' ? 22 : 17;
+  const across = layout === 'tiles' ? width / 14 : (rail ? width - (STORE_RAIL_EM + 1) * CHORE_FONT_FLOOR : width) / rowEm;
+  const hi = Math.min(requested, across);
+  // Never a floor above what the household asked for or the card can hold across.
+  const floor = readOnly ? CHORE_FONT_FLOOR : Math.max(CHORE_FONT_FLOOR, Math.min(STORE_FONT_FLOOR, hi));
+  return search(tall, height, hi, floor);
 }

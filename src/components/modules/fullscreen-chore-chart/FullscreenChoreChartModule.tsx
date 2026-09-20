@@ -134,7 +134,7 @@ export default function FullscreenChoreChartModule({
   const pad = 40 * k * d;
   const weekProgress = config.weekProgress ?? 'chips';
 
-  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, overspentNotice, isLoading, error, rewardsLoading, rewardsError } = useChoreData(config);
+  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, applyRedemption, overspentNotice, isLoading, error, rewardsLoading, rewardsError } = useChoreData(config);
   // Un-ticking hands tickets back that may already have been spent. The card
   // chart says so at its foot; here it rides in the toast strip.
   const overspentMessage = useOverspentMessage(overspentNotice);
@@ -668,6 +668,7 @@ export default function FullscreenChoreChartModule({
           accentColor={config.accentColor}
           theme={theme}
           onBack={showRewardsOverride ? () => setShowRewardsOverride(false) : undefined}
+          onRedeemed={applyRedemption}
           onShowHistory={() => setShowStoreHistory(true)}
           idleTimeoutMs={showRewardsOverride ? 60_000 : undefined}
         />

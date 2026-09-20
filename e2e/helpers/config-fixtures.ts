@@ -48,6 +48,7 @@ export function choreChartModule(): ModuleInstance {
       accentColor: '#8b5cf6',
       showTitle: true,
       historyLimit: 5,
+      storeLayout: 'list',
     },
   };
 }

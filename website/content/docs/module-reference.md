@@ -359,6 +359,7 @@ A chore tracking module for families or housemates. Assign chores to members wit
 - **progress**: Progress bars showing completion rates per member.
 - **compact**: Condensed view for small module sizes.
 - **reward-history**: The latest rewards the family has redeemed, newest first: who, what, how many tickets, and how long ago. `historyLimit` sets how many to list (1 to 50). The type shrinks so the list fits the card, down to a readable floor; past that the card says how many more are below.
+- **rewards-store**: Spend tickets from the card itself. `storeLayout` picks how it looks: `list` (pick a person, then one reward per row with a Redeem button or how many more tickets to go), `tiles` (the same, as a grid of tiles), or `price-list` (every reward with how many people can afford it; tapping one asks who it is for). Redeeming always asks first. A wide, short card moves the person picker to the side. With `allowDisplayComplete` off the view is a price list with nothing to tap. The **History** button in the title opens the reward history in place.
 
 **Rotation modes:**
 

@@ -617,7 +617,21 @@
         "familyNotReady": "Tu familia todavía se está cargando. Inténtalo de nuevo en un momento."
       }
     },
-    "unknownAssignee": "?"
+    "unknownAssignee": "?",
+    "store": {
+      "canGetIt": {
+        "one": "{count} puede conseguirlo",
+        "other": "{count} pueden conseguirlo"
+      },
+      "nobodyYet": "nadie todavía",
+      "whoFor": "¿Para quién es {reward}?",
+      "confirmTitle": "¿{reward} para {member}?",
+      "confirmBody": {
+        "one": "{count} ticket. A {member} le quedarán {left}.",
+        "other": "{count} tickets. A {member} le quedarán {left}."
+      },
+      "notNow": "Ahora no"
+    }
   },
   "fullscreen-chore-chart": {
     "rewardsButton": "Premios",

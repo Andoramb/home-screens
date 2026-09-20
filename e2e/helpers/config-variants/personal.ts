@@ -319,6 +319,36 @@ export const PERSONAL_VARIANTS: ConfigVariant[] = [
     },
   },
   {
+    // storeLayout 'list': a person picker, then one reward per row. The seeded
+    // kid has 10 tickets: Candy (2) gets a Redeem pill, New Book (50) does not.
+    type: 'chore-chart', name: 'store-list', kind: 'local-data', seed: 'chores',
+    config: { view: 'rewards-store', storeLayout: 'list' },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-testid="store-view"][data-layout="list"]')).toBeVisible();
+      await expect(mod.getByTestId('store-redeem')).toHaveCount(1);
+      await has('40 more tickets to go')(mod);
+    },
+  },
+  {
+    // storeLayout 'tiles': the same rewards as a grid of tiles.
+    type: 'chore-chart', name: 'store-tiles', kind: 'local-data', seed: 'chores',
+    config: { view: 'rewards-store', storeLayout: 'tiles' },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-testid="store-view"][data-layout="tiles"]')).toBeVisible();
+      await has('2 tickets')(mod);
+    },
+  },
+  {
+    // storeLayout 'price-list': no picker, each reward says who can afford it.
+    type: 'chore-chart', name: 'store-price-list', kind: 'local-data', seed: 'chores',
+    config: { view: 'rewards-store', storeLayout: 'price-list' },
+    expect: async (mod) => {
+      await has('1 can get it')(mod);
+      await has('nobody yet')(mod);
+      await expect(mod.getByTestId('store-picker')).toHaveCount(0);
+    },
+  },
+  {
     // showPoints:false hides the star-chart's weekly "tickets" totals row.
     type: 'chore-chart', name: 'hide-points', kind: 'local-data', seed: 'chores',
     config: { view: 'star-chart', showPoints: false },

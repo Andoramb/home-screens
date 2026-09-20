@@ -3851,7 +3851,14 @@ export interface DisplayControlConfig {
 }
 
 // Chore chart module config
-export type ChoreChartView = 'board' | 'star-chart' | 'today' | 'progress' | 'compact' | 'reward-history';
+export type ChoreChartView = 'board' | 'star-chart' | 'today' | 'progress' | 'compact' | 'reward-history' | 'rewards-store';
+/**
+ * How the card's rewards store lays itself out.
+ * - `list`       pick a person, then one reward per row (default)
+ * - `tiles`      pick a person, then a grid of reward tiles
+ * - `price-list` every reward with how many people can afford it; tapping one asks who it is for
+ */
+export type ChoreChartStoreLayout = 'list' | 'tiles' | 'price-list';
 export type ChoreTimeOfDay = 'morning' | 'afternoon' | 'evening' | 'anytime';
 export type ChoreRotation = 'fixed' | 'rotate-daily' | 'rotate-weekly' | 'schedule';
 export type ChoreResetFrequency = 'daily' | 'weekly' | 'biweekly' | 'once';
@@ -3948,7 +3955,7 @@ export interface ChoreToggleResponse {
  * in module config would mean each placed module carried its own private copy.
  */
 export interface ChoreChartConfig {
-  /** Display style: `board`, `star-chart`, `today`, `progress`, `compact`, or `reward-history` */
+  /** Display style: `board`, `star-chart`, `today`, `progress`, `compact`, `reward-history`, or `rewards-store` */
   view: ChoreChartView;
   /** First day of week: `sunday` or `monday` */
   weekStartDay: WeekStartDay;
@@ -3970,6 +3977,8 @@ export interface ChoreChartConfig {
   showTitle?: boolean;
   /** Maximum number of redemptions shown in Reward History. Omitted = 5. */
   historyLimit?: number;
+  /** Rewards Store layout: `list`, `tiles`, or `price-list`. Omitted = `list`. */
+  storeLayout?: ChoreChartStoreLayout;
 }
 
 /**

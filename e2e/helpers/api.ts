@@ -84,16 +84,21 @@ export async function seedHouseholdChores(request: APIRequestContext, sandboxDir
 }
 
 /**
- * Three redemptions by the seeded kid, newest first, stamped relative to now
- * because the store drops anything older than 90 days. Written straight to
- * `data/rewards.json`: the API only records a redemption by spending a balance.
+ * The rewards file for the seeded kid: two rewards (one they can afford with
+ * their 10 tickets, one nobody can) and three redemptions, newest first,
+ * stamped relative to now because the store drops anything older than 90 days.
+ * Written straight to `data/rewards.json`: the API only records a redemption
+ * by spending a balance.
  */
 export function seedRedemptions(sandboxDir: string, names: string[] = ['Movie night', 'Ice cream trip', 'Stay up late']): void {
   const [member] = CHORE_DATA.members;
   const directory = path.join(sandboxDir, 'data');
   mkdirSync(directory, { recursive: true });
   writeFileSync(path.join(directory, 'rewards.json'), JSON.stringify({
-    rewards: [],
+    rewards: [
+      { id: 'reward-candy', name: 'Candy', emoji: '', cost: 2, description: '', memberIds: [], enabled: true },
+      { id: 'reward-book', name: 'New Book', emoji: '', cost: 50, description: '', memberIds: [], enabled: true },
+    ],
     balances: { [member.id]: 10 },
     redemptions: names.map((rewardName, i) => ({
       id: `red-${i}`,

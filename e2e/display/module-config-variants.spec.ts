@@ -37,7 +37,8 @@ async function renderVariant(page: Page, request: APIRequestContext, sandboxDir:
 
   if (variant.familyMembers) seedFamily(sandboxDir, variant.familyMembers, variant.familyGroups);
   if (variant.seed === 'chores') await seedHouseholdChores(request, sandboxDir, variant.seedData ?? undefined);
-  if (variant.seed === 'chores' && variant.config.view === 'reward-history') seedRedemptions(sandboxDir);
+  // The two reward views draw from rewards.json, which the chores seed leaves alone.
+  if (variant.seed === 'chores' && (variant.config.view === 'reward-history' || variant.config.view === 'rewards-store')) seedRedemptions(sandboxDir);
   if (variant.seed === 'meals') await seedMeals(request, variant.seedData ?? undefined);
   if (variant.seed === 'todos') seedTodos(sandboxDir, (variant.seedData as Parameters<typeof seedTodos>[1]) ?? undefined);
   if (variant.seed === 'timetables') seedTimetables(sandboxDir, (variant.seedData as Parameters<typeof seedTimetables>[1]) ?? undefined);

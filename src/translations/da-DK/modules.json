@@ -617,7 +617,21 @@
         "familyNotReady": "Din familie indlæses stadig. Prøv igen om lidt."
       }
     },
-    "unknownAssignee": "?"
+    "unknownAssignee": "?",
+    "store": {
+      "canGetIt": {
+        "one": "{count} kan få den",
+        "other": "{count} kan få den"
+      },
+      "nobodyYet": "ingen endnu",
+      "whoFor": "Hvem er {reward} til?",
+      "confirmTitle": "{reward} til {member}?",
+      "confirmBody": {
+        "one": "{count} billet. {member} har {left} tilbage.",
+        "other": "{count} billetter. {member} har {left} tilbage."
+      },
+      "notNow": "Ikke nu"
+    }
   },
   "fullscreen-chore-chart": {
     "rewardsButton": "Belønninger",

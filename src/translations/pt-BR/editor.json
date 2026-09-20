@@ -3253,7 +3253,13 @@
       "accentColor": "Cor de destaque",
       "membersCount": "{count} membros",
       "choresCount": "{count} tarefas",
-      "editChoreChart": "Editar quadro de tarefas"
+      "editChoreChart": "Editar quadro de tarefas",
+      "viewRewardsStore": "Loja de recompensas",
+      "storeLayout": "Layout da loja",
+      "storeLayoutList": "Lista",
+      "storeLayoutTiles": "Blocos",
+      "storeLayoutPriceList": "Lista de preços",
+      "tapToRedeem": "Tocar para resgatar"
     },
     "timezoneUseDisplay": "Usar a configuração do display ({timezone})",
     "timezoneUseDisplayNoZone": "Usar a configuração do display",

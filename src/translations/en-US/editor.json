@@ -3253,7 +3253,13 @@
       "accentColor": "Accent Color",
       "membersCount": "{count} members",
       "choresCount": "{count} chores",
-      "editChoreChart": "Edit Chore Chart"
+      "editChoreChart": "Edit Chore Chart",
+      "viewRewardsStore": "Rewards Store",
+      "storeLayout": "Store Layout",
+      "storeLayoutList": "List",
+      "storeLayoutTiles": "Tiles",
+      "storeLayoutPriceList": "Price List",
+      "tapToRedeem": "Tap to Redeem"
     },
     "timezoneUseDisplay": "Use display setting ({timezone})",
     "timezoneUseDisplayNoZone": "Use display setting",

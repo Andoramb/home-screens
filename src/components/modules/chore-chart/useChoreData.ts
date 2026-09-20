@@ -82,6 +82,17 @@ interface ChoreDataState {
   toggleComplete: (choreId: string, memberId: string) => Promise<void>;
   /** An un-tick that took someone below zero tickets, until it clears itself. */
   overspentNotice: OverspentNotice | null;
+  /**
+   * The server's answer to a redeem. Published here, not kept in the store
+   * that asked, so every view of this data (and the next poll of chores, which
+   * rebuilds the balances) sees the tickets as spent.
+   */
+  applyRedemption: (result: RedemptionResult) => void;
+}
+
+export interface RedemptionResult {
+  balances?: Record<string, number>;
+  redemptions?: RewardRedemption[];
 }
 
 export function useChoreData(config: ChoreDataConfig): ChoreDataState {
@@ -212,6 +223,26 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
     return days;
   }, [members, groups, chores, completionSet, config.weekStartDay, dayNames]);
 
+  // Server truth from a write we made ourselves. Primes the shared cache so
+  // sibling module instances do not re-read stale data, and opens the override
+  // window so a stale in-flight poll cannot flash the old balance back.
+  const publishRewards = useCallback((next: RewardsResponse) => {
+    setRewards(next);
+    displayCache.set(rewardsUrl(), next, choreChartTtl);
+    rewardsOverrideUntil.current = Date.now() + choreChartTtl;
+  }, [choreChartTtl]);
+
+  const latestRewards = useRef<RewardsResponse | null>(null);
+  useEffect(() => { latestRewards.current = knownRewards ?? null; }, [knownRewards]);
+  const applyRedemption = useCallback((result: RedemptionResult) => {
+    const current = latestRewards.current;
+    publishRewards({
+      rewards: current?.rewards,
+      balances: result.balances ?? current?.balances ?? {},
+      redemptions: result.redemptions ?? current?.redemptions,
+    });
+  }, [publishRewards]);
+
   const toggleComplete = useCallback(async (choreId: string, memberId: string) => {
     const today = todayStr();
     // One plan drives both the optimistic update and the direction the server
@@ -240,11 +271,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
       // dashboard tab that mounts later) don't re-read stale data, and set the
       // override window so a stale in-flight poll can't flash the old balance
       // back until the next poll returns a fresh snapshot.
-      if (data.rewards) {
-        setRewards(data.rewards);
-        displayCache.set(rewardsUrl(), data.rewards, choreChartTtl);
-        rewardsOverrideUntil.current = Date.now() + choreChartTtl;
-      }
+      if (data.rewards) publishRewards(data.rewards);
       // Un-ticking takes the tickets back, and they may already be spent. The
       // screen says so rather than leaving a kid to find a negative balance
       // later with nothing to explain it.
@@ -252,7 +279,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
     } catch {
       setCompletions(snapshot);
     }
-  }, [choreChartTtl, members, completions]);
+  }, [publishRewards, members, completions]);
 
   // The notice is a passing message, not a state of the world: it clears
   // itself so a wall display is not left holding it for the rest of the day.
@@ -286,5 +313,6 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
     error,
     toggleComplete,
     overspentNotice,
+    applyRedemption,
   };
 }

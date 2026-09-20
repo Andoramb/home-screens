@@ -1,12 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import type { FamilyMember } from '@/types/family';
 import type { ChoreChartConfig } from '@/types/config';
 import type { RewardRedemption } from '@/lib/reward-data';
 import { formatTimeAgoLocalized } from '@/lib/chore-constants';
 import { sortRedemptionsNewestFirst } from '@/lib/reward-rules';
-import { TEXT_OPACITY, DIVIDER } from '@/lib/constants';
+import { TEXT_OPACITY, DIVIDER, ink } from '@/lib/constants';
 import { useTranslate } from '@/i18n';
 import { CHORE_ROW_ATTR, FitRows } from '../FitRows';
 import { resolveHistoryLimit } from '../layout';
@@ -19,6 +20,9 @@ interface RewardHistoryViewProps {
   };
   width: number;
   fontSize: number;
+  /** Set when the history was opened from the store rather than configured. */
+  onBack?: () => void;
+  backLabel?: string;
 }
 
 /** Who, what, cost, when. The last two take what their widest row needs. */
@@ -29,6 +33,8 @@ export function RewardHistoryView({
   config,
   data,
   fontSize,
+  onBack,
+  backLabel,
 }: RewardHistoryViewProps) {
   const t = useTranslate('modules');
   const tCore = useTranslate('core');
@@ -53,18 +59,29 @@ export function RewardHistoryView({
     >
       {/* The rule belongs to the title: with the title off, or nothing to
           list, it would be a stray line above the card's content. */}
-      {config.showTitle !== false && (
+      {(config.showTitle !== false || onBack) && (
         <div
-          className="shrink-0 font-semibold"
+          className="flex shrink-0 items-center justify-between font-semibold"
           style={{
             fontSize: '0.8em',
-            opacity: TEXT_OPACITY.secondary,
             paddingBottom: '0.5em',
             marginBottom: '0.3em',
             borderBottom: redemptions.length > 0 ? `1px solid ${DIVIDER.visible}` : undefined,
           }}
         >
-          {t('chore-chart.rewardHistory')}
+          <span style={{ opacity: TEXT_OPACITY.secondary }}>{t('chore-chart.rewardHistory')}</span>
+          {onBack && (
+            <button
+              type="button"
+              data-testid="history-back"
+              onClick={onBack}
+              className="inline-flex items-center rounded-full"
+              style={{ gap: '0.3em', fontSize: '0.85em', fontWeight: 600, padding: '0.15em 0.7em', border: `1px solid ${ink(0.22)}`, background: 'none', color: 'inherit', fontFamily: 'inherit', cursor: 'pointer' }}
+            >
+              <ArrowLeft size="0.95em" strokeWidth={2.4} aria-hidden="true" />
+              {backLabel}
+            </button>
+          )}
         </div>
       )}
 

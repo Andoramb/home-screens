@@ -3253,7 +3253,13 @@
       "accentColor": "Accentkleur",
       "membersCount": "{count} leden",
       "choresCount": "{count} klusjes",
-      "editChoreChart": "Klusjeslijst bewerken"
+      "editChoreChart": "Klusjeslijst bewerken",
+      "viewRewardsStore": "Beloningswinkel",
+      "storeLayout": "Winkelindeling",
+      "storeLayoutList": "Lijst",
+      "storeLayoutTiles": "Tegels",
+      "storeLayoutPriceList": "Prijslijst",
+      "tapToRedeem": "Tikken om in te wisselen"
     },
     "timezoneUseDisplay": "Display-instelling gebruiken ({timezone})",
     "timezoneUseDisplayNoZone": "Display-instelling gebruiken",

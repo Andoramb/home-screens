@@ -652,6 +652,7 @@ const EXTRA_DISCRIMINATORS: Array<{ type: string; key: string; union?: string; m
   { type: 'multi-month', key: 'startDay', union: 'WeekStartDay' },
   { type: 'multi-month', key: 'todayStyle', union: 'MultiMonthTodayStyle' },
   { type: 'chore-chart', key: 'weekStartDay', union: 'WeekStartDay' },
+  { type: 'chore-chart', key: 'storeLayout', union: 'ChoreChartStoreLayout' },
   { type: 'fullscreen-chore-chart', key: 'weekStartDay', union: 'WeekStartDay' },
   { type: 'fullscreen-chore-chart', key: 'weekProgress', union: 'FullscreenChoreChartWeekProgress' },
   { type: 'fullscreen-chore-chart', key: 'layout', union: 'FullscreenChoreChartLayout' },

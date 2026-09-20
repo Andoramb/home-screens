@@ -6,9 +6,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { ArrowLeft, History, Ticket, Users } from 'lucide-react';
 
 import type { RewardDefinition, RewardRedemption } from '@/lib/reward-data';
-import { displayFetch } from '@/lib/display-fetch';
 import { formatTimeAgoLocalized } from '@/lib/chore-constants';
-import { rewardsUrl } from '@/lib/fetch-keys';
 import { getDensityMultiplier, resolveFullscreenOnAccent, type FullscreenThemeTokens } from '@/lib/fullscreen-themes';
 import { DEFAULT_ACCENT_COLOR } from '@/lib/meal-constants';
 import { useTranslate } from '@/i18n';
@@ -19,6 +17,7 @@ import RewardCard from './rewards/RewardCard';
 import RedeemConfirm from './rewards/RedeemConfirm';
 import RedeemedBanner from './rewards/RedeemedBanner';
 import { useElementBox } from '@/hooks/useElementBox';
+import { useRedeemReward } from '../shared/useRedeemReward';
 import { fitStore, feedMetrics, hiddenBelow } from './rewards/storeLayout';
 import { isRewardOfferedTo, sortRedemptionsNewestFirst } from '@/lib/reward-rules';
 
@@ -39,18 +38,12 @@ interface RewardsStoreViewProps {
   /** The module's accentColor setting; empty follows the theme. */
   accentColor?: string;
   theme: FullscreenThemeTokens;
+  /** Where a redeem's result goes: `useChoreData().applyRedemption`. */
+  onRedeemed: (result: { balances?: Record<string, number>; redemptions?: RewardRedemption[] }) => void;
   onBack?: () => void;
   /** Opens the family's reward history in place of the store. */
   onShowHistory?: () => void;
   idleTimeoutMs?: number;
-}
-
-const REDEEMED_BANNER_MS = 5000;
-
-interface RedeemedInfo {
-  memberName: string;
-  rewardName: string;
-  cost: number;
 }
 
 export function RewardsStoreView({
@@ -65,6 +58,7 @@ export function RewardsStoreView({
   allowTouch,
   accentColor,
   theme,
+  onRedeemed,
   onBack,
   onShowHistory,
   idleTimeoutMs,
@@ -74,23 +68,16 @@ export function RewardsStoreView({
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(
     members.length > 0 ? members[0].id : null,
   );
-  const [localBalances, setLocalBalances] = useState<Record<string, number>>(balances);
-  const [localRedemptions, setLocalRedemptions] = useState<RewardRedemption[]>(redemptions);
-  const [confirmingReward, setConfirmingReward] = useState<RewardDefinition | null>(null);
-  const [redeeming, setRedeeming] = useState(false);
-  const [redeemError, setRedeemError] = useState<string | null>(null);
-  const [redeemed, setRedeemed] = useState<RedeemedInfo | null>(null);
+  // Both come straight from the shared chore data, which a redeem publishes
+  // into; a copy kept here was overwritten by the next poll of anything else.
+  const localBalances = balances;
+  const localRedemptions = redemptions;
   const [scrollTop, setScrollTop] = useState(0);
   const t = useTranslate('modules');
   const tCore = useTranslate('core');
 
   const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const redeemedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [scrollerRef, scrollerSize] = useElementBox();
-
-  // Sync from props when polling updates arrive
-  useEffect(() => { setLocalBalances(balances); }, [balances]);
-  useEffect(() => { setLocalRedemptions(redemptions); }, [redemptions]);
 
   // When the rewards store is the configured boot view, `members` is empty
   // at mount (useChoreData hasn't resolved yet), so the useState initializer
@@ -122,19 +109,9 @@ export function RewardsStoreView({
     };
   }, [idleTimeoutMs, onBack, resetIdleTimer]);
 
-  useEffect(() => () => {
-    if (redeemedTimerRef.current !== null) clearTimeout(redeemedTimerRef.current);
-  }, []);
-
   const handlePointerDown = useCallback(() => {
     resetIdleTimer();
   }, [resetIdleTimer]);
-
-  const dismissRedeemed = useCallback(() => {
-    if (redeemedTimerRef.current !== null) clearTimeout(redeemedTimerRef.current);
-    redeemedTimerRef.current = null;
-    setRedeemed(null);
-  }, []);
 
   const visibleRewards = useMemo(
     () => rewards.filter((r) => isRewardOfferedTo(r, selectedMemberId)),
@@ -151,62 +128,12 @@ export function RewardsStoreView({
     [localRedemptions, selectedMemberId],
   );
 
-  const handleRedeem = useCallback(
-    async () => {
-      if (!allowTouch || !confirmingReward || !selectedMemberId || redeeming) return;
-      setRedeeming(true);
-      setRedeemError(null);
-      try {
-        const res = await displayFetch(rewardsUrl(), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rewardId: confirmingReward.id, memberId: selectedMemberId }),
-        });
-        if (res.ok) {
-          const data = await res.json() as { balances?: Record<string, number> };
-          if (data.balances) {
-            setLocalBalances(data.balances);
-          }
-          const memberName = selectedMember?.name ?? '';
-          const optimistic: RewardRedemption = {
-            id: `local-${Date.now()}`,
-            rewardId: confirmingReward.id,
-            rewardName: confirmingReward.name,
-            memberId: selectedMemberId,
-            memberName,
-            cost: confirmingReward.cost,
-            redeemedAt: new Date().toISOString(),
-          };
-          setLocalRedemptions((prev) => [optimistic, ...prev]);
-          setConfirmingReward(null);
-          setRedeemed({ memberName, rewardName: confirmingReward.name, cost: confirmingReward.cost });
-          if (redeemedTimerRef.current !== null) clearTimeout(redeemedTimerRef.current);
-          redeemedTimerRef.current = setTimeout(() => {
-            redeemedTimerRef.current = null;
-            setRedeemed(null);
-          }, REDEEMED_BANNER_MS);
-        } else {
-          const err = await res.json().catch(() => null);
-          setRedeemError(err?.error ?? t('fullscreen-chore-chart.rewardsStore.errorGeneric'));
-        }
-      } catch {
-        setRedeemError(t('fullscreen-chore-chart.rewardsStore.errorOffline'));
-      } finally {
-        setRedeeming(false);
-      }
-    },
-    [allowTouch, confirmingReward, selectedMemberId, selectedMember, redeeming, t],
-  );
-
-  const handleCancelConfirm = useCallback(() => {
-    setConfirmingReward(null);
-    setRedeemError(null);
-  }, []);
-
+  const redeem = useRedeemReward({ enabled: allowTouch, onRedeemed });
+  const { redeemed } = redeem;
+  const askForSelected = redeem.ask;
   const handleOpenConfirm = useCallback((reward: RewardDefinition) => {
-    if (!allowTouch) return;
-    setConfirmingReward(reward);
-  }, [allowTouch]);
+    if (selectedMember) askForSelected(reward, selectedMember);
+  }, [askForSelected, selectedMember]);
 
   // ── Sizing ──────────────────────────────────────────────────────────
   // Text follows the chore list next door (30px names at k = 1, medium);
@@ -488,14 +415,14 @@ export function RewardsStoreView({
         )}
       </div>
 
-      {allowTouch && confirmingReward && selectedMember && (
+      {allowTouch && redeem.pending && (
         <RedeemConfirm
-          reward={confirmingReward}
-          memberName={selectedMember.name}
-          error={redeemError}
-          busy={redeeming}
-          onConfirm={handleRedeem}
-          onCancel={handleCancelConfirm}
+          reward={redeem.pending.reward}
+          memberName={redeem.pending.member.name}
+          error={redeem.error}
+          busy={redeem.busy}
+          onConfirm={redeem.confirm}
+          onCancel={redeem.cancel}
           k={k}
           t={tt}
           d={d}
@@ -511,7 +438,7 @@ export function RewardsStoreView({
           t={tt}
           d={d}
           onAccent={onAccent}
-          onDismiss={dismissRedeemed}
+          onDismiss={redeem.dismissRedeemed}
         />
       )}
     </div>

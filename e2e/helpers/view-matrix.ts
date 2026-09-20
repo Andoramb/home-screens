@@ -52,7 +52,7 @@ export const VIEW_MATRIX: ViewSpec[] = [
   { type: 'fullscreen-calendar', key: 'view', kind: 'networked', stubKey: 'calendar', views: [
     'schedule', 'week-list', 'month-grid', 'day-timeline', 'agenda', 'family-grid', 'up-next', 'free-time', 'rolling'] },
   { type: 'chore-chart', key: 'view', kind: 'local-data', seed: 'chores', views: [
-    'board', 'star-chart', 'today', 'progress', 'compact', 'reward-history'] },
+    'board', 'star-chart', 'today', 'progress', 'compact', 'reward-history', 'rewards-store'] },
   { type: 'fullscreen-chore-chart', key: 'view', kind: 'local-data', seed: 'chores', views: [
     'chores', 'rewards-store', 'reward-history', 'reward-totals', 'reward-spotlight'] },
   { type: 'meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'next-meal', 'compact', 'list'] },

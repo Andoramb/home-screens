@@ -3253,7 +3253,13 @@
       "accentColor": "Couleur d'accent",
       "membersCount": "{count} membres",
       "choresCount": "{count} tâches",
-      "editChoreChart": "Modifier le tableau des tâches"
+      "editChoreChart": "Modifier le tableau des tâches",
+      "viewRewardsStore": "Boutique de récompenses",
+      "storeLayout": "Disposition de la boutique",
+      "storeLayoutList": "Liste",
+      "storeLayoutTiles": "Tuiles",
+      "storeLayoutPriceList": "Liste de prix",
+      "tapToRedeem": "Toucher pour échanger"
     },
     "timezoneUseDisplay": "Utiliser le réglage de l'affichage ({timezone})",
     "timezoneUseDisplayNoZone": "Utiliser le réglage de l'affichage",
