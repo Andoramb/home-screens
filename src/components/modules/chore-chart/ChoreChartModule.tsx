@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import type { ChoreChartConfig, ModuleStyle } from '@/types/config';
 import { useTranslate } from '@/i18n';
 import { useElementBox } from '@/hooks/useElementBox';
-import { balanceRows, fitChoreFontSize, fitPerRow, weekMembers } from './layout';
+import { balanceRows, fitChoreFontSize, fitPerRow, resolveHistoryLimit, weekMembers } from './layout';
 
 /** Mirrors BoardView's own column sizing, for the height estimate. */
 const BOARD_COLUMN_EM = 6;
@@ -22,6 +22,7 @@ import { StarChartView } from './views/StarChartView';
 import { TodayView } from './views/TodayView';
 import { ProgressView } from './views/ProgressView';
 import { CompactView } from './views/CompactView';
+import { RewardHistoryView } from './views/RewardHistoryView';
 
 interface ChoreChartModuleProps {
   config: ChoreChartConfig;
@@ -59,6 +60,9 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
     if (view === 'compact') {
       return { rows: new Set(assignments.map((a) => a.chore.id)).size, sections: 0 };
     }
+    if (view === 'reward-history') {
+      return { rows: Math.min(data.allRedemptions.length, resolveHistoryLimit(config.historyLimit)), sections: 0 };
+    }
     if (view === 'today') {
       const times = new Set(assignments.map((a) => a.chore.timeOfDay));
       return { rows: assignments.length, sections: config.showTimeOfDay === false ? 0 : times.size };
@@ -73,7 +77,7 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
       return { rows: charted.length, sections: legendRows };
     }
     return { rows: 0, sections: 0 };
-  }, [data, view, config.showTimeOfDay, config.showPoints, box.width, style.fontSize]);
+  }, [data, view, config.showTimeOfDay, config.showPoints, config.historyLimit, box.width, style.fontSize]);
 
   // An empty roster only means a fresh install once the roster has actually
   // arrived. Until then (or when it could not be read) say so, rather than
@@ -81,10 +85,16 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
   if (data.isLoading || data.error) {
     return <ModuleLoadingState style={style} message={t('chore-chart.loading')} error={data.error} />;
   }
+  // The reward history is drawn from the rewards fetch alone, which the other
+  // views treat as optional. Here "not arrived" must not read as "no rewards
+  // redeemed yet".
+  if (view === 'reward-history' && (data.rewardsLoading || data.rewardsError)) {
+    return <ModuleLoadingState style={style} message={t('chore-chart.loading')} error={data.rewardsError} />;
+  }
 
   // Family data lives on the phone, not in the editor: the empty state sends
   // people to /remote and says which tab.
-  if (data.members.length === 0 || data.chores.length === 0) {
+  if (data.members.length === 0 || (view !== 'reward-history' && data.chores.length === 0)) {
     return (
       <ModuleWrapper style={style}>
         <FamilyEmptyState
@@ -113,6 +123,7 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
         {view === 'today' && <TodayView {...viewProps} timezone={timezone} />}
         {view === 'progress' && <ProgressView {...viewProps} />}
         {view === 'compact' && <CompactView {...viewProps} />}
+        {view === 'reward-history' && <RewardHistoryView {...viewProps} />}
       </div>
     </ModuleWrapper>
   );
