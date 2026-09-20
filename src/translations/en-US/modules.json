@@ -560,6 +560,7 @@
       "sticker": "Sticker",
       "volleyball": "Sports"
     },
+    "loading": "Loading chores…",
     "noMembersYet": "No family members yet",
     "noChoresYet": "No chores yet",
     "setUpFromPhoneHint": "Add your family and chores from a phone: open {url} and tap Chores",

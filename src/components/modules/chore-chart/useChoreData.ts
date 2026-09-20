@@ -70,6 +70,7 @@ interface ChoreDataState {
   /** Every redemption the server still holds (it purges at 90 days), for the store's feed. */
   allRedemptions: RewardRedemption[];
   isLoading: boolean;
+  /** Set only while a source has no data at all; a failed refresh of good data is not an error here. */
   error: FetchError | null;
   toggleComplete: (choreId: string, memberId: string) => Promise<void>;
 }
@@ -95,7 +96,7 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
   // override window just long enough for the next poll to catch up.
   const rewardsOverrideUntil = useRef<number>(0);
 
-  const { members, groups, loading: familyLoading, error: familyError } = useFamilyData();
+  const { members, groups, loading: familyLoading, loaded: familyLoaded, error: familyError } = useFamilyData();
   const chores = useMemo(() => fetchedChoreData?.chores ?? [], [fetchedChoreData]);
 
   useEffect(() => {
@@ -110,7 +111,11 @@ export function useChoreData(config: ChoreDataConfig): ChoreDataState {
   }, [fetchedRewards]);
 
   const isLoading = (!fetchedCompletions && !completionsError) || (!fetchedChoreData && !choreDataError) || familyLoading;
-  const error = completionsError ?? choreDataError ?? familyError;
+  // Only a source with nothing to show counts. A failed refresh keeps the
+  // last good data, and the chart keeps drawing it.
+  const error = (fetchedCompletions ? null : completionsError)
+    ?? (fetchedChoreData ? null : choreDataError)
+    ?? (familyLoaded ? null : familyError);
 
   const completionSet = useMemo(() => {
     const set = new Set<string>();

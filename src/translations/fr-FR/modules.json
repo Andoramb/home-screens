@@ -560,6 +560,7 @@
       "sticker": "Autocollant",
       "volleyball": "Sports"
     },
+    "loading": "Chargement des tâches…",
     "noMembersYet": "Aucun membre de la famille pour l'instant",
     "noChoresYet": "Aucune tâche pour l'instant",
     "setUpFromPhoneHint": "Ajoute ta famille et les tâches depuis un téléphone : ouvre {url} et touche Tâches",

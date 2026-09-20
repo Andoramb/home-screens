@@ -15,6 +15,7 @@ const STAR_LEGEND_ITEM_PX = (fontSize: number) => 5.5 * 0.65 * fontSize;
 const STAR_LEGEND_GAP = 12;
 import ModuleWrapper from '../ModuleWrapper';
 import FamilyEmptyState from '../FamilyEmptyState';
+import { ModuleLoadingState } from '../ModuleStates';
 import { useChoreData } from './useChoreData';
 import { BoardView } from './views/BoardView';
 import { StarChartView } from './views/StarChartView';
@@ -73,6 +74,13 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
     }
     return { rows: 0, sections: 0 };
   }, [data, view, config.showTimeOfDay, config.showPoints, box.width, style.fontSize]);
+
+  // An empty roster only means a fresh install once the roster has actually
+  // arrived. Until then (or when it could not be read) say so, rather than
+  // telling a family their members are gone.
+  if (data.isLoading || data.error) {
+    return <ModuleLoadingState style={style} message={t('chore-chart.loading')} error={data.error} />;
+  }
 
   // Family data lives on the phone, not in the editor: the empty state sends
   // people to /remote and says which tab.

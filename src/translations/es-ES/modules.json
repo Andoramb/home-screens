@@ -560,6 +560,7 @@
       "sticker": "Pegatina",
       "volleyball": "Deportes"
     },
+    "loading": "Cargando tareas…",
     "noMembersYet": "Aún no hay miembros de la familia",
     "noChoresYet": "Aún no hay tareas",
     "setUpFromPhoneHint": "Añade a tu familia y las tareas desde un teléfono: abre {url} y toca Tareas",

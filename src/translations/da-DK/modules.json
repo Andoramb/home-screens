@@ -560,6 +560,7 @@
       "sticker": "Klistermærke",
       "volleyball": "Sport"
     },
+    "loading": "Indlæser pligter…",
     "noMembersYet": "Ingen familiemedlemmer endnu",
     "noChoresYet": "Ingen pligter endnu",
     "setUpFromPhoneHint": "Tilføj familie og pligter fra en telefon: åbn {url} og tryk på Pligter",

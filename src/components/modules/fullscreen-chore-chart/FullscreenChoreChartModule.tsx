@@ -125,7 +125,7 @@ export default function FullscreenChoreChartModule({
   const pad = 40 * k * d;
   const weekProgress = config.weekProgress ?? 'chips';
 
-  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete } = useChoreData(config);
+  const { todayAssignments, memberStats, weekData, members, groups, chores, rewards, recentRedemptions, allRedemptions, toggleComplete, isLoading, error } = useChoreData(config);
   const allowTouch = config.allowDisplayComplete ?? true;
   const byPerson = (config.layout ?? 'by-time') === 'by-person';
   // Who is on the chart: chips for people with chores today, one line for a
@@ -488,7 +488,10 @@ export default function FullscreenChoreChartModule({
     </div>
   );
 
-  const isUnset = members.length === 0 || chores.length === 0;
+  // Nothing has arrived yet, or it could not be read. An empty roster only
+  // means a fresh install once the data is really in.
+  const isPending = isLoading || !!error;
+  const isUnset = !isPending && (members.length === 0 || chores.length === 0);
   const footer = !isUnset && (config.showPoints || config.showStreaks) && (
     <div style={{
       flexShrink: 0,
@@ -558,7 +561,15 @@ export default function FullscreenChoreChartModule({
   // "No chores today" is a day off. A household with no members or no chores
   // at all is a fresh install, and that needs to say where chores come from,
   // at a size that reads across the room.
-  const emptyState = isUnset ? (
+  const emptyState = isPending ? (
+    <div
+      data-testid={error ? 'module-not-updating' : 'fcc-loading'}
+      aria-live="polite"
+      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--fcc-text-2)', fontSize: 40 * tc, textAlign: 'center', padding: pad }}
+    >
+      {t(error ? 'common.notUpdating' : 'chore-chart.loading')}
+    </div>
+  ) : isUnset ? (
     <div style={{ flex: 1, display: 'flex', color: 'var(--fcc-text)' }}>
       <FamilyEmptyState
         icon={<>&#128203;</>}

@@ -26,6 +26,8 @@ export function useFamilyData() {
     groups: current?.groups ?? EMPTY_GROUPS,
     revision: current?.revision ?? null,
     loading: !current && !error,
+    /** A roster has arrived. A later failed refresh keeps it and sets `error`. */
+    loaded: !!current,
     error,
     refresh: () => displayCache.invalidate(familyUrl()),
   };
