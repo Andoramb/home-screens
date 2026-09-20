@@ -28,12 +28,12 @@ export const TEMPLATE_CATALOG: TemplateMeta[] = [
   {
     id: 'family-dashboard',
     name: 'Family Dashboard',
-    description: 'Clock, calendar, weather, countdown, and greeting — a complete family hub.',
+    description: "Clock, calendar, weather, today's chores, countdown, and greeting — a complete family hub.",
     category: 'Dashboard',
     portrait: 'family-dashboard.json',
     landscape: 'family-dashboard-landscape.json',
     screenCount: 1,
-    moduleTypes: ['clock', 'calendar', 'weather', 'countdown', 'greeting'],
+    moduleTypes: ['clock', 'calendar', 'weather', 'chore-chart', 'countdown', 'greeting'],
   },
   {
     id: 'weather-station',

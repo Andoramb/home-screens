@@ -19,13 +19,17 @@ const filled: Screen = {
 };
 
 /** A brand-new install: nothing placed, nothing configured. */
-const fresh = { dismissed: false, screens: [blank], locationSet: false, passwordSet: false };
+const fresh = {
+  dismissed: false, screens: [blank], locationSet: false, familySet: false, passwordSet: false,
+};
 
 describe('resolveFirstRunChecklist', () => {
   it('shows on a fresh install with every step outstanding', () => {
     const { show, steps } = resolveFirstRunChecklist(fresh);
     expect(show).toBe(true);
-    expect(steps).toEqual({ template: false, location: false, phone: false, password: false });
+    expect(steps).toEqual({
+      template: false, family: false, location: false, phone: false, password: false,
+    });
   });
 
   it('stays after modules are placed, so the remaining steps are still reachable', () => {
@@ -43,16 +47,22 @@ describe('resolveFirstRunChecklist', () => {
     expect(resolveFirstRunChecklist({ ...fresh, screens: [blank, filled] }).steps.template).toBe(true);
   });
 
-  it('ticks location and password from what is actually configured', () => {
-    const done = resolveFirstRunChecklist({ ...fresh, locationSet: true, passwordSet: true });
+  it('ticks location, family and password from what is actually configured', () => {
+    const done = resolveFirstRunChecklist({
+      ...fresh, locationSet: true, familySet: true, passwordSet: true,
+    });
     expect(done.steps.location).toBe(true);
+    expect(done.steps.family).toBe(true);
     expect(done.steps.password).toBe(true);
   });
 
   it('goes away only once the steps it can check are done', () => {
-    const setUp = { dismissed: false, screens: [filled], locationSet: true, passwordSet: true };
+    const setUp = {
+      dismissed: false, screens: [filled], locationSet: true, familySet: true, passwordSet: true,
+    };
     expect(resolveFirstRunChecklist(setUp).show).toBe(false);
     expect(resolveFirstRunChecklist({ ...setUp, locationSet: false }).show).toBe(true);
+    expect(resolveFirstRunChecklist({ ...setUp, familySet: false }).show).toBe(true);
     expect(resolveFirstRunChecklist({ ...setUp, passwordSet: false }).show).toBe(true);
     expect(resolveFirstRunChecklist({ ...setUp, screens: [blank] }).show).toBe(true);
   });
@@ -66,12 +76,21 @@ describe('resolveFirstRunChecklist', () => {
     // the length of one request on an install that needs nothing.
     expect(
       resolveFirstRunChecklist({
-        dismissed: false, screens: [filled], locationSet: true, passwordSet: null,
+        dismissed: false, screens: [filled], locationSet: true, familySet: true, passwordSet: null,
       }).show,
     ).toBe(false);
     // Unknown, but other steps outstanding: the install is plainly new, so show
     // at once instead of waiting on the request.
     expect(resolveFirstRunChecklist({ ...fresh, passwordSet: null }).show).toBe(true);
+  });
+
+  it('waits for the hub the same way about the household', () => {
+    expect(
+      resolveFirstRunChecklist({
+        dismissed: false, screens: [filled], locationSet: true, familySet: null, passwordSet: true,
+      }).show,
+    ).toBe(false);
+    expect(resolveFirstRunChecklist({ ...fresh, familySet: null }).show).toBe(true);
   });
 
   it('renders nothing before the config has loaded', () => {
@@ -80,8 +99,9 @@ describe('resolveFirstRunChecklist', () => {
 
   it('leaves the phone step unticked, because nothing records that the remote was opened', () => {
     expect(
-      resolveFirstRunChecklist({ dismissed: false, screens: [filled], locationSet: true, passwordSet: true })
-        .steps.phone,
+      resolveFirstRunChecklist({
+        dismissed: false, screens: [filled], locationSet: true, familySet: true, passwordSet: true,
+      }).steps.phone,
     ).toBe(false);
   });
 });

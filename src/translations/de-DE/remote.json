@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "Jemand anderes hat die Aufgaben geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
     "header": "Aufgaben",
+    "headerFor": "Aufgaben von {name}",
+    "switchHint": "Nicht {name}? Tippe auf deinen Namen.",
     "subNav": {
       "today": "Heute",
       "manage": "Verwalten",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Mahlzeit auswählen",
-      "emptyLibrary": "Keine Mahlzeiten in der Bibliothek. Füge zuerst welche hinzu.",
+      "emptyLibrary": "Noch keine gespeicherten Mahlzeiten. Tippe oben eine für heute ein oder speichere die, die du oft kochst.",
+        "typePlaceholder": "Mahlzeit eintippen, zum Beispiel Tacos",
+        "typeLabel": "Mahlzeit für diesen Tag eintippen",
+        "typeAdd": "Hinzufügen",
       "prepTimeShort": "{minutes} Min.",
       "removeMealButton": "Mahlzeit entfernen",
       "subtitle": "{slot} · {day}"

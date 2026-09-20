@@ -6,7 +6,8 @@ import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import { getLocation } from '@/lib/location';
 import { resolveFirstRunChecklist } from '@/lib/first-run-checklist';
 import { settingsPath } from '@/lib/settings-route';
-import { editorFetch } from '@/lib/editor-fetch';
+import { useFetchData } from '@/hooks/useFetchData';
+import { familyUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { useTranslate } from '@/i18n';
 import StartFromTemplateButton from './StartFromTemplateButton';
 
@@ -20,23 +21,34 @@ function readDismissed(): boolean {
   }
 }
 
-/**
- * Whether the hub has a password, cached for the life of the page. PropertyPanel
- * remounts this component on every deselect, and the answer cannot change
- * without leaving the editor for the Security page, so one request per page
- * load is enough.
- */
-let cachedPasswordSet: boolean | null = null;
+const AUTH_STATUS_URL = '/api/auth/status';
+/** These two answer "did you finish setting up", not live data. */
+const SETUP_ANSWER_TTL_MS = 60_000;
 
 /**
- * The four things a new install needs, shown in the property panel until they
+ * Latched once the install plainly needs no checklist, so the two questions
+ * below stop being asked for the rest of the page's life.
+ *
+ * It is never set back to false: it only ever means "this browser has already
+ * seen every step done", and an install that goes backwards (a password
+ * removed) does not need the first-run card back.
+ */
+let setupSettled = false;
+
+function markSetupSettled(): void {
+  setupSettled = true;
+}
+
+/**
+ * The five things a new install needs, shown in the property panel until they
  * are done or the person closes it. The close button hides it for good in this
  * browser (a checklist that comes back after being dismissed is nagging).
  *
  * "Done" state is read from what is actually configured (a module on the
- * display, a real location, a password on the hub) and never from whether the
- * link was clicked, so a user who set things up from another device sees the
- * right ticks. `resolveFirstRunChecklist` holds that rule.
+ * display, people in the household, a real location, a password on the hub) and
+ * never from whether the link was clicked, so a user who set things up from
+ * another device sees the right ticks. `resolveFirstRunChecklist` holds that
+ * rule.
  */
 export default function FirstRunChecklist() {
   const t = useTranslate('editor');
@@ -44,33 +56,46 @@ export default function FirstRunChecklist() {
   const selectedDisplayId = useEditorStore((s) => s.selectedDisplayId);
   const selectedScreenId = useEditorStore((s) => s.selectedScreenId);
   const [dismissed, setDismissed] = useState(true);
-  const [passwordSet, setPasswordSet] = useState<boolean | null>(cachedPasswordSet);
 
   // Read after mount so the server-rendered panel matches the first client
   // paint (localStorage is not available during render on the server).
   useEffect(() => { setDismissed(readDismissed()); }, []);
 
+  // A dismissed or finished checklist asks the hub nothing. Otherwise both
+  // answers are needed to decide whether to render at all, so they cannot wait
+  // behind that decision.
+  //
+  // Both go through the shared fetch cache rather than a cache of their own.
+  // PropertyPanel remounts this component on every deselect and the cache
+  // absorbs that, but the reason it has to be the shared one is the other
+  // direction: the toolbar's Settings button and the Back button on the
+  // settings page are both `router.push`, so the document never reloads. A
+  // cache of our own survived adding the first family member and left the step
+  // unticked until a manual refresh. This one is invalidated by the roster's
+  // own save (`publishFamilyData`) and revalidates on a TTL besides.
+  const asksHub = !dismissed && config != null && !setupSettled;
+  const [family] = useFetchData<{ members?: unknown[] }>(
+    asksHub ? familyUrl() : '', FETCH_KEY_REGISTRY.family.ttlMs,
+  );
+  const [auth] = useFetchData<{ authEnabled?: boolean }>(
+    asksHub ? AUTH_STATUS_URL : '', SETUP_ANSWER_TTL_MS,
+  );
+  const familySet = family ? Array.isArray(family.members) && family.members.length > 0 : null;
+  const passwordSet = auth ? !!auth.authEnabled : null;
+
   const screens = config ? getActiveScreens(config, selectedDisplayId) : null;
   const locationSet = config ? getLocation(config.settings) != null : false;
-  const { show, steps } = resolveFirstRunChecklist({ dismissed, screens, locationSet, passwordSet });
+  const { show, steps } = resolveFirstRunChecklist({
+    dismissed, screens, locationSet, familySet, passwordSet,
+  });
 
-  // A dismissed checklist asks the hub nothing. Otherwise the password answer
-  // is needed to decide whether to render at all, so it cannot wait behind
-  // that decision.
-  const asksHub = !dismissed && config != null && cachedPasswordSet === null;
-
-  useEffect(() => {
-    if (!asksHub) return;
-    let cancelled = false;
-    editorFetch('/api/auth/status')
-      .then((r) => r.json())
-      .then((d: { authEnabled?: boolean }) => {
-        cachedPasswordSet = !!d.authEnabled;
-        if (!cancelled) setPasswordSet(cachedPasswordSet);
-      })
-      .catch(() => { if (!cancelled) setPasswordSet(null); });
-    return () => { cancelled = true; };
-  }, [asksHub]);
+  // Every step this card can check is done, so stop asking the hub for the rest
+  // of this page. Latching rather than deriving keeps the two questions from
+  // restarting the moment `asksHub` turns them off and their answers reset to
+  // unknown.
+  const allStepsDone = steps.template && steps.location
+    && familySet === true && passwordSet === true;
+  useEffect(() => { if (allStepsDone) markSetupSettled(); }, [allStepsDone]);
 
   if (!show || !config || !screens) return null;
 
@@ -111,6 +136,16 @@ export default function FirstRunChecklist() {
               size="sm"
               className="inline-flex items-center gap-1"
             />
+          )}
+        </ChecklistItem>
+        {/* Second, because chores, rewards, meals and the calendar's name tags
+            all read the roster: an owner who never adds it gets a display that
+            can only ever show the weather. */}
+        <ChecklistItem done={steps.family} label={t('firstRun.steps.family')}>
+          {!steps.family && (
+            <a href={settingsPath({ kind: 'defaults', page: 'family' })} className="text-xs text-hs-accent hover:underline">
+              {t('firstRun.steps.familyLink')}
+            </a>
           )}
         </ChecklistItem>
         <ChecklistItem done={steps.location} label={t('firstRun.steps.location')}>

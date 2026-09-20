@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "Otra persona ha cambiado las tareas. Tu último cambio no se guardó. Inténtalo de nuevo.",
     "header": "Tareas",
+    "headerFor": "Tareas de {name}",
+    "switchHint": "¿No eres {name}? Toca tu nombre para cambiar.",
     "subNav": {
       "today": "Hoy",
       "manage": "Gestionar",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Elige una comida",
-      "emptyLibrary": "No hay comidas en la biblioteca. Añade alguna primero.",
+      "emptyLibrary": "Aún no hay comidas guardadas. Escribe una arriba para hoy, o guarda las que cocinas a menudo.",
+        "typePlaceholder": "Escribe una comida, por ejemplo Tacos",
+        "typeLabel": "Escribir una comida para este día",
+        "typeAdd": "Añadir",
       "prepTimeShort": "{minutes} min",
       "removeMealButton": "Quitar comida",
       "subtitle": "{slot} · {day}"

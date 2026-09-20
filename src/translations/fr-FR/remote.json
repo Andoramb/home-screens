@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "Quelqu'un d'autre a modifié les tâches. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît.",
     "header": "Tâches",
+    "headerFor": "Les tâches de {name}",
+    "switchHint": "Ce n’est pas {name} ? Touche ton nom pour changer.",
     "subNav": {
       "today": "Aujourd'hui",
       "manage": "Gérer",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Choisir un repas",
-      "emptyLibrary": "Aucun repas dans la bibliothèque. Ajoutes-en d'abord.",
+      "emptyLibrary": "Aucun repas enregistré pour l'instant. Tape celui de ce soir ci-dessus, ou enregistre ceux que tu cuisines souvent.",
+        "typePlaceholder": "Tape un repas, par exemple Tacos",
+        "typeLabel": "Taper un repas pour ce jour",
+        "typeAdd": "Ajouter",
       "prepTimeShort": "{minutes} min",
       "removeMealButton": "Retirer le repas",
       "subtitle": "{slot} · {day}"

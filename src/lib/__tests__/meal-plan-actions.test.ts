@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { SavedMeal, PlannedMeal } from '@/types/config';
 import {
   assignPlanSlot,
+  setPlanSlotText,
   clearPlanSlot,
   setPlanSlotTime,
   clearPlanWeek,
@@ -49,6 +50,46 @@ describe('assignPlanSlot', () => {
   it('leaves the other slots and days alone', () => {
     const plan = [entry('2026-09-14', 'm-1'), { ...entry('2026-09-15', 'm-1'), slot: 'lunch' } as PlannedMeal];
     const next = assignPlanSlot(plan, '2026-09-15', 'dinner', 'm-2');
+    expect(next).toHaveLength(3);
+    expect(next.filter((p) => p.slot === 'lunch')).toHaveLength(1);
+  });
+});
+
+describe('setPlanSlotText', () => {
+  it('puts a typed meal in an empty slot', () => {
+    const next = setPlanSlotText([], '2026-09-15', 'dinner', 'Tacos');
+    expect(next).toHaveLength(1);
+    expect(find(next, '2026-09-15')).toMatchObject({ customText: 'Tacos' });
+  });
+
+  it('trims what was typed', () => {
+    const next = setPlanSlotText([], '2026-09-15', 'dinner', '  Tacos  ');
+    expect(find(next, '2026-09-15')?.customText).toBe('Tacos');
+  });
+
+  /* Typing over a slot that held a saved meal replaces the meal: the slot
+   * shows one dinner, not a library meal with a note stuck to it. */
+  it('drops the saved meal it replaces', () => {
+    const plan = [entry('2026-09-15', 'm-1', { time: '18:30' })];
+    const updated = find(setPlanSlotText(plan, '2026-09-15', 'dinner', 'Takeaway'), '2026-09-15')!;
+    expect(updated.customText).toBe('Takeaway');
+    expect('mealId' in updated).toBe(false);
+    expect(updated.time).toBe('18:30');
+  });
+
+  it('empties the slot when the text is blank', () => {
+    const plan = [{ date: '2026-09-15', slot: 'dinner', customText: 'Tacos' } as PlannedMeal];
+    expect(setPlanSlotText(plan, '2026-09-15', 'dinner', '   ')).toEqual([]);
+  });
+
+  it('is a no-op when blank text meets an empty slot', () => {
+    const plan = [entry('2026-09-16', 'm-1')];
+    expect(setPlanSlotText(plan, '2026-09-15', 'dinner', '')).toBe(plan);
+  });
+
+  it('leaves the other slots and days alone', () => {
+    const plan = [entry('2026-09-14', 'm-1'), { ...entry('2026-09-15', 'm-1'), slot: 'lunch' } as PlannedMeal];
+    const next = setPlanSlotText(plan, '2026-09-15', 'dinner', 'Tacos');
     expect(next).toHaveLength(3);
     expect(next.filter((p) => p.slot === 'lunch')).toHaveLength(1);
   });

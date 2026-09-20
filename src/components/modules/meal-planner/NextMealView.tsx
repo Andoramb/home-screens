@@ -40,7 +40,7 @@ export function NextMealView({ config, settings, timeFormat, plan, savedMeals, t
     );
   }
 
-  const { meal, slot, date: mealDate, context } = next;
+  const { meal, name, slot, date: mealDate, context } = next;
   const label = context === 'future'
     ? formatDateSync(new Date(mealDate + 'T12:00:00'), 'EEEE', { locale })
     : t(`meal-planner.nextMealLabels.${{ now: 'now', upcoming: 'comingUp', tomorrow: 'tomorrow' }[context]}`);
@@ -67,19 +67,19 @@ export function NextMealView({ config, settings, timeFormat, plan, savedMeals, t
       </span>
 
       <div
-        key={`${mealDate}-${slot}-${meal.name}`}
+        key={`${mealDate}-${slot}-${name}`}
         className="flex flex-col items-center gap-2"
       >
         {/* Emoji + name (time/tags/prep stay outside the tap target) */}
         <MealTapTarget meal={meal} mode={recipeTapMode} className="flex flex-col items-center gap-2">
-          {(config.showEmoji ?? true) && meal.emoji && (
+          {(config.showEmoji ?? true) && meal?.emoji && (
             <span style={{ fontSize: '2.5em', lineHeight: 1 }}>{meal.emoji}</span>
           )}
           <p
             className="font-semibold text-center leading-tight"
             style={{ fontSize: '1.3em' }}
           >
-            {meal.name}
+            {name}
           </p>
         </MealTapTarget>
 
@@ -98,7 +98,7 @@ export function NextMealView({ config, settings, timeFormat, plan, savedMeals, t
         )}
 
         {/* Tags */}
-        {showTags && meal.tags && meal.tags.length > 0 && (
+        {showTags && meal?.tags && meal.tags.length > 0 && (
           <div className="flex flex-wrap justify-center gap-1.5" style={{ fontSize: '0.55em' }}>
             {meal.tags.map((tag) => (
               <span
@@ -113,14 +113,14 @@ export function NextMealView({ config, settings, timeFormat, plan, savedMeals, t
         )}
 
         {/* Prep time */}
-        {showPrepTime && meal.prepTime && (
+        {showPrepTime && meal?.prepTime && (
           <span className="flex items-center gap-1" style={{ fontSize: '0.6em', opacity: TEXT_OPACITY.tertiary }}>
             <span>&#9201;</span> {t('meal-planner.prepTimeMin', { minutes: meal.prepTime })}
           </span>
         )}
 
         {/* Notes */}
-        {meal.notes && (
+        {meal?.notes && (
           <p
             className="text-center italic max-w-[80%] leading-snug mt-1"
             style={{ fontSize: '0.6em', opacity: TEXT_OPACITY.tertiary }}

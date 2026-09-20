@@ -351,9 +351,9 @@ function StyleSection({ mod, screenId, t }: { mod: ModuleInstance; screenId: str
       <PropertyGroup title={t('fields.color')} accent={3}>
         <div className="space-y-3">
           {!owned.has('backgroundColor') && (
-            <ColorPicker label={t('propertyPanel.fields.background')} value={s.backgroundColor} onChange={(v) => set({ backgroundColor: v })} />
+            <ColorPicker label={t('propertyPanel.fields.background')} value={s.backgroundColor} onChange={(v) => set({ backgroundColor: v })} showAlpha alphaLabel={t('propertyPanel.fields.colorAlpha')} />
           )}
-          <ColorPicker label={t('propertyPanel.fields.borderColor')} value={s.borderColor ?? 'rgba(255, 255, 255, 0.15)'} onChange={(v) => set({ borderColor: v })} />
+          <ColorPicker label={t('propertyPanel.fields.borderColor')} value={s.borderColor ?? 'rgba(255, 255, 255, 0.15)'} onChange={(v) => set({ borderColor: v })} showAlpha alphaLabel={t('propertyPanel.fields.colorAlpha')} />
           {!owned.has('textColor') && (
             <ColorPicker label={t('propertyPanel.fields.textColor')} value={s.textColor} onChange={(v) => set({ textColor: v })} />
           )}

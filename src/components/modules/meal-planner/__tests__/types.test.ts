@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getOrderedDays, resolveMeal, getActiveSlot, getNextPlannedMeal } from '@/lib/meal-constants';
+import { getOrderedDays, getActiveSlot, getNextPlannedMeal } from '@/lib/meal-constants';
 import type { SavedMeal, PlannedMeal, MealSlotType } from '@/types/config';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -24,42 +24,6 @@ describe('getOrderedDays', () => {
 
   it('returns Mon–Sun for monday start', () => {
     expect(getOrderedDays('monday')).toEqual([1, 2, 3, 4, 5, 6, 0]);
-  });
-});
-
-// ── resolveMeal ──────────────────────────────────────────────────────
-
-describe('resolveMeal', () => {
-  const savedMeals = [meal('a', 'Oatmeal'), meal('b', 'Pasta')];
-
-  it('returns null when plan is undefined', () => {
-    expect(resolveMeal('2026-04-01', 'breakfast', undefined, savedMeals)).toBeNull();
-  });
-
-  it('returns null when savedMeals is undefined', () => {
-    expect(resolveMeal('2026-04-01', 'breakfast', [planned('2026-04-01', 'breakfast', 'a')], undefined)).toBeNull();
-  });
-
-  it('returns null when no planned entry matches day/slot', () => {
-    expect(resolveMeal('2026-04-02', 'lunch', [planned('2026-04-01', 'breakfast', 'a')], savedMeals)).toBeNull();
-  });
-
-  it('returns null when mealId references nonexistent saved meal', () => {
-    expect(resolveMeal('2026-04-01', 'breakfast', [planned('2026-04-01', 'breakfast', 'missing')], savedMeals)).toBeNull();
-  });
-
-  it('returns the saved meal when plan entry matches', () => {
-    const result = resolveMeal('2026-04-01', 'breakfast', [planned('2026-04-01', 'breakfast', 'a')], savedMeals);
-    expect(result).toEqual(savedMeals[0]);
-  });
-
-  it('returns correct meal from multiple plan entries', () => {
-    const plan = [planned('2026-04-01', 'breakfast', 'a'), planned('2026-04-01', 'dinner', 'b')];
-    expect(resolveMeal('2026-04-01', 'dinner', plan, savedMeals)).toEqual(savedMeals[1]);
-  });
-
-  it('returns null for empty arrays', () => {
-    expect(resolveMeal('2026-04-04', 'breakfast', [], [])).toBeNull();
   });
 });
 
@@ -133,7 +97,7 @@ describe('getNextPlannedMeal', () => {
     const plan = [planned('2026-09-01', 'breakfast', 'm1')];
     const result = getNextPlannedMeal('2026-09-01', 7, plan, [spaghetti], ALL_SLOTS);
     expect(result).toMatchObject({ slot: 'breakfast', date: '2026-09-01', dayOffset: 0, context: 'now' });
-    expect(result?.meal.name).toBe('Spaghetti');
+    expect(result?.name).toBe('Spaghetti');
   });
 
   it('skips an empty active slot and finds a later slot today as "upcoming"', () => {

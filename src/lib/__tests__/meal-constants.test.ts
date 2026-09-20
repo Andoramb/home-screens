@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   getOrderedDays,
-  resolveMeal,
   resolveMealWithEntry,
+  getNextPlannedMeal,
   getActiveSlot,
   formatTagLabel,
   capitalize,
@@ -248,56 +248,6 @@ describe('copyWeekEntries', () => {
     const result = copyWeekEntries(plan, altFrom, toDates);
     // date is within the filter range (altFrom[0]..altFrom[6]) but '2026-03-29' < '2026-03-30', so no entries
     expect(result).toHaveLength(0);
-  });
-});
-
-// ── resolveMeal ──
-
-describe('resolveMeal', () => {
-  const meals: SavedMeal[] = [
-    { id: 'pasta', name: 'Pasta' },
-    { id: 'salad', name: 'Salad' },
-  ];
-
-  it('returns null when plan is undefined', () => {
-    expect(resolveMeal('2026-04-04', 'dinner', undefined, meals)).toBeNull();
-  });
-
-  it('returns null when savedMeals is undefined', () => {
-    const plan: PlannedMeal[] = [{ date: '2026-04-04', slot: 'dinner', mealId: 'pasta' }];
-    expect(resolveMeal('2026-04-04', 'dinner', plan, undefined)).toBeNull();
-  });
-
-  it('returns null when no plan entry matches date/slot', () => {
-    const plan: PlannedMeal[] = [{ date: '2026-04-03', slot: 'lunch', mealId: 'pasta' }];
-    expect(resolveMeal('2026-04-04', 'dinner', plan, meals)).toBeNull();
-  });
-
-  it('returns null when mealId is empty', () => {
-    const plan: PlannedMeal[] = [{ date: '2026-04-04', slot: 'dinner', mealId: '' }];
-    expect(resolveMeal('2026-04-04', 'dinner', plan, meals)).toBeNull();
-  });
-
-  it('returns null when mealId references a non-existent meal', () => {
-    const plan: PlannedMeal[] = [{ date: '2026-04-04', slot: 'dinner', mealId: 'deleted' }];
-    expect(resolveMeal('2026-04-04', 'dinner', plan, meals)).toBeNull();
-  });
-
-  it('resolves a valid planned meal', () => {
-    const plan: PlannedMeal[] = [{ date: '2026-04-01', slot: 'lunch', mealId: 'salad' }];
-    const result = resolveMeal('2026-04-01', 'lunch', plan, meals);
-    expect(result).not.toBeNull();
-    expect(result!.id).toBe('salad');
-    expect(result!.name).toBe('Salad');
-  });
-
-  it('resolves the correct meal when multiple entries exist', () => {
-    const plan: PlannedMeal[] = [
-      { date: '2026-04-04', slot: 'breakfast', mealId: 'pasta' },
-      { date: '2026-04-04', slot: 'dinner', mealId: 'salad' },
-    ];
-    expect(resolveMeal('2026-04-04', 'breakfast', plan, meals)!.id).toBe('pasta');
-    expect(resolveMeal('2026-04-04', 'dinner', plan, meals)!.id).toBe('salad');
   });
 });
 
@@ -648,6 +598,63 @@ describe('resolveMealWithEntry', () => {
     const result = resolveMealWithEntry('2026-04-01', 'dinner', undefined, meals);
     expect(result.meal).toBeNull();
     expect(result.planned).toBeUndefined();
+  });
+
+  /* `name` is what every view prints. Without it each one read `meal.name` and
+   * a meal typed straight into the slot showed on the phone and nowhere else. */
+  it('names a saved meal and a typed-in one the same way', () => {
+    expect(resolveMealWithEntry('2026-04-01', 'dinner', plan, meals).name).toBe('Tacos');
+    expect(resolveMealWithEntry('2026-04-02', 'lunch', plan, meals).name).toBe('Eating out');
+  });
+
+  it('has no name when the slot is empty', () => {
+    expect(resolveMealWithEntry('2026-04-03', 'dinner', plan, meals).name).toBeNull();
+  });
+
+  it('has no name for an entry whose saved meal has been deleted', () => {
+    const orphan: PlannedMeal[] = [{ date: '2026-04-04', slot: 'dinner', mealId: 'gone' }];
+    expect(resolveMealWithEntry('2026-04-04', 'dinner', orphan, meals).name).toBeNull();
+  });
+
+  it('ignores whitespace-only typed text', () => {
+    const blank: PlannedMeal[] = [{ date: '2026-04-05', slot: 'dinner', customText: '   ' }];
+    expect(resolveMealWithEntry('2026-04-05', 'dinner', blank, meals).name).toBeNull();
+  });
+});
+
+describe('getNextPlannedMeal with a typed-in meal', () => {
+  const meals: SavedMeal[] = [{ id: 'm1', name: 'Tacos' }];
+  const slots: MealSlotType[] = ['breakfast', 'lunch', 'dinner'];
+
+  /* The wall's Next Meal card and the fullscreen Next Meal view both resolve
+   * through this, so a typed meal used to be skipped over on both. */
+  it('finds a slot holding only typed text', () => {
+    const plan: PlannedMeal[] = [{ date: '2026-04-01', slot: 'dinner', customText: 'Takeaway' }];
+    const next = getNextPlannedMeal('2026-04-01', 8, plan, meals, slots);
+    expect(next?.name).toBe('Takeaway');
+    expect(next?.meal).toBeNull();
+    expect(next?.slot).toBe('dinner');
+  });
+
+  it('still prefers the earlier slot whichever kind it is', () => {
+    const plan: PlannedMeal[] = [
+      { date: '2026-04-01', slot: 'lunch', customText: 'Leftovers' },
+      { date: '2026-04-01', slot: 'dinner', mealId: 'm1' },
+    ];
+    const next = getNextPlannedMeal('2026-04-01', 8, plan, meals, slots);
+    expect(next?.name).toBe('Leftovers');
+  });
+
+  it('carries the saved meal through when there is one', () => {
+    const plan: PlannedMeal[] = [{ date: '2026-04-01', slot: 'dinner', mealId: 'm1' }];
+    const next = getNextPlannedMeal('2026-04-01', 8, plan, meals, slots);
+    expect(next?.meal?.id).toBe('m1');
+    expect(next?.name).toBe('Tacos');
+  });
+
+  it('skips an entry whose saved meal has been deleted', () => {
+    const plan: PlannedMeal[] = [{ date: '2026-04-01', slot: 'dinner', mealId: 'gone' }];
+    expect(getNextPlannedMeal('2026-04-01', 8, plan, meals, slots)).toBeNull();
   });
 });
 

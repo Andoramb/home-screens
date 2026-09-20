@@ -1,4 +1,5 @@
 import type { SavedMeal, PlannedMeal } from '@/types/config';
+import { guessGroceryCategory } from '@/lib/grocery-categories';
 
 export const GROCERY_CATEGORY_ORDER = ['produce', 'meat', 'dairy', 'bakery', 'pantry', 'frozen', 'beverages', 'other'];
 
@@ -14,6 +15,20 @@ export const GROCERY_CATEGORY_ICONS: Record<string, string> = {
   other:     'M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z',
 };
 
+/**
+ * Whether the aisle headings are worth drawing.
+ *
+ * One heading over the whole list is not a grouping, it is a label on a flat
+ * list, which is what a week of uncategorised items used to produce: a single
+ * OTHER above everything. Both surfaces that draw the list read this, so they
+ * agree.
+ */
+export function groceryListNeedsHeadings(
+  list: Map<string, { items: unknown[] }>,
+): boolean {
+  return list.size > 1;
+}
+
 /** Generate a grocery list grouped by category from planned meals. */
 export function generateGroceryList(
   planArr: PlannedMeal[],
@@ -28,7 +43,11 @@ export function generateGroceryList(
     const meal = mealMap.get(entry.mealId);
     if (!meal?.ingredients) continue;
     for (const ing of meal.ingredients) {
-      const cat = ing.category || 'other';
+      // The per-row category select is a fourth control on a three-tap row, so
+      // most ingredients arrive without one and every item ended up under a
+      // single OTHER heading. Guess from the name when the household did not
+      // say; an explicit category always wins.
+      const cat = ing.category || guessGroceryCategory(ing.name) || 'other';
       // Merge 'seafood' into 'meat' bucket for display
       const displayCat = cat === 'seafood' ? 'meat' : cat;
       if (!grouped.has(displayCat)) grouped.set(displayCat, new Map());

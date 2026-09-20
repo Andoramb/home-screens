@@ -2950,6 +2950,7 @@
       "shadowSize": "Tamanho da sombra",
       "background": "Fundo",
       "borderColor": "Cor da borda",
+      "colorAlpha": "O quanto esta cor é intensa",
       "textColor": "Cor do texto",
       "textScale": "Tamanho do texto",
       "textScaleHint": "100% é o tamanho normal do texto deste módulo. Deslize para deixá-lo maior ou menor.",
@@ -4903,11 +4904,13 @@
   },
   "firstRun": {
     "heading": "Primeiros passos",
-    "intro": "Quatro passos rápidos para uma tela funcionando.",
+    "intro": "Cinco passos rápidos para uma tela funcionando.",
     "dismiss": "Ocultar esta lista",
     "steps": {
       "template": "Escolha um modelo ou adicione módulos à sua primeira tela",
       "templateButton": "Escolher um modelo",
+      "family": "Adicione as pessoas da sua casa",
+      "familyLink": "Abrir Família",
       "location": "Defina sua localização",
       "locationLink": "Abrir Localização e idioma",
       "phone": "Abra no seu celular",

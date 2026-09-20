@@ -268,44 +268,54 @@ export function replaceWeekInPlan(
   return [...otherWeeks, ...newWeekEntries];
 }
 
-/** Resolve a planned meal to display info */
-export function resolveMeal(
-  date: string,
-  slot: MealSlotType,
-  plan: PlannedMeal[] | undefined,
-  savedMeals: SavedMeal[] | undefined,
-): SavedMeal | null {
-  if (!plan || !savedMeals) return null;
-  const planned = plan.find((p) => p.date === date && p.slot === slot);
-  if (!planned) return null;
-  if (planned.mealId) {
-    return savedMeals.find((m) => m.id === planned.mealId) ?? null;
-  }
-  return null;
+/**
+ * What a slot is showing, from either kind of entry: the saved meal's name, or
+ * the text somebody typed straight into the day.
+ *
+ * Every surface prints this rather than `meal.name`. A plan entry has always
+ * been allowed to carry `customText` instead of a `mealId` — the phone writes
+ * one when you type "Tacos" for tonight rather than saving it to the library —
+ * and the views that read `meal.name` drew an empty slot for it, so the same
+ * dinner showed on the phone and not on the wall.
+ */
+export function plannedMealName(
+  meal: SavedMeal | null,
+  planned: PlannedMeal | undefined,
+): string | null {
+  if (meal) return meal.name;
+  const typed = planned?.customText?.trim();
+  return typed ? typed : null;
 }
 
 /**
  * Resolve both the saved meal AND the planned-meal entry for a given date+slot,
  * so callers can access both the meal definition and per-instance fields like
  * `time` and `notes` without having to scan the plan twice.
+ *
+ * `name` is what to print; `meal` is null for a typed-in meal, which has no
+ * library entry behind it and so no emoji, prep time, tags or recipe. Render
+ * off `name`, and treat the extras as the optional trimmings they are.
  */
 export function resolveMealWithEntry(
   date: string,
   slot: MealSlotType,
   plan: PlannedMeal[] | undefined,
   savedMeals: SavedMeal[] | undefined,
-): { meal: SavedMeal | null; planned: PlannedMeal | undefined } {
-  if (!plan) return { meal: null, planned: undefined };
+): { meal: SavedMeal | null; planned: PlannedMeal | undefined; name: string | null } {
+  if (!plan) return { meal: null, planned: undefined, name: null };
   const planned = plan.find((p) => p.date === date && p.slot === slot);
-  if (!planned) return { meal: null, planned: undefined };
+  if (!planned) return { meal: null, planned: undefined, name: null };
   const meal = planned.mealId && savedMeals
     ? savedMeals.find((m) => m.id === planned.mealId) ?? null
     : null;
-  return { meal, planned };
+  return { meal, planned, name: plannedMealName(meal, planned) };
 }
 
 export interface NextPlannedMeal {
-  meal: SavedMeal;
+  /** The library meal, or null when the slot holds a meal typed straight in. */
+  meal: SavedMeal | null;
+  /** What to print: the saved meal's name, or the typed text. */
+  name: string;
   slot: MealSlotType;
   /** YYYY-MM-DD of the day the meal is planned for. */
   date: string;
@@ -337,12 +347,12 @@ export function getNextPlannedMeal(
     const date = toISODate(d);
     for (const slot of activeOrder) {
       if (dayOffset === 0 && hour >= SLOT_WINDOWS[slot].end) continue;
-      const meal = resolveMeal(date, slot, plan, savedMeals);
-      if (!meal) continue;
+      const { meal, name } = resolveMealWithEntry(date, slot, plan, savedMeals);
+      if (!name) continue;
       const context = dayOffset === 0
         ? (hour >= SLOT_WINDOWS[slot].start ? 'now' : 'upcoming')
         : dayOffset === 1 ? 'tomorrow' : 'future';
-      return { meal, slot, date, dayOffset, context };
+      return { meal, name, slot, date, dayOffset, context };
     }
   }
   return null;

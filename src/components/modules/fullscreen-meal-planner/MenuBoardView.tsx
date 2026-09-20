@@ -1,4 +1,3 @@
-import type { MealSlotType, SavedMeal } from '@/types/config';
 import { SLOT_META, SLOT_ORDER, getMealSlotLabelKey, resolveMealWithEntry, toISODate, formatMealTime, resolvePlannedMealTime } from '@/lib/meal-constants';
 import { useFormattingLocale, useTranslate, formatDateSync } from '@/i18n';
 import { FIT_MEASURE_ATTR } from '@/hooks/useFitScale';
@@ -24,11 +23,13 @@ export default function MenuBoardView({
 
   const courses = activeOrder
     .map((sl) => {
-      const { meal, planned } = resolveMealWithEntry(todayISO, sl, plan, savedMeals);
+      const { meal, planned, name } = resolveMealWithEntry(todayISO, sl, plan, savedMeals);
       const time = resolvePlannedMealTime(planned, sl, settings.defaultSlotTimes);
-      return { slot: sl, meal, time, meta: SLOT_META[sl] };
+      return { slot: sl, meal, name, time, meta: SLOT_META[sl] };
     })
-    .filter((c) => c.meal !== null) as { slot: MealSlotType; meal: SavedMeal; time: string | undefined; meta: { color: string } }[];
+    // A course is a slot with something in it, which includes a meal typed
+    // straight into the day and so having no library entry behind it.
+    .filter((c): c is typeof c & { name: string } => c.name !== null);
 
   // A wide panel with a full four-course day reads better two-up; anything
   // shorter stays a single centred column like the portrait board.
@@ -112,9 +113,9 @@ export default function MenuBoardView({
                 mode={recipeTapMode}
                 style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: P(10), width: '100%' }}
               >
-                {showEmoji && course.meal.emoji && (
+                {showEmoji && course.meal?.emoji && (
                   <div style={{ fontSize: P(150), lineHeight: 1 }}>
-                    {course.meal.emoji}
+                    {course.meal?.emoji}
                   </div>
                 )}
                 <div style={{
@@ -122,30 +123,30 @@ export default function MenuBoardView({
                   color: 'var(--fmp-text)', letterSpacing: '-0.01em',
                   display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
                 }}>
-                  {course.meal.name}
+                  {course.name}
                 </div>
               </MealTapTarget>
 
               {/* Notes */}
-              {course.meal.notes && (
+              {course.meal?.notes && (
                 <div style={{
                   fontSize: P(26), fontStyle: 'italic', color: 'var(--fmp-text-2)',
                   maxWidth: '80%', lineHeight: 1.3,
                 }}>
-                  {course.meal.notes}
+                  {course.meal?.notes}
                 </div>
               )}
 
               {/* Meta */}
-              {(showPrepTime || showDifficulty) && (course.meal.prepTime || course.meal.difficulty) && (
+              {(showPrepTime || showDifficulty) && (course.meal?.prepTime || course.meal?.difficulty) && (
                 <div style={{
                   display: 'flex', justifyContent: 'center', gap: P(20),
                   fontSize: P(26), color: 'var(--fmp-text-3)',
                 }}>
-                  {showPrepTime && course.meal.prepTime && (
+                  {showPrepTime && course.meal?.prepTime && (
                     <span>&#128339; {t('fullscreen-meal-planner.prepTimeMin', { minutes: course.meal.prepTime })}</span>
                   )}
-                  {showDifficulty && course.meal.difficulty && (() => {
+                  {showDifficulty && course.meal?.difficulty && (() => {
                     const dc = getDifficultyColor(course.meal.difficulty);
                     return <span style={{ color: dc ?? undefined }}>{course.meal.difficulty}</span>;
                   })()}

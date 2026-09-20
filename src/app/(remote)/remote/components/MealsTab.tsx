@@ -36,6 +36,7 @@ export default function MealsTab() {
     jumpToToday,
     getMealForSlot,
     assignMealToSlot,
+    setSlotText,
     clearSlot,
     setSlotTime,
     clearAllPlan,
@@ -120,6 +121,7 @@ export default function MealsTab() {
           getMealForSlot={getMealForSlot}
           globalTimeFormat={globalTimeFormat}
           assignMealToSlot={assignMealToSlot}
+          setSlotText={setSlotText}
           clearSlot={clearSlot}
           setSlotTime={setSlotTime}
           clearAllPlan={clearAllPlan}

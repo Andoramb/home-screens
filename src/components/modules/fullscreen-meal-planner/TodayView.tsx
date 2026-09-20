@@ -44,7 +44,7 @@ export default function TodayView({
       heroLabel = t('fullscreen-meal-planner.heroLabels.tonight');
     }
   }
-  const { meal: heroMeal, planned: heroPlanned } = resolveMealWithEntry(todayISO, heroSlot, plan, savedMeals);
+  const { meal: heroMeal, planned: heroPlanned, name: heroName } = resolveMealWithEntry(todayISO, heroSlot, plan, savedMeals);
   const heroTime = resolvePlannedMealTime(heroPlanned, heroSlot, settings.defaultSlotTimes);
 
   const otherSlots = activeOrder.filter((sl) => sl !== heroSlot);
@@ -116,7 +116,7 @@ export default function TodayView({
             )}
           </span>
 
-          {heroMeal ? (
+          {heroName ? (
             <>
               <MealTapTarget
                 meal={heroMeal}
@@ -126,8 +126,8 @@ export default function TodayView({
                   gap: P(22), maxWidth: '100%',
                 }}
               >
-                {showEmoji && heroMeal.emoji && (
-                  <span style={{ fontSize: P(heroAlone ? 320 : 250), lineHeight: 1 }}>{heroMeal.emoji}</span>
+                {showEmoji && heroMeal?.emoji && (
+                  <span style={{ fontSize: P(heroAlone ? 320 : 250), lineHeight: 1 }}>{heroMeal?.emoji}</span>
                 )}
                 <span style={{
                   fontFamily: headerFont, fontSize: P(heroAlone ? 96 : 84), fontWeight: 400,
@@ -135,10 +135,10 @@ export default function TodayView({
                   display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const,
                   overflow: 'hidden',
                 }}>
-                  {heroMeal.name}
+                  {heroName}
                 </span>
               </MealTapTarget>
-              {heroMeal.notes && (
+              {heroMeal?.notes && (
                 <span style={{
                   fontSize: P(30), fontStyle: 'italic', color: 'var(--fmp-text-2)',
                   maxWidth: '80%', lineHeight: 1.3,
@@ -148,12 +148,12 @@ export default function TodayView({
               )}
               {/* Meta pills */}
               <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: P(14), justifyContent: 'center' }}>
-                {showPrepTime && heroMeal.prepTime && (
+                {showPrepTime && heroMeal?.prepTime && (
                   <span style={pillStyle}>
                     &#9201; {t('fullscreen-meal-planner.prepTimeMinShort', { minutes: heroMeal.prepTime })}
                   </span>
                 )}
-                {showDifficulty && heroMeal.difficulty && (() => {
+                {showDifficulty && heroMeal?.difficulty && (() => {
                   const dc = getDifficultyColor(heroMeal.difficulty);
                   return (
                     <span style={{
@@ -165,7 +165,7 @@ export default function TodayView({
                     </span>
                   );
                 })()}
-                {showTags && heroMeal.tags?.map((tag) => (
+                {showTags && heroMeal?.tags?.map((tag) => (
                   <span key={tag} style={pillStyle}>
                     {tag}
                   </span>
@@ -195,7 +195,7 @@ export default function TodayView({
             </div>
             <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: P(18) }}>
               {otherSlots.map((sl) => {
-                const { meal, planned } = resolveMealWithEntry(todayISO, sl, plan, savedMeals);
+                const { meal, planned, name } = resolveMealWithEntry(todayISO, sl, plan, savedMeals);
                 const slotTime = resolvePlannedMealTime(planned, sl, settings.defaultSlotTimes);
                 const meta = SLOT_META[sl];
                 const past = isSlotPast(sl);
@@ -247,7 +247,7 @@ export default function TodayView({
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
                           textAlign: 'left' as const,
                         }}>
-                          {meal?.name ?? t('fullscreen-meal-planner.notPlanned')}
+                          {name ?? t('fullscreen-meal-planner.notPlanned')}
                         </div>
                       </div>
                     </MealTapTarget>

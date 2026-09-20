@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { SavedMeal, PlannedMeal } from '@/types/config';
-import { generateGroceryList, GROCERY_CATEGORY_ORDER } from '@/lib/grocery-utils';
+import { generateGroceryList, groceryListNeedsHeadings, GROCERY_CATEGORY_ORDER } from '@/lib/grocery-utils';
 import { useTranslate } from '@/i18n';
 
 interface SidebarGroceryProps {
@@ -21,6 +21,8 @@ export default function SidebarGrocery({ plan, meals, checkedItems, onToggleItem
     () => generateGroceryList(plan, meals, Array.from(checkedItems)),
     [plan, meals, checkedItems],
   );
+
+  const showHeadings = groceryListNeedsHeadings(groceryMap);
 
   let total = 0;
   let checked = 0;
@@ -76,7 +78,8 @@ export default function SidebarGrocery({ plan, meals, checkedItems, onToggleItem
 
           return (
             <div key={catKey} className="mb-5">
-              {/* Category header */}
+              {/* Category header, unless the whole list is one aisle */}
+              {showHeadings && (
               <div className="flex items-center gap-1.5 mb-1.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-hs-text-faint">
                   {categoryLabel}
@@ -85,6 +88,7 @@ export default function SidebarGrocery({ plan, meals, checkedItems, onToggleItem
                   {catChecked}/{catTotal}
                 </span>
               </div>
+              )}
 
               {/* Items */}
               {group.items.map((item) => {

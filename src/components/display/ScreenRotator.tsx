@@ -26,6 +26,7 @@ import { usePauseRotation } from './usePauseRotation';
 import { useScreenTransition } from './useScreenTransition';
 import { useSwipeNavigation } from './useSwipeNavigation';
 import { useInteractionHeld } from '@/lib/interaction-hold';
+import { useTapRotationHold } from './useTapRotationHold';
 import { resolveScreenDuration } from '@/lib/resolve-screen-duration';
 import { resolveScreenTargetIndex } from '@/lib/resolve-screen-target';
 import { useTZClock } from '@/hooks/useTZClock';
@@ -321,8 +322,15 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     || (displayState === 'dimmed' && brightnessOverride !== null);
 
   // interactionHeld gates both the swipe gesture below and the rotation
-  // timer further down: true while an overlay (e.g. an open recipe) is up.
+  // timer further down: true while an overlay (e.g. an open recipe) is up, and
+  // for a moment after someone taps a control (useTapRotationHold below).
   const interactionHeld = useInteractionHeld();
+
+  // A tap on any control holds the screen briefly, so a rotation cannot take
+  // the chart out from under a half-finished tap. Only while the content is
+  // live: a touch on a dimmed or sleeping display is a wake, and the sleep
+  // manager owns that.
+  useTapRotationHold(contentIsLive && !preview);
 
   // Flick navigation. Same triple as remote/plugin nav: navigate, grant the
   // new screen a full dwell, resume a paused rotator. Gated at pointerdown

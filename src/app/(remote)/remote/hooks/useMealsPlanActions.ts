@@ -5,6 +5,7 @@ import type { SavedMeal, PlannedMeal, MealSlotType, MealSettings } from '@/types
 import { filterPlanToWeek } from '@/lib/meal-constants';
 import {
   assignPlanSlot,
+  setPlanSlotText,
   clearPlanSlot,
   setPlanSlotTime,
   clearPlanWeek,
@@ -78,6 +79,12 @@ export function useMealsPlanActions({
     await applyToPlan((p) => assignPlanSlot(p, date, slot, mealId));
   }, [applyToPlan, setPickingSlot]);
 
+  /** A meal typed straight into the slot, with no library entry behind it. */
+  const setSlotText = useCallback(async (date: string, slot: MealSlotType, text: string) => {
+    setPickingSlot(null);
+    await applyToPlan((p) => setPlanSlotText(p, date, slot, text));
+  }, [applyToPlan, setPickingSlot]);
+
   const clearSlot = useCallback(async (date: string, slot: MealSlotType) => {
     await applyToPlan((p) => clearPlanSlot(p, date, slot));
   }, [applyToPlan]);
@@ -128,6 +135,7 @@ export function useMealsPlanActions({
     weekPlan,
     getMealForSlot,
     assignMealToSlot,
+    setSlotText,
     clearSlot,
     setSlotTime,
     clearAllPlan,

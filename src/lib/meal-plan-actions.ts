@@ -42,6 +42,35 @@ export function assignPlanSlot(
   return [...rest, { ...(existing ?? {}), date, slot, mealId }];
 }
 
+/**
+ * Put a typed-in meal in a slot: "Tacos" for tonight, without it first having
+ * to become a library entry.
+ *
+ * `customText` has always been part of a plan entry and nothing could write
+ * one. Typing over a saved meal replaces it rather than sitting alongside it,
+ * so the slot shows one dinner, and blank text empties the slot, which is what
+ * backspacing the last character plainly means.
+ *
+ * Every surface that draws a plan reads `plannedMealName` rather than
+ * `meal.name`, because an entry holding only typed text has no library meal
+ * behind it. The first version of this shipped without that: the phone showed
+ * the dinner and the wall showed an empty slot.
+ */
+export function setPlanSlotText(
+  plan: PlannedMeal[],
+  date: string,
+  slot: MealSlotType,
+  text: string,
+): PlannedMeal[] {
+  const trimmed = text.trim();
+  const existing = plan.find((p) => p.date === date && p.slot === slot);
+  if (!trimmed) return existing ? clearPlanSlot(plan, date, slot) : plan;
+  const rest = plan.filter((p) => !(p.date === date && p.slot === slot));
+  const next: PlannedMeal = { ...(existing ?? {}), date, slot, customText: trimmed };
+  delete next.mealId;
+  return [...rest, next];
+}
+
 /** Empty one slot. */
 export function clearPlanSlot(plan: PlannedMeal[], date: string, slot: MealSlotType): PlannedMeal[] {
   return plan.filter((p) => !(p.date === date && p.slot === slot));

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { GROCERY_CATEGORY_ICONS } from '@/lib/grocery-utils';
+import { GROCERY_CATEGORY_ICONS, groceryListNeedsHeadings } from '@/lib/grocery-utils';
 import { useTranslate } from '@/i18n';
 import { shareOrCopyText } from './share-text';
 
@@ -17,6 +17,7 @@ export default function MealsGroceryView({
   toggleGroceryItem,
 }: MealsGroceryViewProps) {
   const t = useTranslate('remote');
+  const showHeadings = groceryListNeedsHeadings(groceryList);
   // Grocery category labels live in `core.meal.grocery.categoryLabels.*`
   // so /remote doesn't have to lazy-fetch the 113KB editor.json. Core is
   // already loaded by the remote layout.
@@ -111,6 +112,7 @@ export default function MealsGroceryView({
         const categoryLabel = tCore(`meal.grocery.categoryLabels.${catKey}`);
         return (
         <div key={catKey} style={{ marginBottom: 20 }}>
+          {showHeadings && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
             {GROCERY_CATEGORY_ICONS[catKey] && (
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--hs-text-faint)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -134,6 +136,7 @@ export default function MealsGroceryView({
               {catChecked}/{items.length}
             </span>
           </div>
+          )}
 
           {items.map((item) => (
             <button

@@ -56,7 +56,7 @@ export function CompactView({ config, settings, timeFormat, plan, savedMeals, to
           {/* Meals */}
           <div className="flex flex-col gap-1 flex-1">
             {slots.map((slot) => {
-              const { meal, planned } = resolveMealWithEntry(date, slot, plan, savedMeals);
+              const { meal, planned, name } = resolveMealWithEntry(date, slot, plan, savedMeals);
               const time = resolvePlannedMealTime(planned, slot, settings.defaultSlotTimes);
               const meta = SLOT_META[slot];
               return (
@@ -64,23 +64,23 @@ export function CompactView({ config, settings, timeFormat, plan, savedMeals, to
                   key={slot}
                   className="flex items-center gap-1.5 px-2 py-1 rounded"
                   style={{
-                    backgroundColor: meal ? meta.bg : 'transparent',
+                    backgroundColor: name ? meta.bg : 'transparent',
                   }}
                 >
                   {/* Slot dot */}
                   <div
                     className="w-1 h-1 rounded-full shrink-0"
-                    style={{ backgroundColor: meta.color, opacity: meal ? 0.8 : 0.2 }}
+                    style={{ backgroundColor: meta.color, opacity: name ? 0.8 : 0.2 }}
                   />
 
-                  {meal ? (
+                  {name ? (
                     <div className="flex items-center gap-1 min-w-0 flex-1">
                       <MealTapTarget meal={meal} mode={recipeTapMode} className="flex items-center gap-1 min-w-0">
-                        {showEmoji && meal.emoji && (
-                          <span className="shrink-0" style={{ fontSize: '0.7em' }}>{meal.emoji}</span>
+                        {showEmoji && meal?.emoji && (
+                          <span className="shrink-0" style={{ fontSize: '0.7em' }}>{meal?.emoji}</span>
                         )}
                         <span className="truncate" style={{ fontSize: '0.65em', opacity: TEXT_OPACITY.heading }}>
-                          {meal.name}
+                          {name}
                         </span>
                       </MealTapTarget>
                       {time && (

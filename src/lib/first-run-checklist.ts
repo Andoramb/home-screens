@@ -3,6 +3,13 @@ import type { Screen } from '@/types/config';
 
 export interface FirstRunSteps {
   template: boolean;
+  /**
+   * Someone is in the household. Chores, rewards, meals, timetables and the
+   * calendar's name tags all hang off the roster, and an owner who follows
+   * this card to the end used to arrive at a finished display having never
+   * been asked for it.
+   */
+  family: boolean;
   location: boolean;
   /**
    * Always false. Nothing on the hub records that `/remote` was ever opened,
@@ -20,6 +27,8 @@ export interface FirstRunChecklistInput {
   /** Screens on the display being edited, or null before the config loads. */
   screens: Screen[] | null;
   locationSet: boolean;
+  /** null while the hub has not answered about the household yet. */
+  familySet: boolean | null;
   /** null while the hub has not answered about the password yet. */
   passwordSet: boolean | null;
 }
@@ -48,10 +57,11 @@ export interface FirstRunChecklistState {
  * hold still.
  */
 export function resolveFirstRunChecklist(input: FirstRunChecklistInput): FirstRunChecklistState {
-  const { dismissed, screens, locationSet, passwordSet } = input;
+  const { dismissed, screens, locationSet, familySet, passwordSet } = input;
 
   const steps: FirstRunSteps = {
     template: screens != null && screens.some((screen) => !isScreenEmpty(screen)),
+    family: familySet === true,
     location: locationSet,
     phone: false,
     password: passwordSet === true,
@@ -61,12 +71,14 @@ export function resolveFirstRunChecklist(input: FirstRunChecklistInput): FirstRu
   // outstanding the install is plainly new, so the card shows straight away.
   const knownLocally = steps.template && steps.location;
 
-  // Otherwise wait for the hub's answer about the password: on an install that
-  // needs nothing, flashing the card for the length of one request is worse
-  // than the card arriving a moment late on the one install that needs the
-  // nudge. A request that never answers leaves it quiet, which errs toward not
-  // nagging.
-  const show = !dismissed && screens != null && (!knownLocally || passwordSet === false);
+  // Otherwise wait for the hub's answers about the household and the password:
+  // on an install that needs nothing, flashing the card for the length of one
+  // request is worse than the card arriving a moment late on the one install
+  // that needs the nudge. A request that never answers leaves it quiet, which
+  // errs toward not nagging.
+  const show = !dismissed
+    && screens != null
+    && (!knownLocally || familySet === false || passwordSet === false);
 
   return { show, steps };
 }

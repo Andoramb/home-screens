@@ -119,6 +119,7 @@ export function useMealsTabData() {
     jumpToToday: weekNav.jumpToToday,
     getMealForSlot: planActions.getMealForSlot,
     assignMealToSlot: planActions.assignMealToSlot,
+    setSlotText: planActions.setSlotText,
     clearSlot: planActions.clearSlot,
     setSlotTime: planActions.setSlotTime,
     clearAllPlan: planActions.clearAllPlan,

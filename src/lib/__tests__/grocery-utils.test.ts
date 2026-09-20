@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { generateGroceryList, GROCERY_CATEGORY_ORDER } from '@/lib/grocery-utils';
+import { generateGroceryList, groceryListNeedsHeadings, GROCERY_CATEGORY_ORDER } from '@/lib/grocery-utils';
 import type { SavedMeal, PlannedMeal } from '@/types/config';
 
 const meal = (id: string, ingredients: SavedMeal['ingredients']): SavedMeal => ({
@@ -155,5 +155,51 @@ describe('generateGroceryList', () => {
 
     const result = generateGroceryList(plan, meals, []);
     expect(result.size).toBe(0);
+  });
+});
+
+/**
+ * Before this, the category select was a fourth control on a three-tap form
+ * row, so a hurried parent set none of them and every item on the week's list
+ * appeared under one OTHER heading.
+ */
+describe('uncategorised ingredients', () => {
+  const plan: PlannedMeal[] = [{ date: '2026-04-04', slot: 'dinner', mealId: 'a' }];
+
+  it('files them by name instead of dropping them all in other', () => {
+    const meals = [meal('a', [
+      { name: 'Ground beef', amount: '1 lb' },
+      { name: 'Cheddar cheese', amount: '200g' },
+      { name: 'Tomatoes', amount: '4' },
+    ])];
+    const result = generateGroceryList(plan, meals, []);
+    expect([...result.keys()].sort()).toEqual(['dairy', 'meat', 'produce']);
+    expect(result.get('other')).toBeUndefined();
+  });
+
+  it('never guesses over a category the household set', () => {
+    const meals = [meal('a', [{ name: 'Ground beef', amount: '1 lb', category: 'pantry' }])];
+    const result = generateGroceryList(plan, meals, []);
+    expect([...result.keys()]).toEqual(['pantry']);
+  });
+
+  it('still falls back to other for a name it cannot place', () => {
+    const meals = [meal('a', [{ name: 'Birthday candles', amount: '1 box' }])];
+    expect([...generateGroceryList(plan, meals, []).keys()]).toEqual(['other']);
+  });
+});
+
+describe('groceryListNeedsHeadings', () => {
+  const list = (...keys: string[]) =>
+    new Map(keys.map((k) => [k, { items: [{ name: 'x' }] }]));
+
+  it('draws headings once there is more than one aisle', () => {
+    expect(groceryListNeedsHeadings(list('produce', 'meat'))).toBe(true);
+  });
+
+  /* One heading over the whole list is a label on a flat list, not a grouping. */
+  it('leaves them off a single-aisle list', () => {
+    expect(groceryListNeedsHeadings(list('other'))).toBe(false);
+    expect(groceryListNeedsHeadings(list())).toBe(false);
   });
 });

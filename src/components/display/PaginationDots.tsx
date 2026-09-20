@@ -164,6 +164,9 @@ export default function PaginationDots({
   return (
     <>
       <div
+        // Tapping a dot is navigation, and the double-tap on the active dot is
+        // the explicit pause; neither wants the brief tap hold underneath it.
+        data-rotation-hold="off"
         style={{
           position: 'absolute',
           bottom: PAGINATION_BOTTOM_PX,

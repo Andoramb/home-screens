@@ -436,9 +436,23 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
 
   return (
     <div>
+      {/* Whose chart this is, in the heading. A shared tablet opens on whoever
+          used it last, and the only cue used to be one name pill outlined in
+          colour halfway down the rail, so a kid could tick someone else's
+          chores without ever seeing a name. The switch hint the Rewards tab
+          already carries sits here too, on the tab people actually land on. */}
       <div style={{ padding: '12px 0 4px' }}>
         <div style={{ fontSize: 12, color: 'var(--hs-text-faint)' }}>{dayName}</div>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--hs-text-primary)' }}>{t('choresTab.header')}</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--hs-text-primary)' }}>
+          {subView === 'today' && selectedMember
+            ? t('choresTab.headerFor', { name: selectedMember.name })
+            : t('choresTab.header')}
+        </h2>
+        {subView === 'today' && selectedMember && members.length > 1 && (
+          <p style={{ fontSize: 12, color: 'var(--hs-text-faint)', margin: '4px 0 0', lineHeight: 1.4 }}>
+            {t('choresTab.switchHint', { name: selectedMember.name })}
+          </p>
+        )}
       </div>
 
       {/* Sub-nav: Today / Manage / Rewards */}

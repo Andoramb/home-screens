@@ -37,14 +37,15 @@ export function ListView({ config, settings, timeFormat, plan, savedMeals, today
         const isToday = date === todayISO;
         const dayIdx = dateToDayIndex(date);
         const meals = slots.map((slot) => {
-          const { meal, planned } = resolveMealWithEntry(date, slot, plan, savedMeals);
+          const { meal, planned, name } = resolveMealWithEntry(date, slot, plan, savedMeals);
           return {
             slot,
             meal,
+            name,
             time: resolvePlannedMealTime(planned, slot, settings.defaultSlotTimes),
           };
         });
-        const hasMeals = meals.some((m) => m.meal);
+        const hasMeals = meals.some((m) => m.name);
 
         return (
           <div key={date} className="mb-2">
@@ -74,8 +75,8 @@ export function ListView({ config, settings, timeFormat, plan, savedMeals, today
             {/* Meals */}
             {hasMeals ? (
               <div className="flex flex-col gap-0.5 pl-1">
-                {meals.map(({ slot, meal, time }) => {
-                  if (!meal) return null;
+                {meals.map(({ slot, meal, name, time }) => {
+                  if (!name) return null;
                   const meta = SLOT_META[slot];
                   return (
                     <div
@@ -92,11 +93,11 @@ export function ListView({ config, settings, timeFormat, plan, savedMeals, today
 
                       {/* Meal info */}
                       <MealTapTarget meal={meal} mode={recipeTapMode} className="flex items-center gap-1.5 min-w-0 flex-1">
-                        {showEmoji && meal.emoji && (
-                          <span className="shrink-0" style={{ fontSize: '0.8em' }}>{meal.emoji}</span>
+                        {showEmoji && meal?.emoji && (
+                          <span className="shrink-0" style={{ fontSize: '0.8em' }}>{meal?.emoji}</span>
                         )}
                         <span className="truncate" style={{ fontSize: '0.7em', opacity: TEXT_OPACITY.heading }}>
-                          {meal.name}
+                          {name}
                         </span>
                       </MealTapTarget>
 
@@ -112,10 +113,10 @@ export function ListView({ config, settings, timeFormat, plan, savedMeals, today
                             {formatMealTime(time, timeFormat)}
                           </span>
                         )}
-                        {showPrepTime && meal.prepTime && (
+                        {showPrepTime && meal?.prepTime && (
                           <span style={{ opacity: TEXT_OPACITY.tertiary }}>&#9201; {t('meal-planner.prepTimeMinShort', { minutes: meal.prepTime })}</span>
                         )}
-                        {showTags && meal.tags?.slice(0, 2).map((tag) => (
+                        {showTags && meal?.tags?.slice(0, 2).map((tag) => (
                           <span
                             key={tag}
                             className="rounded-full px-1 py-px"

@@ -2950,6 +2950,7 @@
       "shadowSize": "Taille de l'ombre",
       "background": "Arrière-plan",
       "borderColor": "Couleur de bordure",
+      "colorAlpha": "À quel point cette couleur est intense",
       "textColor": "Couleur du texte",
       "textScale": "Taille du texte",
       "textScaleHint": "100 % est la taille de texte normale de ce module. Fais glisser pour l'agrandir ou la réduire.",
@@ -4903,11 +4904,13 @@
   },
   "firstRun": {
     "heading": "Premiers pas",
-    "intro": "Quatre étapes rapides pour un affichage qui fonctionne.",
+    "intro": "Cinq étapes rapides pour un affichage qui fonctionne.",
     "dismiss": "Masquer cette liste",
     "steps": {
       "template": "Choisissez un modèle ou ajoutez des modules à votre premier écran",
       "templateButton": "Choisir un modèle",
+      "family": "Ajoutez les personnes de votre foyer",
+      "familyLink": "Ouvrir Famille",
       "location": "Indiquez votre lieu",
       "locationLink": "Ouvrir Lieu et langue",
       "phone": "Ouvrez-le sur votre téléphone",

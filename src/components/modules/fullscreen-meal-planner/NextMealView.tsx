@@ -30,7 +30,7 @@ export default function NextMealView({
     );
   }
 
-  const { meal, slot, context, date } = next;
+  const { meal, name, slot, context, date } = next;
   // Find the planned entry for this date+slot to grab its time
   const plannedEntry = plan.find((p) => p.date === date && p.slot === slot);
   const time = resolvePlannedMealTime(plannedEntry, slot, settings.defaultSlotTimes);
@@ -97,7 +97,7 @@ export default function NextMealView({
           gap: P(28), maxWidth: '100%',
         }}
       >
-        {showEmoji && meal.emoji && (
+        {showEmoji && meal?.emoji && (
           <span style={{ fontSize: P(380), lineHeight: 1, margin: `${P(20)}px 0` }}>
             {meal.emoji}
           </span>
@@ -107,12 +107,12 @@ export default function NextMealView({
           color: 'var(--fmp-text)', lineHeight: 1.05, letterSpacing: '-0.01em',
           display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as const, overflow: 'hidden',
         }}>
-          {meal.name}
+          {name}
         </span>
       </MealTapTarget>
 
       {/* Notes */}
-      {meal.notes && (
+      {meal?.notes && (
         <span style={{
           fontSize: P(36), fontStyle: 'italic', color: 'var(--fmp-text-2)',
           maxWidth: '80%', lineHeight: 1.3,
@@ -122,14 +122,14 @@ export default function NextMealView({
       )}
 
       {/* Meta pills and tags share one row, like the today hero. */}
-      {((showPrepTime && meal.prepTime) || (showDifficulty && meal.difficulty) || (showTags && meal.tags && meal.tags.length > 0)) && (
+      {((showPrepTime && meal?.prepTime) || (showDifficulty && meal?.difficulty) || (showTags && meal?.tags && meal.tags.length > 0)) && (
         <div style={{ display: 'flex', flexWrap: 'wrap' as const, justifyContent: 'center', gap: P(16) }}>
-          {showPrepTime && meal.prepTime && (
+          {showPrepTime && meal?.prepTime && (
             <span style={pillStyle}>
               &#9201; {t('fullscreen-meal-planner.prepTimeMin', { minutes: meal.prepTime })}
             </span>
           )}
-          {showDifficulty && meal.difficulty && (() => {
+          {showDifficulty && meal?.difficulty && (() => {
             const dc = getDifficultyColor(meal.difficulty);
             return (
               <span style={{
@@ -141,7 +141,7 @@ export default function NextMealView({
               </span>
             );
           })()}
-          {showTags && meal.tags?.map((tag) => (
+          {showTags && meal?.tags?.map((tag) => (
             <span key={tag} style={pillStyle}>
               {tag}
             </span>

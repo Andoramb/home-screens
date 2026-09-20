@@ -60,7 +60,7 @@ describe('getNextPlannedMeal', () => {
       expect(result).not.toBeNull();
       expect(result!.context).toBe('now');
       expect(result!.slot).toBe('breakfast');
-      expect(result!.meal.name).toBe('Pancakes');
+      expect(result!.name).toBe('Pancakes');
     });
 
     it('returns "now" when in dinner window (17-21)', () => {
@@ -71,7 +71,7 @@ describe('getNextPlannedMeal', () => {
       expect(result).not.toBeNull();
       expect(result!.context).toBe('now');
       expect(result!.slot).toBe('dinner');
-      expect(result!.meal.name).toBe('Pasta');
+      expect(result!.name).toBe('Pasta');
     });
   });
 

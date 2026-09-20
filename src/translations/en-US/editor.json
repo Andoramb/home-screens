@@ -2950,6 +2950,7 @@
       "shadowSize": "Shadow Size",
       "background": "Background",
       "borderColor": "Border Color",
+      "colorAlpha": "How strong this color is",
       "textColor": "Text Color",
       "textScale": "Text size",
       "textScaleHint": "100% is this module's normal text size. Slide to make it bigger or smaller.",
@@ -4903,11 +4904,13 @@
   },
   "firstRun": {
     "heading": "Getting started",
-    "intro": "Four quick steps to a working display.",
+    "intro": "Five quick steps to a working display.",
     "dismiss": "Hide this checklist",
     "steps": {
       "template": "Pick a template or add modules to your first screen",
       "templateButton": "Choose a template",
+      "family": "Add the people in your house",
+      "familyLink": "Open Family",
       "location": "Set your location",
       "locationLink": "Open Location & language",
       "phone": "Open it on your phone",

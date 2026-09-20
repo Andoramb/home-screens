@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "En anden har ændret pligterne. Din seneste ændring blev ikke gemt. Prøv igen.",
     "header": "Pligter",
+    "headerFor": "{name}s pligter",
+    "switchHint": "Er du ikke {name}? Tryk på dit navn for at skifte.",
     "subNav": {
       "today": "I dag",
       "manage": "Administrér",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Vælg et måltid",
-      "emptyLibrary": "Ingen måltider i biblioteket. Tilføj nogle først.",
+      "emptyLibrary": "Ingen gemte måltider endnu. Skriv et herover til i aften, eller gem dem I tit laver.",
+        "typePlaceholder": "Skriv et måltid, for eksempel tacos",
+        "typeLabel": "Skriv et måltid til denne dag",
+        "typeAdd": "Tilføj",
       "prepTimeShort": "{minutes}m",
       "removeMealButton": "Fjern måltid",
       "subtitle": "{slot} · {day}"

@@ -42,7 +42,7 @@ function SlotCard({
   recipeTapMode: RecipeTapMode;
 }) {
   const t = useTranslate('modules');
-  const { meal, planned } = resolveMealWithEntry(todayISO, slot, plan, savedMeals);
+  const { meal, planned, name } = resolveMealWithEntry(todayISO, slot, plan, savedMeals);
   const time = resolvePlannedMealTime(planned, slot, settings.defaultSlotTimes);
   const meta = SLOT_META[slot];
   const showEmoji = config.showEmoji ?? true;
@@ -54,7 +54,7 @@ function SlotCard({
       layout
       className="flex flex-col rounded-lg overflow-hidden"
       style={{
-        backgroundColor: meal ? meta.bg : ink(0.02),
+        backgroundColor: name ? meta.bg : ink(0.02),
         borderLeft: `3px solid ${isActive ? meta.color : `${meta.color}30`}`,
       }}
     >
@@ -87,23 +87,23 @@ function SlotCard({
 
       {/* Meal content */}
       <div className="px-3 pb-2.5 pt-0.5">
-        {meal ? (
+        {name ? (
           <MealTapTarget meal={meal} mode={recipeTapMode} className="flex items-start gap-2 w-full">
-            {showEmoji && meal.emoji && (
-              <span className="shrink-0 mt-0.5" style={{ fontSize: '1.4em' }}>{meal.emoji}</span>
+            {showEmoji && meal?.emoji && (
+              <span className="shrink-0 mt-0.5" style={{ fontSize: '1.4em' }}>{meal?.emoji}</span>
             )}
             <div className="flex-1 min-w-0">
               <p className="font-medium truncate" style={{ fontSize: '0.95em' }}>
-                {meal.name}
+                {name}
               </p>
               {(showPrepTime || showTags) && (
                 <div className="flex flex-wrap items-center gap-1.5 mt-1" style={{ fontSize: '0.55em' }}>
-                  {showPrepTime && meal.prepTime && (
+                  {showPrepTime && meal?.prepTime && (
                     <span className="flex items-center gap-0.5" style={{ opacity: TEXT_OPACITY.dim }}>
                       <span>&#9201;</span> {t('meal-planner.prepTimeMin', { minutes: meal.prepTime })}
                     </span>
                   )}
-                  {showTags && meal.tags?.map((tag) => (
+                  {showTags && meal?.tags?.map((tag) => (
                     <span
                       key={tag}
                       className="rounded-full px-1.5 py-px"

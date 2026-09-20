@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { SavedMeal, PlannedMeal, MealSlotType, TimeFormat } from '@/types/config';
-import { SLOT_META, SLOT_ORDER, getLocalizedDayNames, getMealSlotLabelKey, DEFAULT_MEAL_EMOJI, dateToDayIndex, toISODate } from '@/lib/meal-constants';
+import { SLOT_META, SLOT_ORDER, getLocalizedDayNames, getMealSlotLabelKey, DEFAULT_MEAL_EMOJI, dateToDayIndex, toISODate, plannedMealName } from '@/lib/meal-constants';
 import { Shuffle, Copy, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import MealTimeChip from '@/components/meals/MealTimeChip';
 import { useFormattingLocale, useTranslate } from '@/i18n';
@@ -66,10 +66,16 @@ export default function WeekGrid({
   const ghostBtn =
     'flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded border border-hs-border-strong bg-transparent text-hs-text-faint hover:text-hs-text-secondary hover:bg-hs-card transition';
 
-  function resolveMealCell(date: string, slot: MealSlotType): { meal: SavedMeal | null; planned: PlannedMeal | undefined } {
+  // The grid draws whatever the slot holds, which includes a meal typed
+  // straight into the day on the phone: those carry `customText` and no
+  // `mealId`, and reading only the library left the cell looking empty.
+  function resolveMealCell(date: string, slot: MealSlotType): {
+    meal: SavedMeal | null; planned: PlannedMeal | undefined; name: string | null;
+  } {
     const planned = plan.find((p) => p.date === date && p.slot === slot);
-    if (!planned?.mealId) return { meal: null, planned };
-    return { meal: savedMeals.find((m) => m.id === planned.mealId) ?? null, planned };
+    if (!planned) return { meal: null, planned, name: null };
+    const meal = planned.mealId ? savedMeals.find((m) => m.id === planned.mealId) ?? null : null;
+    return { meal, planned, name: plannedMealName(meal, planned) };
   }
 
   return (
@@ -153,7 +159,7 @@ export default function WeekGrid({
             const shortDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
 
             return orderedSlots.map((slot, slotIdx) => {
-              const { meal, planned } = resolveMealCell(date, slot);
+              const { meal, planned, name } = resolveMealCell(date, slot);
               const isSelected = meal ? selectedMealId === meal.id : false;
 
               return (
@@ -206,20 +212,20 @@ export default function WeekGrid({
                       backgroundColor: isToday ? 'rgba(245,158,11,0.02)' : undefined,
                     }}
                   >
-                    {meal ? (
+                    {name ? (
                       <div
-                        onClick={() => onSelectMeal(meal.id)}
+                        onClick={() => { if (meal) onSelectMeal(meal.id); }}
                         className={`relative flex flex-col gap-1 px-2.5 py-2 rounded-lg bg-hs-card/60 border border-hs-border-strong/50 cursor-pointer hover:bg-hs-card hover:border-hs-border-strong transition-all group ${
                           isSelected ? 'border-amber-500/30 bg-amber-500/5' : ''
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <span className="text-2xl">{meal.emoji || DEFAULT_MEAL_EMOJI}</span>
+                          <span className="text-2xl">{meal?.emoji || DEFAULT_MEAL_EMOJI}</span>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-semibold text-hs-text-body truncate">
-                              {meal.name}
+                              {name}
                             </div>
-                            {meal.prepTime != null && (
+                            {meal?.prepTime != null && (
                               <div className="text-[10px] text-hs-text-faint">
                                 {t('mealPlannerModal.weekGrid.prepTimeMin', { minutes: meal.prepTime })}
                               </div>

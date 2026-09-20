@@ -216,6 +216,26 @@ describe('bundled template files', () => {
     }
   });
 
+  it('lists in the catalog exactly the module types each layout contains', async () => {
+    // The palette filters and the picker card read `moduleTypes`, so a layout
+    // edited without touching the catalog advertises the wrong contents.
+    for (const template of TEMPLATE_CATALOG) {
+      for (const filename of [template.portrait, template.landscape]) {
+        const layout = await readTemplate(filename);
+        const actual = new Set(layout.screens.flatMap((s) => s.modules.map((m) => m.type)));
+        expect([...actual].sort(), filename).toEqual([...template.moduleTypes].sort());
+      }
+    }
+  });
+
+  it('offers a chore chart somewhere in the catalog', async () => {
+    // An owner who follows onboarding to the end lands on a finished display.
+    // With no template carrying one, the chore chart the product is built
+    // around was reachable only by knowing to look for it in the palette.
+    const withChores = TEMPLATE_CATALOG.filter((t) => t.moduleTypes.includes('chore-chart'));
+    expect(withChores.map((t) => t.id)).toContain('family-dashboard');
+  });
+
   it('every template already carries the current module shapes', async () => {
     // A template written for an older schema is migrated on import (see
     // importLayout), but the bundled files should not depend on that: a

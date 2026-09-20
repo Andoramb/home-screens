@@ -48,7 +48,10 @@ test.beforeEach(async ({ request, sandboxDir }) => {
 test('kid view lists today\'s chores without the Manage view', async ({ page }) => {
   await page.goto('/chores');
   await expect(page.getByText('Feed the dog')).toBeVisible();
-  await expect(page.getByText('Avery')).toBeVisible();
+  // The heading says whose chart this is: a shared tablet opens on whoever
+  // used it last, and the name pill alone never said so.
+  await expect(page.getByRole('heading', { name: 'Avery\u2019s chores' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Avery', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Manage', exact: true })).toBeHidden();
 });
 

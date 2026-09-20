@@ -1,12 +1,23 @@
 'use client';
 
 import { useState } from 'react';
-import { parseCssColorToRgb } from '@/lib/hex-color';
+import { parseCssColorToRgb, parseEditableColor, withCssColorAlpha } from '@/lib/hex-color';
 
 interface ColorPickerProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  /**
+   * Offer a see-through slider beside the swatch. Without it, the only way to
+   * make a module's background semi-transparent was to hand-type
+   * `rgba(0, 0, 0, 0.4)` into the text box, which is also the value every
+   * module card ships with — so the control most likely to be touched first
+   * asked for CSS. The OS colour input has no alpha of its own, hence a
+   * separate slider rather than a richer swatch.
+   */
+  showAlpha?: boolean;
+  /** Screen-reader name for the see-through slider. Required by `showAlpha`. */
+  alphaLabel?: string;
   /** Pairs with `resetLabel`: when both are set and `value` differs from
    *  `defaultValue`, a reset button appears. Passing one without the other
    *  renders no button — the label is what names it for screen readers, and
@@ -27,7 +38,9 @@ function isSupportedColor(input: string): boolean {
   return parseCssColorToRgb(input) !== null;
 }
 
-export default function ColorPicker({ label, value, onChange, defaultValue, resetLabel }: ColorPickerProps) {
+export default function ColorPicker({
+  label, value, onChange, defaultValue, resetLabel, showAlpha, alphaLabel,
+}: ColorPickerProps) {
   const [draft, setDraft] = useState(value);
   // Keep draft in sync when parent value changes (e.g. undo/redo)
   const [prevValue, setPrevValue] = useState(value);
@@ -35,6 +48,27 @@ export default function ColorPicker({ label, value, onChange, defaultValue, rese
     setDraft(value);
     setPrevValue(value);
   }
+
+  // The swatch used to show white for every `rgba(...)` and for `transparent`
+  // because it only read hex, so the two values modules actually ship with
+  // were both drawn as the wrong colour. Feed it the parsed channels instead.
+  const editable = parseEditableColor(value);
+  const alpha = editable?.alpha ?? 1;
+  const swatch = editable
+    ? `#${editable.rgb.map((c) => c.toString(16).padStart(2, '0')).join('')}`
+    : '#ffffff';
+  const setAlpha = (next: number) => {
+    const updated = withCssColorAlpha(value, next);
+    if (updated === null) return;
+    onChange(updated);
+    setDraft(updated);
+  };
+  const setSwatch = (hex: string) => {
+    // Picking a colour keeps however see-through the card already was.
+    const updated = withCssColorAlpha(hex, alpha) ?? hex;
+    onChange(updated);
+    setDraft(updated);
+  };
 
   return (
     <label className="flex items-center justify-between gap-2">
@@ -56,10 +90,25 @@ export default function ColorPicker({ label, value, onChange, defaultValue, rese
         )}
         <input
           type="color"
-          value={value.startsWith('#') ? value : '#ffffff'}
-          onChange={(e) => { onChange(e.target.value); setDraft(e.target.value); }}
+          value={swatch}
+          onChange={(e) => setSwatch(e.target.value)}
           className="w-8 h-8 rounded border border-hs-border-strong bg-transparent cursor-pointer"
         />
+        {showAlpha && alphaLabel !== undefined && (
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={1}
+            value={Math.round(alpha * 100)}
+            title={alphaLabel}
+            aria-label={alphaLabel}
+            onChange={(e) => setAlpha(Number(e.target.value) / 100)}
+            // Inside the <label>, so a drag must not also open the OS picker.
+            onClick={(e) => e.preventDefault()}
+            className="w-16 cursor-pointer accent-hs-accent"
+          />
+        )}
         <input
           type="text"
           value={draft}

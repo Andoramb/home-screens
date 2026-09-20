@@ -4,6 +4,8 @@ import path from 'path';
 import {
   SETTINGS_FIELD_INDEX,
   isSettingsFieldReachable,
+  settingsFieldSearchText,
+  normalizeSettingsSearch,
   type SettingsFieldVisibilityContext,
 } from '@/lib/settings-search-index';
 import { DEFAULT_PAGE_IDS, validPanelFor, type DefaultPageId } from '@/lib/settings-route';
@@ -200,5 +202,60 @@ describe('conditionally-rendered field gating', () => {
         advancedMode: true, isMultiDisplay: true, profileCount: 5, transitionEffect: 'none', dotDefaultsInUse: false,
       }),
     ).toBe(true);
+  });
+});
+
+/**
+ * Search compared the field's label and nothing else, so the words printed on
+ * the control itself found nothing: "24 hour" is written on the time-format
+ * option, "metric" on the units option, and both returned "No settings found"
+ * while the setting sat one click away.
+ */
+describe('what the search text covers', () => {
+  const dict = JSON.parse(
+    readFileSync(path.join(process.cwd(), 'src', 'translations', 'en-US', 'editor.json'), 'utf-8'),
+  ) as Record<string, unknown>;
+
+  /** The real translator: resolves a dotted key against the en-US dictionary. */
+  const t = (key: string): string => {
+    let cur: unknown = dict;
+    for (const part of key.split('.')) {
+      if (typeof cur !== 'object' || cur === null) return key;
+      cur = (cur as Record<string, unknown>)[part];
+    }
+    return typeof cur === 'string' ? cur : key;
+  };
+
+  const find = (query: string) =>
+    SETTINGS_FIELD_INDEX.filter((f) =>
+      settingsFieldSearchText(f, t).includes(normalizeSettingsSearch(query)),
+    ).map((f) => f.fieldId);
+
+  it.each([
+    ['24 hour', 'location.timeFormat'],
+    ['24-hour', 'location.timeFormat'],
+    ['clock', 'location.timeFormat'],
+    ['metric', 'weather.units'],
+    ['celsius', 'weather.units'],
+    ['fahrenheit', 'weather.units'],
+  ])('finds %s', (query, fieldId) => {
+    expect(find(query)).toContain(fieldId);
+  });
+
+  it('still matches on the label alone', () => {
+    expect(find('password')).toContain('security.changePassword');
+    expect(find('rotation')).toContain('display.rotationInterval');
+  });
+
+  it('resolves every keyword key it carries', () => {
+    // A mistyped key would otherwise make the key itself searchable, so
+    // "settings" would match half the index.
+    const unresolved: string[] = [];
+    for (const entry of SETTINGS_FIELD_INDEX) {
+      for (const key of entry.keywordKeys ?? []) {
+        if (t(key) === key) unresolved.push(`${entry.fieldId}: ${key}`);
+      }
+    }
+    expect(unresolved).toEqual([]);
   });
 });

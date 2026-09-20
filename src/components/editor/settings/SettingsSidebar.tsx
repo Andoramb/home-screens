@@ -70,6 +70,8 @@ import { getDisplayProfiles } from '@/lib/display-filter';
 import {
   SETTINGS_FIELD_INDEX,
   resolveSettingsFieldLabel,
+  settingsFieldSearchText,
+  normalizeSettingsSearch,
   settingsFieldRoute,
   isSettingsFieldReachable,
   type SettingsFieldEntry,
@@ -224,18 +226,18 @@ export default function SettingsSidebar({ onAddDisplay }: SettingsSidebarProps) 
   // ModulePalette's search box (no debounce; these lists are small
   // enough that a plain `.includes()` on every keystroke is cheap).
   const [search, setSearch] = useState('');
-  const query = search.trim().toLowerCase();
+  const query = normalizeSettingsSearch(search);
 
   const filteredDefaultPages = useMemo(
-    () => (query ? defaultPages.filter((p) => p.label.toLowerCase().includes(query)) : defaultPages),
+    () => (query ? defaultPages.filter((p) => normalizeSettingsSearch(p.label).includes(query)) : defaultPages),
     [defaultPages, query],
   );
   const filteredDisplays = useMemo(
-    () => (query ? displays.filter((d) => d.name.toLowerCase().includes(query)) : displays),
+    () => (query ? displays.filter((d) => normalizeSettingsSearch(d.name).includes(query)) : displays),
     [displays, query],
   );
-  const allDisplaysMatches = !query || t('settings.sidebar.allDisplays').toLowerCase().includes(query);
-  const displaysEntryMatches = !query || t('settings.sidebar.displays').toLowerCase().includes(query);
+  const allDisplaysMatches = !query || normalizeSettingsSearch(t('settings.sidebar.allDisplays')).includes(query);
+  const displaysEntryMatches = !query || normalizeSettingsSearch(t('settings.sidebar.displays')).includes(query);
 
   // Field-level matches — searches inside each Defaults page's content, not
   // just its nav label. A hit navigates to the owning page with `?highlight=`
@@ -292,7 +294,7 @@ export default function SettingsSidebar({ onAddDisplay }: SettingsSidebarProps) 
       query
         ? SETTINGS_FIELD_INDEX.filter(
             (f) =>
-              resolveSettingsFieldLabel(f, t).toLowerCase().includes(query)
+              settingsFieldSearchText(f, t).includes(query)
               && isSettingsFieldReachable(f, fieldVisibility),
           )
         : [],

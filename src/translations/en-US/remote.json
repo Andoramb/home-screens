@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "Someone else changed the chores. Your last change wasn't saved. Please try it again.",
     "header": "Chores",
+    "headerFor": "{name}’s chores",
+    "switchHint": "Not {name}? Tap your name to switch.",
     "subNav": {
       "today": "Today",
       "manage": "Manage",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Choose a Meal",
-      "emptyLibrary": "No meals in library. Add some first.",
+      "emptyLibrary": "No saved meals yet. Type one above for tonight, or save the meals you cook often.",
+        "typePlaceholder": "Type a meal, like Tacos",
+        "typeLabel": "Type a meal for this day",
+        "typeAdd": "Add",
       "prepTimeShort": "{minutes}m",
       "removeMealButton": "Remove Meal",
       "subtitle": "{slot} · {day}"

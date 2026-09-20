@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { MealSlotType, TimeFormat } from '@/types/config';
 import {
   SLOT_META,
@@ -20,6 +20,7 @@ interface MealsPlanViewProps extends MealsViewProps {
    *  the shared meal settings carry no explicit override */
   globalTimeFormat: TimeFormat;
   assignMealToSlot: (date: string, slot: MealSlotType, mealId: string) => Promise<void>;
+  setSlotText: (date: string, slot: MealSlotType, text: string) => Promise<void>;
   clearSlot: (date: string, slot: MealSlotType) => Promise<void>;
   setSlotTime: (date: string, slot: MealSlotType, time: string | undefined) => Promise<void>;
   clearAllPlan: () => void;
@@ -39,6 +40,7 @@ export default function MealsPlanView({
   getMealForSlot,
   globalTimeFormat,
   assignMealToSlot,
+  setSlotText,
   clearSlot,
   setSlotTime,
   clearAllPlan,
@@ -66,6 +68,19 @@ export default function MealsPlanView({
   const picked = pickingSlot ? getMealForSlot(pickingSlot.date, pickingSlot.slot) : null;
   const pickedMealId = picked?.meal?.id ?? null;
   const pickedHasMeal = !!(picked?.meal || picked?.planned?.customText);
+
+  // A meal typed for one day only. Tonight is often not a library entry, and
+  // without this every dinner had to be saved to the library first, which is
+  // also what left the picker a dead end on a household that had saved none.
+  const [typedMeal, setTypedMeal] = useState('');
+  const pickedCustomText = picked?.planned?.customText ?? '';
+  useEffect(() => {
+    setTypedMeal(pickedCustomText);
+  }, [pickingSlot?.date, pickingSlot?.slot, pickedCustomText]);
+  const submitTypedMeal = () => {
+    if (!pickingSlot || !typedMeal.trim()) return;
+    void setSlotText(pickingSlot.date, pickingSlot.slot, typedMeal);
+  };
   return (
     <div style={{ paddingBottom: 80 }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
@@ -339,10 +354,73 @@ export default function MealsPlanView({
                 })}
               </div>
             </div>
+            {/* Type tonight's dinner without saving it to the library first.
+                Sits above the list because it is the quickest way out of the
+                sheet, and it is the only way out when the library is empty. */}
+            <div style={{ display: 'flex', gap: 8, padding: '12px 16px', borderBottom: '1px solid var(--hs-border)' }}>
+              <input
+                type="text"
+                value={typedMeal}
+                onChange={(e) => setTypedMeal(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') submitTypedMeal(); }}
+                placeholder={t('mealsPlan.picker.typePlaceholder')}
+                aria-label={t('mealsPlan.picker.typeLabel')}
+                maxLength={80}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  minHeight: 44,
+                  padding: '10px 12px',
+                  borderRadius: 10,
+                  border: '1px solid var(--hs-border)',
+                  background: 'var(--hs-bg-card)',
+                  color: 'var(--hs-text-primary)',
+                  fontSize: 14,
+                  fontFamily: 'inherit',
+                }}
+              />
+              <button
+                onClick={submitTypedMeal}
+                disabled={!typedMeal.trim()}
+                style={{
+                  padding: '10px 18px',
+                  minHeight: 44,
+                  borderRadius: 10,
+                  border: 'none',
+                  cursor: typedMeal.trim() ? 'pointer' : 'default',
+                  background: typedMeal.trim() ? '#f59e0b' : 'var(--hs-bg-card)',
+                  color: typedMeal.trim() ? '#000' : 'var(--hs-text-faint)',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: 'inherit',
+                  flexShrink: 0,
+                }}
+              >
+                {t('mealsPlan.picker.typeAdd')}
+              </button>
+            </div>
             <div style={{ overflow: 'auto', padding: '8px 16px', flex: 1, scrollbarWidth: 'none' as const }}>
               {savedMeals.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--hs-text-faint)', fontSize: 13 }}>
-                  {t('mealsPlan.picker.emptyLibrary')}
+                <div style={{ textAlign: 'center', padding: '20px 0 8px', color: 'var(--hs-text-faint)', fontSize: 13, lineHeight: 1.5 }}>
+                  <p style={{ margin: 0 }}>{t('mealsPlan.picker.emptyLibrary')}</p>
+                  <button
+                    onClick={() => { setPickingSlot(null); setSubView('library'); }}
+                    style={{
+                      marginTop: 12,
+                      padding: '10px 20px',
+                      minHeight: 44,
+                      borderRadius: 10,
+                      border: '1px solid var(--hs-border)',
+                      background: 'var(--hs-bg-panel)',
+                      color: 'var(--hs-text-body)',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      fontFamily: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {t('mealsPlan.empty.addMealsButton')}
+                  </button>
                 </div>
               ) : (
                 savedMeals.map((meal) => (

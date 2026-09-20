@@ -2950,6 +2950,7 @@
       "shadowSize": "Schaduwgrootte",
       "background": "Achtergrond",
       "borderColor": "Randkleur",
+      "colorAlpha": "Hoe sterk deze kleur is",
       "textColor": "Tekstkleur",
       "textScale": "Tekstgrootte",
       "textScaleHint": "100% is de normale tekstgrootte van deze module. Schuif om die groter of kleiner te maken.",
@@ -4903,11 +4904,13 @@
   },
   "firstRun": {
     "heading": "Aan de slag",
-    "intro": "Vier korte stappen naar een werkend scherm.",
+    "intro": "Vijf korte stappen naar een werkend scherm.",
     "dismiss": "Deze checklist verbergen",
     "steps": {
       "template": "Kies een sjabloon of voeg modules toe aan je eerste scherm",
       "templateButton": "Kies een sjabloon",
+      "family": "Voeg de mensen in je huis toe",
+      "familyLink": "Gezin openen",
       "location": "Stel je locatie in",
       "locationLink": "Locatie & taal openen",
       "phone": "Open het op je telefoon",

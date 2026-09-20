@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "Iemand anders heeft de klusjes gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
     "header": "Klusjes",
+    "headerFor": "Klusjes van {name}",
+    "switchHint": "Ben jij niet {name}? Tik op je naam om te wisselen.",
     "subNav": {
       "today": "Vandaag",
       "manage": "Beheren",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Kies een maaltijd",
-      "emptyLibrary": "Geen maaltijden in de bibliotheek. Voeg er eerst een paar toe.",
+      "emptyLibrary": "Nog geen opgeslagen maaltijden. Tik er hierboven een in voor vanavond, of sla op wat je vaak kookt.",
+        "typePlaceholder": "Tik een maaltijd in, bijvoorbeeld Taco’s",
+        "typeLabel": "Een maaltijd voor deze dag intikken",
+        "typeAdd": "Toevoegen",
       "prepTimeShort": "{minutes} min",
       "removeMealButton": "Maaltijd verwijderen",
       "subtitle": "{slot} · {day}"

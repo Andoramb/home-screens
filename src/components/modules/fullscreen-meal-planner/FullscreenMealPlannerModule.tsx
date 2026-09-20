@@ -9,7 +9,7 @@ import { useFetchData } from '@/hooks/useFetchData';
 import { mealsDataUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import type { FullscreenMealPlannerConfig, MealSettings, SavedMeal, PlannedMeal, TimeFormat } from '@/types/config';
 import type { ModuleStyle } from '@/types/config';
-import { getActiveSlot, DEFAULT_MEAL_SETTINGS, DEFAULT_ACCENT_COLOR, getWeekRange, filterPlanToWeek, toISODate, resolveMealTimeFormat, resolveMeal, getNextPlannedMeal } from '@/lib/meal-constants';
+import { getActiveSlot, DEFAULT_MEAL_SETTINGS, DEFAULT_ACCENT_COLOR, getWeekRange, filterPlanToWeek, toISODate, resolveMealTimeFormat, resolveMealWithEntry, getNextPlannedMeal } from '@/lib/meal-constants';
 import type { MealPlannerViewProps } from './meal-planner-utils';
 import { resolveRecipeTapMode } from '../shared/MealTapTarget';
 import WeekView from './WeekView';
@@ -99,15 +99,22 @@ export default function FullscreenMealPlannerModule({
     if (view === 'week') return { mealCount: 0, textLength: 0 };
     let count = 0;
     let length = 0;
-    const tally = (meal: SavedMeal | null) => {
-      if (!meal) return;
+    // A meal typed straight into the day draws text like any other, so it has
+    // to be counted here or the fit is measured against a slot the view does
+    // not actually consider empty.
+    const tally = (name: string | null, meal: SavedMeal | null) => {
+      if (!name) return;
       count += 1;
-      length += meal.name.length + (meal.notes?.length ?? 0) + (meal.tags?.join('').length ?? 0);
+      length += name.length + (meal?.notes?.length ?? 0) + (meal?.tags?.join('').length ?? 0);
     };
     if (view === 'next-meal') {
-      tally(getNextPlannedMeal(todayISO, currentHour, fullPlan, savedMeals, slots)?.meal ?? null);
+      const next = getNextPlannedMeal(todayISO, currentHour, fullPlan, savedMeals, slots);
+      tally(next?.name ?? null, next?.meal ?? null);
     } else {
-      for (const slot of slots) tally(resolveMeal(todayISO, slot, plan, savedMeals));
+      for (const slot of slots) {
+        const { meal, name } = resolveMealWithEntry(todayISO, slot, plan, savedMeals);
+        tally(name, meal);
+      }
     }
     return { mealCount: count, textLength: length };
   }, [view, todayISO, currentHour, fullPlan, plan, savedMeals, slots]);

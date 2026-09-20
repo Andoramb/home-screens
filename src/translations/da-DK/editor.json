@@ -2950,6 +2950,7 @@
       "shadowSize": "Skyggestørrelse",
       "background": "Baggrund",
       "borderColor": "Kantfarve",
+      "colorAlpha": "Hvor kraftig denne farve er",
       "textColor": "Tekstfarve",
       "textScale": "Tekststørrelse",
       "textScaleHint": "100 % er modulets normale tekststørrelse. Træk for at gøre den større eller mindre.",
@@ -4903,11 +4904,13 @@
   },
   "firstRun": {
     "heading": "Kom godt i gang",
-    "intro": "Fire hurtige trin til en skærm der virker.",
+    "intro": "Fem hurtige trin til en skærm der virker.",
     "dismiss": "Skjul denne tjekliste",
     "steps": {
       "template": "Vælg en skabelon eller tilføj moduler til din første skærm",
       "templateButton": "Vælg en skabelon",
+      "family": "Tilføj dem der bor i dit hjem",
+      "familyLink": "Åbn Familie",
       "location": "Angiv din placering",
       "locationLink": "Åbn Placering og sprog",
       "phone": "Åbn den på din telefon",

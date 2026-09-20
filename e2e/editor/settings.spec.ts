@@ -341,13 +341,16 @@ test('settings search only offers the pause control while a display shows the do
   await search.fill('pause');
   await expect(pauseResult).toBeVisible();
 
-  // With the dots off the page has no pause control, so a result would lead nowhere.
+  // With the dots off the page has no pause control, so a result would lead
+  // nowhere. Search still answers, because the Screen dots help says the
+  // gesture lives on the dots — which is the control that brings pause back.
   await putConfig(request, baseConfig({ settings: { showPaginationDots: false } }));
   await page.reload();
   await expect(page.locator('[data-field-id="display.showPaginationDots"]')).toBeVisible();
   await search.fill('pause');
-  await expect(nav.getByText('No settings found')).toBeVisible();
   await expect(pauseResult).toHaveCount(0);
+  await expect(nav.getByRole('button', { name: /Screen dots/ })).toBeVisible();
+  await expect(nav.getByText('No settings found')).toHaveCount(0);
 });
 
 test('Defaults › Screen: a display that turns the dots back on keeps the shared pause controls editable', async ({ page, request }) => {

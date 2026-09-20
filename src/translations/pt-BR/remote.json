@@ -80,6 +80,8 @@
   "choresTab": {
     "changedElsewhere": "Outra pessoa alterou as tarefas. Sua última alteração não foi salva. Tente de novo.",
     "header": "Tarefas",
+    "headerFor": "Tarefas de {name}",
+    "switchHint": "Não é {name}? Toque no seu nome para trocar.",
     "subNav": {
       "today": "Hoje",
       "manage": "Gerenciar",
@@ -314,7 +316,10 @@
     },
     "picker": {
       "title": "Escolha uma refeição",
-      "emptyLibrary": "Nenhuma refeição na biblioteca. Adicione algumas primeiro.",
+      "emptyLibrary": "Nenhuma refeição salva ainda. Escreva uma acima para hoje, ou salve as que você faz sempre.",
+        "typePlaceholder": "Escreva uma refeição, como Tacos",
+        "typeLabel": "Escrever uma refeição para este dia",
+        "typeAdd": "Adicionar",
       "prepTimeShort": "{minutes} min",
       "removeMealButton": "Remover refeição",
       "subtitle": "{slot} · {day}"

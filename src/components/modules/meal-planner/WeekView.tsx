@@ -39,7 +39,7 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
   // (the module shows its empty state before it gets here).
   const usedSlots = useMemo(() => {
     const used = settings.enabledSlots.filter((slot) =>
-      weekDates.some((date) => resolveMealWithEntry(date, slot, plan, savedMeals).meal));
+      weekDates.some((date) => resolveMealWithEntry(date, slot, plan, savedMeals).name));
     return used.length > 0 ? used : settings.enabledSlots;
   }, [settings.enabledSlots, weekDates, plan, savedMeals]);
   const slots = usedSlots;
@@ -99,22 +99,22 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
 
               {/* Meal cells */}
               {slots.map((slot) => {
-                const { meal, planned } = resolveMealWithEntry(date, slot, plan, savedMeals);
+                const { meal, planned, name } = resolveMealWithEntry(date, slot, plan, savedMeals);
                 const time = resolvePlannedMealTime(planned, slot, settings.defaultSlotTimes);
                 return (
                   <div
                     key={slot}
                     className="flex items-center gap-1 px-1.5 py-0.5 rounded min-w-0 self-stretch"
                     style={{
-                      backgroundColor: meal ? SLOT_META[slot].bg : 'transparent',
-                      borderLeft: isToday && meal ? `2px solid ${SLOT_META[slot].color}40` : '2px solid transparent',
+                      backgroundColor: name ? SLOT_META[slot].bg : 'transparent',
+                      borderLeft: isToday && name ? `2px solid ${SLOT_META[slot].color}40` : '2px solid transparent',
                     }}
                   >
-                    {meal ? (
+                    {name ? (
                       <>
                         <MealTapTarget meal={meal} mode={recipeTapMode} className="flex items-center gap-1 min-w-0">
-                          {showEmoji && meal.emoji && (
-                            <span className="shrink-0" style={{ fontSize: '0.8em' }}>{meal.emoji}</span>
+                          {showEmoji && meal?.emoji && (
+                            <span className="shrink-0" style={{ fontSize: '0.8em' }}>{meal?.emoji}</span>
                           )}
                           {/* Two lines at most: rows are tall enough, columns are not. */}
                           <span
@@ -131,7 +131,7 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
                               overflowWrap: 'anywhere',
                             }}
                           >
-                            {meal.name}
+                            {name}
                           </span>
                         </MealTapTarget>
                         {time && (

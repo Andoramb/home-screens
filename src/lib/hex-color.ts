@@ -33,3 +33,66 @@ export function parseCssColorToRgb(color: string | undefined): [number, number, 
   if (fn) return [Number(fn[1]), Number(fn[2]), Number(fn[3])];
   return parseHexToRgb(color);
 }
+
+/**
+ * The one named colour the style panel actually meets: nine modules ship
+ * `backgroundColor: 'transparent'`. CSS defines it as rgba(0, 0, 0, 0), which
+ * is what the colour controls need to edit from — but only they do.
+ * `parseCssColorToRgb` deliberately keeps refusing it, so a renderer asking
+ * "what colour is this card" still gets null and keeps its own fallback
+ * instead of quietly deciding the card is black.
+ */
+function isTransparentKeyword(color: string): boolean {
+  return color.trim().toLowerCase() === 'transparent';
+}
+
+/**
+ * How see-through a colour is, 0 to 1, from either notation. A colour that
+ * carries no alpha is fully opaque, which is what both notations mean by
+ * leaving it out; `transparent` is the opposite end of the same scale.
+ * `null` for anything unparseable, like the parser above.
+ */
+export function parseCssColorAlpha(color: string | undefined): number | null {
+  if (!color) return null;
+  if (isTransparentKeyword(color)) return 0;
+  if (parseCssColorToRgb(color) === null) return null;
+  const fn = color.match(/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)$/i);
+  if (fn) return Number(fn[1]);
+  const hex = color.startsWith('#') ? color.slice(1) : color;
+  if (/^[0-9a-f]{8}$/i.test(hex)) return parseInt(hex.slice(6, 8), 16) / 255;
+  return 1;
+}
+
+/**
+ * A colour split into the two things a picker edits separately: the channels
+ * its swatch shows, and how see-through it is. `transparent` comes back as
+ * black at zero alpha, so the swatch stops drawing white for it and the
+ * see-through slider has a colour to turn up.
+ */
+export function parseEditableColor(
+  color: string | undefined,
+): { rgb: [number, number, number]; alpha: number } | null {
+  if (!color) return null;
+  if (isTransparentKeyword(color)) return { rgb: [0, 0, 0], alpha: 0 };
+  const rgb = parseCssColorToRgb(color);
+  if (!rgb) return null;
+  return { rgb, alpha: parseCssColorAlpha(color) ?? 1 };
+}
+
+/**
+ * The same colour at a different alpha.
+ *
+ * Fully opaque comes back as the plain hex people recognize, anything else as
+ * `rgba()`, which is the one see-through notation every renderer downstream
+ * can read. Two decimals, because a slider otherwise stores
+ * `rgba(0, 0, 0, 0.4300000000000001)` into the layout.
+ */
+export function withCssColorAlpha(color: string, alpha: number): string | null {
+  const rgb = parseEditableColor(color)?.rgb;
+  if (!rgb) return null;
+  const clamped = Math.min(1, Math.max(0, alpha));
+  if (clamped === 1) {
+    return `#${rgb.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+  }
+  return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${Number(clamped.toFixed(2))})`;
+}

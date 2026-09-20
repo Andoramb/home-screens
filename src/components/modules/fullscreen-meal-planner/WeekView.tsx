@@ -27,7 +27,7 @@ export default function WeekView({
   // apple planned, three empty tiles per day said nothing. A week with no
   // meals at all is one panel that says where meals are planned.
   const usedSlots = useMemo(
-    () => slots.filter((slot) => weekDates.some((date) => resolveMealWithEntry(date, slot, plan, savedMeals).meal)),
+    () => slots.filter((slot) => weekDates.some((date) => resolveMealWithEntry(date, slot, plan, savedMeals).name)),
     [slots, weekDates, plan, savedMeals],
   );
   const weekEmpty = usedSlots.length === 0;
@@ -111,7 +111,7 @@ export default function WeekView({
               {/* Meal cards row */}
               <div style={{ display: 'flex', gap: s * 0.6 }}>
                 {usedSlots.map((slot) => {
-                  const { meal, planned } = resolveMealWithEntry(date, slot, plan, savedMeals);
+                  const { meal, planned, name } = resolveMealWithEntry(date, slot, plan, savedMeals);
                   const time = resolvePlannedMealTime(planned, slot, settings.defaultSlotTimes);
                   const meta = SLOT_META[slot];
                   const isActiveSlot = isToday && slot === activeSlot;
@@ -126,7 +126,7 @@ export default function WeekView({
                     </span>
                   );
 
-                  if (!meal) {
+                  if (!name) {
                     // Quiet: nothing on the wall is tappable, so a dashed
                     // "+" box only looked like a button that never worked.
                     return (
@@ -180,9 +180,9 @@ export default function WeekView({
                           gap: s * 0.15, maxWidth: '100%',
                         }}
                       >
-                        {showEmoji && meal.emoji && (
+                        {showEmoji && meal?.emoji && (
                           <span style={{ fontSize: s * 3.2, lineHeight: 1.2 }}>
-                            {meal.emoji}
+                            {meal?.emoji}
                           </span>
                         )}
                         <span style={{
@@ -190,7 +190,7 @@ export default function WeekView({
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
                           maxWidth: '100%',
                         }}>
-                          {meal.name}
+                          {name}
                         </span>
                       </MealTapTarget>
                       {time && (
@@ -203,7 +203,7 @@ export default function WeekView({
                           {formatMealTime(time, timeFormat)}
                         </span>
                       )}
-                      {showPrepTime && meal.prepTime && (
+                      {showPrepTime && meal?.prepTime && (
                         <span style={{ fontSize: s * 0.9, color: 'var(--fmp-text-3)' }}>
                           {t('fullscreen-meal-planner.prepTimeMin', { minutes: meal.prepTime })}
                         </span>
