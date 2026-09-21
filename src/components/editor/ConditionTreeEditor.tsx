@@ -695,6 +695,7 @@ function TimeConditionEditor({
         <select
           data-testid="condition-time-shape"
           value={shape}
+          title={t(shape === 'span' ? 'scheduleEditor.shapeSpan' : 'scheduleEditor.shapeRepeat')}
           onChange={(e) => setShape(e.target.value as 'repeat' | 'span')}
           className={INPUT_CLASS}
         >

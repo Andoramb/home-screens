@@ -138,8 +138,8 @@
     }
   },
   "displaySwitcher": {
-    "title": "Quel affichage ce canevas est-il en train de modifier ? (Les surcharges des paramètres sont dans Paramètres → Par affichage.)",
-    "label": "Quel affichage ce canevas est-il en train de modifier ?",
+    "title": "Quel affichage modifies-tu ? (Les surcharges des paramètres sont dans Paramètres → Par affichage.)",
+    "label": "Quel affichage modifies-tu ?",
     "onNow": "allumé",
     "lastSeen": "vu {time}",
     "addDisplay": "Ajouter un affichage"
@@ -218,8 +218,8 @@
     "statusTitle": "État",
     "enableLabel": "N'afficher qu'à certaines heures",
     "repeatTitle": "Répétition",
-    "shapeRepeat": "Chaque jour choisi",
-    "shapeSpan": "Une seule période",
+    "shapeRepeat": "Mêmes heures, les jours choisis",
+    "shapeSpan": "Une période sur plusieurs jours",
     "weekPreviewTitle": "Votre semaine",
     "timeWindowTitle": "Plage horaire",
     "fromLabel": "De",
@@ -409,7 +409,7 @@
       "displays": "Affichages",
       "searchPlaceholder": "Rechercher des paramètres…",
       "noResults": "Aucun paramètre trouvé",
-      "matchingFields": "Champs correspondants",
+      "matchingFields": "Réglages correspondants",
       "navLabels": {
         "calendar": "Calendrier",
         "weather": "Météo",
@@ -457,7 +457,7 @@
       "multiFieldCount": "{count} réglages",
       "openDisplayLink": "Ouvrir {name}",
       "multiDisplayLabel": "{count} affichages",
-      "multiDisplayCurrentlyOverride": " remplacent actuellement des champs sur {pageLabel} : ",
+      "multiDisplayCurrentlyOverride": " remplacent actuellement des réglages sur {pageLabel} : ",
       "fieldSeparator": ", "
     },
     "defaultAlertsPage": {
@@ -795,22 +795,22 @@
       }
     },
     "defaultDisplayPage": {
-      "descriptionPart1": "Ces valeurs sont utilisées par tous les affichages tant qu'aucun ne les remplace. Modifie une valeur ici et tous les affichages qui ",
-      "descriptionEmphasisNot": "ne",
-      "descriptionPart2": " remplacent pas ce champ adoptent la nouvelle valeur.",
+      "descriptionPart1": "Ces valeurs sont utilisées par tous les affichages tant qu'aucun ne les remplace. Modifie une valeur ici et tous les affichages qui ne remplacent ",
+      "descriptionEmphasisNot": "pas",
+      "descriptionPart2": " ce réglage adoptent la nouvelle valeur.",
       "multiDisplayNotePart1": "La résolution, l'orientation et le retournement sont ",
       "multiDisplayNotePerDisplay": "par affichage",
       "multiDisplayNotePart2": ". Modifie-les sur la page propre à chaque affichage dans ",
       "multiDisplayNotePerDisplaySection": "Par affichage",
       "multiDisplayNotePart3": ".",
       "canvas": {
-        "heading": "Canevas",
+        "heading": "Zone d'affichage",
         "orientationPortrait": "Portrait",
         "orientationLandscape": "Paysage",
         "resolutionCustom": "Personnalisée…",
         "resolutionWidthPlaceholder": "Largeur",
         "resolutionHeightPlaceholder": "Hauteur",
-        "resolutionHelp": "Fais correspondre à ton affichage physique. Changer la résolution affecte la taille du canevas des modules.",
+        "resolutionHelp": "Choisis la résolution de ton écran physique. Si tu la modifies, la zone où tu disposes les modules change aussi.",
         "flipLabel": "Retourner l'affichage",
         "flipToggle": "Montage inversé",
         "flipHelp": "Active si ton moniteur est monté à l'envers. Pivote l'affichage de 180° par rapport à son orientation de base."
@@ -823,7 +823,7 @@
         "paginationDotsHelp": "La rangée de points en bas de l'écran qui indique quel écran est affiché et permet d'appuyer pour passer à un autre. La désactiver supprime aussi la pause par double-tap, puisque ce geste se trouve sur les points.",
         "pauseEnabledLabel": "Autoriser la pause sur écran tactile",
         "pauseEnabledToggle": "Activé",
-        "pauseEnabledHelp": "Double-tape sur le point de pagination actif pour mettre en pause la rotation. Double-tape à nouveau pour reprendre.",
+        "pauseEnabledHelp": "Appuie deux fois sur le point de l'écran affiché pour mettre la rotation en pause. Appuie encore deux fois pour reprendre.",
         "pauseTimeoutLabel": "Délai de reprise automatique",
         "pauseTimeoutNever": "Jamais",
         "pauseTimeoutSeconds": "{seconds} s",
@@ -838,7 +838,7 @@
         "rotationProgressToggle": "Activé",
         "rotationProgressHelp": "Une fine ligne sous les points d'écran se remplit à mesure que le temps de l'écran s'écoule, pour distinguer de loin un écran long d'un écran bloqué.",
         "transitionEffectLabel": "Effet de transition",
-        "transitionEffectHelp": "Style d'animation lors du passage d'un écran à l'autre. Le flou peut solliciter le GPU sur les appareils peu puissants.",
+        "transitionEffectHelp": "La façon dont un écran cède la place au suivant. Le flou est celui qui demande le plus à l'appareil : si l'image saccade, choisis-en un autre.",
         "transitionDurationLabel": "Durée de la transition",
         "transitionDurationValue": "{seconds} s",
         "transitionDurationHelp": "Durée de l'animation de transition entre les écrans.",
@@ -867,7 +867,7 @@
       "header": {
         "openTitle": "Ouvrir l'adresse de cet affichage",
         "openLabel": "Ouvrir",
-        "editScreensTitle": "Modifier les écrans de cet affichage dans le canevas",
+        "editScreensTitle": "Modifier les écrans de cet affichage dans l'éditeur",
         "editScreensLabel": "Modifier les écrans",
         "statusOnline": "En ligne",
         "statusIdle": "Inactif",
@@ -891,7 +891,7 @@
         "defaultsLink": "valeurs par défaut",
         "withOverridesPart2": " pour tout, sauf :",
         "noOverridesPart1": "{name} utilise les ",
-        "noOverridesPart2": " pour chaque champ. Remplaces-en un depuis l'onglet Surcharges.",
+        "noOverridesPart2": " pour chaque réglage. Remplaces-en un depuis l'onglet Surcharges.",
         "chipBlockOverridden": "{label} remplacé",
         "chipFieldWithDefault": "{label} : {value} (par défaut : {defaultValue})",
         "chipFieldNoDefault": "{label} : {value}",
@@ -952,15 +952,15 @@
       },
       "display": {
         "defaultsLabel": "Valeurs par défaut → Écran",
-        "bannerPart1": "Les champs ici affichent la valeur ",
+        "bannerPart1": "Les réglages de cette page affichent la valeur ",
         "bannerEmphasisDefault": "par défaut",
-        "bannerPart2": " de ",
+        "bannerPart2": " définie dans ",
         "bannerPart3": ". Clique sur ",
         "bannerEmphasisOverride": "Remplacer",
-        "bannerPart4": " sur n'importe quel champ pour le modifier uniquement pour {name}.",
-        "canvasHeading": "Canevas",
+        "bannerPart4": " à côté de n'importe quel réglage pour ne le modifier que pour {name}.",
+        "canvasHeading": "Zone d'affichage",
         "perDisplayBadge": "Par affichage",
-        "resolutionHelp": "Les modules sont disposés selon ce canevas. Chaque affichage a sa propre résolution ; elle n'est pas partagée.",
+        "resolutionHelp": "Les modules sont disposés dans cette zone. Chaque affichage a sa propre résolution ; elle n'est pas partagée.",
         "rotationOptionNormal": "Normale (paysage)",
         "rotationOption90": "90° horaire (portrait)",
         "rotationOption180": "180° (inversée)",
@@ -1616,7 +1616,7 @@
       "displayPicker": {
         "label": "Modifier les profils pour",
         "optionLabel": "{name} ({id})",
-        "help": "Les profils sont par affichage car ils référencent les écrans propres à chaque affichage. Changer ici modifie aussi l'affichage sur lequel le canevas de l'éditeur travaille."
+        "help": "Les profils sont par affichage car ils référencent les écrans propres à chaque affichage. Changer ici modifie aussi l'affichage sur lequel tu travailles."
       },
       "active": {
         "label": "Affiché en ce moment",
@@ -1668,7 +1668,7 @@
       "displayPicker": {
         "label": "Modifier les règles de",
         "optionLabel": "{name} ({id})",
-        "help": "Les règles sont propres à chaque affichage, car elles pointent vers ses propres écrans. Changer ici change aussi l'affichage sur lequel l'éditeur travaille."
+        "help": "Les règles sont propres à chaque affichage, car elles pointent vers ses propres écrans. Changer ici modifie aussi l'affichage sur lequel tu travailles."
       },
       "emptyHint": "Aucune règle pour l'instant. Ajoutez-en une pour que l'affichage réagisse quand quelque chose se produit.",
       "priority": {
@@ -2219,12 +2219,12 @@
       "formReportedViewport": "(signalé par l’écran : {width} × {height})",
       "formWidth": "Largeur",
       "formHeight": "Hauteur",
-      "formResolutionHint": "Réglez ceci pour correspondre à l’écran physique sur lequel cet affichage apparaît. Les modules seront disposés sur ce canevas lorsque vous éditerez les écrans de cet affichage.",
+      "formResolutionHint": "Indique la taille de l'écran physique sur lequel cet affichage apparaît. Les modules sont disposés pour tenir dans cette taille quand tu modifies les écrans de cet affichage.",
       "formRotationNormal": "Normale (paysage)",
       "formRotation90": "90° horaire (portrait)",
       "formRotation180": "180° (inversé)",
       "formRotation270": "270° horaire (portrait)",
-      "formRotationHint": "Choisit l’orientation du canevas. La largeur et la hauteur ci-dessus sont permutées automatiquement pour que le côté le plus long corresponde à l’axe choisi par la rotation.",
+      "formRotationHint": "Définit le sens de la zone d'affichage. La largeur et la hauteur ci-dessus sont permutées automatiquement pour que le côté le plus long aille dans le sens choisi.",
       "formCancel": "Annuler",
       "formSaveChanges": "Enregistrer les modifications",
       "formAddDisplay": "Ajouter l’écran",
@@ -2258,7 +2258,7 @@
       "displayPicker": {
         "label": "Modifier l'automatisation pour",
         "optionLabel": "{name} ({id})",
-        "help": "Les profils et les règles sont propres à chaque affichage, car ils référencent ses écrans. Changer ici change aussi l'affichage sur lequel travaille l'éditeur."
+        "help": "Les profils et les règles sont propres à chaque affichage, car ils référencent ses écrans. Changer ici modifie aussi l'affichage sur lequel tu travailles."
       }
     },
     "phonePage": {
@@ -2951,10 +2951,10 @@
       "y": "Y",
       "w": "L",
       "h": "H",
-      "borderRadius": "Rayon de bordure",
-      "padding": "Marge intérieure",
+      "borderRadius": "Arrondi des coins",
+      "padding": "Espace intérieur",
       "borderWidth": "Largeur de bordure",
-      "opacity": "Opacité",
+      "opacity": "Opaque",
       "backdropBlur": "Verre dépoli",
       "shadowSize": "Taille de l'ombre",
       "background": "Arrière-plan",
@@ -2963,7 +2963,7 @@
       "textColor": "Couleur du texte",
       "textScale": "Taille du texte",
       "textScaleHint": "100 % est la taille de texte normale de ce module. Fais glisser pour l'agrandir ou la réduire.",
-      "fontWeight": "Graisse",
+      "fontWeight": "Épaisseur du texte",
       "fontWeightDefault": "Par défaut",
       "fontWeightReset": "Rétablir la valeur par défaut",
       "title": "Titre",
@@ -4724,7 +4724,7 @@
     },
     "orientation": {
       "title": "Des modules risquent d'être hors écran",
-      "warning": "{offCanvasCount} des {totalModuleCount} modules dépasseraient le nouveau canevas {newWidth}×{newHeight}.",
+      "warning": "{offCanvasCount} des {totalModuleCount} modules seraient hors de la nouvelle zone d'affichage {newWidth}×{newHeight}.",
       "scaleToFit": "Ajuster à l'écran",
       "scaleToFitDescription": "réduit tous les modules proportionnellement pour que rien ne soit coupé.",
       "switchAnyway": "Changer quand même",
@@ -4824,7 +4824,7 @@
     "noProvidersHint": "Rien n'est encore partagé. Connectez un agenda, ou installez le module Home Assistant pour les portes, les lumières et qui est à la maison. En attendant, Heure de la journée est la condition qui fonctionne.",
     "noConditionsHint": "Aucune condition pour l'instant. Le module reste affiché tant que vous n'en ajoutez pas.",
     "sourceKeyInvalid": "Saisissez une clé d'état avec uniquement des lettres minuscules, des chiffres et _ : . -",
-    "invalidHint": "Ces conditions ne peuvent pas encore être enregistrées. Corrigez les champs signalés.",
+    "invalidHint": "Ces conditions ne peuvent pas encore être enregistrées. Corrige les champs signalés.",
     "liveValueLabel": "Sur l'écran actuellement :",
     "liveValueLabelEditor": "Valeur actuelle :",
     "liveValueStale": "n’est plus mise à jour",

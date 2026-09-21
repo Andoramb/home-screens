@@ -42,7 +42,7 @@
     "waiting": "Esperando al display…",
     "unreachable": "Display inalcanzable",
     "notConnectedTitle": "Este display aún no se ha conectado",
-    "notConnectedHint": "Comprueba que está encendido, o termina de configurarlo en el editor, en Por display.",
+    "notConnectedHint": "Comprueba que está encendido, o abre Home Screens en un ordenador para terminar de configurarlo.",
     "theDisplay": "La pantalla",
     "allHeading": "Todas las pantallas",
     "rowNotConnected": "Aún no se ha conectado",
@@ -666,7 +666,7 @@
     "firstList": {
       "title": "Crea tu primera lista",
       "placeholder": "Nombre de tu primera lista",
-      "body": "La compra, la maleta, cosas antes del cole. Cuando exista, elígela para el módulo de Lista de tareas en el editor."
+      "body": "La compra, la maleta, cosas antes del cole. Cuando la tengas, abre Home Screens en un ordenador y ponla en la pared."
     },
     "newList": {
       "title": "Nueva lista",
@@ -742,7 +742,7 @@
     },
     "lists": {
       "title": "Aún no hay lista",
-      "body": "Las listas aparecen aquí cuando hay un módulo de Lista de tareas en una de tus pantallas."
+      "body": "Las listas aparecen aquí cuando hay una lista de tareas en una de tus pantallas."
     },
     "meals": {
       "title": "Aún no hay planificador de comidas",

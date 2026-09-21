@@ -42,7 +42,7 @@
     "waiting": "Wachten op display…",
     "unreachable": "Display niet bereikbaar",
     "notConnectedTitle": "Dit display heeft nog geen verbinding gemaakt",
-    "notConnectedHint": "Controleer of het aanstaat, of maak de installatie af in de editor onder Per display.",
+    "notConnectedHint": "Controleer of het aanstaat, of open Home Screens op een computer om het instellen af te maken.",
     "theDisplay": "Het scherm",
     "allHeading": "Alle schermen",
     "rowNotConnected": "Nog niet verbonden",
@@ -666,7 +666,7 @@
     "firstList": {
       "title": "Maak je eerste lijst",
       "placeholder": "Naam van je eerste lijst",
-      "body": "Boodschappen, een paklijst, dingen voor school. Zodra hij bestaat, kies je hem in de editor voor de Takenlijst-module."
+      "body": "Boodschappen, een paklijst, dingen voor school. Zodra je lijst er is, open je Home Screens op een computer om hem te kiezen voor de takenlijst aan de muur."
     },
     "newList": {
       "title": "Nieuwe lijst",
@@ -742,7 +742,7 @@
     },
     "lists": {
       "title": "Nog geen takenlijst",
-      "body": "Lijsten verschijnen hier zodra er een Takenlijst-module op een van je schermen staat."
+      "body": "Lijsten verschijnen hier zodra er een takenlijst op een van je schermen staat."
     },
     "meals": {
       "title": "Nog geen maaltijdplanner",

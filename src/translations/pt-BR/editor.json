@@ -138,8 +138,8 @@
     }
   },
   "displaySwitcher": {
-    "title": "Qual tela este canvas está editando? (Substituições de configurações ficam em Configurações → Por tela.)",
-    "label": "Qual tela este canvas está editando?",
+    "title": "Qual display você está editando? (Substituições de configurações ficam em Configurações → Por tela.)",
+    "label": "Qual display você está editando?",
     "onNow": "ligado agora",
     "lastSeen": "visto pela última vez {time}",
     "addDisplay": "Adicionar um display"
@@ -218,8 +218,8 @@
     "statusTitle": "Status",
     "enableLabel": "Mostrar só em certos horários",
     "repeatTitle": "Como se repete",
-    "shapeRepeat": "Todo dia que eu escolher",
-    "shapeSpan": "Um período contínuo",
+    "shapeRepeat": "Mesmo horário nos dias escolhidos",
+    "shapeSpan": "Um período de vários dias",
     "weekPreviewTitle": "Sua semana",
     "timeWindowTitle": "Janela de tempo",
     "fromLabel": "De",
@@ -409,7 +409,7 @@
       "displays": "Telas",
       "searchPlaceholder": "Buscar configurações…",
       "noResults": "Nenhuma configuração encontrada",
-      "matchingFields": "Campos correspondentes",
+      "matchingFields": "Configurações encontradas",
       "navLabels": {
         "calendar": "Calendário",
         "weather": "Tempo",
@@ -456,8 +456,8 @@
       "singleDisplayCurrentlyOverrides": " atualmente substitui ",
       "multiFieldCount": "{count} configurações",
       "openDisplayLink": "Abrir {name}",
-      "multiDisplayLabel": "{count} telas",
-      "multiDisplayCurrentlyOverride": " atualmente substituem campos em {pageLabel}: ",
+      "multiDisplayLabel": "{count} displays",
+      "multiDisplayCurrentlyOverride": " atualmente substituem configurações em {pageLabel}: ",
       "fieldSeparator": ", "
     },
     "defaultAlertsPage": {
@@ -795,22 +795,22 @@
       }
     },
     "defaultDisplayPage": {
-      "descriptionPart1": "Esses valores são usados por todas as telas até que uma específica os substitua. Mudando algo aqui, todas as telas que ",
+      "descriptionPart1": "Esses valores são usados por todas as telas até que uma específica os substitua. Se você mudar algo aqui, todas as telas que ",
       "descriptionEmphasisNot": "não",
-      "descriptionPart2": " estão substituindo aquele campo passam a usar o novo valor.",
+      "descriptionPart2": " substituem essa configuração passam a usar o novo valor.",
       "multiDisplayNotePart1": "Resolução, orientação e espelhamento são ",
       "multiDisplayNotePerDisplay": "por tela",
       "multiDisplayNotePart2": ". Edite-os na página de cada tela em ",
       "multiDisplayNotePerDisplaySection": "Por tela",
       "multiDisplayNotePart3": ".",
       "canvas": {
-        "heading": "Canvas",
+        "heading": "Área da tela",
         "orientationPortrait": "Retrato",
         "orientationLandscape": "Paisagem",
         "resolutionCustom": "Personalizada...",
         "resolutionWidthPlaceholder": "Largura",
         "resolutionHeightPlaceholder": "Altura",
-        "resolutionHelp": "Ajuste isto à sua tela física. Mudar a resolução afeta o tamanho do canvas dos módulos.",
+        "resolutionHelp": "Ajuste isto ao tamanho real da sua tela. Se você mudar esse valor, a área onde você organiza os módulos muda junto.",
         "flipLabel": "Espelhar tela",
         "flipToggle": "Montagem invertida",
         "flipHelp": "Ative se seu monitor estiver montado de cabeça para baixo. Gira a tela 180° em relação à orientação base."
@@ -823,7 +823,7 @@
         "paginationDotsHelp": "A fileira de pontos na parte inferior da tela que mostra qual tela está sendo exibida e permite tocar para ir a outra. Desativar isso também remove o toque duplo para pausar, já que esse gesto vive nos pontos.",
         "pauseEnabledLabel": "Permitir pausa em touchscreen",
         "pauseEnabledToggle": "Ativado",
-        "pauseEnabledHelp": "Toque duas vezes no ponto de paginação ativo para pausar a rotação. Toque duas vezes de novo para retomar.",
+        "pauseEnabledHelp": "Toque duas vezes no ponto de tela destacado para pausar a rotação. Toque duas vezes de novo para retomar.",
         "pauseTimeoutLabel": "Tempo para retomar automaticamente",
         "pauseTimeoutNever": "Nunca",
         "pauseTimeoutSeconds": "{seconds}s",
@@ -838,7 +838,7 @@
         "rotationProgressToggle": "Ativado",
         "rotationProgressHelp": "Uma linha fina sob os pontos de tela vai se preenchendo enquanto o tempo da tela passa, para distinguir de longe uma tela demorada de uma travada.",
         "transitionEffectLabel": "Efeito de transição",
-        "transitionEffectHelp": "Estilo de animação ao alternar entre telas. Desfoque pode exigir muito da GPU em dispositivos mais fracos.",
+        "transitionEffectHelp": "Como uma tela dá lugar à seguinte. O desfoque é o efeito mais pesado: se a troca de telas engasgar num aparelho mais lento, escolha outro.",
         "transitionDurationLabel": "Duração da transição",
         "transitionDurationValue": "{seconds}s",
         "transitionDurationHelp": "Quanto tempo dura a animação de transição entre telas.",
@@ -867,7 +867,7 @@
       "header": {
         "openTitle": "Abrir o endereço desta tela",
         "openLabel": "Abrir",
-        "editScreensTitle": "Editar as telas desta tela no canvas",
+        "editScreensTitle": "Editar as telas deste display no editor",
         "editScreensLabel": "Editar telas",
         "statusOnline": "Online",
         "statusIdle": "Inativa",
@@ -891,7 +891,7 @@
         "defaultsLink": "Padrões",
         "withOverridesPart2": " para tudo, exceto:",
         "noOverridesPart1": "{name} usa os ",
-        "noOverridesPart2": " para todos os campos. Substitua um na subaba Substituições.",
+        "noOverridesPart2": " para todas as configurações. Você pode substituir qualquer uma delas na aba Substituições.",
         "chipBlockOverridden": "{label} substituído",
         "chipFieldWithDefault": "{label}: {value} (padrão: {defaultValue})",
         "chipFieldNoDefault": "{label}: {value}",
@@ -952,15 +952,15 @@
       },
       "display": {
         "defaultsLabel": "Padrões → Tela",
-        "bannerPart1": "Os campos aqui mostram o valor ",
+        "bannerPart1": "As configurações aqui mostram o valor ",
         "bannerEmphasisDefault": "padrão",
-        "bannerPart2": " de ",
+        "bannerPart2": " definido em ",
         "bannerPart3": ". Clique em ",
         "bannerEmphasisOverride": "Substituir",
-        "bannerPart4": " em qualquer campo para alterá-lo apenas para {name}.",
-        "canvasHeading": "Canvas",
-        "perDisplayBadge": "Por tela",
-        "resolutionHelp": "Os módulos são posicionados sobre este canvas. Cada tela tem sua própria resolução; não é compartilhada.",
+        "bannerPart4": " na configuração que você quiser mudar só para {name}.",
+        "canvasHeading": "Área da tela",
+        "perDisplayBadge": "Por display",
+        "resolutionHelp": "Você organiza os módulos dentro dessa área. Cada display tem a própria resolução; ela não é compartilhada com os outros.",
         "rotationOptionNormal": "Normal (paisagem)",
         "rotationOption90": "90° horário (retrato)",
         "rotationOption180": "180° (invertida)",
@@ -1616,7 +1616,7 @@
       "displayPicker": {
         "label": "Editando perfis para",
         "optionLabel": "{name} ({id})",
-        "help": "Perfis são por tela porque referenciam as telas próprias de cada display. Trocar aqui também muda em qual tela o canvas do editor está trabalhando."
+        "help": "Perfis são por display porque apontam para as telas de cada display. Trocar aqui também muda qual display você está editando."
       },
       "active": {
         "label": "Sendo exibido agora",
@@ -1668,7 +1668,7 @@
       "displayPicker": {
         "label": "Editando regras de",
         "optionLabel": "{name} ({id})",
-        "help": "As regras são por display, porque apontam para as telas próprias de cada display. Trocar aqui também muda em qual display o editor está trabalhando."
+        "help": "As regras são por display porque apontam para as telas de cada display. Trocar aqui também muda qual display você está editando."
       },
       "emptyHint": "Nenhuma regra ainda. Adicione uma para a tela reagir quando algo acontecer.",
       "priority": {
@@ -2219,12 +2219,12 @@
       "formReportedViewport": "(relatado pelo display: {width} × {height})",
       "formWidth": "Largura",
       "formHeight": "Altura",
-      "formResolutionHint": "Defina isto para corresponder à tela física em que este display aparece. Os módulos serão dispostos sobre esta área quando você editar as telas deste display.",
+      "formResolutionHint": "Defina isto para corresponder à tela física em que este display aparece. Os módulos são organizados para caber nesse tamanho quando você edita as telas deste display.",
       "formRotationNormal": "Normal (paisagem)",
       "formRotation90": "90° horário (retrato)",
       "formRotation180": "180° (invertido)",
       "formRotation270": "270° horário (retrato)",
-      "formRotationHint": "Escolhe a orientação da área. A largura e altura acima são trocadas automaticamente para que o lado mais longo combine com o eixo escolhido pela rotação.",
+      "formRotationHint": "Define se a área da tela fica em pé ou deitada. A largura e a altura acima trocam de lugar automaticamente para que o lado mais longo acompanhe a rotação escolhida.",
       "formCancel": "Cancelar",
       "formSaveChanges": "Salvar alterações",
       "formAddDisplay": "Adicionar display",
@@ -2258,7 +2258,7 @@
       "displayPicker": {
         "label": "Editando automação para",
         "optionLabel": "{name} ({id})",
-        "help": "Perfis e regras são por tela porque referenciam as telas de cada uma. Trocar aqui também muda em qual tela o editor está trabalhando."
+        "help": "Perfis e regras são por display porque apontam para as telas de cada display. Trocar aqui também muda qual display você está editando."
       }
     },
     "phonePage": {
@@ -2951,10 +2951,10 @@
       "y": "Y",
       "w": "L",
       "h": "A",
-      "borderRadius": "Raio da borda",
-      "padding": "Espaçamento interno",
+      "borderRadius": "Cantos arredondados",
+      "padding": "Espaço interno",
       "borderWidth": "Largura da borda",
-      "opacity": "Opacidade",
+      "opacity": "O quanto aparece",
       "backdropBlur": "Vidro fosco",
       "shadowSize": "Tamanho da sombra",
       "background": "Fundo",
@@ -2963,7 +2963,7 @@
       "textColor": "Cor do texto",
       "textScale": "Tamanho do texto",
       "textScaleHint": "100% é o tamanho normal do texto deste módulo. Deslize para deixá-lo maior ou menor.",
-      "fontWeight": "Peso da fonte",
+      "fontWeight": "Espessura do texto",
       "fontWeightDefault": "Padrão",
       "fontWeightReset": "Redefinir para padrão",
       "title": "Título",
@@ -4724,7 +4724,7 @@
     },
     "orientation": {
       "title": "Alguns módulos podem ficar fora da tela",
-      "warning": "{offCanvasCount} de {totalModuleCount} módulos ficariam fora do novo canvas {newWidth}×{newHeight}.",
+      "warning": "{offCanvasCount} de {totalModuleCount} módulos ficariam fora da nova área da tela ({newWidth}×{newHeight}).",
       "scaleToFit": "Escalar para caber",
       "scaleToFitDescription": "reduz todos os módulos proporcionalmente para que nada fique cortado.",
       "switchAnyway": "Trocar mesmo assim",

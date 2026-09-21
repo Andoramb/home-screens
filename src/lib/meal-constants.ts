@@ -1,7 +1,6 @@
 import { localISODate } from './timezone';
 import { formatClockTime, resolveTimeFormat } from './clock-time';
 import type { SavedMeal, PlannedMeal, MealSlotType, MealSettings, FullscreenTypographySize, TimeFormat } from '@/types/config';
-import { formatDateSync } from '@/i18n/formatters';
 import { DEFAULT_LOCALE } from '@/i18n/manifest';
 
 // ── Shared defaults (used across editor + remote + config sections) ────
@@ -119,24 +118,34 @@ export const SLOT_WINDOWS: Record<MealSlotType, { start: number; end: number }> 
   dinner:    { start: 17, end: 21 },
 };
 
+const DAY_NAME_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
 /**
  * Return 7 localized day-of-week names indexed 0=Sunday … 6=Saturday.
  *
- * Uses `formatDateSync` against a known anchor week (Sun 2024-01-07 →
- * Sat 2024-01-13) so the array indices line up with `Date.prototype.getDay()`.
- * The locale's date-fns bundle must already be preloaded — every layout
- * does this server-side at request time, so by the time any client
- * component calls this, the cache is warm. Falls back to the en-US
- * date-fns default (synchronous) on cache miss.
+ * Reads `Intl.DateTimeFormat` rather than date-fns, for two reasons that
+ * only show up outside English. date-fns has no abbreviated weekday for
+ * pt-BR — its `EEE` returns the whole word ("domingo"), which filled a
+ * weekday column with a full word — and `formatDateSync` answers in
+ * en-US when the locale's date-fns bundle has not been preloaded, so a
+ * screen that rendered before the bundle landed showed English day names
+ * to a household that reads none. Intl carries the CLDR abbreviations and
+ * needs no preloading. Full names are identical either way in all seven
+ * shipped locales.
  *
- * `format` selects the date-fns pattern: `'full'` → `EEEE` ("Monday",
- * "Montag"), `'short'` → `EEE` ("Mon", "Mo").
+ * Formatters are cached per (locale, format): constructing one is
+ * expensive enough to matter on a Pi.
  */
 export function getLocalizedDayNames(
   locale: string = DEFAULT_LOCALE,
   format: 'short' | 'full' = 'full',
 ): string[] {
-  const pattern = format === 'short' ? 'EEE' : 'EEEE';
+  const key = `${locale}|${format}`;
+  let formatter = DAY_NAME_FORMATTERS.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { weekday: format === 'short' ? 'short' : 'long' });
+    DAY_NAME_FORMATTERS.set(key, formatter);
+  }
   // Anchor week: 2024-01-07 is a Sunday in every reasonable timezone
   // (it's noon UTC, well clear of the date boundary). We construct each
   // day with local-time `new Date(y, m, d)` so the result matches what
@@ -144,26 +153,38 @@ export function getLocalizedDayNames(
   const result: string[] = new Array(7);
   for (let dow = 0; dow < 7; dow++) {
     const anchor = new Date(2024, 0, 7 + dow); // Sun Jan 7 + dow
-    result[dow] = formatDateSync(anchor, pattern, { locale });
+    result[dow] = formatter.format(anchor);
   }
   return result;
 }
 
+const MONTH_NAME_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
 /**
- * Month names for a locale, index 0 = January, from the same formatter the
- * wall uses (standalone form, so languages that decline month names in
- * dates still get the dictionary word). Editors that offer a month choice
- * read this instead of carrying twelve strings per locale.
+ * Month names for a locale, index 0 = January, in the standalone form, so
+ * languages that decline month names inside dates still get the dictionary
+ * word. Editors that offer a month choice read this instead of carrying
+ * twelve strings per locale.
+ *
+ * Reads `Intl.DateTimeFormat` for the same reason `getLocalizedDayNames`
+ * does: the sync date-fns path answers in en-US until the locale's bundle
+ * has been preloaded, which offered English month names to a non-English
+ * editor. Intl needs no preloading.
  */
 export function getLocalizedMonthNames(
   locale: string = DEFAULT_LOCALE,
   format: 'short' | 'full' = 'full',
 ): string[] {
-  const pattern = format === 'short' ? 'LLL' : 'LLLL';
+  const key = `${locale}|${format}`;
+  let formatter = MONTH_NAME_FORMATTERS.get(key);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { month: format === 'short' ? 'short' : 'long' });
+    MONTH_NAME_FORMATTERS.set(key, formatter);
+  }
   const result: string[] = new Array(12);
   for (let month = 0; month < 12; month++) {
     // Mid-month at local noon keeps the anchor clear of any date boundary.
-    result[month] = formatDateSync(new Date(2024, month, 15, 12), pattern, { locale });
+    result[month] = formatter.format(new Date(2024, month, 15, 12));
   }
   return result;
 }

@@ -138,8 +138,8 @@
     }
   },
   "displaySwitcher": {
-    "title": "Which display is this canvas editing? (Settings overrides live in Settings → Per display.)",
-    "label": "Which display is this canvas editing?",
+    "title": "Which display are you editing? (Settings overrides live in Settings → Per display.)",
+    "label": "Which display are you editing?",
     "onNow": "on now",
     "lastSeen": "last seen {time}",
     "addDisplay": "Add a display"
@@ -218,8 +218,8 @@
     "statusTitle": "Status",
     "enableLabel": "Only show at certain times",
     "repeatTitle": "How it repeats",
-    "shapeRepeat": "The same hours on each day I pick",
-    "shapeSpan": "One stretch that can run across days",
+    "shapeRepeat": "Same hours on each day I pick",
+    "shapeSpan": "One stretch across several days",
     "weekPreviewTitle": "Your week",
     "timeWindowTitle": "Time window",
     "fromLabel": "From",
@@ -409,7 +409,7 @@
       "displays": "Displays",
       "searchPlaceholder": "Search settings…",
       "noResults": "No settings found",
-      "matchingFields": "Matching fields",
+      "matchingFields": "Matching settings",
       "navLabels": {
         "calendar": "Calendar",
         "weather": "Weather",
@@ -457,7 +457,7 @@
       "multiFieldCount": "{count} settings",
       "openDisplayLink": "Open {name}",
       "multiDisplayLabel": "{count} displays",
-      "multiDisplayCurrentlyOverride": " currently override fields on {pageLabel}: ",
+      "multiDisplayCurrentlyOverride": " currently override settings on {pageLabel}: ",
       "fieldSeparator": ", "
     },
     "defaultAlertsPage": {
@@ -797,20 +797,20 @@
     "defaultDisplayPage": {
       "descriptionPart1": "These values are used by every display until a specific one overrides them. Change anything here and every display that's ",
       "descriptionEmphasisNot": "not",
-      "descriptionPart2": " overriding that field picks up the new value.",
+      "descriptionPart2": " overriding that setting picks up the new value.",
       "multiDisplayNotePart1": "Resolution, orientation, and flip are ",
       "multiDisplayNotePerDisplay": "per display",
       "multiDisplayNotePart2": ". Edit them on each display's own page under ",
       "multiDisplayNotePerDisplaySection": "Per display",
       "multiDisplayNotePart3": ".",
       "canvas": {
-        "heading": "Canvas",
+        "heading": "Screen area",
         "orientationPortrait": "Portrait",
         "orientationLandscape": "Landscape",
         "resolutionCustom": "Custom...",
         "resolutionWidthPlaceholder": "Width",
         "resolutionHeightPlaceholder": "Height",
-        "resolutionHelp": "Match this to your physical display. Changing resolution affects the module canvas size.",
+        "resolutionHelp": "Match this to your real screen. Change it and the area you arrange modules on changes to match.",
         "flipLabel": "Flip display",
         "flipToggle": "Inverted mount",
         "flipHelp": "Enable if your monitor is mounted upside-down. Rotates the display 180° from its base orientation."
@@ -823,7 +823,7 @@
         "paginationDotsHelp": "The row of dots at the bottom of the display that shows which screen is showing and lets you tap to jump to another. Turning this off also removes double-tap-to-pause, since that gesture lives on the dots.",
         "pauseEnabledLabel": "Allow pause on touchscreen",
         "pauseEnabledToggle": "Enabled",
-        "pauseEnabledHelp": "Double-tap the active pagination dot to pause screen rotation. Double-tap again to resume.",
+        "pauseEnabledHelp": "Double-tap the highlighted screen dot to pause the rotation. Double-tap again to resume.",
         "pauseTimeoutLabel": "Auto-resume timeout",
         "pauseTimeoutNever": "Never",
         "pauseTimeoutSeconds": "{seconds}s",
@@ -838,7 +838,7 @@
         "rotationProgressToggle": "Enabled",
         "rotationProgressHelp": "A thin line under the screen dots fills up as the screen's time runs out, so a long screen and a stuck one look different from across the room.",
         "transitionEffectLabel": "Transition effect",
-        "transitionEffectHelp": "Animation style when cycling between screens. Blur may be GPU-intensive on low-power devices.",
+        "transitionEffectHelp": "How one screen gives way to the next. Blur is the heaviest to draw, so if screens stutter on a slower device, pick another one.",
         "transitionDurationLabel": "Transition duration",
         "transitionDurationValue": "{seconds}s",
         "transitionDurationHelp": "How long the transition animation takes between screens.",
@@ -867,7 +867,7 @@
       "header": {
         "openTitle": "Open this display's address",
         "openLabel": "Open",
-        "editScreensTitle": "Edit this display's screens in the canvas",
+        "editScreensTitle": "Edit this display's screens in the editor",
         "editScreensLabel": "Edit screens",
         "statusOnline": "Online",
         "statusIdle": "Idle",
@@ -891,7 +891,7 @@
         "defaultsLink": "Defaults",
         "withOverridesPart2": " for everything except:",
         "noOverridesPart1": "{name} uses the ",
-        "noOverridesPart2": " for every field. Override one from the Overrides subtab.",
+        "noOverridesPart2": " for every setting. Override one from the Overrides subtab.",
         "chipBlockOverridden": "{label} overridden",
         "chipFieldWithDefault": "{label}: {value} (default: {defaultValue})",
         "chipFieldNoDefault": "{label}: {value}",
@@ -952,15 +952,15 @@
       },
       "display": {
         "defaultsLabel": "Defaults → Screen",
-        "bannerPart1": "Fields here show the ",
+        "bannerPart1": "Settings here show the ",
         "bannerEmphasisDefault": "default",
         "bannerPart2": " value from ",
         "bannerPart3": ". Click ",
         "bannerEmphasisOverride": "Override",
-        "bannerPart4": " on any field to change it just for {name}.",
-        "canvasHeading": "Canvas",
+        "bannerPart4": " on any setting to change it just for {name}.",
+        "canvasHeading": "Screen area",
         "perDisplayBadge": "Per display",
-        "resolutionHelp": "Modules are laid out against this canvas. Every display carries its own resolution; it isn't shared.",
+        "resolutionHelp": "Modules are arranged to fit this size. Every display has its own resolution; it isn't shared.",
         "rotationOptionNormal": "Normal (landscape)",
         "rotationOption90": "90° clockwise (portrait)",
         "rotationOption180": "180° (inverted)",
@@ -1616,7 +1616,7 @@
       "displayPicker": {
         "label": "Editing profiles for",
         "optionLabel": "{name} ({id})",
-        "help": "Profiles are per-display because they reference each display's own screens. Switching here changes which display the editor canvas is also working on."
+        "help": "Profiles are per-display because they reference each display's own screens. Switching here also changes which display you are editing."
       },
       "active": {
         "label": "Showing right now",
@@ -1668,7 +1668,7 @@
       "displayPicker": {
         "label": "Editing rules for",
         "optionLabel": "{name} ({id})",
-        "help": "Rules are per-display because they point at each display's own screens. Switching here changes which display the editor canvas is also working on."
+        "help": "Rules are per-display because they point at each display's own screens. Switching here also changes which display you are editing."
       },
       "emptyHint": "No rules yet. Add one to make the display react when something happens.",
       "priority": {
@@ -2219,12 +2219,12 @@
       "formReportedViewport": "(reported by display: {width} × {height})",
       "formWidth": "Width",
       "formHeight": "Height",
-      "formResolutionHint": "Set this to match the physical screen this display is showing on. Modules will be laid out against this canvas size when you edit this display's screens.",
+      "formResolutionHint": "Set this to match the physical screen this display is showing on. Modules are arranged to fit this size when you edit this display's screens.",
       "formRotationNormal": "Normal (landscape)",
       "formRotation90": "90° clockwise (portrait)",
       "formRotation180": "180° (inverted)",
       "formRotation270": "270° clockwise (portrait)",
-      "formRotationHint": "Picks the canvas orientation. The width and height above auto-swap so the longer edge matches whichever axis the rotation chose.",
+      "formRotationHint": "Picks which way round the screen area sits. The width and height above swap automatically so the longer edge matches the rotation you picked.",
       "formCancel": "Cancel",
       "formSaveChanges": "Save changes",
       "formAddDisplay": "Add display",
@@ -2258,7 +2258,7 @@
       "displayPicker": {
         "label": "Editing automation for",
         "optionLabel": "{name} ({id})",
-        "help": "Profiles and rules are per-display because they reference each display's own screens. Switching here changes which display the editor canvas is also working on."
+        "help": "Profiles and rules are per-display because they reference each display's own screens. Switching here also changes which display you are editing."
       }
     },
     "phonePage": {
@@ -4724,7 +4724,7 @@
     },
     "orientation": {
       "title": "Modules may be off-screen",
-      "warning": "{offCanvasCount} of {totalModuleCount} modules would extend beyond the new {newWidth}×{newHeight} canvas.",
+      "warning": "{offCanvasCount} of {totalModuleCount} modules would sit outside the new {newWidth}×{newHeight} screen area.",
       "scaleToFit": "Scale to Fit",
       "scaleToFitDescription": "shrinks all modules proportionally so nothing is cut off.",
       "switchAnyway": "Switch Anyway",
