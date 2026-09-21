@@ -133,7 +133,8 @@ jobs:
       # they would bury every real release: the app only searches the newest
       # 30 releases and the Settings list shows 20. So only the current one
       # is kept. That is safe for versioning because scripts/nightly-version.sh
-      # reads nothing but the newest v*-dev.* tag, which prune always leaves.
+      # takes the version from release tags alone, and reads nightly tags only
+      # to see whether main moved since the newest one, which prune leaves.
       # It does mean a nightly that boots but is broken falls all the way back
       # to the last stable release: upgrade.sh keeps a local rollback tree,
       # but finalize-deploy deletes it once the new install answers a health

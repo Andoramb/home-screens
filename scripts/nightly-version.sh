@@ -10,17 +10,23 @@
 # tag fetched. FORCE=true builds even when main has not moved since the last
 # nightly. NIGHTLY_STAMP overrides today's date stamp (tests).
 #
-# Version shape: vX.Y.Z-dev.YYYYMMDD. The base X.Y.Z is the highest of:
-#   - one patch above the newest release tag, or the next minor when the
-#     newest tag is a candidate or beta: its version has not shipped and its
-#     hotfixes are still to come, so v1.13.0-rc.1 gives v1.14.0-dev.*;
-#   - the base of the previous nightly. Once the rc has pushed nightlies to
-#     1.14.0-dev.*, the stable v1.13.0 shipping must not pull them back to
-#     1.13.1-dev.*, or the update check would rank the older nightly newest.
-# Together these keep every nightly above the release it follows, that
-# release's candidates, every hotfix of it, and every nightly before it, so
-# inside the test-builds channel "newest" is always the newest commit.
+# Version shape: vX.Y.Z-dev.YYYYMMDD. Main is working toward the next
+# version cut from it, so the base X.Y.Z names that version:
+#   - a beta or alpha in flight: its own version. v1.13.0-beta.1 gives
+#     v1.13.0-dev.*, which sorts above every 1.13.0 beta ("dev" > "beta")
+#     and below the 1.13.0 release.
+#   - a release candidate: the next minor. "dev" sorts below "rc", so
+#     v1.13.0-dev.* would rank under the candidate it was built after.
+#   - a release: the next minor. v1.13.0 and its hotfixes give v1.14.0-dev.*.
+# The base never drops below the next minor of the newest release, so a
+# hotfix beta (v1.13.1-beta.0 after v1.13.0) cannot pull nightlies back
+# under the v1.14.0-dev.* ones already built. Every input is a release tag
+# and the rule only rises as they are added, so inside the test-builds
+# channel "newest" is always the newest commit.
 set -euo pipefail
+
+core() { local v="${1#v}"; echo "${v%%-*}"; }
+next_minor() { local major minor; IFS=. read -r major minor _ <<< "$1"; echo "${major}.$(( minor + 1 )).0"; }
 
 FORCE="${FORCE:-false}"
 STAMP="${NIGHTLY_STAMP:-$(date -u +%Y%m%d)}"
@@ -44,19 +50,15 @@ if [ -z "${NEWEST_TAG}" ]; then
   echo "::error::No release tag found to base the nightly version on" >&2
   exit 1
 fi
-CORE="${NEWEST_TAG#v}"
-CORE="${CORE%%-*}"
-IFS=. read -r MAJOR MINOR PATCH <<< "${CORE}"
 case "${NEWEST_TAG}" in
-  *-*) BASE="${MAJOR}.$(( MINOR + 1 )).0" ;;
-  *)   BASE="${MAJOR}.${MINOR}.$(( PATCH + 1 ))" ;;
+  *-alpha*|*-beta*) BASE="$(core "${NEWEST_TAG}")" ;;
+  *)                BASE="$(next_minor "$(core "${NEWEST_TAG}")")" ;;
 esac
 
-# Never step below the previous nightly's base.
-if [ -n "${LAST_NIGHTLY}" ]; then
-  LAST_BASE="${LAST_NIGHTLY#v}"
-  LAST_BASE="${LAST_BASE%%-*}"
-  BASE="$(printf '%s\n%s\n' "${BASE}" "${LAST_BASE}" | sort -V | tail -n 1)"
+NEWEST_RELEASE="$(git tag -l 'v*' --sort=-v:refname | grep -v -- '-' | head -n 1 || true)"
+if [ -n "${NEWEST_RELEASE}" ]; then
+  FLOOR="$(next_minor "$(core "${NEWEST_RELEASE}")")"
+  BASE="$(printf '%s\n%s\n' "${BASE}" "${FLOOR}" | sort -V | tail -n 1)"
 fi
 
 VERSION="v${BASE}-dev.${STAMP}"

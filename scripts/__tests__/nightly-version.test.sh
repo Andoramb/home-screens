@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Exercise scripts/nightly-version.sh against a scratch tag history. The
-# version a nightly gets must sort above every release, candidate, hotfix
-# and earlier nightly, or the test-builds channel ranks an older build newest.
+# version a nightly gets must name the next version cut from main, and sort
+# above every release, beta, candidate, hotfix and earlier nightly, or the
+# test-builds channel ranks an older build newest.
 set -euo pipefail
 
 SCRIPT="$(cd "$(dirname "$0")/.." && pwd)/nightly-version.sh"
@@ -22,48 +23,59 @@ expect() { # $1 = label, $2 = got, $3 = want
   if [ "$2" != "$3" ]; then echo "FAIL: $1: got '$2', want '$3'"; exit 1; fi
   echo "ok: $1 -> $2"
 }
+newest_tag() { # newest first by semver, the order the update check sees
+  git -c versionsort.suffix=-alpha -c versionsort.suffix=-beta -c versionsort.suffix=-dev -c versionsort.suffix=-rc \
+    tag -l 'v*' --sort=-v:refname | head -n 1
+}
+nightly() { # $1 = label, $2 = date stamp, $3 = expected version; tags it and checks it ranks newest
+  commit "work for $2"
+  expect "$1" "$(decide "$2")" "$3"
+  git tag "$3"
+  expect "$1 ranks newest" "$(newest_tag)" "$3"
+}
 
-echo "Test 1: one patch above the newest release"
+echo "Test 1: a release moves nightlies to the next minor"
 git tag v1.12.2
-expect "after v1.12.2" "$(decide 20260901)" "v1.12.3-dev.20260901"
-git tag v1.12.3-dev.20260901
+expect "after v1.12.2" "$(decide 20260901)" "v1.13.0-dev.20260901"
+git tag v1.13.0-dev.20260901
 
 echo "Test 2: nothing new since the last nightly skips, FORCE builds"
 expect "same commit" "$(decide 20260902)" "build=false"
 forced="$(FORCE=true NIGHTLY_STAMP=20260902 bash "${SCRIPT}" 2>/dev/null | sed -n 's/^version=//p')"
-expect "forced same commit" "${forced}" "v1.12.3-dev.20260902"
+expect "forced same commit" "${forced}" "v1.13.0-dev.20260902"
 
 echo "Test 3: a second build on the same day gets a .2 suffix"
 commit "work"
-expect "same day again" "$(decide 20260901)" "v1.12.3-dev.20260901.2"
+expect "same day again" "$(decide 20260901)" "v1.13.0-dev.20260901.2"
 
-echo "Test 4: a candidate of an unreleased minor moves nightlies to the next minor"
+echo "Test 4: a beta keeps nightlies on its own version, ranked above it"
+git tag v1.13.0-beta.0
+nightly "after v1.13.0-beta.0" 20260905 "v1.13.0-dev.20260905"
+git tag v1.13.0-beta.1
+nightly "after v1.13.0-beta.1" 20260906 "v1.13.0-dev.20260906"
+
+echo "Test 5: a candidate moves nightlies to the next minor, since dev sorts below rc"
 git tag v1.13.0-rc.0
-expect "after v1.13.0-rc.0" "$(decide 20260905)" "v1.14.0-dev.20260905"
-git tag v1.14.0-dev.20260905
+nightly "after v1.13.0-rc.0" 20260908 "v1.14.0-dev.20260908"
 
-echo "Test 5: the stable shipping does not pull nightlies back below the last one"
-commit "more work"
+echo "Test 6: the release keeps them there"
 git tag v1.13.0
-expect "after v1.13.0 with nightlies at 1.14.0" "$(decide 20260910)" "v1.14.0-dev.20260910"
-git tag v1.14.0-dev.20260910
+nightly "after v1.13.0" 20260910 "v1.14.0-dev.20260910"
 
-echo "Test 6: a hotfix of that release does not either"
-commit "hotfix"
+echo "Test 7: so does a hotfix of it"
 git tag v1.13.1
-expect "after v1.13.1" "$(decide 20260912)" "v1.14.0-dev.20260912"
-git tag v1.14.0-dev.20260912
+nightly "after v1.13.1" 20260912 "v1.14.0-dev.20260912"
 
-echo "Test 7: the next candidate moves nightlies up again"
-commit "next"
-git tag v1.14.0-rc.0
-expect "after v1.14.0-rc.0" "$(decide 20260920)" "v1.15.0-dev.20260920"
-git tag v1.15.0-dev.20260920
+echo "Test 8: a hotfix beta does not pull nightlies back below the next minor"
+git tag v1.13.2-beta.0
+nightly "after v1.13.2-beta.0" 20260914 "v1.14.0-dev.20260914"
 
-echo "Test 8: every nightly sorted above the release tags it followed"
-# The order the update check would see: newest first by semver.
-sorted="$(git -c versionsort.suffix=-alpha -c versionsort.suffix=-beta -c versionsort.suffix=-dev -c versionsort.suffix=-rc \
-  tag -l 'v*' --sort=-v:refname | head -n 1)"
-expect "newest tag overall" "${sorted}" "v1.15.0-dev.20260920"
+echo "Test 9: the next beta keeps nightlies on its version"
+git tag v1.14.0-beta.0
+nightly "after v1.14.0-beta.0" 20260920 "v1.14.0-dev.20260920"
+
+echo "Test 10: a new major beta moves them to it"
+git tag v2.0.0-beta.0
+nightly "after v2.0.0-beta.0" 20260925 "v2.0.0-dev.20260925"
 
 echo "All nightly-version tests passed"
