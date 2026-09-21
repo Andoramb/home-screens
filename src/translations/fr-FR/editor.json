@@ -2374,7 +2374,18 @@
       "pattern-paper": "Papier"
     },
     "yourPicturesHeading": "Vos propres images",
-    "sourceKeyMissing": "Cette source a besoin d'une clé API qui n'est pas encore configurée, l'écran garde donc sa dernière image. Ajoutez la clé dans les Paramètres, ou choisissez une autre source."
+    "sourceKeyMissing": "Cette source a besoin d'une clé API qui n'est pas encore configurée, l'écran garde donc sa dernière image. Ajoutez la clé dans les Paramètres, ou choisissez une autre source.",
+    "shadeGroup": "Shade",
+    "shadeEnable": "Shade background",
+    "shadeStyleLabel": "Style",
+    "shadeStrengthLabel": "Strength",
+    "shadeColorLabel": "Color",
+    "shadeStyles": {
+      "even": "Even",
+      "topBottom": "Top and bottom",
+      "edges": "Edges",
+      "both": "Both"
+    }
   },
   "imageBrowserModal": {
     "title": "Bibliothèque d'images",

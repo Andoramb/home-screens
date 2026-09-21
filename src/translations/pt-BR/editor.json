@@ -2374,7 +2374,18 @@
       "pattern-paper": "Papel"
     },
     "yourPicturesHeading": "Suas próprias fotos",
-    "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte."
+    "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
+    "shadeGroup": "Shade",
+    "shadeEnable": "Shade background",
+    "shadeStyleLabel": "Style",
+    "shadeStrengthLabel": "Strength",
+    "shadeColorLabel": "Color",
+    "shadeStyles": {
+      "even": "Even",
+      "topBottom": "Top and bottom",
+      "edges": "Edges",
+      "both": "Both"
+    }
   },
   "imageBrowserModal": {
     "title": "Biblioteca de imagens",
