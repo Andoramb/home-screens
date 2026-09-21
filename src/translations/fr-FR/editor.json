@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Ajoutez votre foyer une seule fois. Noms, couleurs et emojis accompagnent chaque personne dans les tâches, les récompenses, les calendriers et les emplois du temps."
+    },
+    "touchAlignment": {
+      "label": "Alignement du tactile",
+      "optionFollow": "Suivre la rotation de l’écran",
+      "optionLeave": "Laisser le tactile tel quel",
+      "optionCustom": "Vos propres nombres",
+      "customLabel": "Nombres d’alignement du tactile",
+      "help": "Pour un écran tactile branché sur cet appareil. Quand l’écran est tourné, les appuis tournent avec lui. Choisissez « Laisser le tactile tel quel » si les appuis arrivent déjà au bon endroit.",
+      "customHelp": "Six nombres séparés par des espaces, par exemple 0 1 0 -1 0 1. À utiliser quand les appuis arrivent en miroir ou un peu décalés. C’est la matrice de calibration de l’écran tactile."
     }
   },
   "backgroundPicker": {

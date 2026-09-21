@@ -3,11 +3,12 @@
 import Toggle from '@/components/ui/Toggle';
 import { RESOLUTION_PRESETS, deriveDisplayTransform } from '@/lib/constants';
 import { FieldHelp, FieldLabel, FieldRow } from '@/components/editor/settings/screen/FieldRow';
+import TouchAlignmentControl from '@/components/editor/settings/shared/TouchAlignmentControl';
 import type { DisplayState } from '@/lib/settings-form';
 import { useTranslate } from '@/i18n';
 
 interface CanvasCardProps {
-  values: Pick<DisplayState, 'displayWidth' | 'displayHeight' | 'displayTransform'>;
+  values: Pick<DisplayState, 'displayWidth' | 'displayHeight' | 'displayTransform' | 'touchMatrix'>;
   onChange: (updates: Partial<DisplayState>) => void;
   /**
    * Whether the user explicitly picked "Custom..." in the resolution
@@ -183,6 +184,14 @@ export default function CanvasCard({
           <FieldHelp>
             {t('settings.defaultDisplayPage.canvas.flipHelp')}
           </FieldHelp>
+        </FieldRow>
+
+        <FieldRow fieldId="display.touchAlignment">
+          <FieldLabel>{t('settings.touchAlignment.label')}</FieldLabel>
+          <TouchAlignmentControl
+            value={values.touchMatrix}
+            onChange={(next) => onChange({ touchMatrix: next ?? null })}
+          />
         </FieldRow>
       </div>
     </div>

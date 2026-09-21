@@ -138,6 +138,7 @@ export const SETTINGS_FIELD_INDEX: SettingsFieldEntry[] = [
   { pageId: 'screen', fieldId: 'display.canvasOrientation', labelKey: 'common.orientation', panel: 'appearance', visibleWhen: singleDisplayOnly },
   { pageId: 'screen', fieldId: 'display.canvasResolution', labelKey: 'common.resolution', panel: 'appearance', visibleWhen: singleDisplayOnly },
   { pageId: 'screen', fieldId: 'display.canvasFlip', labelKey: 'settings.defaultDisplayPage.canvas.flipLabel', panel: 'appearance', visibleWhen: singleDisplayOnly, keywordKeys: ['settings.defaultDisplayPage.canvas.flipHelp'] },
+  { pageId: 'screen', fieldId: 'display.touchAlignment', labelKey: 'settings.touchAlignment.label', panel: 'appearance', visibleWhen: singleDisplayOnly, keywordKeys: ['settings.touchAlignment.help'] },
   { pageId: 'screen', fieldId: 'display.rotationInterval', labelKey: 'settings.defaultDisplayPage.fields.rotationIntervalLabel', panel: 'appearance', keywordKeys: ['settings.defaultDisplayPage.fields.rotationIntervalHelp'] },
   { pageId: 'screen', fieldId: 'display.pauseEnabled', labelKey: 'settings.defaultDisplayPage.fields.pauseEnabledLabel', panel: 'appearance', visibleWhen: hasDots, keywordKeys: ['settings.defaultDisplayPage.fields.pauseEnabledHelp'] },
   { pageId: 'screen', fieldId: 'display.swipeEnabled', labelKey: 'settings.defaultDisplayPage.fields.swipeEnabledLabel', panel: 'appearance', keywordKeys: ['settings.defaultDisplayPage.fields.swipeEnabledHelp'] },

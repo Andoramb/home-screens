@@ -39,6 +39,16 @@ export const INVALID_CONFIGS: { name: string; config: unknown; error: RegExp }[]
     error: /Screen rotation must be one of/,
   },
   {
+    name: 'a display touch matrix that is not six numbers',
+    config: { ...base, displays: [{ id: 'kitchen', screens: [], touchMatrix: [1, 0, 0, 0, '$(id)', 0] }] },
+    error: /Display "kitchen": Touch alignment must be 6 numbers/,
+  },
+  {
+    name: 'a touch matrix in the shared settings that is too short',
+    config: { ...base, settings: { ...base.settings, touchMatrix: [1, 0, 0] } },
+    error: /Touch alignment must be 6 numbers/,
+  },
+  {
     name: 'a screen schedule with a day outside 0-6',
     config: { ...base, screens: [{ id: 's1', name: 'Main', modules: [], schedule: { daysOfWeek: [9] } }] },
     error: /daysOfWeek/,

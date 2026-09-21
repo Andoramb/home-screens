@@ -7106,6 +7106,15 @@
           "default": "90"
         },
         {
+          "name": "touchMatrix",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "number[]"
+          },
+          "description": "Six numbers that line touch up with the picture on the hub's own screen. Leave unset and touch follows the screen rotation; `[1, 0, 0, 0, 1, 0]` leaves touch as it is"
+        },
+        {
           "name": "latitude",
           "optional": false,
           "type": {
@@ -8748,6 +8757,15 @@
             ]
           },
           "description": "Screen rotation for this display: `normal`, `90`, `180`, or `270`"
+        },
+        {
+          "name": "touchMatrix",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "number[]"
+          },
+          "description": "Six numbers that line touch up with the picture, instead of following the screen rotation"
         },
         {
           "name": "profiles",

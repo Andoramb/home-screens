@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Tilføj din husstand én gang. Navne, farver og emojis følger hver person i pligter, belønninger, kalendere og skemaer."
+    },
+    "touchAlignment": {
+      "label": "Justering af berøring",
+      "optionFollow": "Følg skærmens rotation",
+      "optionLeave": "Lad berøring være, som den er",
+      "optionCustom": "Dine egne tal",
+      "customLabel": "Tal til justering af berøring",
+      "help": "Til en berøringsskærm, der er sluttet til denne enhed. Når skærmen drejes, drejer trykkene med. Vælg \"Lad berøring være, som den er\", hvis trykkene allerede rammer det rigtige sted.",
+      "customHelp": "Seks tal med mellemrum imellem, for eksempel 0 1 0 -1 0 1. Brug det, når trykkene rammer spejlvendt eller lidt ved siden af. Det er berøringsskærmens kalibreringsmatrix."
     }
   },
   "backgroundPicker": {

@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Voeg je huishouden één keer toe. Namen, kleuren en emoji’s volgen elke persoon bij taken, beloningen, agenda’s en roosters."
+    },
+    "touchAlignment": {
+      "label": "Uitlijning van aanraking",
+      "optionFollow": "De schermrotatie volgen",
+      "optionLeave": "Aanraking laten zoals die is",
+      "optionCustom": "Je eigen getallen",
+      "customLabel": "Getallen voor de uitlijning van aanraking",
+      "help": "Voor een aanraakscherm dat op dit apparaat is aangesloten. Als het scherm wordt gedraaid, draaien de tikken mee. Kies \"Aanraking laten zoals die is\" als tikken al op de juiste plek terechtkomen.",
+      "customHelp": "Zes getallen met spaties ertussen, bijvoorbeeld 0 1 0 -1 0 1. Gebruik dit als tikken gespiegeld of een beetje verschoven terechtkomen. Dit is de kalibratiematrix van het aanraakscherm."
     }
   },
   "backgroundPicker": {

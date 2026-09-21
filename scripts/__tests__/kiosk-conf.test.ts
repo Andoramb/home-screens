@@ -123,6 +123,44 @@ const CASES: Array<{ name: string; config: Record<string, unknown>; want: string
     want: 'PI_VARIANT="lite"\n',
   },
   {
+    name: 'a touch matrix on the main display',
+    config: { settings: globals, displays: [{ id: 'main', name: 'Main', displayTransform: '270', touchMatrix: [0, -1, 1, 1, 0, 0] }] },
+    want: 'DISPLAY_MODE="1920x1080"\nDISPLAY_TRANSFORM="270"\nTOUCH_MATRIX="0 -1 1 1 0 0"\nPI_VARIANT="lite"\n',
+  },
+  {
+    name: 'a touch matrix in the globals, with fractions and a negative zero',
+    config: { settings: { ...globals, touchMatrix: [1.04, -0, -0.02, 0, 1.0300001, -0.015] } },
+    want: 'DISPLAY_MODE="1920x1080"\nTOUCH_MATRIX="1.04 0 -0.02 0 1.03 -0.015"\nPI_VARIANT="lite"\n',
+  },
+  {
+    name: 'a main display that follows the rotation ignores a matrix left in the globals',
+    config: { settings: { ...globals, touchMatrix: [-1, 0, 1, 0, 1, 0] }, displays: [{ id: 'main', name: 'Main' }] },
+    want: 'DISPLAY_MODE="1920x1080"\nPI_VARIANT="lite"\n',
+  },
+  {
+    name: 'an empty displays list still reads the touch matrix from the globals',
+    config: { settings: { ...globals, touchMatrix: [-1, 0, 1, 0, 1, 0] }, displays: [] },
+    want: 'DISPLAY_MODE="1920x1080"\nTOUCH_MATRIX="-1 0 1 0 1 0"\nPI_VARIANT="lite"\n',
+  },
+  {
+    name: 'the main display\'s touch matrix wins over the globals',
+    config: {
+      settings: { ...globals, touchMatrix: [-1, 0, 1, 0, 1, 0] },
+      displays: [{ id: 'main', name: 'Main', touchMatrix: [1, 0, 0, 0, 1, 0] }],
+    },
+    want: 'DISPLAY_MODE="1920x1080"\nTOUCH_MATRIX="1 0 0 0 1 0"\nPI_VARIANT="lite"\n',
+  },
+  {
+    name: 'a touch matrix that is shell code is never written',
+    config: { settings: { ...globals, touchMatrix: ['$(touch pwned)', 0, 0, 0, 1, 0] } },
+    want: 'DISPLAY_MODE="1920x1080"\nPI_VARIANT="lite"\n',
+  },
+  {
+    name: 'a touch matrix of the wrong length is never written',
+    config: { settings: { ...globals, touchMatrix: [1, 0, 0, 0, 1] } },
+    want: 'DISPLAY_MODE="1920x1080"\nPI_VARIANT="lite"\n',
+  },
+  {
     name: 'an empty displays list: the globals',
     config: { settings: { ...globals, displayTransform: '90' }, displays: [] },
     want: 'DISPLAY_MODE="1920x1080"\nDISPLAY_TRANSFORM="90"\nPI_VARIANT="lite"\n',

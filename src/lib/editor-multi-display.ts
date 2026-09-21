@@ -284,6 +284,7 @@ export function buildBootstrapMain(config: ScreenConfiguration): DisplayNode {
     ...(config.settings.displayTransform
       ? { displayTransform: config.settings.displayTransform }
       : {}),
+    ...(config.settings.touchMatrix ? { touchMatrix: config.settings.touchMatrix } : {}),
   };
 }
 
@@ -326,6 +327,11 @@ export function buildNewDisplay(
     ...(display.displayWidth != null ? { displayWidth: display.displayWidth } : {}),
     ...(display.displayHeight != null ? { displayHeight: display.displayHeight } : {}),
     ...(display.displayTransform ? { displayTransform: display.displayTransform } : {}),
+    // The hub's touch matrix moves onto main with everything else: once a
+    // displays list exists the global one is no longer read.
+    ...(display.touchMatrix ?? (inheritFromGlobal ? config.settings.touchMatrix : undefined)
+      ? { touchMatrix: display.touchMatrix ?? config.settings.touchMatrix }
+      : {}),
     ...(display.activeProfile
       ? { activeProfile: display.activeProfile }
       : inheritedActiveProfile

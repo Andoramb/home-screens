@@ -677,6 +677,10 @@ export interface GlobalSettings {
    * Screen rotation: `normal`, `90`, `180`, or `270`. `90` and `270` turn the screen to portrait
    */
   displayTransform?: 'normal' | '90' | '180' | '270';
+  /**
+   * Six numbers that line touch up with the picture on the hub's own screen. Leave unset and touch follows the screen rotation; `[1, 0, 0, 0, 1, 0]` leaves touch as it is
+   */
+  touchMatrix?: number[];
   /** Household latitude */
   latitude: number;
   /** Household longitude */
@@ -1036,6 +1040,13 @@ export interface DisplayNode {
    * wlr-randr transform applied at boot on the display-only Pi (informational on the hub side)
    */
   displayTransform?: 'normal' | '90' | '180' | '270';
+  /**
+   * Six numbers that line touch up with the picture, instead of following the screen rotation
+   *
+   * libinput calibration matrix written to labwc's rc.xml. Only read from the
+   * display the hub itself renders; a display-only Pi keeps its own rc.xml.
+   */
+  touchMatrix?: number[];
   /**
    * This display's own profiles. Their `screenIds` point at this display's screens
    *

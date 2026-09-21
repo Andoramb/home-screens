@@ -1036,6 +1036,13 @@ var mh = Math.min(w, h);
 var lines = [];
 if (mw && mh) lines.push('DISPLAY_MODE="' + mw + 'x' + mh + '"');
 if (t !== "normal") lines.push('DISPLAY_TRANSFORM="' + t + '"');
+// Six numbers that replace the touch matrix labwc-rc.sh picks from the rotation.
+// With a displays list the hub display owns it outright: unset there means follow the rotation.
+var m = ds.length ? hub.touchMatrix : s.touchMatrix;
+var okNum = function (n) { return typeof n === "number" && isFinite(n) && Math.abs(n) <= 100; };
+if (Array.isArray(m) && m.length === 6 && m.every(okNum)) {
+  lines.push('TOUCH_MATRIX="' + m.map(function (n) { return String(Number(n.toFixed(6))); }).join(" ") + '"');
+}
 if (s.piVariant) lines.push('PI_VARIANT="' + s.piVariant + '"');
 console.log(lines.join("\\n"));
 GENEOF
@@ -1175,30 +1182,13 @@ exec chromium \
       chown "${USER}:${USER}" "${LAUNCHER}"
     fi
 
-    # 8b. labwc configuration (window rules, cursor hiding keybind)
+    # 8b. labwc configuration (window rules, cursor hiding keybind, and the
+    #     touch matrix that follows the rotation in the kiosk.conf written by
+    #     step 7). labwc-rc.sh is the file's only writer: the app runs the
+    #     same script after a save, so an update and a save agree.
     LABWC_DIR="${HOME}/.config/labwc"
-    mkdir -p "${LABWC_DIR}"
-
-    DESIRED_RC='<?xml version="1.0"?>
-<labwc_config>
-  <windowRules>
-    <windowRule identifier="*" serverDecoration="no" skipTaskbar="yes" skipWindowSwitcher="yes" />
-  </windowRules>
-  <keyboard>
-    <keybind key="W-h">
-      <action name="HideCursor"/>
-    </keybind>
-  </keyboard>
-</labwc_config>'
-
-    if [ ! -f "${LABWC_DIR}/rc.xml" ] || [ "$(cat "${LABWC_DIR}/rc.xml")" != "${DESIRED_RC}" ]; then
-      echo "${DESIRED_RC}" > "${LABWC_DIR}/rc.xml"
+    if [ "$(bash "${SCRIPT_DIR}/labwc-rc.sh" --create)" = "changed" ]; then
       changed="${changed}labwc-rc,"
-      # A running labwc keeps its rules in memory, so reload it: otherwise a
-      # Chromium relaunch under this session would still meet the old rules
-      # (the ToggleFullscreen rule undoes --kiosk's fullscreen). No labwc runs
-      # inside the image-build chroot, and pkill's miss is harmless there.
-      pkill -HUP -x labwc 2>/dev/null || true
     fi
 
     # 8c. Remove stale Chromium launch from labwc autostart (if present).

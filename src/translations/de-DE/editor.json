@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Füge deinen Haushalt einmal hinzu. Namen, Farben und Emojis begleiten jede Person in Aufgaben, Belohnungen, Kalendern und Stundenplänen."
+    },
+    "touchAlignment": {
+      "label": "Touch-Ausrichtung",
+      "optionFollow": "Der Bildschirmdrehung folgen",
+      "optionLeave": "Touch unverändert lassen",
+      "optionCustom": "Eigene Zahlen",
+      "customLabel": "Zahlen für die Touch-Ausrichtung",
+      "help": "Für einen Touchscreen, der an diesem Gerät angeschlossen ist. Wird der Bildschirm gedreht, drehen sich die Berührungen mit. Wähle „Touch unverändert lassen“, wenn Berührungen schon an der richtigen Stelle ankommen.",
+      "customHelp": "Sechs Zahlen mit Leerzeichen dazwischen, zum Beispiel 0 1 0 -1 0 1. Nutze das, wenn Berührungen gespiegelt oder leicht versetzt ankommen. Das ist die Kalibrierungsmatrix des Touchscreens."
     }
   },
   "backgroundPicker": {

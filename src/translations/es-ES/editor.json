@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Añade tu hogar una sola vez. Los nombres, colores y emojis acompañan a cada persona en tareas, recompensas, calendarios y horarios escolares."
+    },
+    "touchAlignment": {
+      "label": "Alineación táctil",
+      "optionFollow": "Seguir la rotación de la pantalla",
+      "optionLeave": "Dejar el táctil como está",
+      "optionCustom": "Tus propios números",
+      "customLabel": "Números de alineación táctil",
+      "help": "Para una pantalla táctil conectada a este dispositivo. Cuando la pantalla se gira, los toques giran con ella. Elige «Dejar el táctil como está» si los toques ya caen en el lugar correcto.",
+      "customHelp": "Seis números separados por espacios, por ejemplo 0 1 0 -1 0 1. Úsalo cuando los toques caen reflejados o un poco desviados. Es la matriz de calibración de la pantalla táctil."
     }
   },
   "backgroundPicker": {

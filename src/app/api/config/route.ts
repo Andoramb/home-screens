@@ -9,7 +9,7 @@ import { readTransactionFile, withDataTransaction } from '@/lib/data-transaction
 import { settleFamilyMigration } from '@/lib/family-data';
 import { withFamilyData, validateMemberReferences } from '@/lib/family-api';
 import { getAllScreens } from '@/lib/display-filter';
-import { syncKioskConf, applyDisplaySettings, resolveHubPanel } from '@/lib/kiosk';
+import { syncKioskConf, applyDisplaySettings, applyLabwcRc, resolveHubPanel } from '@/lib/kiosk';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
 import { maybeSendBeacon } from '@/lib/telemetry';
 import { validateConfigForWrite } from '@/lib/config-validation';
@@ -137,7 +137,10 @@ async function saveConfig(request: NextRequest, config: ScreenConfiguration): Pr
     }
 
     // Keep kiosk.conf in sync so kiosk-launcher.sh picks up changes on next boot
-    syncKioskConf(saved).catch((e) => log.error('kiosk.conf sync failed:', e));
+    // and, when it changed, have labwc line touch up with the new rotation.
+    syncKioskConf(saved)
+      .then((wrote) => (wrote ? applyLabwcRc() : undefined))
+      .catch((e) => log.error('kiosk.conf sync failed:', e));
 
     // Apply display rotation/mode immediately via wlr-randr (no reboot needed).
     // Only attempt when display settings actually changed.

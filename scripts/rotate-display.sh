@@ -47,6 +47,7 @@ KIOSK_CONF="${APP_DIR}/data/kiosk.conf"
 
 # Load existing values
 DISPLAY_MODE=""
+TOUCH_MATRIX=""
 PI_VARIANT=""
 [ -f "${KIOSK_CONF}" ] && source "${KIOSK_CONF}"
 
@@ -56,7 +57,12 @@ PI_VARIANT=""
 if [ "${ANGLE}" != "0" ]; then
   echo "DISPLAY_TRANSFORM=\"${ANGLE}\"" >> "${KIOSK_CONF}"
 fi
+[ -n "${TOUCH_MATRIX}" ] && echo "TOUCH_MATRIX=\"${TOUCH_MATRIX}\"" >> "${KIOSK_CONF}"
 [ -n "${PI_VARIANT}" ] && echo "PI_VARIANT=\"${PI_VARIANT}\"" >> "${KIOSK_CONF}"
+
+# Turn touch input with the picture (a no-op on a display-only Pi, which
+# keeps its own rc.xml and does not ship the script).
+[ -f "${APP_DIR}/scripts/labwc-rc.sh" ] && bash "${APP_DIR}/scripts/labwc-rc.sh" > /dev/null
 
 info "Rotation persisted. Will take effect on next reboot."
 

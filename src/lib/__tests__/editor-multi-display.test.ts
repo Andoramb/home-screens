@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { withProfiles, withActiveProfile } from '@/lib/editor-multi-display';
+import { buildBootstrapMain, buildNewDisplay, withProfiles, withActiveProfile } from '@/lib/editor-multi-display';
+import { resolveHubPanel } from '@/lib/kiosk';
 import type {
   GlobalSettings,
   Profile,
@@ -185,5 +186,37 @@ describe('withActiveProfile', () => {
     const config = makeConfig({ settings: makeSettings({ activeProfile: 'p1' }) });
     const next = withActiveProfile(config, null, undefined);
     expect(next.settings.activeProfile).toBeUndefined();
+  });
+});
+
+// Once a displays list exists the hub's touch matrix is read from its display
+// and nowhere else, so both ways of creating that display must carry the
+// single-display value across. Otherwise a calibrated touchscreen goes wrong
+// the moment a second display is added.
+describe('touch matrix when the displays list is created', () => {
+  const matrix = [-1, 0, 1, 0, 1, 0];
+  const config: ScreenConfiguration = { version: 1, settings: makeSettings({ touchMatrix: matrix }), screens: [makeScreen('s1')] } as ScreenConfiguration;
+
+  it('moves onto a bootstrapped main', () => {
+    expect(buildBootstrapMain(config).touchMatrix).toEqual(matrix);
+  });
+
+  it('moves onto main when main is the first display added, and not onto any other', () => {
+    expect(buildNewDisplay({ id: 'main', name: 'Main' }, config, true).touchMatrix).toEqual(matrix);
+    expect(buildNewDisplay({ id: 'kitchen', name: 'Kitchen' }, config, false)).not.toHaveProperty('touchMatrix');
+  });
+
+  it('is absent when nothing was set', () => {
+    const plain = { ...config, settings: makeSettings() };
+    expect(buildBootstrapMain(plain)).not.toHaveProperty('touchMatrix');
+    expect(buildNewDisplay({ id: 'main', name: 'Main' }, plain, true)).not.toHaveProperty('touchMatrix');
+  });
+
+  it('Follow on the hub display is the answer, whatever the globals still hold', () => {
+    const main = buildBootstrapMain(config);
+    const followed = { ...config, displays: [{ ...main, touchMatrix: undefined }] };
+    expect(resolveHubPanel(followed).touchMatrix).toBeNull();
+    expect(resolveHubPanel({ ...config, displays: [main] }).touchMatrix).toEqual(matrix);
+    expect(resolveHubPanel(config).touchMatrix).toEqual(matrix);
   });
 });

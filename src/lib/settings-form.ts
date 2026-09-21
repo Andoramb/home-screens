@@ -16,6 +16,8 @@ export interface DisplayState {
   displayWidth: number;
   displayHeight: number;
   displayTransform: string;
+  /** Six numbers that line touch up with the picture; null follows the rotation. */
+  touchMatrix: number[] | null;
   rotationInterval: number;
   cursorHideSeconds: number;
   transitionEffect: string;
@@ -93,6 +95,7 @@ export const FORM_DEFAULTS: SettingsState = {
     displayWidth: 1080,
     displayHeight: 1920,
     displayTransform: '90',
+    touchMatrix: null,
     cursorHideSeconds: 3,
     transitionEffect: 'fade',
     transitionDuration: 0.6,
@@ -187,6 +190,7 @@ export function toFormState(s: GlobalSettings | undefined): SettingsState {
       displayWidth: s.displayWidth,
       displayHeight: s.displayHeight,
       displayTransform: s.displayTransform ?? FORM_DEFAULTS.display.displayTransform,
+      touchMatrix: s.touchMatrix ?? null,
       cursorHideSeconds: s.cursorHideSeconds ?? FORM_DEFAULTS.display.cursorHideSeconds,
       transitionEffect: s.transitionEffect ?? FORM_DEFAULTS.display.transitionEffect,
       transitionDuration: s.transitionDuration ?? FORM_DEFAULTS.display.transitionDuration,
@@ -239,6 +243,7 @@ export function toConfigSettings(state: SettingsState): Partial<GlobalSettings> 
     displayWidth: display.displayWidth,
     displayHeight: display.displayHeight,
     displayTransform: display.displayTransform as 'normal' | '90' | '180' | '270',
+    touchMatrix: display.touchMatrix ?? undefined,
     cursorHideSeconds: display.cursorHideSeconds,
     transitionEffect: display.transitionEffect as GlobalSettings['transitionEffect'],
     transitionDuration: display.transitionDuration,

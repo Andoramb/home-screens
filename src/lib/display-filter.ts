@@ -859,7 +859,28 @@ export function isValidDisplayTransform(value: unknown): boolean {
   return value == null || (DISPLAY_TRANSFORMS as readonly unknown[]).includes(value);
 }
 
+/** Six numbers: the first two rows of libinput's 3x3 touch calibration matrix. */
+export const TOUCH_MATRIX_LENGTH = 6;
+/** Rotations and flips use -1, 0 and 1; a stretched or shifted panel stays close to that. */
+export const TOUCH_MATRIX_LIMIT = 100;
+
+/**
+ * A touch matrix that is unset or six ordinary numbers. Like the rotation it
+ * ends up in kiosk.conf, which bash sources, so nothing else is ever saved.
+ */
+export function isValidTouchMatrix(value: unknown): boolean {
+  if (value == null) return true;
+  return Array.isArray(value)
+    && value.length === TOUCH_MATRIX_LENGTH
+    && value.every((n) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= TOUCH_MATRIX_LIMIT);
+}
+
+export const TOUCH_MATRIX_ERROR = `Touch alignment must be ${TOUCH_MATRIX_LENGTH} numbers between -${TOUCH_MATRIX_LIMIT} and ${TOUCH_MATRIX_LIMIT}`;
+
 function validateDisplayTransform(display: DisplayNode): string | null {
+  if (!isValidTouchMatrix(display.touchMatrix)) {
+    return `Display "${display.id}": ${TOUCH_MATRIX_ERROR}`;
+  }
   if (!isValidDisplayTransform(display.displayTransform) || !isValidDisplayTransform(display.settings?.displayTransform)) {
     return `Display "${display.id}" rotation must be one of: ${DISPLAY_TRANSFORMS.join(', ')}`;
   }

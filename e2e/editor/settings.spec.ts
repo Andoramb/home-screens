@@ -224,6 +224,37 @@ test('Defaults › Screen: a custom resolution pick survives a tab switch', asyn
   await expect(row.getByPlaceholder('Height')).toBeVisible();
 });
 
+test('Defaults › Screen: touch alignment saves six numbers, refuses anything else, and goes back to following the rotation', async ({ page, request }) => {
+  await putConfig(request, baseConfig());
+  await page.goto('/editor/settings?section=defaults&page=screen');
+
+  const row = page.locator('[data-field-id="display.touchAlignment"]');
+  const select = row.locator('select');
+  const numbers = row.getByLabel('Touch alignment numbers');
+  await expect(select).toHaveValue('follow');
+
+  await select.selectOption('leave');
+  await expect.poll(async () => (await getConfig(request)).settings.touchMatrix).toEqual([1, 0, 0, 0, 1, 0]);
+
+  // Text that is not six numbers snaps back and leaves what was saved alone.
+  await select.selectOption('custom');
+  await numbers.fill('1 0 0 sideways');
+  await numbers.blur();
+  await expect(numbers).toHaveValue('');
+
+  await numbers.fill('-1, 0, 1, 0, 1, 0');
+  await numbers.blur();
+  await expect.poll(async () => (await getConfig(request)).settings.touchMatrix).toEqual([-1, 0, 1, 0, 1, 0]);
+
+  // The saved numbers come back after a reload, which lands after first render.
+  await page.reload();
+  await expect(select).toHaveValue('custom');
+  await expect(numbers).toHaveValue('-1 0 1 0 1 0');
+
+  await select.selectOption('follow');
+  await expect.poll(async () => (await getConfig(request)).settings.touchMatrix).toBeUndefined();
+});
+
 test('Defaults › Alerts: editing the shared duration persists', async ({ page, request }) => {
   await putConfig(request, baseConfig()); // no alerts block → form hydrates enabled, duration 0
   await page.goto('/editor/settings?section=defaults&page=screen&panel=alerts');
@@ -382,6 +413,28 @@ test.describe('per-display overrides', () => {
   function overrideRow(page: Page, label: string) {
     return page.getByText(label, { exact: true }).locator('xpath=ancestor::div[contains(@class,"px-4")][1]');
   }
+
+  test('touch alignment is offered on the hub\'s own display only, and saves to that display', async ({ page, request }) => {
+    await putConfig(request, multiDisplayConfig());
+    const row = page.locator('[data-field-id="display.touchAlignment"]');
+
+    // A display-only Pi keeps its own touch setup, so the row promises nothing there.
+    await page.goto('/editor/settings?section=display&id=kitchen&subtab=overrides');
+    await expect(page.getByText('Rotation', { exact: true })).toBeVisible();
+    await expect(row).toHaveCount(0);
+
+    await page.goto('/editor/settings?section=display&id=main&subtab=overrides');
+    await row.locator('select').selectOption('custom');
+    await row.getByLabel('Touch alignment numbers').fill('0 1 0 -1 0 1');
+    await row.getByLabel('Touch alignment numbers').blur();
+
+    await expect
+      .poll(async () => {
+        const config = (await getConfig(request)) as unknown as { displays?: DisplayNode[]; settings: { touchMatrix?: number[] } };
+        return [config.displays?.find((d) => d.id === 'main')?.touchMatrix, config.settings.touchMatrix];
+      })
+      .toEqual([[0, 1, 0, -1, 0, 1], undefined]);
+  });
 
   test('overriding a display field writes to the node, shows the backlink banner, and resets', async ({ page, request }) => {
     await putConfig(request, multiDisplayConfig());

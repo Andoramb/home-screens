@@ -1,6 +1,8 @@
 'use client';
 
-import { MAX_DISPLAY_DIMENSION, MIN_DISPLAY_DIMENSION } from '@/lib/display-filter';
+import { MAX_DISPLAY_DIMENSION, MIN_DISPLAY_DIMENSION, findMainDisplay } from '@/lib/display-filter';
+import { useEditorStore } from '@/stores/editor-store';
+import TouchAlignmentControl from '@/components/editor/settings/shared/TouchAlignmentControl';
 import { useTranslate } from '@/i18n';
 import { useCanvasDimensionDrafts } from './useCanvasDimensionDrafts';
 import type { DisplayNode, ScreenConfiguration } from '@/types/config';
@@ -28,6 +30,12 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
     commitHeight,
     handleTransform,
   } = useCanvasDimensionDrafts(display, config.settings);
+  const updateDisplay = useEditorStore((s) => s.updateDisplay);
+  const saveConfig = useEditorStore((s) => s.saveConfig);
+  // Touch is lined up on the machine the screen is plugged into, and the hub
+  // only manages its own: the display that /display renders. A display-only
+  // Pi keeps its own labwc config, so the row would promise nothing there.
+  const isHubScreen = findMainDisplay(config.displays)?.id === display.id;
 
   return (
     <div className="mb-5">
@@ -68,7 +76,7 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
             {t('settings.perDisplayPage.display.resolutionHelp')}
           </p>
         </div>
-        <div className="px-4 py-3.5">
+        <div className={`px-4 py-3.5${isHubScreen ? ' border-b border-hs-border' : ''}`}>
           <div className="flex items-center justify-between mb-2">
             <div className="text-xs text-hs-text-muted">
               {t('fields.rotation')}
@@ -88,6 +96,25 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
             <option value="270">{t('settings.perDisplayPage.display.rotationOption270')}</option>
           </select>
         </div>
+        {isHubScreen && (
+          <div className="px-4 py-3.5" data-field-id="display.touchAlignment">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs text-hs-text-muted">
+                {t('settings.touchAlignment.label')}
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-hs-text-faint">
+                {t('settings.perDisplayPage.display.perDisplayBadge')}
+              </span>
+            </div>
+            <TouchAlignmentControl
+              value={display.touchMatrix}
+              onChange={async (next) => {
+                updateDisplay(display.id, { touchMatrix: next });
+                await saveConfig();
+              }}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@
 import { promises as fs } from 'fs';
 import { execFile } from 'child_process';
 import path from 'path';
-import { DISPLAY_TRANSFORMS, findMainDisplay } from '@/lib/display-filter';
+import { DISPLAY_TRANSFORMS, findMainDisplay, isValidTouchMatrix } from '@/lib/display-filter';
 import type { ScreenConfiguration } from '@/types/config';
 
 const KIOSK_CONF = 'data/kiosk.conf';
@@ -18,6 +18,11 @@ export interface HubPanel {
   width: number;
   height: number;
   transform: (typeof DISPLAY_TRANSFORMS)[number];
+  /**
+   * Six numbers that replace the touch matrix scripts/labwc-rc.sh would pick
+   * from the rotation, or null when touch simply follows the rotation.
+   */
+  touchMatrix: number[] | null;
 }
 
 /**
@@ -43,10 +48,17 @@ export function resolveHubPanel(config: ScreenConfiguration): HubPanel {
   const s = config.settings;
   const hub = findMainDisplay(config.displays);
   const transform = hub?.displayTransform ?? hub?.settings?.displayTransform ?? s.displayTransform;
+  // Unlike the fields above, an unset touch matrix is an answer ("follow the
+  // rotation"), not a gap to fill: falling back to the globals here left a
+  // matrix from single-display days active behind a row that said Follow,
+  // with the global control hidden. The node is seeded from the globals when
+  // the displays list is created, and owns the value from then on.
+  const touchMatrix = hub ? hub.touchMatrix : s.touchMatrix;
   return {
     width: hub?.displayWidth ?? hub?.settings?.displayWidth ?? s.displayWidth ?? 0,
     height: hub?.displayHeight ?? hub?.settings?.displayHeight ?? s.displayHeight ?? 0,
     transform: DISPLAY_TRANSFORMS.find((t) => t === transform) ?? 'normal',
+    touchMatrix: touchMatrix != null && isValidTouchMatrix(touchMatrix) ? touchMatrix : null,
   };
 }
 
@@ -67,6 +79,9 @@ export function buildKioskConf(config: ScreenConfiguration): string {
   if (panel.transform !== 'normal') {
     lines.push(`DISPLAY_TRANSFORM="${panel.transform}"`);
   }
+  if (panel.touchMatrix) {
+    lines.push(`TOUCH_MATRIX="${panel.touchMatrix.map((n) => String(Number(n.toFixed(6)))).join(' ')}"`);
+  }
   // piVariant is set by install scripts but not in the TypeScript types.
   // Validate to prevent shell injection since kiosk.conf is sourced by bash.
   const piVariant = rawSettings.piVariant as string | undefined;
@@ -77,19 +92,34 @@ export function buildKioskConf(config: ScreenConfiguration): string {
 
 /**
  * Write kiosk.conf so kiosk-launcher.sh picks up display settings on next boot.
- * Called after every config write to keep kiosk.conf in sync.
+ * Called after every config write to keep kiosk.conf in sync. Resolves true
+ * when the file was rewritten.
  */
-export async function syncKioskConf(config: ScreenConfiguration): Promise<void> {
+export async function syncKioskConf(config: ScreenConfiguration): Promise<boolean> {
   const confPath = getKioskConfPath();
   const desired = buildKioskConf(config);
   // Only write if content changed (avoids unnecessary disk writes on Pi SD cards)
   try {
     const current = await fs.readFile(confPath, 'utf-8');
-    if (current === desired) return;
+    if (current === desired) return false;
   } catch {
     // File doesn't exist yet — write it
   }
   await fs.writeFile(confPath, desired, 'utf-8');
+  return true;
+}
+
+/**
+ * Bring labwc's rc.xml in line with the kiosk.conf just written, so touch
+ * turns with the screen as soon as a rotation is saved. scripts/labwc-rc.sh
+ * is the file's only writer (setup-system runs it too). Called this way it only
+ * replaces an rc.xml it wrote itself, so a laptop or a desktop whose labwc
+ * config is its owner's is never touched.
+ */
+export function applyLabwcRc(): Promise<void> {
+  return new Promise((resolve) => {
+    execFile('bash', [path.join(process.cwd(), 'scripts', 'labwc-rc.sh')], { timeout: 5000 }, () => resolve());
+  });
 }
 
 /** Fallback when nothing can be detected: the port a Pi almost always uses. */

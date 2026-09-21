@@ -24,6 +24,7 @@ Every answer here starts with what to check in the editor or on the phone, then 
 - [The family remote says Waiting for display](#the-remote-says-waiting-for-display)
 - [The display shows a WiFi icon](#display-shows-a-wi-fi-icon-at-the-bottom)
 - [The mouse cursor is showing on a touchscreen](#cursor-visible-on-touchscreen)
+- [Taps land in the wrong place on a touchscreen](#taps-land-in-the-wrong-place)
 - [An update failed](#upgrade-failed)
 - [I want to add a second display](#i-want-to-add-a-second-display)
 - [How do I update or roll back?](#how-do-i-update-or-roll-back)
@@ -210,6 +211,20 @@ pkill -TERM chromium
 ```
 
 The Pi brings the browser and the screen manager back on their own a second later.
+
+---
+
+## Taps land in the wrong place
+
+When you turn the screen in Settings, touch turns with it, so a rotated touchscreen should simply work. If taps still land somewhere else, look at **Touch alignment**. It sits with the screen rotation: under **Settings > Screen > Rotation & appearance**, or on the display's own page if you have more than one display.
+
+- **Follow the screen rotation** is the normal choice.
+- **Leave touch as it is** is for a touchscreen that already handles being turned on its own. Pick it if taps were right before and went wrong after an update.
+- **Your own numbers** is for a panel that reports taps mirrored or a little off. It takes the six numbers of a touchscreen calibration matrix, for example `-1 0 1 0 1 0` to flip left and right.
+
+This setting covers the screen plugged into the device that runs Home Screens. A display-only Pi keeps its own touch setup.
+
+**If you are comfortable with a terminal**, note that Home Screens writes `~/.config/labwc/rc.xml` itself and replaces changes made by hand on every update. Put a calibration matrix in the setting above instead of in that file.
 
 ---
 

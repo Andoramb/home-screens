@@ -48,6 +48,7 @@ describe('settings-form transforms', () => {
         displayWidth: 1920,
         displayHeight: 1080,
         displayTransform: 'normal',
+        touchMatrix: [-1, 0, 1, 0, 1, 0],
         cursorHideSeconds: 5,
         transitionEffect: 'slide',
         transitionDuration: 1.2,

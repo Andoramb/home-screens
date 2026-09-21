@@ -61,6 +61,7 @@ const GLOBAL_ONLY: Record<string, string> = {
   locale: 'global-only by design, like timeFormat (see LanguageFields)',
   formattingLocale: 'see locale',
   timeFormat: 'household preference, global-only by design (see TimeFormatFields)',
+  touchMatrix: 'lines touch up on the one screen plugged into the hub; with a displays list it lives on that display node, like displayTransform',
 };
 
 /**

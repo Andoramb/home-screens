@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Add your household once. Names, colors and emoji follow each person across chores, rewards, calendars and school timetables."
+    },
+    "touchAlignment": {
+      "label": "Touch alignment",
+      "optionFollow": "Follow the screen rotation",
+      "optionLeave": "Leave touch as it is",
+      "optionCustom": "Your own numbers",
+      "customLabel": "Touch alignment numbers",
+      "help": "For a touchscreen plugged into this device. When the screen is turned, taps turn with it. Pick \"Leave touch as it is\" if taps already land in the right place.",
+      "customHelp": "Six numbers with spaces between them, such as 0 1 0 -1 0 1. Use this when taps land mirrored or a little off. This is the touchscreen calibration matrix."
     }
   },
   "backgroundPicker": {

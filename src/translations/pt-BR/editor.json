@@ -2288,6 +2288,15 @@
     },
     "familyPage": {
       "description": "Adicione sua família uma única vez. Nomes, cores e emojis acompanham cada pessoa nas tarefas, recompensas, calendários e horários escolares."
+    },
+    "touchAlignment": {
+      "label": "Alinhamento do toque",
+      "optionFollow": "Seguir a rotação da tela",
+      "optionLeave": "Deixar o toque como está",
+      "optionCustom": "Seus próprios números",
+      "customLabel": "Números de alinhamento do toque",
+      "help": "Para uma tela sensível ao toque ligada a este dispositivo. Quando a tela é girada, os toques giram junto. Escolha \"Deixar o toque como está\" se os toques já caem no lugar certo.",
+      "customHelp": "Seis números separados por espaços, por exemplo 0 1 0 -1 0 1. Use quando os toques caem espelhados ou um pouco fora do lugar. Esta é a matriz de calibração da tela sensível ao toque."
     }
   },
   "backgroundPicker": {
