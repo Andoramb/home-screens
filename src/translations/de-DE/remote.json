@@ -42,7 +42,7 @@
     "waiting": "Warte auf Display …",
     "unreachable": "Display nicht erreichbar",
     "notConnectedTitle": "Dieses Display hat sich noch nicht verbunden",
-    "notConnectedHint": "Stelle sicher, dass es eingeschaltet ist, oder richte es im Editor unter „Pro Display“ fertig ein.",
+    "notConnectedHint": "Stelle sicher, dass es eingeschaltet ist, oder öffne Home Screens auf einem Computer, um die Einrichtung abzuschließen.",
     "theDisplay": "Das Display",
     "allHeading": "Alle Displays",
     "rowNotConnected": "Noch nicht verbunden",
@@ -666,7 +666,7 @@
     "firstList": {
       "title": "Lege deine erste Liste an",
       "placeholder": "Name deiner ersten Liste",
-      "body": "Einkäufe, eine Packliste, Dinge vor der Schule. Sobald sie da ist, wähle sie im Editor für das Aufgabenlisten-Modul."
+      "body": "Einkäufe, eine Packliste, was vor der Schule zu erledigen ist. Sobald sie da ist, öffne Home Screens auf einem Computer und wähle sie dort für die Aufgabenliste an der Wand aus."
     },
     "newList": {
       "title": "Neue Liste",
@@ -742,7 +742,7 @@
     },
     "lists": {
       "title": "Noch keine Aufgabenliste",
-      "body": "Listen erscheinen hier, sobald ein Aufgabenlisten-Modul auf einem deiner Bildschirme liegt."
+      "body": "Listen erscheinen hier, sobald eine Aufgabenliste auf einem deiner Bildschirme liegt."
     },
     "meals": {
       "title": "Noch kein Essensplan",

@@ -42,7 +42,7 @@
     "waiting": "En attente de l'affichage…",
     "unreachable": "Affichage injoignable",
     "notConnectedTitle": "Cet affichage ne s’est pas encore connecté",
-    "notConnectedHint": "Vérifie qu’il est allumé, ou termine sa configuration dans l’éditeur, section « Par affichage ».",
+    "notConnectedHint": "Vérifie qu'il est allumé, ou ouvre Home Screens sur un ordinateur pour terminer sa configuration.",
     "theDisplay": "L'écran",
     "allHeading": "Tous les écrans",
     "rowNotConnected": "Pas encore connecté",
@@ -666,7 +666,7 @@
     "firstList": {
       "title": "Crée ta première liste",
       "placeholder": "Nom de ta première liste",
-      "body": "Courses, valise, choses à faire avant l'école. Une fois créée, choisis-la pour le module Liste de tâches dans l'éditeur."
+      "body": "Courses, valise, choses à faire avant l'école. Une fois créée, ouvre Home Screens sur un ordinateur et choisis-la pour la liste de tâches du mur."
     },
     "newList": {
       "title": "Nouvelle liste",
@@ -742,7 +742,7 @@
     },
     "lists": {
       "title": "Pas encore de liste",
-      "body": "Les listes apparaissent ici dès qu'un module Liste de tâches est sur un de tes écrans."
+      "body": "Les listes apparaîtront ici dès qu'une liste de tâches sera sur l'un de vos écrans."
     },
     "meals": {
       "title": "Pas encore de planificateur de repas",

@@ -19,8 +19,12 @@ name: Nightly
 # flow.
 
 on:
+  # 1:17am Central, an hour before the E2E schedule. Off the hour because
+  # GitHub delays scheduled runs most at the top of the hour, sometimes by
+  # several hours.
   schedule:
-    - cron: '0 8 * * *' # 08:00 UTC = 2-3am Central, an hour before the E2E schedule
+    - cron: '17 1 * * *'
+      timezone: America/Chicago
   workflow_dispatch:
     inputs:
       force:
@@ -56,14 +60,23 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      # A late scheduled start can land while CI for a fresh push is still
+      # running (or not yet queued), so that run is waited on for up to 30
+      # minutes rather than failing the nightly. CI takes about 6.
       - name: Require a green CI run for this commit
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           SHA="$(git rev-parse HEAD)"
-          CONCLUSION="$(gh run list --repo "${{ github.repository }}" --workflow ci.yml \
-            --branch main --commit "${SHA}" --json conclusion,status \
-            --jq 'map(select(.status == "completed")) | .[0].conclusion // ""')"
+          ci_runs() {
+            gh run list --repo "${{ github.repository }}" --workflow ci.yml \
+              --branch main --commit "${SHA}" --json conclusion,status --jq "$1"
+          }
+          for _ in $(seq 60); do
+            [ "$(ci_runs '.[0].status // ""')" = "completed" ] && break
+            sleep 30
+          done
+          CONCLUSION="$(ci_runs 'map(select(.status == "completed")) | .[0].conclusion // ""')"
           if [ "${CONCLUSION}" != "success" ]; then
             echo "::error::CI for ${SHA} on main is '${CONCLUSION:-not finished}', not success. No nightly from a red main."
             exit 1
@@ -133,7 +146,8 @@ jobs:
       # they would bury every real release: the app only searches the newest
       # 30 releases and the Settings list shows 20. So only the current one
       # is kept. That is safe for versioning because scripts/nightly-version.sh
-      # reads nothing but the newest v*-dev.* tag, which prune always leaves.
+      # takes the version from release tags alone, and reads nightly tags only
+      # to see whether main moved since the newest one, which prune leaves.
       # It does mean a nightly that boots but is broken falls all the way back
       # to the last stable release: upgrade.sh keeps a local rollback tree,
       # but finalize-deploy deletes it once the new install answers a health

@@ -138,8 +138,8 @@
     }
   },
   "displaySwitcher": {
-    "title": "Welk display bewerk je nu op dit canvas? (Instellingen-overrides staan onder Instellingen → Per display.)",
-    "label": "Welk display bewerk je nu op dit canvas?",
+    "title": "Welk display bewerk je nu? (Instellingen-overrides staan onder Instellingen → Per display.)",
+    "label": "Welk display bewerk je nu?",
     "onNow": "nu aan",
     "lastSeen": "laatst gezien {time}",
     "addDisplay": "Display toevoegen"
@@ -217,9 +217,9 @@
   "scheduleEditor": {
     "statusTitle": "Status",
     "enableLabel": "Alleen op bepaalde tijden tonen",
-    "repeatTitle": "Hoe het herhaalt",
-    "shapeRepeat": "Elke gekozen dag",
-    "shapeSpan": "Eén doorlopende periode",
+    "repeatTitle": "Hoe het zich herhaalt",
+    "shapeRepeat": "Dezelfde tijden op gekozen dagen",
+    "shapeSpan": "Eén periode, meerdere dagen",
     "weekPreviewTitle": "Jouw week",
     "timeWindowTitle": "Tijdvenster",
     "fromLabel": "Van",
@@ -409,7 +409,7 @@
       "displays": "Displays",
       "searchPlaceholder": "Instellingen zoeken…",
       "noResults": "Geen instellingen gevonden",
-      "matchingFields": "Overeenkomende velden",
+      "matchingFields": "Gevonden instellingen",
       "navLabels": {
         "calendar": "Kalender",
         "weather": "Weer",
@@ -457,7 +457,7 @@
       "multiFieldCount": "{count} instellingen",
       "openDisplayLink": "{name} openen",
       "multiDisplayLabel": "{count} displays",
-      "multiDisplayCurrentlyOverride": " overschrijven momenteel velden op {pageLabel}: ",
+      "multiDisplayCurrentlyOverride": " overschrijven momenteel instellingen op {pageLabel}: ",
       "fieldSeparator": ", "
     },
     "defaultAlertsPage": {
@@ -795,7 +795,7 @@
       }
     },
     "defaultDisplayPage": {
-      "descriptionPart1": "Deze waarden worden door elk display gebruikt totdat een specifiek display ze overschrijft. Verander hier iets en elk display dat dat veld ",
+      "descriptionPart1": "Deze waarden worden door elk display gebruikt totdat een specifiek display ze overschrijft. Verander hier iets en elk display dat die instelling ",
       "descriptionEmphasisNot": "niet",
       "descriptionPart2": " overschrijft, neemt de nieuwe waarde over.",
       "multiDisplayNotePart1": "Resolutie, oriëntatie en spiegeling zijn ",
@@ -804,13 +804,13 @@
       "multiDisplayNotePerDisplaySection": "Per display",
       "multiDisplayNotePart3": ".",
       "canvas": {
-        "heading": "Canvas",
+        "heading": "Beeldvlak",
         "orientationPortrait": "Staand",
         "orientationLandscape": "Liggend",
         "resolutionCustom": "Aangepast…",
         "resolutionWidthPlaceholder": "Breedte",
         "resolutionHeightPlaceholder": "Hoogte",
-        "resolutionHelp": "Stel dit in op je fysieke display. Een gewijzigde resolutie beïnvloedt de grootte van het modulecanvas.",
+        "resolutionHelp": "Stel dit in op de afmetingen van je beeldscherm. Verander je die, dan verandert ook het beeldvlak waarop je de modules plaatst.",
         "flipLabel": "Display spiegelen",
         "flipToggle": "Omgekeerd gemonteerd",
         "flipHelp": "Inschakelen als je monitor ondersteboven is gemonteerd. Draait het display 180° ten opzichte van de basisoriëntatie."
@@ -823,7 +823,7 @@
         "paginationDotsHelp": "De rij stippen onderaan het scherm die laat zien welk scherm wordt getoond en waarmee je naar een ander scherm kunt tikken. Als je dit uitschakelt, verdwijnt ook de dubbeltik-om-te-pauzeren, want dat gebaar zit op de stippen.",
         "pauseEnabledLabel": "Pauze op touchscreen toestaan",
         "pauseEnabledToggle": "Ingeschakeld",
-        "pauseEnabledHelp": "Dubbeltik op de actieve paginatiestip om de schermrotatie te pauzeren. Dubbeltik nogmaals om te hervatten.",
+        "pauseEnabledHelp": "Dubbeltik op de gemarkeerde schermstip om het wisselen te pauzeren. Dubbeltik nogmaals om verder te gaan.",
         "pauseTimeoutLabel": "Time-out voor automatisch hervatten",
         "pauseTimeoutNever": "Nooit",
         "pauseTimeoutSeconds": "{seconds}s",
@@ -838,7 +838,7 @@
         "rotationProgressToggle": "Ingeschakeld",
         "rotationProgressHelp": "Een dun lijntje onder de schermstippen vult zich terwijl de tijd van het scherm afloopt, zodat je ook van een afstand een lang scherm van een vastgelopen scherm kunt onderscheiden.",
         "transitionEffectLabel": "Overgangseffect",
-        "transitionEffectHelp": "Animatiestijl bij het wisselen tussen schermen. Blur kan zwaar zijn voor de GPU op apparaten met weinig vermogen.",
+        "transitionEffectHelp": "Hoe het ene scherm plaatsmaakt voor het volgende. Onscherp is het zwaarst voor een langzaam apparaat: hapert het beeld, kies dan een ander effect.",
         "transitionDurationLabel": "Duur van de overgang",
         "transitionDurationValue": "{seconds}s",
         "transitionDurationHelp": "Hoe lang de overgangsanimatie tussen schermen duurt.",
@@ -854,7 +854,7 @@
         "slide-up": "Schuiven omhoog",
         "zoom": "Zoom",
         "flip": "3D-flip",
-        "blur": "Blur",
+        "blur": "Onscherp",
         "crossfade": "Crossfade (overlap)",
         "none": "Geen (direct)"
       },
@@ -867,7 +867,7 @@
       "header": {
         "openTitle": "Open het adres van dit display",
         "openLabel": "Openen",
-        "editScreensTitle": "Bewerk de schermen van dit display in het canvas",
+        "editScreensTitle": "Bewerk de schermen van dit display in de editor",
         "editScreensLabel": "Schermen bewerken",
         "statusOnline": "Online",
         "statusIdle": "Inactief",
@@ -891,7 +891,7 @@
         "defaultsLink": "Standaardwaarden",
         "withOverridesPart2": " voor alles behalve:",
         "noOverridesPart1": "{name} gebruikt de ",
-        "noOverridesPart2": " voor elk veld. Overschrijf er een via de subtab Overrides.",
+        "noOverridesPart2": " voor elke instelling. Overschrijf er één via de subtab Overrides.",
         "chipBlockOverridden": "{label} overschreven",
         "chipFieldWithDefault": "{label}: {value} (standaard: {defaultValue})",
         "chipFieldNoDefault": "{label}: {value}",
@@ -921,7 +921,7 @@
           "slide-up": "Schuiven omhoog",
           "zoom": "Zoom",
           "flip": "3D-flip",
-          "blur": "Blur",
+          "blur": "Onscherp",
           "crossfade": "Crossfade",
           "none": "Geen"
         },
@@ -952,15 +952,15 @@
       },
       "display": {
         "defaultsLabel": "Standaardwaarden → Scherm",
-        "bannerPart1": "Velden hier tonen de ",
-        "bannerEmphasisDefault": "standaard",
-        "bannerPart2": "-waarde van ",
+        "bannerPart1": "De instellingen hier tonen de ",
+        "bannerEmphasisDefault": "standaardwaarde",
+        "bannerPart2": " van ",
         "bannerPart3": ". Klik op ",
         "bannerEmphasisOverride": "Overschrijven",
-        "bannerPart4": " bij een veld om het alleen voor {name} te wijzigen.",
-        "canvasHeading": "Canvas",
+        "bannerPart4": " bij een instelling om die alleen voor {name} te wijzigen.",
+        "canvasHeading": "Beeldvlak",
         "perDisplayBadge": "Per display",
-        "resolutionHelp": "Modules worden binnen dit canvas geplaatst. Elk display heeft zijn eigen resolutie; die wordt niet gedeeld.",
+        "resolutionHelp": "Modules worden binnen dit beeldvlak geplaatst. Elk display heeft zijn eigen resolutie; die wordt niet gedeeld.",
         "rotationOptionNormal": "Normaal (liggend)",
         "rotationOption90": "90° met de klok mee (staand)",
         "rotationOption180": "180° (omgekeerd)",
@@ -1616,7 +1616,7 @@
       "displayPicker": {
         "label": "Profielen bewerken voor",
         "optionLabel": "{name} ({id})",
-        "help": "Profielen zijn per display omdat ze verwijzen naar de eigen schermen van elk display. Hier wisselen verandert ook welk display het editorcanvas bewerkt."
+        "help": "Profielen zijn per display omdat ze verwijzen naar de eigen schermen van elk display. Als je hier wisselt, verander je ook welk display je bewerkt."
       },
       "active": {
         "label": "Nu te zien",
@@ -1668,7 +1668,7 @@
       "displayPicker": {
         "label": "Regels bewerken voor",
         "optionLabel": "{name} ({id})",
-        "help": "Regels zijn per display, omdat ze verwijzen naar de eigen schermen van elk display. Hier wisselen verandert ook aan welk display de editor werkt."
+        "help": "Regels zijn per display, omdat ze verwijzen naar de eigen schermen van elk display. Als je hier wisselt, verander je ook welk display je bewerkt."
       },
       "emptyHint": "Nog geen regels. Voeg er een toe zodat het display reageert als er iets gebeurt.",
       "priority": {
@@ -2219,12 +2219,12 @@
       "formReportedViewport": "(gerapporteerd door scherm: {width} × {height})",
       "formWidth": "Breedte",
       "formHeight": "Hoogte",
-      "formResolutionHint": "Stel dit in op het fysieke scherm waarop deze display te zien is. Modules worden op dit canvas geplaatst wanneer je de schermen van deze display bewerkt.",
+      "formResolutionHint": "Stel dit in op het beeldscherm waarop dit display te zien is. Modules worden binnen dit beeldvlak geplaatst wanneer je de schermen van dit display bewerkt.",
       "formRotationNormal": "Normaal (liggend)",
       "formRotation90": "90° met de klok mee (staand)",
       "formRotation180": "180° (omgekeerd)",
       "formRotation270": "270° met de klok mee (staand)",
-      "formRotationHint": "Kiest de oriëntatie van het canvas. De breedte en hoogte hierboven wisselen automatisch zodat de langste kant overeenkomt met de door de rotatie gekozen as.",
+      "formRotationHint": "Bepaalt hoe het beeldvlak staat. De breedte en hoogte hierboven wisselen automatisch zodat de langste kant bij de gekozen draaiing past.",
       "formCancel": "Annuleren",
       "formSaveChanges": "Wijzigingen opslaan",
       "formAddDisplay": "Scherm toevoegen",
@@ -2258,7 +2258,7 @@
       "displayPicker": {
         "label": "Automatisering bewerken voor",
         "optionLabel": "{name} ({id})",
-        "help": "Profielen en regels gelden per display, omdat ze verwijzen naar de schermen van dat display. Hier wisselen verandert ook aan welk display de editor werkt."
+        "help": "Profielen en regels gelden per display, omdat ze verwijzen naar de schermen van dat display. Als je hier wisselt, verander je ook welk display je bewerkt."
       }
     },
     "phonePage": {
@@ -2962,10 +2962,10 @@
       "y": "Y",
       "w": "B",
       "h": "H",
-      "borderRadius": "Hoekafronding",
-      "padding": "Opvulling",
+      "borderRadius": "Ronde hoeken",
+      "padding": "Ruimte binnenin",
       "borderWidth": "Randdikte",
-      "opacity": "Doorzichtigheid",
+      "opacity": "Dekkend",
       "backdropBlur": "Matglas",
       "shadowSize": "Schaduwgrootte",
       "background": "Achtergrond",
@@ -2974,7 +2974,7 @@
       "textColor": "Tekstkleur",
       "textScale": "Tekstgrootte",
       "textScaleHint": "100% is de normale tekstgrootte van deze module. Schuif om die groter of kleiner te maken.",
-      "fontWeight": "Lettergewicht",
+      "fontWeight": "Tekstdikte",
       "fontWeightDefault": "Standaard",
       "fontWeightReset": "Terugzetten op standaard",
       "title": "Titel",
@@ -4735,7 +4735,7 @@
     },
     "orientation": {
       "title": "Modules kunnen buiten beeld vallen",
-      "warning": "{offCanvasCount} van de {totalModuleCount} modules zou buiten het nieuwe canvas van {newWidth}×{newHeight} vallen.",
+      "warning": "{offCanvasCount} van de {totalModuleCount} modules zouden buiten het nieuwe beeldvlak van {newWidth}×{newHeight} vallen.",
       "scaleToFit": "Passend schalen",
       "scaleToFitDescription": "verkleint alle modules proportioneel zodat er niets afgesneden wordt.",
       "switchAnyway": "Toch wisselen",

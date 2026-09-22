@@ -46,6 +46,14 @@ describe('getLocalizedMonthNames', () => {
     const de = getLocalizedMonthNames('de-DE');
     expect(de[2]).toBe('März');
   });
+
+  it('reads the locale with no date bundle preloaded', () => {
+    // Same cold-cache fallback the day names had: the sync date-fns path
+    // answers in en-US when the bundle has not loaded, so a German editor
+    // could offer English month names.
+    expect(getLocalizedMonthNames('de-DE')[2]).toBe('März');
+    expect(getLocalizedMonthNames('fr-FR')[0]).toBe('janvier');
+  });
 });
 
 // ── getLocalizedDayNames ──
@@ -67,6 +75,24 @@ describe('getLocalizedDayNames', () => {
     expect(names).toHaveLength(7);
     expect(names[0]).toBe('Sun');
     expect(names[1]).toBe('Mon');
+  });
+
+  it('abbreviates short names in every locale', () => {
+    // pt-BR's date-fns short pattern returns the whole word ("domingo"),
+    // which filled every weekday column with a full word. These are the
+    // CLDR abbreviations, which is what a column header wants.
+    expect(getLocalizedDayNames('pt-BR', 'short')[0]).toBe('dom.');
+    expect(getLocalizedDayNames('nl-NL', 'short')[0]).toBe('zo');
+    expect(getLocalizedDayNames('de-DE', 'short')[0]).toBe('So');
+    expect(getLocalizedDayNames('da-DK', 'short')[0]).toBe('søn.');
+  });
+
+  it('reads the locale with no date bundle preloaded', () => {
+    // Deliberately no `preloadDateLocale`. The sync date-fns path falls
+    // back to en-US on a cold cache, so a wall that rendered before the
+    // bundle landed showed English weekday names in a German household.
+    expect(getLocalizedDayNames('de-DE', 'full')[0]).toBe('Sonntag');
+    expect(getLocalizedDayNames('fr-FR', 'short')[1]).toBe('lun.');
   });
 
   it('honors the locale argument (de-DE returns German names)', async () => {

@@ -138,8 +138,8 @@
     }
   },
   "displaySwitcher": {
-    "title": "Welches Display bearbeitet diese Leinwand gerade? (Einstellungs-Überschreibungen liegen unter Einstellungen → Pro Display.)",
-    "label": "Welches Display bearbeitet diese Leinwand gerade?",
+    "title": "Welches Display bearbeitest du gerade? (Einstellungs-Überschreibungen liegen unter Einstellungen → Pro Display.)",
+    "label": "Welches Display bearbeitest du gerade?",
     "onNow": "jetzt an",
     "lastSeen": "zuletzt gesehen {time}",
     "addDisplay": "Display hinzufügen"
@@ -218,8 +218,8 @@
     "statusTitle": "Status",
     "enableLabel": "Nur zu bestimmten Zeiten anzeigen",
     "repeatTitle": "Wie es sich wiederholt",
-    "shapeRepeat": "An jedem gewählten Tag",
-    "shapeSpan": "Ein durchgehender Zeitraum",
+    "shapeRepeat": "Gleiche Zeiten an gewählten Tagen",
+    "shapeSpan": "Ein Zeitraum über mehrere Tage",
     "weekPreviewTitle": "Deine Woche",
     "timeWindowTitle": "Zeitfenster",
     "fromLabel": "Von",
@@ -409,7 +409,7 @@
       "displays": "Displays",
       "searchPlaceholder": "Einstellungen durchsuchen…",
       "noResults": "Keine Einstellungen gefunden",
-      "matchingFields": "Passende Felder",
+      "matchingFields": "Passende Einstellungen",
       "navLabels": {
         "calendar": "Kalender",
         "weather": "Wetter",
@@ -457,7 +457,7 @@
       "multiFieldCount": "{count} Einstellungen",
       "openDisplayLink": "{name} öffnen",
       "multiDisplayLabel": "{count} Displays",
-      "multiDisplayCurrentlyOverride": " überschreiben aktuell Felder auf {pageLabel}: ",
+      "multiDisplayCurrentlyOverride": " überschreiben aktuell Einstellungen auf {pageLabel}: ",
       "fieldSeparator": ", "
     },
     "defaultAlertsPage": {
@@ -795,7 +795,7 @@
       }
     },
     "defaultDisplayPage": {
-      "descriptionPart1": "Diese Werte werden von jedem Display verwendet, bis ein bestimmtes Display sie überschreibt. Wenn du hier etwas änderst, übernimmt jedes Display, das dieses Feld ",
+      "descriptionPart1": "Diese Werte werden von jedem Display verwendet, bis ein bestimmtes Display sie überschreibt. Wenn du hier etwas änderst, übernimmt jedes Display, das diese Einstellung ",
       "descriptionEmphasisNot": "nicht",
       "descriptionPart2": " überschreibt, den neuen Wert.",
       "multiDisplayNotePart1": "Auflösung, Ausrichtung und Spiegelung sind ",
@@ -810,7 +810,7 @@
         "resolutionCustom": "Benutzerdefiniert …",
         "resolutionWidthPlaceholder": "Breite",
         "resolutionHeightPlaceholder": "Höhe",
-        "resolutionHelp": "Stelle dies passend zu deinem physischen Display ein. Eine geänderte Auflösung wirkt sich auf die Größe der Modul-Anzeigefläche aus.",
+        "resolutionHelp": "Wähle hier die Auflösung deines Monitors. Änderst du sie, ändert sich auch die Anzeigefläche, auf der du deine Module anordnest.",
         "flipLabel": "Anzeige spiegeln",
         "flipToggle": "Umgekehrte Montage",
         "flipHelp": "Aktivieren, wenn dein Monitor verkehrt herum montiert ist. Dreht die Anzeige um 180° gegenüber der Grundausrichtung."
@@ -823,7 +823,7 @@
         "paginationDotsHelp": "Die Punktreihe unten am Display, die zeigt, welcher Bildschirm gerade angezeigt wird, und mit der man zu einem anderen springen kann. Schaltet man das aus, verschwindet auch die Doppeltipp-Pause, da diese Geste an den Punkten hängt.",
         "pauseEnabledLabel": "Pause per Touchscreen erlauben",
         "pauseEnabledToggle": "Aktiviert",
-        "pauseEnabledHelp": "Tippe doppelt auf den aktiven Paginierungspunkt, um den Bildschirmwechsel zu pausieren. Doppeltippe erneut, um fortzufahren.",
+        "pauseEnabledHelp": "Tippe doppelt auf den hervorgehobenen Bildschirmpunkt, um den Bildschirmwechsel anzuhalten. Tippe noch einmal doppelt, um ihn fortzusetzen.",
         "pauseTimeoutLabel": "Automatisches Fortsetzen nach",
         "pauseTimeoutNever": "Nie",
         "pauseTimeoutSeconds": "{seconds}s",
@@ -838,7 +838,7 @@
         "rotationProgressToggle": "Aktiviert",
         "rotationProgressHelp": "Eine dünne Linie unter den Bildschirmpunkten füllt sich, während die Zeit des Bildschirms abläuft. So sieht man auch von weitem, ob ein Bildschirm nur lange dauert oder hängt.",
         "transitionEffectLabel": "Übergangseffekt",
-        "transitionEffectHelp": "Animationsstil beim Wechsel zwischen Bildschirmen. „Unschärfe“ kann auf leistungsschwachen Geräten GPU-intensiv sein.",
+        "transitionEffectHelp": "Wie ein Bildschirm in den nächsten übergeht. „Unschärfe“ ist der aufwendigste Effekt: Ruckelt es auf einem langsameren Gerät, nimm einen anderen.",
         "transitionDurationLabel": "Übergangsdauer",
         "transitionDurationValue": "{seconds}s",
         "transitionDurationHelp": "Wie lange die Übergangsanimation zwischen Bildschirmen dauert.",
@@ -867,7 +867,7 @@
       "header": {
         "openTitle": "Adresse dieses Displays öffnen",
         "openLabel": "Öffnen",
-        "editScreensTitle": "Bildschirme dieses Displays in der Anzeigefläche bearbeiten",
+        "editScreensTitle": "Bildschirme dieses Displays im Editor bearbeiten",
         "editScreensLabel": "Bildschirme bearbeiten",
         "statusOnline": "Online",
         "statusIdle": "Inaktiv",
@@ -891,7 +891,7 @@
         "defaultsLink": "Standardwerte",
         "withOverridesPart2": " für alles außer:",
         "noOverridesPart1": "{name} verwendet die ",
-        "noOverridesPart2": " für jedes Feld. Überschreibe eines im Tab Überschreibungen.",
+        "noOverridesPart2": " für jede Einstellung. Überschreibe eine davon im Tab „Überschreibungen“.",
         "chipBlockOverridden": "{label} überschrieben",
         "chipFieldWithDefault": "{label}: {value} (Standard: {defaultValue})",
         "chipFieldNoDefault": "{label}: {value}",
@@ -952,15 +952,15 @@
       },
       "display": {
         "defaultsLabel": "Standardwerte → Bildschirm",
-        "bannerPart1": "Felder hier zeigen den ",
+        "bannerPart1": "Die Einstellungen hier zeigen den ",
         "bannerEmphasisDefault": "Standardwert",
-        "bannerPart2": " von ",
-        "bannerPart3": " an. Klicke auf ",
+        "bannerPart2": " aus ",
+        "bannerPart3": " an. Klicke bei einer Einstellung auf ",
         "bannerEmphasisOverride": "Überschreiben",
-        "bannerPart4": " bei einem Feld, um es nur für {name} zu ändern.",
+        "bannerPart4": ", um sie nur für {name} zu ändern.",
         "canvasHeading": "Anzeigefläche",
         "perDisplayBadge": "Pro Display",
-        "resolutionHelp": "Module werden gegen diese Anzeigefläche ausgelegt. Jedes Display hat seine eigene Auflösung; sie wird nicht geteilt.",
+        "resolutionHelp": "Module werden für diese Größe angeordnet. Jedes Display hat seine eigene Auflösung; sie gilt nicht für die anderen.",
         "rotationOptionNormal": "Normal (Querformat)",
         "rotationOption90": "90° im Uhrzeigersinn (Hochformat)",
         "rotationOption180": "180° (umgekehrt)",
@@ -1616,7 +1616,7 @@
       "displayPicker": {
         "label": "Profile bearbeiten für",
         "optionLabel": "{name} ({id})",
-        "help": "Profile sind pro Display, weil sie auf die jeweiligen Bildschirme eines Displays verweisen. Ein Wechsel hier ändert auch das Display, an dem der Editor-Canvas arbeitet."
+        "help": "Profile sind pro Display, weil sie auf die jeweiligen Bildschirme eines Displays verweisen. Ein Wechsel hier ändert auch, welches Display du gerade bearbeitest."
       },
       "active": {
         "label": "Wird gerade gezeigt",
@@ -1668,7 +1668,7 @@
       "displayPicker": {
         "label": "Regeln bearbeiten für",
         "optionLabel": "{name} ({id})",
-        "help": "Regeln gelten pro Display, weil sie auf die eigenen Bildschirme des jeweiligen Displays zeigen. Ein Wechsel hier ändert auch, an welchem Display der Editor gerade arbeitet."
+        "help": "Regeln gelten pro Display, weil sie auf die eigenen Bildschirme des jeweiligen Displays zeigen. Ein Wechsel hier ändert auch, welches Display du gerade bearbeitest."
       },
       "emptyHint": "Noch keine Regeln. Füge eine hinzu, damit das Display reagiert, wenn etwas passiert.",
       "priority": {
@@ -2219,12 +2219,12 @@
       "formReportedViewport": "(von Anzeige gemeldet: {width} × {height})",
       "formWidth": "Breite",
       "formHeight": "Höhe",
-      "formResolutionHint": "Stellen Sie dies auf den physischen Bildschirm ein, auf dem dieses Display läuft. Module werden gegen diese Canvas-Größe angeordnet, wenn Sie die Bildschirme dieser Anzeige bearbeiten.",
+      "formResolutionHint": "Stelle hier die Auflösung des Monitors ein, auf dem diese Anzeige läuft. Module werden für diese Größe angeordnet, wenn du die Bildschirme dieser Anzeige bearbeitest.",
       "formRotationNormal": "Normal (Querformat)",
       "formRotation90": "90° im Uhrzeigersinn (Hochformat)",
       "formRotation180": "180° (umgekehrt)",
       "formRotation270": "270° im Uhrzeigersinn (Hochformat)",
-      "formRotationHint": "Wählt die Canvas-Ausrichtung. Die Breite und Höhe oben werden automatisch getauscht, sodass die längere Kante zur von der Drehung gewählten Achse passt.",
+      "formRotationHint": "Legt fest, wie herum die Anzeigefläche steht. Breite und Höhe oben werden automatisch getauscht, sodass die längere Kante zur gewählten Drehung passt.",
       "formCancel": "Abbrechen",
       "formSaveChanges": "Änderungen speichern",
       "formAddDisplay": "Anzeige hinzufügen",
@@ -2258,7 +2258,7 @@
       "displayPicker": {
         "label": "Automatisierung bearbeiten für",
         "optionLabel": "{name} ({id})",
-        "help": "Profile und Regeln gelten je Display, weil sie die Screens des jeweiligen Displays referenzieren. Ein Wechsel hier ändert auch, an welchem Display der Editor arbeitet."
+        "help": "Profile und Regeln gelten pro Display, weil sie auf die Bildschirme des jeweiligen Displays verweisen. Ein Wechsel hier ändert auch, welches Display du gerade bearbeitest."
       }
     },
     "phonePage": {
@@ -2962,7 +2962,7 @@
       "y": "Y",
       "w": "W",
       "h": "H",
-      "borderRadius": "Eckenradius",
+      "borderRadius": "Eckenrundung",
       "padding": "Innenabstand",
       "borderWidth": "Rahmenbreite",
       "opacity": "Deckkraft",
@@ -4735,7 +4735,7 @@
     },
     "orientation": {
       "title": "Module könnten außerhalb des Bildschirms liegen",
-      "warning": "{offCanvasCount} von {totalModuleCount} Modulen würden über die neue Leinwand mit {newWidth}×{newHeight} hinausragen.",
+      "warning": "{offCanvasCount} von {totalModuleCount} Modulen würden außerhalb der neuen Anzeigefläche von {newWidth}×{newHeight} liegen.",
       "scaleToFit": "Anpassen",
       "scaleToFitDescription": "verkleinert alle Module proportional, damit nichts abgeschnitten wird.",
       "switchAnyway": "Trotzdem wechseln",

@@ -5,7 +5,8 @@ on:
   # production build per shard), so it runs on PRs, nightly against main,
   # and at release time instead of on direct pushes.
   schedule:
-    - cron: '0 9 * * *' # 09:00 UTC = 3-4am Central
+    - cron: '17 2 * * *' # 2:17am Central, an hour after the nightly build
+      timezone: America/Chicago
   # Runs alongside the Release workflow when a version tag is pushed.
   push:
     tags: ['v*']

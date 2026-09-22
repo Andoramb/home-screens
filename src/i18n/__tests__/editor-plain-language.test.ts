@@ -40,6 +40,46 @@ describe('the Style panel labels say what they do', () => {
   });
 });
 
+/**
+ * Settings > Screen was the other half of the same finding, and the half that
+ * outlived the first fix: the page named one control twice ("Screen dots" in
+ * the label, "pagination dot" in the help three lines below), and explained
+ * two more in the vocabulary of the renderer rather than of the person
+ * changing them.
+ *
+ * Scoped to the Defaults > Screen page, which is what the finding covered.
+ * The two words that outlived the first sweep, "Canvas" as the section
+ * heading and "field" for a setting, were renamed to "Screen area" and
+ * "setting" across every locale, so the last two patterns below guard work
+ * that is already done rather than describing a gap.
+ */
+const SCREEN_JARGON: Array<{ pattern: RegExp; why: string }> = [
+  { pattern: /pagination/i, why: 'the same dots are called "Screen dots" on the label above' },
+  { pattern: /\bGPU\b/, why: 'name the effect that costs the most, not the chip it costs' },
+  { pattern: /module canvas/i, why: 'say it is the area you arrange modules on' },
+  { pattern: /\bfields?\b/i, why: 'say "setting", which is what the rest of the page calls it' },
+];
+
+describe('the Screen settings page says what it means', () => {
+  it('names no renderer internals', () => {
+    const dict = loadDict('en-US', 'editor') as Record<string, unknown>;
+    const settings = dict.settings as Record<string, unknown>;
+    const page = flatten(
+      settings.defaultDisplayPage as Record<string, unknown>,
+      'settings.defaultDisplayPage',
+    );
+
+    const offenders: string[] = [];
+    for (const [key, value] of Object.entries(page)) {
+      if (typeof value !== 'string') continue;
+      for (const { pattern, why } of SCREEN_JARGON) {
+        if (pattern.test(value)) offenders.push(`${key}: "${value}" (${why})`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('the schedule shape options say what they do', () => {
   const dict = loadDict('en-US', 'editor') as Record<string, unknown>;
   const scheduleEditor = dict.scheduleEditor as Record<string, string>;

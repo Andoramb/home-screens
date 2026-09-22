@@ -138,8 +138,8 @@
     }
   },
   "displaySwitcher": {
-    "title": "Hvilket display redigerer dette lærred? (Tilsidesatte indstillinger findes under Indstillinger → Pr. display.)",
-    "label": "Hvilket display redigerer dette lærred?",
+    "title": "Hvilket display redigerer du? (Tilsidesatte indstillinger findes under Indstillinger → Pr. display.)",
+    "label": "Hvilket display redigerer du?",
     "onNow": "tændt lige nu",
     "lastSeen": "sidst set {time}",
     "addDisplay": "Tilføj et display"
@@ -218,8 +218,8 @@
     "statusTitle": "Status",
     "enableLabel": "Vis kun på bestemte tidspunkter",
     "repeatTitle": "Hvordan det gentages",
-    "shapeRepeat": "Hver dag jeg vælger",
-    "shapeSpan": "Én sammenhængende periode",
+    "shapeRepeat": "Samme tidsrum på de valgte dage",
+    "shapeSpan": "Én periode over flere dage",
     "weekPreviewTitle": "Din uge",
     "timeWindowTitle": "Tidsrum",
     "fromLabel": "Fra",
@@ -409,7 +409,7 @@
       "displays": "Displays",
       "searchPlaceholder": "Søg i indstillinger…",
       "noResults": "Ingen indstillinger fundet",
-      "matchingFields": "Matchende felter",
+      "matchingFields": "Matchende indstillinger",
       "navLabels": {
         "calendar": "Kalender",
         "weather": "Vejr",
@@ -452,12 +452,12 @@
     "backlinkBanner": {
       "thisPage": "denne side",
       "singleDisplayPart3": " på {pageLabel}. ",
-      "singleDisplayPart5": " for at se eller fjerne dens tilsidesættelser.",
+      "singleDisplayPart5": " for at se eller fjerne dets tilsidesættelser.",
       "singleDisplayCurrentlyOverrides": " tilsidesætter i øjeblikket ",
       "multiFieldCount": "{count} indstillinger",
       "openDisplayLink": "Åbn {name}",
       "multiDisplayLabel": "{count} displays",
-      "multiDisplayCurrentlyOverride": " tilsidesætter i øjeblikket felter på {pageLabel}: ",
+      "multiDisplayCurrentlyOverride": " tilsidesætter i øjeblikket indstillinger på {pageLabel}: ",
       "fieldSeparator": ", "
     },
     "defaultAlertsPage": {
@@ -795,22 +795,22 @@
       }
     },
     "defaultDisplayPage": {
-      "descriptionPart1": "Disse værdier bruges af alle displays, indtil et bestemt display tilsidesætter dem. Ændrer du noget her, får alle displays, der ",
+      "descriptionPart1": "Disse værdier bruges af alle displays, indtil et bestemt display tilsidesætter dem. Ændrer du noget her, slår det igennem på alle displays, der ",
       "descriptionEmphasisNot": "ikke",
-      "descriptionPart2": " tilsidesætter det felt, den nye værdi.",
+      "descriptionPart2": " har deres egen værdi for netop den indstilling.",
       "multiDisplayNotePart1": "Opløsning, retning og vending er ",
       "multiDisplayNotePerDisplay": "pr. display",
       "multiDisplayNotePart2": ". Redigér dem på hvert displays egen side under ",
       "multiDisplayNotePerDisplaySection": "Pr. display",
       "multiDisplayNotePart3": ".",
       "canvas": {
-        "heading": "Lærred",
+        "heading": "Skærmområde",
         "orientationPortrait": "Stående",
         "orientationLandscape": "Liggende",
         "resolutionCustom": "Tilpasset…",
         "resolutionWidthPlaceholder": "Bredde",
         "resolutionHeightPlaceholder": "Højde",
-        "resolutionHelp": "Skal passe til din fysiske skærm. Ændrer du opløsningen, ændres lærredets størrelse.",
+        "resolutionHelp": "Skal passe til den skærm, du bruger. Ændrer du opløsningen, ændres også det område, du placerer moduler på.",
         "flipLabel": "Vend displayet",
         "flipToggle": "Monteret på hovedet",
         "flipHelp": "Slå til, hvis skærmen er monteret på hovedet. Drejer visningen 180° i forhold til grundretningen."
@@ -823,7 +823,7 @@
         "paginationDotsHelp": "Rækken af prikker nederst på skærmen, der viser, hvilken skærm der vises, og som du kan trykke på for at skifte til en anden. Slår du dette fra, forsvinder også dobbelttryk-for-pause, da den gestus sidder på prikkerne.",
         "pauseEnabledLabel": "Tillad pause på touchskærm",
         "pauseEnabledToggle": "Slået til",
-        "pauseEnabledHelp": "Dobbelttryk på den aktive prik for at sætte skærmskift på pause. Dobbelttryk igen for at fortsætte.",
+        "pauseEnabledHelp": "Dobbelttryk på den fremhævede skærmprik for at sætte skærmskift på pause. Dobbelttryk igen for at fortsætte.",
         "pauseTimeoutLabel": "Fortsæt automatisk efter",
         "pauseTimeoutNever": "Aldrig",
         "pauseTimeoutSeconds": "{seconds}s",
@@ -838,7 +838,7 @@
         "rotationProgressToggle": "Slået til",
         "rotationProgressHelp": "En tynd linje under skærmprikkerne fyldes op, mens skærmens tid løber ud, så man på afstand kan se forskel på en lang skærm og en, der hænger.",
         "transitionEffectLabel": "Overgangseffekt",
-        "transitionEffectHelp": "Animationsstil ved skift mellem skærme. Sløring kan belaste grafikken på svage enheder.",
+        "transitionEffectHelp": "Hvordan én skærm giver plads til den næste. Sløring belaster enheden mest. Hakker overgangene på en langsom enhed, så vælg en anden effekt.",
         "transitionDurationLabel": "Overgangens varighed",
         "transitionDurationValue": "{seconds}s",
         "transitionDurationHelp": "Hvor lang tid overgangen mellem skærme tager.",
@@ -867,7 +867,7 @@
       "header": {
         "openTitle": "Åbn dette displays adresse",
         "openLabel": "Åbn",
-        "editScreensTitle": "Redigér dette displays skærme på lærredet",
+        "editScreensTitle": "Redigér dette displays skærme i editoren",
         "editScreensLabel": "Redigér skærme",
         "statusOnline": "Online",
         "statusIdle": "Inaktiv",
@@ -891,7 +891,7 @@
         "defaultsLink": "Standarder",
         "withOverridesPart2": " til alt undtagen:",
         "noOverridesPart1": "{name} bruger ",
-        "noOverridesPart2": " til alle felter. Tilsidesæt et felt under fanen Tilsidesættelser.",
+        "noOverridesPart2": " til alle indstillinger. Tilsidesæt en indstilling under fanen Tilsidesættelser.",
         "chipBlockOverridden": "{label} tilsidesat",
         "chipFieldWithDefault": "{label}: {value} (standard: {defaultValue})",
         "chipFieldNoDefault": "{label}: {value}",
@@ -952,15 +952,15 @@
       },
       "display": {
         "defaultsLabel": "Standarder → Skærm",
-        "bannerPart1": "Felterne her viser ",
+        "bannerPart1": "Indstillingerne her viser ",
         "bannerEmphasisDefault": "standardværdien",
         "bannerPart2": " fra ",
         "bannerPart3": ". Klik på ",
         "bannerEmphasisOverride": "Tilsidesæt",
-        "bannerPart4": " ved et felt for kun at ændre det for {name}.",
-        "canvasHeading": "Lærred",
+        "bannerPart4": " ud for en indstilling for kun at ændre den for {name}.",
+        "canvasHeading": "Skærmområde",
         "perDisplayBadge": "Pr. display",
-        "resolutionHelp": "Moduler placeres på dette lærred. Hvert display har sin egen opløsning; den deles ikke.",
+        "resolutionHelp": "Modulerne placeres på et skærmområde i denne størrelse. Hvert display har sin egen opløsning, og den er ikke fælles.",
         "rotationOptionNormal": "Normal (liggende)",
         "rotationOption90": "90° med uret (stående)",
         "rotationOption180": "180° (på hovedet)",
@@ -1616,7 +1616,7 @@
       "displayPicker": {
         "label": "Redigerer profiler for",
         "optionLabel": "{name} ({id})",
-        "help": "Profiler er pr. display, fordi de peger på hvert displays egne skærme. Skifter du her, skifter du også, hvilket display editoren arbejder på."
+        "help": "Profiler er pr. display, fordi de peger på hvert displays egne skærme. Skifter du her, skifter du også, hvilket display du redigerer."
       },
       "active": {
         "label": "Vises lige nu",
@@ -1668,7 +1668,7 @@
       "displayPicker": {
         "label": "Redigerer regler for",
         "optionLabel": "{name} ({id})",
-        "help": "Regler er pr. display, fordi de peger på hvert displays egne skærme. Skifter du her, skifter du også, hvilket display editoren arbejder på."
+        "help": "Regler er pr. display, fordi de peger på hvert displays egne skærme. Skifter du her, skifter du også, hvilket display du redigerer."
       },
       "emptyHint": "Ingen regler endnu. Tilføj en, så displayet reagerer, når der sker noget.",
       "priority": {
@@ -2219,12 +2219,12 @@
       "formReportedViewport": "(rapporteret af skærmen: {width} × {height})",
       "formWidth": "Bredde",
       "formHeight": "Højde",
-      "formResolutionHint": "Sæt den, så den passer til den fysiske skærm, dette display vises på. Moduler placeres på et lærred i denne størrelse, når du redigerer dette displays skærme.",
+      "formResolutionHint": "Sæt den, så den passer til den fysiske skærm, dette display vises på. Modulerne placeres på et skærmområde i denne størrelse, når du redigerer dette displays skærme.",
       "formRotationNormal": "Normal (liggende)",
       "formRotation90": "90° med uret (stående)",
       "formRotation180": "180° (på hovedet)",
       "formRotation270": "270° med uret (stående)",
-      "formRotationHint": "Bestemmer lærredets retning. Bredde og højde ovenfor byttes automatisk, så den lange kant følger den valgte retning.",
+      "formRotationHint": "Bestemmer, hvordan skærmområdet vender. Bredde og højde ovenfor byttes automatisk, så den lange kant følger den valgte retning.",
       "formCancel": "Annullér",
       "formSaveChanges": "Gem ændringer",
       "formAddDisplay": "Tilføj display",
@@ -2258,7 +2258,7 @@
       "displayPicker": {
         "label": "Redigerer automatisering for",
         "optionLabel": "{name} ({id})",
-        "help": "Profiler og regler er pr. display, fordi de peger på hvert displays egne skærme. Skifter du her, skifter du også, hvilket display editoren arbejder på."
+        "help": "Profiler og regler er pr. display, fordi de peger på hvert displays egne skærme. Skifter du her, skifter du også, hvilket display du redigerer."
       }
     },
     "phonePage": {
@@ -2962,10 +2962,10 @@
       "y": "Y",
       "w": "B",
       "h": "H",
-      "borderRadius": "Hjørneradius",
-      "padding": "Indvendig afstand",
+      "borderRadius": "Runde hjørner",
+      "padding": "Plads indeni",
       "borderWidth": "Kantbredde",
-      "opacity": "Gennemsigtighed",
+      "opacity": "Dækkraft",
       "backdropBlur": "Frostet glas",
       "shadowSize": "Skyggestørrelse",
       "background": "Baggrund",
@@ -4735,7 +4735,7 @@
     },
     "orientation": {
       "title": "Nogle moduler havner måske uden for skærmen",
-      "warning": "{offCanvasCount} af {totalModuleCount} moduler ville rage ud over det nye lærred på {newWidth}×{newHeight}.",
+      "warning": "{offCanvasCount} af {totalModuleCount} moduler ville ligge uden for det nye skærmområde på {newWidth}×{newHeight}.",
       "scaleToFit": "Skalér så det passer",
       "scaleToFitDescription": "formindsker alle moduler forholdsmæssigt, så intet bliver skåret af.",
       "switchAnyway": "Skift alligevel",

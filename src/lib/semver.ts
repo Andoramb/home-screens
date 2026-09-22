@@ -61,7 +61,7 @@ export function compareSemver(a: string, b: string): number {
  *   stable   1.12.2                a tested release
  *   rc       1.13.0-rc.1           a release candidate, days from stable
  *   beta     1.13.0-beta.2         feature complete, still being shaken out
- *   nightly  1.12.3-dev.20260908   last night's main
+ *   nightly  1.13.0-dev.20260908   last night's main
  */
 export type UpdateChannel = 'stable' | 'rc' | 'beta' | 'nightly';
 

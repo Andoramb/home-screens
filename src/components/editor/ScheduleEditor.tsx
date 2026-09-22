@@ -77,6 +77,11 @@ export function ScheduleEditor({ schedule, onChange }: ScheduleEditorProps) {
               aria-label={t('scheduleEditor.repeatTitle')}
               data-testid="schedule-shape"
               value={shape}
+              /* The panel is narrow enough that a long option is cut off
+                 mid-word with no ellipsis, so the full wording is only
+                 recoverable on hover. `shape-options.test.ts` keeps the
+                 strings inside the width that fits. */
+              title={t(shape === 'span' ? 'scheduleEditor.shapeSpan' : 'scheduleEditor.shapeRepeat')}
               onChange={(e) => setShape(e.target.value as 'repeat' | 'span')}
               className={INPUT_CLASS}
             >

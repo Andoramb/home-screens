@@ -42,7 +42,7 @@
     "waiting": "Venter på skærm…",
     "unreachable": "Skærm er ikke tilgængelig",
     "notConnectedTitle": "Skærmen har ikke oprettet forbindelse endnu",
-    "notConnectedHint": "Tjek at den er tændt, eller gør opsætningen færdig i editoren under Pr. display.",
+    "notConnectedHint": "Tjek, at den er tændt, eller åbn Home Screens på en computer for at gøre opsætningen færdig.",
     "theDisplay": "Skærmen",
     "allHeading": "Alle skærme",
     "rowNotConnected": "Ikke forbundet endnu",
@@ -666,7 +666,7 @@
     "firstList": {
       "title": "Lav din første liste",
       "placeholder": "Navn på din første liste",
-      "body": "Indkøb, en pakkeliste, ting før skole. Når den findes, vælger du den til Huskeliste-modulet i editoren."
+      "body": "Indkøb, en pakkeliste, ting før skole. Når du har lavet den, åbner du Home Screens på en computer og vælger den til huskelisten på væggen."
     },
     "newList": {
       "title": "Ny liste",
@@ -742,7 +742,7 @@
     },
     "lists": {
       "title": "Ingen liste endnu",
-      "body": "Lister dukker op her, når et Huskeliste-modul er på en af dine skærme."
+      "body": "Lister dukker op her, når en huskeliste vises på en af dine skærme."
     },
     "meals": {
       "title": "Der er ikke nogen madplan endnu",
