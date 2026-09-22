@@ -1,14 +1,6 @@
 import type { CSSProperties } from 'react';
 import type { BackgroundShade } from '@/types/config';
-
-/** Converts a hex color to an `r, g, b` triple usable inside an rgba() string. */
-function hexToRgb(hex: string): string {
-  const clean = hex.replace('#', '');
-  const full = clean.length === 3 ? clean.split('').map((c) => c + c).join('') : clean;
-  const num = parseInt(full, 16);
-  if (Number.isNaN(num) || full.length !== 6) return '0, 0, 0';
-  return `${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}`;
-}
+import { parseCssColorToRgb } from '@/lib/hex-color';
 
 /**
  * Builds the CSS `background` value for a shade preset. Shared by the live
@@ -16,7 +8,8 @@ function hexToRgb(hex: string): string {
  * what the user sees while editing matches the wall exactly.
  */
 export function buildShadeBackground(shade: BackgroundShade): string {
-  const rgb = hexToRgb(shade.color);
+  // The colour picker stores hex or rgb(); anything unreadable falls back to black.
+  const rgb = (parseCssColorToRgb(shade.color) ?? [0, 0, 0]).join(', ');
   const alpha = Math.max(0, Math.min(100, shade.strength)) / 100;
 
   const even = `rgba(${rgb}, ${alpha})`;

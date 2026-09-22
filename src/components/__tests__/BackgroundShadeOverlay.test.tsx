@@ -33,6 +33,12 @@ describe('buildShadeBackground', () => {
     expect(buildShadeBackground({ ...base, color: '#ff0000' })).toBe('rgba(255, 0, 0, 0.5)');
   });
 
+  it('reads rgb() and short hex colors the picker can store', () => {
+    expect(buildShadeBackground({ ...base, color: 'rgb(255, 0, 0)' })).toBe('rgba(255, 0, 0, 0.5)');
+    expect(buildShadeBackground({ ...base, color: 'rgba(0, 128, 255, 0.3)' })).toBe('rgba(0, 128, 255, 0.5)');
+    expect(buildShadeBackground({ ...base, color: '#f00' })).toBe('rgba(255, 0, 0, 0.5)');
+  });
+
   it('clamps strength to 0-100', () => {
     expect(buildShadeBackground({ ...base, strength: 150 })).toBe('rgba(0, 0, 0, 1)');
     expect(buildShadeBackground({ ...base, strength: -10 })).toBe('rgba(0, 0, 0, 0)');

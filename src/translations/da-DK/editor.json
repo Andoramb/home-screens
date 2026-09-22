@@ -2375,16 +2375,16 @@
     },
     "yourPicturesHeading": "Dine egne billeder",
     "sourceKeyMissing": "Denne kilde kræver en API-nøgle, som ikke er sat op, så skærmen beholder sit sidste billede. Tilføj nøglen under Indstillinger, eller vælg en anden kilde.",
-    "shadeGroup": "Shade",
-    "shadeEnable": "Shade background",
-    "shadeStyleLabel": "Style",
-    "shadeStrengthLabel": "Strength",
-    "shadeColorLabel": "Color",
+    "shadeGroup": "Dæmpning",
+    "shadeEnable": "Dæmp baggrunden",
+    "shadeStyleLabel": "Stil",
+    "shadeStrengthLabel": "Styrke",
+    "shadeColorLabel": "Farve",
     "shadeStyles": {
-      "even": "Even",
-      "topBottom": "Top and bottom",
-      "edges": "Edges",
-      "both": "Both"
+      "even": "Jævn",
+      "topBottom": "Top og bund",
+      "edges": "Kanter",
+      "both": "Begge"
     }
   },
   "imageBrowserModal": {

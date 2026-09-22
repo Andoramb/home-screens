@@ -371,7 +371,7 @@ export interface BackgroundShade {
   style: 'even' | 'topBottom' | 'edges' | 'both';
   /** Overlay intensity, 0-100 */
   strength: number;
-  /** Shade color (hex) */
+  /** Shade color (hex or rgb()) */
   color: string;
 }
 
