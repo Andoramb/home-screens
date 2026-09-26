@@ -1,5 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
+import { promises as fs } from 'fs';
+import os from 'os';
+import path from 'path';
 
 // Mock dependencies before importing the route
 vi.mock('@/lib/display-commands', () => {
@@ -59,6 +62,10 @@ vi.mock('@/lib/auth', () => ({
   isAuthEnabled: vi.fn().mockResolvedValue(false),
 }));
 
+vi.mock('@/lib/media-token', () => ({
+  mintMediaToken: vi.fn(async () => null),
+}));
+
 import { GET, POST } from '@/app/api/display/[action]/route';
 import {
   enqueueCommand,
@@ -72,6 +79,7 @@ import {
 } from '@/lib/display-commands';
 import { readConfig, writeConfig } from '@/lib/config';
 import { requireDisplayAuth } from '@/lib/auth';
+import { mintMediaToken } from '@/lib/media-token';
 
 function makeParams(action: string) {
   return { params: Promise.resolve({ action }) };
@@ -527,6 +535,160 @@ describe('POST /api/display/module-command', () => {
       makeParams('module-command'),
     );
     expect(res.status).toBe(400);
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/display/show-photo', () => {
+  // A fixed clock so the queued expiry can be pinned exactly.
+  const NOW = Date.UTC(2026, 8, 26, 18, 0, 0);
+  let tmpDir: string;
+  let origCwd: () => string;
+  let library: string;
+
+  beforeEach(async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    vi.mocked(mintMediaToken).mockResolvedValue(null);
+    // The route resolves files under <cwd>/public/backgrounds, so a temp cwd
+    // gives every test its own small library.
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'show-photo-test-'));
+    origCwd = process.cwd;
+    process.cwd = () => tmpDir;
+    library = path.join(tmpDir, 'public', 'backgrounds');
+    await fs.mkdir(path.join(library, 'nature'), { recursive: true });
+    await fs.mkdir(path.join(library, 'clips'), { recursive: true });
+    await fs.writeFile(path.join(library, 'nature', 'lake sunset.jpg'), 'jpg');
+    await fs.writeFile(path.join(library, 'clips', 'walk.mp4'), 'mp4');
+    await fs.writeFile(path.join(library, 'notes.txt'), 'text');
+  });
+
+  afterEach(async () => {
+    process.cwd = origCwd;
+    vi.useRealTimers();
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  });
+
+  function show(body?: Record<string, unknown>) {
+    return POST(makeRequest(body), makeParams('show-photo'));
+  }
+
+  it('queues a library picture for 60 seconds by default', async () => {
+    const res = await show({ file: 'nature/lake sunset.jpg' });
+
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, command: 'show-photo', durationMs: 60_000 });
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'show-photo', {
+      url: '/api/backgrounds/serve?file=nature%2Flake%20sunset.jpg',
+      kind: 'image',
+      durationMs: 60_000,
+      expiresAt: NOW + 60_000,
+    });
+    // Only a video's bare <video> needs a media token.
+    expect(mintMediaToken).not.toHaveBeenCalled();
+  });
+
+  it('clamps the duration to between 5 seconds and 10 minutes, in whole seconds', async () => {
+    const cases: Array<[number, number]> = [
+      [1, 5_000],
+      [-30, 5_000],
+      [3_600, 600_000],
+      [12.6, 13_000],
+      [12.4, 12_000],
+    ];
+    for (const [duration, durationMs] of cases) {
+      const res = await show({ file: 'nature/lake sunset.jpg', duration });
+      expect((await res.json()).durationMs, `duration ${duration}`).toBe(durationMs);
+      expect(enqueueCommand).toHaveBeenLastCalledWith(
+        undefined,
+        'show-photo',
+        expect.objectContaining({ durationMs, expiresAt: NOW + durationMs }),
+      );
+    }
+  });
+
+  it('uses the 60 second default for a duration that is not a number', async () => {
+    for (const duration of ['90', null, true]) {
+      const res = await show({ file: 'nature/lake sunset.jpg', duration });
+      expect((await res.json()).durationMs, `duration ${JSON.stringify(duration)}`).toBe(60_000);
+    }
+  });
+
+  it('adds a media token to a video, bound to the path the serve route reads back', async () => {
+    vi.mocked(mintMediaToken).mockResolvedValue('tok/1+2=');
+
+    const res = await show({ file: 'clips/walk.mp4', duration: 30 });
+
+    expect(res.status).toBe(200);
+    expect(mintMediaToken).toHaveBeenCalledWith('clips/walk.mp4');
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'show-photo', {
+      url: '/api/backgrounds/serve?file=clips%2Fwalk.mp4&mt=tok%2F1%2B2%3D',
+      kind: 'video',
+      durationMs: 30_000,
+      expiresAt: NOW + 30_000,
+    });
+  });
+
+  it('leaves the token off a video when none is minted', async () => {
+    const res = await show({ file: 'clips/walk.mp4' });
+
+    expect(res.status).toBe(200);
+    expect(mintMediaToken).toHaveBeenCalledWith('clips/walk.mp4');
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'show-photo', expect.objectContaining({
+      url: '/api/backgrounds/serve?file=clips%2Fwalk.mp4',
+      kind: 'video',
+    }));
+  });
+
+  it('tidies the path before it builds the url and mints the token', async () => {
+    vi.mocked(mintMediaToken).mockResolvedValue('tok');
+
+    const res = await show({ file: '/clips/./walk.mp4' });
+
+    expect(res.status).toBe(200);
+    expect(mintMediaToken).toHaveBeenCalledWith('clips/walk.mp4');
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'show-photo', expect.objectContaining({
+      url: '/api/backgrounds/serve?file=clips%2Fwalk.mp4&mt=tok',
+    }));
+  });
+
+  it('broadcasts with displayId "all" in the body', async () => {
+    const res = await show({ file: 'nature/lake sunset.jpg', displayId: 'all' });
+
+    expect(res.status).toBe(200);
+    expect(enqueueCommand).toHaveBeenCalledWith('all', 'show-photo', expect.objectContaining({ kind: 'image' }));
+  });
+
+  it('answers 400 without a file', async () => {
+    for (const body of [undefined, {}, { file: '' }, { file: 42 }]) {
+      const res = await show(body);
+      expect(res.status, JSON.stringify(body)).toBe(400);
+    }
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('answers 400 for a path that climbs out of the library', async () => {
+    for (const file of ['../outside.jpg', 'nature/../../outside.jpg', 'nature/..']) {
+      const res = await show({ file });
+      expect(res.status, file).toBe(400);
+    }
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('answers 400 for a file that is not a picture or a video, even one on disk', async () => {
+    const res = await show({ file: 'notes.txt' });
+
+    expect(res.status).toBe(400);
+    expect(enqueueCommand).not.toHaveBeenCalled();
+  });
+
+  it('answers 404 for a picture that is not in the library', async () => {
+    expect((await show({ file: 'nature/gone.jpg' })).status).toBe(404);
+
+    // A folder named like a picture is not a file either.
+    await fs.mkdir(path.join(library, 'album.jpg'));
+    expect((await show({ file: 'album.jpg' })).status).toBe(404);
+
     expect(enqueueCommand).not.toHaveBeenCalled();
   });
 });

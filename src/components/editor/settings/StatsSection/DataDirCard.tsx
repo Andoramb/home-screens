@@ -3,7 +3,7 @@
 import { FolderTree } from 'lucide-react';
 import { useTranslate } from '@/i18n';
 import { SectionHeading } from './shared/SectionHeading';
-import { formatBytes } from './shared/formatters';
+import { formatBytes } from '@/lib/format-bytes';
 import { DATA_DIR_COLORS } from './metadata';
 import type { SystemStats } from '@/lib/system-stats-types';
 

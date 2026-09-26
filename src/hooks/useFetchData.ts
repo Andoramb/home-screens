@@ -213,6 +213,16 @@ export function useFetchData<T>(
       }
       fetchAndCache();
     }
+    // Asked to read again because a newer revision of this read exists
+    // (`displayCache.refreshWhere`). Nothing is superseded: a read already
+    // out is joined, since its answer says which revision it is at.
+    // Cancelling tells the cache a reader took it on, so the entry is kept
+    // until an answer replaces it.
+    function onRefresh(e: Event) {
+      if ((e as CustomEvent).detail !== url) return;
+      e.preventDefault();
+      fetchAndCache();
+    }
     // A write's response is newer than any poll still out for this URL. That
     // poll may have started before the write and answer after it, and its
     // older snapshot must not land on top of what the write just published.
@@ -228,6 +238,7 @@ export function useFetchData<T>(
       show(replacement.data, replacement.at);
     }
     window.addEventListener('displaycache:invalidate', onInvalidate);
+    window.addEventListener('displaycache:refresh', onRefresh);
     window.addEventListener('displaycache:replace', onReplace);
     // A beat that names a revision the cache does not hold is this read's
     // "something changed". Reads the heartbeat does not report on ignore it.
@@ -259,6 +270,7 @@ export function useFetchData<T>(
       clearInterval(interval);
       unsubscribe();
       window.removeEventListener('displaycache:invalidate', onInvalidate);
+      window.removeEventListener('displaycache:refresh', onRefresh);
       window.removeEventListener('displaycache:replace', onReplace);
     };
   }, [url, refreshMs, t]);

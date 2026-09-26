@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import { INPUT_CLASS } from '@/components/ui/input-classes';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useLibraryImportJob } from '@/hooks/useLibraryImportJob';
+import { useGooglePickerSession } from '@/hooks/useGooglePickerSession';
 import { useTranslate } from '@/i18n';
 
 /** Where Google Photos picks land in the media library. */
@@ -20,12 +21,6 @@ interface PickerStatus {
   credentialsConfigured: boolean;
 }
 
-interface PickerSession {
-  id: string;
-  pickerUri: string;
-  pollIntervalMs: number;
-}
-
 /**
  * "Import from Google Photos" — the Picker API flow. The user signs in once
  * (auth-code flow; the code comes back via the homescreens.dev helper page
@@ -35,10 +30,10 @@ interface PickerSession {
  * only shares hand-picked items with short-lived URLs, so import-into-library
  * is the only durable shape for a self-hosted display.
  *
- * Job polling lives in useLibraryImportJob (shared with the iCloud importer);
- * session polling below is a state-driven effect so Cancel / unmount tears
- * down the loop even mid-request, and an expired session ends with a clear
- * message instead of polling forever.
+ * Job polling lives in useLibraryImportJob (shared with the iCloud importer)
+ * and session polling in useGooglePickerSession (shared with the phone's
+ * Photos tab); an expired session ends with a clear message instead of
+ * polling forever.
  */
 export function GooglePhotosImportSection({ onImported }: Props) {
   const t = useTranslate('editor');
@@ -47,7 +42,6 @@ export function GooglePhotosImportSection({ onImported }: Props) {
   const [pasted, setPasted] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [session, setSession] = useState<PickerSession | null>(null);
 
   const {
     start: startImportJob, running: importing, job, errorCode, reset: resetJob,
@@ -70,66 +64,16 @@ export function GooglePhotosImportSection({ onImported }: Props) {
     if (open) refreshStatus();
   }, [open, refreshStatus]);
 
-  // Poll the picking session while one is open. State-driven so the cleanup
-  // runs on cancel/unmount, and the `cancelled` flag discards an in-flight
-  // response that resolves after teardown (it must neither re-arm the loop
-  // nor start an import for a session the user abandoned). The local latches
-  // keep overlapping ticks from double-handling one session, and repeated
-  // failures end the wait with a message instead of pulsing forever.
-  useEffect(() => {
-    if (!session) return;
-    let cancelled = false;
-    let inFlight = false;
-    let settled = false;
-    let failures = 0;
-    const MAX_CONSECUTIVE_FAILURES = 5;
-
-    const finish = (timer: ReturnType<typeof setInterval>, message?: string) => {
-      settled = true;
-      clearInterval(timer);
-      setSession(null);
-      if (message) setError(message);
-    };
-
-    const timer = setInterval(async () => {
-      if (inFlight || settled) return;
-      inFlight = true;
-      try {
-        const res = await editorFetch(`/api/google-picker/session?id=${encodeURIComponent(session.id)}`);
-        if (cancelled || settled) return;
-        if (!res.ok) {
-          // A vanished session is terminal immediately; anything else
-          // (including 500s from a lost Google connection) is terminal after
-          // a few consecutive failures — never an endless silent wait.
-          if (res.status === 404) {
-            finish(timer, t('configSections.googlePhotosImport.sessionExpired'));
-          } else if (++failures >= MAX_CONSECUTIVE_FAILURES) {
-            finish(timer, t('configSections.googlePhotosImport.genericError'));
-            refreshStatus();
-          }
-          return;
-        }
-        failures = 0;
-        const data = await res.json();
-        if (data.mediaItemsSet) {
-          finish(timer);
-          await startImportJob({ sessionId: session.id, folder: GOOGLE_PHOTOS_IMPORT_FOLDER });
-        }
-      } catch {
-        // Thrown fetch = editor-side network blip — keep polling, but not
-        // forever.
-        if (!cancelled && !settled && ++failures >= MAX_CONSECUTIVE_FAILURES) {
-          finish(timer, t('configSections.googlePhotosImport.genericError'));
-        }
-      } finally {
-        inFlight = false;
-      }
-    }, Math.max(session.pollIntervalMs || 5000, 2000));
-    return () => {
-      cancelled = true;
-      clearInterval(timer);
-    };
-  }, [session, startImportJob, refreshStatus, t]);
+  const { session, open: openSession, cancel: cancelPicking } = useGooglePickerSession((end, sessionId) => {
+    if (end === 'picked') {
+      void startImportJob({ sessionId, folder: GOOGLE_PHOTOS_IMPORT_FOLDER });
+    } else if (end === 'expired') {
+      setError(t('configSections.googlePhotosImport.sessionExpired'));
+    } else {
+      setError(t('configSections.googlePhotosImport.genericError'));
+      refreshStatus();
+    }
+  });
 
   const signIn = async () => {
     setError(null);
@@ -169,27 +113,15 @@ export function GooglePhotosImportSection({ onImported }: Props) {
     resetJob();
     setBusy(true);
     try {
-      const res = await editorFetch('/api/google-picker/session', { method: 'POST' });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setSession(data);
+      const data = await openSession();
       window.open(data.pickerUri, '_blank', 'noopener');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('configSections.googlePhotosImport.genericError'));
+      setError(err instanceof Error && err.message ? err.message : t('configSections.googlePhotosImport.genericError'));
       // A dead grant is the most likely cause — the status endpoint verifies
       // token liveness, so re-checking drops the panel back to sign-in.
       refreshStatus();
     }
     setBusy(false);
-  };
-
-  const cancelPicking = () => {
-    const abandoned = session;
-    // Clearing state tears the polling effect down; the DELETE is best-effort.
-    setSession(null);
-    if (abandoned) {
-      editorFetch(`/api/google-picker/session?id=${encodeURIComponent(abandoned.id)}`, { method: 'DELETE' }).catch(() => {});
-    }
   };
 
   const disconnect = async () => {

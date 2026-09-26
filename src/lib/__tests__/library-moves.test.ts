@@ -118,18 +118,38 @@ describe('moveLibraryFiles', () => {
     expect(await fs.readFile(path.join(bgsDir, 'a.jpg'), 'utf8')).toBe('mine');
   });
 
-  it('refuses to move a file a slideshow shows, naming the screen', async () => {
+  it("keeps a slideshow's last picture behind and moves the rest", async () => {
     await seed('nature/a.jpg');
+    await seed('nature/b.jpg');
     await seed('trips/.keep');
     configState.config = { screens: [{ id: 's1', name: 'Hall', modules: [
       { id: 'm1', type: 'photo-slideshow', config: { source: 'local', directory: 'nature' } },
     ] }] };
-    await expect(moveLibraryFiles(['nature/a.jpg'], 'trips')).rejects.toMatchObject({
-      status: 409,
-      message: expect.stringContaining("slideshow on 'Hall'"),
-    });
-    expect(await exists('nature/a.jpg')).toBe(true);
-    expect(await exists('trips/a.jpg')).toBe(false);
+
+    const result = await moveLibraryFiles(['nature/a.jpg', 'nature/b.jpg'], 'trips');
+
+    expect(result.moved).toEqual([{ from: 'nature/a.jpg', to: 'trips/a.jpg' }]);
+    expect(result.kept).toEqual([{
+      path: 'nature/b.jpg',
+      usage: [{ kind: 'slideshow', name: 'Hall', configPath: 'screens[0].modules[0].config.directory', screenId: 's1', moduleId: 'm1' }],
+    }]);
+    expect(await exists('trips/a.jpg')).toBe(true);
+    expect(await exists('nature/b.jpg')).toBe(true);
+  });
+
+  it('moves a slideshow picture out while another stays, and counts only what the slideshow plays', async () => {
+    await seed('nature/a.jpg');
+    await seed('nature/clip.mp4');
+    await seed('trips/.keep');
+    // Photos only: the video left in the folder is nothing the slideshow can show.
+    configState.config = { screens: [{ id: 's1', name: 'Hall', modules: [
+      { id: 'm1', type: 'photo-slideshow', config: { source: 'local', directory: 'nature' } },
+    ] }] };
+
+    const result = await moveLibraryFiles(['nature/a.jpg', 'nature/clip.mp4'], 'trips');
+
+    expect(result.moved).toEqual([{ from: 'nature/clip.mp4', to: 'trips/clip.mp4' }]);
+    expect(result.kept.map((k) => k.path)).toEqual(['nature/a.jpg']);
   });
 
   it('puts every file back when the config write fails, leaving references intact', async () => {

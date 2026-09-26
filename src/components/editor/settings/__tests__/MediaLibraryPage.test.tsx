@@ -5,6 +5,7 @@ import { render, cleanup, fireEvent, waitFor, screen, within } from '@testing-li
 import type { ReactNode } from 'react';
 import { I18nProvider } from '@/i18n/provider';
 import type { MediaInventory } from '@/lib/media-inventory';
+import type { MediaUse } from '@/lib/media-usage';
 
 const confirmState = vi.hoisted(() => ({ ask: vi.fn() }));
 vi.mock('@/stores/confirm-store', () => ({
@@ -70,9 +71,12 @@ const BLOB = {
   editor: {
     settings: {
       mediaPage: {
-        kind: { screen: 'screen:{name}', dayRule: 'dayRule:{name}', module: 'module:{name}', slideshow: 'slideshow:{name}', rotation: 'rotation', other: '{name}' },
+        kind: { screen: 'screen:{name}', dayRule: 'dayRule:{name}', module: 'module:{name}', slideshow: 'slideshow:{name}', slideshowLast: 'slideshow-last:{name}', rotation: 'rotation', other: '{name}' },
         unnamed: 'untitled',
+        inSlideshow: 'slideshow-badge',
         refused: '{file}',
+        keptLast: 'kept-last {file} {name}',
+        viewer: { lastPictureHint: 'last-hint {folder}' },
         open: 'open {file}',
         select: 'select {file}',
         deleteOne: 'delete {file}',
@@ -127,22 +131,45 @@ function seedInventory(): MediaInventory {
     },
     missing: [],
     storage: { bytes: 129567000, freeBytes: 30000000000, totalBytes: 60000000000 },
+    slideshows: [],
   };
+}
+
+const DEN_SLIDESHOW: MediaUse = { kind: 'slideshow', name: 'Den', configPath: 'screens[1].modules[1].config.directory', screenId: 's-den', moduleId: 'm-slides' };
+const PORCH_SLIDESHOW: MediaUse = { kind: 'slideshow', name: 'Porch', configPath: 'screens[2].modules[0].config.directory', screenId: 's-porch', moduleId: 'm-clips' };
+
+/**
+ * The seed with slideshows: Den plays both nature pictures (one of which a
+ * screen also uses), and walk.mp4 is the only file Porch has.
+ */
+function slideshowInventory(): MediaInventory {
+  const inv = seedInventory();
+  inv.usage = {
+    'nature/foggy_ridge.webp': [DEN_SLIDESHOW],
+    'nature/forest_morning.jpg': [...inv.usage['nature/forest_morning.jpg'], DEN_SLIDESHOW],
+    'clips/walk.mp4': [PORCH_SLIDESHOW],
+  };
+  return inv;
 }
 
 /**
  * Wire editorFetch: inventory GETs read live state (successful DELETEs drop
  * the file from subsequent inventories), DELETE answers 409 for paths listed
- * in `refuse` and 500 for paths in `fail`, POST uploads succeed.
+ * in `refuse` (with that path's `refusedUsage` as the where-used list) and
+ * 500 for paths in `fail`, POST uploads succeed.
  */
-function mockApi(refuse: string[] = [], fail: string[] = []) {
-  const inv = seedInventory();
+function mockApi(
+  refuse: string[] = [],
+  fail: string[] = [],
+  { seed = seedInventory, refusedUsage = {} }: { seed?: () => MediaInventory; refusedUsage?: Record<string, MediaUse[]> } = {},
+) {
+  const inv = seed();
   editorFetch.mockImplementation(async (url: string, init?: RequestInit) => {
     if (url === '/api/backgrounds/inventory') return jsonRes(inv);
     if (init?.method === 'DELETE') {
       const body = JSON.parse(String(init.body)) as { file: string; directory?: string };
       const path = body.directory ? `${body.directory}/${body.file}` : body.file;
-      if (refuse.includes(path)) return jsonRes({ error: 'in use', usage: [] }, 409);
+      if (refuse.includes(path)) return jsonRes({ error: 'in use', usage: refusedUsage[path] ?? [] }, 409);
       if (fail.includes(path)) return jsonRes({ error: 'Failed to delete background' }, 500);
       inv.items = inv.items.filter((i) => i.path !== path);
       return jsonRes({ deleted: body.file });
@@ -186,6 +213,12 @@ function select(path: string) {
 
 function openTile(path: string) {
   fireEvent.click(within(tile(path)).getByTestId('media-tile-open'));
+}
+
+/** The kept and refused lines, leaving out the failure count and the outcome line. */
+function keptLines(): string[] {
+  const box = screen.queryByTestId('media-refused');
+  return box ? Array.from(box.querySelectorAll('p:not([data-testid])'), (p) => p.textContent ?? '') : [];
 }
 
 beforeEach(() => {
@@ -349,6 +382,111 @@ describe('MediaLibraryPage used files', () => {
     const viewer = screen.getByTestId('media-viewer');
     expect(within(viewer).getByTestId('media-viewer-used-by').textContent).toContain('screen:Hall');
     expect(within(viewer).queryByTestId('media-viewer-delete')).toBeNull();
+  });
+});
+
+describe('MediaLibraryPage slideshow pictures', () => {
+  beforeEach(() => mockApi([], [], { seed: slideshowInventory }));
+
+  it('badges a picture its slideshow can spare and leaves it deletable', async () => {
+    await renderLoaded();
+
+    const spare = tile('nature/foggy_ridge.webp');
+    expect(spare.querySelector('[data-slideshow]')!.textContent).toBe('slideshow-badge');
+    expect(spare.querySelector('[data-in-use]')).toBeNull();
+    expect(within(spare).getByTestId('media-tile-delete')).toBeTruthy();
+    expect(within(spare).getByTestId('media-tile-replace')).toBeTruthy();
+    expect(spare.querySelector('[data-used-by]')!.textContent).toContain('slideshow:Den');
+
+    openTile('nature/foggy_ridge.webp');
+    expect(screen.getByTestId('media-viewer-delete')).toBeTruthy();
+    expect(screen.queryByTestId('media-viewer-lock-hint')).toBeNull();
+  });
+
+  it('locks the last picture a slideshow has, and the viewer says why', async () => {
+    await renderLoaded();
+
+    const last = tile('clips/walk.mp4');
+    expect(last.querySelector('[data-in-use]')).toBeTruthy();
+    expect(last.querySelector('[data-slideshow]')).toBeNull();
+    expect(within(last).queryByTestId('media-tile-delete')).toBeNull();
+    expect(within(last).getByTestId('media-tile-replace')).toBeTruthy();
+    expect(last.querySelector('[data-used-by]')!.textContent).toContain('slideshow-last:Porch');
+
+    openTile('clips/walk.mp4');
+    const viewer = screen.getByTestId('media-viewer');
+    expect(within(viewer).getByTestId('media-viewer-lock-hint').textContent).toBe('last-hint clips');
+    expect(within(viewer).getByTestId('media-viewer-used-by').textContent).toContain('slideshow-last:Porch');
+    expect(within(viewer).queryByTestId('media-viewer-delete')).toBeNull();
+  });
+
+  it('keeps a picture a screen uses locked, even when its slideshow could spare it', async () => {
+    await renderLoaded();
+
+    const used = tile('nature/forest_morning.jpg');
+    expect(used.querySelector('[data-in-use]')).toBeTruthy();
+    expect(used.querySelector('[data-slideshow]')).toBeNull();
+    expect(within(used).queryByTestId('media-tile-delete')).toBeNull();
+    const usedBy = used.querySelector('[data-used-by]')!.textContent;
+    expect(usedBy).toContain('screen:Hall');
+    expect(usedBy).toContain('slideshow:Den');
+    expect(usedBy).not.toContain('slideshow-last');
+
+    openTile('nature/forest_morning.jpg');
+    expect(screen.queryByTestId('media-viewer-delete')).toBeNull();
+    // The hint is only for a slideshow's last picture.
+    expect(screen.queryByTestId('media-viewer-lock-hint')).toBeNull();
+  });
+
+  it('names the slideshow when a delete keeps its last picture', async () => {
+    mockApi(['clips/walk.mp4'], [], { seed: slideshowInventory, refusedUsage: { 'clips/walk.mp4': [PORCH_SLIDESHOW] } });
+    await renderLoaded();
+
+    select('clips/walk.mp4');
+    select('lake_sunset.jpg');
+    fireEvent.click(screen.getByTestId('media-delete-button'));
+
+    await waitFor(() => expect(screen.queryByTestId('media-tile-lake_sunset.jpg')).toBeNull());
+    expect(keptLines()).toEqual(['kept-last walk.mp4 Porch']);
+    expect(tile('clips/walk.mp4')).toBeTruthy();
+  });
+
+  it('keeps the plain refused line when a 409 names other uses', async () => {
+    mockApi(['nature/forest_morning.jpg'], [], {
+      seed: slideshowInventory,
+      refusedUsage: {
+        'nature/forest_morning.jpg': [{ kind: 'screen', name: 'Hall', configPath: 'screens[0].backgroundImage', screenId: 's-hall' }],
+      },
+    });
+    await renderLoaded();
+
+    select('nature/forest_morning.jpg');
+    fireEvent.click(screen.getByTestId('media-delete-button'));
+
+    await waitFor(() => expect(keptLines()).toEqual(['forest_morning.jpg']));
+    expect(deleteCalls()).toHaveLength(1);
+  });
+
+  it('names the slideshow when a move leaves its last picture behind', async () => {
+    libraryOps.move.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }],
+        kept: [{ path: 'clips/walk.mp4', usage: [PORCH_SLIDESHOW] }],
+        rewritten: 0,
+        revision: 'r1',
+      },
+    });
+    await renderLoaded();
+
+    select('clips/walk.mp4');
+    select('lake_sunset.jpg');
+    fireEvent.change(screen.getByTestId('media-move-select'), { target: { value: 'nature' } });
+
+    await waitFor(() => expect(screen.getByTestId('media-outcome').textContent).toBe('moved:1'));
+    expect(libraryOps.move).toHaveBeenCalledWith(['clips/walk.mp4', 'lake_sunset.jpg'], 'nature');
+    expect(keptLines()).toEqual(['kept-last walk.mp4 Porch']);
   });
 });
 
@@ -652,7 +790,7 @@ describe('MediaLibraryPage search, sort and selection', () => {
 
 describe('MediaLibraryPage move', () => {
   it('moves the selection after a confirm, reports rewritten places, and refetches', async () => {
-    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }, { from: 'nature/forest_morning.jpg', to: 'nature/forest_morning.jpg' }], rewritten: 1, revision: 'r1' } });
+    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }, { from: 'nature/forest_morning.jpg', to: 'nature/forest_morning.jpg' }], kept: [], rewritten: 1, revision: 'r1' } });
     await renderLoaded();
     const moveSelect = screen.getByTestId('media-move-select') as HTMLSelectElement;
     expect(moveSelect.disabled).toBe(true);
@@ -670,7 +808,7 @@ describe('MediaLibraryPage move', () => {
   });
 
   it('maps the top-level option to an empty folder', async () => {
-    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'nature/foggy_ridge.webp', to: 'foggy_ridge.webp' }], rewritten: 0, revision: 'r1' } });
+    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'nature/foggy_ridge.webp', to: 'foggy_ridge.webp' }], kept: [], rewritten: 0, revision: 'r1' } });
     await renderLoaded();
     select('nature/foggy_ridge.webp');
     fireEvent.change(screen.getByTestId('media-move-select'), { target: { value: '__top__' } });
@@ -678,7 +816,7 @@ describe('MediaLibraryPage move', () => {
   });
 
   it('reloads a clean editor store after a move, and rewrites a dirty one in memory', async () => {
-    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }], rewritten: 1, revision: 'r9' } });
+    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }], kept: [], rewritten: 1, revision: 'r9' } });
     await renderLoaded();
     select('lake_sunset.jpg');
     fireEvent.change(screen.getByTestId('media-move-select'), { target: { value: 'nature' } });

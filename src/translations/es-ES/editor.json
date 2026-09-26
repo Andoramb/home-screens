@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "Para displays con Raspberry Pi. La pantalla se queda completamente a oscuras y tarda unos segundos en volver cuando alguien la despierta. Déjalo desactivado si tu pantalla no vuelve a encenderse sola."
     },
     "mediaPage": {
-      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos que se siguen usando no se pueden eliminar.",
+      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos de los que depende una pantalla no se pueden eliminar, y una presentación siempre conserva su última imagen.",
       "upload": "Subir",
       "dropzone": "Arrastra imágenes o vídeos aquí, o haz clic para elegir: tantos como quieras",
       "saveInto": "Guardar en",
@@ -1128,6 +1128,7 @@
       "images": "Imágenes",
       "videos": "Vídeos",
       "inUse": "En uso",
+      "inSlideshow": "Presentación",
       "usedBy": "Usado por",
       "kind": {
         "screen": "Pantalla '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Módulo en '{name}'",
         "other": "En algún lugar de la configuración",
         "slideshow": "Presentación en '{name}'",
+        "slideshowLast": "Presentación en '{name}' (su última imagen)",
         "rotation": "Fondo rotativo que se muestra ahora mismo en una pantalla"
       },
       "selected": "{count} seleccionados",
@@ -1143,9 +1145,10 @@
         "one": "¿Eliminar 1 archivo?",
         "other": "¿Eliminar {count} archivos?"
       },
-      "deleteMessage": "Desaparecerán de este hub para todas las pantallas. Los archivos que aún se usan no se pueden eliminar, así que ninguna pantalla puede romperse.",
+      "deleteMessage": "Desaparecerán de este hub para siempre. Las presentaciones seguirán con sus otras imágenes y se conservarán los archivos de los que depende una pantalla, así que ninguna pantalla se quedará vacía.",
       "deleteConfirm": "Eliminar",
       "refused": "{file} todavía se está usando y no se ha eliminado",
+      "keptLast": "{file} sigue en su sitio: es la última imagen de la presentación en '{name}'.",
       "loading": "Cargando tus imágenes y vídeos",
       "emptyFiltered": "Nada coincide con este filtro",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Tipo",
         "dimensions": "Tamaño en píxeles",
         "size": "Tamaño del archivo",
-        "notUsed": "Todavía no se usa en ningún sitio"
+        "notUsed": "Todavía no se usa en ningún sitio",
+        "lastPictureHint": "No se puede eliminar la última imagen que muestra una presentación. Primero añade otra a la carpeta {folder}.",
+        "lastPictureHintTop": "No se puede eliminar la última imagen que muestra una presentación. Primero añade otra al nivel superior de la biblioteca."
       },
       "unusedOnly": "Solo sin usar",
       "storage": "La biblioteca ocupa {size}, {free} libres en este hub",
@@ -1191,7 +1196,7 @@
         "one": "¿Mover 1 archivo?",
         "other": "¿Mover {count} archivos?"
       },
-      "moveMessage": "Todo lo que muestra estos archivos los seguirá a la nueva carpeta.",
+      "moveMessage": "Las pantallas que usan estos archivos los seguirán encontrando en la nueva carpeta. Si sacas una imagen de la carpeta de una presentación, esa presentación dejará de mostrarla.",
       "moveConfirm": "Mover",
       "moved": {
         "one": "1 archivo movido",

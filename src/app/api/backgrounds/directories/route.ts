@@ -5,7 +5,7 @@ import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
-import { IMAGE_FILE_RE } from '@/lib/library-files';
+import { IMAGE_FILE_RE } from '@/lib/media-formats';
 import { LibraryMoveError, renameLibraryFolder } from '@/lib/library-moves';
 
 export const dynamic = 'force-dynamic';

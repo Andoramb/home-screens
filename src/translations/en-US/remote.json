@@ -581,30 +581,226 @@
   },
   "photosTab": {
     "header": "Photos",
-    "newFolderButton": "New Folder",
-    "newFolderPlaceholder": "Folder name",
-    "createButton": "Create",
-    "uploadingProgress": "Uploading {current} of {total}...",
-    "uploadFailedFor": "Upload failed for {name}",
-    "uploadFailed": "Upload failed",
-    "uploadedSingular": "{n} photo uploaded",
-    "uploadedPlural": "{n} photos uploaded",
-    "photoDeleted": "Photo deleted",
-    "deleteFailed": "Failed to delete photo",
-    "folderCreated": "Folder created",
-    "failedCreateFolder": "Failed to create folder",
-    "uploadButton": "Upload Photos",
-    "emptyTitle": "No photos in this folder",
-    "emptyHint": "Tap Upload Photos to add images",
-    "deletingButton": "Deleting...",
-    "deleteAriaLabel": "Delete photo",
-    "dismissErrorAriaLabel": "Dismiss error",
+    "select": "Select",
+    "selectedCount": {
+      "one": "{count} selected",
+      "other": "{count} selected"
+    },
+    "selectAll": "Select all",
+    "selectNone": "Select none",
+    "foldersLabel": "Folders",
     "mainFolderTab": "Main folder",
-    "deleteConfirmTitle": "Delete this photo?",
-    "deleteConfirmDescription": "It comes off the wall and out of the photo library for good.",
+    "onWall": "On the wall",
+    "newFolder": "New folder",
+    "showingOn": "Showing on {walls}",
+    "notOnWall": "Not on the wall",
+    "notOnWallHint": "{contents}. To show them, choose this folder for a slideshow from a computer.",
+    "notOnWallShort": "Not on the wall · {contents}",
+    "unnamedWall": "Untitled screen",
+    "unnamedScreen": "untitled",
+    "empty": "Empty",
+    "what": {
+      "photos": {
+        "one": "1 photo",
+        "other": "{count} photos"
+      },
+      "videos": {
+        "one": "1 video",
+        "other": "{count} videos"
+      },
+      "mixed": {
+        "one": "1 photo or video",
+        "other": "{count} photos and videos"
+      }
+    },
+    "photosAndVideos": "{photos} and {videos}",
+    "photoLabel": "Photo {n}",
+    "videoLabel": "Video {n}",
+    "addButton": "Add photos and videos",
+    "addFromGoogle": "Google Photos",
+    "addFromICloud": "iCloud link",
+    "space": "Photos and videos use {size}. {free} free on the hub.",
+    "spaceNoFree": "Photos and videos use {size}.",
+    "spaceLow": "Almost full: {free} left on the hub. Delete photos you don't need to make room.",
+    "emptyTitle": "Nothing in {folder} yet",
+    "emptyHint": "Add photos or videos from this phone.",
+    "loadFailed": "Couldn't load your photos.",
+    "tryAgain": "Try again",
+    "showsOn": {
+      "one": "It'll show on {walls}.",
+      "other": "They'll show on {walls}."
+    },
+    "folderNotOnWall": "This folder isn't on the wall yet.",
+    "slideshowPhotosOnly": "The slideshow for {folder} only plays photos.",
+    "slideshowVideosOnly": "The slideshow for {folder} only plays videos.",
+    "upload": {
+      "progress": "Adding {current} of {total}",
+      "left": "{size} to go",
+      "shrinking": "Big photos are made smaller first, so they send faster.",
+      "added": {
+        "one": "1 added.",
+        "other": "{count} added."
+      },
+      "failedHeading": {
+        "one": "1 couldn't be added",
+        "other": "{count} couldn't be added"
+      },
+      "tooBig": "{name} is bigger than {size}.",
+      "notMedia": "{name} isn't a photo or video the wall can show.",
+      "wontPlay": "{name} is a kind of video the wall can't play. On an iPhone, choose Most Compatible in Settings > Camera > Formats.",
+      "failed": "{name} couldn't be sent. Try again.",
+      "close": "Close",
+      "showNow": "Show it on the wall now"
+    },
+    "showOnWall": "Show on the wall",
+    "show": {
+      "sent": "Showing on {where} for a minute.",
+      "everyWall": "every wall",
+      "theWall": "the wall",
+      "failed": "Couldn't reach the wall. Try again.",
+      "gonePhoto": "That photo isn't here anymore.",
+      "goneVideo": "That video isn't here anymore."
+    },
+    "viewer": {
+      "label": "Photo",
+      "count": "{n} of {total}",
+      "added": "Added {date}",
+      "videoDetails": "Video · {size}",
+      "alone": {
+        "screen": "Background of the {screen} screen",
+        "dayRule": "Used by a day rule on the {screen} screen",
+        "module": "Shown on its own on the {screen} screen",
+        "other": "Used in the settings"
+      },
+      "aloneNote": {
+        "screen": "It can't be deleted while it's a background. Change the background from a computer first.",
+        "dayRule": "It can't be deleted while a day rule uses it. Change the rule from a computer first.",
+        "module": "It can't be deleted while a screen shows it. Change that screen from a computer first.",
+        "other": "It can't be deleted while something uses it. Change that from a computer first."
+      },
+      "onlyPhoto": "This is the only photo in the {walls} slideshow. Add another one before you delete or move it.",
+      "onlyVideo": "This is the only video in the {walls} slideshow. Add another one before you delete or move it.",
+      "onlyPhotoAnywhere": "This is the only photo a slideshow has left. Add another one before you delete or move it.",
+      "onlyVideoAnywhere": "This is the only video a slideshow has left. Add another one before you delete or move it."
+    },
+    "move": "Move",
+    "moveSheet": {
+      "title": "Move {what} to",
+      "here": "You're here",
+      "newFolder": "New folder"
+    },
+    "movedTo": {
+      "one": "Moved to {folder}.",
+      "other": "{count} moved to {folder}."
+    },
+    "moveClash": "A file with the same name is already in that folder.",
+    "moveFailed": "The move didn't work. Try again.",
+    "deletePhotoTitle": "Delete this photo?",
+    "deleteVideoTitle": "Delete this video?",
+    "deleteManyTitle": "Delete {what}?",
+    "deleteManyButton": "Delete {what}",
+    "deletePhotoOnWall": "It comes off the {walls} slideshow and out of the photo library for good.",
+    "deleteVideoOnWall": "It comes off the {walls} slideshow and out of the photo library for good.",
+    "deletePhotoOffWall": "It comes out of the photo library for good.",
+    "deleteVideoOffWall": "It comes out of the photo library for good.",
+    "deleteManyOnWall": "They come off the {walls} slideshow and out of the photo library for good.",
+    "deleteManyOffWall": "They come out of the photo library for good.",
+    "photoDeleted": "Photo deleted",
+    "videoDeleted": "Video deleted",
+    "deleteFailed": "Couldn't delete it. Try again.",
+    "deleteRefused": "It's still needed on the wall, so it stayed.",
+    "deleted": {
+      "one": "1 deleted.",
+      "other": "{count} deleted."
+    },
+    "keptLast": {
+      "one": "1 stayed so the {walls} slideshow isn't empty.",
+      "other": "{count} stayed so no slideshow is left empty."
+    },
+    "keptLastAnywhere": {
+      "one": "1 stayed so a slideshow isn't empty.",
+      "other": "{count} stayed so no slideshow is left empty."
+    },
+    "keptAlone": {
+      "one": "1 is used on a screen and stayed.",
+      "other": "{count} are used on a screen and stayed."
+    },
+    "deleteFailedCount": {
+      "one": "1 couldn't be deleted. Try again.",
+      "other": "{count} couldn't be deleted. Try again."
+    },
+    "folderMenu": {
+      "label": "Folder options",
+      "rename": "Rename",
+      "newInside": "New folder inside {folder}",
+      "delete": "Delete folder",
+      "hasFiles": "Move or delete its {what} first.",
+      "hasFolders": "Delete the folders inside it first.",
+      "onWall": "This folder shows on {walls}. Choose another folder for it from a computer first."
+    },
+    "nameSheet": {
+      "newTitle": "New folder",
+      "renameTitle": "Rename {folder}",
+      "newName": "New name",
+      "create": "Create",
+      "startsOffWall": "It won't be on the wall until a slideshow uses it.",
+      "wallFollows": "It keeps showing on {walls} under its new name."
+    },
     "savedAsHint": "Saved as {name}",
-    "deleteInUse": "This photo is still showing on a screen, so it can't be deleted",
-    "deleteInUseOn": "This photo is still used on {where}, so it can't be deleted"
+    "folderCreated": "Folder created",
+    "failedCreateFolder": "Couldn't create the folder. Try again.",
+    "renamed": "Renamed to {name}",
+    "renameFailed": "Couldn't rename the folder. Try again.",
+    "folderExists": "There's already a folder with that name here.",
+    "deleteFolderTitle": "Delete the folder {folder}?",
+    "deleteFolderBody": "It's empty, so nothing on the wall changes.",
+    "deleteFolderButton": "Delete folder",
+    "folderDeleted": "Folder deleted",
+    "deleteFolderFailed": "Couldn't delete the folder. Try again.",
+    "folderNotEmpty": "That folder still has something in it. Move or delete it first.",
+    "imports": {
+      "googleTitle": "Add from Google Photos",
+      "googleIntro": "Pick photos in Google Photos, then come back here. They'll be added to {folder}.",
+      "googleOpen": "Open Google Photos",
+      "googlePreparing": "Getting Google Photos ready...",
+      "googleWaiting": "Waiting for your picks...",
+      "googleExpired": "Google Photos stopped waiting. Try again.",
+      "googleFailed": "Couldn't reach Google Photos. Try again.",
+      "icloudTitle": "Add from an iCloud link",
+      "icloudIntro": "Paste a Shared Album link, or a link from Copy iCloud Link in the Photos app. Everything in it is added to {folder}.",
+      "icloudPlaceholder": "Paste the link here",
+      "icloudAdd": "Add",
+      "icloudErrors": {
+        "invalid": "That doesn't look like an iCloud photo link.",
+        "expired": "That link has run out. Make a new one in the Photos app.",
+        "busy": "Photos are still being added. Try again in a minute.",
+        "tooMany": "That's too many at once. Share fewer and try again.",
+        "lost": "The hub restarted while adding. Try again.",
+        "unreachable": "Couldn't reach iCloud. Try again."
+      },
+      "progress": "Adding {done} of {total}",
+      "nothingPicked": "Nothing was picked.",
+      "busy": "Photos are still being added. Try again in a minute.",
+      "tooMany": "That's too many at once. Pick fewer and try again.",
+      "lost": "The hub restarted while adding. Try again.",
+      "tryAgain": "Try again",
+      "alreadyHere": {
+        "one": "1 was already here.",
+        "other": "{count} were already here."
+      },
+      "couldNotAdd": {
+        "one": "1 couldn't be added.",
+        "other": "{count} couldn't be added."
+      },
+      "nothingFound": "Nothing to add. The album is empty, or its link stopped working."
+    }
+  },
+  "slideshowControls": {
+    "title": "Slideshow",
+    "back": "Previous photo",
+    "next": "Next photo",
+    "pause": "Pause the slideshow",
+    "play": "Play the slideshow"
   },
   "choresKidView": {
     "notConfigured": "No chores yet. Ask a grown-up to add a chore chart to the display.",

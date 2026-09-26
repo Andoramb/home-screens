@@ -37,10 +37,10 @@ beforeEach(() => move.mockReset());
 
 describe('POST /api/backgrounds/move', () => {
   it('passes files and directory through and returns the move result', async () => {
-    move.mockResolvedValueOnce({ moved: [{ from: 'a.jpg', to: 'trips/a.jpg' }], rewritten: 1, revision: 'r1' });
+    move.mockResolvedValueOnce({ moved: [{ from: 'a.jpg', to: 'trips/a.jpg' }], kept: [], rewritten: 1, revision: 'r1' });
     const res = await POST(request({ files: ['a.jpg'], directory: 'trips' }));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ moved: [{ from: 'a.jpg', to: 'trips/a.jpg' }], rewritten: 1, revision: 'r1' });
+    expect(await res.json()).toEqual({ moved: [{ from: 'a.jpg', to: 'trips/a.jpg' }], kept: [], rewritten: 1, revision: 'r1' });
     expect(move).toHaveBeenCalledWith(['a.jpg'], 'trips');
   });
 

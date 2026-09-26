@@ -7,7 +7,7 @@ const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
 
 /**
  * Raster formats a browser can render, mapped to the extension we save them
- * under. Every entry is also in IMAGE_MIME_BY_EXT (lib/library-files), which
+ * under. Every entry is also in IMAGE_MIME_BY_EXT (lib/media-formats), which
  * the serve route reads the response content-type from: save a TIFF as .jpg
  * and the display gets JPEG headers over TIFF bytes and shows a broken image.
  */

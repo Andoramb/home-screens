@@ -345,3 +345,99 @@ describe('useMediaRotation resume across remounts', () => {
   });
 
 });
+
+describe('useMediaRotation remote controls', () => {
+  const photos = [photo(0), photo(1), photo(2)];
+
+  it('steps back onto the first slide without taking a refresh that waits for the pass to end', () => {
+    const batchB = [photo(10), photo(11), photo(12)];
+    const { result, rerender } = renderHook(
+      ({ items }) => useMediaRotation(items, 5000, false, true, '/api/photos'),
+      { initialProps: { items: photos } },
+    );
+    act(() => vi.advanceTimersByTime(5001)); // → index 1
+    rerender({ items: batchB }); // same source, held until the pass wraps
+
+    act(() => result.current[3].back());
+    expect(result.current[0]).toBe(photos);
+    expect(result.current[1]).toBe(0);
+
+    // A real wrap still hands over.
+    act(() => result.current[3].next());
+    act(() => result.current[3].next());
+    act(() => result.current[3].next());
+    expect(result.current[0]).toBe(batchB);
+  });
+
+  it('steps back a slide, and from the first to the last', () => {
+    const { result } = renderHook(() => useMediaRotation(photos, 5000));
+    act(() => vi.advanceTimersByTime(5001)); // → index 1
+
+    act(() => result.current[3].back());
+    expect(result.current[1]).toBe(0);
+    act(() => result.current[3].back());
+    expect(result.current[1]).toBe(2);
+  });
+
+  it('holds the photo timer while paused', () => {
+    const { result } = renderHook(() => useMediaRotation(photos, 5000));
+    expect(result.current[3].paused).toBe(false);
+    act(() => vi.advanceTimersByTime(4000));
+
+    act(() => result.current[3].setPaused(true));
+    expect(result.current[3].paused).toBe(true);
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(result.current[1]).toBe(0);
+
+    act(() => result.current[3].setPaused(false));
+    expect(result.current[3].paused).toBe(false);
+    act(() => vi.advanceTimersByTime(5001));
+    expect(result.current[1]).toBe(1);
+  });
+
+  it('moves on next() even while paused, and stays paused', () => {
+    const { result } = renderHook(() => useMediaRotation(photos, 5000));
+    act(() => result.current[3].setPaused(true));
+
+    act(() => result.current[3].next());
+    expect(result.current[1]).toBe(1);
+    act(() => vi.advanceTimersByTime(60_000));
+    expect(result.current[1]).toBe(1);
+    expect(result.current[3].paused).toBe(true);
+  });
+
+  it('holds a video that ends while paused, and moves on once when play resumes', () => {
+    const items = [video(0), photo(1), photo(2)];
+    const { result } = renderHook(() => useMediaRotation(items, 5000));
+    act(() => result.current[3].setPaused(true));
+
+    act(() => result.current[2]()); // the video ended
+    expect(result.current[1]).toBe(0);
+
+    act(() => result.current[3].setPaused(false));
+    expect(result.current[1]).toBe(1);
+    act(() => result.current[3].setPaused(false));
+    expect(result.current[1]).toBe(1);
+  });
+
+  it('does not move when play resumes with nothing held', () => {
+    const items = [video(0), video(1)];
+    const { result } = renderHook(() => useMediaRotation(items, 5000));
+    act(() => result.current[3].setPaused(true));
+    act(() => result.current[3].setPaused(false));
+    expect(result.current[1]).toBe(0);
+  });
+
+  it.each(['back', 'next'] as const)('forgets a held video end after %s(), so play does not skip a slide', (step) => {
+    const items = [video(0), video(1), video(2)];
+    const { result } = renderHook(() => useMediaRotation(items, 5000));
+    act(() => result.current[3].setPaused(true));
+    act(() => result.current[2]()); // held
+    act(() => result.current[3][step]());
+    const shown = result.current[1];
+    expect(shown).toBe(step === 'back' ? 2 : 1);
+
+    act(() => result.current[3].setPaused(false));
+    expect(result.current[1]).toBe(shown);
+  });
+});

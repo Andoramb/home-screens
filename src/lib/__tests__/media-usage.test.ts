@@ -1,5 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { classifyMediaRef, normalizeMediaRef, rewriteMediaRefs, scanMediaUsage, scanMissingMedia } from '../media-usage';
+import {
+  blockedRemovals,
+  classifyMediaRef,
+  normalizeMediaRef,
+  removalBlocksByFile,
+  rewriteMediaRefs,
+  scanMediaUsage,
+  scanMissingMedia,
+  slideshowCanShow,
+  slideshowFolders,
+  type MediaUse,
+} from '../media-usage';
 
 describe('normalizeMediaRef', () => {
   it('extracts and decodes the file param from serve URLs, ignoring the media token', () => {
@@ -130,6 +141,16 @@ describe('scanMediaUsage', () => {
       const config = { screens: [{ modules: [{ type: 'iframe', config: { directory: 'nature' } }] }] };
       expect(scanMediaUsage(config, library).size).toBe(0);
     });
+    it('marks only the files the slideshow plays: photos unless it asks for videos or both', () => {
+      const mixed = new Set(['trip/a.jpg', 'trip/clip.mp4', 'trip/notes.txt']);
+      const slideshow = (mediaTypes?: string) => ({ screens: [{ name: 'Hall', modules: [
+        { type: 'photo-slideshow', config: { directory: 'trip', ...(mediaTypes ? { mediaTypes } : {}) } },
+      ] }] });
+      expect([...scanMediaUsage(slideshow(), mixed).keys()]).toEqual(['trip/a.jpg']);
+      expect([...scanMediaUsage(slideshow('photos'), mixed).keys()]).toEqual(['trip/a.jpg']);
+      expect([...scanMediaUsage(slideshow('videos'), mixed).keys()]).toEqual(['trip/clip.mp4']);
+      expect([...scanMediaUsage(slideshow('both'), mixed).keys()].sort()).toEqual(['trip/a.jpg', 'trip/clip.mp4']);
+    });
   });
 
   it('carries the display, screen and module ids a use sits under', () => {
@@ -230,5 +251,105 @@ describe('rewriteMediaRefs', () => {
     // Single-photo mode: its directory is not a shown folder, only its file moves.
     expect(out.screens[0]!.modules[1]!.config.directory).toBe('trips');
     expect(out.screens[0]!.modules[1]!.config.file).toBe('summer/a.jpg');
+  });
+});
+
+describe('slideshowCanShow', () => {
+  it('matches the file kind against what the slideshow plays', () => {
+    expect(slideshowCanShow('photos', 'a/b.JPG')).toBe(true);
+    expect(slideshowCanShow('photos', 'a/b.mov')).toBe(false);
+    expect(slideshowCanShow('videos', 'a/b.webm')).toBe(true);
+    expect(slideshowCanShow('videos', 'a/b.png')).toBe(false);
+    expect(slideshowCanShow('both', 'a/b.svg')).toBe(true);
+    expect(slideshowCanShow('both', 'a/readme.txt')).toBe(false);
+  });
+});
+
+describe('slideshowFolders', () => {
+  it('lists every local slideshow in config order, empty folders included, with where it sits', () => {
+    const config = {
+      screens: [{ id: 'frozen', name: 'Frozen', modules: [{ type: 'photo-slideshow', config: { directory: 'old' } }] }],
+      displays: [
+        { id: 'kitchen', name: 'Kitchen', screens: [{ id: 's1', name: 'Family photos', modules: [
+          { id: 'm1', type: 'photo-slideshow', config: { source: 'local', directory: 'Favorites/', mediaTypes: 'both' } },
+        ] }] },
+        { id: 'hallway', name: 'Hallway', screens: [{ id: 's2', name: 'Welcome', modules: [
+          { id: 'm2', type: 'fullscreen-photo', config: { directory: 'Empty-for-now' } },
+          { id: 'm3', type: 'fullscreen-photo', config: { directory: 'Pinned', file: 'x.jpg' } },
+          { id: 'm4', type: 'photo-slideshow', config: { source: 'icloud', directory: 'stale' } },
+        ] }] },
+      ],
+    };
+    const found = slideshowFolders(config);
+    expect(found.map((f) => [f.folder, f.shows, f.displayName, f.use.name])).toEqual([
+      ['Favorites', 'both', 'Kitchen', 'Family photos'],
+      ['Empty-for-now', 'photos', 'Hallway', 'Welcome'],
+    ]);
+    expect(found[0].use).toEqual({
+      kind: 'slideshow',
+      name: 'Family photos',
+      configPath: 'displays[0].screens[0].modules[0].config.directory',
+      displayId: 'kitchen',
+      screenId: 's1',
+      moduleId: 'm1',
+    });
+  });
+  it('reads the top-level screens when there is no displays registry', () => {
+    const config = { screens: [{ id: 's1', name: 'Hall', modules: [{ type: 'photo-slideshow', config: { directory: '' } }] }] };
+    expect(slideshowFolders(config).map((f) => [f.folder, f.use.name, f.displayName])).toEqual([['', 'Hall', undefined]]);
+  });
+});
+
+describe('blockedRemovals and removalBlocksByFile', () => {
+  const hall: MediaUse = { kind: 'slideshow', name: 'Hall', configPath: 'screens[0].modules[0].config.directory' };
+  const den: MediaUse = { kind: 'slideshow', name: 'Den', configPath: 'screens[1].modules[0].config.directory' };
+  const background: MediaUse = { kind: 'screen', name: 'Morning', configPath: 'screens[2].backgroundImage' };
+
+  it('lets a slideshow picture go while another stays, and keeps the last one', () => {
+    const usage = new Map([['f/a.jpg', [hall]], ['f/b.jpg', [hall]], ['f/c.jpg', [hall]]]);
+    expect(blockedRemovals(usage, ['f/a.jpg'], 'delete').size).toBe(0);
+    // A whole folder: every picture goes but the last one in the list.
+    const blocked = blockedRemovals(usage, ['f/a.jpg', 'f/b.jpg', 'f/c.jpg'], 'delete');
+    expect([...blocked.keys()]).toEqual(['f/c.jpg']);
+    expect(blocked.get('f/c.jpg')).toEqual([hall]);
+  });
+
+  it('never deletes a file a screen uses on its own, and it still counts as the slideshow\'s other picture', () => {
+    const usage = { 'f/a.jpg': [hall, background], 'f/b.jpg': [hall] };
+    const blocked = blockedRemovals(usage, ['f/a.jpg', 'f/b.jpg'], 'delete');
+    expect(blocked.get('f/a.jpg')).toEqual([background]);
+    // The background stays, so the slideshow still has it: b can go.
+    expect(blocked.has('f/b.jpg')).toBe(false);
+  });
+
+  it('moves a background freely (its reference follows) but not a slideshow\'s last picture', () => {
+    const usage = { 'f/a.jpg': [hall, background], 'f/b.jpg': [hall] };
+    expect(blockedRemovals(usage, ['f/a.jpg'], 'move').size).toBe(0);
+    const both = blockedRemovals(usage, ['f/a.jpg', 'f/b.jpg'], 'move');
+    expect([...both.keys()]).toEqual(['f/b.jpg']);
+    expect(both.get('f/b.jpg')).toEqual([hall]);
+  });
+
+  it('keeps one picture for each slideshow that plays the folder', () => {
+    // Hall plays photos (a, b), Den plays videos (v): each needs its own last one.
+    const usage = { 'f/a.jpg': [hall], 'f/b.jpg': [hall], 'f/v.mp4': [den] };
+    const blocked = blockedRemovals(usage, ['f/v.mp4', 'f/a.jpg', 'f/b.jpg'], 'delete');
+    expect(blocked.get('f/v.mp4')).toEqual([den]);
+    expect(blocked.has('f/a.jpg')).toBe(false);
+    expect(blocked.get('f/b.jpg')).toEqual([hall]);
+  });
+
+  it('judges each file on its own for a grid', () => {
+    const usage = { 'f/a.jpg': [hall], 'f/b.jpg': [hall], 'g/only.jpg': [den], 'bg.jpg': [background] };
+    const locks = removalBlocksByFile(usage, 'delete');
+    expect([...locks.keys()].sort()).toEqual(['bg.jpg', 'g/only.jpg']);
+    expect(removalBlocksByFile(usage, 'move').has('bg.jpg')).toBe(false);
+    expect(removalBlocksByFile(usage, 'move').get('g/only.jpg')).toEqual([den]);
+  });
+
+  it('ignores a file nothing uses and a path listed twice', () => {
+    const usage = { 'f/a.jpg': [hall] };
+    expect(blockedRemovals(usage, ['free.jpg', 'free.jpg'], 'delete').size).toBe(0);
+    expect(blockedRemovals(usage, ['f/a.jpg', 'f/a.jpg'], 'delete').get('f/a.jpg')).toEqual([hall]);
   });
 });

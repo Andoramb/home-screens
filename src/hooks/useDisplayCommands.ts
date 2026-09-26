@@ -14,6 +14,7 @@ import { useAlertStore, type DisplayAlert } from '@/stores/alert-store';
 import { getShowingTimerSession, subscribeTimerPresence } from '@/lib/timer-presence';
 import { dispatchModuleCommand } from '@/hooks/useModuleCommand';
 import { publishRevisions, type DisplayRevisions } from '@/lib/display-heartbeat';
+import type { ShownPhoto } from '@/stores/photo-show-store';
 import type { AlertType } from '@/types/config';
 
 export interface CommandHandlers {
@@ -34,6 +35,8 @@ export interface CommandHandlers {
    * and drop a routine one that arrives while asleep.
    */
   showAlert: (alert: Omit<DisplayAlert, 'id'>) => void;
+  /** Put a library picture or video over the screen ("Show on the wall" from a phone). */
+  showPhoto: (photo: ShownPhoto) => void;
 }
 
 /** Extract the Chromium version from a UA string, or null if not Chromium. */
@@ -198,6 +201,21 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
                 dismissible: typeof p.dismissible === 'boolean' ? p.dismissible : undefined,
                 wake: typeof p.wake === 'boolean' ? p.wake : undefined,
               });
+            }
+            break;
+          }
+          case 'show-photo': {
+            const p = cmd.payload;
+            // Queued for a wall that was off: a photo whose moment has passed
+            // (by the hub's clock, give or take a minute) is not shown late.
+            const current = typeof p?.expiresAt !== 'number' || p.expiresAt + 60_000 > Date.now();
+            if (
+              current
+              && typeof p?.url === 'string' && p.url.startsWith('/api/backgrounds/serve?')
+              && (p.kind === 'image' || p.kind === 'video')
+              && typeof p.durationMs === 'number' && p.durationMs > 0
+            ) {
+              handlersRef.current.showPhoto({ url: p.url, kind: p.kind, durationMs: p.durationMs });
             }
             break;
           }

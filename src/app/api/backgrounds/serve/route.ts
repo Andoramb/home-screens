@@ -6,7 +6,7 @@ import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withMediaTokenAuth } from '@/lib/api-utils';
 import { parseRangeHeader } from '@/lib/http-range';
 import { toWebStream } from '@/lib/web-stream';
-import { IMAGE_MIME_BY_EXT, VIDEO_MIME_BY_EXT } from '@/lib/library-files';
+import { IMAGE_MIME_BY_EXT, VIDEO_MIME_BY_EXT } from '@/lib/media-formats';
 import { thumbnailPath, thumbnailWidth, wallCopyPath } from '@/lib/thumbnails';
 import { canResizePicture, displaySizeBox } from '@/lib/media-paths';
 import { logger } from '@/lib/logger';

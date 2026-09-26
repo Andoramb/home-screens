@@ -249,6 +249,24 @@ describe('GET /api/backgrounds/inventory', () => {
     ]);
   });
 
+  it('lists the slideshows on the walls, one pointed at an empty folder included', async () => {
+    await fs.mkdir(path.join(bgsDir, 'nature'));
+    await fs.writeFile(path.join(bgsDir, 'nature', 'a.png'), 'png');
+    await fs.mkdir(path.join(bgsDir, 'empty-yet'));
+    configState.config = { screens: [
+      { id: 's1', name: 'Den', modules: [
+        { id: 'm1', type: 'photo-slideshow', config: { directory: 'nature', mediaTypes: 'both' } },
+        { id: 'm2', type: 'fullscreen-photo', config: { directory: 'empty-yet' } },
+      ] },
+    ] };
+    const { GET } = await getHandlers();
+    const json: MediaInventory = await (await GET(makeGetRequest())).json();
+    expect(json.slideshows.map((s) => [s.folder, s.shows, s.use.name, s.use.moduleId])).toEqual([
+      ['nature', 'both', 'Den', 'm1'],
+      ['empty-yet', 'photos', 'Den', 'm2'],
+    ]);
+  });
+
   it('sums the listed bytes and reports the volume space', async () => {
     await fs.writeFile(path.join(bgsDir, 'a.jpg'), 'aaaa');
     await fs.writeFile(path.join(bgsDir, 'b.mp4'), 'bbbbbb');
@@ -281,7 +299,7 @@ describe('GET /api/backgrounds/inventory', () => {
 
     const res = await GET(makeGetRequest());
     expect(res.status).toBe(200);
-    expect(await res.json()).toMatchObject({ items: [], directories: [], usage: {}, missing: [], storage: { bytes: 0 } });
+    expect(await res.json()).toMatchObject({ items: [], directories: [], usage: {}, missing: [], storage: { bytes: 0 }, slideshows: [] });
   });
 
   it('rejects an unauthenticated request', async () => {

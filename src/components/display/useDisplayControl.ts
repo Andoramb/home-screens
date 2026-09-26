@@ -5,6 +5,7 @@ import type { SleepSettings } from '@/types/config';
 import { useSleepManager } from '@/hooks/useSleepManager';
 import { useDisplayCommands, useStatusReporter } from '@/hooks/useDisplayCommands';
 import { useAlertStore, type DisplayAlert } from '@/stores/alert-store';
+import { usePhotoShowStore, type ShownPhoto } from '@/stores/photo-show-store';
 
 interface UseDisplayControlParams {
   sleep: SleepSettings | undefined;
@@ -109,6 +110,13 @@ export function useDisplayControl({
     if (wakes) wakeForAlert();
   }, [getDisplayState, wakeForAlert]);
 
+  // A photo sent from a phone is someone asking the room to look: it wakes a
+  // hidden display the way remote navigation does.
+  const showPhoto = useCallback((photo: ShownPhoto) => {
+    wakeIfHidden();
+    usePhotoShowStore.getState().show(photo);
+  }, [wakeIfHidden]);
+
   // The alert wake ends with the last urgent alert — dismissed, expired, or
   // cleared by clear-alerts — however it went. Subscribing to the store is
   // the one place that sees all three.
@@ -131,6 +139,7 @@ export function useDisplayControl({
       setBrightness: setRemoteBrightness,
       reload,
       showAlert,
+      showPhoto,
     },
     displayId,
     hubTransport,

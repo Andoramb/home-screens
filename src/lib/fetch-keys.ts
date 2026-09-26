@@ -161,6 +161,17 @@ export function photoSlideshowUrl(config: AnyConfig): string {
 }
 
 /**
+ * Whether a data URL is a slideshow's list of a library folder (what
+ * `photoSlideshowUrl` builds for a local source), as opposed to the video
+ * module's single-file lookup (`file=`) or another source's list. These are
+ * the reads a wall re-does when the library changes.
+ */
+export function isLibraryListUrl(url: string): boolean {
+  const [path, query = ''] = url.split('?');
+  return path === '/api/backgrounds' && !new URLSearchParams(query).has('file');
+}
+
+/**
  * The standalone video module resolves its library file through the media
  * API's `file=` point lookup (not a direct serve URL) because that's where
  * `mt` auth tokens are minted — a bare <video src> cannot send the display

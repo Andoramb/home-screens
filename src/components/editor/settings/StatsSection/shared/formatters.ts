@@ -1,13 +1,5 @@
 import type { SemanticColor } from './types';
 
-export function formatBytes(bytes: number): string {
-  if (!(bytes > 0)) return '0 B';
-  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(1024));
-  const value = bytes / Math.pow(1024, i);
-  return `${value < 10 ? value.toFixed(1) : Math.round(value)} ${units[i]}`;
-}
-
 // so the unit can be styled separately from the value
 export function splitBytes(bytes: number): { value: string; unit: string } {
   if (bytes <= 0) return { value: '0', unit: 'B' };

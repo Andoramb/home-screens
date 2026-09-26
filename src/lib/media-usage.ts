@@ -1,5 +1,7 @@
 import { folderOf } from '@/lib/media-paths';
+import { mediaKindOf } from '@/lib/media-formats';
 import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
+import type { SlideshowMediaTypes } from '@/types/config';
 
 /**
  * Generic media-usage scan: walks the ENTIRE config JSON for strings that
@@ -12,8 +14,9 @@ import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
  *
  * The one deliberate exception to "no field list" is folder-driven modules:
  * a slideshow stores only its folder name and resolves the files at runtime,
- * so the scanner marks every library file directly inside that folder as
- * used by it. Those two module types are the only ones with a `directory`.
+ * so the scanner marks every library file directly inside that folder that
+ * the slideshow plays (its `mediaTypes`) as used by it. Those two module
+ * types are the only ones with a `directory`.
  */
 
 export type MediaUseKind = 'screen' | 'dayRule' | 'module' | 'slideshow' | 'rotation' | 'other';
@@ -102,19 +105,48 @@ function slideshowFolder(node: Record<string, unknown>): string | null {
   return c.directory.replace(/^\/+|\/+$/g, '');
 }
 
+/** What a slideshow module plays from its folder, mirroring its list fetch:
+ *  photos unless `mediaTypes` asks for videos or both. */
+function slideshowShows(node: Record<string, unknown>): SlideshowMediaTypes {
+  const media = (node.config as Record<string, unknown>).mediaTypes;
+  return media === 'videos' || media === 'both' ? media : 'photos';
+}
+
+/** Whether a slideshow that plays `shows` puts pictures (or videos) on screen. */
+export function slideshowPlays(shows: SlideshowMediaTypes, kind: 'image' | 'video'): boolean {
+  return shows === 'both' || (shows === 'photos') === (kind === 'image');
+}
+
+/** Whether a slideshow that plays `shows` would put this library file on screen. */
+export function slideshowCanShow(shows: SlideshowMediaTypes, libraryPath: string): boolean {
+  const kind = mediaKindOf(libraryPath);
+  return kind !== null && slideshowPlays(shows, kind);
+}
+
 interface Ancestry {
   name?: string;
   displayId?: string;
+  /** The display's own name; `name` is overwritten by the screen's below it. */
+  displayName?: string;
   screenId?: string;
   moduleId?: string;
 }
 
+interface FolderUse {
+  folder: string;
+  shows: SlideshowMediaTypes;
+  use: MediaUse;
+  displayName?: string;
+}
+
 /** Walk every string in a JSON-derived config. `onRef` fires for each string
- *  that reads as a library reference, `onFolder` for each slideshow folder. */
+ *  that reads as a library reference, `onFolder` for each slideshow folder.
+ *  `skipKey` leaves one top-level key out of the walk entirely. */
 function walkConfig(
   config: unknown,
   onRef: (ref: MediaRef, use: MediaUse) => void,
-  onFolder: (folder: string, use: MediaUse) => void,
+  onFolder: (folderUse: FolderUse) => void,
+  skipKey?: string,
 ): void {
   const walk = (node: unknown, path: string, key: string, ancestry: Ancestry) => {
     if (typeof node === 'string') {
@@ -131,15 +163,23 @@ function walkConfig(
       const next: Ancestry = { ...ancestry };
       if (typeof obj.name === 'string') next.name = obj.name;
       if (typeof obj.id === 'string') {
-        if (key === 'displays') next.displayId = obj.id;
-        else if (key === 'screens') { next.screenId = obj.id; next.moduleId = undefined; }
+        if (key === 'displays') {
+          next.displayId = obj.id;
+          next.displayName = typeof obj.name === 'string' ? obj.name : undefined;
+        } else if (key === 'screens') { next.screenId = obj.id; next.moduleId = undefined; }
         else if (key === 'modules') next.moduleId = obj.id;
       }
       const folder = slideshowFolder(obj);
       if (folder != null) {
-        onFolder(folder, { kind: 'slideshow', name: next.name, configPath: `${path}.config.directory`, ...ids(next) });
+        onFolder({
+          folder,
+          shows: slideshowShows(obj),
+          use: { kind: 'slideshow', name: next.name, configPath: `${path}.config.directory`, ...ids(next) },
+          ...(next.displayName ? { displayName: next.displayName } : {}),
+        });
       }
       for (const [k, v] of Object.entries(obj)) {
+        if (path === '' && k === skipKey) continue;
         walk(v, path ? `${path}.${k}` : k, k, next);
       }
     }
@@ -178,9 +218,136 @@ export function scanMediaUsage(config: unknown, knownPaths: Set<string>): Map<st
   walkConfig(
     config,
     (ref, use) => { if (knownPaths.has(ref.path)) record(ref.path, use); },
-    (folder, use) => { for (const p of pathsInFolder(folder)) record(p, use); },
+    ({ folder, shows, use }) => {
+      for (const p of pathsInFolder(folder)) {
+        if (slideshowCanShow(shows, p)) record(p, use);
+      }
+    },
   );
   return usage;
+}
+
+/** One slideshow on a wall: the library folder it plays and where it sits. */
+export interface SlideshowFolder {
+  /** Library-relative folder, '' for the top level. */
+  folder: string;
+  /** Which files in the folder it plays. */
+  shows: SlideshowMediaTypes;
+  /** The slideshow as a usage entry: its screen's name and ids, and the
+   *  `configPath` the usage scan files its folder's pictures under. */
+  use: MediaUse;
+  /** The display it is on, when the config has a displays registry. */
+  displayName?: string;
+}
+
+/**
+ * Every local-folder slideshow a wall can show, in config order, including
+ * one pointed at an empty or missing folder (which the usage scan, keyed by
+ * files, cannot see). Once the config has displays, the top-level `screens`
+ * is a frozen snapshot no wall renders, so it is left out here.
+ */
+export function slideshowFolders(config: unknown): SlideshowFolder[] {
+  const out: SlideshowFolder[] = [];
+  const displays = config && typeof config === 'object'
+    ? (config as Record<string, unknown>).displays
+    : undefined;
+  const hasDisplays = Array.isArray(displays) && displays.length > 0;
+  walkConfig(config, () => {}, (found) => { out.push(found); }, hasDisplays ? 'screens' : undefined);
+  return out;
+}
+
+/** A usage map as either shape it travels in: the scan's Map or the inventory's record. */
+export type MediaUsageMap = ReadonlyMap<string, readonly MediaUse[]> | Readonly<Record<string, readonly MediaUse[]>>;
+
+function usesIn(usage: MediaUsageMap, libraryPath: string): readonly MediaUse[] {
+  if (usage instanceof Map) return usage.get(libraryPath) ?? [];
+  return (usage as Readonly<Record<string, readonly MediaUse[]>>)[libraryPath] ?? [];
+}
+
+function usageEntries(usage: MediaUsageMap): [string, readonly MediaUse[]][] {
+  return usage instanceof Map ? [...usage.entries()] : Object.entries(usage);
+}
+
+/** Deleting takes a file away from everything that uses it; moving keeps
+ *  every reference (they are rewritten to follow) except a slideshow's. */
+export type RemovalMode = 'delete' | 'move';
+
+/** Files each slideshow plays, keyed by the slideshow's `configPath`. */
+function slideshowMembers(usage: MediaUsageMap): Map<string, Set<string>> {
+  const members = new Map<string, Set<string>>();
+  for (const [libraryPath, uses] of usageEntries(usage)) {
+    for (const use of uses) {
+      if (use.kind !== 'slideshow') continue;
+      const set = members.get(use.configPath) ?? new Set<string>();
+      set.add(libraryPath);
+      members.set(use.configPath, set);
+    }
+  }
+  return members;
+}
+
+/** The uses that keep one file where it is, given who is still in each slideshow. */
+function blockingUses(uses: readonly MediaUse[], members: Map<string, Set<string>>, libraryPath: string, mode: RemovalMode): MediaUse[] {
+  const blocking: MediaUse[] = [];
+  for (const use of uses) {
+    if (use.kind === 'slideshow') {
+      // A slideshow lets a picture go while it has another one to show, so
+      // the wall never goes blank; only its last picture stays put.
+      const left = members.get(use.configPath);
+      if (!left || (left.size === 1 && left.has(libraryPath))) blocking.push(use);
+    } else if (mode === 'delete') {
+      blocking.push(use);
+    }
+  }
+  return blocking;
+}
+
+/**
+ * Which of `leaving` must stay, and the uses that keep each one. `usage` must
+ * cover every file in the folders involved (the scan over those folders, or
+ * the inventory's map), since a slideshow's last picture is only "last"
+ * relative to the others still in its folder.
+ *
+ * Files are judged in order, each as if the ones before it had already gone,
+ * so deleting a whole slideshow folder takes every picture but the last one
+ * in the list. A file used anywhere else (a screen background, a day rule, a
+ * single-photo module) can never be deleted; moving it is fine because those
+ * references follow it. This is the one rule the delete route, the move
+ * route, Settings and the phone all apply.
+ */
+export function blockedRemovals(usage: MediaUsageMap, leaving: readonly string[], mode: RemovalMode): Map<string, MediaUse[]> {
+  const members = slideshowMembers(usage);
+  const blocked = new Map<string, MediaUse[]>();
+  const seen = new Set<string>();
+  for (const libraryPath of leaving) {
+    if (seen.has(libraryPath)) continue;
+    seen.add(libraryPath);
+    const uses = usesIn(usage, libraryPath);
+    const blocking = blockingUses(uses, members, libraryPath, mode);
+    if (blocking.length > 0) {
+      blocked.set(libraryPath, blocking);
+      continue;
+    }
+    for (const use of uses) {
+      if (use.kind === 'slideshow') members.get(use.configPath)?.delete(libraryPath);
+    }
+  }
+  return blocked;
+}
+
+/**
+ * The same rule judged for every file in `usage` on its own (nothing else
+ * leaving), for a grid that marks which files are locked. Files missing from
+ * the result can go.
+ */
+export function removalBlocksByFile(usage: MediaUsageMap, mode: RemovalMode): Map<string, MediaUse[]> {
+  const members = slideshowMembers(usage);
+  const blocked = new Map<string, MediaUse[]>();
+  for (const [libraryPath, uses] of usageEntries(usage)) {
+    const blocking = blockingUses(uses, members, libraryPath, mode);
+    if (blocking.length > 0) blocked.set(libraryPath, blocking);
+  }
+  return blocked;
 }
 
 /**
@@ -207,7 +374,7 @@ export function scanMissingMedia(
       if (existingPaths.has(ref.path)) return;
       if (ref.explicit || MEDIA_EXT_RE.test(ref.path)) record(ref.path, 'file', use);
     },
-    (folder, use) => {
+    ({ folder, use }) => {
       if (folder !== '' && !existingFolders.has(folder)) record(folder, 'folder', use);
     },
   );

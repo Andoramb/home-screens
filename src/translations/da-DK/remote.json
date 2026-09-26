@@ -581,30 +581,226 @@
   },
   "photosTab": {
     "header": "Billeder",
-    "newFolderButton": "Ny mappe",
-    "newFolderPlaceholder": "Mappenavn",
-    "createButton": "Opret",
-    "uploadingProgress": "Uploader {current} af {total}...",
-    "uploadFailedFor": "Upload af {name} fejlede",
-    "uploadFailed": "Upload fejlede",
-    "uploadedSingular": "{n} billede uploadet",
-    "uploadedPlural": "{n} billeder uploaded",
-    "photoDeleted": "Billede blev slettet",
-    "deleteFailed": "Sletning af billede fejlede",
-    "folderCreated": "Mappe blev oprettet",
-    "failedCreateFolder": "Oprettelse af mappe fejlede",
-    "uploadButton": "Upload billeder",
-    "emptyTitle": "Ingen billeder i denne mappe",
-    "emptyHint": "Tryk Upload billeder for at tilføje billeder",
-    "deletingButton": "Sletter...",
-    "deleteAriaLabel": "Slet billede",
-    "dismissErrorAriaLabel": "Afvis fejl",
+    "select": "Vælg",
+    "selectedCount": {
+      "one": "{count} valgt",
+      "other": "{count} valgt"
+    },
+    "selectAll": "Vælg alle",
+    "selectNone": "Fravælg alle",
+    "foldersLabel": "Mapper",
     "mainFolderTab": "Hovedmappe",
-    "deleteConfirmTitle": "Slet dette foto?",
-    "deleteConfirmDescription": "Det forsvinder fra skærmen og ud af fotobiblioteket for altid.",
+    "onWall": "På væggen",
+    "newFolder": "Ny mappe",
+    "showingOn": "Vises på {walls}",
+    "notOnWall": "Ikke på væggen",
+    "notOnWallHint": "{contents}. Vil du vise mappen, så vælg den til et billedshow på en computer.",
+    "notOnWallShort": "Ikke på væggen · {contents}",
+    "unnamedWall": "Skærm uden navn",
+    "unnamedScreen": "uden navn",
+    "empty": "Tom",
+    "what": {
+      "photos": {
+        "one": "1 billede",
+        "other": "{count} billeder"
+      },
+      "videos": {
+        "one": "1 video",
+        "other": "{count} videoer"
+      },
+      "mixed": {
+        "one": "1 billede eller video",
+        "other": "{count} billeder og videoer"
+      }
+    },
+    "photosAndVideos": "{photos} og {videos}",
+    "photoLabel": "Billede {n}",
+    "videoLabel": "Video {n}",
+    "addButton": "Tilføj billeder og videoer",
+    "addFromGoogle": "Google Fotos",
+    "addFromICloud": "iCloud-link",
+    "space": "Billeder og videoer fylder {size}. Der er {free} ledig plads på hubben.",
+    "spaceNoFree": "Billeder og videoer fylder {size}.",
+    "spaceLow": "Hubben er næsten fuld: kun {free} tilbage. Slet billeder, du ikke har brug for, så der bliver plads.",
+    "emptyTitle": "Der er ikke noget i {folder} endnu",
+    "emptyHint": "Tilføj billeder eller videoer fra denne telefon.",
+    "loadFailed": "Dine billeder kunne ikke hentes.",
+    "tryAgain": "Prøv igen",
+    "showsOn": {
+      "one": "Det bliver vist på {walls}.",
+      "other": "De bliver vist på {walls}."
+    },
+    "folderNotOnWall": "Mappen er ikke på væggen endnu.",
+    "slideshowPhotosOnly": "Billedshowet for {folder} viser kun billeder.",
+    "slideshowVideosOnly": "Billedshowet for {folder} viser kun videoer.",
+    "upload": {
+      "progress": "Tilføjer {current} af {total}",
+      "left": "{size} tilbage",
+      "shrinking": "Store billeder bliver gjort mindre først, så de sendes hurtigere.",
+      "added": {
+        "one": "1 tilføjet.",
+        "other": "{count} tilføjet."
+      },
+      "failedHeading": {
+        "one": "1 kunne ikke tilføjes",
+        "other": "{count} kunne ikke tilføjes"
+      },
+      "tooBig": "{name} er større end {size}.",
+      "notMedia": "{name} er ikke et billede eller en video, som væggen kan vise.",
+      "wontPlay": "{name} er en slags video, som væggen ikke kan afspille. På en iPhone skal du vælge Mest kompatibel under Indstillinger > Kamera > Formater.",
+      "failed": "{name} kunne ikke sendes. Prøv igen.",
+      "close": "Luk",
+      "showNow": "Vis på væggen nu"
+    },
+    "showOnWall": "Vis på væggen",
+    "show": {
+      "sent": "Vises på {where} i et minut.",
+      "everyWall": "alle væggene",
+      "theWall": "væggen",
+      "failed": "Kunne ikke nå væggen. Prøv igen.",
+      "gonePhoto": "Det billede er her ikke længere.",
+      "goneVideo": "Den video er her ikke længere."
+    },
+    "viewer": {
+      "label": "Billede",
+      "count": "{n} af {total}",
+      "added": "Tilføjet {date}",
+      "videoDetails": "Video · {size}",
+      "alone": {
+        "screen": "Baggrund på skærmen {screen}",
+        "dayRule": "Bruges af en dagsregel på skærmen {screen}",
+        "module": "Vises for sig selv på skærmen {screen}",
+        "other": "Bruges i indstillingerne"
+      },
+      "aloneNote": {
+        "screen": "Det kan ikke slettes, så længe det bruges som baggrund. Skift baggrunden på en computer først.",
+        "dayRule": "Det kan ikke slettes, så længe en dagsregel bruger det. Ret reglen på en computer først.",
+        "module": "Det kan ikke slettes, så længe en skærm viser det. Ret den skærm på en computer først.",
+        "other": "Det kan ikke slettes, så længe noget bruger det. Ret indstillingen på en computer først."
+      },
+      "onlyPhoto": "Dette er det eneste billede i billedshowet på {walls}. Tilføj et til, før du sletter eller flytter det.",
+      "onlyVideo": "Dette er den eneste video i billedshowet på {walls}. Tilføj en til, før du sletter eller flytter den.",
+      "onlyPhotoAnywhere": "Dette er det eneste billede, et billedshow har tilbage. Tilføj et til, før du sletter eller flytter det.",
+      "onlyVideoAnywhere": "Dette er den eneste video, et billedshow har tilbage. Tilføj en til, før du sletter eller flytter den."
+    },
+    "move": "Flyt",
+    "moveSheet": {
+      "title": "Flyt {what} til",
+      "here": "Du er her",
+      "newFolder": "Ny mappe"
+    },
+    "movedTo": {
+      "one": "Flyttet til {folder}.",
+      "other": "{count} flyttet til {folder}."
+    },
+    "moveClash": "Der ligger allerede en fil med samme navn i den mappe.",
+    "moveFailed": "Flytningen lykkedes ikke. Prøv igen.",
+    "deletePhotoTitle": "Slet dette billede?",
+    "deleteVideoTitle": "Slet denne video?",
+    "deleteManyTitle": "Slet {what}?",
+    "deleteManyButton": "Slet {what}",
+    "deletePhotoOnWall": "Det forsvinder for altid fra fotobiblioteket og fra billedshowet på {walls}.",
+    "deleteVideoOnWall": "Den forsvinder for altid fra fotobiblioteket og fra billedshowet på {walls}.",
+    "deletePhotoOffWall": "Det forsvinder for altid fra fotobiblioteket.",
+    "deleteVideoOffWall": "Den forsvinder for altid fra fotobiblioteket.",
+    "deleteManyOnWall": "De forsvinder for altid fra fotobiblioteket og fra billedshowet på {walls}.",
+    "deleteManyOffWall": "De forsvinder for altid fra fotobiblioteket.",
+    "photoDeleted": "Billede blev slettet",
+    "videoDeleted": "Video blev slettet",
+    "deleteFailed": "Det kunne ikke slettes. Prøv igen.",
+    "deleteRefused": "Væggen har stadig brug for det, så det blev ikke slettet.",
+    "deleted": {
+      "one": "1 slettet.",
+      "other": "{count} slettet."
+    },
+    "keptLast": {
+      "one": "1 blev tilbage, så billedshowet på {walls} ikke står tomt.",
+      "other": "{count} blev tilbage, så intet billedshow står tomt."
+    },
+    "keptLastAnywhere": {
+      "one": "1 blev tilbage, så et billedshow ikke står tomt.",
+      "other": "{count} blev tilbage, så intet billedshow står tomt."
+    },
+    "keptAlone": {
+      "one": "1 bruges på en skærm og blev tilbage.",
+      "other": "{count} bruges på en skærm og blev tilbage."
+    },
+    "deleteFailedCount": {
+      "one": "1 kunne ikke slettes. Prøv igen.",
+      "other": "{count} kunne ikke slettes. Prøv igen."
+    },
+    "folderMenu": {
+      "label": "Muligheder for mappen",
+      "rename": "Omdøb",
+      "newInside": "Ny mappe i {folder}",
+      "delete": "Slet mappe",
+      "hasFiles": "Flyt eller slet mappens {what} først.",
+      "hasFolders": "Slet mapperne i den først.",
+      "onWall": "Denne mappe vises på {walls}. Vælg først en anden mappe til billedshowet på en computer."
+    },
+    "nameSheet": {
+      "newTitle": "Ny mappe",
+      "renameTitle": "Omdøb {folder}",
+      "newName": "Nyt navn",
+      "create": "Opret",
+      "startsOffWall": "Den kommer ikke på væggen, før et billedshow bruger den.",
+      "wallFollows": "Den vises stadig på {walls}, nu med det nye navn."
+    },
     "savedAsHint": "Gemmes som {name}",
-    "deleteInUse": "Dette billede vises stadig på en skærm, så det kan ikke slettes",
-    "deleteInUseOn": "Dette billede bruges stadig på {where}, så det kan ikke slettes"
+    "folderCreated": "Mappe blev oprettet",
+    "failedCreateFolder": "Mappen kunne ikke oprettes. Prøv igen.",
+    "renamed": "Omdøbt til {name}",
+    "renameFailed": "Mappen kunne ikke omdøbes. Prøv igen.",
+    "folderExists": "Der er allerede en mappe med det navn her.",
+    "deleteFolderTitle": "Slet mappen {folder}?",
+    "deleteFolderBody": "Den er tom, så der ændrer sig ikke noget på væggen.",
+    "deleteFolderButton": "Slet mappe",
+    "folderDeleted": "Mappe blev slettet",
+    "deleteFolderFailed": "Mappen kunne ikke slettes. Prøv igen.",
+    "folderNotEmpty": "Der er stadig noget i den mappe. Flyt eller slet det først.",
+    "imports": {
+      "googleTitle": "Tilføj fra Google Fotos",
+      "googleIntro": "Vælg billeder i Google Fotos, og kom så tilbage hertil. De bliver lagt i {folder}.",
+      "googleOpen": "Åbn Google Fotos",
+      "googlePreparing": "Gør Google Fotos klar...",
+      "googleWaiting": "Venter på dine valg...",
+      "googleExpired": "Google Fotos holdt op med at vente. Prøv igen.",
+      "googleFailed": "Kunne ikke nå Google Fotos. Prøv igen.",
+      "icloudTitle": "Tilføj fra et iCloud-link",
+      "icloudIntro": "Indsæt et link til et delt album eller et link, du har lavet med Kopier iCloud-link i appen Fotos. Alt i linket bliver lagt i {folder}.",
+      "icloudPlaceholder": "Indsæt linket her",
+      "icloudAdd": "Tilføj",
+      "icloudErrors": {
+        "invalid": "Det ligner ikke et link til billeder i iCloud.",
+        "expired": "Det link er udløbet. Lav et nyt i appen Fotos.",
+        "busy": "Der bliver stadig tilføjet billeder. Prøv igen om et minut.",
+        "tooMany": "Det er for mange på én gang. Del færre, og prøv igen.",
+        "lost": "Hubben genstartede undervejs. Prøv igen.",
+        "unreachable": "Kunne ikke nå iCloud. Prøv igen."
+      },
+      "progress": "Tilføjer {done} af {total}",
+      "nothingPicked": "Der blev ikke valgt noget.",
+      "busy": "Der bliver stadig tilføjet billeder. Prøv igen om et minut.",
+      "tooMany": "Det er for mange på én gang. Vælg færre, og prøv igen.",
+      "lost": "Hubben genstartede undervejs. Prøv igen.",
+      "tryAgain": "Prøv igen",
+      "alreadyHere": {
+        "one": "1 var her allerede.",
+        "other": "{count} var her allerede."
+      },
+      "couldNotAdd": {
+        "one": "1 kunne ikke tilføjes.",
+        "other": "{count} kunne ikke tilføjes."
+      },
+      "nothingFound": "Der var intet at tilføje. Albummet er tomt, eller linket virker ikke længere."
+    }
+  },
+  "slideshowControls": {
+    "title": "Billedshow",
+    "back": "Forrige billede",
+    "next": "Næste billede",
+    "pause": "Sæt billedshowet på pause",
+    "play": "Afspil billedshowet"
   },
   "choresKidView": {
     "notConfigured": "Ingen pligter endnu. Bed en voksen om at tilføje et pligtskema til skærmen.",

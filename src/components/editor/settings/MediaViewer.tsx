@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import ModalFrame from '@/components/ui/ModalFrame';
 import Button from '@/components/ui/Button';
 import { RefreshCw, Trash2 } from 'lucide-react';
-import { formatBytes } from '@/components/editor/settings/StatsSection/shared/formatters';
+import { formatBytes } from '@/lib/format-bytes';
 import { extensionOf, fileNameOf, folderOf, serveUrlFor, typeTagOf } from '@/lib/media-paths';
 import type { MediaInventoryItem } from '@/lib/media-inventory';
 import type { MediaUse } from '@/lib/media-usage';
@@ -20,13 +20,16 @@ interface MediaViewerProps {
   item: MediaInventoryItem;
   /** Where-used lines; empty when nothing uses the file. */
   usedBy: UsedByLine[];
+  /** Why this file cannot be deleted, when the reason needs more than the
+   *  where-used list (a slideshow's last picture). */
+  lockHint?: string;
   /** Position inside the list being browsed, for the counter and the arrows. */
   index: number;
   total: number;
   t: ReturnType<typeof useTranslate>;
   onClose: () => void;
   onStep: (delta: 1 | -1) => void;
-  /** Absent while the file is in use: it cannot be deleted from here either. */
+  /** Absent while the file is locked: it cannot be deleted from here either. */
   onDelete?: () => void;
   /** Opens a picker for a same-type file that overwrites this one in place. */
   onReplace: (file: File) => void;
@@ -55,6 +58,7 @@ function keyBelongsElsewhere(e: KeyboardEvent): boolean {
 export default function MediaViewer({
   item,
   usedBy,
+  lockHint,
   index,
   total,
   t,
@@ -173,6 +177,11 @@ export default function MediaViewer({
               usedBy.map((line, i) => (
                 <UsedByEntry key={i} line={line} t={t} onOpenUse={onOpenUse} />
               ))
+            )}
+            {lockHint && (
+              <div className="mt-1 max-w-[260px] leading-relaxed text-hs-text-muted" data-testid="media-viewer-lock-hint">
+                {lockHint}
+              </div>
             )}
           </div>
           <div className="flex items-center gap-2 self-center">

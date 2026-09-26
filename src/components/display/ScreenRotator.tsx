@@ -12,9 +12,11 @@ import SleepOverlay from './SleepOverlay';
 import AlertOverlay from './AlertOverlay';
 import { useAlertStore } from '@/stores/alert-store';
 import TimerOverlay from './TimerOverlay';
+import PhotoShowOverlay from './PhotoShowOverlay';
 import NetworkIndicator from './NetworkIndicator';
 import PaginationDots from './PaginationDots';
 import { useDisplayControl } from './useDisplayControl';
+import { useLibraryRefresh } from '@/hooks/useLibraryRefresh';
 import { useDisplayRules } from './useDisplayRules';
 import { useBackgroundRotation } from './useBackgroundRotation';
 import { screenBackgroundSrc } from '@/lib/screen-background';
@@ -318,6 +320,9 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     displayId,
     hubTransport: !preview,
   });
+
+  // A photo sent from a phone reaches the slideshows here within a few beats.
+  useLibraryRefresh();
 
   /**
    * Whether the wall is showing live content a finger may act on.
@@ -734,6 +739,7 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
       {/* A preview must neither show nor control the live routine. The overlay
           owns its polling and step-done writes, so leave it unmounted here. */}
       {!preview && <TimerOverlay displayId={displayId} viewport={viewportSize} />}
+      {!preview && <PhotoShowOverlay viewport={viewportSize} />}
 
       {/* The wall runs on the hub's clock while no zone is saved, so the
           preview says so where the parent is looking. Not on a real wall:

@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "Pour les affichages Raspberry Pi. L'écran devient complètement noir et met quelques secondes à revenir quand quelqu'un le réveille. Laissez ceci désactivé si votre écran ne se rallume pas tout seul."
     },
     "mediaPage": {
-      "description": "Tout ce qui a été envoyé sur ce hub, au même endroit. Les fichiers encore utilisés quelque part ne peuvent pas être supprimés.",
+      "description": "Tout ce qui a été envoyé sur ce hub, au même endroit. Les fichiers dont un écran a besoin ne peuvent pas être supprimés, et un diaporama garde toujours au moins une photo.",
       "upload": "Envoyer",
       "dropzone": "Déposez des photos ou vidéos ici, ou cliquez pour choisir, autant que vous voulez",
       "saveInto": "Enregistrer dans",
@@ -1128,6 +1128,7 @@
       "images": "Photos",
       "videos": "Vidéos",
       "inUse": "Utilisé",
+      "inSlideshow": "Diaporama",
       "usedBy": "Utilisé par",
       "kind": {
         "screen": "Écran '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Module sur '{name}'",
         "other": "Quelque part dans les réglages",
         "slideshow": "Diaporama sur '{name}'",
+        "slideshowLast": "Diaporama sur '{name}' (sa seule photo)",
         "rotation": "Fond d'écran en rotation affiché en ce moment"
       },
       "selected": "{count} sélectionnés",
@@ -1143,9 +1145,10 @@
         "one": "Supprimer 1 fichier ?",
         "other": "Supprimer {count} fichiers ?"
       },
-      "deleteMessage": "Ils disparaîtront de ce hub pour tous les écrans. Un fichier encore utilisé ne peut pas être supprimé, donc rien ne peut casser.",
+      "deleteMessage": "Tout ce que vous supprimez disparaîtra définitivement de ce hub. Les diaporamas continueront avec leurs autres photos, et les fichiers dont un écran a besoin seront conservés, pour qu'aucun écran ne se retrouve vide.",
       "deleteConfirm": "Supprimer",
       "refused": "{file} est encore utilisé et n'a pas été supprimé",
+      "keptLast": "{file} a été conservé : c'est la seule photo du diaporama sur '{name}'.",
       "loading": "Chargement de vos photos et vidéos",
       "emptyFiltered": "Rien ne correspond à ce filtre",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Format",
         "dimensions": "Taille en pixels",
         "size": "Taille du fichier",
-        "notUsed": "Pas encore utilisé"
+        "notUsed": "Pas encore utilisé",
+        "lastPictureHint": "La seule photo d'un diaporama ne peut pas être supprimée. Ajoutez-en d'abord une autre dans {folder}.",
+        "lastPictureHintTop": "La seule photo d'un diaporama ne peut pas être supprimée. Ajoutez-en d'abord une autre à la racine de la bibliothèque."
       },
       "unusedOnly": "Inutilisés seulement",
       "storage": "La bibliothèque occupe {size}, {free} libres sur ce hub",
@@ -1191,7 +1196,7 @@
         "one": "Déplacer 1 fichier ?",
         "other": "Déplacer {count} fichiers ?"
       },
-      "moveMessage": "Tout ce qui affiche ces fichiers les suivra dans le nouveau dossier.",
+      "moveMessage": "Les écrans qui utilisent un fichier déplacé le suivront dans le nouveau dossier. Une photo déplacée hors du dossier d'un diaporama n'apparaît plus dans ce diaporama.",
       "moveConfirm": "Déplacer",
       "moved": {
         "one": "1 fichier déplacé",

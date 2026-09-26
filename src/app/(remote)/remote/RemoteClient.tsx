@@ -21,6 +21,7 @@ import DisplayHero from './components/DisplayHero';
 import ScreenNav from './components/ScreenControls';
 import QuickActions from './components/QuickActions';
 import BrightnessCard from './components/BrightnessCard';
+import SlideshowControls from './components/SlideshowControls';
 import ProfileSwitcher from './components/ProfileSwitcher';
 import DisplayPicker from './components/DisplayPicker';
 import AlertSender from './components/AlertSender';
@@ -57,7 +58,10 @@ interface RemoteInitialData {
   hasLists: boolean;
   hasMeals: boolean;
   hasPhotos: boolean;
+  /** The library folder the Photos tab opens on: the first one a wall shows. */
   photoDirectory: string;
+  /** Screen ids with a photo slideshow, and the module types to address there. */
+  slideshowScreens: Record<string, string[]>;
   backupReminder: { enabled: boolean; intervalDays: number };
   updateNotification: { enabled: boolean };
   updateChannel: UpdateChannel;
@@ -298,6 +302,17 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
     () => onlineTargets.flatMap((e) => (typeof e.status?.brightness === 'number' ? [e.status.brightness] : [])),
     [onlineTargets],
   );
+  // The slideshows on the screens the targets are showing right now.
+  const slideshowTypes = useMemo(() => {
+    const types = new Set<string>();
+    for (const entry of onlineTargets) {
+      const screenId = entry.status?.currentScreen.id;
+      for (const type of (screenId && initialData.slideshowScreens[screenId]) || []) types.add(type);
+    }
+    return [...types];
+  }, [onlineTargets, initialData.slideshowScreens]);
+  const slideshowScreenKey = onlineTargets.map((e) => e.status?.currentScreen.id ?? '').join('|');
+
   const activeAlerts = useMemo(() => {
     const known = onlineTargets.flatMap((e) => (typeof e.status?.activeAlerts === 'number' ? [e.status.activeAlerts] : []));
     return known.length > 0 ? known.reduce((sum, n) => sum + n, 0) : null;
@@ -392,6 +407,13 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
                 onSleepWake={handleSleepWake}
                 onAlertOpen={() => setAlertOpen(true)}
               />
+              {slideshowTypes.length > 0 && (
+                <SlideshowControls
+                  moduleTypes={slideshowTypes}
+                  screenKey={slideshowScreenKey}
+                  disabled={controlsDisabled}
+                />
+              )}
               <BrightnessCard
                 reportedValues={reportedBrightness}
                 disabled={controlsDisabled}

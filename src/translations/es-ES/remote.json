@@ -581,30 +581,226 @@
   },
   "photosTab": {
     "header": "Fotos",
-    "newFolderButton": "Nueva carpeta",
-    "newFolderPlaceholder": "Nombre de carpeta",
-    "createButton": "Crear",
-    "uploadingProgress": "Subiendo {current} de {total}...",
-    "uploadFailedFor": "Error al subir {name}",
-    "uploadFailed": "Error al subir",
-    "uploadedSingular": "{n} foto subida",
-    "uploadedPlural": "{n} fotos subidas",
-    "photoDeleted": "Foto eliminada",
-    "deleteFailed": "No se pudo eliminar la foto",
-    "folderCreated": "Carpeta creada",
-    "failedCreateFolder": "No se pudo crear la carpeta",
-    "uploadButton": "Subir fotos",
-    "emptyTitle": "No hay fotos en esta carpeta",
-    "emptyHint": "Toca «Subir fotos» para añadir imágenes",
-    "deletingButton": "Eliminando...",
-    "deleteAriaLabel": "Eliminar foto",
-    "dismissErrorAriaLabel": "Descartar error",
+    "select": "Seleccionar",
+    "selectedCount": {
+      "one": "{count} seleccionado",
+      "other": "{count} seleccionados"
+    },
+    "selectAll": "Seleccionar todo",
+    "selectNone": "Deseleccionar todo",
+    "foldersLabel": "Carpetas",
     "mainFolderTab": "Carpeta principal",
-    "deleteConfirmTitle": "¿Eliminar esta foto?",
-    "deleteConfirmDescription": "Desaparece de la pantalla y de la biblioteca de fotos para siempre.",
+    "onWall": "En la pared",
+    "newFolder": "Nueva carpeta",
+    "showingOn": "Se muestra en {walls}",
+    "notOnWall": "No está en la pared",
+    "notOnWallHint": "{contents}. Para mostrar esta carpeta en la pared, elígela para un pase de fotos desde un ordenador.",
+    "notOnWallShort": "No está en la pared · {contents}",
+    "unnamedWall": "Pantalla sin nombre",
+    "unnamedScreen": "sin nombre",
+    "empty": "Vacía",
+    "what": {
+      "photos": {
+        "one": "1 foto",
+        "other": "{count} fotos"
+      },
+      "videos": {
+        "one": "1 vídeo",
+        "other": "{count} vídeos"
+      },
+      "mixed": {
+        "one": "1 foto o vídeo",
+        "other": "{count} fotos y vídeos"
+      }
+    },
+    "photosAndVideos": "{photos} y {videos}",
+    "photoLabel": "Foto {n}",
+    "videoLabel": "Vídeo {n}",
+    "addButton": "Añadir fotos y vídeos",
+    "addFromGoogle": "Google Fotos",
+    "addFromICloud": "Enlace de iCloud",
+    "space": "Las fotos y los vídeos ocupan {size}. Quedan {free} libres en el hub.",
+    "spaceNoFree": "Las fotos y los vídeos ocupan {size}.",
+    "spaceLow": "El hub está casi lleno: quedan {free}. Elimina las fotos que no necesites para hacer sitio.",
+    "emptyTitle": "Aún no hay nada en {folder}",
+    "emptyHint": "Añade fotos o vídeos desde este móvil.",
+    "loadFailed": "No se pudieron cargar tus fotos.",
+    "tryAgain": "Reintentar",
+    "showsOn": {
+      "one": "Se verá en {walls}.",
+      "other": "Se verán en {walls}."
+    },
+    "folderNotOnWall": "Esta carpeta aún no está en la pared.",
+    "slideshowPhotosOnly": "El pase de fotos de {folder} solo muestra fotos.",
+    "slideshowVideosOnly": "El pase de fotos de {folder} solo muestra vídeos.",
+    "upload": {
+      "progress": "Añadiendo {current} de {total}",
+      "left": "Faltan {size}",
+      "shrinking": "Las fotos grandes se reducen primero para que se envíen más rápido.",
+      "added": {
+        "one": "Se ha añadido 1.",
+        "other": "Se han añadido {count}."
+      },
+      "failedHeading": {
+        "one": "1 no se pudo añadir",
+        "other": "{count} no se pudieron añadir"
+      },
+      "tooBig": "{name} ocupa más de {size}.",
+      "notMedia": "{name} no es una foto ni un vídeo que la pared pueda mostrar.",
+      "wontPlay": "{name} es un tipo de vídeo que la pared no puede reproducir. En el iPhone, elige «El más compatible» en Ajustes > Cámara > Formatos.",
+      "failed": "No se pudo enviar {name}. Inténtalo de nuevo.",
+      "close": "Cerrar",
+      "showNow": "Mostrar en la pared ahora"
+    },
+    "showOnWall": "Mostrar en la pared",
+    "show": {
+      "sent": "Se verá en {where} durante un minuto.",
+      "everyWall": "todas las paredes",
+      "theWall": "la pared",
+      "failed": "No se pudo mostrar en la pared. Inténtalo de nuevo.",
+      "gonePhoto": "Esa foto ya no está.",
+      "goneVideo": "Ese vídeo ya no está."
+    },
+    "viewer": {
+      "label": "Foto",
+      "count": "{n} de {total}",
+      "added": "Se añadió el {date}",
+      "videoDetails": "Vídeo · {size}",
+      "alone": {
+        "screen": "Fondo de la pantalla {screen}",
+        "dayRule": "Se usa en una regla de día de la pantalla {screen}",
+        "module": "Se muestra por separado en la pantalla {screen}",
+        "other": "Se usa en los ajustes"
+      },
+      "aloneNote": {
+        "screen": "No se puede eliminar mientras sea un fondo. Primero cambia el fondo desde un ordenador.",
+        "dayRule": "No se puede eliminar mientras se use en una regla de día. Primero cambia la regla desde un ordenador.",
+        "module": "No se puede eliminar mientras se muestre en una pantalla. Primero cambia esa pantalla desde un ordenador.",
+        "other": "No se puede eliminar mientras se use en los ajustes. Primero cambia ese ajuste desde un ordenador."
+      },
+      "onlyPhoto": "Es la única foto del pase de fotos de {walls}. Añade otra antes de eliminarla o moverla.",
+      "onlyVideo": "Es el único vídeo del pase de fotos de {walls}. Añade otro antes de eliminarlo o moverlo.",
+      "onlyPhotoAnywhere": "Es la única foto que le queda a un pase de fotos. Añade otra antes de eliminarla o moverla.",
+      "onlyVideoAnywhere": "Es el único vídeo que le queda a un pase de fotos. Añade otro antes de eliminarlo o moverlo."
+    },
+    "move": "Mover",
+    "moveSheet": {
+      "title": "Mover {what} a",
+      "here": "Estás aquí",
+      "newFolder": "Nueva carpeta"
+    },
+    "movedTo": {
+      "one": "Se ha movido a {folder}.",
+      "other": "Se han movido {count} a {folder}."
+    },
+    "moveClash": "Ya hay un archivo con el mismo nombre en esa carpeta.",
+    "moveFailed": "No se pudo mover. Inténtalo de nuevo.",
+    "deletePhotoTitle": "¿Eliminar esta foto?",
+    "deleteVideoTitle": "¿Eliminar este vídeo?",
+    "deleteManyTitle": "¿Eliminar {what}?",
+    "deleteManyButton": "Eliminar {what}",
+    "deletePhotoOnWall": "Desaparecerá para siempre de la biblioteca de fotos y del pase de fotos de {walls}.",
+    "deleteVideoOnWall": "Desaparecerá para siempre de la biblioteca de fotos y del pase de fotos de {walls}.",
+    "deletePhotoOffWall": "Desaparecerá para siempre de la biblioteca de fotos.",
+    "deleteVideoOffWall": "Desaparecerá para siempre de la biblioteca de fotos.",
+    "deleteManyOnWall": "Desaparecerán para siempre de la biblioteca de fotos y del pase de fotos de {walls}.",
+    "deleteManyOffWall": "Desaparecerán para siempre de la biblioteca de fotos.",
+    "photoDeleted": "Foto eliminada",
+    "videoDeleted": "Vídeo eliminado",
+    "deleteFailed": "No se pudo eliminar. Inténtalo de nuevo.",
+    "deleteRefused": "Aún hace falta en la pared, así que sigue en su sitio.",
+    "deleted": {
+      "one": "Se ha eliminado 1.",
+      "other": "Se han eliminado {count}."
+    },
+    "keptLast": {
+      "one": "1 sigue en su sitio para que el pase de fotos de {walls} no se quede vacío.",
+      "other": "{count} siguen en su sitio para que ningún pase de fotos se quede vacío."
+    },
+    "keptLastAnywhere": {
+      "one": "1 sigue en su sitio para que un pase de fotos no se quede vacío.",
+      "other": "{count} siguen en su sitio para que ningún pase de fotos se quede vacío."
+    },
+    "keptAlone": {
+      "one": "1 se usa en una pantalla y sigue en su sitio.",
+      "other": "{count} se usan en alguna pantalla y siguen en su sitio."
+    },
+    "deleteFailedCount": {
+      "one": "1 no se pudo eliminar. Inténtalo de nuevo.",
+      "other": "{count} no se pudieron eliminar. Inténtalo de nuevo."
+    },
+    "folderMenu": {
+      "label": "Opciones de la carpeta",
+      "rename": "Cambiar nombre",
+      "newInside": "Nueva carpeta dentro de {folder}",
+      "delete": "Eliminar carpeta",
+      "hasFiles": "Primero mueve o elimina lo que hay dentro: {what}.",
+      "hasFolders": "Primero elimina las carpetas que hay dentro.",
+      "onWall": "Esta carpeta se muestra en {walls}. Primero elige otra en su lugar desde un ordenador."
+    },
+    "nameSheet": {
+      "newTitle": "Nueva carpeta",
+      "renameTitle": "Cambiar el nombre de {folder}",
+      "newName": "Nuevo nombre",
+      "create": "Crear",
+      "startsOffWall": "No estará en la pared hasta que un pase de fotos la use.",
+      "wallFollows": "Se seguirá mostrando en {walls} con su nuevo nombre."
+    },
     "savedAsHint": "Se guardará como {name}",
-    "deleteInUse": "Esta foto todavía se muestra en una pantalla, así que no se puede eliminar",
-    "deleteInUseOn": "Esta foto todavía se usa en {where}, así que no se puede eliminar"
+    "folderCreated": "Carpeta creada",
+    "failedCreateFolder": "No se pudo crear la carpeta. Inténtalo de nuevo.",
+    "renamed": "Ahora se llama {name}",
+    "renameFailed": "No se pudo cambiar el nombre de la carpeta. Inténtalo de nuevo.",
+    "folderExists": "Ya hay una carpeta con ese nombre aquí.",
+    "deleteFolderTitle": "¿Eliminar la carpeta {folder}?",
+    "deleteFolderBody": "Está vacía, así que no cambia nada en la pared.",
+    "deleteFolderButton": "Eliminar carpeta",
+    "folderDeleted": "Carpeta eliminada",
+    "deleteFolderFailed": "No se pudo eliminar la carpeta. Inténtalo de nuevo.",
+    "folderNotEmpty": "Esa carpeta todavía tiene algo dentro. Muévelo o elimínalo primero.",
+    "imports": {
+      "googleTitle": "Añadir desde Google Fotos",
+      "googleIntro": "Elige fotos en Google Fotos y luego vuelve aquí. Se añadirán a {folder}.",
+      "googleOpen": "Abrir Google Fotos",
+      "googlePreparing": "Preparando Google Fotos...",
+      "googleWaiting": "Esperando a que elijas las fotos...",
+      "googleExpired": "Google Fotos ha dejado de esperar. Inténtalo de nuevo.",
+      "googleFailed": "No se pudo conectar con Google Fotos. Inténtalo de nuevo.",
+      "icloudTitle": "Añadir desde un enlace de iCloud",
+      "icloudIntro": "Pega el enlace de un álbum compartido o uno copiado con «Copiar enlace de iCloud» en la app Fotos. Todo lo que contenga se añadirá a {folder}.",
+      "icloudPlaceholder": "Pega el enlace aquí",
+      "icloudAdd": "Añadir",
+      "icloudErrors": {
+        "invalid": "Eso no parece un enlace de fotos de iCloud.",
+        "expired": "Ese enlace ha caducado. Crea uno nuevo en la app Fotos.",
+        "busy": "Todavía se están añadiendo fotos. Inténtalo de nuevo dentro de un minuto.",
+        "tooMany": "Son demasiadas a la vez. Comparte menos e inténtalo de nuevo.",
+        "lost": "El hub se ha reiniciado mientras se añadían. Inténtalo de nuevo.",
+        "unreachable": "No se pudo conectar con iCloud. Inténtalo de nuevo."
+      },
+      "progress": "Añadiendo {done} de {total}",
+      "nothingPicked": "No has elegido nada.",
+      "busy": "Todavía se están añadiendo fotos. Inténtalo de nuevo dentro de un minuto.",
+      "tooMany": "Son demasiadas a la vez. Elige menos e inténtalo de nuevo.",
+      "lost": "El hub se ha reiniciado mientras se añadían. Inténtalo de nuevo.",
+      "tryAgain": "Reintentar",
+      "alreadyHere": {
+        "one": "1 ya estaba aquí.",
+        "other": "{count} ya estaban aquí."
+      },
+      "couldNotAdd": {
+        "one": "1 no se pudo añadir.",
+        "other": "{count} no se pudieron añadir."
+      },
+      "nothingFound": "No hay nada que añadir. El álbum está vacío o su enlace ya no funciona."
+    }
+  },
+  "slideshowControls": {
+    "title": "Pase de fotos",
+    "back": "Foto anterior",
+    "next": "Foto siguiente",
+    "pause": "Pausar el pase de fotos",
+    "play": "Reanudar el pase de fotos"
   },
   "choresKidView": {
     "notConfigured": "Aún no hay tareas. Pídele a una persona mayor que añada una tabla de tareas a la pantalla.",

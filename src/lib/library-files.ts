@@ -3,6 +3,8 @@ import { Readable, Transform } from 'stream';
 import { pipeline } from 'stream/promises';
 import path from 'path';
 import { BACKGROUNDS_DIR } from './constants';
+import { mediaKindOf } from './media-formats';
+import { ROTATION_FILE_RE } from './background-rotation-cache';
 
 /**
  * Shared filesystem plumbing for the media library (public/backgrounds).
@@ -18,60 +20,36 @@ export function libraryRoot(): string {
   return path.join(process.cwd(), BACKGROUNDS_DIR);
 }
 
-/**
- * Every image and video format the library knows, keyed by extension. The
- * upload gate, the folder counts, the listing filter and the served
- * content-type all derive from these two tables, so adding a format here is
- * the whole change (svg once landed in three of the four and folder counts
- * disagreed with folder listings).
- */
-export const IMAGE_MIME_BY_EXT: Readonly<Record<string, string>> = {
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  // JPEG spellings some cameras and sites produce; all are image/jpeg.
-  '.jfif': 'image/jpeg',
-  '.pjpeg': 'image/jpeg',
-  '.pjp': 'image/jpeg',
-  '.png': 'image/png',
-  '.webp': 'image/webp',
-  '.gif': 'image/gif',
-  '.avif': 'image/avif',
-  '.svg': 'image/svg+xml',
-};
-
-export const VIDEO_MIME_BY_EXT: Readonly<Record<string, string>> = {
-  '.mp4': 'video/mp4',
-  '.webm': 'video/webm',
-  '.mov': 'video/quicktime',
-};
-
-function extensionPattern(table: Readonly<Record<string, string>>): RegExp {
-  return new RegExp(`\\.(${Object.keys(table).map((ext) => ext.slice(1)).join('|')})$`, 'i');
-}
-
-/** Filename tests for library entries (case-insensitive, extension only). */
-export const IMAGE_FILE_RE = extensionPattern(IMAGE_MIME_BY_EXT);
-export const VIDEO_FILE_RE = extensionPattern(VIDEO_MIME_BY_EXT);
-
-/** MIME types uploads may declare, one per distinct format. */
-export const IMAGE_MIME_TYPES: readonly string[] = [...new Set(Object.values(IMAGE_MIME_BY_EXT))];
-export const VIDEO_MIME_TYPES: readonly string[] = [...new Set(Object.values(VIDEO_MIME_BY_EXT))];
-
-/** Size caps shared by uploads and imports. */
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10 MB per image file
-export const MAX_VIDEO_BYTES = 200 * 1024 * 1024; // 200 MB per video file
-
-/** Server-fetched images (iCloud imports, background rotation) get a higher
- *  ceiling than uploads: Apple originals (48 MP photos) legitimately exceed
- *  10 MB. */
-export const MAX_IMPORT_IMAGE_BYTES = 50 * 1024 * 1024;
-
 /** Validate and resolve a library-relative path, preventing directory traversal. */
 export function safeLibraryPath(relativePath: string): string | null {
   const root = libraryRoot();
   const resolved = path.resolve(root, relativePath);
   if (!resolved.startsWith(root + path.sep) && resolved !== root) return null;
   return resolved;
+}
+
+/**
+ * Library paths of the pictures and videos directly inside one folder ('' for
+ * the top level), the same set the inventory lists for it: top-level
+ * `rotation-` downloads belong to the background rotation and are left out.
+ * A missing or unreadable folder holds nothing.
+ */
+export async function listLibraryFolder(folder: string): Promise<string[]> {
+  const abs = folder === '' ? libraryRoot() : safeLibraryPath(folder);
+  if (!abs) return [];
+  let entries;
+  try {
+    entries = await fs.readdir(abs, { withFileTypes: true });
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  for (const entry of entries) {
+    if (!entry.isFile() || mediaKindOf(entry.name) === null) continue;
+    if (folder === '' && ROTATION_FILE_RE.test(entry.name)) continue;
+    out.push(folder ? `${folder}/${entry.name}` : entry.name);
+  }
+  return out;
 }
 
 /**

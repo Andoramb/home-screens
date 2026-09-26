@@ -581,30 +581,226 @@
   },
   "photosTab": {
     "header": "Foto's",
-    "newFolderButton": "Nieuwe map",
-    "newFolderPlaceholder": "Mapnaam",
-    "createButton": "Maken",
-    "uploadingProgress": "Uploaden {current} van {total}…",
-    "uploadFailedFor": "Uploaden mislukt voor {name}",
-    "uploadFailed": "Uploaden mislukt",
-    "uploadedSingular": "{n} foto geüpload",
-    "uploadedPlural": "{n} foto's geüpload",
-    "photoDeleted": "Foto verwijderd",
-    "deleteFailed": "Foto verwijderen mislukt",
-    "folderCreated": "Map gemaakt",
-    "failedCreateFolder": "Map maken mislukt",
-    "uploadButton": "Foto's uploaden",
-    "emptyTitle": "Geen foto's in deze map",
-    "emptyHint": "Tik op Foto's uploaden om afbeeldingen toe te voegen",
-    "deletingButton": "Verwijderen…",
-    "deleteAriaLabel": "Foto verwijderen",
-    "dismissErrorAriaLabel": "Fout sluiten",
+    "select": "Selecteren",
+    "selectedCount": {
+      "one": "{count} geselecteerd",
+      "other": "{count} geselecteerd"
+    },
+    "selectAll": "Alles selecteren",
+    "selectNone": "Niets selecteren",
+    "foldersLabel": "Mappen",
     "mainFolderTab": "Hoofdmap",
-    "deleteConfirmTitle": "Deze foto verwijderen?",
-    "deleteConfirmDescription": "Hij verdwijnt van het scherm en definitief uit de fotobibliotheek.",
+    "onWall": "Op de muur",
+    "newFolder": "Nieuwe map",
+    "showingOn": "Te zien op {walls}",
+    "notOnWall": "Niet op de muur",
+    "notOnWallHint": "{contents}. Wil je deze map op de muur zien? Kies hem dan op een computer voor een diavoorstelling.",
+    "notOnWallShort": "Niet op de muur · {contents}",
+    "unnamedWall": "Naamloos scherm",
+    "unnamedScreen": "zonder naam",
+    "empty": "Leeg",
+    "what": {
+      "photos": {
+        "one": "1 foto",
+        "other": "{count} foto's"
+      },
+      "videos": {
+        "one": "1 video",
+        "other": "{count} video's"
+      },
+      "mixed": {
+        "one": "1 foto of video",
+        "other": "{count} foto's en video's"
+      }
+    },
+    "photosAndVideos": "{photos} en {videos}",
+    "photoLabel": "Foto {n}",
+    "videoLabel": "Video {n}",
+    "addButton": "Foto's en video's toevoegen",
+    "addFromGoogle": "Google Foto's",
+    "addFromICloud": "iCloud-link",
+    "space": "Foto's en video's gebruiken {size}. Nog {free} vrij op de hub.",
+    "spaceNoFree": "Foto's en video's gebruiken {size}.",
+    "spaceLow": "Bijna vol: nog {free} over op de hub. Verwijder foto's die je niet meer nodig hebt, dan komt er ruimte vrij.",
+    "emptyTitle": "Nog niets in {folder}",
+    "emptyHint": "Voeg foto's of video's toe vanaf deze telefoon.",
+    "loadFailed": "Je foto's konden niet worden geladen.",
+    "tryAgain": "Opnieuw proberen",
+    "showsOn": {
+      "one": "Je ziet hem straks op {walls}.",
+      "other": "Je ziet ze straks op {walls}."
+    },
+    "folderNotOnWall": "Deze map staat nog niet op de muur.",
+    "slideshowPhotosOnly": "De diavoorstelling van {folder} toont alleen foto's.",
+    "slideshowVideosOnly": "De diavoorstelling van {folder} toont alleen video's.",
+    "upload": {
+      "progress": "Toevoegen: {current} van {total}",
+      "left": "Nog {size}",
+      "shrinking": "Grote foto's worden eerst kleiner gemaakt, zodat het versturen sneller gaat.",
+      "added": {
+        "one": "1 toegevoegd.",
+        "other": "{count} toegevoegd."
+      },
+      "failedHeading": {
+        "one": "1 kon niet worden toegevoegd",
+        "other": "{count} konden niet worden toegevoegd"
+      },
+      "tooBig": "{name} is groter dan {size}.",
+      "notMedia": "{name} is geen foto of video die de muur kan tonen.",
+      "wontPlay": "{name} is een soort video die de muur niet kan afspelen. Kies op een iPhone 'Meest compatibel' bij Instellingen > Camera > Bestandsstructuren.",
+      "failed": "{name} kon niet worden verstuurd. Probeer het opnieuw.",
+      "close": "Sluiten",
+      "showNow": "Nu op de muur tonen"
+    },
+    "showOnWall": "Op de muur tonen",
+    "show": {
+      "sent": "Nu een minuut lang te zien op {where}.",
+      "everyWall": "elke muur",
+      "theWall": "de muur",
+      "failed": "De muur is niet bereikbaar. Probeer het opnieuw.",
+      "gonePhoto": "Die foto is er niet meer.",
+      "goneVideo": "Die video is er niet meer."
+    },
+    "viewer": {
+      "label": "Foto",
+      "count": "{n} van {total}",
+      "added": "Toegevoegd op {date}",
+      "videoDetails": "Video · {size}",
+      "alone": {
+        "screen": "Achtergrond van het scherm {screen}",
+        "dayRule": "Gebruikt door een dagregel op het scherm {screen}",
+        "module": "Heeft een eigen plek op het scherm {screen}",
+        "other": "Gebruikt in de instellingen"
+      },
+      "aloneNote": {
+        "screen": "Zolang dit een achtergrond is, kun je het niet verwijderen. Kies eerst op een computer een andere achtergrond.",
+        "dayRule": "Zolang een dagregel dit gebruikt, kun je het niet verwijderen. Pas eerst op een computer de regel aan.",
+        "module": "Zolang een scherm dit toont, kun je het niet verwijderen. Pas eerst op een computer dat scherm aan.",
+        "other": "Zolang iets dit gebruikt, kun je het niet verwijderen. Pas dat eerst aan op een computer."
+      },
+      "onlyPhoto": "Dit is de enige foto in de diavoorstelling op {walls}. Voeg nog een foto toe voordat je deze verwijdert of verplaatst.",
+      "onlyVideo": "Dit is de enige video in de diavoorstelling op {walls}. Voeg nog een video toe voordat je deze verwijdert of verplaatst.",
+      "onlyPhotoAnywhere": "Dit is de enige foto die een diavoorstelling nog heeft. Voeg nog een foto toe voordat je deze verwijdert of verplaatst.",
+      "onlyVideoAnywhere": "Dit is de enige video die een diavoorstelling nog heeft. Voeg nog een video toe voordat je deze verwijdert of verplaatst."
+    },
+    "move": "Verplaatsen",
+    "moveSheet": {
+      "title": "{what} verplaatsen naar",
+      "here": "Je bent hier",
+      "newFolder": "Nieuwe map"
+    },
+    "movedTo": {
+      "one": "Verplaatst naar {folder}.",
+      "other": "{count} verplaatst naar {folder}."
+    },
+    "moveClash": "Er staat al een bestand met dezelfde naam in die map.",
+    "moveFailed": "Het verplaatsen is niet gelukt. Probeer het opnieuw.",
+    "deletePhotoTitle": "Deze foto verwijderen?",
+    "deleteVideoTitle": "Deze video verwijderen?",
+    "deleteManyTitle": "{what} verwijderen?",
+    "deleteManyButton": "{what} verwijderen",
+    "deletePhotoOnWall": "Hij verdwijnt voorgoed uit de fotobibliotheek en uit de diavoorstelling op {walls}.",
+    "deleteVideoOnWall": "Hij verdwijnt voorgoed uit de fotobibliotheek en uit de diavoorstelling op {walls}.",
+    "deletePhotoOffWall": "Hij verdwijnt voorgoed uit de fotobibliotheek.",
+    "deleteVideoOffWall": "Hij verdwijnt voorgoed uit de fotobibliotheek.",
+    "deleteManyOnWall": "Ze verdwijnen voorgoed uit de fotobibliotheek en uit de diavoorstelling op {walls}.",
+    "deleteManyOffWall": "Ze verdwijnen voorgoed uit de fotobibliotheek.",
+    "photoDeleted": "Foto verwijderd",
+    "videoDeleted": "Video verwijderd",
+    "deleteFailed": "Het verwijderen is niet gelukt. Probeer het opnieuw.",
+    "deleteRefused": "Hij is nog nodig op de muur, dus hij blijft staan.",
+    "deleted": {
+      "one": "1 verwijderd.",
+      "other": "{count} verwijderd."
+    },
+    "keptLast": {
+      "one": "1 is blijven staan, zodat de diavoorstelling op {walls} niet leeg raakt.",
+      "other": "{count} zijn blijven staan, zodat er geen diavoorstelling leeg raakt."
+    },
+    "keptLastAnywhere": {
+      "one": "1 is blijven staan, zodat een diavoorstelling niet leeg raakt.",
+      "other": "{count} zijn blijven staan, zodat er geen diavoorstelling leeg raakt."
+    },
+    "keptAlone": {
+      "one": "1 wordt op een scherm gebruikt en is blijven staan.",
+      "other": "{count} worden op een scherm gebruikt en zijn blijven staan."
+    },
+    "deleteFailedCount": {
+      "one": "1 kon niet worden verwijderd. Probeer het opnieuw.",
+      "other": "{count} konden niet worden verwijderd. Probeer het opnieuw."
+    },
+    "folderMenu": {
+      "label": "Mapopties",
+      "rename": "Naam wijzigen",
+      "newInside": "Nieuwe map in {folder}",
+      "delete": "Map verwijderen",
+      "hasFiles": "Verplaats of verwijder eerst wat erin staat: {what}.",
+      "hasFolders": "Verwijder eerst de mappen die erin staan.",
+      "onWall": "Deze map is te zien op {walls}. Kies daar eerst op een computer een andere map voor."
+    },
+    "nameSheet": {
+      "newTitle": "Nieuwe map",
+      "renameTitle": "Naam van {folder} wijzigen",
+      "newName": "Nieuwe naam",
+      "create": "Maken",
+      "startsOffWall": "Hij komt pas op de muur als een diavoorstelling hem gebruikt.",
+      "wallFollows": "Deze map blijft gewoon te zien op {walls}, ook met de nieuwe naam."
+    },
     "savedAsHint": "Wordt opgeslagen als {name}",
-    "deleteInUse": "Deze foto staat nog op een scherm en kan daarom niet worden verwijderd",
-    "deleteInUseOn": "Deze foto wordt nog gebruikt op {where} en kan daarom niet worden verwijderd"
+    "folderCreated": "Map gemaakt",
+    "failedCreateFolder": "De map kon niet worden gemaakt. Probeer het opnieuw.",
+    "renamed": "Naam gewijzigd in {name}",
+    "renameFailed": "De naam van de map kon niet worden gewijzigd. Probeer het opnieuw.",
+    "folderExists": "Er staat hier al een map met die naam.",
+    "deleteFolderTitle": "De map {folder} verwijderen?",
+    "deleteFolderBody": "Hij is leeg, dus op de muur verandert er niets.",
+    "deleteFolderButton": "Map verwijderen",
+    "folderDeleted": "Map verwijderd",
+    "deleteFolderFailed": "De map kon niet worden verwijderd. Probeer het opnieuw.",
+    "folderNotEmpty": "Er staat nog iets in die map. Verplaats of verwijder dat eerst.",
+    "imports": {
+      "googleTitle": "Toevoegen uit Google Foto's",
+      "googleIntro": "Kies foto's in Google Foto's en kom dan hier terug. Ze worden toegevoegd aan {folder}.",
+      "googleOpen": "Google Foto's openen",
+      "googlePreparing": "Google Foto's wordt klaargezet...",
+      "googleWaiting": "Wachten op je keuze...",
+      "googleExpired": "Google Foto's is gestopt met wachten. Probeer het opnieuw.",
+      "googleFailed": "Google Foto's is niet bereikbaar. Probeer het opnieuw.",
+      "icloudTitle": "Toevoegen via een iCloud-link",
+      "icloudIntro": "Plak de link van een gedeeld album, of een link die je in de Foto's-app maakt met 'Kopieer iCloud-link'. Alles wat erin staat, wordt toegevoegd aan {folder}.",
+      "icloudPlaceholder": "Plak de link hier",
+      "icloudAdd": "Toevoegen",
+      "icloudErrors": {
+        "invalid": "Dat lijkt geen iCloud-link naar foto's te zijn.",
+        "expired": "Die link is verlopen. Maak een nieuwe in de Foto's-app.",
+        "busy": "Er worden nog foto's toegevoegd. Probeer het over een minuutje opnieuw.",
+        "tooMany": "Dat zijn er te veel tegelijk. Deel er minder en probeer het opnieuw.",
+        "lost": "De hub is herstart tijdens het toevoegen. Probeer het opnieuw.",
+        "unreachable": "iCloud is niet bereikbaar. Probeer het opnieuw."
+      },
+      "progress": "Toevoegen: {done} van {total}",
+      "nothingPicked": "Er is niets gekozen.",
+      "busy": "Er worden nog foto's toegevoegd. Probeer het over een minuutje opnieuw.",
+      "tooMany": "Dat zijn er te veel tegelijk. Kies er minder en probeer het opnieuw.",
+      "lost": "De hub is herstart tijdens het toevoegen. Probeer het opnieuw.",
+      "tryAgain": "Opnieuw proberen",
+      "alreadyHere": {
+        "one": "1 stond er al.",
+        "other": "{count} stonden er al."
+      },
+      "couldNotAdd": {
+        "one": "1 kon niet worden toegevoegd.",
+        "other": "{count} konden niet worden toegevoegd."
+      },
+      "nothingFound": "Niets om toe te voegen. Het album is leeg, of de link werkt niet meer."
+    }
+  },
+  "slideshowControls": {
+    "title": "Diavoorstelling",
+    "back": "Vorige foto",
+    "next": "Volgende foto",
+    "pause": "Diavoorstelling pauzeren",
+    "play": "Diavoorstelling afspelen"
   },
   "choresKidView": {
     "notConfigured": "Nog geen klusjes. Vraag een volwassene om een klusjeskaart aan het scherm toe te voegen.",

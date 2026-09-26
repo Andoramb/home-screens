@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { promises as fs } from 'fs';
 import {
   enqueueCommand,
   drainCommands,
@@ -19,6 +20,10 @@ import { readDisplayRevisions } from '@/lib/display-revisions';
 import { getDisplayProfiles, isValidDisplayId } from '@/lib/display-filter';
 import { errorResponse, withDisplayAuth, getClientIP } from '@/lib/api-utils';
 import { validateBrowserStats } from '@/lib/hardware-stats';
+import { safeLibraryPath } from '@/lib/library-files';
+import { cleanLibraryPath } from '@/lib/library-moves';
+import { mediaKindOf } from '@/lib/media-formats';
+import { mintMediaToken } from '@/lib/media-token';
 import type { ModuleInstance, Screen, ScreenConfiguration } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -196,6 +201,8 @@ export const POST = withDisplayAuth<RouteContext>(async (request, { params }) =>
       return handleAlert(request, queryDisplayId);
     case 'module-command':
       return handleModuleCommand(request, queryDisplayId);
+    case 'show-photo':
+      return handleShowPhoto(request, queryDisplayId);
     case 'status':
       return handleStatus(request, queryDisplayId);
     default:
@@ -283,6 +290,55 @@ async function handleModuleCommand(
   if (displayId instanceof NextResponse) return displayId;
   enqueueCommand(displayId, 'module-command', { module: moduleType, action, ...(value !== undefined ? { value } : {}) });
   return NextResponse.json({ ok: true, command: 'module-command', module: moduleType, action });
+}
+
+/** How long a photo stays up when the request does not say. */
+const DEFAULT_SHOW_PHOTO_SECONDS = 60;
+/** The longest a photo may stay up; a tap on the wall takes it down anyway. */
+const MAX_SHOW_PHOTO_SECONDS = 10 * 60;
+const MIN_SHOW_PHOTO_SECONDS = 5;
+
+/**
+ * POST /api/display/show-photo  { file: '<library path>', duration?: seconds }
+ *
+ * Puts one picture or video from the library over the wall's screen until the
+ * time is up or someone taps it: the "put it on the TV" moment from a phone.
+ * The hub resolves the path itself, so a request can only ever show a file
+ * that is in the library, and a video gets the media token its bare <video>
+ * needs to be fetched. `expiresAt` lets a wall that was offline when the
+ * command was queued skip a photo whose moment has passed.
+ */
+async function handleShowPhoto(
+  request: NextRequest,
+  queryDisplayId: string | undefined,
+): Promise<NextResponse> {
+  const body = await safeJson(request);
+  const file = typeof body?.file === 'string' ? cleanLibraryPath(body.file) : null;
+  const absolute = file ? safeLibraryPath(file) : null;
+  const kind = file ? mediaKindOf(file) : null;
+  if (!file || !absolute || !kind) {
+    return NextResponse.json({ error: 'file must be a picture or video in the library' }, { status: 400 });
+  }
+  try {
+    if (!(await fs.stat(absolute)).isFile()) throw new Error('not a file');
+  } catch {
+    return NextResponse.json({ error: 'File not found' }, { status: 404 });
+  }
+  const requested = body?.duration;
+  const seconds = typeof requested === 'number' && Number.isFinite(requested)
+    ? Math.min(MAX_SHOW_PHOTO_SECONDS, Math.max(MIN_SHOW_PHOTO_SECONDS, Math.round(requested)))
+    : DEFAULT_SHOW_PHOTO_SECONDS;
+  const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });
+  if (displayId instanceof NextResponse) return displayId;
+  let url = `/api/backgrounds/serve?file=${encodeURIComponent(file)}`;
+  if (kind === 'video') {
+    // Bound to the same `file` value the serve route reads back.
+    const token = await mintMediaToken(file);
+    if (token) url += `&mt=${encodeURIComponent(token)}`;
+  }
+  const durationMs = seconds * 1000;
+  enqueueCommand(displayId, 'show-photo', { url, kind, durationMs, expiresAt: Date.now() + durationMs });
+  return NextResponse.json({ ok: true, command: 'show-photo', durationMs });
 }
 
 /**

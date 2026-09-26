@@ -11,6 +11,7 @@
 
 import { displayFetch } from '@/lib/display-fetch';
 import { followedRevision } from '@/lib/display-heartbeat';
+import { LIBRARY_REVISION_HEADER } from '@/lib/library-revision';
 import { logger } from '@/lib/logger';
 
 const log = logger('display-cache');
@@ -35,12 +36,13 @@ interface CacheEntry {
  * The revision a fetched answer is at: its own ETag, which for every read the
  * heartbeat reports on is the very value the heartbeat names, so a read made
  * before the first beat already counts as current when that beat arrives.
- * Without one (an older hub, a stubbed answer), `asked`: the revision the
- * latest beat named when the request went out, which the answer is at least
- * as new as.
+ * A slideshow list says instead which library revision it was read at
+ * (`useLibraryRefresh` compares that with the heartbeat's). Without either
+ * (an older hub, a stubbed answer), `asked`: the revision the latest beat
+ * named when the request went out, which the answer is at least as new as.
  */
 export function answerRevision(res: Response, asked: string | undefined): string | undefined {
-  return res.headers?.get?.('ETag') ?? asked;
+  return res.headers?.get?.('ETag') ?? res.headers?.get?.(LIBRARY_REVISION_HEADER) ?? asked;
 }
 
 export interface CacheStats {
@@ -192,8 +194,43 @@ class DisplayDataCache {
    * fetching entirely while a cache entry is fresh).
    */
   invalidateByPrefix(prefix: string): void {
+    this.invalidateWhere((url) => url.startsWith(prefix));
+  }
+
+  /** The cached URLs the test accepts, each with the revision its answer is at. */
+  revisionsWhere(test: (url: string) => boolean): { url: string; revision?: string }[] {
+    const found: { url: string; revision?: string }[] = [];
+    for (const [url, entry] of this.cache) {
+      if (test(url)) found.push({ url, revision: entry.revision });
+    }
+    return found;
+  }
+
+  /** Invalidate every cached or in-flight URL the test accepts. */
+  invalidateWhere(test: (url: string) => boolean): void {
     for (const url of new Set([...this.cache.keys(), ...this.inflight.keys()])) {
-      if (url.startsWith(prefix)) this.invalidate(url);
+      if (test(url)) this.invalidate(url);
+    }
+  }
+
+  /**
+   * Ask whatever shows the cached URLs the test accepts to read them again,
+   * for reads that are behind rather than wrong and whose answers say which
+   * revision they are at (a slideshow list's `X-Library-Revision`). Unlike
+   * `invalidateWhere` the entry stays until an answer replaces it, so a read
+   * that fails leaves it behind and the caller can ask again. A reader that
+   * takes the request on cancels the event; a URL no reader took is dropped,
+   * so the next one to show it reads it fresh instead of the old answer.
+   */
+  refreshWhere(test: (url: string) => boolean): void {
+    if (typeof window === 'undefined') return;
+    for (const url of [...this.cache.keys()]) {
+      if (!test(url)) continue;
+      const event = new CustomEvent('displaycache:refresh', { detail: url, cancelable: true });
+      if (window.dispatchEvent(event)) {
+        this.cache.delete(url);
+        this.inflight.delete(url);
+      }
     }
   }
 

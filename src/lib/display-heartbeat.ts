@@ -24,6 +24,12 @@ export interface DisplayRevisions {
   chores?: string;
   /** The ETag `GET /api/rewards` would be answered with. */
   rewards?: string;
+  /**
+   * What the media library holds (`library-revision.ts`). A wall re-reads its
+   * slideshow lists when this moves, so a photo sent from a phone shows up in
+   * seconds rather than on the lists' 10-minute poll.
+   */
+  library?: string;
 }
 
 type Listener = (revisions: DisplayRevisions) => void;

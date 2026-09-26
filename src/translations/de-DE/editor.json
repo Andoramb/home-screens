@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "Für Raspberry-Pi-Displays. Der Bildschirm wird komplett dunkel und braucht ein paar Sekunden, bis er nach dem Aufwecken wieder da ist. Lass das aus, wenn dein Bildschirm nicht von selbst wieder angeht."
     },
     "mediaPage": {
-      "description": "Alles, was auf diesem Hub hochgeladen wurde, an einem Ort. Dateien, die noch irgendwo verwendet werden, können nicht gelöscht werden.",
+      "description": "Alles, was auf diesen Hub hochgeladen wurde, an einem Ort. Dateien, die ein Bildschirm braucht, können nicht gelöscht werden, und eine Diashow behält immer ihr letztes Bild.",
       "upload": "Hochladen",
       "dropzone": "Ziehe Bilder oder Videos hierher oder klicke zum Auswählen, so viele du magst",
       "saveInto": "Speichern in",
@@ -1128,6 +1128,7 @@
       "images": "Bilder",
       "videos": "Videos",
       "inUse": "In Verwendung",
+      "inSlideshow": "Diashow",
       "usedBy": "Verwendet von",
       "kind": {
         "screen": "Bildschirm '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Modul auf '{name}'",
         "other": "Irgendwo in den Einstellungen",
         "slideshow": "Diashow auf '{name}'",
+        "slideshowLast": "Diashow auf '{name}' (ihr letztes Bild)",
         "rotation": "Gerade als wechselnder Hintergrund auf einem Bildschirm"
       },
       "selected": "{count} ausgewählt",
@@ -1143,9 +1145,10 @@
         "one": "1 Datei löschen?",
         "other": "{count} Dateien löschen?"
       },
-      "deleteMessage": "Danach sind sie auf diesem Hub für jeden Bildschirm weg. Dateien, die noch von etwas verwendet werden, können nicht gelöscht werden, dadurch kann nichts kaputtgehen.",
+      "deleteMessage": "Sie sind dann endgültig von diesem Hub verschwunden. Diashows machen mit ihren übrigen Bildern weiter, und Dateien, die ein Bildschirm braucht, bleiben erhalten, damit kein Bildschirm leer wird.",
       "deleteConfirm": "Löschen",
       "refused": "{file} wird noch verwendet und wurde nicht gelöscht",
+      "keptLast": "{file} wurde behalten: Es ist das letzte Bild der Diashow auf '{name}'.",
       "loading": "Deine Bilder und Videos werden geladen",
       "emptyFiltered": "Nichts passt zu diesem Filter",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Typ",
         "dimensions": "Größe in Pixeln",
         "size": "Dateigröße",
-        "notUsed": "Wird noch nirgends verwendet"
+        "notUsed": "Wird noch nirgends verwendet",
+        "lastPictureHint": "Das letzte Bild einer Diashow kann nicht gelöscht werden. Füge zuerst im Ordner {folder} ein weiteres hinzu.",
+        "lastPictureHintTop": "Das letzte Bild einer Diashow kann nicht gelöscht werden. Füge zuerst auf der obersten Ebene der Bibliothek ein weiteres hinzu."
       },
       "unusedOnly": "Nur unbenutzte",
       "storage": "Die Bibliothek belegt {size}, {free} frei auf diesem Hub",
@@ -1191,7 +1196,7 @@
         "one": "1 Datei verschieben?",
         "other": "{count} Dateien verschieben?"
       },
-      "moveMessage": "Alles, was diese Dateien zeigt, folgt ihnen in den neuen Ordner.",
+      "moveMessage": "Bildschirme, die diese Dateien verwenden, folgen ihnen in den neuen Ordner. Ein Bild, das du aus dem Ordner einer Diashow verschiebst, verschwindet aus dieser Diashow.",
       "moveConfirm": "Verschieben",
       "moved": {
         "one": "1 Datei verschoben",

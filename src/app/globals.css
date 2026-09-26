@@ -418,6 +418,18 @@ body {
   z-index: 9997;
 }
 
+/* A photo sent from a phone sits over the timer takeover, out of the
+   rotation transition the same way. */
+::view-transition-old(photo-show),
+::view-transition-new(photo-show) {
+  animation: none;
+}
+
+::view-transition-group(photo-show) {
+  animation: none;
+  z-index: 9997;
+}
+
 /* ============================================================================
    Mobile tap feedback — inline styles can't express :active, so these utility
    classes provide press-state transforms matching the remote-chores mockup.

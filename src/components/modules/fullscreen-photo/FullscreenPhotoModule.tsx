@@ -6,6 +6,8 @@ import { useFetchData } from '@/hooks/useFetchData';
 import { photoSlideshowUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
 import { useMediaRotation } from '@/hooks/useRotatingIndex';
+import { useModuleCommand } from '@/hooks/useModuleCommand';
+import { handleSlideshowCommand } from '../shared/slideshow-commands';
 import { useTZClock } from '@/hooks/useTZClock';
 import { getThemeTokens } from '@/lib/fullscreen-themes';
 import { useFormattingLocale, useTranslate, type TranslateFn } from '@/i18n';
@@ -280,7 +282,9 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
   // The list URL keys the batch, so a periodic refresh is held until the
   // current pass completes instead of re-dealing mid-slideshow. The module
   // id carries the position across the screen rotating away and back.
-  const [files, photoIndex, advance] = useMediaRotation(isSinglePhoto ? NO_ITEMS : items, intervalMs, config.shuffle ?? false, playVideos, listUrl, moduleId);
+  const [files, photoIndex, advance, controls] = useMediaRotation(isSinglePhoto ? NO_ITEMS : items, intervalMs, config.shuffle ?? false, playVideos, listUrl, moduleId);
+  // Back, next, pause and play from the phone's Control tab.
+  useModuleCommand('fullscreen-photo', (action) => handleSlideshowCommand(controls, action));
 
   // The swap waits for the incoming image: see useCrossfadeLayers.
   const currentItem = isSinglePhoto || files.length === 0 ? null : files[photoIndex] ?? null;

@@ -8,6 +8,8 @@ import { moduleGate } from './ModuleStates';
 import { useFetchData } from '@/hooks/useFetchData';
 import { photoSlideshowUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { useMediaRotation } from '@/hooks/useRotatingIndex';
+import { useModuleCommand } from '@/hooks/useModuleCommand';
+import { handleSlideshowCommand } from './shared/slideshow-commands';
 import VideoLayer from './shared/VideoLayer';
 import { useCrossfadeLayers, useSlideImage, readyWhenDecoded, type LayerIndex } from './shared/useCrossfadeLayers';
 import type { PictureBox } from '@/lib/media-paths';
@@ -79,7 +81,9 @@ export default function PhotoSlideshowModule({ config, style, screenId, moduleId
   // The list URL keys the batch, so a periodic refresh is held until the
   // current pass completes instead of re-dealing mid-slideshow. The module
   // id carries the position across the screen rotating away and back.
-  const [batch, index, advance] = useMediaRotation(items, intervalMs, false, playVideos, listUrl, moduleId);
+  const [batch, index, advance, controls] = useMediaRotation(items, intervalMs, false, playVideos, listUrl, moduleId);
+  // Back, next, pause and play from the phone's Control tab.
+  useModuleCommand('photo-slideshow', (action) => handleSlideshowCommand(controls, action));
 
   // The swap waits for the incoming image: see useCrossfadeLayers.
   const currentItem = batch.length === 0 ? null : batch[index % batch.length] ?? null;

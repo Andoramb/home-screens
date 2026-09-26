@@ -24,6 +24,17 @@ export function useRotatingIndex(itemCount: number, intervalMs: number): number 
 
 type MediaItem = { url: string; type: 'image' | 'video' };
 
+/** Steps a remote can take on a running slideshow ("go back, I want to see that one"). */
+export interface MediaRotationControls {
+  /** The next slide now, paused or not. */
+  next: () => void;
+  /** The slide before this one. */
+  back: () => void;
+  /** Held on one slide: its timer stops, and a video that ends stays put. */
+  paused: boolean;
+  setPaused: (paused: boolean) => void;
+}
+
 /**
  * Where a slideshow stood when it last unmounted. A screen unmounts its
  * modules when it rotates away, so without this every return started again
@@ -105,6 +116,10 @@ function takeResumePoint<T extends MediaItem>(
  * its interval, because the screen left just after it came up, is shown
  * again instead. Only an unmount saves, and only a mount's first list
  * resumes: a folder change inside one mount starts from the top.
+ *
+ * The fourth element lets a remote step back and forth and pause: while
+ * paused, `advance` (the timer, a video ending, a failed picture's skip)
+ * holds, and only `next` and `back` move.
  */
 export function useMediaRotation<T extends MediaItem>(
   items: T[],
@@ -113,7 +128,7 @@ export function useMediaRotation<T extends MediaItem>(
   playVideos = true,
   batchKey?: string,
   resumeId?: string,
-): [T[], number, () => void] {
+): [T[], number, () => void, MediaRotationControls] {
   const pendingRef = useRef(items);
   const keyRef = useRef<string | undefined>(batchKey);
   const shuffleRef = useRef(shuffle);
@@ -174,9 +189,15 @@ export function useMediaRotation<T extends MediaItem>(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- `active`, `intervalMs` and `resumeId` are read only when items/shuffle change, and must not re-run this
   }, [items, batchKey, shuffle, buildOrder]);
 
+  // Set by a forward wrap only: stepping back onto the first slide must not
+  // hand the slideshow to a refresh that is waiting for the pass to end.
+  const wrappedRef = useRef(false);
+
   // A held refresh takes over when the pass wraps back to the start.
   useEffect(() => {
-    if (pos !== 0 || active.length === 0 || pendingRef.current === active) return;
+    if (pos !== 0 || !wrappedRef.current) return;
+    wrappedRef.current = false;
+    if (active.length === 0 || pendingRef.current === active) return;
     keyRef.current = batchKey;
     adopt(pendingRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- runs on wrap commits only
@@ -184,28 +205,56 @@ export function useMediaRotation<T extends MediaItem>(
 
   const count = active.length;
 
-  const advance = useCallback(() => {
+  // An advance that came in while paused (a video that ended): taken on play.
+  const heldRef = useRef(false);
+
+  const next = useCallback(() => {
+    heldRef.current = false;
     if (count <= 1) return;
     setPos((prev) => {
-      const next = prev + 1;
-      if (next >= count) {
+      const following = prev + 1;
+      if (following >= count) {
         if (shuffle) setOrder((prevOrder) => shuffleArray(prevOrder));
+        wrappedRef.current = true;
         return 0;
       }
-      return next;
+      return following;
     });
   }, [count, shuffle]);
+
+  const back = useCallback(() => {
+    heldRef.current = false;
+    if (count <= 1) return;
+    setPos((prev) => (prev === 0 ? count - 1 : prev - 1));
+  }, [count]);
+
+  const [paused, setPausedState] = useState(false);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const advance = useCallback(() => {
+    if (pausedRef.current) {
+      heldRef.current = true;
+      return;
+    }
+    next();
+  }, [next]);
+  const setPaused = useCallback((hold: boolean) => {
+    pausedRef.current = hold;
+    setPausedState(hold);
+    // A video that finished while paused would otherwise sit on its last frame.
+    if (!hold && heldRef.current) next();
+  }, [next]);
 
   const index = order.length > 0 ? (order[pos % order.length] ?? 0) : 0;
   const isEventDriven = playVideos && active[index]?.type === 'video';
 
   useEffect(() => {
-    if (count <= 1 || isEventDriven) return;
+    if (count <= 1 || isEventDriven || paused) return;
     const id = setTimeout(advance, intervalMs);
     return () => clearTimeout(id);
     // `pos` restarts the timer after each slide change, including wrap-around
     // to the same index after a reshuffle.
-  }, [count, isEventDriven, pos, index, intervalMs, advance]);
+  }, [count, isEventDriven, paused, pos, index, intervalMs, advance]);
 
   // What is on screen, for the unmount below to save.
   const playingRef = useRef({ active, order, pos });
@@ -231,5 +280,5 @@ export function useMediaRotation<T extends MediaItem>(
     };
   }, [resumeId]);
 
-  return [active, index, advance];
+  return [active, index, advance, { next, back, paused, setPaused }];
 }

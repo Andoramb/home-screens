@@ -74,6 +74,17 @@ export function displaySizedUrl(url: string | undefined, box: PictureBox | undef
   return `${url}&w=${sizeStep(box.w)}&h=${sizeStep(box.h)}`;
 }
 
+/**
+ * The size a `width` x `height` picture is drawn at when it has to fit whole
+ * inside `box` (object-fit: contain), never enlarged. A viewer asks for a copy
+ * of this size: a sized copy covers the box it is asked for, so asking with
+ * the screen itself would fetch far more picture than a contained photo shows.
+ */
+export function fitInside(width: number, height: number, box: PictureBox): PictureBox {
+  const scale = Math.min(box.w / width, box.h / height, 1);
+  return { w: Math.max(1, Math.round(width * scale)), h: Math.max(1, Math.round(height * scale)) };
+}
+
 /** The box a `w`/`h` pair names, or null unless both are listed steps. */
 export function displaySizeBox(w: string | null, h: string | null): PictureBox | null {
   const width = Number(w);

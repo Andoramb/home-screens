@@ -1,32 +1,29 @@
 import { test, expect } from '../fixtures';
-import type { APIRequestContext } from '@playwright/test';
-import { existsSync, rmSync } from 'fs';
+import type { APIRequestContext, Page } from '@playwright/test';
+import { existsSync, rmSync, writeFileSync } from 'fs';
 import path from 'path';
-import { putConfig } from '../helpers/api';
+import { getConfig, postHeartbeat, putConfig } from '../helpers/api';
 import { baseConfig, makeScreen, choreChartModule } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
-import type { ScreenConfiguration } from '@/types/config';
+import type { ModuleInstance, ScreenConfiguration } from '@/types/config';
 
 /**
- * /remote Photos tab. The tab is gated on a `fullscreen-photo` or
- * `photo-slideshow` module existing in config (PHOTO_MODULE_TYPES in
- * src/app/(remote)/remote/page.tsx), and the bottom tab bar only renders once
- * there are 2+ tabs (Control is always the first), so a lone photo module of
- * either type is enough to surface it.
+ * /remote Photos tab: the hub's photo library from a phone. The tab is gated
+ * on a `fullscreen-photo` or `photo-slideshow` module existing in config, and
+ * reads the whole library through `/api/backgrounds/inventory`.
  *
  * ISOLATION NOTE: backgrounds are stored on disk under `public/backgrounds`
  * (BACKGROUNDS_DIR), NOT `data/`. The e2e sandbox only gives each worker a
- * private `data/`; every other repo entry — including `public/` — is symlinked,
+ * private `data/`; every other repo entry, `public/` included, is symlinked,
  * so writes to `public/backgrounds` land in the real repo directory shared by
- * all workers. To stay isolated and safe, every test that touches disk works
- * inside a per-test uniquely-named subfolder and removes it in afterEach. The
+ * all workers. Every test that touches disk works inside its own uniquely
+ * named folders and removes them in afterEach, and picks its folder chip by
+ * `data-folder` (other workers' folders show up in the chip row too). The
  * files are gitignored (`public/backgrounds/*`), so `git status` stays clean.
- * On-disk assertions resolve through the worker's `sandboxDir/public/...`
- * symlink, which points at that same real directory.
  */
 
-// 1x1 transparent PNG — a real, valid image the upload validator and the
-// /api/backgrounds/serve route both accept.
+// 1x1 transparent PNG: a real, valid image the upload validator and the
+// serve route both accept.
 const TINY_PNG_BYTES = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   'base64',
@@ -37,10 +34,10 @@ function bgPath(sandboxDir: string, ...segments: string[]): string {
   return path.join(sandboxDir, 'public', 'backgrounds', ...segments);
 }
 
-/** Config whose only screen holds a full-screen photo module opening into `directory`. */
-function photoConfig(directory = ''): ScreenConfiguration {
+/** A full-screen photo module on the only screen ("Screen One"), playing `directory`. */
+function photoConfig(directory = '', extraModules: ModuleInstance[] = [], screen: Record<string, unknown> = {}): ScreenConfiguration {
   const photo = buildModuleInstance('fullscreen-photo', { directory });
-  return baseConfig({ screens: [makeScreen('s1', 'Screen One', [photo])] });
+  return baseConfig({ screens: [makeScreen('screen-0', 'Screen One', [photo, ...extraModules], screen)] });
 }
 
 /** Slug that survives the folder-name sanitizer (only [A-Za-z0-9._-] kept). */
@@ -48,35 +45,46 @@ function uniqueFolder(): string {
   return `e2e-photos-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** Seed an image straight onto disk the way the UI would, via the real upload API. */
-async function seedImage(
-  request: APIRequestContext,
-  directory: string,
-  name: string,
-): Promise<void> {
+/** Seed an image through the real upload API, the way the phone adds one. */
+async function seedImage(request: APIRequestContext, directory: string, name: string): Promise<void> {
   const res = await request.post('/api/backgrounds', {
-    multipart: {
-      directory,
-      file: { name, mimeType: 'image/png', buffer: TINY_PNG_BYTES },
-    },
+    multipart: { directory, file: { name, mimeType: 'image/png', buffer: TINY_PNG_BYTES } },
   });
   expect(res.ok()).toBe(true);
 }
 
-// Folders created during a test; removed from the shared real directory after.
-const createdFolders: string[] = [];
+// Folders (and loose files) created during a test; removed from the shared real directory after.
+const created: string[] = [];
 
 test.afterEach(async ({ sandboxDir }) => {
-  for (const folder of createdFolders) {
-    rmSync(bgPath(sandboxDir, folder), { recursive: true, force: true });
-  }
-  createdFolders.length = 0;
+  for (const entry of created) rmSync(bgPath(sandboxDir, entry), { recursive: true, force: true });
+  created.length = 0;
 });
 
-test('the Photos tab explains itself until a full-screen photo module exists', async ({ page, request }) => {
-  // A chore module alone: the Photos tab is still on the bar, but opening it
-  // says why it is empty instead of showing an upload surface with nowhere to
-  // appear.
+async function openPhotos(page: Page): Promise<void> {
+  await page.goto('/remote');
+  await page.getByRole('button', { name: 'Photos', exact: true }).click();
+  await expect(page.getByTestId('photos-tab')).toBeVisible();
+  await expect(page.getByTestId('photos-folder-card')).toBeVisible();
+}
+
+function chip(page: Page, folder: string) {
+  return page.locator(`[data-testid="photos-folder-chip"][data-folder="${folder}"]`);
+}
+
+function tiles(page: Page) {
+  return page.getByTestId('photo-tile');
+}
+
+/** The delete confirm ignores taps in its first moments, so a double tap never confirms. */
+async function confirmDelete(page: Page, label: string | RegExp): Promise<void> {
+  const sheet = page.getByTestId('confirm-sheet');
+  await expect(sheet).toBeVisible();
+  await page.waitForTimeout(400);
+  await sheet.getByRole('button', { name: label }).click();
+}
+
+test('the Photos tab explains itself until a photo module exists', async ({ page, request }) => {
   await putConfig(request, baseConfig({ screens: [makeScreen('s1', 'Screen One', [choreChartModule()])] }));
   await page.goto('/remote');
   // `exact` matters on the tab locators: the Settings sheet (rendered but
@@ -86,128 +94,430 @@ test('the Photos tab explains itself until a full-screen photo module exists', a
   await page.getByRole('button', { name: 'Photos', exact: true }).click();
   await expect(page.getByText('No photo slideshow yet')).toBeVisible();
 
-  // Adding a full-screen photo module turns the tab into the real surface.
   await putConfig(request, photoConfig());
   await page.reload();
-  const photosTab = page.getByRole('button', { name: 'Photos', exact: true });
-  await expect(photosTab).toBeVisible();
-
-  // Opening it shows the Photos surface (header + directory pill + upload CTA).
-  // No empty-state assertion here: this opens the root ("Main folder"), which on
-  // the shared real directory may already hold images.
-  await photosTab.click();
+  await openPhotos(page);
   await expect(page.getByRole('heading', { name: 'Photos' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Main folder/ })).toBeVisible();
-  // Exact match: in an empty folder the empty-state hint "Tap Upload Photos to
-  // add images" also contains this text, so a substring match would be ambiguous.
-  await expect(page.getByText('Upload Photos', { exact: true })).toBeVisible();
+  await expect(chip(page, '')).toContainText('Main folder');
+  await expect(page.getByTestId('photos-add')).toHaveText('Add photos and videos');
+  await expect(page.getByTestId('photos-space')).toContainText('Photos and videos use');
 });
 
 test('a windowed photo-slideshow module also surfaces the Photos tab', async ({ page, request }) => {
-  // PHOTO_MODULE_TYPES must cover both the windowed and full-screen photo
-  // module types, the same way MEAL_MODULE_TYPES covers both meal-planner
-  // variants — a household using only the windowed module shouldn't see a
-  // permanent "not set up" empty state.
   const photo = buildModuleInstance('photo-slideshow', { directory: '' });
   await putConfig(request, baseConfig({ screens: [makeScreen('s1', 'Screen One', [photo])] }));
-  await page.goto('/remote');
-  const photosTab = page.getByRole('button', { name: 'Photos', exact: true });
-  await expect(photosTab).toBeVisible();
-  await photosTab.click();
-  await expect(page.getByRole('heading', { name: 'Photos' })).toBeVisible();
+  await openPhotos(page);
   await expect(page.getByText('No photo slideshow yet')).not.toBeVisible();
 });
 
-test('uploading a photo adds it to the grid and writes it to disk', async ({ page, request, sandboxDir }) => {
+test('the tab opens on the wall\'s folder, says so, and lists it newest first', async ({ page, request }) => {
   const folder = uniqueFolder();
-  createdFolders.push(folder);
-
-  // Open the tab pre-scoped to the isolated folder via the module's directory.
+  created.push(folder);
+  for (const name of ['e2e-first.png', 'e2e-second.png', 'e2e-third.png']) await seedImage(request, folder, name);
   await putConfig(request, photoConfig(folder));
-  await page.goto('/remote');
-  await page.getByRole('button', { name: 'Photos', exact: true }).click();
-  await expect(page.getByText('No photos in this folder')).toBeVisible();
-  // With the folder empty, the empty-state hint co-exists with the upload label;
-  // the exact-match CTA locator must still resolve to exactly one element.
-  await expect(page.getByText('Upload Photos', { exact: true })).toHaveCount(1);
+  await openPhotos(page);
 
-  // The file input is hidden behind a styled label; drive it directly.
-  await page.locator('#photo-upload').setInputFiles({
-    name: 'e2e-upload.png',
-    mimeType: 'image/png',
-    buffer: TINY_PNG_BYTES,
+  await expect(chip(page, folder)).toHaveAttribute('aria-pressed', 'true');
+  await expect(chip(page, folder)).toHaveAttribute('data-on-wall', 'true');
+  const card = page.getByTestId('photos-folder-card');
+  await expect(card).toContainText('Showing on Screen One');
+  await expect(card).toContainText('3 photos');
+  await expect(tiles(page)).toHaveCount(3);
+  const order = await tiles(page).evaluateAll((els) => els.map((el) => el.getAttribute('data-path')));
+  expect(order).toEqual([`${folder}/e2e-third.png`, `${folder}/e2e-second.png`, `${folder}/e2e-first.png`]);
+  // Tiles load the small copy, never the original.
+  await expect(tiles(page).first().locator('img')).toHaveAttribute('src', /&w=480&v=\d+$/);
+});
+
+test('a download the background rotation owns never shows in Main folder', async ({ page, request, sandboxDir }) => {
+  const rotation = `rotation-e2e-${Date.now().toString(36)}.png`;
+  writeFileSync(bgPath(sandboxDir, rotation), TINY_PNG_BYTES);
+  created.push(rotation);
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await openPhotos(page);
+  await chip(page, '').click();
+  await expect(page.getByTestId('photos-folder-card')).toBeVisible();
+  await expect(page.locator(`[data-testid="photo-tile"][data-path="${rotation}"]`)).toHaveCount(0);
+});
+
+test('adding one photo says where it will show and offers to put it on the wall', async ({ page, request, sandboxDir }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await putConfig(request, photoConfig(folder));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  await openPhotos(page);
+  // A slideshow pointed at an empty folder still counts as on the wall.
+  await expect(chip(page, folder)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('photos-folder-card')).toContainText('Showing on Screen One');
+  await expect(page.getByTestId('photos-empty')).toContainText(`Nothing in ${folder} yet`);
+
+  await page.getByTestId('photos-file-input').setInputFiles({ name: 'e2e-upload.png', mimeType: 'image/png', buffer: TINY_PNG_BYTES });
+  const result = page.getByTestId('photo-upload-result');
+  await expect(result).toContainText("1 added. It'll show on Screen One.");
+  await expect(tiles(page)).toHaveCount(1);
+  await expect.poll(() => existsSync(bgPath(sandboxDir, folder, 'e2e-upload.png'))).toBe(true);
+
+  const show = page.waitForRequest((r) => r.url().endsWith('/api/display/show-photo') && r.method() === 'POST');
+  await result.getByTestId('photo-upload-show').click();
+  expect((await show).postDataJSON()).toMatchObject({ file: `${folder}/e2e-upload.png`, duration: 60 });
+  await expect(page.getByTestId('remote-toast')).toContainText('Showing on the wall for a minute.');
+});
+
+test('the card after adding stays with its folder, and a photo gone from the hub says so', async ({ page, request, sandboxDir }) => {
+  const folder = uniqueFolder();
+  const other = uniqueFolder();
+  created.push(folder, other);
+  await putConfig(request, photoConfig(folder));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  await page.request.post('/api/backgrounds/directories', { data: { name: other } });
+  await openPhotos(page);
+
+  await page.getByTestId('photos-file-input').setInputFiles({ name: 'e2e-card.png', mimeType: 'image/png', buffer: TINY_PNG_BYTES });
+  await expect(page.getByTestId('photo-upload-result')).toContainText("1 added. It'll show on Screen One.");
+
+  // The card speaks for the folder the photo went into: leaving it retires the card.
+  await chip(page, other).click();
+  await expect(page.getByTestId('photo-upload-result')).toHaveCount(0);
+  await chip(page, folder).click();
+  await expect(tiles(page)).toHaveCount(1);
+  await expect(page.getByTestId('photo-upload-result')).toHaveCount(0);
+
+  // Deleted behind this phone's back: showing it says the photo is gone, not the wall.
+  await tiles(page).first().click();
+  const viewer = page.getByTestId('photo-viewer');
+  await expect(viewer.getByTestId('photo-viewer-count')).toHaveText('1 of 1');
+  rmSync(bgPath(sandboxDir, folder, 'e2e-card.png'));
+  await viewer.getByTestId('photo-viewer-show').click();
+  await expect(page.getByTestId('remote-toast')).toContainText("That photo isn't here anymore.");
+  // The re-read drops it, so the viewer closes on its own.
+  await expect(viewer).toHaveCount(0);
+});
+
+test('adding several says so once, and every file that could not go is listed with its reason', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  await openPhotos(page);
+  await chip(page, folder).click();
+
+  await page.getByTestId('photos-file-input').setInputFiles([
+    { name: 'e2e-a.png', mimeType: 'image/png', buffer: TINY_PNG_BYTES },
+    { name: 'e2e-b.png', mimeType: 'image/png', buffer: TINY_PNG_BYTES },
+  ]);
+  await expect(page.getByTestId('remote-toast')).toContainText("2 added. This folder isn't on the wall yet.");
+  await expect(tiles(page)).toHaveCount(2);
+
+  await page.getByTestId('photos-file-input').setInputFiles([
+    { name: 'permission-slip.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n') },
+    { name: 'e2e-c.png', mimeType: 'image/png', buffer: TINY_PNG_BYTES },
+  ]);
+  const result = page.getByTestId('photo-upload-result');
+  await expect(result).toContainText('1 added.');
+  await expect(result).toContainText("1 couldn't be added");
+  await expect(result.getByTestId('photo-upload-failures')).toContainText("permission-slip.pdf isn't a photo or video the wall can show.");
+  await result.getByTestId('photo-upload-close').first().click();
+  await expect(result).toHaveCount(0);
+});
+
+test('a new folder from the + chip is created and opened', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await openPhotos(page);
+
+  await page.getByTestId('photos-new-folder').click();
+  await page.getByTestId('photo-folder-name').fill(folder);
+  await page.getByTestId('photo-folder-name-submit').click();
+  await expect(page.getByTestId('remote-toast')).toContainText('Folder created');
+  await expect(chip(page, folder)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('photos-folder-card')).toContainText('Not on the wall');
+});
+
+test('a photo opens full screen, and deleting it there moves on to the next one', async ({ page, request, sandboxDir }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await seedImage(request, folder, 'e2e-keep.png');
+  await seedImage(request, folder, 'e2e-gone.png');
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await openPhotos(page);
+  await chip(page, folder).click();
+
+  await tiles(page).first().click();
+  const viewer = page.getByTestId('photo-viewer');
+  await expect(viewer.getByTestId('photo-viewer-count')).toHaveText('1 of 2');
+  await expect(viewer.getByTestId('photo-viewer-facts')).toContainText('Added');
+  await expect(viewer.getByTestId('photo-viewer-showing')).toHaveCount(0);
+
+  await viewer.getByTestId('photo-viewer-delete').click();
+  await expect(page.getByTestId('confirm-sheet')).toContainText('It comes out of the photo library for good.');
+  await confirmDelete(page, 'Delete');
+  await expect(page.getByTestId('remote-toast')).toContainText('Photo deleted');
+  await expect(viewer.getByTestId('photo-viewer-count')).toHaveText('1 of 1');
+  await expect.poll(() => existsSync(bgPath(sandboxDir, folder, 'e2e-gone.png'))).toBe(false);
+  expect(existsSync(bgPath(sandboxDir, folder, 'e2e-keep.png'))).toBe(true);
+
+  await viewer.getByTestId('photo-viewer-close').click();
+  await expect(viewer).toHaveCount(0);
+});
+
+test('a slideshow keeps its last picture: deleting them all leaves one and says why', async ({ page, request, sandboxDir }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  for (const name of ['e2e-1.png', 'e2e-2.png', 'e2e-3.png']) await seedImage(request, folder, name);
+  await putConfig(request, photoConfig(folder));
+  await openPhotos(page);
+
+  await page.getByTestId('photos-select').click();
+  await page.getByTestId('photos-select-all').click();
+  await expect(page.getByTestId('photos-selected-count')).toHaveText('3 selected');
+  await page.getByTestId('photos-delete').click();
+  await expect(page.getByTestId('confirm-sheet')).toContainText('They come off the Screen One slideshow');
+  await confirmDelete(page, 'Delete 3 photos');
+  await expect(page.getByTestId('remote-toast')).toContainText("2 deleted. 1 stayed so the Screen One slideshow isn't empty.");
+  await expect(tiles(page)).toHaveCount(1);
+  // Grid order is newest first, and deleting follows it: the oldest stays.
+  expect(existsSync(bgPath(sandboxDir, folder, 'e2e-1.png'))).toBe(true);
+
+  await tiles(page).first().click();
+  const viewer = page.getByTestId('photo-viewer');
+  await expect(viewer.getByTestId('photo-viewer-showing')).toContainText('Showing on Screen One');
+  await expect(viewer.getByTestId('photo-viewer-note')).toContainText('This is the only photo in the Screen One slideshow.');
+  await expect(viewer.getByTestId('photo-viewer-delete')).toHaveCount(0);
+  await expect(viewer.getByTestId('photo-viewer-move')).toHaveCount(0);
+});
+
+test('a photo a screen uses on its own is locked, but can still be moved', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await seedImage(request, folder, 'e2e-bg.png');
+  await putConfig(request, photoConfig(uniqueFolder(), [], { backgroundImage: `${folder}/e2e-bg.png` }));
+  await openPhotos(page);
+  await chip(page, folder).click();
+
+  await expect(tiles(page).first().locator('[data-used-alone]')).toBeVisible();
+  await tiles(page).first().click();
+  const viewer = page.getByTestId('photo-viewer');
+  await expect(viewer.getByTestId('photo-viewer-used-alone')).toContainText('Background of the Screen One screen');
+  await expect(viewer.getByTestId('photo-viewer-note')).toContainText("It can't be deleted while it's a background.");
+  await expect(viewer.getByTestId('photo-viewer-delete')).toHaveCount(0);
+  await expect(viewer.getByTestId('photo-viewer-move')).toBeVisible();
+});
+
+test('moving photos into the wall\'s folder switches there with them first, and the screen follows', async ({ page, request, sandboxDir }) => {
+  const from = uniqueFolder();
+  const wall = uniqueFolder();
+  created.push(from, wall);
+  await seedImage(request, wall, 'e2e-old.png');
+  await seedImage(request, from, 'e2e-trip-a.png');
+  await seedImage(request, from, 'e2e-trip-b.png');
+  await putConfig(request, photoConfig(wall));
+  await openPhotos(page);
+  await chip(page, from).click();
+
+  await page.getByTestId('photos-select').click();
+  await page.getByTestId('photos-select-all').click();
+  await page.getByTestId('photos-move').click();
+  const sheet = page.getByTestId('photo-move-sheet');
+  await expect(sheet).toContainText('Move 2 photos to');
+  await sheet.getByTestId('photo-move-target').filter({ hasText: wall }).click();
+
+  await expect(page.getByTestId('remote-toast')).toContainText(`2 moved to ${wall}. They'll show on Screen One.`);
+  await expect(chip(page, wall)).toHaveAttribute('aria-pressed', 'true');
+  await expect(tiles(page)).toHaveCount(3);
+  const lead = await tiles(page).evaluateAll((els) => els.slice(0, 2).map((el) => el.getAttribute('data-path')).sort());
+  expect(lead).toEqual([`${wall}/e2e-trip-a.png`, `${wall}/e2e-trip-b.png`]);
+  await expect.poll(() => existsSync(bgPath(sandboxDir, wall, 'e2e-trip-a.png'))).toBe(true);
+});
+
+test('renaming the wall\'s folder keeps the slideshow on it', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  const renamed = `${folder}-renamed`;
+  created.push(folder, renamed);
+  await seedImage(request, folder, 'e2e-a.png');
+  await putConfig(request, photoConfig(folder));
+  await openPhotos(page);
+
+  await page.getByTestId('photos-folder-menu').click();
+  const menu = page.getByTestId('photo-folder-menu');
+  await expect(menu).toContainText('Showing on Screen One');
+  // Not empty yet, so delete is offered with the reason it cannot work.
+  await expect(menu.getByTestId('photo-folder-delete')).toBeDisabled();
+  await expect(menu.getByTestId('photo-folder-delete')).toContainText('Move or delete its 1 photo first.');
+  await menu.getByTestId('photo-folder-rename').click();
+  await expect(page.getByTestId('photo-folder-name-sheet')).toContainText('It keeps showing on Screen One under its new name.');
+  await page.getByTestId('photo-folder-name').fill(renamed);
+  await page.getByTestId('photo-folder-name-submit').click();
+
+  await expect(page.getByTestId('remote-toast')).toContainText(`Renamed to ${renamed}`);
+  await expect(chip(page, renamed)).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('photos-folder-card')).toContainText('Showing on Screen One');
+  const config = await getConfig(request);
+  expect((config.screens[0].modules[0].config as { directory: string }).directory).toBe(renamed);
+});
+
+test('an empty folder can be deleted from its menu', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  await openPhotos(page);
+  await chip(page, folder).click();
+
+  await page.getByTestId('photos-folder-menu').click();
+  await page.getByTestId('photo-folder-delete').click();
+  const sheet = page.getByTestId('confirm-sheet');
+  await expect(sheet).toContainText(`Delete the folder ${folder}?`);
+  await expect(sheet).toContainText("It's empty, so nothing on the wall changes.");
+  await sheet.getByRole('button', { name: 'Delete folder' }).click();
+  await expect(page.getByTestId('remote-toast')).toContainText('Folder deleted');
+  await expect(chip(page, folder)).toHaveCount(0);
+});
+
+test('Google Photos is offered once the hub is signed in, and adds the picks to the folder being viewed', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  await putConfig(request, photoConfig(folder));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  created.push(folder);
+
+  await openPhotos(page);
+  await expect(page.getByTestId('photos-add-google')).toHaveCount(0);
+
+  // Google itself is never reached: the hub's picker routes are stubbed.
+  await page.route('**/api/google-picker/status', (route) => route.fulfill({ json: { connected: true, credentialsConfigured: true } }));
+  await page.route('**/api/google-picker/session**', (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ json: { id: 'sess-1', pickerUri: 'https://photos.google.com/picker/sess-1', pollIntervalMs: 1000 } });
+    }
+    return route.fulfill({ json: { mediaItemsSet: true } });
   });
-
-  // Success toast, the image renders in the grid, and it exists on disk.
-  await expect(page.getByText('1 photo uploaded')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Delete photo' })).toHaveCount(1);
-  await expect
-    .poll(() => existsSync(bgPath(sandboxDir, folder, 'e2e-upload.png')))
-    .toBe(true);
+  let importBody: unknown = null;
+  await page.route('**/api/google-picker/import**', (route) => {
+    if (route.request().method() === 'POST') {
+      importBody = route.request().postDataJSON();
+      return route.fulfill({ status: 202, json: { jobId: 'job-1', total: 2 } });
+    }
+    return route.fulfill({ json: { state: 'done', total: 2, done: 2, skipped: 0, failed: 0, videoFiles: [] } });
+  });
+  await openPhotos(page);
+  await page.getByTestId('photos-add-google').click();
+  const sheet = page.getByTestId('photo-google-sheet');
+  await expect(sheet.getByTestId('photo-google-open')).toHaveAttribute('href', 'https://photos.google.com/picker/sess-1');
+  await expect(sheet.getByTestId('photo-import-result')).toContainText("2 added. They'll show on Screen One.");
+  expect(importBody).toEqual({ sessionId: 'sess-1', folder });
 });
 
-test('creating a folder from the UI lists it as a directory pill', async ({ page, request }) => {
+test('after picks that could not be added, Try again brings the Google Photos link back', async ({ page, request }) => {
   const folder = uniqueFolder();
-  createdFolders.push(folder);
-
-  await putConfig(request, photoConfig());
-  await page.goto('/remote');
-  await page.getByRole('button', { name: 'Photos', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Photos' })).toBeVisible();
-
-  await page.getByRole('button', { name: 'New Folder' }).click();
-  await page.getByPlaceholder('Folder name').fill(folder);
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
-
-  await expect(page.getByText('Folder created')).toBeVisible();
-  // The new folder shows up as a selectable directory pill (name + image count).
-  await expect(page.getByRole('button', { name: folder })).toBeVisible();
-});
-
-test('deleting a photo removes it from the grid and from disk', async ({ page, request, sandboxDir }) => {
-  const folder = uniqueFolder();
-  createdFolders.push(folder);
-  await seedImage(request, folder, 'e2e-seed.png');
-  expect(existsSync(bgPath(sandboxDir, folder, 'e2e-seed.png'))).toBe(true);
-
-  // The wall's slideshow shows a different folder, so this photo is free to
-  // go; a photo the wall still shows is refused (next test).
-  const shown = uniqueFolder();
-  createdFolders.push(shown);
-  await seedImage(request, shown, 'e2e-shown.png');
-  await putConfig(request, photoConfig(shown));
-  await page.goto('/remote');
-  await page.getByRole('button', { name: 'Photos', exact: true }).click();
-  await page.getByRole('button', { name: folder }).click();
-
-  // The seeded image renders; open the per-image delete confirmation.
-  const deleteButton = page.getByRole('button', { name: 'Delete photo' });
-  await expect(deleteButton).toHaveCount(1);
-  await deleteButton.click();
-  await expect(page.getByText('Delete this photo?')).toBeVisible();
-  await page.getByRole('button', { name: 'Delete', exact: true }).click();
-
-  // Confirmation toast, grid empties, and the file is gone from disk.
-  await expect(page.getByText('Photo deleted')).toBeVisible();
-  await expect(page.getByText('No photos in this folder')).toBeVisible();
-  await expect
-    .poll(() => existsSync(bgPath(sandboxDir, folder, 'e2e-seed.png')))
-    .toBe(false);
-});
-
-test('a photo the wall still shows cannot be deleted, and the phone says where it is used', async ({ page, request, sandboxDir }) => {
-  const folder = uniqueFolder();
-  createdFolders.push(folder);
-  await seedImage(request, folder, 'e2e-seed.png');
-
   await putConfig(request, photoConfig(folder));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  created.push(folder);
+
+  await page.route('**/api/google-picker/status', (route) => route.fulfill({ json: { connected: true, credentialsConfigured: true } }));
+  let sessions = 0;
+  let picked = false;
+  await page.route('**/api/google-picker/session**', (route) => {
+    if (route.request().method() === 'POST') {
+      sessions += 1;
+      return route.fulfill({ json: { id: `sess-${sessions}`, pickerUri: `https://photos.google.com/picker/sess-${sessions}`, pollIntervalMs: 1000 } });
+    }
+    if (route.request().method() === 'DELETE') return route.fulfill({ json: {} });
+    return route.fulfill({ json: { mediaItemsSet: picked } });
+  });
+  let starts = 0;
+  await page.route('**/api/google-picker/import**', (route) => {
+    if (route.request().method() === 'POST') {
+      starts += 1;
+      // The first picks land while another import is still running.
+      return starts === 1
+        ? route.fulfill({ status: 409, json: { error: 'busy' } })
+        : route.fulfill({ status: 202, json: { jobId: 'job-2', total: 1 } });
+    }
+    return route.fulfill({ json: { state: 'done', total: 1, done: 1, skipped: 0, failed: 0, videoFiles: [] } });
+  });
+  await openPhotos(page);
+  await page.getByTestId('photos-add-google').click();
+  const sheet = page.getByTestId('photo-google-sheet');
+  await expect(sheet.getByTestId('photo-google-open')).toHaveAttribute('href', 'https://photos.google.com/picker/sess-1');
+  picked = true;
+  await expect(sheet.getByTestId('photo-import-error')).toHaveText('Photos are still being added. Try again in a minute.');
+
+  // A new picking session, and its link shows instead of the old message.
+  picked = false;
+  await sheet.getByRole('button', { name: 'Try again' }).click();
+  await expect(sheet.getByTestId('photo-google-open')).toHaveAttribute('href', 'https://photos.google.com/picker/sess-2');
+  await expect(sheet.getByTestId('photo-import-error')).toHaveCount(0);
+  picked = true;
+  await expect(sheet.getByTestId('photo-import-result')).toContainText("1 added. It'll show on Screen One.");
+});
+
+test('an iCloud link is added to the folder being viewed, and a bad link says so', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  await putConfig(request, photoConfig(folder));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  created.push(folder);
+
+  let started: unknown = null;
+  await page.route('**/api/icloud/import**', (route) => {
+    if (route.request().method() === 'POST') {
+      started = route.request().postDataJSON();
+      const { url } = started as { url: string };
+      return url.includes('icloud.com')
+        ? route.fulfill({ status: 202, json: { jobId: 'job-2', total: 1 } })
+        : route.fulfill({ status: 400, json: { error: 'invalid-link' } });
+    }
+    return route.fulfill({ json: { state: 'done', total: 1, done: 1, skipped: 0, failed: 0, videoFiles: [] } });
+  });
+  await openPhotos(page);
+  await page.getByTestId('photos-add-icloud').click();
+  const sheet = page.getByTestId('photo-icloud-sheet');
+  await sheet.getByTestId('photo-icloud-url').fill('https://example.com/not-apple');
+  await sheet.getByTestId('photo-icloud-start').click();
+  await expect(sheet.getByTestId('photo-import-error')).toContainText("That doesn't look like an iCloud photo link.");
+
+  await sheet.getByTestId('photo-icloud-url').fill('https://www.icloud.com/sharedalbum/#B0aGWZuqDGSZqa');
+  await sheet.getByTestId('photo-icloud-start').click();
+  await expect(sheet.getByTestId('photo-import-result')).toContainText("1 added. It'll show on Screen One.");
+  expect(started).toEqual({ url: 'https://www.icloud.com/sharedalbum/#B0aGWZuqDGSZqa', folder });
+});
+
+test('an iCloud album with nothing in it, or a dead one, says so rather than "nothing new"', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  await putConfig(request, photoConfig(folder));
+  await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
+  created.push(folder);
+
+  // The hub reads a gone album as an empty one, so the job finishes with nothing in it.
+  await page.route('**/api/icloud/import**', (route) => route.request().method() === 'POST'
+    ? route.fulfill({ status: 202, json: { jobId: 'job-empty', total: 0 } })
+    : route.fulfill({ json: { state: 'done', total: 0, done: 0, skipped: 0, failed: 0, videoFiles: [] } }));
+  await openPhotos(page);
+  await page.getByTestId('photos-add-icloud').click();
+  const sheet = page.getByTestId('photo-icloud-sheet');
+  await sheet.getByTestId('photo-icloud-url').fill('https://www.icloud.com/sharedalbum/#B0aGWZuqDGx0J3Vq');
+  await sheet.getByTestId('photo-icloud-start').click();
+  await expect(sheet.getByTestId('photo-import-result')).toHaveText('Nothing to add. The album is empty, or its link stopped working.');
+});
+
+test('the Control tab steps the slideshow on the screen showing now', async ({ page, request }) => {
+  const slideshow = buildModuleInstance('photo-slideshow', { directory: uniqueFolder() });
+  await putConfig(request, baseConfig({ screens: [makeScreen('screen-0', 'Screen One', [slideshow])] }));
+  await postHeartbeat(request, { screenCount: 1, currentIndex: 0 });
   await page.goto('/remote');
-  await page.getByRole('button', { name: 'Photos', exact: true }).click();
 
-  await page.getByRole('button', { name: 'Delete photo' }).click();
-  await page.getByRole('button', { name: 'Delete', exact: true }).click();
-
-  await expect(page.getByText("still used on Screen One")).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Delete photo' })).toHaveCount(1);
-  expect(existsSync(bgPath(sandboxDir, folder, 'e2e-seed.png'))).toBe(true);
+  const card = page.getByTestId('slideshow-controls');
+  await expect(card).toBeVisible();
+  const sent: unknown[] = [];
+  page.on('request', (r) => {
+    if (r.url().endsWith('/api/display/module-command') && r.method() === 'POST') sent.push(r.postDataJSON());
+  });
+  await card.getByTestId('slideshow-next').click();
+  await card.getByTestId('slideshow-pause').click();
+  await expect(card.getByTestId('slideshow-pause')).toHaveAttribute('aria-pressed', 'true');
+  await card.getByTestId('slideshow-back').click();
+  await expect.poll(() => sent).toEqual([
+    { module: 'photo-slideshow', action: 'next' },
+    { module: 'photo-slideshow', action: 'pause' },
+    { module: 'photo-slideshow', action: 'prev' },
+  ]);
 });

@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type MouseEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import clsx from 'clsx';
-import { FolderPlus, Pencil, RefreshCw, Trash2 } from 'lucide-react';
+import { FolderPlus, Monitor, Pencil, RefreshCw, Trash2 } from 'lucide-react';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import {
   createLibraryFolder,
@@ -18,10 +18,10 @@ import { useEditorStore } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import SegmentedControl from '@/components/ui/SegmentedControl';
 import { useTranslate } from '@/i18n';
-import type { MediaInventory, MediaInventoryItem } from '@/lib/media-inventory';
-import { rewriteMediaRefs, type MediaUse, type MediaUseKind } from '@/lib/media-usage';
+import { MEDIA_SORTERS, type MediaInventory, type MediaInventoryItem, type MediaSortKey } from '@/lib/media-inventory';
+import { removalBlocksByFile, rewriteMediaRefs, type MediaUse, type MediaUseKind } from '@/lib/media-usage';
 import { TILE_THUMBNAIL_WIDTH, extensionOf, fileNameOf, folderOf, serveUrlFor, typeTagOf } from '@/lib/media-paths';
-import { formatBytes } from './StatsSection/shared/formatters';
+import { formatBytes } from '@/lib/format-bytes';
 import MediaViewer, { UsedByEntry, type UsedByLine } from './MediaViewer';
 import { logger } from '@/lib/logger';
 
@@ -38,22 +38,40 @@ const KIND_LABELS: Record<KindFilter, string> = {
   video: 'settings.mediaPage.videos',
 };
 
-type SortKey = 'name' | 'newest' | 'largest';
-const SORTERS: Record<SortKey, (a: MediaInventoryItem, b: MediaInventoryItem) => number> = {
-  name: (a, b) => a.path.localeCompare(b.path),
-  newest: (a, b) => b.mtimeMs - a.mtimeMs || a.path.localeCompare(b.path),
-  largest: (a, b) => b.bytes - a.bytes || a.path.localeCompare(b.path),
-};
-
 /** One "where is this used?" line: the usage kind, with the name folded in.
  *  A screen the scanner found no name for reads as untitled rather than
  *  leaking the template's placeholder. Kinds outside the scanner's set (a
  *  future config shape, a hand-edited payload) read as the generic
- *  "somewhere in settings" label rather than a missing-key path. */
-function usageLabel(t: ReturnType<typeof useTranslate>, use: MediaUse): string {
+ *  "somewhere in settings" label rather than a missing-key path. A
+ *  slideshow keeping this file as its last picture says so. */
+function usageLabel(t: ReturnType<typeof useTranslate>, use: MediaUse, lastPicture = false): string {
   const kind = KNOWN_USE_KINDS.has(use.kind) ? use.kind : 'other';
-  return t(`settings.mediaPage.kind.${kind}`, { name: use.name || t('settings.mediaPage.unnamed') });
+  const key = kind === 'slideshow' && lastPicture ? 'slideshowLast' : kind;
+  return t(`settings.mediaPage.kind.${key}`, { name: use.name || t('settings.mediaPage.unnamed') });
 }
+
+/** One file a delete or move left where it was, and the slideshow (if any)
+ *  whose last picture it is. */
+interface KeptFile {
+  path: string;
+  file: string;
+  slideshow?: string;
+}
+
+/** A 409's where-used list as a kept file: a slideshow in it means the file
+ *  was that slideshow's last picture (nothing else about a slideshow blocks). */
+function keptFile(t: ReturnType<typeof useTranslate>, path: string, usage: readonly MediaUse[]): KeptFile {
+  const slideshow = usage.find((use) => use.kind === 'slideshow');
+  return {
+    path,
+    file: fileNameOf(path),
+    ...(slideshow ? { slideshow: slideshow.name || t('settings.mediaPage.unnamed') } : {}),
+  };
+}
+
+/** Badges sit on the photo itself, so they carry their own dark backing
+ *  and read the same on a pale sky as on a night shot, in either theme. */
+const BADGE_CLASS = 'absolute right-[7px] top-[7px] flex items-center gap-1 rounded-full border bg-black/60 px-2 py-[2px] text-[9.5px] font-bold uppercase tracking-wide';
 
 /** Neutral checker under every thumbnail, so a dark or transparent picture
  *  still reads as a picture against the dark card. */
@@ -83,9 +101,9 @@ export default function MediaLibraryPage() {
   const [kind, setKind] = useState<KindFilter>('all');
   const [unusedOnly, setUnusedOnly] = useState(false);
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState<SortKey>('name');
+  const [sort, setSort] = useState<MediaSortKey>('name');
   const [selected, setSelected] = useState<Set<string>>(new Set());
-  const [refused, setRefused] = useState<string[]>([]);
+  const [refused, setRefused] = useState<KeptFile[]>([]);
   const [deleteFailed, setDeleteFailed] = useState(0);
   const [outcome, setOutcome] = useState<Outcome | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -129,24 +147,29 @@ export default function MediaLibraryPage() {
 
   const loading = inventory === null && !loadFailed;
   const items = inventory?.items ?? [];
-  const uses = inventory?.usage ?? {};
+  const uses = useMemo(() => inventory?.usage ?? {}, [inventory]);
   const directories = inventory?.directories ?? [];
   const missing = inventory?.missing ?? [];
   const storage = inventory?.storage;
   const usesOf = (path: string): MediaUse[] => uses[path] ?? [];
+  // A file is locked when a screen depends on it, or when it is the last
+  // picture a slideshow has; the other pictures a slideshow plays can go.
+  const locks = useMemo(() => removalBlocksByFile(uses, 'delete'), [uses]);
   const query = search.trim().toLowerCase();
   const matches = (item: MediaInventoryItem, inFolder: string) =>
     (inFolder === 'all' || folderOf(item.path) === inFolder)
     && (kind === 'all' || item.kind === kind)
     && (!unusedOnly || usesOf(item.path).length === 0)
     && (!query || fileNameOf(item.path).toLowerCase().includes(query));
-  const visible = items.filter((item) => matches(item, folder)).sort(SORTERS[sort]);
+  const visible = items.filter((item) => matches(item, folder)).sort(MEDIA_SORTERS[sort]);
   const countIn = (f: string) => items.filter((item) => matches(item, f)).length;
   const bytesIn = (f: string) => items
     .filter((item) => f === 'all' || folderOf(item.path) === f)
     .reduce((sum, item) => sum + item.bytes, 0);
-  const usedByLines = (path: string): UsedByLine[] =>
-    usesOf(path).map((use) => ({ label: usageLabel(t, use), use }));
+  const usedByLines = (path: string): UsedByLine[] => {
+    const lock = locks.get(path) ?? [];
+    return usesOf(path).map((use) => ({ label: usageLabel(t, use, lock.includes(use)), use }));
+  };
   const currentFolder = folder === 'all' || folder === '' ? null : folder;
   const allVisibleSelected = visible.length > 0 && visible.every((item) => selected.has(item.path));
 
@@ -324,15 +347,16 @@ export default function MediaLibraryPage() {
     if (!confirmed) return;
     setBusy(true);
     clearOutcome();
-    const refusedNow: string[] = [];
+    const refusedNow: KeptFile[] = [];
     let failedNow = 0;
     let deletedAny = false;
     for (const path of paths) {
       try {
         const result = await deleteLibraryFile(path);
-        // 409: the config picked the file up since the page loaded.
+        // 409: a screen depends on it, or it is the last picture a slideshow
+        // still has once the ones before it in this batch are gone.
         if (result.ok) deletedAny = true;
-        else if (result.status === 409) refusedNow.push(fileNameOf(path));
+        else if (result.status === 409) refusedNow.push(keptFile(t, path, result.usage));
         else failedNow += 1;
       } catch (err) {
         log.debug('Failed to delete background:', err);
@@ -375,6 +399,8 @@ export default function MediaLibraryPage() {
       const refsText = result.data.rewritten > 0
         ? ` ${t('settings.mediaPage.placesUpdated', { count: result.data.rewritten })}`
         : '';
+      // Each slideshow's last picture stays where it was, so no wall goes blank.
+      setRefused(result.data.kept.map((k) => keptFile(t, k.path, k.usage)));
       await finish({ ok: true, text: movedText + refsText });
     } catch (err) {
       if (!isSessionExpired(err)) setOutcome({ ok: false, text: t('settings.mediaPage.moveFailed') });
@@ -778,7 +804,7 @@ export default function MediaLibraryPage() {
           {t('settings.mediaPage.sort')}
           <select
             value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
+            onChange={(e) => setSort(e.target.value as MediaSortKey)}
             data-testid="media-sort"
             className={INPUT_CLASS}
           >
@@ -814,9 +840,12 @@ export default function MediaLibraryPage() {
 
       {(refused.length > 0 || deleteFailed > 0 || outcome) && (
         <div className="mb-3 flex flex-col gap-1" data-testid="media-refused">
-          {refused.map((file) => (
-            <p key={file} className="text-xs text-hs-danger">
-              {t('settings.mediaPage.refused', { file })}
+          {refused.map((kept) => (
+            // Keeping a slideshow's last picture is the rule working, not a failure.
+            <p key={kept.path} className={clsx('text-xs', kept.slideshow ? 'text-hs-warning' : 'text-hs-danger')}>
+              {kept.slideshow
+                ? t('settings.mediaPage.keptLast', { file: kept.file, name: kept.slideshow })
+                : t('settings.mediaPage.refused', { file: kept.file })}
             </p>
           ))}
           {deleteFailed > 0 && (
@@ -841,6 +870,10 @@ export default function MediaLibraryPage() {
           const name = fileNameOf(item.path);
           const lines = usedByLines(item.path);
           const isUsed = lines.length > 0;
+          // In use: a screen depends on it (or it is a slideshow's last
+          // picture). Otherwise a used file is only playing in slideshows,
+          // which carry on with their other pictures, so it can go.
+          const isLocked = locks.has(item.path);
           const isSelected = selected.has(item.path);
           const usedByTitle = lines.map((line) => line.label).join(', ');
           return (
@@ -914,7 +947,7 @@ export default function MediaLibraryPage() {
                 </div>
               </button>
               {/* Used files can be selected too: a move keeps every reference
-                  working, and a delete simply reports them as still in use. */}
+                  working, and a delete simply reports the ones it kept. */}
               <input
                 type="checkbox"
                 checked={isSelected}
@@ -925,7 +958,7 @@ export default function MediaLibraryPage() {
                 onChange={() => { /* handled on click so the shift key is available */ }}
                 className="absolute left-[7px] top-[7px] h-4 w-4 cursor-pointer accent-[var(--hs-accent)]"
               />
-              {!isUsed && (
+              {!isLocked && (
                 <button
                   type="button"
                   onClick={() => void deleteFiles([item.path])}
@@ -933,23 +966,37 @@ export default function MediaLibraryPage() {
                   aria-label={t('settings.mediaPage.deleteOne', { file: name })}
                   title={t('settings.mediaPage.deleteConfirm')}
                   data-testid="media-tile-delete"
-                  className="absolute right-[7px] top-[7px] flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 opacity-0 transition-opacity hover:bg-hs-danger hover:text-white focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-0"
+                  className={clsx(
+                    'absolute right-[7px] flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 opacity-0 transition-opacity hover:bg-hs-danger hover:text-white focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-0',
+                    isUsed ? 'top-[30px]' : 'top-[7px]',
+                  )}
                 >
                   <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                 </button>
               )}
               {isUsed && (
                 <>
-                  <span
-                    data-in-use=""
-                    title={usedByTitle}
-                    className="absolute right-[7px] top-[7px] rounded-full border border-hs-warning/40 bg-hs-warning/15 px-2 py-[2px] text-[9.5px] font-bold uppercase tracking-wide text-hs-warning"
-                  >
-                    {t('settings.mediaPage.inUse')}
-                  </span>
-                  {/* A used file cannot be deleted, so the free slot under
-                      the badge offers the one change that keeps every
-                      reference working: swapping the file in place. */}
+                  {isLocked ? (
+                    <span
+                      data-in-use=""
+                      title={usedByTitle}
+                      className={clsx(BADGE_CLASS, 'border-amber-400/55 text-amber-400')}
+                    >
+                      {t('settings.mediaPage.inUse')}
+                    </span>
+                  ) : (
+                    <span
+                      data-slideshow=""
+                      title={usedByTitle}
+                      className={clsx(BADGE_CLASS, 'border-green-400/55 text-green-400')}
+                    >
+                      <Monitor className="h-[11px] w-[11px]" aria-hidden="true" />
+                      {t('settings.mediaPage.inSlideshow')}
+                    </span>
+                  )}
+                  {/* Swapping the file in place keeps every reference
+                      working, so it is offered on every used file: the only
+                      change a locked one allows, and under Delete on the rest. */}
                   <button
                     type="button"
                     onClick={() => pickReplacement(item.path, item.kind)}
@@ -957,7 +1004,10 @@ export default function MediaLibraryPage() {
                     aria-label={t('settings.mediaPage.replaceOne', { file: name })}
                     title={t('settings.mediaPage.replaceHint', { ext: extensionOf(item.path) })}
                     data-testid="media-tile-replace"
-                    className="absolute right-[7px] top-[30px] flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 opacity-0 transition-opacity hover:bg-hs-accent hover:text-white focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-0"
+                    className={clsx(
+                      'absolute right-[7px] flex h-7 w-7 items-center justify-center rounded-full bg-black/65 text-white/85 opacity-0 transition-opacity hover:bg-hs-accent hover:text-white focus-visible:opacity-100 group-hover:opacity-100 disabled:opacity-0',
+                      isLocked ? 'top-[30px]' : 'top-[62px]',
+                    )}
                   >
                     <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
@@ -999,12 +1049,17 @@ export default function MediaLibraryPage() {
         <MediaViewer
           item={viewingItem}
           usedBy={usedByLines(viewingItem.path)}
+          lockHint={locks.get(viewingItem.path)?.some((use) => use.kind === 'slideshow')
+            ? folderOf(viewingItem.path)
+              ? t('settings.mediaPage.viewer.lastPictureHint', { folder: folderOf(viewingItem.path) })
+              : t('settings.mediaPage.viewer.lastPictureHintTop')
+            : undefined}
           index={viewingIndex}
           total={visible.length}
           t={t}
           onClose={closeViewer}
           onStep={stepViewer}
-          onDelete={usesOf(viewingItem.path).length === 0 ? () => void deleteFiles([viewingItem.path]) : undefined}
+          onDelete={locks.has(viewingItem.path) ? undefined : () => void deleteFiles([viewingItem.path])}
           onReplace={(file) => void replaceFile(viewingItem.path, file)}
           onOpenUse={openUse}
           busy={busy}

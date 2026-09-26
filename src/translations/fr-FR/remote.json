@@ -581,30 +581,226 @@
   },
   "photosTab": {
     "header": "Photos",
-    "newFolderButton": "Nouveau dossier",
-    "newFolderPlaceholder": "Nom du dossier",
-    "createButton": "Créer",
-    "uploadingProgress": "Téléversement {current} sur {total}…",
-    "uploadFailedFor": "Échec du téléversement pour {name}",
-    "uploadFailed": "Échec du téléversement",
-    "uploadedSingular": "{n} photo téléversée",
-    "uploadedPlural": "{n} photos téléversées",
-    "photoDeleted": "Photo supprimée",
-    "deleteFailed": "Impossible de supprimer la photo",
-    "folderCreated": "Dossier créé",
-    "failedCreateFolder": "Impossible de créer le dossier",
-    "uploadButton": "Téléverser des photos",
-    "emptyTitle": "Aucune photo dans ce dossier",
-    "emptyHint": "Appuie sur « Téléverser des photos » pour ajouter des images",
-    "deletingButton": "Suppression…",
-    "deleteAriaLabel": "Supprimer la photo",
-    "dismissErrorAriaLabel": "Fermer l'erreur",
+    "select": "Sélectionner",
+    "selectedCount": {
+      "one": "{count} sélectionnée",
+      "other": "{count} sélectionnées"
+    },
+    "selectAll": "Tout sélectionner",
+    "selectNone": "Tout désélectionner",
+    "foldersLabel": "Dossiers",
     "mainFolderTab": "Dossier principal",
-    "deleteConfirmTitle": "Supprimer cette photo ?",
-    "deleteConfirmDescription": "Elle disparaît de l'écran et définitivement de la bibliothèque de photos.",
+    "onWall": "Sur le mur",
+    "newFolder": "Nouveau dossier",
+    "showingOn": "Visible sur {walls}",
+    "notOnWall": "Pas sur le mur",
+    "notOnWallHint": "{contents}. Pour afficher ce dossier sur le mur, choisis-le pour un diaporama depuis un ordinateur.",
+    "notOnWallShort": "Pas sur le mur · {contents}",
+    "unnamedWall": "Écran sans nom",
+    "unnamedScreen": "sans nom",
+    "empty": "Vide",
+    "what": {
+      "photos": {
+        "one": "1 photo",
+        "other": "{count} photos"
+      },
+      "videos": {
+        "one": "1 vidéo",
+        "other": "{count} vidéos"
+      },
+      "mixed": {
+        "one": "1 photo ou vidéo",
+        "other": "{count} photos et vidéos"
+      }
+    },
+    "photosAndVideos": "{photos} et {videos}",
+    "photoLabel": "Photo {n}",
+    "videoLabel": "Vidéo {n}",
+    "addButton": "Ajouter des photos et des vidéos",
+    "addFromGoogle": "Google Photos",
+    "addFromICloud": "Lien iCloud",
+    "space": "Les photos et vidéos occupent {size}. Il reste {free} sur le hub.",
+    "spaceNoFree": "Les photos et vidéos occupent {size}.",
+    "spaceLow": "Presque plein : il ne reste que {free} sur le hub. Supprime les photos dont tu n'as plus besoin pour faire de la place.",
+    "emptyTitle": "Rien dans {folder} pour l'instant",
+    "emptyHint": "Ajoute des photos ou des vidéos depuis ce téléphone.",
+    "loadFailed": "Impossible de charger tes photos.",
+    "tryAgain": "Réessayer",
+    "showsOn": {
+      "one": "Elle s'affichera sur {walls}.",
+      "other": "Elles s'afficheront sur {walls}."
+    },
+    "folderNotOnWall": "Ce dossier n'est pas encore sur le mur.",
+    "slideshowPhotosOnly": "Le diaporama qui utilise {folder} ne montre que les photos.",
+    "slideshowVideosOnly": "Le diaporama qui utilise {folder} ne montre que les vidéos.",
+    "upload": {
+      "progress": "Ajout de {current} sur {total}",
+      "left": "Encore {size}",
+      "shrinking": "Les grosses photos sont d'abord réduites pour être envoyées plus vite.",
+      "added": {
+        "one": "1 ajoutée.",
+        "other": "{count} ajoutées."
+      },
+      "failedHeading": {
+        "one": "1 n'a pas pu être ajoutée",
+        "other": "{count} n'ont pas pu être ajoutées"
+      },
+      "tooBig": "{name} fait plus de {size}.",
+      "notMedia": "{name} n'est pas une photo ou une vidéo que le mur peut afficher.",
+      "wontPlay": "{name} est un type de vidéo que le mur ne peut pas lire. Sur un iPhone, choisis « Le plus compatible » dans Réglages > Appareil photo > Formats.",
+      "failed": "Impossible d'envoyer {name}. Réessaie.",
+      "close": "Fermer",
+      "showNow": "Afficher sur le mur maintenant"
+    },
+    "showOnWall": "Afficher sur le mur",
+    "show": {
+      "sent": "Affichée sur {where} pendant une minute.",
+      "everyWall": "tous les murs",
+      "theWall": "le mur",
+      "failed": "Impossible de joindre le mur. Réessaie.",
+      "gonePhoto": "Cette photo n'est plus là.",
+      "goneVideo": "Cette vidéo n'est plus là."
+    },
+    "viewer": {
+      "label": "Photo",
+      "count": "{n} sur {total}",
+      "added": "Ajoutée le {date}",
+      "videoDetails": "Vidéo · {size}",
+      "alone": {
+        "screen": "Fond de l'écran {screen}",
+        "dayRule": "Utilisée par une règle de jour sur l'écran {screen}",
+        "module": "Affichée seule sur l'écran {screen}",
+        "other": "Utilisée dans les réglages"
+      },
+      "aloneNote": {
+        "screen": "Impossible de la supprimer tant qu'elle sert de fond. Change d'abord le fond depuis un ordinateur.",
+        "dayRule": "Impossible de la supprimer tant qu'une règle de jour l'utilise. Modifie d'abord la règle depuis un ordinateur.",
+        "module": "Impossible de la supprimer tant qu'un écran l'affiche. Modifie d'abord cet écran depuis un ordinateur.",
+        "other": "Impossible de la supprimer tant que quelque chose l'utilise. Modifie d'abord ce réglage depuis un ordinateur."
+      },
+      "onlyPhoto": "Le diaporama sur {walls} n'a plus que cette photo. Ajoute une autre photo avant de supprimer ou de déplacer celle-ci.",
+      "onlyVideo": "Le diaporama sur {walls} n'a plus que cette vidéo. Ajoute une autre vidéo avant de supprimer ou de déplacer celle-ci.",
+      "onlyPhotoAnywhere": "Un diaporama n'a plus que cette photo. Ajoute une autre photo avant de supprimer ou de déplacer celle-ci.",
+      "onlyVideoAnywhere": "Un diaporama n'a plus que cette vidéo. Ajoute une autre vidéo avant de supprimer ou de déplacer celle-ci."
+    },
+    "move": "Déplacer",
+    "moveSheet": {
+      "title": "Déplacer {what} vers",
+      "here": "Tu es ici",
+      "newFolder": "Nouveau dossier"
+    },
+    "movedTo": {
+      "one": "Déplacée dans {folder}.",
+      "other": "{count} déplacées dans {folder}."
+    },
+    "moveClash": "Ce dossier contient déjà un fichier du même nom.",
+    "moveFailed": "Le déplacement n'a pas marché. Réessaie.",
+    "deletePhotoTitle": "Supprimer cette photo ?",
+    "deleteVideoTitle": "Supprimer cette vidéo ?",
+    "deleteManyTitle": "Supprimer {what} ?",
+    "deleteManyButton": "Supprimer {what}",
+    "deletePhotoOnWall": "Elle disparaîtra définitivement de la bibliothèque de photos et du diaporama sur {walls}.",
+    "deleteVideoOnWall": "Elle disparaîtra définitivement de la bibliothèque de photos et du diaporama sur {walls}.",
+    "deletePhotoOffWall": "Elle disparaîtra définitivement de la bibliothèque de photos.",
+    "deleteVideoOffWall": "Elle disparaîtra définitivement de la bibliothèque de photos.",
+    "deleteManyOnWall": "Elles disparaîtront définitivement de la bibliothèque de photos et du diaporama sur {walls}.",
+    "deleteManyOffWall": "Elles disparaîtront définitivement de la bibliothèque de photos.",
+    "photoDeleted": "Photo supprimée",
+    "videoDeleted": "Vidéo supprimée",
+    "deleteFailed": "Impossible de la supprimer. Réessaie.",
+    "deleteRefused": "Le mur en a encore besoin, alors elle est restée.",
+    "deleted": {
+      "one": "1 supprimée.",
+      "other": "{count} supprimées."
+    },
+    "keptLast": {
+      "one": "1 est restée pour que le diaporama sur {walls} ne soit pas vide.",
+      "other": "{count} sont restées pour qu'aucun diaporama ne soit vide."
+    },
+    "keptLastAnywhere": {
+      "one": "1 est restée pour qu'un diaporama ne soit pas vide.",
+      "other": "{count} sont restées pour qu'aucun diaporama ne soit vide."
+    },
+    "keptAlone": {
+      "one": "1 est restée car elle est utilisée sur un écran.",
+      "other": "{count} sont restées car elles sont utilisées sur un écran."
+    },
+    "deleteFailedCount": {
+      "one": "1 n'a pas pu être supprimée. Réessaie.",
+      "other": "{count} n'ont pas pu être supprimées. Réessaie."
+    },
+    "folderMenu": {
+      "label": "Options du dossier",
+      "rename": "Renommer",
+      "newInside": "Nouveau dossier dans {folder}",
+      "delete": "Supprimer le dossier",
+      "hasFiles": "Déplace ou supprime d'abord ce qu'il contient : {what}.",
+      "hasFolders": "Supprime d'abord les dossiers qu'il contient.",
+      "onWall": "Ce dossier s'affiche sur {walls}. Depuis un ordinateur, choisis d'abord un autre dossier à sa place."
+    },
+    "nameSheet": {
+      "newTitle": "Nouveau dossier",
+      "renameTitle": "Renommer {folder}",
+      "newName": "Nouveau nom",
+      "create": "Créer",
+      "startsOffWall": "Le dossier n'apparaîtra sur le mur qu'une fois choisi pour un diaporama.",
+      "wallFollows": "Ce dossier restera affiché sur {walls} sous son nouveau nom."
+    },
     "savedAsHint": "Sera enregistré sous {name}",
-    "deleteInUse": "Cette photo est encore affichée sur un écran, elle ne peut donc pas être supprimée",
-    "deleteInUseOn": "Cette photo est encore utilisée sur {where}, elle ne peut donc pas être supprimée"
+    "folderCreated": "Dossier créé",
+    "failedCreateFolder": "Impossible de créer le dossier. Réessaie.",
+    "renamed": "Renommé en {name}",
+    "renameFailed": "Impossible de renommer le dossier. Réessaie.",
+    "folderExists": "Il y a déjà un dossier de ce nom ici.",
+    "deleteFolderTitle": "Supprimer le dossier {folder} ?",
+    "deleteFolderBody": "Il est vide, donc rien ne changera sur le mur.",
+    "deleteFolderButton": "Supprimer le dossier",
+    "folderDeleted": "Dossier supprimé",
+    "deleteFolderFailed": "Impossible de supprimer le dossier. Réessaie.",
+    "folderNotEmpty": "Ce dossier n'est pas vide. Déplace ou supprime d'abord ce qu'il contient.",
+    "imports": {
+      "googleTitle": "Ajouter depuis Google Photos",
+      "googleIntro": "Choisis des photos dans Google Photos, puis reviens ici. Elles seront ajoutées dans {folder}.",
+      "googleOpen": "Ouvrir Google Photos",
+      "googlePreparing": "Préparation de Google Photos…",
+      "googleWaiting": "En attente de tes choix…",
+      "googleExpired": "Google Photos a arrêté d'attendre. Réessaie.",
+      "googleFailed": "Impossible de joindre Google Photos. Réessaie.",
+      "icloudTitle": "Ajouter depuis un lien iCloud",
+      "icloudIntro": "Colle le lien d'un album partagé, ou un lien créé avec « Copier le lien iCloud » dans l'app Photos. Tout son contenu sera ajouté dans {folder}.",
+      "icloudPlaceholder": "Colle le lien ici",
+      "icloudAdd": "Ajouter",
+      "icloudErrors": {
+        "invalid": "Ça ne ressemble pas à un lien de photos iCloud.",
+        "expired": "Ce lien a expiré. Crée un nouveau lien dans l'app Photos.",
+        "busy": "Des photos sont encore en cours d'ajout. Réessaie dans une minute.",
+        "tooMany": "C'est trop d'un coup. Partage moins de photos et réessaie.",
+        "lost": "Le hub a redémarré pendant l'ajout. Réessaie.",
+        "unreachable": "Impossible de joindre iCloud. Réessaie."
+      },
+      "progress": "Ajout de {done} sur {total}",
+      "nothingPicked": "Rien n'a été choisi.",
+      "busy": "Des photos sont encore en cours d'ajout. Réessaie dans une minute.",
+      "tooMany": "C'est trop d'un coup. Choisis-en moins et réessaie.",
+      "lost": "Le hub a redémarré pendant l'ajout. Réessaie.",
+      "tryAgain": "Réessayer",
+      "alreadyHere": {
+        "one": "1 était déjà là.",
+        "other": "{count} étaient déjà là."
+      },
+      "couldNotAdd": {
+        "one": "1 n'a pas pu être ajoutée.",
+        "other": "{count} n'ont pas pu être ajoutées."
+      },
+      "nothingFound": "Rien à ajouter. L'album est vide ou son lien ne marche plus."
+    }
+  },
+  "slideshowControls": {
+    "title": "Diaporama",
+    "back": "Photo précédente",
+    "next": "Photo suivante",
+    "pause": "Mettre le diaporama en pause",
+    "play": "Reprendre le diaporama"
   },
   "choresKidView": {
     "notConfigured": "Aucune tâche pour l'instant. Demande à un grand d'ajouter un tableau de tâches à l'écran.",

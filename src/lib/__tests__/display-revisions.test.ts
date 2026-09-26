@@ -20,6 +20,7 @@ import { configRevision } from '@/lib/config';
 import { householdToday, hubTimezone } from '@/lib/household-day';
 import { wallEtag } from '@/lib/wall-config';
 import { readDisplayRevisions } from '@/lib/display-revisions';
+import { bumpLibraryRevision, libraryRevision } from '@/lib/library-revision';
 
 const CONFIG = { screens: [], settings: { timezone: 'UTC' } } as unknown as ScreenConfiguration;
 
@@ -42,7 +43,16 @@ describe('readDisplayRevisions', () => {
       timer: 'timer-1',
       chores: '"chores-2026-09-25"',
       rewards: '"rewards-2026-09-25"',
+      library: libraryRevision(),
     });
+  });
+
+  it('names a new library revision once an upload, delete or move bumps it', async () => {
+    const before = (await readDisplayRevisions()).library;
+    bumpLibraryRevision();
+    const after = (await readDisplayRevisions()).library;
+    expect(after).toBeDefined();
+    expect(after).not.toBe(before);
   });
 
   it("names the chores and rewards by the ETags their reads answer with on the household's day", async () => {

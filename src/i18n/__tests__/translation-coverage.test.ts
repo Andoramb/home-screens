@@ -326,6 +326,9 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'modules|video.name',
     // "Offline" is the standard word in Danish.
     'remote|displayHero.stateOffline',
+    // "Video" is the same word here (the phone's photo viewer and tile labels).
+    'remote|photosTab.videoLabel',
+    'remote|photosTab.viewer.videoDetails',
   ]),
   'de-DE': new Set([
     // "Bonus" is the same word in this language (bonus chores).
@@ -414,6 +417,9 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|rewardForm.nameLabel',
     'remote|settingsSheet.system.hostLabel',
     'remote|timers.routineName',
+    // "Video" is the same word here (the phone's photo viewer and tile labels).
+    'remote|photosTab.videoLabel',
+    'remote|photosTab.viewer.videoDetails',
   ]),
   'es-ES': new Set([
     // 'Color' is the Spanish word too
@@ -631,6 +637,11 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|timers.minutesShort',
     'remote|timers.routines',
     'remote|timers.stepMinutes',
+    // "Photo" and "Google Photos" are the same words in French (the phone's Photos tab).
+    'remote|photosTab.what.photos',
+    'remote|photosTab.photoLabel',
+    'remote|photosTab.addFromGoogle',
+    'remote|photosTab.viewer.label',
   ]),
   'nl-NL': new Set([
     // "Bonus" is the same word in this language (bonus chores).
@@ -773,6 +784,9 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|timers.secUnit',
     'remote|timers.secondsShort',
     'remote|timers.title',
+    // "Video" is the same word here (the phone's photo viewer and tile labels).
+    'remote|photosTab.videoLabel',
+    'remote|photosTab.viewer.videoDetails',
   ]),
   'pt-BR': new Set([
     'remote|lists.itemSheet.textLabel',

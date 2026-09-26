@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "Para telas com Raspberry Pi. A tela fica totalmente escura e leva alguns segundos para voltar quando alguém a acorda. Deixe isso desligado se a sua tela não volta a ligar sozinha."
     },
     "mediaPage": {
-      "description": "Tudo o que foi enviado para este hub, em um só lugar. Arquivos que ainda estão em uso não podem ser excluídos.",
+      "description": "Tudo o que foi enviado para este hub, em um só lugar. Arquivos de que uma tela depende não podem ser excluídos, e uma apresentação sempre fica com a última foto.",
       "upload": "Enviar",
       "dropzone": "Arraste fotos ou vídeos para aqui, ou clique para escolher, quantos você quiser",
       "saveInto": "Salvar em",
@@ -1128,6 +1128,7 @@
       "images": "Fotos",
       "videos": "Vídeos",
       "inUse": "Em uso",
+      "inSlideshow": "Apresentação",
       "usedBy": "Usado por",
       "kind": {
         "screen": "Tela '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Módulo em '{name}'",
         "other": "Em algum lugar das configurações",
         "slideshow": "Apresentação em '{name}'",
+        "slideshowLast": "Apresentação em '{name}' (a última foto dela)",
         "rotation": "Fundo rotativo exibido em uma tela agora"
       },
       "selected": "{count} selecionados",
@@ -1143,9 +1145,10 @@
         "one": "Excluir 1 arquivo?",
         "other": "Excluir {count} arquivos?"
       },
-      "deleteMessage": "Eles desaparecerão deste hub para todas as telas. Arquivos que ainda estão em uso não podem ser excluídos, então nenhuma tela pode quebrar.",
+      "deleteMessage": "Eles vão sumir deste hub para sempre. As apresentações seguem com as outras fotos, e os arquivos de que uma tela depende são mantidos, para que nenhuma tela fique vazia.",
       "deleteConfirm": "Excluir",
       "refused": "{file} ainda está em uso e não foi excluído",
+      "keptLast": "{file} foi mantido: é a última foto da apresentação em '{name}'.",
       "loading": "Carregando suas fotos e vídeos",
       "emptyFiltered": "Nada corresponde a este filtro",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Tipo",
         "dimensions": "Tamanho em pixels",
         "size": "Tamanho do arquivo",
-        "notUsed": "Ainda não é usado em lugar nenhum"
+        "notUsed": "Ainda não é usado em lugar nenhum",
+        "lastPictureHint": "A última foto de uma apresentação não pode ser excluída. Primeiro, adicione outra em {folder}.",
+        "lastPictureHintTop": "A última foto de uma apresentação não pode ser excluída. Primeiro, adicione outra no nível superior da biblioteca."
       },
       "unusedOnly": "Só não usados",
       "storage": "A biblioteca usa {size}, {free} livres neste hub",
@@ -1191,7 +1196,7 @@
         "one": "Mover 1 arquivo?",
         "other": "Mover {count} arquivos?"
       },
-      "moveMessage": "Tudo o que mostra esses arquivos vai segui-los para a nova pasta.",
+      "moveMessage": "As telas que usam esses arquivos vão segui-los para a nova pasta. Uma foto que sai da pasta de uma apresentação também sai dessa apresentação.",
       "moveConfirm": "Mover",
       "moved": {
         "one": "1 arquivo movido",

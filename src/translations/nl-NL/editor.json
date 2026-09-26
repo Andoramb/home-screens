@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "Voor Raspberry Pi-displays. Het scherm gaat helemaal op zwart en heeft een paar seconden nodig om terug te komen als iemand het wekt. Laat dit uit als je scherm niet vanzelf weer aangaat."
     },
     "mediaPage": {
-      "description": "Alles wat naar deze hub is geüpload, op één plek. Bestanden die nog ergens worden gebruikt, kunnen niet worden verwijderd.",
+      "description": "Alles wat naar deze hub is geüpload, op één plek. Bestanden die een scherm nodig heeft, kunnen niet worden verwijderd, en de laatste afbeelding van een diavoorstelling blijft altijd staan.",
       "upload": "Uploaden",
       "dropzone": "Sleep afbeeldingen of video's hierheen, of klik om te kiezen, zoveel als je wilt",
       "saveInto": "Opslaan in",
@@ -1128,6 +1128,7 @@
       "images": "Afbeeldingen",
       "videos": "Video's",
       "inUse": "In gebruik",
+      "inSlideshow": "Diavoorstelling",
       "usedBy": "Gebruikt door",
       "kind": {
         "screen": "Scherm '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Module op '{name}'",
         "other": "Ergens in de instellingen",
         "slideshow": "Diavoorstelling op '{name}'",
+        "slideshowLast": "Diavoorstelling op '{name}' (de laatste afbeelding)",
         "rotation": "Wisselende achtergrond die nu op een scherm staat"
       },
       "selected": "{count} geselecteerd",
@@ -1143,9 +1145,10 @@
         "one": "1 bestand verwijderen?",
         "other": "{count} bestanden verwijderen?"
       },
-      "deleteMessage": "Ze zijn daarna op deze hub voor elk scherm weg. Bestanden die nog worden gebruikt, kunnen niet worden verwijderd, dus er kan niets kapot.",
+      "deleteMessage": "Ze verdwijnen voorgoed van deze hub. Diavoorstellingen gaan verder met hun andere afbeeldingen. Bestanden die een scherm nodig heeft, blijven staan, zodat er geen scherm leeg raakt.",
       "deleteConfirm": "Verwijderen",
       "refused": "{file} is nog in gebruik en is niet verwijderd",
+      "keptLast": "{file} is blijven staan: het is de laatste afbeelding in de diavoorstelling op '{name}'.",
       "loading": "Je afbeeldingen en video's worden geladen",
       "emptyFiltered": "Niets past bij dit filter",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Soort",
         "dimensions": "Grootte in pixels",
         "size": "Bestandsgrootte",
-        "notUsed": "Nog nergens in gebruik"
+        "notUsed": "Nog nergens in gebruik",
+        "lastPictureHint": "De laatste afbeelding van een diavoorstelling kan niet worden verwijderd. Voeg eerst nog een afbeelding toe aan {folder}.",
+        "lastPictureHintTop": "De laatste afbeelding van een diavoorstelling kan niet worden verwijderd. Voeg eerst nog een afbeelding toe aan het bovenste niveau van de bibliotheek."
       },
       "unusedOnly": "Alleen ongebruikt",
       "storage": "De bibliotheek gebruikt {size}, {free} vrij op deze hub",
@@ -1191,7 +1196,7 @@
         "one": "1 bestand verplaatsen?",
         "other": "{count} bestanden verplaatsen?"
       },
-      "moveMessage": "Alles wat deze bestanden toont, volgt ze naar de nieuwe map.",
+      "moveMessage": "Schermen die deze bestanden gebruiken, volgen ze naar de nieuwe map. Een afbeelding die je uit de map van een diavoorstelling haalt, verdwijnt uit die diavoorstelling.",
       "moveConfirm": "Verplaatsen",
       "moved": {
         "one": "1 bestand verplaatst",

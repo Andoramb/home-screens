@@ -8,12 +8,19 @@ const SESSION_EXPIRED_MESSAGE = 'Session expired';
  */
 export async function editorFetch(url: string, options?: RequestInit): Promise<Response> {
   const res = await fetch(url, options);
-  if (res.status === 401) {
-    const from = window.location.pathname + window.location.search;
-    window.location.href = `/login?from=${encodeURIComponent(from)}`;
-    throw new Error(SESSION_EXPIRED_MESSAGE);
-  }
+  if (res.status === 401) throw sessionExpired();
   return res;
+}
+
+/**
+ * Send the page to the login screen, and hand back the error `editorFetch`
+ * throws for it, for the requests that cannot go through `editorFetch` (an
+ * upload that reports its progress runs on XMLHttpRequest).
+ */
+export function sessionExpired(): Error {
+  const from = window.location.pathname + window.location.search;
+  window.location.href = `/login?from=${encodeURIComponent(from)}`;
+  return new Error(SESSION_EXPIRED_MESSAGE);
 }
 
 /** True when an error was thrown by editorFetch in response to a 401.

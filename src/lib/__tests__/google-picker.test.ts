@@ -33,8 +33,6 @@ const mockSafeLibraryPath = vi.fn();
 vi.mock('@/lib/library-files', () => ({
   writeLibraryFile: (...args: unknown[]) => mockWriteLibraryFile(...args),
   safeLibraryPath: (...args: unknown[]) => mockSafeLibraryPath(...args),
-  MAX_VIDEO_BYTES: 200 * 1024 * 1024,
-  MAX_IMPORT_IMAGE_BYTES: 50 * 1024 * 1024,
 }));
 
 const { getSecret } = await import('@/lib/secrets');

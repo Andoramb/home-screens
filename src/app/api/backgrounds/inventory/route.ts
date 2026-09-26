@@ -3,14 +3,10 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { imageSize } from 'image-size';
 import { readConfig } from '@/lib/config';
-import { scanMediaUsage, scanMissingMedia } from '@/lib/media-usage';
+import { scanMediaUsage, scanMissingMedia, slideshowFolders } from '@/lib/media-usage';
 import { withAuth } from '@/lib/api-utils';
-import {
-  IMAGE_FILE_RE,
-  MAX_IMPORT_IMAGE_BYTES,
-  VIDEO_FILE_RE,
-  libraryRoot,
-} from '@/lib/library-files';
+import { libraryRoot } from '@/lib/library-files';
+import { IMAGE_FILE_RE, MAX_IMPORT_IMAGE_BYTES, VIDEO_FILE_RE } from '@/lib/media-formats';
 import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
 import type {
   MediaInventory,
@@ -208,6 +204,6 @@ export const GET = withAuth(async () => {
     ...(await volumeSpace()),
   };
 
-  const inventory: MediaInventory = { items, directories, usage, missing, storage };
+  const inventory: MediaInventory = { items, directories, usage, missing, storage, slideshows: slideshowFolders(config) };
   return NextResponse.json(inventory);
 }, 'Failed to build media inventory');

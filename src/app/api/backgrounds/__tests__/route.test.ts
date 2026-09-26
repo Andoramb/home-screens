@@ -23,6 +23,9 @@ const configState = vi.hoisted(() => ({ config: {} as unknown }));
 
 vi.mock('@/lib/config', () => ({
   readConfig: vi.fn(async () => configState.config),
+  // The delete runs its check and unlink inside the queued update; an
+  // unchanged config back means nothing is written.
+  updateConfigAtomic: vi.fn(async (mutator: (c: unknown) => unknown) => mutator(configState.config)),
 }));
 
 let tmpDir: string;
@@ -334,6 +337,29 @@ describe('GET /api/backgrounds', () => {
 });
 
 // ─── GET endpoint: media= typed lists ───────────────────────────
+
+describe('GET /api/backgrounds library revision', () => {
+  it('says which library revision a folder list reflects, and a new one after an upload', async () => {
+    const { GET, POST } = await getHandlers();
+    await fs.mkdir(path.join(bgsDir, 'trip'));
+
+    const before = (await GET(makeGetRequest({ directory: 'trip' }))).headers.get('X-Library-Revision');
+    expect(before).toMatch(/^[a-z0-9]+\.\d+$/);
+    // The same library, the same revision.
+    expect((await GET(makeGetRequest({ directory: 'trip', media: 'both' }))).headers.get('X-Library-Revision')).toBe(before);
+
+    const upload = await POST(makePostRequest([{ name: 'a.png', type: 'image/png', content: Buffer.from('png') }], 'trip'));
+    expect(upload.status).toBe(201);
+    expect((await GET(makeGetRequest({ directory: 'trip' }))).headers.get('X-Library-Revision')).not.toBe(before);
+  });
+
+  it('names no revision on a single-file lookup', async () => {
+    const { GET } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'one.jpg'), 'img');
+    const res = await GET(makeGetRequest({ file: 'one.jpg' }));
+    expect(res.headers.get('X-Library-Revision')).toBeNull();
+  });
+});
 
 describe('GET /api/backgrounds with media parameter', () => {
   beforeEach(async () => {
@@ -1063,6 +1089,58 @@ describe('DELETE /api/backgrounds in-use protection', () => {
     const res = await DELETE(makeDeleteRequest({ file: 'beach.jpg' }));
     expect(res.status).toBe(200);
     await expect(fs.access(path.join(bgsDir, 'beach.jpg'))).rejects.toThrow();
+  });
+
+  it('lets a slideshow picture go while the slideshow has another to show', async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Hall', modules: [
+        { type: 'photo-slideshow', config: { source: 'local', directory: 'nature' } },
+      ] }],
+    };
+    const { DELETE } = await getHandlers();
+    const abs = await seedNaturePng();
+    await fs.writeFile(path.join(bgsDir, 'nature', 'b.png'), 'img');
+
+    const first = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(first.status).toBe(200);
+    await expect(fs.access(abs)).rejects.toThrow();
+
+    // b.png is now all the slideshow has: it stays.
+    const last = await DELETE(makeDeleteRequest({ file: 'b.png', directory: 'nature' }));
+    expect(last.status).toBe(409);
+    expect((await last.json()).usage).toEqual([
+      { kind: 'slideshow', name: 'Hall', configPath: 'screens[0].modules[0].config.directory', screenId: 's1' },
+    ]);
+    await expect(fs.access(path.join(bgsDir, 'nature', 'b.png'))).resolves.toBeUndefined();
+  });
+
+  it("keeps a photos-only slideshow's last photo even with videos left beside it", async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Hall', modules: [
+        { type: 'photo-slideshow', config: { source: 'local', directory: 'nature' } },
+      ] }],
+    };
+    const { DELETE } = await getHandlers();
+    await seedNaturePng();
+    await fs.writeFile(path.join(bgsDir, 'nature', 'clip.mp4'), 'vid');
+
+    const photo = await DELETE(makeDeleteRequest({ file: 'a.png', directory: 'nature' }));
+    expect(photo.status).toBe(409);
+    // The video is nothing this slideshow plays, so it goes.
+    const video = await DELETE(makeDeleteRequest({ file: 'clip.mp4', directory: 'nature' }));
+    expect(video.status).toBe(200);
+  });
+
+  it("does not count the background rotation's downloads as a top-level slideshow's other pictures", async () => {
+    configState.config = {
+      screens: [{ id: 's1', name: 'Hall', modules: [{ type: 'fullscreen-photo', config: { directory: '' } }] }],
+    };
+    const { DELETE } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'only.jpg'), 'img');
+    await fs.writeFile(path.join(bgsDir, 'rotation-unsplash-x.jpg'), 'img');
+
+    const res = await DELETE(makeDeleteRequest({ file: 'only.jpg' }));
+    expect(res.status).toBe(409);
   });
 
   it('refuses every file inside a folder a slideshow shows', async () => {

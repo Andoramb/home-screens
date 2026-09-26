@@ -2,6 +2,8 @@ import { readConfig } from '@/lib/config';
 import { readChoreSnapshot } from '@/lib/chore-data';
 import { getAllScreens, getDisplayProfiles } from '@/lib/display-filter';
 import { resolveChoreModuleConfig } from '@/lib/chore-module-config';
+import { slideshowFolders } from '@/lib/media-usage';
+import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
 import RemoteClient from './RemoteClient';
 import { parseUpdateChannel } from '@/lib/semver';
 
@@ -64,17 +66,20 @@ export default async function RemotePage() {
   );
   const hasLists = allScreens.some((s) => s.modules.some((m) => m.type === 'todo'));
 
-  let photoDirectory = '';
-  let hasPhotos = false;
+  const hasPhotos = allScreens.some((s) => s.modules.some((m) => PHOTO_MODULE_TYPES.includes(m.type)));
+  // The Photos tab opens on the first folder a wall shows. Only a slideshow
+  // of the hub's own library counts: an iCloud, Immich or OneDrive one names
+  // no library folder, however its `directory` was left.
+  const photoDirectory = slideshowFolders(config)[0]?.folder ?? '';
+
+  // Screens whose photos the Control tab can step through, with the module
+  // types to address (a single-photo full-screen module has nothing to step).
+  const slideshowScreens: Record<string, string[]> = {};
   for (const screen of allScreens) {
-    for (const mod of screen.modules) {
-      if (PHOTO_MODULE_TYPES.includes(mod.type)) {
-        photoDirectory = (mod.config.directory as string) ?? '';
-        hasPhotos = true;
-        break;
-      }
-    }
-    if (hasPhotos) break;
+    const types = [...new Set(screen.modules
+      .filter((m) => PHOTO_MODULE_TYPES.includes(m.type) && !(m.type === 'fullscreen-photo' && isSinglePhotoMode(m.config)))
+      .map((m) => m.type))];
+    if (types.length > 0) slideshowScreens[screen.id] = types;
   }
 
   const backupReminder = {
@@ -88,7 +93,7 @@ export default async function RemotePage() {
 
   return (
     <RemoteClient
-      initialData={{ screens, displayScreens, profiles, activeProfile, choreConfig, choreData, hasLists, hasMeals, hasPhotos, photoDirectory, backupReminder, displays, displayProfiles, updateNotification, updateChannel }}
+      initialData={{ screens, displayScreens, profiles, activeProfile, choreConfig, choreData, hasLists, hasMeals, hasPhotos, photoDirectory, slideshowScreens, backupReminder, displays, displayProfiles, updateNotification, updateChannel }}
     />
   );
 }

@@ -581,30 +581,226 @@
   },
   "photosTab": {
     "header": "Fotos",
-    "newFolderButton": "Neuer Ordner",
-    "newFolderPlaceholder": "Ordnername",
-    "createButton": "Erstellen",
-    "uploadingProgress": "Lädt hoch {current} von {total}…",
-    "uploadFailedFor": "Hochladen fehlgeschlagen für {name}",
-    "uploadFailed": "Hochladen fehlgeschlagen",
-    "uploadedSingular": "{n} Foto hochgeladen",
-    "uploadedPlural": "{n} Fotos hochgeladen",
-    "photoDeleted": "Foto gelöscht",
-    "deleteFailed": "Foto konnte nicht gelöscht werden",
-    "folderCreated": "Ordner erstellt",
-    "failedCreateFolder": "Ordner konnte nicht erstellt werden",
-    "uploadButton": "Fotos hochladen",
-    "emptyTitle": "Keine Fotos in diesem Ordner",
-    "emptyHint": "Tippe auf „Fotos hochladen“, um Bilder hinzuzufügen",
-    "deletingButton": "Lösche…",
-    "deleteAriaLabel": "Foto löschen",
-    "dismissErrorAriaLabel": "Fehler schließen",
+    "select": "Auswählen",
+    "selectedCount": {
+      "one": "{count} ausgewählt",
+      "other": "{count} ausgewählt"
+    },
+    "selectAll": "Alle auswählen",
+    "selectNone": "Alle abwählen",
+    "foldersLabel": "Ordner",
     "mainFolderTab": "Hauptordner",
-    "deleteConfirmTitle": "Dieses Foto löschen?",
-    "deleteConfirmDescription": "Es verschwindet vom Display und endgültig aus der Fotobibliothek.",
+    "onWall": "An der Wand",
+    "newFolder": "Neuer Ordner",
+    "showingOn": "Zu sehen auf {walls}",
+    "notOnWall": "Nicht an der Wand",
+    "notOnWallHint": "{contents}. Wähle diesen Ordner am Computer für eine Diashow aus, damit er an der Wand zu sehen ist.",
+    "notOnWallShort": "Nicht an der Wand · {contents}",
+    "unnamedWall": "Bildschirm ohne Namen",
+    "unnamedScreen": "ohne Namen",
+    "empty": "Leer",
+    "what": {
+      "photos": {
+        "one": "1 Foto",
+        "other": "{count} Fotos"
+      },
+      "videos": {
+        "one": "1 Video",
+        "other": "{count} Videos"
+      },
+      "mixed": {
+        "one": "1 Foto oder Video",
+        "other": "{count} Fotos und Videos"
+      }
+    },
+    "photosAndVideos": "{photos} und {videos}",
+    "photoLabel": "Foto {n}",
+    "videoLabel": "Video {n}",
+    "addButton": "Fotos und Videos hinzufügen",
+    "addFromGoogle": "Google Fotos",
+    "addFromICloud": "iCloud-Link",
+    "space": "Fotos und Videos belegen {size}. Auf dem Hub sind noch {free} frei.",
+    "spaceNoFree": "Fotos und Videos belegen {size}.",
+    "spaceLow": "Fast voll: Auf dem Hub sind nur noch {free} frei. Lösche Fotos, die du nicht mehr brauchst, um Platz zu schaffen.",
+    "emptyTitle": "Noch nichts in „{folder}“",
+    "emptyHint": "Füge Fotos oder Videos von diesem Handy hinzu.",
+    "loadFailed": "Deine Fotos konnten nicht geladen werden.",
+    "tryAgain": "Erneut versuchen",
+    "showsOn": {
+      "one": "Es erscheint auf {walls}.",
+      "other": "Sie erscheinen auf {walls}."
+    },
+    "folderNotOnWall": "Dieser Ordner ist noch nicht an der Wand zu sehen.",
+    "slideshowPhotosOnly": "Die Diashow für „{folder}“ zeigt nur Fotos.",
+    "slideshowVideosOnly": "Die Diashow für „{folder}“ zeigt nur Videos.",
+    "upload": {
+      "progress": "Wird hinzugefügt: {current} von {total}",
+      "left": "Noch {size}",
+      "shrinking": "Große Fotos werden vorher verkleinert, damit sie schneller ankommen.",
+      "added": {
+        "one": "1 hinzugefügt.",
+        "other": "{count} hinzugefügt."
+      },
+      "failedHeading": {
+        "one": "1 konnte nicht hinzugefügt werden",
+        "other": "{count} konnten nicht hinzugefügt werden"
+      },
+      "tooBig": "{name} ist größer als {size}.",
+      "notMedia": "{name} ist kein Foto oder Video, das an der Wand gezeigt werden kann.",
+      "wontPlay": "{name} ist in einem Videoformat, das an der Wand nicht läuft. Wähle auf dem iPhone unter Einstellungen > Kamera > Formate „Maximale Kompatibilität“.",
+      "failed": "{name} konnte nicht gesendet werden. Versuch es noch einmal.",
+      "close": "Schließen",
+      "showNow": "Jetzt an der Wand zeigen"
+    },
+    "showOnWall": "An der Wand zeigen",
+    "show": {
+      "sent": "Jetzt eine Minute lang auf {where} zu sehen.",
+      "everyWall": "allen Displays",
+      "theWall": "dem Display",
+      "failed": "Das Display ist nicht erreichbar. Versuch es noch einmal.",
+      "gonePhoto": "Das Foto ist nicht mehr da.",
+      "goneVideo": "Das Video ist nicht mehr da."
+    },
+    "viewer": {
+      "label": "Foto",
+      "count": "{n} von {total}",
+      "added": "Hinzugefügt am {date}",
+      "videoDetails": "Video · {size}",
+      "alone": {
+        "screen": "Hintergrund auf dem Bildschirm {screen}",
+        "dayRule": "Von einer Tagesregel auf dem Bildschirm {screen} genutzt",
+        "module": "Einzeln auf dem Bildschirm {screen} gezeigt",
+        "other": "In den Einstellungen genutzt"
+      },
+      "aloneNote": {
+        "screen": "Solange es ein Hintergrund ist, kann es nicht gelöscht werden. Ändere den Hintergrund zuerst am Computer.",
+        "dayRule": "Solange eine Tagesregel es nutzt, kann es nicht gelöscht werden. Ändere die Regel zuerst am Computer.",
+        "module": "Solange ein Bildschirm es zeigt, kann es nicht gelöscht werden. Ändere diesen Bildschirm zuerst am Computer.",
+        "other": "Solange es irgendwo genutzt wird, kann es nicht gelöscht werden. Ändere das zuerst am Computer."
+      },
+      "onlyPhoto": "Die Diashow auf {walls} hat nur noch dieses Foto. Füge ein weiteres hinzu, bevor du es löschst oder verschiebst.",
+      "onlyVideo": "Die Diashow auf {walls} hat nur noch dieses Video. Füge ein weiteres hinzu, bevor du es löschst oder verschiebst.",
+      "onlyPhotoAnywhere": "Eine Diashow hat nur noch dieses Foto. Füge ein weiteres hinzu, bevor du es löschst oder verschiebst.",
+      "onlyVideoAnywhere": "Eine Diashow hat nur noch dieses Video. Füge ein weiteres hinzu, bevor du es löschst oder verschiebst."
+    },
+    "move": "Verschieben",
+    "moveSheet": {
+      "title": "{what} verschieben nach",
+      "here": "Du bist hier",
+      "newFolder": "Neuer Ordner"
+    },
+    "movedTo": {
+      "one": "In „{folder}“ verschoben.",
+      "other": "{count} in „{folder}“ verschoben."
+    },
+    "moveClash": "In dem Ordner liegt schon eine Datei mit demselben Namen.",
+    "moveFailed": "Das Verschieben hat nicht geklappt. Versuch es noch einmal.",
+    "deletePhotoTitle": "Dieses Foto löschen?",
+    "deleteVideoTitle": "Dieses Video löschen?",
+    "deleteManyTitle": "{what} löschen?",
+    "deleteManyButton": "{what} löschen",
+    "deletePhotoOnWall": "Es verschwindet endgültig aus der Fotobibliothek und damit auch aus der Diashow auf {walls}.",
+    "deleteVideoOnWall": "Es verschwindet endgültig aus der Fotobibliothek und damit auch aus der Diashow auf {walls}.",
+    "deletePhotoOffWall": "Es verschwindet endgültig aus der Fotobibliothek.",
+    "deleteVideoOffWall": "Es verschwindet endgültig aus der Fotobibliothek.",
+    "deleteManyOnWall": "Sie verschwinden endgültig aus der Fotobibliothek und damit auch aus der Diashow auf {walls}.",
+    "deleteManyOffWall": "Sie verschwinden endgültig aus der Fotobibliothek.",
+    "photoDeleted": "Foto gelöscht",
+    "videoDeleted": "Video gelöscht",
+    "deleteFailed": "Das Löschen hat nicht geklappt. Versuch es noch einmal.",
+    "deleteRefused": "Es wird an der Wand noch gebraucht, deshalb ist es noch da.",
+    "deleted": {
+      "one": "1 gelöscht.",
+      "other": "{count} gelöscht."
+    },
+    "keptLast": {
+      "one": "1 bleibt, damit die Diashow auf {walls} nicht leer wird.",
+      "other": "{count} bleiben, damit keine Diashow leer wird."
+    },
+    "keptLastAnywhere": {
+      "one": "1 bleibt, damit eine Diashow nicht leer wird.",
+      "other": "{count} bleiben, damit keine Diashow leer wird."
+    },
+    "keptAlone": {
+      "one": "1 wird auf einem Bildschirm genutzt und bleibt.",
+      "other": "{count} werden auf einem Bildschirm genutzt und bleiben."
+    },
+    "deleteFailedCount": {
+      "one": "1 konnte nicht gelöscht werden. Versuch es noch einmal.",
+      "other": "{count} konnten nicht gelöscht werden. Versuch es noch einmal."
+    },
+    "folderMenu": {
+      "label": "Ordneroptionen",
+      "rename": "Umbenennen",
+      "newInside": "Neuer Ordner in „{folder}“",
+      "delete": "Ordner löschen",
+      "hasFiles": "Verschiebe oder lösche zuerst {what} aus diesem Ordner.",
+      "hasFolders": "Lösche zuerst die Ordner darin.",
+      "onWall": "Dieser Ordner ist auf {walls} zu sehen. Wähle zuerst am Computer einen anderen Ordner für die Diashow aus."
+    },
+    "nameSheet": {
+      "newTitle": "Neuer Ordner",
+      "renameTitle": "„{folder}“ umbenennen",
+      "newName": "Neuer Name",
+      "create": "Erstellen",
+      "startsOffWall": "Der Ordner ist erst an der Wand zu sehen, wenn eine Diashow ihn nutzt.",
+      "wallFollows": "Der Ordner bleibt auch nach dem Umbenennen auf {walls} zu sehen."
+    },
     "savedAsHint": "Wird gespeichert als {name}",
-    "deleteInUse": "Dieses Foto wird noch auf einem Bildschirm gezeigt und kann deshalb nicht gelöscht werden",
-    "deleteInUseOn": "Dieses Foto wird noch auf {where} verwendet und kann deshalb nicht gelöscht werden"
+    "folderCreated": "Ordner erstellt",
+    "failedCreateFolder": "Der Ordner konnte nicht erstellt werden. Versuch es noch einmal.",
+    "renamed": "Umbenannt in „{name}“",
+    "renameFailed": "Der Ordner konnte nicht umbenannt werden. Versuch es noch einmal.",
+    "folderExists": "Hier gibt es schon einen Ordner mit diesem Namen.",
+    "deleteFolderTitle": "Den Ordner „{folder}“ löschen?",
+    "deleteFolderBody": "Er ist leer, an der Wand ändert sich also nichts.",
+    "deleteFolderButton": "Ordner löschen",
+    "folderDeleted": "Ordner gelöscht",
+    "deleteFolderFailed": "Der Ordner konnte nicht gelöscht werden. Versuch es noch einmal.",
+    "folderNotEmpty": "In diesem Ordner ist noch etwas. Verschiebe oder lösche es zuerst.",
+    "imports": {
+      "googleTitle": "Aus Google Fotos hinzufügen",
+      "googleIntro": "Wähle Fotos in Google Fotos aus und komm dann hierher zurück. Sie werden zu „{folder}“ hinzugefügt.",
+      "googleOpen": "Google Fotos öffnen",
+      "googlePreparing": "Google Fotos wird vorbereitet…",
+      "googleWaiting": "Warte auf deine Auswahl…",
+      "googleExpired": "Bei Google Fotos ist die Zeit abgelaufen. Versuch es noch einmal.",
+      "googleFailed": "Google Fotos ist nicht erreichbar. Versuch es noch einmal.",
+      "icloudTitle": "Aus einem iCloud-Link hinzufügen",
+      "icloudIntro": "Füge einen Link zu einem geteilten Album ein. Ein Link über „iCloud-Link kopieren“ in der Fotos-App geht auch. Alles darin wird zu „{folder}“ hinzugefügt.",
+      "icloudPlaceholder": "Link hier einfügen",
+      "icloudAdd": "Hinzufügen",
+      "icloudErrors": {
+        "invalid": "Das sieht nicht wie ein iCloud-Fotolink aus.",
+        "expired": "Dieser Link ist abgelaufen. Erstelle in der Fotos-App einen neuen.",
+        "busy": "Es werden noch Fotos hinzugefügt. Versuch es in einer Minute noch einmal.",
+        "tooMany": "Das sind zu viele auf einmal. Teile weniger und versuch es noch einmal.",
+        "lost": "Der Hub ist beim Hinzufügen neu gestartet. Versuch es noch einmal.",
+        "unreachable": "iCloud ist nicht erreichbar. Versuch es noch einmal."
+      },
+      "progress": "Wird hinzugefügt: {done} von {total}",
+      "nothingPicked": "Du hast nichts ausgewählt.",
+      "busy": "Es werden noch Fotos hinzugefügt. Versuch es in einer Minute noch einmal.",
+      "tooMany": "Das sind zu viele auf einmal. Wähle weniger aus und versuch es noch einmal.",
+      "lost": "Der Hub ist beim Hinzufügen neu gestartet. Versuch es noch einmal.",
+      "tryAgain": "Erneut versuchen",
+      "alreadyHere": {
+        "one": "1 war schon da.",
+        "other": "{count} waren schon da."
+      },
+      "couldNotAdd": {
+        "one": "1 konnte nicht hinzugefügt werden.",
+        "other": "{count} konnten nicht hinzugefügt werden."
+      },
+      "nothingFound": "Nichts hinzuzufügen. Das Album ist leer, oder der Link funktioniert nicht mehr."
+    }
+  },
+  "slideshowControls": {
+    "title": "Diashow",
+    "back": "Vorheriges Foto",
+    "next": "Nächstes Foto",
+    "pause": "Diashow pausieren",
+    "play": "Diashow abspielen"
   },
   "choresKidView": {
     "notConfigured": "Noch keine Aufgaben. Bitte einen Erwachsenen, eine Aufgabentafel zum Display hinzuzufügen.",

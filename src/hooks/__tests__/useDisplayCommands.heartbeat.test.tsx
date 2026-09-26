@@ -51,6 +51,7 @@ function handlers(): CommandHandlers {
     setBrightness: vi.fn(),
     reload: vi.fn(),
     showAlert: vi.fn(),
+    showPhoto: vi.fn(),
   };
 }
 
@@ -121,5 +122,81 @@ describe('the display heartbeat', () => {
     expect(fetched).toEqual(['/api/display/commands', '/api/system/build-id']);
     expect(order).toEqual(['wake', 'revisions']);
     expect(published).toEqual([{ buildId: 'build-2' }]);
+  });
+});
+
+describe('the show-photo command', () => {
+  function photo(file: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+    return { url: `/api/backgrounds/serve?file=${file}`, kind: 'image', durationMs: 60_000, ...extra };
+  }
+
+  /** Drain one beat of show-photo commands and hand back the handler they reach. */
+  async function run(...payloads: Array<Record<string, unknown> | undefined>) {
+    commands = payloads.map((payload) => ({ type: 'show-photo', payload, timestamp: 1 }));
+    const h = handlers();
+    renderHook(() => useDisplayCommands(h, 'kitchen'));
+    await flush();
+    return vi.mocked(h.showPhoto);
+  }
+
+  it('puts a library picture or video up with just its url, kind and duration', async () => {
+    const expiresAt = Date.now() + 60_000;
+    const showPhoto = await run(
+      photo('lake.jpg', { expiresAt }),
+      { url: '/api/backgrounds/serve?file=walk.mp4&mt=tok', kind: 'video', durationMs: 30_000, expiresAt },
+    );
+
+    expect(showPhoto.mock.calls).toEqual([
+      [{ url: '/api/backgrounds/serve?file=lake.jpg', kind: 'image', durationMs: 60_000 }],
+      [{ url: '/api/backgrounds/serve?file=walk.mp4&mt=tok', kind: 'video', durationMs: 30_000 }],
+    ]);
+  });
+
+  it('skips a photo whose time ran out more than a minute ago', async () => {
+    const now = Date.now();
+    const showPhoto = await run(
+      photo('old.jpg', { expiresAt: now - 60_001 }),
+      // Within a minute of the hub's clock still counts as on time.
+      photo('recent.jpg', { expiresAt: now - 30_000 }),
+    );
+
+    expect(showPhoto).toHaveBeenCalledTimes(1);
+    expect(showPhoto).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/backgrounds/serve?file=recent.jpg' }));
+  });
+
+  it('skips a url that is not the library serve route', async () => {
+    const showPhoto = await run(
+      photo('a.jpg', { url: 'https://example.com/api/backgrounds/serve?file=a.jpg' }),
+      photo('a.jpg', { url: '/api/backgrounds/serve/a.jpg' }),
+      photo('a.jpg', { url: '/api/plugins/proxy/x?file=a.jpg' }),
+      photo('a.jpg', { url: 'javascript:alert(1)' }),
+      photo('a.jpg', { url: 42 }),
+      undefined,
+      photo('good.jpg'),
+    );
+
+    // The last one proves the loop carried on past the ones it skipped.
+    expect(showPhoto).toHaveBeenCalledTimes(1);
+    expect(showPhoto).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/backgrounds/serve?file=good.jpg' }));
+  });
+
+  it('skips an unknown kind or a duration that is not a positive number', async () => {
+    const showPhoto = await run(
+      photo('a.jpg', { kind: 'audio' }),
+      photo('b.jpg', { kind: undefined }),
+      photo('c.jpg', { durationMs: 0 }),
+      photo('d.jpg', { durationMs: -5_000 }),
+      photo('e.jpg', { durationMs: '60000' }),
+      photo('good.jpg'),
+    );
+
+    expect(showPhoto).toHaveBeenCalledTimes(1);
+    expect(showPhoto).toHaveBeenCalledWith(expect.objectContaining({ url: '/api/backgrounds/serve?file=good.jpg' }));
+  });
+
+  it('shows a photo that carries no expiry', async () => {
+    const showPhoto = await run(photo('lake.jpg'));
+
+    expect(showPhoto).toHaveBeenCalledWith({ url: '/api/backgrounds/serve?file=lake.jpg', kind: 'image', durationMs: 60_000 });
   });
 });

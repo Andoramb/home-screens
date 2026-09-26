@@ -1,4 +1,4 @@
-import type { MediaUse, MissingMedia } from '@/lib/media-usage';
+import type { MediaUse, MissingMedia, SlideshowFolder } from '@/lib/media-usage';
 
 /** Inventory payload shared by the route and the settings page. */
 export interface MediaInventoryItem {
@@ -34,4 +34,16 @@ export interface MediaInventory {
   /** Config references to files or folders that are not in the library. */
   missing: MissingMedia[];
   storage: MediaInventoryStorage;
+  /** Every local-folder slideshow a wall shows, in config order, including
+   *  one pointed at an empty folder (which `usage`, keyed by file, cannot show). */
+  slideshows: SlideshowFolder[];
 }
+
+export type MediaSortKey = 'name' | 'newest' | 'largest';
+
+/** The library's orders, shared so Settings and the phone agree on "newest". */
+export const MEDIA_SORTERS: Record<MediaSortKey, (a: MediaInventoryItem, b: MediaInventoryItem) => number> = {
+  name: (a, b) => a.path.localeCompare(b.path),
+  newest: (a, b) => b.mtimeMs - a.mtimeMs || a.path.localeCompare(b.path),
+  largest: (a, b) => b.bytes - a.bytes || a.path.localeCompare(b.path),
+};

@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "Til Raspberry Pi-displays. Skærmen bliver helt mørk og bruger et par sekunder på at komme tilbage, når nogen vækker den. Lad dette være slået fra, hvis din skærm ikke tænder igen af sig selv."
     },
     "mediaPage": {
-      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som stadig bruges et sted, kan ikke slettes.",
+      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som en skærm har brug for, kan ikke slettes, og et diasshow beholder altid sit sidste billede.",
       "upload": "Upload",
       "dropzone": "Træk billeder eller videoer herhen, eller klik for at vælge, lige så mange du vil",
       "saveInto": "Gem i",
@@ -1128,6 +1128,7 @@
       "images": "Billeder",
       "videos": "Videoer",
       "inUse": "I brug",
+      "inSlideshow": "Diasshow",
       "usedBy": "Bruges af",
       "kind": {
         "screen": "Skærm '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Modul på '{name}'",
         "other": "Et sted i indstillingerne",
         "slideshow": "Diasshow på '{name}'",
+        "slideshowLast": "Diasshow på '{name}' (det sidste billede)",
         "rotation": "Skiftende baggrund, der vises på en skærm lige nu"
       },
       "selected": "{count} valgt",
@@ -1143,9 +1145,10 @@
         "one": "Slet 1 fil?",
         "other": "Slet {count} filer?"
       },
-      "deleteMessage": "De er derefter væk fra denne hub for alle skærme. Filer, der stadig bruges, kan ikke slettes – så intet kan gå i stykker.",
+      "deleteMessage": "De forsvinder fra denne hub for altid. Diasshows fortsætter med deres andre billeder, og filer, som en skærm har brug for, bliver beholdt, så ingen skærm står tom.",
       "deleteConfirm": "Slet",
       "refused": "{file} bruges stadig og blev ikke slettet",
+      "keptLast": "{file} blev liggende, fordi det er det sidste billede i diasshowet på '{name}'.",
       "loading": "Henter dine billeder og videoer",
       "emptyFiltered": "Intet passer til dette filter",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Filtype",
         "dimensions": "Størrelse i pixels",
         "size": "Filstørrelse",
-        "notUsed": "Bruges ikke nogen steder endnu"
+        "notUsed": "Bruges ikke nogen steder endnu",
+        "lastPictureHint": "Det sidste billede, et diasshow viser, kan ikke slettes. Tilføj først et billede mere til {folder}.",
+        "lastPictureHintTop": "Det sidste billede, et diasshow viser, kan ikke slettes. Tilføj først et billede mere til bibliotekets øverste niveau."
       },
       "unusedOnly": "Kun ubrugte",
       "storage": "Biblioteket fylder {size}, {free} ledigt på denne hub",
@@ -1191,7 +1196,7 @@
         "one": "Flyt 1 fil?",
         "other": "Flyt {count} filer?"
       },
-      "moveMessage": "Alt, der viser disse filer, følger med til den nye mappe.",
+      "moveMessage": "Skærme, der bruger disse filer, følger med til den nye mappe. Et billede, der flyttes ud af et diasshows mappe, er ikke længere med i det diasshow.",
       "moveConfirm": "Flyt",
       "moved": {
         "one": "1 fil flyttet",

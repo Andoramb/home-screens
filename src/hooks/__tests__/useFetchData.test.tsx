@@ -406,3 +406,68 @@ describe('useFetchData following the heartbeat', () => {
     await morePolls(2);
   });
 });
+
+describe('useFetchData asked to refresh', () => {
+  const url = '/api/backgrounds?directory=Favorites';
+  /** Ask the way `displayCache.refreshWhere` does; true when a reader took it on. */
+  function askToRefresh(): boolean {
+    let taken = false;
+    act(() => {
+      taken = !window.dispatchEvent(new CustomEvent('displaycache:refresh', { detail: url, cancelable: true }));
+    });
+    return taken;
+  }
+
+  it('takes the request on and reads again', async () => {
+    responses.set(url, ['a.jpg']);
+    const { result } = renderHook(() => useFetchData<string[]>(url, 600000));
+    await waitFor(() => expect(result.current[0]).toEqual(['a.jpg']));
+
+    responses.set(url, ['a.jpg', 'b.jpg']);
+    expect(askToRefresh()).toBe(true);
+    await waitFor(() => expect(result.current[0]).toEqual(['a.jpg', 'b.jpg']));
+    expect(requestCount).toBe(2);
+  });
+
+  it('joins a read already out rather than starting another', async () => {
+    responses.set(url, ['a.jpg']);
+    const { result } = renderHook(() => useFetchData<string[]>(url, 600000));
+    await waitFor(() => expect(result.current[0]).toEqual(['a.jpg']));
+
+    let release!: (value: unknown) => void;
+    heldRequest = new Promise((resolve) => { release = resolve; });
+    askToRefresh();
+    await waitFor(() => expect(requestCount).toBe(2));
+    askToRefresh();
+    expect(requestCount).toBe(2);
+
+    await act(async () => { release(['a.jpg', 'c.jpg']); });
+    await waitFor(() => expect(result.current[0]).toEqual(['a.jpg', 'c.jpg']));
+    expect(requestCount).toBe(2);
+  });
+
+  it('keeps what it shows, and what the cache holds, when the read fails', async () => {
+    responses.set(url, ['a.jpg']);
+    const { result } = renderHook(() => useFetchData<string[]>(url, 600000));
+    await waitFor(() => expect(result.current[0]).toEqual(['a.jpg']));
+
+    hubUp = false;
+    askToRefresh();
+    await waitFor(() => expect(result.current[1]).not.toBeNull());
+    expect(result.current[0]).toEqual(['a.jpg']);
+    expect(displayCache.peek<string[]>(url)?.data).toEqual(['a.jpg']);
+  });
+
+  it('leaves a request for another URL to its own reader', async () => {
+    responses.set(url, ['a.jpg']);
+    renderHook(() => useFetchData<string[]>(url, 600000));
+    await waitFor(() => expect(requestCount).toBe(1));
+
+    let taken = true;
+    act(() => {
+      taken = !window.dispatchEvent(new CustomEvent('displaycache:refresh', { detail: '/api/backgrounds?directory=Other', cancelable: true }));
+    });
+    expect(taken).toBe(false);
+    expect(requestCount).toBe(1);
+  });
+});

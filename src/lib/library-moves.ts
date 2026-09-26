@@ -1,8 +1,9 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { configRevision, updateConfigAtomic } from '@/lib/config';
-import { rewriteMediaRefs, scanMediaUsage } from '@/lib/media-usage';
-import { libraryRoot, safeLibraryPath } from '@/lib/library-files';
+import { blockedRemovals, rewriteMediaRefs, scanMediaUsage, type MediaUse } from '@/lib/media-usage';
+import { libraryRoot, listLibraryFolder, safeLibraryPath } from '@/lib/library-files';
+import { bumpLibraryRevision } from '@/lib/library-revision';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
 import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
 import { removeThumbnails } from '@/lib/thumbnails';
@@ -81,6 +82,9 @@ async function moveNoClobber(from: string, to: string): Promise<void> {
 
 export interface MoveResult {
   moved: { from: string; to: string }[];
+  /** Files left where they were because each is the last picture a
+   *  slideshow has to show, with that slideshow's use. */
+  kept: { path: string; usage: MediaUse[] }[];
   /** Config references rewritten to follow the moves. */
   rewritten: number;
   /** Revision of the config after the rewrite, for an editor holding a copy. */
@@ -97,9 +101,10 @@ interface PlannedMove {
 /**
  * Move library files into `directory` under their own names. Every move is
  * checked before any file moves: a name already in the target folder, two
- * selected files sharing a name, a top-level `rotation-` name, or a file a
- * slideshow shows (moving it would take it off that screen) refuses the
- * whole batch.
+ * selected files sharing a name, or a top-level `rotation-` name refuses the
+ * whole batch. A file leaving a slideshow's folder leaves that slideshow, so
+ * the last picture a slideshow has to show stays behind (reported in `kept`)
+ * and the rest move, the same rule a delete follows.
  */
 export async function moveLibraryFiles(files: string[], directory: string): Promise<MoveResult> {
   const folder = cleanFolderPath(directory);
@@ -142,10 +147,12 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
   }
 
   if (plan.length === 0) {
-    return { moved: [], rewritten: 0, revision: configRevision(await readCurrentConfig()) };
+    return { moved: [], kept: [], rewritten: 0, revision: configRevision(await readCurrentConfig()) };
   }
 
   const done: PlannedMove[] = [];
+  const kept: MoveResult['kept'] = [];
+  let moving: PlannedMove[] = plan;
   const rollback = async () => {
     for (const step of done.splice(0).reverse()) {
       await moveNoClobber(step.absTo, step.absFrom).catch(() => { /* best effort */ });
@@ -156,9 +163,9 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
   let next: ScreenConfiguration | null = null;
   try {
     next = await updateConfigAtomic(async (current) => {
-      refuseSlideshowMembers(current, plan);
+      moving = await withoutLastPictures(current, plan, kept);
       try {
-        for (const step of plan) {
+        for (const step of moving) {
           await moveNoClobber(step.absFrom, step.absTo);
           done.push(step);
         }
@@ -166,7 +173,7 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
         await rollback();
         throw err;
       }
-      const byFrom = new Map(plan.map((m) => [m.from, m.to]));
+      const byFrom = new Map(moving.map((m) => [m.from, m.to]));
       const result = rewriteMediaRefs(current, (p) => byFrom.get(p) ?? null, () => null);
       rewritten = result.changed;
       return result.config;
@@ -176,24 +183,28 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
     await rollback();
     throw err;
   }
-  await Promise.all(plan.map((step) => removeThumbnails(step.from)));
-  return { moved: plan.map(({ from, to }) => ({ from, to })), rewritten, revision: configRevision(next) };
+  await Promise.all(moving.map((step) => removeThumbnails(step.from)));
+  if (moving.length > 0) bumpLibraryRevision();
+  return { moved: moving.map(({ from, to }) => ({ from, to })), kept, rewritten, revision: configRevision(next) };
 }
 
-/** A file a slideshow shows belongs to that folder on the wall; moving it
- *  out would silently change what the screen plays. */
-function refuseSlideshowMembers(config: ScreenConfiguration, plan: PlannedMove[]): void {
-  const usage = scanMediaUsage(config, new Set(plan.map((step) => step.from)));
-  for (const step of plan) {
-    const slideshow = (usage.get(step.from) ?? []).find((use) => use.kind === 'slideshow');
-    if (slideshow) {
-      const where = slideshow.name ? `on '${slideshow.name}'` : 'on a screen';
-      throw new LibraryMoveError(
-        `${fileNameOf(step.from)} is part of the slideshow ${where}. Moving it would take it off that screen, so move the whole folder instead.`,
-        409,
-      );
-    }
+/**
+ * The planned moves minus each slideshow's last picture, which stays so no
+ * wall is left with nothing to show; those land in `kept`. Every file in the
+ * source folders is scanned, since "last" is relative to what else is there.
+ */
+async function withoutLastPictures(
+  config: ScreenConfiguration,
+  plan: PlannedMove[],
+  kept: MoveResult['kept'],
+): Promise<PlannedMove[]> {
+  const known = new Set(plan.map((step) => step.from));
+  for (const folder of new Set(plan.map((step) => folderOf(step.from)))) {
+    for (const file of await listLibraryFolder(folder)) known.add(file);
   }
+  const blocked = blockedRemovals(scanMediaUsage(config, known), plan.map((step) => step.from), 'move');
+  for (const [path, usage] of blocked) kept.push({ path, usage });
+  return plan.filter((step) => !blocked.has(step.from));
 }
 
 async function readCurrentConfig(): Promise<ScreenConfiguration> {
@@ -256,6 +267,7 @@ export async function renameLibraryFolder(current: string, newName: string): Pro
   }
   // Thumbnails are keyed by path, so every copy under the old name is dead.
   await Promise.all(files.map((f) => removeThumbnails(f)));
+  bumpLibraryRevision();
   return { from, to, rewritten, revision: configRevision(next) };
 }
 

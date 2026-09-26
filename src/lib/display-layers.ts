@@ -16,6 +16,8 @@ export const DISPLAY_LAYERS = {
   sleep: 9997,
   /** Ringing timer takeover. */
   timer: 9997,
+  /** A photo sent from a phone ("Show on the wall"); later in the DOM than the timer, so above it. */
+  photo: 9997,
   /** Weather alert takeover. */
   alert: 9998,
   /** Dimmed-state screensaver (clock). */

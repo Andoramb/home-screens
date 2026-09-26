@@ -279,24 +279,67 @@ test.describe('Defaults › Pictures & videos', () => {
     await removeFolder(request, target);
   });
 
-  test('every file in a folder a slideshow shows is locked', async ({ page, request }) => {
+  test("a slideshow's pictures can go, except its last one", async ({ page, request }) => {
     const folder = uniqueFolder();
-    await seedImage(request, folder, 'e2e-slide.png');
+    await seedImage(request, folder, 'e2e-slide-a.png');
+    await seedImage(request, folder, 'e2e-slide-b.png');
     const slideshow = buildModuleInstance('photo-slideshow', { source: 'local', directory: folder });
     await putConfig(request, baseConfig({ screens: [makeScreen('screen-1', 'Hall', [slideshow])] }));
 
     await page.goto('/editor/settings?section=defaults&page=media');
     await page.getByTestId(`media-chip-${folder}`).click();
-    const tile = page.getByTestId(`media-tile-${folder}/e2e-slide.png`);
-    await expect(tile.locator('[data-in-use]')).toContainText('In use');
-    await expect(tile.locator('[data-in-use]')).toHaveAttribute('title', "Slideshow on 'Hall'");
+    const first = page.getByTestId(`media-tile-${folder}/e2e-slide-a.png`);
+    const second = page.getByTestId(`media-tile-${folder}/e2e-slide-b.png`);
+    // Both play in the slideshow and either could go: a green badge, not a lock.
+    await expect(first.locator('[data-slideshow]')).toContainText('Slideshow');
+    await expect(first.locator('[data-slideshow]')).toHaveAttribute('title', "Slideshow on 'Hall'");
+    await expect(first.locator('[data-in-use]')).toHaveCount(0);
+
+    await first.hover();
+    await first.getByTestId('media-tile-delete').click();
+    const dialog = page.getByRole('dialog').filter({ hasText: 'Delete 1 file?' });
+    await expect(dialog).toContainText('Slideshows move on to their other pictures');
+    await dialog.getByRole('button', { name: 'Delete', exact: true }).click();
+    await expect(first).toHaveCount(0);
+
+    // Now the last picture it has: locked, with the reason in the viewer.
+    await expect(second.locator('[data-in-use]')).toContainText('In use');
+    await expect(second.locator('[data-in-use]')).toHaveAttribute('title', "Slideshow on 'Hall' (its last picture)");
+    await expect(second.getByTestId('media-tile-delete')).toHaveCount(0);
+    await second.getByTestId('media-tile-open').click();
+    const viewer = page.getByTestId('media-viewer');
+    await expect(viewer.getByTestId('media-viewer-lock-hint')).toContainText(`Add another one to ${folder} first.`);
+    await expect(viewer.getByTestId('media-viewer-delete')).toHaveCount(0);
+    await page.keyboard.press('Escape');
 
     // The server refuses too, whatever page sent the request.
-    const res = await request.delete('/api/backgrounds', { data: { file: 'e2e-slide.png', directory: folder } });
+    const res = await request.delete('/api/backgrounds', { data: { file: 'e2e-slide-b.png', directory: folder } });
     expect(res.status()).toBe(409);
 
     await putConfig(request, baseConfig());
-    await request.delete('/api/backgrounds', { data: { file: 'e2e-slide.png', directory: folder } });
+    await request.delete('/api/backgrounds', { data: { file: 'e2e-slide-b.png', directory: folder } });
+    await removeFolder(request, folder);
+  });
+
+  test('deleting a whole slideshow folder keeps its last picture and says so', async ({ page, request }) => {
+    const folder = uniqueFolder();
+    for (const name of ['e2e-x.png', 'e2e-y.png', 'e2e-z.png']) await seedImage(request, folder, name);
+    const slideshow = buildModuleInstance('photo-slideshow', { source: 'local', directory: folder });
+    await putConfig(request, baseConfig({ screens: [makeScreen('screen-1', 'Hall', [slideshow])] }));
+
+    await page.goto('/editor/settings?section=defaults&page=media');
+    await page.getByTestId(`media-chip-${folder}`).click();
+    await expect(page.locator(`[data-media-path^="${folder}/"]`)).toHaveCount(3);
+    await page.getByTestId('media-select-all').click();
+    await page.getByTestId('media-delete-button').click();
+    await page.getByRole('dialog').filter({ hasText: 'Delete 3 files?' }).getByRole('button', { name: 'Delete', exact: true }).click();
+
+    // Deleting goes in grid order (by name), so the last name stays.
+    await expect(page.getByTestId('media-refused')).toContainText("e2e-z.png was kept: it's the last picture in the slideshow on 'Hall'.");
+    await expect(page.locator(`[data-media-path^="${folder}/"]`)).toHaveCount(1);
+
+    await putConfig(request, baseConfig());
+    await request.delete('/api/backgrounds', { data: { file: 'e2e-z.png', directory: folder } });
     await removeFolder(request, folder);
   });
 });

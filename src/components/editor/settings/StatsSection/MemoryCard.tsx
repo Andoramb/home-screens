@@ -4,7 +4,8 @@ import { Cpu } from 'lucide-react';
 import { useTranslate } from '@/i18n';
 import { SectionIcon } from './shared/SectionIcon';
 import { RingProgress } from './shared/RingProgress';
-import { formatBytes, splitBytes, percentColor } from './shared/formatters';
+import { formatBytes } from '@/lib/format-bytes';
+import { splitBytes, percentColor } from './shared/formatters';
 import type { SystemStats } from '@/lib/system-stats-types';
 
 export function MemoryCard({ stats }: { stats: SystemStats }) {

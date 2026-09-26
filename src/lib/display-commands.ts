@@ -46,7 +46,9 @@ export type DisplayCommandType =
   | 'clear-alerts'
   | 'dump-console-log'
   /** Poke one module type on the display, e.g. `{ module: 'news', action: 'next' }`. */
-  | 'module-command';
+  | 'module-command'
+  /** Put one library picture or video over the screen for a while. */
+  | 'show-photo';
 
 export interface DisplayCommand {
   type: DisplayCommandType;

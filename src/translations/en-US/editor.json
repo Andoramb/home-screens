@@ -1114,7 +1114,7 @@
       "panelPowerOffHelp": "For Raspberry Pi displays. The screen goes completely dark and takes a few seconds to come back when someone wakes it. Leave this off if your screen doesn't come back on by itself."
     },
     "mediaPage": {
-      "description": "Everything uploaded to this hub, in one place. Files that something still uses can't be deleted.",
+      "description": "Everything uploaded to this hub, in one place. Files a screen depends on can't be deleted, and a slideshow always keeps its last picture.",
       "upload": "Upload",
       "dropzone": "Drop pictures or videos here, or click to pick, as many as you like",
       "saveInto": "Save into",
@@ -1128,6 +1128,7 @@
       "images": "Images",
       "videos": "Videos",
       "inUse": "In use",
+      "inSlideshow": "Slideshow",
       "usedBy": "Used by",
       "kind": {
         "screen": "Screen '{name}'",
@@ -1135,6 +1136,7 @@
         "module": "Module on '{name}'",
         "other": "Somewhere in settings",
         "slideshow": "Slideshow on '{name}'",
+        "slideshowLast": "Slideshow on '{name}' (its last picture)",
         "rotation": "Rotating background on a screen right now"
       },
       "selected": "{count} selected",
@@ -1143,9 +1145,10 @@
         "one": "Delete 1 file?",
         "other": "Delete {count} files?"
       },
-      "deleteMessage": "They'll be gone from this hub for every screen. Nothing that still uses a file can be deleted, so this can't break a screen.",
+      "deleteMessage": "They'll be gone from this hub for good. Slideshows move on to their other pictures, and files a screen depends on are kept, so no screen goes empty.",
       "deleteConfirm": "Delete",
       "refused": "{file} is still in use and was not deleted",
+      "keptLast": "{file} was kept: it's the last picture in the slideshow on '{name}'.",
       "loading": "Loading your pictures and videos",
       "emptyFiltered": "Nothing matches this filter",
       "deleteFailed": {
@@ -1165,7 +1168,9 @@
         "type": "Type",
         "dimensions": "Size in pixels",
         "size": "File size",
-        "notUsed": "Not used anywhere yet"
+        "notUsed": "Not used anywhere yet",
+        "lastPictureHint": "The last picture a slideshow shows can't be deleted. Add another one to {folder} first.",
+        "lastPictureHintTop": "The last picture a slideshow shows can't be deleted. Add another one to the top level of the library first."
       },
       "unusedOnly": "Unused only",
       "storage": "Library uses {size}, {free} free on this hub",
@@ -1191,7 +1196,7 @@
         "one": "Move 1 file?",
         "other": "Move {count} files?"
       },
-      "moveMessage": "Everything that shows these files will follow them to the new folder.",
+      "moveMessage": "Screens that use these files will follow them to the new folder. A picture moved out of a slideshow's folder leaves that slideshow.",
       "moveConfirm": "Move",
       "moved": {
         "one": "1 file moved",

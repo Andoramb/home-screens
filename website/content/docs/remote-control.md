@@ -51,6 +51,7 @@ Six tabs along the bottom: **Control**, **Timers**, **Chores**, **Lists**, **Mea
 - **Sleep Display** blacks the wall out (and cuts the screen's power, if that display has **Switch the screen's power off too** turned on); the same button wakes it again.
 - **Send Alert** puts a message on the wall: an info, warning or urgent banner, with a title and how long it stays. **Persistent** keeps it up until someone dismisses it.
 - **Brightness** dims the wall from full down to off.
+- **Slideshow** appears while the screen on show has a photo slideshow: go back a photo, pause on one, or skip ahead. A screen that rotates away and back starts playing again.
 - With more than one display, a **Send to** row at the top picks which display these controls talk to, or **All** of them at once. Screen navigation works one display at a time.
 
 ### Timers
@@ -64,7 +65,8 @@ A **routine** is a saved list of timed steps, each with its own emoji and length
 - **Chores** is where grown-ups add people, chores and rewards, and fix a missed day. See [Chores and rewards](/docs/chores).
 - **Lists** holds the family's to-do lists: add, tick, reorder, give things a due day or a person, and make new lists. See [Lists](/docs/lists).
 - **Meals** holds the meal library, the weekly plan and the grocery list. See [Meals](/docs/meals).
-- **Photos** appears when a Full-Screen Photo Viewer is on a screen. Upload photos from the phone, make folders, browse them, and delete pictures. It is the same library the photo modules and rotating backgrounds read from.
+- **Photos** appears when a photo slideshow is on a screen, and opens on the folder the wall shows. Folders a wall shows come first and say which wall. Add photos and videos from the phone (big photos are made smaller before they are sent), from an iCloud link, or from Google Photos once the hub is signed in to Google from a computer. Tap a photo to see it full size, delete it, move it to another folder, or put it on the wall for a minute; **Select** picks several at once. Folders can be made, renamed and deleted here too. It is the same library **Settings > Pictures & videos** manages. A slideshow always keeps its last picture, and a photo a screen uses on its own (a background) stays put.
+  Videos recorded on an iPhone in the default High Efficiency format do not play on a Raspberry Pi, so the phone turns them away; choose **Most Compatible** under **Settings > Camera > Formats** on the iPhone to record videos the wall can play.
 
 ### The gear
 

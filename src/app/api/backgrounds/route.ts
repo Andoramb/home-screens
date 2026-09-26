@@ -4,19 +4,19 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
+import { listLibraryFolder, safeLibraryPath, writeLibraryFile } from '@/lib/library-files';
 import {
-  safeLibraryPath,
-  writeLibraryFile,
   IMAGE_FILE_RE,
   IMAGE_MIME_TYPES,
   MAX_IMAGE_BYTES,
   MAX_VIDEO_BYTES,
   VIDEO_FILE_RE,
   VIDEO_MIME_TYPES,
-} from '@/lib/library-files';
+} from '@/lib/media-formats';
 import { mintMediaToken } from '@/lib/media-token';
-import { readConfig } from '@/lib/config';
-import { scanMediaUsage } from '@/lib/media-usage';
+import { updateConfigAtomic } from '@/lib/config';
+import { blockedRemovals, scanMediaUsage, type MediaUse } from '@/lib/media-usage';
+import { LIBRARY_REVISION_HEADER, bumpLibraryRevision, libraryRevision } from '@/lib/library-revision';
 import { isRotationFile, referencedRotationFiles, rotationCacheStore } from '@/lib/background-rotation-cache';
 import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
 import { removeThumbnails } from '@/lib/thumbnails';
@@ -82,6 +82,11 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     dir = BGS;
   }
 
+  // Which library revision this list reflects, taken before the folder is
+  // read so the list is at least that new. A wall compares it with the one
+  // its heartbeat names and re-reads a list that is behind.
+  const listHeaders = { [LIBRARY_REVISION_HEADER]: libraryRevision() };
+
   // Only auto-create the root directory; subdirectories must already exist
   if (!directory) {
     await fs.mkdir(dir, { recursive: true });
@@ -89,7 +94,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     try {
       await fs.access(dir);
     } catch {
-      return NextResponse.json([], { status: 200 });
+      return NextResponse.json([], { status: 200, headers: listHeaders });
     }
   }
   const entries = await fs.readdir(dir, { withFileTypes: true });
@@ -100,7 +105,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     const paths = files
       .filter((name) => IMAGE_FILE_RE.test(name))
       .map((name) => serveUrl(name, directory || undefined));
-    return NextResponse.json(paths);
+    return NextResponse.json(paths, { headers: listHeaders });
   }
 
   const items: MediaListItem[] = [];
@@ -115,7 +120,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
       items.push({ url, type: 'video' });
     }
   }
-  return NextResponse.json(items);
+  return NextResponse.json(items, { headers: listHeaders });
 }, 'Failed to list backgrounds');
 
 function sanitizeName(name: string): string {
@@ -185,6 +190,7 @@ async function replaceLibraryFile(target: string, files: File[]): Promise<NextRe
     throw err;
   }
   await removeThumbnails(relativePath);
+  bumpLibraryRevision();
   // The wall keeps a picture in an <img> that never re-requests an unchanged
   // URL, and the config did not change, so nothing else would tell it. A
   // reload makes every display show the new file at once.
@@ -272,6 +278,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     await writeLibraryFile(filePath, file.stream(), isVideo ? MAX_VIDEO_BYTES : MAX_IMAGE_BYTES);
     uploadedPaths.push(serveUrl(safeName, directory || undefined));
   }
+  bumpLibraryRevision();
 
   if (files.length === 1) {
     return NextResponse.json({ path: uploadedPaths[0] }, { status: 201 });
@@ -319,33 +326,42 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'File not found' }, { status: 404 });
   }
 
-  // Refuse to delete a file the config still references somewhere: a stale
-  // page or a quick edit must never be able to remove a picture or video
-  // something still shows. The readConfig() read is serialized with editor
-  // config saves through the shared data-transaction coordinator (PUT
-  // /api/config takes the same queue), so the residual race is only the
-  // sub-millisecond disk timing between the read's lock release and the
-  // unlink; wrapping the unlink would not improve it.
-  const config = await readConfig();
-  const usage = scanMediaUsage(config, new Set([relativePath])).get(relativePath);
-  if (usage) {
-    return NextResponse.json({ error: 'in use', usage }, { status: 409 });
-  }
-
-  // Rotation files are owned by the background rotation, which records them
-  // in its own cache rather than in the config. One a screen is showing right
-  // now must survive too; the rotation prunes the rest itself.
-  if (isRotationFile(relativePath)) {
-    const referenced = referencedRotationFiles(await rotationCacheStore.read());
-    if (referenced.has(relativePath)) {
-      return NextResponse.json(
-        { error: 'in use', usage: [{ kind: 'rotation', configPath: 'rotation' }] },
-        { status: 409 },
-      );
+  // Refuse to delete a file a screen still depends on (a background, a day
+  // rule, a single-photo module) or the last picture a slideshow has to
+  // show: a stale page or a quick edit must never blank a screen. The rest
+  // of a slideshow's pictures can go; the wall skips a picture that vanishes.
+  // The check and the unlink run inside the queued config update, so an
+  // editor save adding a reference, or a second delete emptying the same
+  // slideshow, cannot land between them.
+  const outcome: { refusal?: MediaUse[] } = {};
+  await updateConfigAtomic(async (config) => {
+    // The whole folder, not just this file: a slideshow's last picture is
+    // only "last" relative to the others still in it.
+    const known = new Set([relativePath, ...await listLibraryFolder(folderOf(relativePath))]);
+    const usage = scanMediaUsage(config, known);
+    const blocking = blockedRemovals(usage, [relativePath], 'delete').get(relativePath);
+    if (blocking) {
+      outcome.refusal = blocking;
+      return config;
     }
+    // Rotation files are owned by the background rotation, which records them
+    // in its own cache rather than in the config. One a screen is showing right
+    // now must survive too; the rotation prunes the rest itself.
+    if (isRotationFile(relativePath)) {
+      const referenced = referencedRotationFiles(await rotationCacheStore.read());
+      if (referenced.has(relativePath)) {
+        outcome.refusal = [{ kind: 'rotation', configPath: 'rotation' }];
+        return config;
+      }
+    }
+    await fs.unlink(filePath);
+    return config;
+  });
+  if (outcome.refusal) {
+    return NextResponse.json({ error: 'in use', usage: outcome.refusal }, { status: 409 });
   }
 
-  await fs.unlink(filePath);
   await removeThumbnails(relativePath);
+  bumpLibraryRevision();
   return NextResponse.json({ deleted: path.basename(relativePath) });
 }, 'Failed to delete background');

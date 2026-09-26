@@ -1,6 +1,6 @@
 'use client';
 
-import { editorFetch } from '@/lib/editor-fetch';
+import { editorFetch, sessionExpired } from '@/lib/editor-fetch';
 import type { MediaUse } from '@/lib/media-usage';
 
 /**
@@ -99,6 +99,8 @@ async function libraryAction<T>(url: string, method: string, body: unknown): Pro
 
 export interface MoveLibraryResult {
   moved: { from: string; to: string }[];
+  /** Left behind: each is the last picture a slideshow has to show. */
+  kept: { path: string; usage: MediaUse[] }[];
   rewritten: number;
   /** Config revision after the rewrite, so an editor copy can catch up. */
   revision: string;
@@ -128,4 +130,59 @@ export function renameLibraryFolder(path: string, name: string): Promise<Library
 /** Delete an empty folder; the server answers 409 while it holds files. */
 export function deleteLibraryFolder(path: string): Promise<LibraryActionResult<{ deleted: string }>> {
   return libraryAction('/api/backgrounds/directories', 'DELETE', { path });
+}
+
+/** Outcome of one upload: the new file's serve URL, or the hub's reason. */
+export interface UploadLibraryResult {
+  ok: boolean;
+  status: number;
+  /** Serve URL of the stored file. */
+  path?: string;
+  error?: string;
+}
+
+/**
+ * Upload one file into a library folder ('' for the top level), reporting
+ * bytes sent as they go: `fetch` cannot report upload progress, and a phone
+ * sending a 60 MB video needs a real bar. An expired session sends the page
+ * to the login screen and rejects with the same error `editorFetch` throws;
+ * a dropped connection rejects too.
+ */
+export function uploadLibraryFile(
+  file: File,
+  directory: string,
+  onProgress?: (sent: number, total: number) => void,
+): Promise<UploadLibraryResult> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/backgrounds');
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress?.(e.loaded, e.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status === 401) {
+        reject(sessionExpired());
+        return;
+      }
+      let body: { path?: unknown; error?: unknown } = {};
+      try {
+        body = JSON.parse(xhr.responseText) as typeof body;
+      } catch {
+        // A proxy page or an empty answer: the status says enough.
+      }
+      const ok = xhr.status >= 200 && xhr.status < 300;
+      resolve({
+        ok,
+        status: xhr.status,
+        ...(ok && typeof body.path === 'string' ? { path: body.path } : {}),
+        ...(!ok && typeof body.error === 'string' ? { error: body.error } : {}),
+      });
+    };
+    xhr.onerror = () => reject(new Error('Upload failed'));
+    xhr.onabort = () => reject(new Error('Upload failed'));
+    const form = new FormData();
+    form.append('file', file);
+    if (directory) form.append('directory', directory);
+    xhr.send(form);
+  });
 }

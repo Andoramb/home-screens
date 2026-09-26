@@ -14,6 +14,7 @@ import {
   quoteUrl,
   dadJokeUrl,
   photoSlideshowUrl,
+  isLibraryListUrl,
   videoModuleUrl,
   choresUrl,
   choreToggleUrl,
@@ -324,6 +325,27 @@ describe('videoModuleUrl', () => {
   it('URL-encodes a nested file path', () => {
     expect(videoModuleUrl({ source: 'file', file: 'clips/family.mp4' }))
       .toBe('/api/backgrounds?media=videos&file=clips%2Ffamily.mp4');
+  });
+});
+
+describe('isLibraryListUrl', () => {
+  it('matches a slideshow list of a library folder', () => {
+    expect(isLibraryListUrl('/api/backgrounds')).toBe(true);
+    expect(isLibraryListUrl('/api/backgrounds?directory=Favorites&media=both')).toBe(true);
+  });
+
+  it('skips the video module lookup, served files, the rotate route and other sources', () => {
+    expect(isLibraryListUrl('/api/backgrounds?media=videos&file=a.mp4')).toBe(false);
+    expect(isLibraryListUrl('/api/backgrounds/serve?file=a.jpg')).toBe(false);
+    expect(isLibraryListUrl('/api/backgrounds/rotate')).toBe(false);
+    expect(isLibraryListUrl('/api/immich/photos')).toBe(false);
+  });
+
+  it('agrees with the URLs the slideshow and video modules build', () => {
+    expect(isLibraryListUrl(photoSlideshowUrl({ directory: 'Favorites', mediaTypes: 'both' }))).toBe(true);
+    expect(isLibraryListUrl(photoSlideshowUrl({}))).toBe(true);
+    expect(isLibraryListUrl(photoSlideshowUrl({ source: 'immich', immichAlbumId: 'a1' }))).toBe(false);
+    expect(isLibraryListUrl(videoModuleUrl({ source: 'file', file: 'clips/a.mp4' })!)).toBe(false);
   });
 });
 

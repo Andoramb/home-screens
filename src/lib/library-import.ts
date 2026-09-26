@@ -2,7 +2,9 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import { fetchWithTimeout } from './api-utils';
-import { safeLibraryPath, writeLibraryFile, MAX_VIDEO_BYTES, MAX_IMPORT_IMAGE_BYTES } from './library-files';
+import { safeLibraryPath, writeLibraryFile } from './library-files';
+import { MAX_VIDEO_BYTES, MAX_IMPORT_IMAGE_BYTES } from './media-formats';
+import { bumpLibraryRevision } from './library-revision';
 import { logger } from './logger';
 
 const log = logger('library-import');
@@ -270,6 +272,9 @@ export function beginLibraryImport(
       log.error('import job failed:', err);
     })
     .finally(() => {
+      // Once per job, not per file: a wall re-reading its slideshow list on
+      // every download would restart the slideshow for each one.
+      if (job.done > 0) bumpLibraryRevision();
       void opts.onFinished?.(job);
     });
 }
