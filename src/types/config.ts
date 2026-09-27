@@ -4334,6 +4334,20 @@ export interface FullscreenPhotoConfig {
   shuffle: boolean;
   /** Show clock overlay on photos */
   showClock: boolean;
+  /**
+   * How solid the backdrop behind the clock overlay is, from 0 (none) to 100 (a solid band behind
+   * the clock). Unset = 72 for a light backdrop, 55 for a dark one
+   *
+   * The opacity at the bottom edge of the fade; see clockOverlayPaint in
+   * src/lib/fullscreen-photo-theme.ts for how the rest of the fade follows it.
+   */
+  clockBackdrop?: number;
+  /**
+   * Color of the backdrop behind the clock overlay (hex or rgb()). The clock's text switches to
+   * dark or light, whichever reads best on it. Unset = white on light themes and black on dark
+   * ones, with the theme's own text colors
+   */
+  clockBackdropColor?: string;
   /** Enable Ken Burns (slow pan/zoom) effect */
   kenBurns: boolean;
   /**

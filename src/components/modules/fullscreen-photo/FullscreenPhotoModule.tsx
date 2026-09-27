@@ -9,7 +9,7 @@ import { useMediaRotation } from '@/hooks/useRotatingIndex';
 import { useModuleCommand } from '@/hooks/useModuleCommand';
 import { handleSlideshowCommand } from '../shared/slideshow-commands';
 import { useTZClock } from '@/hooks/useTZClock';
-import { getThemeTokens } from '@/lib/fullscreen-themes';
+import { photoThemeTokens, clockOverlayPaint, type ClockBackdropSettings } from '@/lib/fullscreen-photo-theme';
 import { useFormattingLocale, useTranslate, type TranslateFn } from '@/i18n';
 import { useOrigin } from '@/hooks/useOrigin';
 import { phoneSurfaceLabel, phoneSurfaceUrl } from '@/lib/phone-surfaces';
@@ -185,7 +185,7 @@ function NoPhotosYet({ theme, t, cloudHint }: { theme: FullscreenThemeTokens; t:
 
 // ── Clock overlay ────────────────────────────
 
-function ClockOverlay({ theme, timezone, timeFormat }: { theme: FullscreenThemeTokens; timezone?: string; timeFormat?: TimeFormat }) {
+function ClockOverlay({ theme, backdrop, timezone, timeFormat }: { theme: FullscreenThemeTokens; backdrop: ClockBackdropSettings; timezone?: string; timeFormat?: TimeFormat }) {
   // Display-timezone clock, not browser-local — the Pi's OS timezone may differ
   const time = useTZClock(timezone, 1000);
   const locale = useFormattingLocale();
@@ -200,21 +200,19 @@ function ClockOverlay({ theme, timezone, timeFormat }: { theme: FullscreenThemeT
     day: 'numeric',
   });
 
-  // The scrim always runs the opposite way from the theme's text, because the
-  // photo underneath can be any brightness. Dark themes darken the bottom of
-  // the frame and write light text on it; light themes lighten it and write
-  // dark text. `textSecondary`, not `textMuted`, carries the second line;
-  // several themes' muted tone is far too low-contrast to read across a room.
-  const scrim = theme.isDark
-    ? 'linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.25) 60%, transparent 100%)'
-    : 'linear-gradient(to top, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.38) 60%, transparent 100%)';
-  const textColor = theme.text;
-  const textMuted = theme.textSecondary;
+  // The backdrop and the text on it are decided together (see
+  // clockOverlayPaint). On the theme's own backdrop, `textSecondary`, not
+  // `textMuted`, carries the second line; several themes' muted tone is far
+  // too low-contrast to read across a room.
+  const paint = clockOverlayPaint(theme, backdrop);
+  const textColor = paint.text;
+  const textMuted = paint.textSecondary;
 
   return (
     <div
+      data-testid="fullscreen-photo-clock"
       className="absolute bottom-0 left-0 right-0 z-10 flex flex-col items-start px-10 pb-10"
-      style={{ background: scrim }}
+      style={{ background: paint.background }}
     >
       <div className="flex items-baseline gap-2 pt-16">
         <span
@@ -290,19 +288,12 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
   const currentItem = isSinglePhoto || files.length === 0 ? null : files[photoIndex] ?? null;
   const { sources, activeLayer, layerReady, layerFailed } = useCrossfadeLayers(currentItem, photoIndex, advance);
 
-  // The one full-screen module whose last-resort theme is dark. The others
-  // fall through to `getThemeTokens`, which defaults to `linen`, and the
-  // per-display override UI advertises linen as the default for that reason.
-  // Photos are the exception on purpose: the frame this theme paints (the
-  // letterbox bars, the empty and loading screens, the clock scrim) sits
-  // against a photograph, and a pale frame around a photo reads as a mistake
-  // where a dark one reads as a mount. A household that wants linen here sets
-  // it, per module or per display, and this only applies when neither is set.
-  const themeId = config.theme ?? fullscreenTheme ?? 'midnight';
-  const theme = getThemeTokens(themeId);
+  // Midnight when nothing is set, unlike the other full-screen modules: see
+  // photoThemeTokens.
+  const theme = photoThemeTokens(config.theme, fullscreenTheme);
   // Photos are edge to edge, so the theme paints the frame around them: the
   // empty/loading screens, the letterbox bars an `objectFit: contain` photo
-  // leaves behind, and the clock overlay's scrim and text.
+  // leaves behind, and the clock overlay's backdrop and text.
   const themeGround = { backgroundColor: theme.bg, backgroundImage: theme.bgImage ?? 'none' };
 
   if (isSinglePhoto) {
@@ -339,7 +330,7 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
           layerIndex={0}
         />
         {config.showClock && (
-          <ClockOverlay theme={theme} timezone={timezone} timeFormat={timeFormat} />
+          <ClockOverlay theme={theme} backdrop={config} timezone={timezone} timeFormat={timeFormat} />
         )}
       </div>
     );
@@ -426,7 +417,7 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
 
       {/* Clock overlay */}
       {config.showClock && (
-        <ClockOverlay theme={theme} timezone={timezone} timeFormat={timeFormat} />
+        <ClockOverlay theme={theme} backdrop={config} timezone={timezone} timeFormat={timeFormat} />
       )}
     </div>
   );

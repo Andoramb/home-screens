@@ -3749,6 +3749,7 @@
       "shuffleOrder": "Shuffle Order",
       "kenBurnsEffect": "Ken Burns Effect",
       "showClockOverlay": "Show Clock Overlay",
+      "clockBackground": "Clock Background",
       "sourceOneDrive": "OneDrive"
     },
     "garbage-day": {

@@ -3749,6 +3749,7 @@
       "shuffleOrder": "Ordre aléatoire",
       "kenBurnsEffect": "Effet Ken Burns",
       "showClockOverlay": "Afficher l'horloge en superposition",
+      "clockBackground": "Fond de l'horloge",
       "sourceOneDrive": "OneDrive"
     },
     "garbage-day": {

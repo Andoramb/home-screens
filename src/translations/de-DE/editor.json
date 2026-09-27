@@ -3749,6 +3749,7 @@
       "shuffleOrder": "Zufällige Reihenfolge",
       "kenBurnsEffect": "Ken-Burns-Effekt",
       "showClockOverlay": "Uhr-Überlagerung anzeigen",
+      "clockBackground": "Uhr-Hintergrund",
       "sourceOneDrive": "OneDrive"
     },
     "garbage-day": {

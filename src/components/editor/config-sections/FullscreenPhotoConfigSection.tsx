@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
+import { photoThemeTokens, defaultClockBackdrop, autoClockBackdropColor } from '@/lib/fullscreen-photo-theme';
+import { useEditorStore } from '@/stores/editor-store';
+import ColorPicker from '@/components/ui/ColorPicker';
 import Slider from '@/components/ui/Slider';
 import Toggle from '@/components/ui/Toggle';
 import Button from '@/components/ui/Button';
@@ -66,6 +69,17 @@ export function FullscreenPhotoConfigSection({ mod, screenId }: { mod: ModuleIns
   const source: PhotoSource = c.source ?? 'local';
   const directory = (c.directory as string) || '';
   const isSinglePhoto = isSinglePhotoMode(c);
+
+  const showClock = c.showClock ?? true;
+  // Unset draws the backdrop's own color and strength, so both controls start
+  // there, and landing back on either clears its field so a later theme or
+  // color change still moves it. The theme resolves the way the canvas
+  // preview resolves it.
+  const displayTheme = useEditorStore((s) => s.config?.settings?.fullscreenTheme);
+  const photoTheme = photoThemeTokens(c.theme, displayTheme);
+  const autoBackdropColor = autoClockBackdropColor(photoTheme);
+  const themeBackdrop = defaultClockBackdrop(photoTheme, c.clockBackdropColor);
+  const clockBackdrop = c.clockBackdrop ?? themeBackdrop;
 
   const fetchPreviews = useCallback(async (dir: string) => {
     try {
@@ -253,9 +267,31 @@ export function FullscreenPhotoConfigSection({ mod, screenId }: { mod: ModuleIns
       />
       <Toggle
         label={t('configSections.fullscreen-photo.showClockOverlay')}
-        checked={c.showClock ?? true}
+        checked={showClock}
         onChange={(v) => set({ showClock: v })}
       />
+      {showClock && (
+        <>
+          <Slider
+            label={t('configSections.fullscreen-photo.clockBackground')}
+            value={clockBackdrop}
+            min={0}
+            max={100}
+            displayValue={`${clockBackdrop}%`}
+            onChange={(v) => set({ clockBackdrop: v === themeBackdrop ? undefined : v })}
+          />
+          {/* Plain "Color", read as the Clock Background's by sitting right
+              under it: the picker row leaves its label about 95px beside the
+              swatch, and "Clock Background Color" wrapped to three lines. */}
+          <ColorPicker
+            label={t('fields.color')}
+            value={c.clockBackdropColor || autoBackdropColor}
+            defaultValue={autoBackdropColor}
+            resetLabel={t('common.resetToDefault')}
+            onChange={(v) => set({ clockBackdropColor: v.toLowerCase() === autoBackdropColor ? undefined : v })}
+          />
+        </>
+      )}
 
       <PhoneSurfaceLinks context="photos" />
 

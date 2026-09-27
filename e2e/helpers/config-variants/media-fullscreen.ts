@@ -226,6 +226,35 @@ export const MEDIA_FULLSCREEN_VARIANTS: ConfigVariant[] = [
     },
   },
   {
+    // clockBackdrop 100 turns linen's white fade (0.72 at the bottom edge,
+    // 0.38 at the 60% stop) into a solid band behind the clock: fully white
+    // at both stops, fading out only above them.
+    type: 'fullscreen-photo', name: 'clock-backdrop-solid', kind: 'network-free',
+    config: { file: TINY_GIF, theme: 'linen', showClock: true, clockBackdrop: 100 },
+    expect: async (mod) => {
+      await expect(mod.getByTestId('fullscreen-photo-clock')).toHaveCSS(
+        'background-image',
+        'linear-gradient(to top, rgb(255, 255, 255) 0%, rgb(255, 255, 255) 60%, rgba(0, 0, 0, 0) 100%)',
+      );
+    },
+  },
+  {
+    // A picked backdrop color replaces linen's white and brings its own text:
+    // navy #1e3a8a is dark, so the fade takes the dark backdrop's strength
+    // (0.55 at the bottom edge, 0.25 at 60%) and the time turns white instead
+    // of linen's #1c1917.
+    type: 'fullscreen-photo', name: 'clock-backdrop-color', kind: 'network-free',
+    config: { file: TINY_GIF, theme: 'linen', showClock: true, clockBackdropColor: '#1e3a8a' },
+    expect: async (mod) => {
+      await expect(mod.getByTestId('fullscreen-photo-clock')).toHaveCSS(
+        'background-image',
+        'linear-gradient(to top, rgba(30, 58, 138, 0.55) 0%, rgba(30, 58, 138, 0.25) 60%, rgba(0, 0, 0, 0) 100%)',
+      );
+      const clock = mod.locator('span').filter({ hasText: /^\d{1,2}:\d{2}$/ }).first();
+      await expect(clock).toHaveCSS('color', 'rgb(255, 255, 255)');
+    },
+  },
+  {
     // source 'immich' routes the fetch to /api/immich/photos (the 'immich' stub
     // serves the same bare URL array as backgrounds), and the image renders
     // from that payload.

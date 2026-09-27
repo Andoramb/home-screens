@@ -3749,6 +3749,7 @@
       "shuffleOrder": "Willekeurige volgorde",
       "kenBurnsEffect": "Ken Burns-effect",
       "showClockOverlay": "Klok-overlay tonen",
+      "clockBackground": "Klokachtergrond",
       "sourceOneDrive": "OneDrive"
     },
     "garbage-day": {

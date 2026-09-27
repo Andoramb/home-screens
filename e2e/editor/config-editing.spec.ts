@@ -1196,6 +1196,42 @@ test('fullscreen-photo: switching Mode persists', async ({ page, request }) => {
   expect((await moduleConfig(request, 'fullscreen-photo')).file).toBe('');
 });
 
+test('fullscreen-photo: Clock Background starts at the theme\'s own and persists', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('fullscreen-photo', { theme: 'linen' }));
+
+  // Unset draws the theme's own backdrop, which on a light theme is 72%, so
+  // the slider starts there; one step right stores 73.
+  const slider = page.getByRole('slider', { name: 'Clock Background' });
+  await expect(slider).toHaveValue('72');
+
+  await autosaved(page, async () => {
+    await slider.focus();
+    await slider.press('ArrowRight');
+  });
+
+  expect((await moduleConfig(request, 'fullscreen-photo')).clockBackdrop).toBe(73);
+});
+
+test('fullscreen-photo: a picked Clock Background color persists and an unset strength follows it', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('fullscreen-photo', { theme: 'linen' }));
+
+  // The picker under the Clock Background slider is labelled plain "Color".
+  // Unpicked, linen's backdrop is white at 72%. A dark pick carries light
+  // text and the dark backdrop's own strength, so the slider follows to 55.
+  const color = colorText(page, 'Color');
+  const slider = page.getByRole('slider', { name: 'Clock Background' });
+  await expect(color).toHaveValue('#ffffff');
+  await expect(slider).toHaveValue('72');
+
+  await autosaved(page, async () => {
+    await color.fill('#1e3a8a');
+    await color.blur();
+  });
+
+  expect((await moduleConfig(request, 'fullscreen-photo')).clockBackdropColor).toBe('#1e3a8a');
+  await expect(slider).toHaveValue('55');
+});
+
 test('fullscreen-news: switching View persists', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('fullscreen-news'));
 
