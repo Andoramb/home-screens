@@ -1,4 +1,5 @@
 import { createGoogleTokenStore } from './google-token-store';
+import { hostedCalendarClient, hostedPhotosClient } from './google-hosted';
 
 /**
  * The two Google grant instances, in their own module rather than inside
@@ -17,6 +18,7 @@ export const googleCalendarTokenStore = createGoogleTokenStore({
   tokensPath: 'data/google-tokens.json',
   clientIdKey: 'google_client_id',
   clientSecretKey: 'google_client_secret',
+  hosted: hostedCalendarClient,
   missingCredentialsMessage:
     'Google Calendar Client ID and Secret are not configured. Add them in Settings → Integrations.',
   logName: 'google-auth',
@@ -27,6 +29,7 @@ export const googlePickerTokenStore = createGoogleTokenStore({
   tokensPath: 'data/google-picker-tokens.json',
   clientIdKey: 'google_web_client_id',
   clientSecretKey: 'google_web_client_secret',
+  hosted: hostedPhotosClient,
   missingCredentialsMessage:
     'Google Photos import needs a web Client ID and Secret. Add them in Settings → Integrations.',
   logName: 'google-picker',

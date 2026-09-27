@@ -1,0 +1,25 @@
+name = "home-screens-google-oauth"
+main = "worker.ts"
+compatibility_date = "2026-03-24"
+
+# Hubs call this from their own servers; no browser ever loads it.
+routes = [
+  { pattern = "auth.homescreens.dev", custom_domain = true }
+]
+
+# No request logging: bodies carry sign-in codes and refresh tokens.
+[observability]
+enabled = false
+
+# Per network address. A hub renews about once an hour and signs in rarely,
+# so this only ever stops abuse, even for many hubs behind one address.
+[[ratelimits]]
+name = "TOKEN_LIMITER"
+namespace_id = "2001"
+
+  [ratelimits.simple]
+  limit = 30
+  period = 60
+
+# The secret is set with `npx wrangler secret put GOOGLE_PHOTOS_CLIENT_SECRET`
+# and never appears in this file.

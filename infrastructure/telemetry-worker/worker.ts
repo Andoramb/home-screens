@@ -184,6 +184,37 @@ const worker = {
       });
     }
   },
+
+  /**
+   * Daily clean-up, run by the cron in wrangler.toml. The privacy policy
+   * promises an install's report is deleted 12 months after its hub last
+   * sent one. Each install has a single row that every report overwrites,
+   * so deleting stale rows is the whole promise.
+   *
+   * All-time totals (installs ever, new installs per day) would shrink with
+   * every deletion, so each deleted install is first added to
+   * `pruned_installs`, counted by the day it was first seen, and the
+   * dashboard adds those counts back. One cutoff is read up front and both
+   * statements run as a single D1 batch (a transaction), so an install is
+   * never counted without being deleted or deleted without being counted.
+   */
+  async scheduled(_event: unknown, env: Env): Promise<void> {
+    const row = await env.DB
+      .prepare("SELECT datetime('now', '-12 months') AS cutoff")
+      .first<{ cutoff: string }>();
+    const cutoff = row!.cutoff;
+    const [, deleted] = await env.DB.batch([
+      env.DB.prepare(`
+        INSERT INTO pruned_installs (first_seen_day, installs)
+        SELECT date(first_seen_at), COUNT(*) FROM beacons
+        WHERE last_seen_at < ?1
+        GROUP BY date(first_seen_at)
+        ON CONFLICT(first_seen_day) DO UPDATE SET installs = installs + excluded.installs
+      `).bind(cutoff),
+      env.DB.prepare('DELETE FROM beacons WHERE last_seen_at < ?1').bind(cutoff),
+    ]);
+    console.log(`Deleted ${deleted.meta.changes} installs silent for 12 months (kept in pruned_installs totals)`);
+  },
 };
 
 export default worker;

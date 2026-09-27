@@ -21,7 +21,7 @@ describe('OAuth refresh versus credential restore', () => {
       fetched(); await gate;
       return { ok: true, status: 200, json: async () => { parsed(); return { access_token: 'old-account-refreshed', expires_in: 3600 }; } };
     }));
-    const store = createOAuthTokenStore({ tokensPath: file, tokenUrl: 'https://example.invalid/token', getCredentials: async () => ({ client_id: 'test' }), hasCredentials: async () => true, logName: 'oauth-test' });
+    const store = createOAuthTokenStore({ tokensPath: file, getTokenClient: async () => ({ tokenUrl: 'https://example.invalid/token', params: { client_id: 'test' } }), hasCredentials: async () => true, logName: 'oauth-test' });
     await store.saveTokens(old);
     const pending = store.getAccessToken();
     await network;
@@ -51,7 +51,7 @@ describe('OAuth refresh versus credential restore', () => {
       fetched(); await gate;
       return { ok: true, status: 200, json: async () => ({ access_token: 'old-account-refreshed', refresh_token: 'rotated-refresh', expires_in: 3600 }) };
     }));
-    const store = createOAuthTokenStore({ tokensPath: file, tokenUrl: 'https://example.invalid/token', getCredentials: async () => ({ client_id: 'test' }), hasCredentials: async () => true, logName: 'oauth-test' });
+    const store = createOAuthTokenStore({ tokensPath: file, getTokenClient: async () => ({ tokenUrl: 'https://example.invalid/token', params: { client_id: 'test' } }), hasCredentials: async () => true, logName: 'oauth-test' });
     await store.saveTokens(old);
     const pending = store.getAccessToken();
     await network;

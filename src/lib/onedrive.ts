@@ -55,12 +55,11 @@ export async function getMicrosoftClientId(): Promise<string | null> {
 
 const tokenStore = createOAuthTokenStore({
   tokensPath: 'data/onedrive-tokens.json',
-  tokenUrl: TOKEN_URL,
   logName: 'onedrive',
-  getCredentials: async () => {
+  getTokenClient: async () => {
     const clientId = await getMicrosoftClientId();
     if (!clientId) throw new Error('OneDrive Application ID is not set');
-    return { client_id: clientId };
+    return { tokenUrl: TOKEN_URL, params: { client_id: clientId } };
   },
   hasCredentials: async () => (await getMicrosoftClientId()) !== null,
 });

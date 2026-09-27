@@ -6,3 +6,8 @@ compatibility_date = "2024-12-01"
 binding = "DB"
 database_name = "telemetry"
 database_id = "8508ecf2-74e8-4c55-bc39-cf5f89f587ab"
+
+# Daily: delete installs whose hub stopped reporting 12 months ago (the
+# privacy policy's promise; see the scheduled handler in worker.ts).
+[triggers]
+crons = ["17 4 * * *"]

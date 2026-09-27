@@ -56,6 +56,14 @@ CREATE INDEX IF NOT EXISTS idx_beacons_last_seen ON beacons(last_seen_at);
 CREATE INDEX IF NOT EXISTS idx_beacons_app_version ON beacons(app_version);
 CREATE INDEX IF NOT EXISTS idx_beacons_display_count ON beacons(display_count);
 
--- Upgrading an existing deployment? See `schema-v2-migration.sql` and
--- `schema-v4-migration.sql` for the ALTER TABLE statements that bring an
--- older `beacons` table in line with the column list above.
+-- Installs the daily clean-up deleted (silent for 12 months), counted by the
+-- day they were first seen. Holds counts only, never an install id. The
+-- dashboard adds these back so all-time totals survive the clean-up.
+CREATE TABLE IF NOT EXISTS pruned_installs (
+  first_seen_day  TEXT PRIMARY KEY,  -- YYYY-MM-DD
+  installs        INTEGER NOT NULL
+);
+
+-- Upgrading an existing deployment? See `schema-v2-migration.sql`,
+-- `schema-v4-migration.sql` and `schema-v5-migration.sql` for the statements
+-- that bring an older database in line with the tables above.

@@ -37,9 +37,8 @@ function tokenResponse(extras: Record<string, unknown> = {}) {
 /** Id-only credentials (the Microsoft shape). */
 const idOnlyOpts = (): OAuthTokenStoreOptions => ({
   tokensPath: 'data/test-tokens.json',
-  tokenUrl: 'https://login.example.test/oauth2/token',
   logName: 'test-store',
-  getCredentials: async () => ({ client_id: 'client-id-1' }),
+  getTokenClient: async () => ({ tokenUrl: 'https://login.example.test/oauth2/token', params: { client_id: 'client-id-1' } }),
   hasCredentials: async () => true,
 });
 

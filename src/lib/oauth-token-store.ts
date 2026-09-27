@@ -27,14 +27,16 @@ export interface StoredOAuthTokens {
 export interface OAuthTokenStoreOptions {
   /** Path of the tokens JSON file, relative to process.cwd(). */
   tokensPath: string;
-  tokenUrl: string;
   /** Revocation endpoint; absent → disconnect only clears the tokens file. */
   revokeUrl?: string;
   /**
-   * Token-request credential params (client_id, and client_secret when the
-   * provider has one). Throws with the provider's own message when unusable.
+   * Where a refresh goes and the client params it carries (client_id, and
+   * client_secret when the client has one). Resolved per refresh, and as one
+   * value, because a provider can switch clients while running and the
+   * endpoint must match the credentials. Throws with the provider's own
+   * message when unusable.
    */
-  getCredentials: () => Promise<Record<string, string>>;
+  getTokenClient: () => Promise<{ tokenUrl: string; params: Record<string, string> }>;
   /** Passive presence check — no network. */
   hasCredentials: () => Promise<boolean>;
   /** Logger namespace. */
@@ -108,18 +110,18 @@ export function createOAuthTokenStore(opts: OAuthTokenStoreOptions): OAuthTokenS
 
   /** `startedAt` is the generation observed before the tokens were read. */
   async function refreshAccessToken(tokens: StoredOAuthTokens, startedAt: number): Promise<string | null> {
-    let credentials: Record<string, string>;
+    let client: { tokenUrl: string; params: Record<string, string> };
     try {
-      credentials = await opts.getCredentials();
+      client = await opts.getTokenClient();
     } catch (err) {
       log.error('Token refresh impossible:', err instanceof Error ? err.message : err);
       return null;
     }
-    const res = await fetchWithTimeout(opts.tokenUrl, {
+    const res = await fetchWithTimeout(client.tokenUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        ...credentials,
+        ...client.params,
         refresh_token: tokens.refresh_token!,
         grant_type: 'refresh_token',
       }),

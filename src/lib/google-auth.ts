@@ -1,5 +1,4 @@
 import type { auth as googleAuth } from '@googleapis/calendar';
-import { getSecret } from '@/lib/secrets';
 import { fetchWithTimeout } from '@/lib/api-utils';
 import type { StoredGoogleTokens } from '@/lib/google-token-store';
 import { googleCalendarTokenStore } from '@/lib/google-token-stores';
@@ -15,7 +14,6 @@ const SCOPES = ['https://www.googleapis.com/auth/calendar.readonly'];
 // ── Device Flow ──────────────────────────────────────────────────────
 // Google's device authorization endpoint (no redirect URI needed)
 const DEVICE_CODE_URL = 'https://oauth2.googleapis.com/device/code';
-const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 
 const store = googleCalendarTokenStore;
 
@@ -29,7 +27,7 @@ interface DeviceCodeResponse {
 
 /** Request a device code + user code from Google. */
 export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
-  const clientId = (await getSecret('google_client_id'))?.trim();
+  const clientId = await store.getClientId();
   if (!clientId) throw new Error('Google Calendar Client ID is not configured. Add it in Settings → Integrations.');
 
   const res = await fetchWithTimeout(DEVICE_CODE_URL, {
@@ -53,28 +51,19 @@ export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
 export async function pollDeviceToken(
   deviceCode: string,
 ): Promise<{ status: 'pending' | 'success' | 'expired' | 'denied'; error?: string }> {
-  const { clientId, clientSecret } = await store.getClientCredentials();
-
-  const res = await fetchWithTimeout(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      device_code: deviceCode,
-      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-    }),
+  const { ok, data: body, client } = await store.requestToken({
+    device_code: deviceCode,
+    grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
   });
+  const data = body as StoredGoogleTokens & { expires_in?: number; error?: string; error_description?: string };
 
-  const data = await res.json();
-
-  if (res.ok && data.access_token) {
+  if (ok && data.access_token) {
     // Success — convert expires_in (relative seconds) to expiry_date (absolute ms)
     // so getAuthenticatedClient() can proactively refresh before expiry
     if (data.expires_in && !data.expiry_date) {
       data.expiry_date = Date.now() + data.expires_in * 1000;
     }
-    await store.saveTokens(data);
+    await store.saveGrant(data, client);
     if (!data.refresh_token) {
       return {
         status: 'success',
@@ -115,7 +104,7 @@ export async function getAuthenticatedClient(): Promise<InstanceType<typeof goog
     log.error('No usable Google tokens (missing, expired without refresh token, or refresh rejected)');
     return null;
   }
-  const { clientId, clientSecret } = await store.getClientCredentials();
+  const { clientId, clientSecret } = await store.getClient();
   const { auth } = await import('@googleapis/calendar');
   const client = new auth.OAuth2(clientId, clientSecret);
   client.setCredentials({ access_token: accessToken });

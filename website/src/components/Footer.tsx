@@ -33,6 +33,8 @@ const columns = [
       { label: 'Discord', href: DISCORD_INVITE_URL },
       { label: 'Issues', href: 'https://github.com/home-screens/home-screens/issues' },
       { label: 'License', href: 'https://github.com/home-screens/home-screens/blob/main/LICENSE' },
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Terms', href: '/terms' },
     ],
   },
 ];

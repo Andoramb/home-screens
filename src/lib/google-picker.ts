@@ -1,5 +1,6 @@
 import { fetchWithTimeout } from '@/lib/api-utils';
 import { googlePickerTokenStore } from '@/lib/google-token-stores';
+import { SignInHelperUnreachableError } from '@/lib/google-token-store';
 import {
   reserveLibraryImport,
   abandonLibraryImport,
@@ -25,15 +26,18 @@ import {
  * register plain-http LAN redirect URIs — so the redirect lands on the
  * static helper page at homescreens.dev, which shows the user a code to
  * paste back into the editor. Token persistence/refresh/revocation lives in
- * the shared google-token-store (also used by the calendar integration).
+ * the shared google-token-store (also used by the calendar integration),
+ * which also decides whether the household's own app or Home Screens' app
+ * signs in; with Home Screens' app, codes and refreshes go through its
+ * sign-in helper rather than straight to Google.
  */
 const SCOPES = ['https://www.googleapis.com/auth/photospicker.mediaitems.readonly'];
 const AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
-const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const API_BASE = 'https://photospicker.googleapis.com/v1';
 
 /** Static helper page (in website/) that displays the ?code for pasting.
- *  Every user registers this exact URI on their own OAuth web client. */
+ *  Registered on Home Screens' own web client, and by every household on
+ *  its own. */
 export const REDIRECT_URI = 'https://homescreens.dev/connect/google';
 
 const store = googlePickerTokenStore;
@@ -46,7 +50,7 @@ export async function hasPickerCredentials(): Promise<boolean> {
 
 /** The Google sign-in URL the editor opens in a new tab. */
 export async function getPickerAuthUrl(): Promise<string> {
-  const { clientId } = await store.getClientCredentials();
+  const { clientId } = await store.getClient();
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: REDIRECT_URI,
@@ -77,33 +81,39 @@ export async function exchangePickerCode(pasted: string): Promise<{ ok: true } |
   const code = extractAuthCode(pasted);
   if (!code) return { ok: false, error: 'That code does not look right. Paste the code (or the whole link) from the sign-in page.' };
 
-  const { clientId, clientSecret } = await store.getClientCredentials();
-  const res = await fetchWithTimeout(TOKEN_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: REDIRECT_URI,
-    }),
-    // The authorization code is single-use: a retry after a timeout or 5xx
-    // would replay a code Google may already have redeemed, turning a
-    // transient blip into an invalid_grant that forces a full re-approval.
-    retries: 0,
-  });
-  const data = await res.json();
-  if (!res.ok || !data.access_token) {
+  let result: Awaited<ReturnType<typeof store.requestToken>>;
+  try {
+    result = await store.requestToken(
+      { code, grant_type: 'authorization_code', redirect_uri: REDIRECT_URI },
+      // The authorization code is single-use: a retry after a timeout or 5xx
+      // would replay a code Google may already have redeemed, turning a
+      // transient blip into an invalid_grant that forces a full re-approval.
+      { retries: 0 },
+    );
+  } catch (err) {
+    if (err instanceof SignInHelperUnreachableError) return { ok: false, error: err.message };
+    throw err;
+  }
+  const { ok, client } = result;
+  const data = result.data as {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+    token_type?: string;
+    scope?: string;
+    error?: string;
+    error_description?: string;
+  };
+  if (!ok || !data.access_token) {
     return { ok: false, error: data.error_description || data.error || 'Sign-in failed. Please try again.' };
   }
-  await store.saveTokens({
+  await store.saveGrant({
     access_token: data.access_token,
     refresh_token: data.refresh_token ?? null,
     expiry_date: Date.now() + (data.expires_in ?? 3600) * 1000,
     token_type: data.token_type,
     scope: data.scope,
-  });
+  }, client);
   return { ok: true };
 }
 
