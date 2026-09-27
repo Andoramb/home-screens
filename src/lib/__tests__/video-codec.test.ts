@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { videoCodecOf, videoCodecOfFile, type ReadAt } from '@/lib/video-codec';
+import { isUnplayableVideo, videoCodecOf, videoCodecOfFile, type ReadAt } from '@/lib/video-codec';
 
 /**
  * The files here are built box by box. A box is its size (4 bytes, big
@@ -184,5 +184,24 @@ describe('videoCodecOfFile', () => {
 
   it('reads a WebM file as unknown', async () => {
     await expect(videoCodecOfFile(new Blob([new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0, 0, 0, 0])]))).resolves.toBe('unknown');
+  });
+});
+
+describe('isUnplayableVideo', () => {
+  const clip = (...parts: Uint8Array[]) => new Blob([concat(parts)]);
+
+  it('is true for an HEVC video, which the wall cannot play', async () => {
+    expect(await isUnplayableVideo(clip(FTYP, moov('hvc1')))).toBe(true);
+    expect(await isUnplayableVideo(clip(FTYP, moov('mp4a', 'hev1')))).toBe(true);
+  });
+
+  it('is false for H.264 and for a file that does not open like MP4', async () => {
+    expect(await isUnplayableVideo(clip(FTYP, moov('avc1')))).toBe(false);
+    expect(await isUnplayableVideo(new Blob([new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9])]))).toBe(false);
+  });
+
+  it('counts a file that cannot be read as playable, leaving it to the hub', async () => {
+    const unreadable = { size: 64, slice: () => ({ arrayBuffer: () => Promise.reject(new Error('read failed')) }) } as unknown as Blob;
+    expect(await isUnplayableVideo(unreadable)).toBe(false);
   });
 });

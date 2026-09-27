@@ -54,3 +54,28 @@ function subscribe(fn: () => void): () => void {
 export function useRemoteToast(): RemoteToast | null {
   return useSyncExternalStore(subscribe, () => current, () => null);
 }
+
+/**
+ * How tall the panel of a full-screen overlay is (the photo viewer's), or
+ * null. While set, the toast sits just above that panel instead of above the
+ * tab bar, which the overlay covers and where its buttons are.
+ */
+let floor: number | null = null;
+const floorListeners = new Set<() => void>();
+
+export function setToastFloor(px: number | null): void {
+  if (floor === px) return;
+  floor = px;
+  for (const fn of floorListeners) fn();
+}
+
+function subscribeFloor(fn: () => void): () => void {
+  floorListeners.add(fn);
+  return () => {
+    floorListeners.delete(fn);
+  };
+}
+
+export function useToastFloor(): number | null {
+  return useSyncExternalStore(subscribeFloor, () => floor, () => null);
+}

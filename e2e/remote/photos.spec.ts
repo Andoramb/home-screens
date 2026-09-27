@@ -5,6 +5,7 @@ import path from 'path';
 import { getConfig, postHeartbeat, putConfig } from '../helpers/api';
 import { baseConfig, makeScreen, choreChartModule } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
+import { mp4WithVideo } from '../helpers/video-samples';
 import type { ModuleInstance, ScreenConfiguration } from '@/types/config';
 
 /**
@@ -193,6 +194,98 @@ test('the card after adding stays with its folder, and a photo gone from the hub
   await expect(viewer).toHaveCount(0);
 });
 
+test('Back closes a sheet over the viewer, then the viewer, and stays on the remote', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await seedImage(request, folder, 'e2e-a.png');
+  await seedImage(request, folder, 'e2e-b.png');
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await openPhotos(page);
+  await chip(page, folder).click();
+
+  await tiles(page).first().click();
+  const viewer = page.getByTestId('photo-viewer');
+  await viewer.getByTestId('photo-viewer-delete').click();
+  await expect(page.getByTestId('confirm-sheet')).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByTestId('confirm-sheet')).toHaveCount(0);
+  await expect(viewer.getByTestId('photo-viewer-count')).toHaveText('1 of 2');
+
+  await page.goBack();
+  await expect(viewer).toHaveCount(0);
+  await expect(page.getByTestId('photos-tab')).toBeVisible();
+  await expect(page).toHaveURL(/\/remote\?/);
+
+  // Closed by its own button, the viewer gives its history step back, so a
+  // later Back has no leftover viewer step to land on.
+  const ownStep = () => page.evaluate(() => (window.history.state as { hsSheet?: string } | null)?.hsSheet ?? null);
+  await tiles(page).first().click();
+  await expect.poll(ownStep).not.toBeNull();
+  await viewer.getByTestId('photo-viewer-close').click();
+  await expect(viewer).toHaveCount(0);
+  await expect.poll(ownStep).toBeNull();
+});
+
+test('the toast over the viewer sits above its panel, off the buttons', async ({ page, request }) => {
+  const folder = uniqueFolder();
+  created.push(folder);
+  await seedImage(request, folder, 'e2e-toast.png');
+  await putConfig(request, photoConfig(folder));
+  await page.route('**/api/display/show-photo', (route) => route.fulfill({ json: { ok: true } }));
+  await openPhotos(page);
+
+  await tiles(page).first().click();
+  const viewer = page.getByTestId('photo-viewer');
+  await viewer.getByTestId('photo-viewer-show').click();
+  const toast = page.getByTestId('remote-toast');
+  await expect(toast).toContainText('Showing on the wall for a minute.');
+  const toastBox = (await toast.boundingBox())!;
+  const panelBox = (await viewer.getByTestId('photo-viewer-panel').boundingBox())!;
+  expect(toastBox.y + toastBox.height).toBeLessThanOrEqual(panelBox.y);
+
+  // Back on the grid it returns to its place above the tab bar.
+  await viewer.getByTestId('photo-viewer-close').click();
+  await expect(viewer).toHaveCount(0);
+});
+
+test('the Photos tab comes back to the folder it was left on, after another tab and after a reload', async ({ page, request }) => {
+  const wall = uniqueFolder();
+  const other = uniqueFolder();
+  created.push(wall, other);
+  await putConfig(request, photoConfig(wall));
+  await page.request.post('/api/backgrounds/directories', { data: { name: wall } });
+  await page.request.post('/api/backgrounds/directories', { data: { name: other } });
+  await openPhotos(page);
+  await expect(chip(page, wall)).toHaveAttribute('aria-pressed', 'true');
+
+  await chip(page, other).click();
+  await expect(page).toHaveURL(new RegExp(`folder=${other}`));
+  await page.getByRole('button', { name: 'Control', exact: true }).click();
+  await page.getByRole('button', { name: 'Photos', exact: true }).click();
+  await expect(chip(page, other)).toHaveAttribute('aria-pressed', 'true');
+
+  await page.reload();
+  await expect(page.getByTestId('photos-tab')).toBeVisible();
+  await expect(chip(page, other)).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('deleting a folder inside another goes back to its parent', async ({ page, request }) => {
+  const parent = uniqueFolder();
+  created.push(parent);
+  await putConfig(request, photoConfig(uniqueFolder()));
+  await page.request.post('/api/backgrounds/directories', { data: { name: parent } });
+  await page.request.post('/api/backgrounds/directories', { data: { name: 'Inner', parent } });
+  await openPhotos(page);
+  await chip(page, `${parent}/Inner`).click();
+
+  await page.getByTestId('photos-folder-menu').click();
+  await page.getByTestId('photo-folder-delete').click();
+  await page.getByTestId('confirm-sheet').getByRole('button', { name: 'Delete folder' }).click();
+  await expect(page.getByTestId('remote-toast')).toContainText('Folder deleted');
+  await expect(chip(page, parent)).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('adding several says so once, and every file that could not go is listed with its reason', async ({ page, request }) => {
   const folder = uniqueFolder();
   created.push(folder);
@@ -210,12 +303,16 @@ test('adding several says so once, and every file that could not go is listed wi
 
   await page.getByTestId('photos-file-input').setInputFiles([
     { name: 'permission-slip.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4\n') },
+    { name: 'IMG_0042.MOV', mimeType: 'video/quicktime', buffer: mp4WithVideo('hvc1') },
     { name: 'e2e-c.png', mimeType: 'image/png', buffer: TINY_PNG_BYTES },
   ]);
   const result = page.getByTestId('photo-upload-result');
   await expect(result).toContainText('1 added.');
-  await expect(result).toContainText("1 couldn't be added");
-  await expect(result.getByTestId('photo-upload-failures')).toContainText("permission-slip.pdf isn't a photo or video the wall can show.");
+  await expect(result).toContainText("2 couldn't be added");
+  const failures = result.getByTestId('photo-upload-failures');
+  await expect(failures).toContainText("permission-slip.pdf isn't a photo or video the wall can show.");
+  // Read from the file itself: an iPhone's default HEVC would play as a black slide.
+  await expect(failures).toContainText("IMG_0042.MOV is a kind of video the wall can't play. On an iPhone, choose Most Compatible in Settings > Camera > Formats.");
   await result.getByTestId('photo-upload-close').first().click();
   await expect(result).toHaveCount(0);
 });
@@ -272,8 +369,11 @@ test('a slideshow keeps its last picture: deleting them all leaves one and says 
   await page.getByTestId('photos-select-all').click();
   await expect(page.getByTestId('photos-selected-count')).toHaveText('3 selected');
   await page.getByTestId('photos-delete').click();
-  await expect(page.getByTestId('confirm-sheet')).toContainText('They come off the Screen One slideshow');
-  await confirmDelete(page, 'Delete 3 photos');
+  // Said before deleting, not only after: two go, one stays.
+  await expect(page.getByTestId('confirm-sheet')).toContainText(
+    "They come off the Screen One slideshow and out of the photo library for good. 1 stays so the Screen One slideshow isn't empty.",
+  );
+  await confirmDelete(page, 'Delete 2 photos');
   await expect(page.getByTestId('remote-toast')).toContainText("2 deleted. 1 stayed so the Screen One slideshow isn't empty.");
   await expect(tiles(page)).toHaveCount(1);
   // Grid order is newest first, and deleting follows it: the oldest stays.
@@ -285,6 +385,15 @@ test('a slideshow keeps its last picture: deleting them all leaves one and says 
   await expect(viewer.getByTestId('photo-viewer-note')).toContainText('This is the only photo in the Screen One slideshow.');
   await expect(viewer.getByTestId('photo-viewer-delete')).toHaveCount(0);
   await expect(viewer.getByTestId('photo-viewer-move')).toHaveCount(0);
+
+  // Picked alone in select mode, Delete says why instead of asking to delete nothing.
+  await viewer.getByTestId('photo-viewer-close').click();
+  await page.getByTestId('photos-select').click();
+  await tiles(page).first().click();
+  await page.getByTestId('photos-delete').click();
+  await expect(page.getByTestId('remote-toast')).toContainText("1 stays so the Screen One slideshow isn't empty.");
+  await expect(page.getByTestId('confirm-sheet')).toHaveCount(0);
+  expect(existsSync(bgPath(sandboxDir, folder, 'e2e-1.png'))).toBe(true);
 });
 
 test('a photo a screen uses on its own is locked, but can still be moved', async ({ page, request }) => {
@@ -481,22 +590,36 @@ test('an iCloud link is added to the folder being viewed, and a bad link says so
   expect(started).toEqual({ url: 'https://www.icloud.com/sharedalbum/#B0aGWZuqDGSZqa', folder });
 });
 
-test('an iCloud album with nothing in it, or a dead one, says so rather than "nothing new"', async ({ page, request }) => {
+test('an iCloud album with nothing in it says so, and one that is gone says that instead', async ({ page, request }) => {
   const folder = uniqueFolder();
   await putConfig(request, photoConfig(folder));
   await page.request.post('/api/backgrounds/directories', { data: { name: folder } });
   created.push(folder);
 
-  // The hub reads a gone album as an empty one, so the job finishes with nothing in it.
-  await page.route('**/api/icloud/import**', (route) => route.request().method() === 'POST'
-    ? route.fulfill({ status: 202, json: { jobId: 'job-empty', total: 0 } })
-    : route.fulfill({ json: { state: 'done', total: 0, done: 0, skipped: 0, failed: 0, videoFiles: [] } }));
+  let gone = false;
+  await page.route('**/api/icloud/import**', (route) => {
+    if (route.request().method() !== 'POST') {
+      return route.fulfill({ json: { state: 'done', total: 0, done: 0, skipped: 0, failed: 0, videoFiles: [] } });
+    }
+    return gone
+      ? route.fulfill({ status: 400, json: { error: 'album-gone' } })
+      : route.fulfill({ status: 202, json: { jobId: 'job-empty', total: 0 } });
+  });
   await openPhotos(page);
   await page.getByTestId('photos-add-icloud').click();
   const sheet = page.getByTestId('photo-icloud-sheet');
   await sheet.getByTestId('photo-icloud-url').fill('https://www.icloud.com/sharedalbum/#B0aGWZuqDGx0J3Vq');
   await sheet.getByTestId('photo-icloud-start').click();
-  await expect(sheet.getByTestId('photo-import-result')).toHaveText('Nothing to add. The album is empty, or its link stopped working.');
+  await expect(sheet.getByTestId('photo-import-result')).toHaveText("There's nothing in that album to add.");
+
+  gone = true;
+  await sheet.getByRole('button', { name: 'Done' }).click();
+  await page.getByTestId('photos-add-icloud').click();
+  await sheet.getByTestId('photo-icloud-url').fill('https://www.icloud.com/sharedalbum/#B0aGWZuqDGx0J3Vq');
+  await sheet.getByTestId('photo-icloud-start').click();
+  await expect(sheet.getByTestId('photo-import-error')).toHaveText(
+    "That album isn't shared anymore. Share it again in the Photos app and paste the new link.",
+  );
 });
 
 test('the Control tab steps the slideshow on the screen showing now', async ({ page, request }) => {

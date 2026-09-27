@@ -1119,6 +1119,7 @@
       "dropzone": "Sleep afbeeldingen of video's hierheen, of klik om te kiezen, zoveel als je wilt",
       "saveInto": "Opslaan in",
       "uploadFailedWithStatus": "Uploaden mislukt ({status})",
+      "wontPlay": "{name} is een soort video die de muur niet kan afspelen. Kies op een iPhone 'Meest compatibel' bij Instellingen > Camera > Bestandsstructuren.",
       "uploadFailed": "Uploaden mislukt",
       "loadFailed": "Je afbeeldingen en video's konden niet worden geladen",
       "tryAgain": "Opnieuw proberen",
@@ -1145,7 +1146,10 @@
         "one": "1 bestand verwijderen?",
         "other": "{count} bestanden verwijderen?"
       },
-      "deleteMessage": "Ze verdwijnen voorgoed van deze hub. Diavoorstellingen gaan verder met hun andere afbeeldingen. Bestanden die een scherm nodig heeft, blijven staan, zodat er geen scherm leeg raakt.",
+      "deleteMessage": {
+        "one": "Het verdwijnt voorgoed van deze hub. Een diavoorstelling die het toont, gaat verder met de andere afbeeldingen. Heeft een scherm het bestand nodig, dan blijft het staan, zodat er geen scherm leeg raakt.",
+        "other": "Ze verdwijnen voorgoed van deze hub. Diavoorstellingen gaan verder met hun andere afbeeldingen. Bestanden die een scherm nodig heeft, blijven staan, zodat er geen scherm leeg raakt."
+      },
       "deleteConfirm": "Verwijderen",
       "refused": "{file} is nog in gebruik en is niet verwijderd",
       "keptLast": "{file} is blijven staan: het is de laatste afbeelding in de diavoorstelling op '{name}'.",
@@ -1196,7 +1200,10 @@
         "one": "1 bestand verplaatsen?",
         "other": "{count} bestanden verplaatsen?"
       },
-      "moveMessage": "Schermen die deze bestanden gebruiken, volgen ze naar de nieuwe map. Een afbeelding die je uit de map van een diavoorstelling haalt, verdwijnt uit die diavoorstelling.",
+      "moveMessage": {
+        "one": "Schermen die dit bestand gebruiken, volgen het naar de nieuwe map. Een afbeelding die je uit de map van een diavoorstelling haalt, verdwijnt uit die diavoorstelling.",
+        "other": "Schermen die deze bestanden gebruiken, volgen ze naar de nieuwe map. Een afbeelding die je uit de map van een diavoorstelling haalt, verdwijnt uit die diavoorstelling."
+      },
       "moveConfirm": "Verplaatsen",
       "moved": {
         "one": "1 bestand verplaatst",
@@ -2522,14 +2529,26 @@
     "start": "Importeren",
     "importing": "Bezig met importeren…",
     "progress": "Bezig met downloaden: {done} van {total}…",
-    "summary": "{done} nieuwe items toegevoegd. {skipped} waren er al.",
-    "summaryFailed": "{failed} konden niet worden gedownload.",
+    "summaryAdded": {
+      "one": "1 nieuw item toegevoegd.",
+      "other": "{count} nieuwe items toegevoegd."
+    },
+    "summarySkipped": {
+      "one": "1 stond er al.",
+      "other": "{count} stonden er al."
+    },
+    "summaryFailed": {
+      "one": "1 kon niet worden gedownload.",
+      "other": "{count} konden niet worden gedownload."
+    },
+    "empty": "Er staat niets in dat album om toe te voegen.",
     "help": "Werkt met links van gedeelde albums (icloud.com/sharedalbum/#…) en 'Kopieer iCloud-link'-links (share.icloud.com). Alles uit de link wordt opgeslagen in de huidige map.",
     "albumTip": "Tip: gedeelde albums kunnen ook live worden getoond, zonder downloaden. Kies 'Gedeeld iCloud-album' als fotobron in de instellingen van een diavoorstelling.",
     "errors": {
       "invalid": "Dit lijkt geen iCloud-link te zijn. Kopieer de link opnieuw en probeer het nog eens.",
       "unreachable": "iCloud is nu niet bereikbaar. Controleer de internetverbinding en probeer het nog eens.",
       "expired": "Deze link werkt niet meer. iCloud-fotolinks stoppen na ongeveer een maand; vraag een nieuwe link en probeer het opnieuw.",
+      "gone": "Dit album wordt niet meer gedeeld of is verwijderd. Deel het opnieuw in de Foto's-app en plak de nieuwe link.",
       "busy": "Er loopt al een import. Wacht even tot die klaar is.",
       "tooMany": "Deze link bevat te veel foto's om in één keer op te slaan. Probeer een kleiner album of een kleinere link.",
       "lost": "Deze import is uit beeld geraakt. Kijk in de map wat er is toegevoegd."
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Google Foto's opnieuw openen",
       "cancel": "Annuleren",
       "importing": "Foto's opslaan… {done} van {total}",
-      "importDone": "{done} nieuwe foto’s opgeslagen in je bibliotheek.",
-      "importDoneWithSkipped": "{done} nieuwe foto’s opgeslagen ({skipped} stonden al in je bibliotheek).",
+      "importDone": {
+        "one": "1 nieuwe foto opgeslagen in je bibliotheek.",
+        "other": "{count} nieuwe foto’s opgeslagen in je bibliotheek."
+      },
+      "alreadyInLibrary": {
+        "one": "1 stond al in je bibliotheek.",
+        "other": "{count} stonden al in je bibliotheek."
+      },
       "nothingPicked": "Er is niets gekozen. Probeer opnieuw foto’s te kiezen.",
       "sessionExpired": "Google Foto's heeft die kiessessie gesloten. Probeer opnieuw foto's te kiezen.",
       "busy": "Er loopt al een andere import. Wacht tot die klaar is en probeer het dan opnieuw.",

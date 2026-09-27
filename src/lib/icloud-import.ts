@@ -8,7 +8,7 @@ import {
   type LibraryImportJob,
   type LibraryImportPlan,
 } from './library-import';
-import { fetchICloudMedia } from './icloud-media';
+import { fetchICloudMediaForImport } from './icloud-media';
 import { listICloudLinkItems } from './icloud-link';
 import { detectICloudSource, parseICloudLinkToken } from './icloud-parse';
 
@@ -29,7 +29,7 @@ export type ICloudImportJob = LibraryImportJob;
 
 export type ICloudImportStart =
   | { jobId: string; total: number }
-  | { error: 'invalid-link' | 'link-expired' | 'invalid-folder' | 'busy' | 'too-many-items' };
+  | { error: 'invalid-link' | 'link-expired' | 'album-gone' | 'invalid-folder' | 'busy' | 'too-many-items' };
 
 export function clearICloudImportJobs(): void {
   clearLibraryImportJobs();
@@ -54,12 +54,14 @@ function isAppleContentUrl(rawUrl: string): boolean {
   }
 }
 
-async function buildPlans(url: string): Promise<LibraryImportPlan[] | 'invalid-link' | 'link-expired'> {
+async function buildPlans(url: string): Promise<LibraryImportPlan[] | 'invalid-link' | 'link-expired' | 'album-gone'> {
   const source = detectICloudSource(url);
   if (source === 'album') {
-    // fetchICloudMedia dispatches both album backends (legacy sharedstreams and
-    // new-format CloudKit), so importing works for either album link shape.
-    const items = await fetchICloudMedia(url);
+    // Both album backends (legacy sharedstreams and new-format CloudKit), so
+    // importing works for either album link shape. A gone album is said so,
+    // rather than importing nothing as if it were empty.
+    const items = await fetchICloudMediaForImport(url);
+    if (items === null) return 'album-gone';
     return items.map((item) => ({
       url: item.url,
       type: item.type,
@@ -92,7 +94,7 @@ export async function startICloudImport(url: string, folder: string): Promise<IC
     abandonLibraryImport(job.id);
     throw err;
   }
-  if (plans === 'invalid-link' || plans === 'link-expired') {
+  if (plans === 'invalid-link' || plans === 'link-expired' || plans === 'album-gone') {
     abandonLibraryImport(job.id);
     return { error: plans };
   }

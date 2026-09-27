@@ -1119,6 +1119,7 @@
       "dropzone": "Déposez des photos ou vidéos ici, ou cliquez pour choisir, autant que vous voulez",
       "saveInto": "Enregistrer dans",
       "uploadFailedWithStatus": "Échec de l'envoi ({status})",
+      "wontPlay": "{name} est une vidéo dans un format que le mur ne peut pas lire. Sur un iPhone, choisissez « Le plus compatible » dans Réglages > Appareil photo > Formats.",
       "uploadFailed": "Échec de l'envoi",
       "loadFailed": "Impossible de charger vos photos et vidéos",
       "tryAgain": "Réessayer",
@@ -1145,7 +1146,10 @@
         "one": "Supprimer 1 fichier ?",
         "other": "Supprimer {count} fichiers ?"
       },
-      "deleteMessage": "Tout ce que vous supprimez disparaîtra définitivement de ce hub. Les diaporamas continueront avec leurs autres photos, et les fichiers dont un écran a besoin seront conservés, pour qu'aucun écran ne se retrouve vide.",
+      "deleteMessage": {
+        "one": "Il disparaîtra définitivement de ce hub. Un diaporama qui l'affiche continuera avec ses autres photos, et si un écran en a besoin, le fichier sera conservé, pour qu'aucun écran ne se retrouve vide.",
+        "other": "Tout ce que vous supprimez disparaîtra définitivement de ce hub. Les diaporamas continueront avec leurs autres photos, et les fichiers dont un écran a besoin seront conservés, pour qu'aucun écran ne se retrouve vide."
+      },
       "deleteConfirm": "Supprimer",
       "refused": "{file} est encore utilisé et n'a pas été supprimé",
       "keptLast": "{file} a été conservé : c'est la seule photo du diaporama sur '{name}'.",
@@ -1196,7 +1200,10 @@
         "one": "Déplacer 1 fichier ?",
         "other": "Déplacer {count} fichiers ?"
       },
-      "moveMessage": "Les écrans qui utilisent un fichier déplacé le suivront dans le nouveau dossier. Une photo déplacée hors du dossier d'un diaporama n'apparaît plus dans ce diaporama.",
+      "moveMessage": {
+        "one": "Les écrans qui utilisent ce fichier le suivront dans le nouveau dossier. Une photo déplacée hors du dossier d'un diaporama n'apparaît plus dans ce diaporama.",
+        "other": "Les écrans qui utilisent un fichier déplacé le suivront dans le nouveau dossier. Une photo déplacée hors du dossier d'un diaporama n'apparaît plus dans ce diaporama."
+      },
       "moveConfirm": "Déplacer",
       "moved": {
         "one": "1 fichier déplacé",
@@ -2522,14 +2529,26 @@
     "start": "Importer",
     "importing": "Importation…",
     "progress": "Téléchargement de {done} sur {total}…",
-    "summary": "{done} nouveaux éléments ajoutés. {skipped} étaient déjà là.",
-    "summaryFailed": "{failed} n'ont pas pu être téléchargés.",
+    "summaryAdded": {
+      "one": "1 nouvel élément ajouté.",
+      "other": "{count} nouveaux éléments ajoutés."
+    },
+    "summarySkipped": {
+      "one": "1 était déjà là.",
+      "other": "{count} étaient déjà là."
+    },
+    "summaryFailed": {
+      "one": "1 n'a pas pu être téléchargé.",
+      "other": "{count} n'ont pas pu être téléchargés."
+    },
+    "empty": "Cet album ne contient rien à ajouter.",
     "help": "Fonctionne avec les liens d'albums partagés (icloud.com/sharedalbum/#…) et les liens « Copier le lien iCloud » (share.icloud.com). Tout le contenu du lien est enregistré dans le dossier actuel.",
     "albumTip": "Astuce : les albums partagés peuvent aussi être affichés en direct, sans téléchargement. Choisissez « Album partagé iCloud » comme source de photos dans les réglages d'un diaporama.",
     "errors": {
       "invalid": "Cela ne ressemble pas à un lien iCloud. Copiez le lien à nouveau et réessayez.",
       "unreachable": "Impossible de joindre iCloud pour le moment. Vérifiez la connexion Internet et réessayez.",
       "expired": "Ce lien ne fonctionne plus. Les liens photos iCloud expirent après environ un mois ; demandez un nouveau lien et réessayez.",
+      "gone": "Cet album n'est plus partagé ou a été supprimé. Partagez-le à nouveau dans l'app Photos et collez le nouveau lien.",
       "busy": "Un autre import est déjà en cours. Attendez qu'il se termine.",
       "tooMany": "Ce lien contient trop de photos pour tout enregistrer d'un coup. Essayez avec un album ou un lien plus petit.",
       "lost": "Impossible de suivre cet import. Vérifiez le dossier pour voir ce qui a été ajouté."
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Rouvrir Google Photos",
       "cancel": "Annuler",
       "importing": "Enregistrement des photos… {done} sur {total}",
-      "importDone": "{done} nouvelles photos enregistrées dans votre bibliothèque.",
-      "importDoneWithSkipped": "{done} nouvelles photos enregistrées ({skipped} étaient déjà dans votre bibliothèque).",
+      "importDone": {
+        "one": "1 nouvelle photo enregistrée dans votre bibliothèque.",
+        "other": "{count} nouvelles photos enregistrées dans votre bibliothèque."
+      },
+      "alreadyInLibrary": {
+        "one": "1 était déjà dans votre bibliothèque.",
+        "other": "{count} étaient déjà dans votre bibliothèque."
+      },
       "nothingPicked": "Rien n'a été sélectionné. Réessayez de choisir des photos.",
       "sessionExpired": "Google Photos a fermé cette session de sélection. Réessayez de choisir des photos.",
       "busy": "Un autre import est déjà en cours. Attendez qu'il se termine, puis réessayez.",

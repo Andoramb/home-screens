@@ -12,6 +12,7 @@ import { fetchWithTimeout } from '@/lib/api-utils';
 import {
   clearICloudCaches,
   fetchSharedStreamsAlbum,
+  fetchSharedStreamsAlbumForImport,
   getICloudBaseUrl,
 } from '@/lib/icloud-album';
 import { parseICloudAlbumToken } from '@/lib/icloud-parse';
@@ -288,5 +289,25 @@ describe('fetchSharedStreamsAlbum', () => {
     await fetchSharedStreamsAlbum('B125ON9t3mbLNC');
 
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('fetchSharedStreamsAlbumForImport', () => {
+  it('says an album that is gone is gone, while the slideshow read still gets an empty list', async () => {
+    routeFetch({ webstream: () => new Response('', { status: 404 }) });
+    expect(await fetchSharedStreamsAlbumForImport('B125ON9t3mbLNC')).toBeNull();
+    expect(await fetchSharedStreamsAlbum('B125ON9t3mbLNC')).toEqual([]);
+  });
+
+  it('reads an album with nothing in it as empty, not gone', async () => {
+    routeFetch({ webstream: () => webstreamResponse([]) });
+    expect(await fetchSharedStreamsAlbumForImport('B125ON9t3mbLNC')).toEqual([]);
+  });
+
+  it('reads Apple afresh rather than the slideshow cache', async () => {
+    routeFetch({ webstream: () => webstreamResponse([]) });
+    await fetchSharedStreamsAlbum('B125ON9t3mbLNC');
+    await fetchSharedStreamsAlbumForImport('B125ON9t3mbLNC');
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

@@ -194,7 +194,7 @@ function posterDerivative(derivatives: Record<string, RawDerivative>): RawDeriva
  *  missing/private album resolves to [] (never null), so the negative TTL is
  *  along for the ride here — the empty list caches for the full window,
  *  matching the CloudKit backend's posture of not re-hammering broken links. */
-const albumResolver = createResolverCache(5 * 60_000, 60_000, resolveAlbum);
+const albumResolver = createResolverCache(5 * 60_000, 60_000, async (token: string) => (await readAlbum(token)) ?? []);
 
 /**
  * Fetch a shared album's full media list. Cached for 5 minutes per token so
@@ -205,10 +205,20 @@ export async function fetchSharedStreamsAlbum(token: string): Promise<ICloudAlbu
   return (await albumResolver.fetch(token)) ?? [];
 }
 
-async function resolveAlbum(token: string): Promise<ICloudAlbumItem[]> {
+/**
+ * The same read for an import, which has to tell an album that is gone
+ * (deleted, or its public website turned off) from one with nothing in it:
+ * null for the first. Not cached: an import reads the album once.
+ */
+export function fetchSharedStreamsAlbumForImport(token: string): Promise<ICloudAlbumItem[] | null> {
+  return readAlbum(token);
+}
+
+/** One uncached read of an album's items; null when the album is gone. */
+async function readAlbum(token: string): Promise<ICloudAlbumItem[] | null> {
   const photos = await fetchWebstream(token);
   if (!photos) {
-    return [];
+    return null;
   }
 
   // Plan which checksums each item needs before resolving URLs, so items with

@@ -1,4 +1,4 @@
-import { fetchSharedStreamsAlbum } from './icloud-album';
+import { fetchSharedStreamsAlbum, fetchSharedStreamsAlbumForImport } from './icloud-album';
 import { fetchCloudKitAlbum } from './icloud-link';
 import { parseICloudAlbumToken, parseICloudSharedAlbumUrl } from './icloud-parse';
 import type { ICloudAlbumItem } from './icloud-types';
@@ -18,4 +18,18 @@ export async function fetchICloudMedia(albumUrlOrToken: string): Promise<ICloudA
 
   const legacyToken = parseICloudAlbumToken(albumUrlOrToken);
   return legacyToken ? fetchSharedStreamsAlbum(legacyToken) : [];
+}
+
+/**
+ * The same read for an import, which has to tell a link that leads nowhere
+ * any more (the album was deleted, or sharing was turned off) from an album
+ * with nothing in it: null for the first, so the person hears the link is
+ * dead rather than that there was nothing new.
+ */
+export async function fetchICloudMediaForImport(albumUrlOrToken: string): Promise<ICloudAlbumItem[] | null> {
+  const cloudKitToken = parseICloudSharedAlbumUrl(albumUrlOrToken);
+  if (cloudKitToken) return fetchCloudKitAlbum(cloudKitToken);
+
+  const legacyToken = parseICloudAlbumToken(albumUrlOrToken);
+  return legacyToken ? fetchSharedStreamsAlbumForImport(legacyToken) : null;
 }

@@ -13,7 +13,7 @@ import {
   mediaKindOf,
 } from '@/lib/media-formats';
 import { extensionOf } from '@/lib/media-paths';
-import { videoCodecOfFile } from '@/lib/video-codec';
+import { isUnplayableVideo } from '@/lib/video-codec';
 
 /**
  * The biggest video a phone sends. The hub holds a whole upload in memory,
@@ -69,6 +69,21 @@ function prepare(file: File): { file: File; kind: 'image' | 'video' } | null {
 }
 
 /**
+ * Why a picked file cannot go, when that is known before anything is read or
+ * sent: not a picture or video, a video the hub does not take, or one over
+ * the phone's size cap. Photos are only judged after they are made smaller,
+ * and HEVC only once the file is read, so both answer null here.
+ */
+function refusedUpFront(prepared: ReturnType<typeof prepare>): UploadProblem | null {
+  if (!prepared) return 'notMedia';
+  if (prepared.kind === 'video') {
+    if (!VIDEO_MIME_TYPES.includes(prepared.file.type)) return 'notMedia';
+    if (prepared.file.size > PHONE_VIDEO_MAX_BYTES) return 'tooBigVideo';
+  }
+  return null;
+}
+
+/**
  * Sends picked photos and videos into a library folder one at a time, with a
  * real progress bar. Each photo is made smaller on the phone first
  * (`downscaleForUpload`). A file that cannot go is listed with its reason and
@@ -85,7 +100,10 @@ export function usePhotoUploads(onAdded: () => void) {
     if (activeRef.current || picked.length === 0) return;
     activeRef.current = true;
     const total = picked.length;
-    const sizes = picked.map((f) => f.size);
+    const prepared = picked.map(prepare);
+    const refused = prepared.map(refusedUpFront);
+    // Files turned away before sending never count toward what is left to send.
+    const sizes = picked.map((f, i) => (refused[i] ? 0 : f.size));
     const added: UploadRun['added'] = [];
     const failures: UploadFailure[] = [];
     let lastDraw = 0;
@@ -110,24 +128,17 @@ export function usePhotoUploads(onAdded: () => void) {
       for (let i = 0; i < total; i++) {
         draw(i, 0);
         const name = picked[i].name;
-        const prepared = prepare(picked[i]);
-        if (!prepared) {
-          failures.push({ name, problem: 'notMedia' });
+        const problem = refused[i];
+        const ready = prepared[i];
+        if (problem || !ready) {
+          failures.push({ name, problem: problem ?? 'notMedia' });
           continue;
         }
-        let { file } = prepared;
-        const { kind } = prepared;
+        let { file } = ready;
+        const { kind } = ready;
         if (kind === 'video') {
-          if (!VIDEO_MIME_TYPES.includes(file.type)) {
-            failures.push({ name, problem: 'notMedia' });
-            continue;
-          }
-          if (file.size > PHONE_VIDEO_MAX_BYTES) {
-            failures.push({ name, problem: 'tooBigVideo' });
-            continue;
-          }
           // It would upload fine and then show as a black slide.
-          if (await videoCodecOfFile(file).catch(() => 'unknown') === 'hevc') {
+          if (await isUnplayableVideo(file)) {
             failures.push({ name, problem: 'wontPlay' });
             continue;
           }

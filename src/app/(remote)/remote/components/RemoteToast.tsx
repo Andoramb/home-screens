@@ -1,6 +1,6 @@
 'use client';
 
-import { dismissToast, useRemoteToast } from '../remote-toast';
+import { dismissToast, useRemoteToast, useToastFloor } from '../remote-toast';
 
 /**
  * Renders the current remote toast just above the tab bar. Tap to dismiss.
@@ -9,17 +9,22 @@ import { dismissToast, useRemoteToast } from '../remote-toast';
  *
  * `raisedBy` lifts it further when a tab pins its own bar above the tab bar
  * (the Lists tab's add bar), so an error never lands on top of the field
- * the person is typing into.
+ * the person is typing into. Over the photo viewer it sits just above the
+ * viewer's own panel (`setToastFloor`), off the buttons it would cover.
  */
 export default function RemoteToast({ raisedBy = 0 }: { raisedBy?: number }) {
   const toast = useRemoteToast();
+  const floor = useToastFloor();
+  const bottom = floor !== null
+    ? `${floor + 12}px`
+    : `calc(5.75rem + ${raisedBy}px + env(safe-area-inset-bottom))`;
 
   return (
     <div
       role="status"
       aria-live="polite"
       className="pointer-events-none fixed left-0 right-0 z-[90] flex justify-center px-5"
-      style={{ bottom: `calc(5.75rem + ${raisedBy}px + env(safe-area-inset-bottom))` }}
+      style={{ bottom }}
     >
       {toast && (
         <button

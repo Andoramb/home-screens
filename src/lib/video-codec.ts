@@ -86,3 +86,13 @@ export function videoCodecOfFile(file: Blob): Promise<VideoCodec> {
     file.size,
   );
 }
+
+/**
+ * True for a picked video the wall cannot play: HEVC, which the Chromium on a
+ * Pi does not decode, so it would upload fine and then show as a black slide.
+ * A file that cannot be read counts as playable; the hub still checks the type.
+ * Shared by every place a video is added (the phone and Settings).
+ */
+export async function isUnplayableVideo(file: Blob): Promise<boolean> {
+  return (await videoCodecOfFile(file).catch(() => 'unknown')) === 'hevc';
+}

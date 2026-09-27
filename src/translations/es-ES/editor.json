@@ -1114,11 +1114,12 @@
       "panelPowerOffHelp": "Para displays con Raspberry Pi. La pantalla se queda completamente a oscuras y tarda unos segundos en volver cuando alguien la despierta. Déjalo desactivado si tu pantalla no vuelve a encenderse sola."
     },
     "mediaPage": {
-      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos de los que depende una pantalla no se pueden eliminar, y una presentación siempre conserva su última imagen.",
+      "description": "Todo lo que se ha subido a este hub, en un solo lugar. Los archivos de los que depende una pantalla no se pueden eliminar, y un pase de fotos siempre conserva su última imagen.",
       "upload": "Subir",
       "dropzone": "Arrastra imágenes o vídeos aquí, o haz clic para elegir: tantos como quieras",
       "saveInto": "Guardar en",
       "uploadFailedWithStatus": "Error al subir ({status})",
+      "wontPlay": "{name} es un tipo de vídeo que la pared no puede reproducir. En el iPhone, elige «El más compatible» en Ajustes > Cámara > Formatos.",
       "uploadFailed": "Error al subir",
       "loadFailed": "No se pudieron cargar tus imágenes y vídeos",
       "tryAgain": "Intentar de nuevo",
@@ -1128,15 +1129,15 @@
       "images": "Imágenes",
       "videos": "Vídeos",
       "inUse": "En uso",
-      "inSlideshow": "Presentación",
+      "inSlideshow": "Pase de fotos",
       "usedBy": "Usado por",
       "kind": {
         "screen": "Pantalla '{name}'",
         "dayRule": "Regla de día",
         "module": "Módulo en '{name}'",
         "other": "En algún lugar de la configuración",
-        "slideshow": "Presentación en '{name}'",
-        "slideshowLast": "Presentación en '{name}' (su última imagen)",
+        "slideshow": "Pase de fotos en '{name}'",
+        "slideshowLast": "Pase de fotos en '{name}' (su última imagen)",
         "rotation": "Fondo rotativo que se muestra ahora mismo en una pantalla"
       },
       "selected": "{count} seleccionados",
@@ -1145,10 +1146,13 @@
         "one": "¿Eliminar 1 archivo?",
         "other": "¿Eliminar {count} archivos?"
       },
-      "deleteMessage": "Desaparecerán de este hub para siempre. Las presentaciones seguirán con sus otras imágenes y se conservarán los archivos de los que depende una pantalla, así que ninguna pantalla se quedará vacía.",
+      "deleteMessage": {
+        "one": "Desaparecerá de este hub para siempre. Un pase de fotos que lo muestre seguirá con sus otras imágenes. Si una pantalla depende de este archivo, se conservará, así que ninguna pantalla se quedará vacía.",
+        "other": "Desaparecerán de este hub para siempre. Los pases de fotos seguirán con sus otras imágenes y se conservarán los archivos de los que depende una pantalla, así que ninguna pantalla se quedará vacía."
+      },
       "deleteConfirm": "Eliminar",
       "refused": "{file} todavía se está usando y no se ha eliminado",
-      "keptLast": "{file} sigue en su sitio: es la última imagen de la presentación en '{name}'.",
+      "keptLast": "{file} sigue en su sitio: es la última imagen del pase de fotos en '{name}'.",
       "loading": "Cargando tus imágenes y vídeos",
       "emptyFiltered": "Nada coincide con este filtro",
       "deleteFailed": {
@@ -1169,8 +1173,8 @@
         "dimensions": "Tamaño en píxeles",
         "size": "Tamaño del archivo",
         "notUsed": "Todavía no se usa en ningún sitio",
-        "lastPictureHint": "No se puede eliminar la última imagen que muestra una presentación. Primero añade otra a la carpeta {folder}.",
-        "lastPictureHintTop": "No se puede eliminar la última imagen que muestra una presentación. Primero añade otra al nivel superior de la biblioteca."
+        "lastPictureHint": "No se puede eliminar la última imagen que muestra un pase de fotos. Primero añade otra a la carpeta {folder}.",
+        "lastPictureHintTop": "No se puede eliminar la última imagen que muestra un pase de fotos. Primero añade otra al nivel superior de la biblioteca."
       },
       "unusedOnly": "Solo sin usar",
       "storage": "La biblioteca ocupa {size}, {free} libres en este hub",
@@ -1196,7 +1200,10 @@
         "one": "¿Mover 1 archivo?",
         "other": "¿Mover {count} archivos?"
       },
-      "moveMessage": "Las pantallas que usan estos archivos los seguirán encontrando en la nueva carpeta. Si sacas una imagen de la carpeta de una presentación, esa presentación dejará de mostrarla.",
+      "moveMessage": {
+        "one": "Las pantallas que usan este archivo lo seguirán encontrando en la nueva carpeta. Si sacas una imagen de la carpeta de un pase de fotos, ese pase de fotos dejará de mostrarla.",
+        "other": "Las pantallas que usan estos archivos los seguirán encontrando en la nueva carpeta. Si sacas una imagen de la carpeta de un pase de fotos, ese pase de fotos dejará de mostrarla."
+      },
       "moveConfirm": "Mover",
       "moved": {
         "one": "1 archivo movido",
@@ -2522,14 +2529,26 @@
     "start": "Importar",
     "importing": "Importando…",
     "progress": "Descargando {done} de {total}…",
-    "summary": "Se añadieron {done} elementos nuevos. {skipped} ya estaban aquí.",
-    "summaryFailed": "{failed} no se pudieron descargar.",
+    "summaryAdded": {
+      "one": "Se ha añadido 1 elemento nuevo.",
+      "other": "Se han añadido {count} elementos nuevos."
+    },
+    "summarySkipped": {
+      "one": "1 ya estaba aquí.",
+      "other": "{count} ya estaban aquí."
+    },
+    "summaryFailed": {
+      "one": "1 no se pudo descargar.",
+      "other": "{count} no se pudieron descargar."
+    },
+    "empty": "No hay nada que añadir de ese álbum.",
     "help": "Funciona con enlaces de álbumes compartidos (icloud.com/sharedalbum/#…) y enlaces de \"Copiar enlace de iCloud\" (share.icloud.com). Todo el contenido del enlace se guarda en la carpeta actual.",
-    "albumTip": "Consejo: los álbumes compartidos también pueden mostrarse en vivo, sin descargar. Elige \"Álbum compartido de iCloud\" como fuente de fotos en los ajustes de una presentación.",
+    "albumTip": "Consejo: los álbumes compartidos también pueden mostrarse en vivo, sin descargar. Elige \"Álbum compartido de iCloud\" como fuente de fotos en los ajustes de un pase de fotos.",
     "errors": {
       "invalid": "Eso no parece un enlace de iCloud. Copia el enlace de nuevo e inténtalo otra vez.",
       "unreachable": "No se pudo conectar con iCloud ahora mismo. Comprueba la conexión a internet e inténtalo otra vez.",
       "expired": "Este enlace ya no funciona. Los enlaces de fotos de iCloud dejan de funcionar después de un mes aproximadamente; pide uno nuevo e inténtalo de nuevo.",
+      "gone": "Este álbum ya no se comparte o se ha eliminado. Vuelve a compartirlo en la app Fotos y pega el enlace nuevo.",
       "busy": "Ya hay otra importación en curso. Espera a que termine.",
       "tooMany": "Este enlace tiene demasiadas fotos para guardarlas todas a la vez. Prueba con un álbum o enlace más pequeño.",
       "lost": "Se perdió el seguimiento de esta importación. Revisa la carpeta para ver qué se añadió."
@@ -3710,7 +3729,7 @@
       "sourceImmich": "Immich",
       "sourceICloud": "Álbum compartido de iCloud",
       "mode": "Modo",
-      "modeSlideshow": "Pase de diapositivas",
+      "modeSlideshow": "Pase de fotos",
       "modeSingle": "Foto única",
       "photo": "Foto",
       "noneSelected": "Ninguna seleccionada",
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Volver a abrir Google Fotos",
       "cancel": "Cancelar",
       "importing": "Guardando fotos… {done} de {total}",
-      "importDone": "Se guardaron {done} fotos nuevas en tu biblioteca.",
-      "importDoneWithSkipped": "Se guardaron {done} fotos nuevas ({skipped} ya estaban en tu biblioteca).",
+      "importDone": {
+        "one": "Se ha guardado 1 foto nueva en tu biblioteca.",
+        "other": "Se han guardado {count} fotos nuevas en tu biblioteca."
+      },
+      "alreadyInLibrary": {
+        "one": "1 ya estaba en tu biblioteca.",
+        "other": "{count} ya estaban en tu biblioteca."
+      },
       "nothingPicked": "No se eligió nada. Intenta elegir fotos de nuevo.",
       "sessionExpired": "Google Fotos cerró esa sesión de selección. Intenta elegir fotos de nuevo.",
       "busy": "Ya hay otra importación en marcha. Espera a que termine e inténtalo de nuevo.",
@@ -4690,7 +4715,7 @@
       "upOneFolder": "Subir una carpeta",
       "emptyFolder": "No hay subcarpetas aquí",
       "useThisFolder": "Usar esta carpeta",
-      "capNote": "Si el árbol de carpetas tiene más de {cap} fotos, la presentación usa una muestra aleatoria de {cap}.",
+      "capNote": "Si el árbol de carpetas tiene más de {cap} fotos, el pase de fotos usa una muestra aleatoria de {cap}.",
       "loadFailed": "No se pudieron cargar tus carpetas de OneDrive.",
       "folderNotFound": "Carpeta no encontrada. Elige otra carpeta.",
       "photosPerRefresh": "Fotos por actualización",

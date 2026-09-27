@@ -725,6 +725,18 @@
       "one": "1 wird auf einem Bildschirm genutzt und bleibt.",
       "other": "{count} werden auf einem Bildschirm genutzt und bleiben."
     },
+    "staysLast": {
+      "one": "1 bleibt, damit die Diashow auf {walls} nicht leer wird.",
+      "other": "{count} bleiben, damit keine Diashow leer wird."
+    },
+    "staysLastAnywhere": {
+      "one": "1 bleibt, damit eine Diashow nicht leer wird.",
+      "other": "{count} bleiben, damit keine Diashow leer wird."
+    },
+    "staysAlone": {
+      "one": "1 wird auf einem Bildschirm genutzt und bleibt.",
+      "other": "{count} werden auf einem Bildschirm genutzt und bleiben."
+    },
     "deleteFailedCount": {
       "one": "1 konnte nicht gelöscht werden. Versuch es noch einmal.",
       "other": "{count} konnten nicht gelöscht werden. Versuch es noch einmal."
@@ -773,6 +785,7 @@
       "icloudErrors": {
         "invalid": "Das sieht nicht wie ein iCloud-Fotolink aus.",
         "expired": "Dieser Link ist abgelaufen. Erstelle in der Fotos-App einen neuen.",
+        "gone": "Dieses Album wird nicht mehr geteilt. Teile es in der Fotos-App noch einmal und füge den neuen Link ein.",
         "busy": "Es werden noch Fotos hinzugefügt. Versuch es in einer Minute noch einmal.",
         "tooMany": "Das sind zu viele auf einmal. Teile weniger und versuch es noch einmal.",
         "lost": "Der Hub ist beim Hinzufügen neu gestartet. Versuch es noch einmal.",
@@ -792,7 +805,7 @@
         "one": "1 konnte nicht hinzugefügt werden.",
         "other": "{count} konnten nicht hinzugefügt werden."
       },
-      "nothingFound": "Nichts hinzuzufügen. Das Album ist leer, oder der Link funktioniert nicht mehr."
+      "nothingFound": "In diesem Album gibt es nichts hinzuzufügen."
     }
   },
   "slideshowControls": {

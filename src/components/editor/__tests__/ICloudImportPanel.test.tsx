@@ -83,7 +83,7 @@ describe('ICloudImportPanel', () => {
 
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); }); // poll → done
 
-    expect(view.getByText(/Added 2 new items\. 1 were already here\./)).toBeTruthy();
+    expect(view.getByText('Added 2 new items. 1 was already here.')).toBeTruthy();
     expect(onImported).toHaveBeenCalledTimes(1);
     // The input clears so the next paste starts clean.
     expect((view.getByPlaceholderText('Paste an iCloud album or photo link') as HTMLInputElement).value).toBe('');
@@ -102,6 +102,48 @@ describe('ICloudImportPanel', () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
 
     expect(view.getByText(/2 couldn't be downloaded\./)).toBeTruthy();
+  });
+
+  it('counts one of each in the singular', async () => {
+    editorFetch.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return jsonResponse({ jobId: 'job-3', total: 3 }, 202);
+      return jsonResponse({ state: 'done', total: 3, done: 1, skipped: 1, failed: 1 });
+    });
+    const { view } = renderOpenPanel();
+    typeUrl(view, PHOTO_LINK);
+
+    fireEvent.click(view.getByText('Import'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(view.getByText("Added 1 new item. 1 was already here. 1 couldn't be downloaded.")).toBeTruthy();
+  });
+
+  it('says an album with nothing in it has nothing to add, not "Added 0"', async () => {
+    editorFetch.mockImplementation(async (_url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return jsonResponse({ jobId: 'job-4', total: 0 }, 202);
+      return jsonResponse({ state: 'done', total: 0, done: 0, skipped: 0, failed: 0 });
+    });
+    const { view } = renderOpenPanel();
+    typeUrl(view, PHOTO_LINK);
+
+    fireEvent.click(view.getByText('Import'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(1000); });
+
+    expect(view.getByText("There's nothing in that album to add.")).toBeTruthy();
+    expect(view.queryByText(/Added 0/)).toBeNull();
+  });
+
+  it('says an album that is gone is gone', async () => {
+    editorFetch.mockResolvedValue(jsonResponse({ error: 'album-gone' }, 400));
+    const { view } = renderOpenPanel();
+    typeUrl(view, PHOTO_LINK);
+
+    fireEvent.click(view.getByText('Import'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+
+    expect(view.getByText(/This album isn't shared anymore, or it was deleted\./)).toBeTruthy();
   });
 
   it('shows the error message instead of the help when the start is rejected', async () => {

@@ -725,6 +725,18 @@
       "one": "1 wordt op een scherm gebruikt en is blijven staan.",
       "other": "{count} worden op een scherm gebruikt en zijn blijven staan."
     },
+    "staysLast": {
+      "one": "1 blijft staan, zodat de diavoorstelling op {walls} niet leeg raakt.",
+      "other": "{count} blijven staan, zodat er geen diavoorstelling leeg raakt."
+    },
+    "staysLastAnywhere": {
+      "one": "1 blijft staan, zodat een diavoorstelling niet leeg raakt.",
+      "other": "{count} blijven staan, zodat er geen diavoorstelling leeg raakt."
+    },
+    "staysAlone": {
+      "one": "1 wordt op een scherm gebruikt en blijft staan.",
+      "other": "{count} worden op een scherm gebruikt en blijven staan."
+    },
     "deleteFailedCount": {
       "one": "1 kon niet worden verwijderd. Probeer het opnieuw.",
       "other": "{count} konden niet worden verwijderd. Probeer het opnieuw."
@@ -773,6 +785,7 @@
       "icloudErrors": {
         "invalid": "Dat lijkt geen iCloud-link naar foto's te zijn.",
         "expired": "Die link is verlopen. Maak een nieuwe in de Foto's-app.",
+        "gone": "Dat album wordt niet meer gedeeld. Deel het opnieuw in de Foto's-app en plak de nieuwe link.",
         "busy": "Er worden nog foto's toegevoegd. Probeer het over een minuutje opnieuw.",
         "tooMany": "Dat zijn er te veel tegelijk. Deel er minder en probeer het opnieuw.",
         "lost": "De hub is herstart tijdens het toevoegen. Probeer het opnieuw.",
@@ -792,7 +805,7 @@
         "one": "1 kon niet worden toegevoegd.",
         "other": "{count} konden niet worden toegevoegd."
       },
-      "nothingFound": "Niets om toe te voegen. Het album is leeg, of de link werkt niet meer."
+      "nothingFound": "Er staat niets in dat album om toe te voegen."
     }
   },
   "slideshowControls": {
@@ -994,8 +1007,8 @@
       "body": "Maaltijden verschijnen hier zodra er een maaltijdplanner op een van je schermen staat."
     },
     "photos": {
-      "title": "Nog geen fotoreeks",
-      "body": "Foto's verschijnen hier zodra er een fotoreeks op een van je schermen staat."
+      "title": "Nog geen diavoorstelling",
+      "body": "Foto's verschijnen hier zodra er een diavoorstelling op een van je schermen staat."
     },
     "howTo": "Voeg er een toe vanaf een computer: open {url} en zet hem op een scherm."
   },

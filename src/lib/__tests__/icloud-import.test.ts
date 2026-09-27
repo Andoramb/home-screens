@@ -14,7 +14,7 @@ vi.mock('@/lib/icloud-album', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/icloud-album')>();
   return {
     ...actual,
-    fetchSharedStreamsAlbum: vi.fn(),
+    fetchSharedStreamsAlbumForImport: vi.fn(),
   };
 });
 
@@ -28,7 +28,7 @@ vi.mock('@/lib/icloud-link', async (importOriginal) => {
 });
 
 import { fetchWithTimeout } from '@/lib/api-utils';
-import { fetchSharedStreamsAlbum } from '@/lib/icloud-album';
+import { fetchSharedStreamsAlbumForImport } from '@/lib/icloud-album';
 import { listICloudLinkItems, fetchCloudKitAlbum } from '@/lib/icloud-link';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import {
@@ -40,7 +40,7 @@ import {
 import { detectICloudSource } from '@/lib/icloud-parse';
 
 const mockFetch = vi.mocked(fetchWithTimeout);
-const mockAlbum = vi.mocked(fetchSharedStreamsAlbum);
+const mockAlbum = vi.mocked(fetchSharedStreamsAlbumForImport);
 const mockLink = vi.mocked(listICloudLinkItems);
 const mockCloudKit = vi.mocked(fetchCloudKitAlbum);
 
@@ -169,6 +169,17 @@ describe('startICloudImport — shared albums', () => {
     expect(started.total).toBe(0);
     expect(getICloudImport(started.jobId)?.state).toBe('done');
   });
+
+  it('says a gone album is gone instead of importing nothing, and frees the lock', async () => {
+    // Deleted, or its public website turned off: Apple answers 404, which the
+    // import's read reports as null, unlike an album that is only empty.
+    mockAlbum.mockResolvedValue(null);
+
+    expect(await startICloudImport(ALBUM_URL, 'gone')).toEqual({ error: 'album-gone' });
+    mockAlbum.mockResolvedValue([]);
+    const next = await startICloudImport(ALBUM_URL, 'gone');
+    expect('jobId' in next).toBe(true);
+  });
 });
 
 describe('startICloudImport — new-format shared albums (CloudKit)', () => {
@@ -194,15 +205,11 @@ describe('startICloudImport — new-format shared albums (CloudKit)', () => {
     expect(files).toEqual(['icloud-ck-photo.jpg', 'icloud-ck-video.mp4']);
   });
 
-  it('imports nothing (without erroring) when the new-format album is private or expired', async () => {
-    // The CloudKit backend reports missing/private as null; the dispatcher
-    // maps it to [], which imports as an empty album rather than a hard error.
+  it('says a new-format album that is private or gone is gone, rather than importing nothing', async () => {
+    // The CloudKit backend reports missing/private as null.
     mockCloudKit.mockResolvedValue(null);
 
-    const started = await startICloudImport(NEW_ALBUM_URL, 'empty');
-    if ('error' in started) throw new Error(started.error);
-    expect(started.total).toBe(0);
-    expect(getICloudImport(started.jobId)?.state).toBe('done');
+    expect(await startICloudImport(NEW_ALBUM_URL, 'empty')).toEqual({ error: 'album-gone' });
   });
 });
 
@@ -276,7 +283,7 @@ describe('startICloudImport — guards', () => {
     // The album listing takes 15-30s of network I/O in real life. Leave it
     // unresolved so the second start arrives mid-listing — before this fix,
     // both passed the busy check and ran concurrently.
-    let releaseListing!: (items: Awaited<ReturnType<typeof fetchSharedStreamsAlbum>>) => void;
+    let releaseListing!: (items: Awaited<ReturnType<typeof fetchSharedStreamsAlbumForImport>>) => void;
     mockAlbum.mockReturnValue(new Promise((resolve) => { releaseListing = resolve; }));
 
     const firstPromise = startICloudImport(ALBUM_URL, 'busy');

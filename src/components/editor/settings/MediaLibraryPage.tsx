@@ -22,6 +22,8 @@ import { MEDIA_SORTERS, type MediaInventory, type MediaInventoryItem, type Media
 import { removalBlocksByFile, rewriteMediaRefs, type MediaUse, type MediaUseKind } from '@/lib/media-usage';
 import { TILE_THUMBNAIL_WIDTH, extensionOf, fileNameOf, folderOf, serveUrlFor, typeTagOf } from '@/lib/media-paths';
 import { formatBytes } from '@/lib/format-bytes';
+import { mediaKindOf } from '@/lib/media-formats';
+import { isUnplayableVideo } from '@/lib/video-codec';
 import MediaViewer, { UsedByEntry, type UsedByLine } from './MediaViewer';
 import { logger } from '@/lib/logger';
 
@@ -110,6 +112,8 @@ export default function MediaLibraryPage() {
   const [uploadDir, setUploadDir] = useState('');
   const [dragActive, setDragActive] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  /** Videos held back from the last upload because the wall cannot play them. */
+  const [wontPlay, setWontPlay] = useState<string[]>([]);
   const [folderForm, setFolderForm] = useState<{ mode: 'create' | 'rename'; name: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [viewing, setViewing] = useState<string | null>(null);
@@ -268,10 +272,21 @@ export default function MediaLibraryPage() {
     setBusy(true);
     setUploadError(null);
     clearOutcome();
-    const formData = new FormData();
-    for (const file of files) formData.append('file', file);
-    if (uploadDir) formData.append('directory', uploadDir);
     try {
+      // A video the wall cannot play would upload fine and then show as a
+      // black slide, so it stays behind with the reason and the rest go.
+      const unplayable: string[] = [];
+      const sending: File[] = [];
+      for (const file of files) {
+        const video = file.type.startsWith('video/') || mediaKindOf(file.name) === 'video';
+        if (video && await isUnplayableVideo(file)) unplayable.push(file.name);
+        else sending.push(file);
+      }
+      setWontPlay(unplayable);
+      if (sending.length === 0) return;
+      const formData = new FormData();
+      for (const file of sending) formData.append('file', file);
+      if (uploadDir) formData.append('directory', uploadDir);
       const res = await editorFetch('/api/backgrounds', { method: 'POST', body: formData });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -280,7 +295,8 @@ export default function MediaLibraryPage() {
         );
         return;
       }
-      setUploadOpen(false);
+      // Kept open while it says why a video stayed behind.
+      if (unplayable.length === 0) setUploadOpen(false);
       // Back to the unfiltered view so freshly uploaded files are on screen
       // instead of hidden behind a filter that predates them.
       setFolder('all');
@@ -308,6 +324,12 @@ export default function MediaLibraryPage() {
     formData.append('replace', path);
     formData.append('file', file);
     try {
+      // Same rule as an upload: a video the wall cannot play never replaces one it can.
+      const video = file.type.startsWith('video/') || mediaKindOf(file.name) === 'video';
+      if (video && await isUnplayableVideo(file)) {
+        setOutcome({ ok: false, text: t('settings.mediaPage.wontPlay', { name: file.name }) });
+        return;
+      }
       const res = await editorFetch('/api/backgrounds', { method: 'POST', body: formData });
       const data = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
@@ -340,7 +362,7 @@ export default function MediaLibraryPage() {
     if (paths.length === 0 || busy) return;
     const confirmed = await useConfirmStore.getState().confirm({
       title: t('settings.mediaPage.deleteTitle', { count: paths.length }),
-      message: t('settings.mediaPage.deleteMessage'),
+      message: t('settings.mediaPage.deleteMessage', { count: paths.length }),
       confirmLabel: t('settings.mediaPage.deleteConfirm'),
       variant: 'danger',
     });
@@ -380,7 +402,7 @@ export default function MediaLibraryPage() {
     if (paths.length === 0 || busy) return;
     const confirmed = await useConfirmStore.getState().confirm({
       title: t('settings.mediaPage.moveTitle', { count: paths.length }),
-      message: t('settings.mediaPage.moveMessage'),
+      message: t('settings.mediaPage.moveMessage', { count: paths.length }),
       confirmLabel: t('settings.mediaPage.moveConfirm'),
     });
     if (!confirmed) return;
@@ -666,6 +688,13 @@ export default function MediaLibraryPage() {
           />
           {uploadError && (
             <p className="text-xs text-hs-danger" data-testid="media-upload-error">{uploadError}</p>
+          )}
+          {wontPlay.length > 0 && (
+            <ul className="flex flex-col gap-1 text-xs text-hs-warning" data-testid="media-upload-wont-play">
+              {wontPlay.map((name) => (
+                <li key={name}>{t('settings.mediaPage.wontPlay', { name })}</li>
+              ))}
+            </ul>
           )}
         </div>
       )}

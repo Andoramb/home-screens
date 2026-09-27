@@ -12,7 +12,7 @@ import {
   renameLibraryFolder,
 } from '@/lib/library-client';
 import { MEDIA_SORTERS, type MediaInventory, type MediaInventoryItem } from '@/lib/media-inventory';
-import { removalBlocksByFile, type MediaUse, type SlideshowFolder } from '@/lib/media-usage';
+import { blockedRemovals, removalBlocksByFile, type MediaUse, type SlideshowFolder } from '@/lib/media-usage';
 import { photoFolders, wallName, wallsShowing, type PhotoFolder } from '@/lib/media-folders';
 import { folderOf } from '@/lib/media-paths';
 import { mediaKindOf } from '@/lib/media-formats';
@@ -119,7 +119,12 @@ export default function PhotosTab({ directory }: { directory: string }) {
   const { inventory, loadFailed, refresh } = usePhotoLibrary();
   const { run, start: startUploads, dismiss: dismissUploads, busy: uploading } = usePhotoUploads(refresh);
 
-  const [folder, setFolder] = useState(directory);
+  // The folder this tab was last left on is kept in the address beside the
+  // tab itself (`?tab=photos&folder=`), so switching tabs or reloading comes
+  // back to it rather than to the wall's folder.
+  const [folder, setFolder] = useState(() => (typeof window === 'undefined'
+    ? directory
+    : new URLSearchParams(window.location.search).get('folder') ?? directory));
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(() => new Set());
   const [viewing, setViewing] = useState<string | null>(null);
@@ -200,6 +205,15 @@ export default function PhotosTab({ directory }: { directory: string }) {
     }
     return names;
   }, [slideshows, multiDisplay, unnamedWall]);
+
+  // Mirror the folder being viewed into the address (see `folder` above).
+  useEffect(() => {
+    if (!inventory) return;
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('folder') === currentPath) return;
+    url.searchParams.set('folder', currentPath);
+    window.history.replaceState(window.history.state, '', url);
+  }, [inventory, currentPath]);
 
   // Keep the chip for the folder being viewed in sight after a switch or a rename.
   useEffect(() => {
@@ -342,6 +356,40 @@ export default function PhotosTab({ directory }: { directory: string }) {
 
   // ── Deleting ───────────────────────────────────────────
 
+  /**
+   * What a delete or move kept, one entry of blocking uses per file: "1
+   * stayed so the Kitchen slideshow isn't empty." after, or "1 stays..."
+   * when said before the delete. A slideshow among the uses means the file
+   * was its last picture; anything else means a screen uses it on its own.
+   */
+  const keptSentence = (kept: readonly (readonly MediaUse[])[], when: 'before' | 'after'): string => {
+    const lastUses: MediaUse[] = [];
+    let alone = 0;
+    for (const uses of kept) {
+      const last = uses.find((use) => use.kind === 'slideshow');
+      if (last) lastUses.push(last);
+      else alone += 1;
+    }
+    const parts: string[] = [];
+    if (lastUses.length > 0) {
+      const walls = wallsOfUses(lastUses);
+      parts.push(walls.length > 0
+        ? t(when === 'after' ? 'photosTab.keptLast' : 'photosTab.staysLast', { count: lastUses.length, walls: words.names(walls) })
+        : t(when === 'after' ? 'photosTab.keptLastAnywhere' : 'photosTab.staysLastAnywhere', { count: lastUses.length }));
+    }
+    if (alone > 0) parts.push(t(when === 'after' ? 'photosTab.keptAlone' : 'photosTab.staysAlone', { count: alone }));
+    return parts.join(' ');
+  };
+
+  /** A delete of `paths` judged by the hub's own rule before asking: what goes, and why the rest stays. */
+  const deletePlan = (paths: string[]): { going: string[]; stays: string | null } => {
+    const blocked = blockedRemovals(usage, paths, 'delete');
+    return {
+      going: paths.filter((path) => !blocked.has(path)),
+      stays: blocked.size > 0 ? keptSentence([...blocked.values()], 'before') : null,
+    };
+  };
+
   const runDelete = async (paths: string[], from: 'select' | 'viewer') => {
     setSheet(null);
     setBusy(true);
@@ -349,19 +397,14 @@ export default function PhotosTab({ directory }: { directory: string }) {
     const kinds = kindsOf(visible.filter((item) => paths.includes(item.path)));
     let deleted = 0;
     let failed = 0;
-    let keptAlone = 0;
-    const keptLast: MediaUse[] = [];
+    const kept: MediaUse[][] = [];
     try {
       for (const path of paths) {
         try {
           const result = await deleteLibraryFile(path);
           if (result.ok) deleted += 1;
-          else if (result.status === 409) {
-            // A slideshow in the refusal means the file was its last picture.
-            const last = result.usage.find((use) => use.kind === 'slideshow');
-            if (last) keptLast.push(last);
-            else keptAlone += 1;
-          } else failed += 1;
+          else if (result.status === 409) kept.push(result.usage);
+          else failed += 1;
         } catch (err) {
           if (isSessionExpired(err)) return;
           failed += 1;
@@ -376,7 +419,7 @@ export default function PhotosTab({ directory }: { directory: string }) {
       if (deleted === 1) {
         showToast(t(kinds.includes('video') ? 'photosTab.videoDeleted' : 'photosTab.photoDeleted'));
         setViewing(after);
-      } else if (keptLast.length > 0 || keptAlone > 0) {
+      } else if (kept.length > 0) {
         showToast(t('photosTab.deleteRefused'), 'error');
       } else {
         showToast(t('photosTab.deleteFailed'), 'error');
@@ -386,13 +429,7 @@ export default function PhotosTab({ directory }: { directory: string }) {
     stopSelecting();
     const parts: string[] = [];
     if (deleted > 0) parts.push(t('photosTab.deleted', { count: deleted }));
-    if (keptLast.length > 0) {
-      const walls = wallsOfUses(keptLast);
-      parts.push(walls.length > 0
-        ? t('photosTab.keptLast', { count: keptLast.length, walls: words.names(walls) })
-        : t('photosTab.keptLastAnywhere', { count: keptLast.length }));
-    }
-    if (keptAlone > 0) parts.push(t('photosTab.keptAlone', { count: keptAlone }));
+    if (kept.length > 0) parts.push(keptSentence(kept, 'after'));
     if (failed > 0) parts.push(t('photosTab.deleteFailedCount', { count: failed }));
     showToast(parts.join(' '), failed > 0 ? 'error' : 'info');
   };
@@ -417,13 +454,7 @@ export default function PhotosTab({ directory }: { directory: string }) {
         parts.push(t('photosTab.movedTo', { count: moved.length, folder: folderLabel(to) }));
         parts.push(whereTheyShow(to, movedKinds, moved.length));
       }
-      if (kept.length > 0) {
-        const lastUses = kept.flatMap((k) => k.usage.filter((use) => use.kind === 'slideshow'));
-        const walls = wallsOfUses(lastUses);
-        parts.push(walls.length > 0
-          ? t('photosTab.keptLast', { count: kept.length, walls: words.names(walls) })
-          : t('photosTab.keptLastAnywhere', { count: kept.length }));
-      }
+      if (kept.length > 0) parts.push(keptSentence(kept.map((k) => k.usage), 'after'));
       showToast(parts.join(' '));
       if (request.from === 'select') {
         stopSelecting();
@@ -498,7 +529,10 @@ export default function PhotosTab({ directory }: { directory: string }) {
         showToast(t(result.status === 409 ? 'photosTab.folderNotEmpty' : 'photosTab.deleteFolderFailed'), 'error');
         return;
       }
-      openFolder(folders.find((f) => f.onWall)?.path ?? '');
+      // A folder inside another hands back to its parent; a top-level one to
+      // the first folder a wall shows.
+      const slash = currentPath.lastIndexOf('/');
+      openFolder(slash > 0 ? currentPath.slice(0, slash) : folders.find((f) => f.onWall)?.path ?? '');
       showToast(t('photosTab.folderDeleted'));
     } catch (err) {
       if (!isSessionExpired(err)) showToast(t('photosTab.deleteFolderFailed'), 'error');
@@ -878,7 +912,13 @@ export default function PhotosTab({ directory }: { directory: string }) {
               {t('photosTab.move')}
             </ActionButton>
             <ActionButton
-              onClick={() => setSheet({ kind: 'delete', paths: picked.map((item) => item.path), from: 'select' })}
+              onClick={() => {
+                const paths = picked.map((item) => item.path);
+                const { going, stays } = deletePlan(paths);
+                // Everything picked has to stay: say why rather than ask to delete nothing.
+                if (going.length === 0) showToast(stays ?? '', 'error');
+                else setSheet({ kind: 'delete', paths, from: 'select' });
+              }}
               disabled={picked.length === 0 || busy}
               testId="photos-delete"
             >
@@ -895,6 +935,11 @@ export default function PhotosTab({ directory }: { directory: string }) {
           index={viewIndex}
           onStep={stepViewer}
           onClose={closeViewer}
+          onBackGesture={() => {
+            if (!sheet) return false;
+            setSheet(null);
+            return true;
+          }}
           facts={factsFor}
           onMove={(item) => setSheet({ kind: 'move', request: { paths: [item.path], from: 'viewer' } })}
           onDelete={(item) => setSheet({ kind: 'delete', paths: [item.path], from: 'viewer' })}
@@ -953,7 +998,7 @@ export default function PhotosTab({ directory }: { directory: string }) {
       )}
       {sheet?.kind === 'delete' && (
         <DeleteConfirm
-          paths={sheet.paths}
+          {...deletePlan(sheet.paths)}
           items={visible}
           walls={wallsText(currentPath)}
           onConfirm={() => void runDelete(sheet.paths, sheet.from)}
@@ -1044,15 +1089,19 @@ function ActionButton({
   );
 }
 
-/** The one confirm before a delete: how many, and which slideshow they leave. */
+/** The one confirm before a delete: how many go, which slideshow they leave, and what stays. */
 function DeleteConfirm({
-  paths,
+  going,
+  stays,
   items,
   walls,
   onConfirm,
   onCancel,
 }: {
-  paths: string[];
+  /** The files that will go; the ones the hub keeps are left out. */
+  going: string[];
+  /** Why the rest stays, when some does. */
+  stays: string | null;
   items: readonly MediaInventoryItem[];
   /** The walls that show the folder, joined, or null. */
   walls: string | null;
@@ -1062,16 +1111,17 @@ function DeleteConfirm({
   const t = useTranslate('remote');
   const tCore = useTranslate('core');
   const words = usePhotoWords();
-  const kinds = kindsOf(items.filter((item) => paths.includes(item.path)));
-  const one = paths.length === 1;
-  const what = words.what(kinds, paths.length);
+  const kinds = kindsOf(items.filter((item) => going.includes(item.path)));
+  const one = going.length === 1;
+  const what = words.what(kinds, going.length);
   const title = one
     ? t(kinds.includes('video') ? 'photosTab.deleteVideoTitle' : 'photosTab.deletePhotoTitle')
     : t('photosTab.deleteManyTitle', { what });
   const video = kinds.includes('video');
-  const description = walls
+  const gone = walls
     ? t(one ? (video ? 'photosTab.deleteVideoOnWall' : 'photosTab.deletePhotoOnWall') : 'photosTab.deleteManyOnWall', { walls })
     : t(one ? (video ? 'photosTab.deleteVideoOffWall' : 'photosTab.deletePhotoOffWall') : 'photosTab.deleteManyOffWall');
+  const description = stays ? `${gone} ${stays}` : gone;
   return (
     <ConfirmSheet
       title={title}

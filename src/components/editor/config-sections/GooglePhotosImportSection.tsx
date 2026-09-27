@@ -207,9 +207,10 @@ export function GooglePhotosImportSection({ onImported }: Props) {
         <>
           {jobSucceeded && (
             <p className="text-[11px] text-hs-success">
-              {job!.skipped > 0
-                ? t('configSections.googlePhotosImport.importDoneWithSkipped', { done: job!.done, skipped: job!.skipped })
-                : t('configSections.googlePhotosImport.importDone', { done: job!.done })}
+              {[
+                job!.done > 0 ? t('configSections.googlePhotosImport.importDone', { count: job!.done }) : null,
+                job!.skipped > 0 ? t('configSections.googlePhotosImport.alreadyInLibrary', { count: job!.skipped }) : null,
+              ].filter(Boolean).join(' ')}
             </p>
           )}
           {jobSucceeded && unsavedCount > 0 && (

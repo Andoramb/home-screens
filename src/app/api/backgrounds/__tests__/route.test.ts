@@ -334,6 +334,22 @@ describe('GET /api/backgrounds', () => {
     expect(json).toHaveLength(1);
     expect(json[0]).toContain('real.jpg');
   });
+
+  it('leaves the background rotation\'s top-level downloads out of every list', async () => {
+    const { GET } = await getHandlers();
+    await fs.writeFile(path.join(bgsDir, 'rotation-unsplash-abc123.jpg'), 'img');
+    await fs.writeFile(path.join(bgsDir, 'beach.jpg'), 'img');
+    // Inside a folder the name is only a name: the person's own picture.
+    await fs.mkdir(path.join(bgsDir, 'Trips'));
+    await fs.writeFile(path.join(bgsDir, 'Trips', 'rotation-day.jpg'), 'img');
+
+    const plain: string[] = await (await GET(makeGetRequest())).json();
+    expect(plain).toEqual([`/api/backgrounds/serve?file=${encodeURIComponent('beach.jpg')}`]);
+    const typed: { url: string }[] = await (await GET(makeGetRequest({ media: 'both' }))).json();
+    expect(typed.map((item) => item.url)).toEqual([`/api/backgrounds/serve?file=${encodeURIComponent('beach.jpg')}`]);
+    const trips: string[] = await (await GET(makeGetRequest({ directory: 'Trips' }))).json();
+    expect(trips).toEqual([`/api/backgrounds/serve?file=${encodeURIComponent('Trips/rotation-day.jpg')}`]);
+  });
 });
 
 // ─── GET endpoint: media= typed lists ───────────────────────────

@@ -725,6 +725,18 @@
       "one": "1 bruges på en skærm og blev tilbage.",
       "other": "{count} bruges på en skærm og blev tilbage."
     },
+    "staysLast": {
+      "one": "1 bliver tilbage, så billedshowet på {walls} ikke står tomt.",
+      "other": "{count} bliver tilbage, så intet billedshow står tomt."
+    },
+    "staysLastAnywhere": {
+      "one": "1 bliver tilbage, så et billedshow ikke står tomt.",
+      "other": "{count} bliver tilbage, så intet billedshow står tomt."
+    },
+    "staysAlone": {
+      "one": "1 bruges på en skærm og bliver tilbage.",
+      "other": "{count} bruges på en skærm og bliver tilbage."
+    },
     "deleteFailedCount": {
       "one": "1 kunne ikke slettes. Prøv igen.",
       "other": "{count} kunne ikke slettes. Prøv igen."
@@ -773,6 +785,7 @@
       "icloudErrors": {
         "invalid": "Det ligner ikke et link til billeder i iCloud.",
         "expired": "Det link er udløbet. Lav et nyt i appen Fotos.",
+        "gone": "Det album deles ikke længere. Del det igen i appen Fotos, og indsæt det nye link.",
         "busy": "Der bliver stadig tilføjet billeder. Prøv igen om et minut.",
         "tooMany": "Det er for mange på én gang. Del færre, og prøv igen.",
         "lost": "Hubben genstartede undervejs. Prøv igen.",
@@ -792,7 +805,7 @@
         "one": "1 kunne ikke tilføjes.",
         "other": "{count} kunne ikke tilføjes."
       },
-      "nothingFound": "Der var intet at tilføje. Albummet er tomt, eller linket virker ikke længere."
+      "nothingFound": "Der er intet at tilføje fra det album."
     }
   },
   "slideshowControls": {

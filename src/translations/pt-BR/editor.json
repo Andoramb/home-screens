@@ -1119,6 +1119,7 @@
       "dropzone": "Arraste fotos ou vídeos para aqui, ou clique para escolher, quantos você quiser",
       "saveInto": "Salvar em",
       "uploadFailedWithStatus": "Falha ao enviar ({status})",
+      "wontPlay": "{name} é um tipo de vídeo que não toca na parede. No iPhone, escolha Mais Compatível em Ajustes > Câmera > Formatos.",
       "uploadFailed": "Falha ao enviar",
       "loadFailed": "Não foi possível carregar suas fotos e vídeos",
       "tryAgain": "Tentar novamente",
@@ -1145,7 +1146,10 @@
         "one": "Excluir 1 arquivo?",
         "other": "Excluir {count} arquivos?"
       },
-      "deleteMessage": "Eles vão sumir deste hub para sempre. As apresentações seguem com as outras fotos, e os arquivos de que uma tela depende são mantidos, para que nenhuma tela fique vazia.",
+      "deleteMessage": {
+        "one": "Ele vai sumir deste hub para sempre. Se estiver em uma apresentação, ela segue com as outras fotos. Se uma tela depender dele, ele é mantido, para que nenhuma tela fique vazia.",
+        "other": "Eles vão sumir deste hub para sempre. As apresentações seguem com as outras fotos, e os arquivos de que uma tela depende são mantidos, para que nenhuma tela fique vazia."
+      },
       "deleteConfirm": "Excluir",
       "refused": "{file} ainda está em uso e não foi excluído",
       "keptLast": "{file} foi mantido: é a última foto da apresentação em '{name}'.",
@@ -1196,7 +1200,10 @@
         "one": "Mover 1 arquivo?",
         "other": "Mover {count} arquivos?"
       },
-      "moveMessage": "As telas que usam esses arquivos vão segui-los para a nova pasta. Uma foto que sai da pasta de uma apresentação também sai dessa apresentação.",
+      "moveMessage": {
+        "one": "As telas que usam esse arquivo vão segui-lo para a nova pasta. Uma foto que sai da pasta de uma apresentação também sai dessa apresentação.",
+        "other": "As telas que usam esses arquivos vão segui-los para a nova pasta. Uma foto que sai da pasta de uma apresentação também sai dessa apresentação."
+      },
       "moveConfirm": "Mover",
       "moved": {
         "one": "1 arquivo movido",
@@ -2522,14 +2529,26 @@
     "start": "Importar",
     "importing": "Importando…",
     "progress": "Baixando {done} de {total}…",
-    "summary": "{done} itens novos adicionados. {skipped} já estavam aqui.",
-    "summaryFailed": "{failed} não puderam ser baixados.",
+    "summaryAdded": {
+      "one": "1 item novo adicionado.",
+      "other": "{count} itens novos adicionados."
+    },
+    "summarySkipped": {
+      "one": "1 já estava aqui.",
+      "other": "{count} já estavam aqui."
+    },
+    "summaryFailed": {
+      "one": "1 não pôde ser baixado.",
+      "other": "{count} não puderam ser baixados."
+    },
+    "empty": "Não há nada nesse álbum para adicionar.",
     "help": "Funciona com links de álbuns compartilhados (icloud.com/sharedalbum/#…) e links de \"Copiar Link do iCloud\" (share.icloud.com). Tudo o que está no link é salvo na pasta atual.",
     "albumTip": "Dica: Álbuns Compartilhados também podem tocar ao vivo, sem baixar. Escolha \"Álbum Compartilhado do iCloud\" como fonte de fotos nas configurações de uma apresentação.",
     "errors": {
       "invalid": "Isso não parece um link do iCloud. Copie o link de novo e tente outra vez.",
       "unreachable": "Não foi possível acessar o iCloud agora. Verifique a conexão com a internet e tente outra vez.",
       "expired": "Este link não funciona mais. Links de fotos do iCloud param de funcionar depois de mais ou menos um mês; peça um link novo e tente de novo.",
+      "gone": "Este álbum não está mais compartilhado ou foi apagado. Compartilhe de novo no app Fotos e cole o novo link.",
       "busy": "Outra importação já está em andamento. Espere ela terminar.",
       "tooMany": "Este link tem fotos demais para salvar de uma vez. Tente um álbum ou link menor.",
       "lost": "Perdemos o andamento desta importação. Veja na pasta o que foi adicionado."
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Reabrir o Google Fotos",
       "cancel": "Cancelar",
       "importing": "Salvando fotos… {done} de {total}",
-      "importDone": "{done} fotos novas salvas na sua biblioteca.",
-      "importDoneWithSkipped": "{done} fotos novas salvas ({skipped} já estavam na sua biblioteca).",
+      "importDone": {
+        "one": "1 foto nova salva na sua biblioteca.",
+        "other": "{count} fotos novas salvas na sua biblioteca."
+      },
+      "alreadyInLibrary": {
+        "one": "1 já estava na sua biblioteca.",
+        "other": "{count} já estavam na sua biblioteca."
+      },
       "nothingPicked": "Nada foi escolhido. Tente escolher fotos de novo.",
       "sessionExpired": "O Google Fotos fechou essa sessão de escolha. Tente escolher as fotos de novo.",
       "busy": "Já existe outra importação em andamento. Espere ela terminar e tente de novo.",

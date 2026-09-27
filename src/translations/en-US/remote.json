@@ -725,6 +725,18 @@
       "one": "1 is used on a screen and stayed.",
       "other": "{count} are used on a screen and stayed."
     },
+    "staysLast": {
+      "one": "1 stays so the {walls} slideshow isn't empty.",
+      "other": "{count} stay so no slideshow is left empty."
+    },
+    "staysLastAnywhere": {
+      "one": "1 stays so a slideshow isn't empty.",
+      "other": "{count} stay so no slideshow is left empty."
+    },
+    "staysAlone": {
+      "one": "1 is used on a screen and stays.",
+      "other": "{count} are used on a screen and stay."
+    },
     "deleteFailedCount": {
       "one": "1 couldn't be deleted. Try again.",
       "other": "{count} couldn't be deleted. Try again."
@@ -773,6 +785,7 @@
       "icloudErrors": {
         "invalid": "That doesn't look like an iCloud photo link.",
         "expired": "That link has run out. Make a new one in the Photos app.",
+        "gone": "That album isn't shared anymore. Share it again in the Photos app and paste the new link.",
         "busy": "Photos are still being added. Try again in a minute.",
         "tooMany": "That's too many at once. Share fewer and try again.",
         "lost": "The hub restarted while adding. Try again.",
@@ -792,7 +805,7 @@
         "one": "1 couldn't be added.",
         "other": "{count} couldn't be added."
       },
-      "nothingFound": "Nothing to add. The album is empty, or its link stopped working."
+      "nothingFound": "There's nothing in that album to add."
     }
   },
   "slideshowControls": {

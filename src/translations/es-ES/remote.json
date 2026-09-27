@@ -725,6 +725,18 @@
       "one": "1 se usa en una pantalla y sigue en su sitio.",
       "other": "{count} se usan en alguna pantalla y siguen en su sitio."
     },
+    "staysLast": {
+      "one": "1 seguirá en su sitio para que el pase de fotos de {walls} no se quede vacío.",
+      "other": "{count} seguirán en su sitio para que ningún pase de fotos se quede vacío."
+    },
+    "staysLastAnywhere": {
+      "one": "1 seguirá en su sitio para que un pase de fotos no se quede vacío.",
+      "other": "{count} seguirán en su sitio para que ningún pase de fotos se quede vacío."
+    },
+    "staysAlone": {
+      "one": "1 se usa en una pantalla y seguirá en su sitio.",
+      "other": "{count} se usan en alguna pantalla y seguirán en su sitio."
+    },
     "deleteFailedCount": {
       "one": "1 no se pudo eliminar. Inténtalo de nuevo.",
       "other": "{count} no se pudieron eliminar. Inténtalo de nuevo."
@@ -773,6 +785,7 @@
       "icloudErrors": {
         "invalid": "Eso no parece un enlace de fotos de iCloud.",
         "expired": "Ese enlace ha caducado. Crea uno nuevo en la app Fotos.",
+        "gone": "Ese álbum ya no se comparte. Vuelve a compartirlo en la app Fotos y pega el enlace nuevo.",
         "busy": "Todavía se están añadiendo fotos. Inténtalo de nuevo dentro de un minuto.",
         "tooMany": "Son demasiadas a la vez. Comparte menos e inténtalo de nuevo.",
         "lost": "El hub se ha reiniciado mientras se añadían. Inténtalo de nuevo.",
@@ -792,7 +805,7 @@
         "one": "1 no se pudo añadir.",
         "other": "{count} no se pudieron añadir."
       },
-      "nothingFound": "No hay nada que añadir. El álbum está vacío o su enlace ya no funciona."
+      "nothingFound": "No hay nada que añadir de ese álbum."
     }
   },
   "slideshowControls": {

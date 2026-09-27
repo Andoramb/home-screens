@@ -647,7 +647,7 @@
       },
       "tooBig": "{name} fait plus de {size}.",
       "notMedia": "{name} n'est pas une photo ou une vidéo que le mur peut afficher.",
-      "wontPlay": "{name} est un type de vidéo que le mur ne peut pas lire. Sur un iPhone, choisis « Le plus compatible » dans Réglages > Appareil photo > Formats.",
+      "wontPlay": "{name} est une vidéo dans un format que le mur ne peut pas lire. Sur un iPhone, choisis « Le plus compatible » dans Réglages > Appareil photo > Formats.",
       "failed": "Impossible d'envoyer {name}. Réessaie.",
       "close": "Fermer",
       "showNow": "Afficher sur le mur maintenant"
@@ -725,6 +725,18 @@
       "one": "1 est restée car elle est utilisée sur un écran.",
       "other": "{count} sont restées car elles sont utilisées sur un écran."
     },
+    "staysLast": {
+      "one": "1 restera pour que le diaporama sur {walls} ne soit pas vide.",
+      "other": "{count} resteront pour qu'aucun diaporama ne soit vide."
+    },
+    "staysLastAnywhere": {
+      "one": "1 restera pour qu'un diaporama ne soit pas vide.",
+      "other": "{count} resteront pour qu'aucun diaporama ne soit vide."
+    },
+    "staysAlone": {
+      "one": "1 restera car elle est utilisée sur un écran.",
+      "other": "{count} resteront car elles sont utilisées sur un écran."
+    },
     "deleteFailedCount": {
       "one": "1 n'a pas pu être supprimée. Réessaie.",
       "other": "{count} n'ont pas pu être supprimées. Réessaie."
@@ -773,6 +785,7 @@
       "icloudErrors": {
         "invalid": "Ça ne ressemble pas à un lien de photos iCloud.",
         "expired": "Ce lien a expiré. Crée un nouveau lien dans l'app Photos.",
+        "gone": "Cet album n'est plus partagé. Partage-le à nouveau dans l'app Photos et colle le nouveau lien.",
         "busy": "Des photos sont encore en cours d'ajout. Réessaie dans une minute.",
         "tooMany": "C'est trop d'un coup. Partage moins de photos et réessaie.",
         "lost": "Le hub a redémarré pendant l'ajout. Réessaie.",
@@ -792,7 +805,7 @@
         "one": "1 n'a pas pu être ajoutée.",
         "other": "{count} n'ont pas pu être ajoutées."
       },
-      "nothingFound": "Rien à ajouter. L'album est vide ou son lien ne marche plus."
+      "nothingFound": "Cet album ne contient rien à ajouter."
     }
   },
   "slideshowControls": {

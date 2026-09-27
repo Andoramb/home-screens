@@ -1114,11 +1114,12 @@
       "panelPowerOffHelp": "Til Raspberry Pi-displays. Skærmen bliver helt mørk og bruger et par sekunder på at komme tilbage, når nogen vækker den. Lad dette være slået fra, hvis din skærm ikke tænder igen af sig selv."
     },
     "mediaPage": {
-      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som en skærm har brug for, kan ikke slettes, og et diasshow beholder altid sit sidste billede.",
+      "description": "Alt, hvad der er uploadet til denne hub, samlet ét sted. Filer, som en skærm har brug for, kan ikke slettes, og et billedshow beholder altid sit sidste billede.",
       "upload": "Upload",
       "dropzone": "Træk billeder eller videoer herhen, eller klik for at vælge, lige så mange du vil",
       "saveInto": "Gem i",
       "uploadFailedWithStatus": "Upload mislykkedes ({status})",
+      "wontPlay": "{name} er en slags video, som væggen ikke kan afspille. På en iPhone skal du vælge Mest kompatibel under Indstillinger > Kamera > Formater.",
       "uploadFailed": "Upload mislykkedes",
       "loadFailed": "Dine billeder og videoer kunne ikke indlæses",
       "tryAgain": "Prøv igen",
@@ -1128,15 +1129,15 @@
       "images": "Billeder",
       "videos": "Videoer",
       "inUse": "I brug",
-      "inSlideshow": "Diasshow",
+      "inSlideshow": "Billedshow",
       "usedBy": "Bruges af",
       "kind": {
         "screen": "Skærm '{name}'",
         "dayRule": "Dagsregel",
         "module": "Modul på '{name}'",
         "other": "Et sted i indstillingerne",
-        "slideshow": "Diasshow på '{name}'",
-        "slideshowLast": "Diasshow på '{name}' (det sidste billede)",
+        "slideshow": "Billedshow på '{name}'",
+        "slideshowLast": "Billedshow på '{name}' (det sidste billede)",
         "rotation": "Skiftende baggrund, der vises på en skærm lige nu"
       },
       "selected": "{count} valgt",
@@ -1145,10 +1146,13 @@
         "one": "Slet 1 fil?",
         "other": "Slet {count} filer?"
       },
-      "deleteMessage": "De forsvinder fra denne hub for altid. Diasshows fortsætter med deres andre billeder, og filer, som en skærm har brug for, bliver beholdt, så ingen skærm står tom.",
+      "deleteMessage": {
+        "one": "Den forsvinder fra denne hub for altid. Et billedshow, der viser den, fortsætter med sine andre billeder, og har en skærm brug for filen, bliver den beholdt, så ingen skærm står tom.",
+        "other": "De forsvinder fra denne hub for altid. Billedshows fortsætter med deres andre billeder, og filer, som en skærm har brug for, bliver beholdt, så ingen skærm står tom."
+      },
       "deleteConfirm": "Slet",
       "refused": "{file} bruges stadig og blev ikke slettet",
-      "keptLast": "{file} blev liggende, fordi det er det sidste billede i diasshowet på '{name}'.",
+      "keptLast": "{file} blev liggende, fordi det er det sidste billede i billedshowet på '{name}'.",
       "loading": "Henter dine billeder og videoer",
       "emptyFiltered": "Intet passer til dette filter",
       "deleteFailed": {
@@ -1169,8 +1173,8 @@
         "dimensions": "Størrelse i pixels",
         "size": "Filstørrelse",
         "notUsed": "Bruges ikke nogen steder endnu",
-        "lastPictureHint": "Det sidste billede, et diasshow viser, kan ikke slettes. Tilføj først et billede mere til {folder}.",
-        "lastPictureHintTop": "Det sidste billede, et diasshow viser, kan ikke slettes. Tilføj først et billede mere til bibliotekets øverste niveau."
+        "lastPictureHint": "Det sidste billede, et billedshow viser, kan ikke slettes. Tilføj først et billede mere til {folder}.",
+        "lastPictureHintTop": "Det sidste billede, et billedshow viser, kan ikke slettes. Tilføj først et billede mere til bibliotekets øverste niveau."
       },
       "unusedOnly": "Kun ubrugte",
       "storage": "Biblioteket fylder {size}, {free} ledigt på denne hub",
@@ -1196,7 +1200,10 @@
         "one": "Flyt 1 fil?",
         "other": "Flyt {count} filer?"
       },
-      "moveMessage": "Skærme, der bruger disse filer, følger med til den nye mappe. Et billede, der flyttes ud af et diasshows mappe, er ikke længere med i det diasshow.",
+      "moveMessage": {
+        "one": "Skærme, der bruger denne fil, følger med til den nye mappe. Et billede, der flyttes ud af et billedshows mappe, er ikke længere med i det billedshow.",
+        "other": "Skærme, der bruger disse filer, følger med til den nye mappe. Et billede, der flyttes ud af et billedshows mappe, er ikke længere med i det billedshow."
+      },
       "moveConfirm": "Flyt",
       "moved": {
         "one": "1 fil flyttet",
@@ -2522,14 +2529,26 @@
     "start": "Importér",
     "importing": "Importerer…",
     "progress": "Henter {done} af {total}…",
-    "summary": "{done} nye elementer tilføjet. {skipped} var her allerede.",
-    "summaryFailed": "{failed} kunne ikke hentes.",
+    "summaryAdded": {
+      "one": "1 ny fil tilføjet.",
+      "other": "{count} nye filer tilføjet."
+    },
+    "summarySkipped": {
+      "one": "1 var her allerede.",
+      "other": "{count} var her allerede."
+    },
+    "summaryFailed": {
+      "one": "1 kunne ikke hentes.",
+      "other": "{count} kunne ikke hentes."
+    },
+    "empty": "Der er intet at tilføje fra det album.",
     "help": "Virker med links til delte album (icloud.com/sharedalbum/#…) og 'Kopiér iCloud-link'-links (share.icloud.com). Alt i linket gemmes i den aktuelle mappe.",
-    "albumTip": "Tip: Delte album kan også vises live uden at blive hentet. Vælg 'Delt iCloud-album' som fotokilde i et diasshows indstillinger.",
+    "albumTip": "Tip: Delte album kan også vises live uden at blive hentet. Vælg 'Delt iCloud-album' som fotokilde i et billedshows indstillinger.",
     "errors": {
       "invalid": "Det ligner ikke et iCloud-link. Kopiér linket igen, og prøv en gang til.",
       "unreachable": "Kunne ikke få forbindelse til iCloud lige nu. Tjek internetforbindelsen, og prøv igen.",
       "expired": "Dette link virker ikke længere. iCloud-fotolinks holder op med at virke efter cirka en måned; bed om et nyt link, og prøv igen.",
+      "gone": "Dette album deles ikke længere, eller det er slettet. Del det igen i appen Fotos, og indsæt det nye link.",
       "busy": "En anden import kører allerede. Vent, til den er færdig.",
       "tooMany": "Dette link har for mange billeder til at gemme på én gang. Prøv et mindre album eller link.",
       "lost": "Vi mistede overblikket over denne import. Tjek mappen for at se, hvad der blev tilføjet."
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Åbn Google Fotos igen",
       "cancel": "Annullér",
       "importing": "Gemmer fotos… {done} af {total}",
-      "importDone": "{done} nye fotos gemt i dit bibliotek.",
-      "importDoneWithSkipped": "{done} nye fotos gemt ({skipped} var allerede i dit bibliotek).",
+      "importDone": {
+        "one": "1 nyt foto gemt i dit bibliotek.",
+        "other": "{count} nye fotos gemt i dit bibliotek."
+      },
+      "alreadyInLibrary": {
+        "one": "1 var allerede i dit bibliotek.",
+        "other": "{count} var allerede i dit bibliotek."
+      },
       "nothingPicked": "Der blev ikke valgt noget. Prøv at vælge fotos igen.",
       "sessionExpired": "Google Fotos lukkede den valgsession. Prøv at vælge fotos igen.",
       "busy": "Der kører allerede en anden import. Vent, til den er færdig, og prøv så igen.",
@@ -4690,7 +4715,7 @@
       "upOneFolder": "En mappe op",
       "emptyFolder": "Ingen undermapper her",
       "useThisFolder": "Brug denne mappe",
-      "capNote": "Hvis mappestrukturen indeholder mere end {cap} billeder, bruger diasshowet et tilfældigt udvalg på {cap}.",
+      "capNote": "Hvis mappestrukturen indeholder mere end {cap} billeder, bruger billedshowet et tilfældigt udvalg på {cap}.",
       "loadFailed": "Kunne ikke indlæse dine OneDrive-mapper.",
       "folderNotFound": "Mappen blev ikke fundet. Vælg en anden mappe.",
       "photosPerRefresh": "Billeder pr. opdatering",

@@ -5,7 +5,7 @@ import { useLibraryImportJob, type LibraryImportJobStatus } from './useLibraryIm
 export type ICloudImportJobStatus = LibraryImportJobStatus;
 
 /** Maps to the `icloudImport.errors.*` translation keys. */
-export type ICloudImportErrorKey = 'invalid' | 'expired' | 'busy' | 'tooMany' | 'lost' | 'unreachable';
+export type ICloudImportErrorKey = 'invalid' | 'expired' | 'gone' | 'busy' | 'tooMany' | 'lost' | 'unreachable';
 
 /**
  * Start-and-poll client for /api/icloud/import, shared by every surface that
@@ -25,10 +25,11 @@ export function useICloudImport(onFinished?: (job: ICloudImportJobStatus) => voi
   const errorKey: ICloudImportErrorKey | null = errorCode === null ? null
     : errorCode === 'invalid-link' || errorCode === 'invalid-folder' ? 'invalid'
       : errorCode === 'link-expired' ? 'expired'
-        : errorCode === 'busy' ? 'busy'
-          : errorCode === 'too-many-items' ? 'tooMany'
-            : errorCode === 'lost' ? 'lost'
-              : 'unreachable';
+        : errorCode === 'album-gone' ? 'gone'
+          : errorCode === 'busy' ? 'busy'
+            : errorCode === 'too-many-items' ? 'tooMany'
+              : errorCode === 'lost' ? 'lost'
+                : 'unreachable';
 
   const start = async (url: string, folder: string) => {
     if (!url.trim() || running) return;

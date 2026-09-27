@@ -1119,6 +1119,7 @@
       "dropzone": "Drop pictures or videos here, or click to pick, as many as you like",
       "saveInto": "Save into",
       "uploadFailedWithStatus": "Upload failed ({status})",
+      "wontPlay": "{name} is a kind of video the wall can't play. On an iPhone, choose Most Compatible in Settings > Camera > Formats.",
       "uploadFailed": "Upload failed",
       "loadFailed": "Couldn't load your pictures and videos",
       "tryAgain": "Try again",
@@ -1145,7 +1146,10 @@
         "one": "Delete 1 file?",
         "other": "Delete {count} files?"
       },
-      "deleteMessage": "They'll be gone from this hub for good. Slideshows move on to their other pictures, and files a screen depends on are kept, so no screen goes empty.",
+      "deleteMessage": {
+        "one": "It'll be gone from this hub for good. A slideshow that shows it moves on to its other pictures, and if a screen depends on it, it's kept, so no screen goes empty.",
+        "other": "They'll be gone from this hub for good. Slideshows move on to their other pictures, and files a screen depends on are kept, so no screen goes empty."
+      },
       "deleteConfirm": "Delete",
       "refused": "{file} is still in use and was not deleted",
       "keptLast": "{file} was kept: it's the last picture in the slideshow on '{name}'.",
@@ -1196,7 +1200,10 @@
         "one": "Move 1 file?",
         "other": "Move {count} files?"
       },
-      "moveMessage": "Screens that use these files will follow them to the new folder. A picture moved out of a slideshow's folder leaves that slideshow.",
+      "moveMessage": {
+        "one": "Screens that use this file will follow it to the new folder. A picture moved out of a slideshow's folder leaves that slideshow.",
+        "other": "Screens that use these files will follow them to the new folder. A picture moved out of a slideshow's folder leaves that slideshow."
+      },
       "moveConfirm": "Move",
       "moved": {
         "one": "1 file moved",
@@ -2522,14 +2529,26 @@
     "start": "Import",
     "importing": "Importing…",
     "progress": "Downloading {done} of {total}…",
-    "summary": "Added {done} new items. {skipped} were already here.",
-    "summaryFailed": "{failed} couldn't be downloaded.",
+    "summaryAdded": {
+      "one": "Added 1 new item.",
+      "other": "Added {count} new items."
+    },
+    "summarySkipped": {
+      "one": "1 was already here.",
+      "other": "{count} were already here."
+    },
+    "summaryFailed": {
+      "one": "1 couldn't be downloaded.",
+      "other": "{count} couldn't be downloaded."
+    },
+    "empty": "There's nothing in that album to add.",
     "help": "Works with Shared Album links (icloud.com/sharedalbum/#…) and \"Copy iCloud Link\" links (share.icloud.com). Everything in the link is saved into the current folder.",
     "albumTip": "Tip: Shared Albums can also play live without downloading. Pick \"iCloud Shared Album\" as the photo source in a slideshow's settings.",
     "errors": {
       "invalid": "That doesn't look like an iCloud link. Copy the link again and try once more.",
       "unreachable": "Couldn't reach iCloud right now. Check the internet connection and try again.",
       "expired": "This link isn't working anymore. iCloud photo links stop working after about a month, so ask for a fresh one and try again.",
+      "gone": "This album isn't shared anymore, or it was deleted. Share it again in the Photos app and paste the new link.",
       "busy": "Another import is already running. Give it a moment to finish.",
       "tooMany": "This link has too many photos to save all at once. Try a smaller album or link.",
       "lost": "Lost track of this import. Check the folder to see what was added."
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Reopen Google Photos",
       "cancel": "Cancel",
       "importing": "Saving photos… {done} of {total}",
-      "importDone": "Saved {done} new photos to your library.",
-      "importDoneWithSkipped": "Saved {done} new photos ({skipped} were already in your library).",
+      "importDone": {
+        "one": "Saved 1 new photo to your library.",
+        "other": "Saved {count} new photos to your library."
+      },
+      "alreadyInLibrary": {
+        "one": "1 was already in your library.",
+        "other": "{count} were already in your library."
+      },
       "nothingPicked": "Nothing was picked. Try choosing photos again.",
       "sessionExpired": "Google Photos closed that picking session. Try choosing photos again.",
       "busy": "Another import is already running. Wait for it to finish, then try again.",

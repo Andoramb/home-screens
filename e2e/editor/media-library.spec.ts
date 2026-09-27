@@ -3,6 +3,7 @@ import type { APIRequestContext } from '@playwright/test';
 import { putConfig } from '../helpers/api';
 import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
+import { mp4WithVideo } from '../helpers/video-samples';
 
 /**
  * The Pictures & videos settings page (the library's new home) and the
@@ -139,6 +140,28 @@ test.describe('Defaults › Pictures & videos', () => {
 
     await putConfig(request, baseConfig());
     await request.delete('/api/backgrounds', { data: { file: 'e2e-a.png', directory: folder } });
+    await removeFolder(request, folder);
+  });
+
+  test('an upload holds back a video the wall cannot play, says why, and sends the rest', async ({ page, request }) => {
+    const folder = uniqueFolder();
+    await seedImage(request, folder, 'e2e-seed.png');
+    await putConfig(request, baseConfig());
+    await page.goto('/editor/settings?section=defaults&page=media');
+    await page.getByTestId('media-upload-button').click();
+    const panel = page.getByTestId('media-upload-panel');
+    await panel.locator('[data-upload-directory]').selectOption(folder);
+    await panel.locator('[data-file-input]').setInputFiles([
+      { name: 'IMG_0042.MOV', mimeType: 'video/quicktime', buffer: mp4WithVideo('hvc1') },
+      { name: 'e2e-ok.png', mimeType: 'image/png', buffer: PNG_1X1 },
+    ]);
+
+    await expect(page.getByTestId(`media-tile-${folder}/e2e-ok.png`)).toBeVisible();
+    // The panel stays open while it says why the video stayed behind.
+    await expect(panel.getByTestId('media-upload-wont-play')).toHaveText(
+      "IMG_0042.MOV is a kind of video the wall can't play. On an iPhone, choose Most Compatible in Settings > Camera > Formats.",
+    );
+    await expect(page.getByTestId(`media-tile-${folder}/IMG_0042.MOV`)).toHaveCount(0);
     await removeFolder(request, folder);
   });
 
@@ -298,7 +321,7 @@ test.describe('Defaults › Pictures & videos', () => {
     await first.hover();
     await first.getByTestId('media-tile-delete').click();
     const dialog = page.getByRole('dialog').filter({ hasText: 'Delete 1 file?' });
-    await expect(dialog).toContainText('Slideshows move on to their other pictures');
+    await expect(dialog).toContainText("It'll be gone from this hub for good. A slideshow that shows it moves on to its other pictures");
     await dialog.getByRole('button', { name: 'Delete', exact: true }).click();
     await expect(first).toHaveCount(0);
 

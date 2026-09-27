@@ -1119,6 +1119,7 @@
       "dropzone": "Ziehe Bilder oder Videos hierher oder klicke zum Auswählen, so viele du magst",
       "saveInto": "Speichern in",
       "uploadFailedWithStatus": "Hochladen fehlgeschlagen ({status})",
+      "wontPlay": "{name} ist in einem Videoformat, das an der Wand nicht läuft. Wähle auf dem iPhone unter Einstellungen > Kamera > Formate „Maximale Kompatibilität“.",
       "uploadFailed": "Hochladen fehlgeschlagen",
       "loadFailed": "Deine Bilder und Videos konnten nicht geladen werden",
       "tryAgain": "Erneut versuchen",
@@ -1145,7 +1146,10 @@
         "one": "1 Datei löschen?",
         "other": "{count} Dateien löschen?"
       },
-      "deleteMessage": "Sie sind dann endgültig von diesem Hub verschwunden. Diashows machen mit ihren übrigen Bildern weiter, und Dateien, die ein Bildschirm braucht, bleiben erhalten, damit kein Bildschirm leer wird.",
+      "deleteMessage": {
+        "one": "Die Datei ist dann endgültig von diesem Hub verschwunden. Eine Diashow, die sie zeigt, macht mit ihren übrigen Bildern weiter. Wenn ein Bildschirm die Datei braucht, bleibt sie erhalten, damit kein Bildschirm leer wird.",
+        "other": "Die Dateien sind dann endgültig von diesem Hub verschwunden. Diashows machen mit ihren übrigen Bildern weiter, und Dateien, die ein Bildschirm braucht, bleiben erhalten, damit kein Bildschirm leer wird."
+      },
       "deleteConfirm": "Löschen",
       "refused": "{file} wird noch verwendet und wurde nicht gelöscht",
       "keptLast": "{file} wurde behalten: Es ist das letzte Bild der Diashow auf '{name}'.",
@@ -1196,7 +1200,10 @@
         "one": "1 Datei verschieben?",
         "other": "{count} Dateien verschieben?"
       },
-      "moveMessage": "Bildschirme, die diese Dateien verwenden, folgen ihnen in den neuen Ordner. Ein Bild, das du aus dem Ordner einer Diashow verschiebst, verschwindet aus dieser Diashow.",
+      "moveMessage": {
+        "one": "Bildschirme, die diese Datei verwenden, folgen ihr in den neuen Ordner. Ein Bild, das du aus dem Ordner einer Diashow verschiebst, verschwindet aus dieser Diashow.",
+        "other": "Bildschirme, die diese Dateien verwenden, folgen ihnen in den neuen Ordner. Ein Bild, das du aus dem Ordner einer Diashow verschiebst, verschwindet aus dieser Diashow."
+      },
       "moveConfirm": "Verschieben",
       "moved": {
         "one": "1 Datei verschoben",
@@ -2522,14 +2529,26 @@
     "start": "Importieren",
     "importing": "Wird importiert…",
     "progress": "Lade {done} von {total} herunter…",
-    "summary": "{done} neue Elemente hinzugefügt. {skipped} waren schon da.",
-    "summaryFailed": "{failed} konnten nicht heruntergeladen werden.",
+    "summaryAdded": {
+      "one": "1 neue Datei hinzugefügt.",
+      "other": "{count} neue Dateien hinzugefügt."
+    },
+    "summarySkipped": {
+      "one": "1 war schon da.",
+      "other": "{count} waren schon da."
+    },
+    "summaryFailed": {
+      "one": "1 konnte nicht heruntergeladen werden.",
+      "other": "{count} konnten nicht heruntergeladen werden."
+    },
+    "empty": "In diesem Album gibt es nichts hinzuzufügen.",
     "help": "Funktioniert mit Links zu geteilten Alben (icloud.com/sharedalbum/#…) und „iCloud-Link kopieren“-Links (share.icloud.com). Alles aus dem Link wird im aktuellen Ordner gespeichert.",
     "albumTip": "Tipp: Geteilte Alben können auch live abgespielt werden, ohne Download. Wähle in den Einstellungen einer Diashow „Geteiltes iCloud-Album“ als Fotoquelle.",
     "errors": {
       "invalid": "Das sieht nicht wie ein iCloud-Link aus. Kopiere den Link erneut und versuche es noch einmal.",
       "unreachable": "iCloud ist gerade nicht erreichbar. Prüfe die Internetverbindung und versuche es noch einmal.",
       "expired": "Dieser Link funktioniert nicht mehr. iCloud-Fotolinks laufen nach etwa einem Monat ab. Bitte um einen neuen Link und versuche es erneut.",
+      "gone": "Dieses Album wird nicht mehr geteilt oder wurde gelöscht. Teile es in der Fotos-App erneut und füge den neuen Link ein.",
       "busy": "Es läuft bereits ein Import. Warte kurz, bis er fertig ist.",
       "tooMany": "Dieser Link enthält zu viele Fotos, um alle auf einmal zu speichern. Versuche es mit einem kleineren Album oder Link.",
       "lost": "Der Import ist aus dem Blick geraten. Sieh im Ordner nach, was hinzugefügt wurde."
@@ -3879,8 +3898,14 @@
       "reopenPicker": "Google Fotos erneut öffnen",
       "cancel": "Abbrechen",
       "importing": "Fotos werden gespeichert… {done} von {total}",
-      "importDone": "{done} neue Fotos in deiner Bibliothek gespeichert.",
-      "importDoneWithSkipped": "{done} neue Fotos gespeichert ({skipped} waren schon in deiner Bibliothek).",
+      "importDone": {
+        "one": "1 neues Foto in deiner Bibliothek gespeichert.",
+        "other": "{count} neue Fotos in deiner Bibliothek gespeichert."
+      },
+      "alreadyInLibrary": {
+        "one": "1 war schon in deiner Bibliothek.",
+        "other": "{count} waren schon in deiner Bibliothek."
+      },
       "nothingPicked": "Es wurde nichts ausgewählt. Versuche es noch einmal.",
       "sessionExpired": "Google Fotos hat diese Auswahl-Sitzung beendet. Wähle die Fotos bitte noch einmal aus.",
       "busy": "Es läuft bereits ein anderer Import. Warte, bis er fertig ist, und versuche es dann erneut.",

@@ -72,8 +72,13 @@ export default function ICloudImportPanel({ selectedDir, onImported }: Props) {
 
           {finished && job && (
             <p className="text-[11px] text-hs-text-muted">
-              {t('icloudImport.summary', { done: job.done, skipped: job.skipped })}
-              {job.failed > 0 && ` ${t('icloudImport.summaryFailed', { failed: job.failed })}`}
+              {job.total === 0
+                ? t('icloudImport.empty')
+                : [
+                    job.done > 0 ? t('icloudImport.summaryAdded', { count: job.done }) : null,
+                    job.skipped > 0 ? t('icloudImport.summarySkipped', { count: job.skipped }) : null,
+                    job.failed > 0 ? t('icloudImport.summaryFailed', { count: job.failed }) : null,
+                  ].filter(Boolean).join(' ')}
             </p>
           )}
 

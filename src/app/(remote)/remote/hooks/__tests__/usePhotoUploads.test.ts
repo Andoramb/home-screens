@@ -3,7 +3,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import type { UploadLibraryResult } from '@/lib/library-client';
-import type { VideoCodec } from '@/lib/video-codec';
 import { MAX_IMAGE_BYTES } from '@/lib/media-formats';
 
 type Upload = (file: File, directory: string, onProgress?: (sent: number, total: number) => void) => Promise<UploadLibraryResult>;
@@ -11,7 +10,7 @@ type Upload = (file: File, directory: string, onProgress?: (sent: number, total:
 const mocks = vi.hoisted(() => ({
   uploadLibraryFile: vi.fn<Upload>(),
   downscaleForUpload: vi.fn<(file: File) => Promise<File>>(),
-  videoCodecOfFile: vi.fn<(file: Blob) => Promise<VideoCodec>>(),
+  isUnplayableVideo: vi.fn<(file: Blob) => Promise<boolean>>(),
 }));
 
 vi.mock('@/lib/library-client', async (importOriginal) => {
@@ -19,7 +18,7 @@ vi.mock('@/lib/library-client', async (importOriginal) => {
   return { libraryFileFromServeUrl: actual.libraryFileFromServeUrl, uploadLibraryFile: mocks.uploadLibraryFile };
 });
 vi.mock('@/lib/image-downscale', () => ({ downscaleForUpload: mocks.downscaleForUpload }));
-vi.mock('@/lib/video-codec', () => ({ videoCodecOfFile: mocks.videoCodecOfFile }));
+vi.mock('@/lib/video-codec', () => ({ isUnplayableVideo: mocks.isUnplayableVideo }));
 
 import { PHONE_VIDEO_MAX_BYTES, usePhotoUploads } from '../usePhotoUploads';
 
@@ -62,7 +61,7 @@ function setup() {
 beforeEach(() => {
   mocks.uploadLibraryFile.mockReset().mockImplementation(async (file, folder) => stored(folder, file.name));
   mocks.downscaleForUpload.mockReset().mockImplementation(async (file) => file);
-  mocks.videoCodecOfFile.mockReset().mockResolvedValue('avc');
+  mocks.isUnplayableVideo.mockReset().mockResolvedValue(false);
 });
 
 afterEach(() => {
@@ -139,25 +138,16 @@ describe('usePhotoUploads', () => {
 
     expect(result.current.run?.failures).toEqual([{ name: 'long.mov', problem: 'tooBigVideo' }]);
     expect(sentNames()).toEqual(['fits.mp4']);
-    expect(mocks.videoCodecOfFile).toHaveBeenCalledTimes(1);
+    expect(mocks.isUnplayableVideo).toHaveBeenCalledTimes(1);
   });
 
   it('turns away an HEVC video, which the wall cannot play, without sending it', async () => {
-    mocks.videoCodecOfFile.mockResolvedValue('hevc');
+    mocks.isUnplayableVideo.mockResolvedValue(true);
     const { result, run } = setup();
     await run([pick('IMG_0042.MOV', 'video/quicktime')]);
 
     expect(result.current.run?.failures).toEqual([{ name: 'IMG_0042.MOV', problem: 'wontPlay' }]);
     expect(mocks.uploadLibraryFile).not.toHaveBeenCalled();
-  });
-
-  it('sends a video whose format could not be read', async () => {
-    mocks.videoCodecOfFile.mockRejectedValue(new Error('read failed'));
-    const { result, run } = setup();
-    await run([pick('clip.mp4', 'video/mp4')]);
-
-    expect(sentNames()).toEqual(['clip.mp4']);
-    expect(result.current.run?.failures).toEqual([]);
   });
 
   it('turns away a photo still over 10 MB after it was made smaller', async () => {
@@ -271,5 +261,27 @@ describe('usePhotoUploads', () => {
     await settle(() => answers[1](stored('Favorites', 'b.jpg')));
     await act(async () => { await batch; });
     expect(result.current.run).toMatchObject({ finished: true, current: 2, progress: 1, bytesLeft: 0 });
+  });
+
+  it('never counts a file turned away before sending toward the bytes left', async () => {
+    const answers = heldUploads();
+    const { result } = setup();
+    let batch!: Promise<void>;
+    await settle(() => {
+      batch = result.current.start([
+        pick('a.jpg', 'image/jpeg', 1000),
+        pick('long.mp4', 'video/mp4', PHONE_VIDEO_MAX_BYTES + 1),
+        pick('notes.txt', 'text/plain', 5000),
+      ], 'Favorites');
+    });
+    // Only the photo will go, so only its bytes are left to send.
+    expect(result.current.run).toMatchObject({ current: 0, bytesLeft: 1000 });
+
+    await settle(() => answers[0](stored('Favorites', 'a.jpg')));
+    await act(async () => { await batch; });
+    expect(result.current.run?.failures).toEqual([
+      { name: 'long.mp4', problem: 'tooBigVideo' },
+      { name: 'notes.txt', problem: 'notMedia' },
+    ]);
   });
 });

@@ -98,7 +98,11 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     }
   }
   const entries = await fs.readdir(dir, { withFileTypes: true });
-  const files = entries.filter((e) => e.isFile()).map((e) => e.name);
+  // Top-level `rotation-` downloads belong to the background rotation, not to
+  // a slideshow or a picture picker (Settings and the phone leave them out too).
+  const files = entries
+    .filter((e) => e.isFile() && !isRotationFile(directory ? `${directory}/${e.name}` : e.name))
+    .map((e) => e.name);
 
   // No media param → legacy string[] of image URLs, exactly as before videos existed.
   if (!media) {

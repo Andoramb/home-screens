@@ -1,11 +1,13 @@
 'use client';
 
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
 import { FolderInput, Lock, Monitor, MonitorUp, Trash2, X } from 'lucide-react';
 import { useFormattingLocale, useTranslate } from '@/i18n';
 import type { MediaInventoryItem } from '@/lib/media-inventory';
 import { displaySizedUrl, fitInside, serveUrlFor } from '@/lib/media-paths';
 import { formatBytes } from '@/lib/format-bytes';
+import { useBackGesture } from '../hooks/useBackGesture';
+import { setToastFloor } from '../remote-toast';
 
 /** What the panel under the picture says about one file, worked out by the tab. */
 export interface PhotoFacts {
@@ -24,6 +26,9 @@ interface PhotoViewerProps {
   index: number;
   onStep: (delta: 1 | -1) => void;
   onClose: () => void;
+  /** Back was pressed: true when something open over the viewer took it (a
+   *  sheet it opened closed), so the viewer stays. */
+  onBackGesture?: () => boolean;
   facts: (item: MediaInventoryItem) => PhotoFacts;
   onMove: (item: MediaInventoryItem) => void;
   onDelete: (item: MediaInventoryItem) => void;
@@ -86,6 +91,7 @@ export default function PhotoViewer({
   index,
   onStep,
   onClose,
+  onBackGesture,
   facts,
   onMove,
   onDelete,
@@ -98,17 +104,46 @@ export default function PhotoViewer({
   const item = items[index];
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
 
+  // Back closes the viewer (or first a sheet opened over it) instead of
+  // leaving the remote, like every phone's own photo viewer.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+  const onBackGestureRef = useRef(onBackGesture);
+  onBackGestureRef.current = onBackGesture;
+  const { release } = useBackGesture(() => {
+    if (onBackGestureRef.current?.()) return true;
+    onCloseRef.current();
+    return false;
+  });
+  const close = useCallback(() => {
+    release();
+    onClose();
+  }, [release, onClose]);
+
+  // A toast sits just above the panel while the viewer is open, not on its buttons.
+  const liftToastOver = useCallback((panel: HTMLDivElement | null) => {
+    if (!panel) return;
+    const lift = () => setToastFloor(panel.getBoundingClientRect().height);
+    lift();
+    const observer = new ResizeObserver(lift);
+    observer.observe(panel);
+    return () => {
+      observer.disconnect();
+      setToastFloor(null);
+    };
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
       if (e.target instanceof HTMLElement && e.target.closest('video, input, textarea')) return;
       if (e.key === 'ArrowRight') onStep(1);
       else if (e.key === 'ArrowLeft') onStep(-1);
-      else if (e.key === 'Escape') onClose();
+      else if (e.key === 'Escape') close();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onStep, onClose]);
+  }, [onStep, close]);
 
   // The neighbours load while this one is looked at, so a swipe lands on a
   // picture that is already there.
@@ -171,7 +206,7 @@ export default function PhotoViewer({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 48, padding: '0 8px', flex: 'none' }}>
-        <button type="button" onClick={onClose} aria-label={tCore('actions.close')} data-testid="photo-viewer-close" style={ROUND_BUTTON}>
+        <button type="button" onClick={close} aria-label={tCore('actions.close')} data-testid="photo-viewer-close" style={ROUND_BUTTON}>
           <X size={20} aria-hidden="true" />
         </button>
         <span style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.78)' }} data-testid="photo-viewer-count">
@@ -204,6 +239,8 @@ export default function PhotoViewer({
       </div>
 
       <div
+        ref={liftToastOver}
+        data-testid="photo-viewer-panel"
         style={{
           flex: 'none',
           background: '#141414',
