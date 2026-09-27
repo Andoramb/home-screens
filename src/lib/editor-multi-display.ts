@@ -98,6 +98,24 @@ export function getActiveDimensions(
 }
 
 /**
+ * The full-screen theme the selected display paints with where a module sets
+ * none: the display's own override, else the shared default. Undefined when
+ * neither is set, so each module keeps its own last resort (Midnight for
+ * photos, Linen for the rest). Mirrors the settings merge in
+ * `filterConfigForDisplay`, so the canvas preview and the editor's theme
+ * swatches show what that display's wall paints.
+ */
+export function getActiveFullscreenTheme(
+  config: ScreenConfiguration,
+  selectedDisplayId: string | null,
+): string | undefined {
+  const display = selectedDisplayId
+    ? config.displays?.find((d) => d.id === selectedDisplayId)
+    : undefined;
+  return display?.settings?.fullscreenTheme ?? config.settings.fullscreenTheme;
+}
+
+/**
  * Decide where a profile mutation should land.
  *
  * - `{ kind: 'display', idx, display }` means the selected display owns its

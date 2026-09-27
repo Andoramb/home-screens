@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
-import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
+import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
 import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
@@ -137,8 +137,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   // The theme the selected display paints its fullscreen modules with: its
   // own override first, then the shared default, then the shipped default.
-  const display = selectedDisplayId ? config.displays?.find((d) => d.id === selectedDisplayId) : undefined;
-  const themeInUse = display?.settings?.fullscreenTheme ?? config.settings.fullscreenTheme ?? 'linen';
+  const themeInUse = getActiveFullscreenTheme(config, selectedDisplayId) ?? 'linen';
   const themeWalls = starterBackgroundsIn('theme');
   const orderedThemeWalls = [
     ...themeWalls.filter((bg) => bg.themeId === themeInUse),

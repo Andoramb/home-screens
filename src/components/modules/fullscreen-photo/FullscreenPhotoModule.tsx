@@ -263,6 +263,9 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
 
   const isSinglePhoto = isSinglePhotoMode(config);
   const playVideos = !!(screenId && moduleId);
+  // A config without the key shows the clock, as the registry places it and
+  // as the editor's toggle reads it.
+  const showClock = config.showClock ?? true;
 
   // Fetch photo list (reuses same API as photo-slideshow) — skip when single photo.
   // Photo-only configs receive the legacy string[] response; normalize both
@@ -329,7 +332,7 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
           kenBurns={config.kenBurns ?? false}
           layerIndex={0}
         />
-        {config.showClock && (
+        {showClock && (
           <ClockOverlay theme={theme} backdrop={config} timezone={timezone} timeFormat={timeFormat} />
         )}
       </div>
@@ -416,7 +419,7 @@ export default function FullscreenPhotoModule({ config, timezone, fullscreenThem
       {renderLayer(1)}
 
       {/* Clock overlay */}
-      {config.showClock && (
+      {showClock && (
         <ClockOverlay theme={theme} backdrop={config} timezone={timezone} timeFormat={timeFormat} />
       )}
     </div>

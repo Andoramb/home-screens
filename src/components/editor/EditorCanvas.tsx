@@ -4,7 +4,7 @@ import { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { LayoutDashboard, Monitor, Plus, Copy } from 'lucide-react';
 import Button from '@/components/ui/Button';
-import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
+import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
 import { useEditorHouseholdTimezone } from '@/components/editor/useEditorHouseholdClock';
 import {
   DISPLAY_BACKGROUND,
@@ -237,6 +237,8 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
   // previews don't re-render on unrelated canvas re-renders (polls, clock).
   const { members: familyMembers, groups: familyGroups, revision: familyRevision, error: familyError } = useFamilyData();
   const settings = config?.settings;
+  // The selected display's own theme override counts, as it does on its wall.
+  const fullscreenTheme = config ? getActiveFullscreenTheme(config, selectedDisplayId) : undefined;
   const previewSettings: PreviewSettings | null = useMemo(() => {
     if (!settings) return null;
     const previewLocation = getLocation(settings);
@@ -247,7 +249,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
       timezone: householdTimezone,
       globalProvider: settings.weather.provider,
       units: settings.weather.units,
-      fullscreenTheme: settings.fullscreenTheme,
+      fullscreenTheme,
       timeFormat: settings.timeFormat,
       calendarPeople: calendarPeopleForFamily(familyMembers, settings.calendar?.personSources),
       calendarPeopleState: !familyRevision && Object.values(settings.calendar?.personSources ?? {}).some((ids) => ids.length > 0)
@@ -255,7 +257,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
       familyGroups,
       calendarConfigured: hasAnyCalendarSource(settings.calendar),
     };
-  }, [settings, householdTimezone, familyMembers, familyGroups, familyRevision, familyError]);
+  }, [settings, fullscreenTheme, householdTimezone, familyMembers, familyGroups, familyRevision, familyError]);
 
   // One normalized source for every module preview, built with the same
   // adapter contract the display uses. Memoized because ModulePreview is

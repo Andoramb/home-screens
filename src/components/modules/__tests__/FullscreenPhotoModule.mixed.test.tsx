@@ -132,3 +132,31 @@ describe('FullscreenPhotoModule mixed media', () => {
     expect(activeElement(container)?.getAttribute('src')).toContain('b.jpg');
   });
 });
+
+describe('FullscreenPhotoModule clock overlay', () => {
+  const clock = (container: HTMLElement) => container.querySelector('[data-testid="fullscreen-photo-clock"]');
+
+  /** A config that never had the key, as the editor sees one: its toggle reads it as on. */
+  function withoutShowClock(overrides: Partial<FullscreenPhotoConfig> = {}): FullscreenPhotoConfig {
+    const config: Partial<FullscreenPhotoConfig> = makeConfig(overrides);
+    delete config.showClock;
+    return config as FullscreenPhotoConfig;
+  }
+
+  it('shows the clock on a slideshow whose config has no showClock', () => {
+    mockData = ['/api/backgrounds/serve?file=a.jpg'];
+    const { container } = renderFullscreen(withoutShowClock());
+    expect(clock(container)).not.toBeNull();
+  });
+
+  it('shows the clock on a single photo whose config has no showClock', () => {
+    const { container } = renderFullscreen(withoutShowClock({ file: '/api/backgrounds/serve?file=a.jpg' }));
+    expect(clock(container)).not.toBeNull();
+  });
+
+  it('hides the clock only when it is switched off', () => {
+    mockData = ['/api/backgrounds/serve?file=a.jpg'];
+    expect(clock(renderFullscreen(makeConfig({ showClock: false })).container)).toBeNull();
+    expect(clock(renderFullscreen(makeConfig({ showClock: true })).container)).not.toBeNull();
+  });
+});

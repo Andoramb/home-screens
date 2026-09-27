@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
 import { photoThemeTokens, defaultClockBackdrop, autoClockBackdropColor } from '@/lib/fullscreen-photo-theme';
-import { useEditorStore } from '@/stores/editor-store';
+import { useActiveFullscreenTheme } from '@/hooks/useFullscreenThemeTokens';
 import ColorPicker from '@/components/ui/ColorPicker';
 import Slider from '@/components/ui/Slider';
 import Toggle from '@/components/ui/Toggle';
@@ -75,8 +75,7 @@ export function FullscreenPhotoConfigSection({ mod, screenId }: { mod: ModuleIns
   // there, and landing back on either clears its field so a later theme or
   // color change still moves it. The theme resolves the way the canvas
   // preview resolves it.
-  const displayTheme = useEditorStore((s) => s.config?.settings?.fullscreenTheme);
-  const photoTheme = photoThemeTokens(c.theme, displayTheme);
+  const photoTheme = photoThemeTokens(c.theme, useActiveFullscreenTheme());
   const autoBackdropColor = autoClockBackdropColor(photoTheme);
   const themeBackdrop = defaultClockBackdrop(photoTheme, c.clockBackdropColor);
   const clockBackdrop = c.clockBackdrop ?? themeBackdrop;

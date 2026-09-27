@@ -5,6 +5,7 @@ import { LOCALES } from '@/i18n/manifest';
 import { getConfig, putConfig } from '../helpers/api';
 import { baseConfig, makeScreen } from '../helpers/config-fixtures';
 import { renderOnDisplay } from '../helpers/display';
+import { buildModuleInstance, matrixSettings } from '../helpers/module-fixtures';
 
 /**
  * i18n locale switching (plan Task 15 + Task 20).
@@ -154,3 +155,31 @@ test('formattingLocale overrides date formatting without changing the UI languag
   );
   await expect(de.module('date')).toHaveText(/^\d{2}\.\d{2}\.\d{4}$/);
 });
+
+/* ── Color rows fit the panel in every language ─────────────────────────── */
+
+// A color row puts its label beside the swatch and the text box, which leave
+// it under 100px. A single word longer than that cannot wrap on its own, and
+// these labels used to push the text box past the panel's edge.
+const LONG_COLOR_LABELS: Array<{ locale: string; label: string; mod: ModuleInstance }> = [
+  { locale: 'de-DE', label: 'Verzierungsfarbe', mod: buildModuleInstance('text', { textDecoration: 'underline' }) },
+  { locale: 'de-DE', label: 'Aufzählungspunkt-Farbe', mod: buildModuleInstance('news', { view: 'list' }) },
+  { locale: 'nl-NL', label: 'Opsommingskleur', mod: buildModuleInstance('news', { view: 'list' }) },
+  { locale: 'da-DK', label: 'Udsmykningens farve', mod: buildModuleInstance('text', { textDecoration: 'underline' }) },
+];
+
+for (const { locale, label, mod } of LONG_COLOR_LABELS) {
+  test(`the ${locale} color row "${label}" stays inside the panel`, async ({ page, request }) => {
+    await putConfig(request, baseConfig({
+      settings: { ...matrixSettings(), locale },
+      screens: [makeScreen('screen-1', 'Screen 1', [mod])],
+    }));
+    await page.goto('/editor');
+    await expect(page.getByTestId('editor-canvas')).toBeVisible();
+    await page.locator(`[data-module-id="${mod.id}"]`).click();
+
+    const row = page.locator('label').filter({ has: page.getByText(label, { exact: true }) });
+    await expect(row).toBeVisible();
+    expect(await row.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+  });
+}

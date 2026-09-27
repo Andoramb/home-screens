@@ -3,6 +3,8 @@ import type { APIRequestContext } from '@playwright/test';
 import { getConfig, postHeartbeat, putConfig } from '../helpers/api';
 import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
 import { expectPainted, switchDisplay } from '../helpers/editor';
+import { buildModuleInstance } from '../helpers/module-fixtures';
+import { TINY_GIF } from '../helpers/config-variants/shared';
 import type { DisplayNode, ScreenConfiguration } from '@/types/config';
 
 /** Two registered displays (main + kitchen), each with one labelled text module. */
@@ -422,4 +424,31 @@ test.describe('display software status', () => {
     await page.goto('/editor/settings?section=displays');
     await expect(page.getByTestId('display-software-chip').first()).toContainText('Update waiting');
   });
+});
+
+/* ─── Full-screen theme in the canvas preview ────────────────────────────── */
+
+test('the canvas previews full-screen modules in the selected display\'s own theme', async ({ page, request }) => {
+  // The shared default is Linen and the kitchen overrides it with Midnight.
+  // Neither photo module sets a theme of its own, so its clock backdrop shows
+  // which one the preview used: white under Linen, black under Midnight, the
+  // same as each display's wall paints.
+  const photo = (id: string) => ({ ...buildModuleInstance('fullscreen-photo', { file: TINY_GIF, showClock: true }), id });
+  await putConfig(request, baseConfig({
+    settings: { fullscreenTheme: 'linen' },
+    displays: [
+      { id: 'main', name: 'Main', screens: [makeScreen('main-screen', 'Main Screen', [photo('main-photo')])] },
+      {
+        id: 'kitchen', name: 'Kitchen', settings: { fullscreenTheme: 'midnight' },
+        screens: [makeScreen('kitchen-screen', 'Kitchen Screen', [photo('kitchen-photo')])],
+      },
+    ],
+  }));
+  await page.goto('/editor');
+
+  const clockOn = (moduleId: string) => page.locator(`[data-module-id="${moduleId}"]`).getByTestId('fullscreen-photo-clock');
+  await expect(clockOn('main-photo')).toHaveCSS('background-image', /rgba\(255, 255, 255, 0\.72\)/);
+
+  await switchDisplay(page, 'Kitchen');
+  await expect(clockOn('kitchen-photo')).toHaveCSS('background-image', /rgba\(0, 0, 0, 0\.55\)/);
 });

@@ -4138,7 +4138,7 @@
       "zoom": "Zoom",
       "animationSpeed": "Animationshastighed (ms)",
       "endPause": "Pause til sidst (ms)",
-      "radarOpacity": "Radarens gennemsigtighed %",
+      "radarOpacity": "Radarens farvestyrke (%)",
       "smoothRadar": "Blød radar",
       "showSnow": "Vis sne",
       "showTimestamp": "Vis tidspunkt",

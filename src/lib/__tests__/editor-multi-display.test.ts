@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildBootstrapMain, buildNewDisplay, withProfiles, withActiveProfile } from '@/lib/editor-multi-display';
+import { buildBootstrapMain, buildNewDisplay, withProfiles, withActiveProfile, getActiveFullscreenTheme } from '@/lib/editor-multi-display';
+import { filterConfigForDisplay } from '@/lib/display-filter';
 import { resolveHubPanel } from '@/lib/kiosk';
 import type {
   GlobalSettings,
@@ -218,5 +219,35 @@ describe('touch matrix when the displays list is created', () => {
     expect(resolveHubPanel(followed).touchMatrix).toBeNull();
     expect(resolveHubPanel({ ...config, displays: [main] }).touchMatrix).toEqual(matrix);
     expect(resolveHubPanel(config).touchMatrix).toEqual(matrix);
+  });
+});
+
+/* ─── getActiveFullscreenTheme ─────────────────────── */
+
+// The editor canvas previews a display's full-screen modules in this theme,
+// so it has to be the one that display's wall paints with.
+describe('getActiveFullscreenTheme', () => {
+  const kitchen: DisplayNode = { id: 'kitchen', name: 'Kitchen', screens: [], settings: { fullscreenTheme: 'aurora' } };
+  const hall: DisplayNode = { id: 'hall', name: 'Hall', screens: [] };
+  const config = makeConfig({ settings: makeSettings({ fullscreenTheme: 'linen' }), displays: [kitchen, hall] });
+
+  it('takes the selected display\'s own override', () => {
+    expect(getActiveFullscreenTheme(config, 'kitchen')).toBe('aurora');
+  });
+
+  it('falls back to the shared default for a display without one, an unknown display, and single-display mode', () => {
+    expect(getActiveFullscreenTheme(config, 'hall')).toBe('linen');
+    expect(getActiveFullscreenTheme(config, 'gone')).toBe('linen');
+    expect(getActiveFullscreenTheme(makeConfig({ settings: makeSettings({ fullscreenTheme: 'paper' }) }), null)).toBe('paper');
+  });
+
+  it('is undefined when neither is set, so each module keeps its own last resort', () => {
+    expect(getActiveFullscreenTheme(makeConfig({ displays: [hall] }), 'hall')).toBeUndefined();
+  });
+
+  it('agrees with the settings every display\'s wall is given', () => {
+    for (const display of config.displays!) {
+      expect(getActiveFullscreenTheme(config, display.id)).toBe(filterConfigForDisplay(config, display.id)!.settings.fullscreenTheme);
+    }
   });
 });

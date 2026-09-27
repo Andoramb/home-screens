@@ -78,7 +78,13 @@ export default function ColorPicker({
     // whose clicks all open the OS colour picker.
     <div className="flex flex-col gap-1.5">
       <label className="flex items-center justify-between gap-2">
-        <span className="text-xs text-hs-text-muted">{label}</span>
+        {/* The swatch and text box leave the label under 100px, less with the
+            reset arrow or a classic scrollbar, and a one-word label longer
+            than that (German "Verzierungsfarbe", Dutch "Opsommingskleur")
+            cannot wrap, so it pushed the text box past the panel edge. It
+            hyphenates in the page's language, and breaks anywhere as a last
+            resort. */}
+        <span className="text-xs text-hs-text-muted hyphens-auto wrap-anywhere">{label}</span>
         <div className="flex items-center gap-2">
           {defaultValue !== undefined && resetLabel !== undefined && value !== defaultValue && (
             <button
