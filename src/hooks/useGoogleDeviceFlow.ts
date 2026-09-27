@@ -15,6 +15,8 @@ interface UseGoogleDeviceFlowReturn {
   clientIdHint: string | null;
   deviceFlowPolling: boolean;
   startDeviceFlow: () => Promise<void>;
+  /** Stop waiting for this code; the code simply expires at Google. */
+  cancel: () => void;
   clearError: () => void;
 }
 
@@ -105,6 +107,13 @@ export function useGoogleDeviceFlow({ onSuccess }: UseGoogleDeviceFlowOptions): 
     }
   }, [pollForToken, t]);
 
+  const cancel = useCallback(() => {
+    cancelledRef.current = true;
+    if (pollingTimerRef.current) clearTimeout(pollingTimerRef.current);
+    setDeviceFlowPolling(false);
+    setUserCode(null);
+  }, []);
+
   const clearError = useCallback(() => {
     setDeviceFlowError(null);
     setClientIdHint(null);
@@ -117,6 +126,7 @@ export function useGoogleDeviceFlow({ onSuccess }: UseGoogleDeviceFlowOptions): 
     clientIdHint,
     deviceFlowPolling,
     startDeviceFlow,
+    cancel,
     clearError,
   };
 }

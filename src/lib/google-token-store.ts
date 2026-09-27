@@ -23,7 +23,7 @@ import { logger } from './logger';
  * in the provider-neutral oauth-token-store exactly once.
  */
 
-export const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const REVOKE_URL = 'https://oauth2.googleapis.com/revoke';
 
 export interface StoredGoogleTokens extends StoredOAuthTokens {
@@ -38,9 +38,7 @@ export interface StoredGoogleTokens extends StoredOAuthTokens {
 /** Home Screens' own Google app for one integration. */
 export interface HostedGoogleClient {
   clientId: string;
-  /** Present when the hub holds the secret itself (the Calendar device client). */
-  clientSecret?: string;
-  /** Google's token endpoint, or the sign-in helper that adds the secret. */
+  /** The sign-in helper, which adds the secret on the way to Google. */
   tokenUrl: string;
 }
 
@@ -89,6 +87,11 @@ export interface GoogleTokenStore {
   /** Which app sign-ins and refreshes currently use, or null when neither is usable. */
   getMode(): Promise<GoogleClientMode | null>;
   /**
+   * Whether Home Screens' own app is on for this integration, whatever the
+   * household saved. The editor shows its new sign-in screens only then.
+   */
+  hostedAvailable(): boolean;
+  /**
    * POST a grant request (code exchange, device poll) to the current client's
    * token endpoint with its credentials. Resolves with Google's answer, which
    * the caller inspects; throws SignInHelperUnreachableError when Home Screens'
@@ -97,7 +100,7 @@ export interface GoogleTokenStore {
   requestToken(
     grant: Record<string, string>,
     init?: { retries?: number },
-  ): Promise<{ ok: boolean; data: Record<string, unknown>; client: GoogleClient }>;
+  ): Promise<{ ok: boolean; status: number; data: Record<string, unknown>; client: GoogleClient }>;
   /** Save a fresh grant, recording which app issued it. */
   saveGrant(tokens: StoredGoogleTokens, client: GoogleClient): Promise<void>;
   /**
@@ -188,7 +191,7 @@ export function createGoogleTokenStore(opts: GoogleTokenStoreOptions): GoogleTok
   async function requestToken(
     grant: Record<string, string>,
     init: { retries?: number } = {},
-  ): Promise<{ ok: boolean; data: Record<string, unknown>; client: GoogleClient }> {
+  ): Promise<{ ok: boolean; status: number; data: Record<string, unknown>; client: GoogleClient }> {
     const client = await getClient();
     let res: Response;
     try {
@@ -203,7 +206,7 @@ export function createGoogleTokenStore(opts: GoogleTokenStoreOptions): GoogleTok
       throw err;
     }
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
-    return { ok: res.ok, data, client };
+    return { ok: res.ok, status: res.status, data, client };
   }
 
   async function saveGrant(tokens: StoredGoogleTokens, client: GoogleClient): Promise<void> {
@@ -247,7 +250,8 @@ export function createGoogleTokenStore(opts: GoogleTokenStoreOptions): GoogleTok
   }
 
   async function verifyConnected(): Promise<boolean> {
-    return (await getAccessToken()) !== null;
+    if (!(await grantMatchesClient())) return false;
+    return store.verifyConnected();
   }
 
   return {
@@ -258,6 +262,7 @@ export function createGoogleTokenStore(opts: GoogleTokenStoreOptions): GoogleTok
     getClientId,
     hasCredentials,
     getMode,
+    hostedAvailable: () => opts.hosted() !== null,
     requestToken,
     saveGrant,
     getAccessToken,

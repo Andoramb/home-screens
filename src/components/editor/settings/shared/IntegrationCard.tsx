@@ -9,7 +9,8 @@ interface Props {
   name: string;
   description: string;
   statusLabel: string;
-  statusType: 'connected' | 'partial' | 'none';
+  /** `own`: working, on something the household set up itself (Google's own-app pill). */
+  statusType: 'connected' | 'partial' | 'none' | 'own';
   defaultOpen?: boolean;
   /** Optional settings-search anchor, rendered as `data-field-id` on the card's outer wrapper. */
   fieldId?: string;
@@ -34,14 +35,18 @@ export default function IntegrationCard({
       ? 'bg-hs-card/30 text-hs-text-faint'
       : statusType === 'partial'
         ? 'bg-hs-warning/10 text-hs-warning'
-        : 'bg-hs-success/10 text-hs-success';
+        : statusType === 'own'
+          ? 'bg-hs-accent/10 text-hs-accent'
+          : 'bg-hs-success/10 text-hs-success';
 
   const dotClasses =
     statusType === 'none'
       ? 'bg-hs-card'
       : statusType === 'partial'
         ? 'bg-hs-warning'
-        : 'bg-hs-success';
+        : statusType === 'own'
+          ? 'bg-hs-accent'
+          : 'bg-hs-success';
 
   return (
     <div

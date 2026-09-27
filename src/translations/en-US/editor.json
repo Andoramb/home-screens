@@ -560,7 +560,16 @@
         "pausedBadge": "Paused",
         "removeTitle": "Remove {name}",
         "credentialsSetupPrefix": "Add your Google login on the ",
-        "credentialsSetupSuffix": " page first."
+        "credentialsSetupSuffix": " page first.",
+        "settingsIntegrationsLink": "Settings → API keys",
+        "hosted": {
+          "codeIntroPart1": "On your phone or computer, open ",
+          "codeIntroPart2": " and type this code:",
+          "waiting": "Waiting for you to finish on Google…",
+          "cancel": "Cancel",
+          "help": "Shows your Google calendars on your screens. You'll finish signing in on your phone or computer with a short code.",
+          "signIn": "Sign in with Google"
+        }
       },
       "icloud": {
         "heading": "iCloud Calendar",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Step-by-step guide",
         "calendarBand": {
           "title": "For your calendar",
-          "help": "Google needs you to create a login for your own home first. Make an OAuth credential of type “TVs and Limited Input devices” in the Google Cloud Console, then paste both halves here."
+          "help": "Google needs you to create a login for your own home first. Make an OAuth credential of type “TVs and Limited Input devices” in the Google Cloud Console, then paste both halves here.",
+          "helpOwnApp": "Make an OAuth credential of type “TVs and Limited Input devices” in the Google Cloud Console, then paste both halves here."
         },
         "photosBand": {
           "title": "For importing Google Photos",
-          "help": "A separate login from the calendar one, of type “Web application”. Only needed if you want to pull photos in. Skip this if you don't."
+          "help": "A separate login from the calendar one, of type “Web application”. Only needed if you want to pull photos in. Skip this if you don't.",
+          "helpOwnApp": "A separate login from the calendar one, of type “Web application”."
         },
         "mapsBand": {
           "title": "For drive times",
-          "help": "Optional. Only the traffic module uses this. Turn on the Routes API in the same Cloud Console project."
+          "help": "Optional. Only the traffic module uses this. Turn on the Routes API in the same Cloud Console project.",
+          "helpOwnProject": "Optional. Only the traffic module uses this. Turn on the Routes API in a Google Cloud project."
         },
-        "clientIdInvalid": "That doesn't look right. A Client ID ends in {suffix}."
+        "clientIdInvalid": "That doesn't look right. A Client ID ends in {suffix}.",
+        "ready": {
+          "titleBoth": "Google Calendar and Google Photos are ready to use",
+          "titleCalendar": "Google Calendar is ready to use",
+          "titlePhotos": "Google Photos is ready to use",
+          "helpBoth": "No setup needed. Sign in with Google where you use them.",
+          "helpOne": "No setup needed. Sign in with Google where you use it.",
+          "connectCalendar": "Connect Google Calendar →",
+          "photosHowItWorks": "Import from Google Photos: how it works →"
+        },
+        "ownApp": {
+          "title": "Use your own Google app",
+          "hintClosed": "Most homes don't need this.",
+          "hintOpen": "For people who'd rather run their own Google Cloud project.",
+          "hintSaved": "Open because you've saved one.",
+          "warning": "If you save your own app, anyone already signed in with Google will need to sign in again, because a sign-in only works with the app it came from."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Not configured",
         "connected": "Connected",
-        "partial": "{configured} of {total}"
+        "partial": "{configured} of {total}",
+        "ready": "Ready",
+        "ownApp": "Using your own Google app"
       }
     },
     "networkPage": {
@@ -3915,7 +3945,16 @@
       "allFailed": "The photos couldn't be saved. Check the connection and try again.",
       "failedNote": "{failed} couldn't be saved.",
       "disconnect": "Disconnect Google Photos",
-      "genericError": "Something went wrong. Please try again."
+      "genericError": "Something went wrong. Please try again.",
+      "hosted": {
+        "intro": "Pick photos in Google Photos and they're saved to this Home Screens.",
+        "finishOnGoogle": "Finish signing in on the Google tab.",
+        "comesBack": "You'll come back here on your own.",
+        "pasteInstead": "Didn't come back? Paste a code",
+        "pasteIntro": "If the Google page showed you a code, paste it here.",
+        "startOver": "Start over",
+        "signIn": "Sign in with Google"
+      }
     },
     "meal-planner": {
       "viewWeek": "Week Grid",

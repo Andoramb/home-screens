@@ -535,7 +535,7 @@
     },
     "calendarPage": {
       "google": {
-        "heading": "Google Calendar",
+        "heading": "Google Agenda",
         "checkingConnection": "Vérification de la connexion…",
         "connected": "Connecté à Google",
         "disconnect": "Déconnecter",
@@ -560,7 +560,16 @@
         "pausedBadge": "En pause",
         "removeTitle": "Retirer {name}",
         "credentialsSetupPrefix": "Ajoutez votre identifiant Google sur la page ",
-        "credentialsSetupSuffix": " au préalable."
+        "credentialsSetupSuffix": " au préalable.",
+        "settingsIntegrationsLink": "Paramètres → Clés API",
+        "hosted": {
+          "codeIntroPart1": "Sur votre téléphone ou votre ordinateur, ouvrez ",
+          "codeIntroPart2": " et saisissez ce code :",
+          "waiting": "En attente de votre connexion sur Google…",
+          "cancel": "Annuler",
+          "help": "Montre vos agendas Google sur vos affichages. Vous terminerez la connexion sur votre téléphone ou votre ordinateur avec un code court.",
+          "signIn": "Se connecter avec Google"
+        }
       },
       "icloud": {
         "heading": "Calendrier iCloud",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Guide pas à pas",
         "calendarBand": {
           "title": "Pour votre agenda",
-          "help": "Google demande d'abord de créer un identifiant pour votre maison. Créez des identifiants OAuth de type « TVs and Limited Input devices » dans la Google Cloud Console, puis collez les deux moitiés ici."
+          "help": "Google demande d'abord de créer un identifiant pour votre maison. Créez des identifiants OAuth de type « TVs and Limited Input devices » dans la Google Cloud Console, puis collez les deux moitiés ici.",
+          "helpOwnApp": "Créez des identifiants OAuth de type « TVs and Limited Input devices » dans la Google Cloud Console, puis collez les deux moitiés ici."
         },
         "photosBand": {
           "title": "Pour importer Google Photos",
-          "help": "Un identifiant distinct de celui de l'agenda, de type « Web application ». Utile seulement si vous voulez importer des photos. Sinon, passez."
+          "help": "Un identifiant distinct de celui de l'agenda, de type « Web application ». Utile seulement si vous voulez importer des photos. Sinon, passez.",
+          "helpOwnApp": "Un identifiant distinct de celui de l'agenda, de type « Web application »."
         },
         "mapsBand": {
           "title": "Pour les temps de trajet",
-          "help": "Facultatif. Seul le module trafic s'en sert. Activez l'API Routes dans le même projet Cloud Console."
+          "help": "Facultatif. Seul le module trafic s'en sert. Activez l'API Routes dans le même projet Cloud Console.",
+          "helpOwnProject": "Facultatif. Seul le module trafic s'en sert. Activez l'API Routes dans un projet Google Cloud."
         },
-        "clientIdInvalid": "Cela ne semble pas correct. Un Client ID se termine par {suffix}."
+        "clientIdInvalid": "Cela ne semble pas correct. Un Client ID se termine par {suffix}.",
+        "ready": {
+          "titleBoth": "Google Agenda et Google Photos sont prêts à l'emploi",
+          "titleCalendar": "Google Agenda est prêt à l'emploi",
+          "titlePhotos": "Google Photos est prêt à l'emploi",
+          "helpBoth": "Rien à configurer. Connectez-vous avec Google là où vous les utilisez.",
+          "helpOne": "Rien à configurer. Connectez-vous avec Google là où vous l'utilisez.",
+          "connectCalendar": "Connecter Google Agenda →",
+          "photosHowItWorks": "Importer depuis Google Photos : comment ça marche →"
+        },
+        "ownApp": {
+          "title": "Utiliser votre propre appli Google",
+          "hintClosed": "La plupart des foyers n'en ont pas besoin.",
+          "hintOpen": "Pour ceux qui préfèrent gérer leur propre projet Google Cloud.",
+          "hintSaved": "Ouvert parce que vous en avez enregistré une.",
+          "warning": "Si vous enregistrez votre propre appli, toute personne déjà connectée avec Google devra se reconnecter, car une connexion ne fonctionne qu'avec l'appli qui l'a créée."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Non configuré",
         "connected": "Connecté",
-        "partial": "{configured} sur {total}"
+        "partial": "{configured} sur {total}",
+        "ready": "Prêt",
+        "ownApp": "Votre propre appli Google"
       }
     },
     "networkPage": {
@@ -3315,11 +3345,11 @@
       "viewMonth": "Grille mensuelle",
       "viewMultiWeek": "Grille multi-semaines",
       "viewRolling": "Semaines glissantes",
-      "googleAuthExpired": "L'authentification Google Calendar a expiré. Reconnecte-toi dans Paramètres → Calendrier.",
+      "googleAuthExpired": "L'authentification Google Agenda a expiré. Reconnecte-toi dans Paramètres → Calendrier.",
       "sources": "Sources",
       "allSources": "Toutes les sources",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Agenda",
+      "googleCalendarNumbered": "Google Agenda {n}",
       "publicHolidays": "Jours fériés",
       "titleFilterMode": "Afficher les événements",
       "titleFilterExclude": "Tous sauf",
@@ -3595,8 +3625,8 @@
       "wrapEventTitles": "Renvoyer à la ligne les titres longs",
       "sources": "Sources",
       "allSources": "Toutes les sources",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Agenda",
+      "googleCalendarNumbered": "Google Agenda {n}",
       "publicHolidays": "Jours fériés",
       "titleFilterMode": "Afficher les événements",
       "titleFilterExclude": "Tous sauf",
@@ -3915,7 +3945,16 @@
       "allFailed": "Les photos n'ont pas pu être enregistrées. Vérifiez la connexion et réessayez.",
       "failedNote": "{failed} n'ont pas pu être enregistrées.",
       "disconnect": "Déconnecter Google Photos",
-      "genericError": "Une erreur s'est produite. Veuillez réessayer."
+      "genericError": "Une erreur s'est produite. Veuillez réessayer.",
+      "hosted": {
+        "intro": "Choisissez des photos dans Google Photos et elles seront enregistrées sur ce Home Screens.",
+        "finishOnGoogle": "Terminez la connexion dans l'onglet Google.",
+        "comesBack": "Vous reviendrez ici automatiquement.",
+        "pasteInstead": "Rien ne se passe ? Collez un code",
+        "pasteIntro": "Si la page Google vous a montré un code, collez-le ici.",
+        "startOver": "Recommencer",
+        "signIn": "Se connecter avec Google"
+      }
     },
     "meal-planner": {
       "viewWeek": "Grille hebdomadaire",
@@ -4844,7 +4883,7 @@
       "feedNamePlaceholder": "Nom du flux",
       "newFeedNamePlaceholder": "Nom du flux (ex. Travail, Sport)",
       "addFeed": "+ Ajouter un flux",
-      "helpText": "Ajoute des URL de flux ICS/iCal depuis Google Calendar, Apple Calendar, Outlook, Nextcloud ou tout service qui fournit des flux .ics.",
+      "helpText": "Ajoute des URL de flux ICS/iCal depuis Google Agenda, Apple Calendar, Outlook, Nextcloud ou tout service qui fournit des flux .ics.",
       "checking": "Vérification du lien…",
       "checkFailedHint": "Vérifie que le lien se termine par .ics ou commence par webcal://",
       "addAnyway": "Ajouter quand même",

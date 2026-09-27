@@ -535,7 +535,7 @@
     },
     "calendarPage": {
       "google": {
-        "heading": "Google Calendar",
+        "heading": "Google Agenda",
         "checkingConnection": "Verbinding controleren…",
         "connected": "Verbonden met Google",
         "disconnect": "Verbinding verbreken",
@@ -559,8 +559,17 @@
         "pausedExplanation": "Google is nu niet verbonden, dus deze agenda’s worden niet meer bijgewerkt. Log hierboven opnieuw in om ze terug te halen.",
         "pausedBadge": "Gepauzeerd",
         "removeTitle": "{name} verwijderen",
-        "credentialsSetupPrefix": "Voeg je Google-login toe op de pagina ",
-        "credentialsSetupSuffix": " eerst toe."
+        "credentialsSetupPrefix": "Voeg je Google-login eerst toe op de pagina ",
+        "credentialsSetupSuffix": ".",
+        "settingsIntegrationsLink": "Instellingen → API-sleutels",
+        "hosted": {
+          "codeIntroPart1": "Open op je telefoon of computer ",
+          "codeIntroPart2": " en typ deze code:",
+          "waiting": "Wachten tot je klaar bent bij Google…",
+          "cancel": "Annuleren",
+          "help": "Toont je Google-agenda's op je displays. Je rondt het aanmelden af op je telefoon of computer met een korte code.",
+          "signIn": "Inloggen met Google"
+        }
       },
       "icloud": {
         "heading": "iCloud-agenda",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Stap-voor-stap uitleg",
         "calendarBand": {
           "title": "Voor je agenda",
-          "help": "Google wil dat je eerst een login voor je eigen huis maakt. Maak in de Google Cloud Console een OAuth-inlog van het type “TVs and Limited Input devices” en plak hier beide helften."
+          "help": "Google wil dat je eerst een login voor je eigen huis maakt. Maak in de Google Cloud Console een OAuth-inlog van het type “TVs and Limited Input devices” en plak hier beide helften.",
+          "helpOwnApp": "Maak in de Google Cloud Console een OAuth-inlog van het type “TVs and Limited Input devices” en plak hier beide helften."
         },
         "photosBand": {
           "title": "Voor het importeren van Google Foto’s",
-          "help": "Een aparte login, los van die voor de agenda, van het type “Web application”. Alleen nodig als je foto’s wilt ophalen. Zo niet, sla dit over."
+          "help": "Een aparte login, los van die voor de agenda, van het type “Web application”. Alleen nodig als je foto’s wilt ophalen. Zo niet, sla dit over.",
+          "helpOwnApp": "Een aparte login, los van die voor de agenda, van het type “Web application”."
         },
         "mapsBand": {
           "title": "Voor reistijden",
-          "help": "Optioneel. Alleen de verkeersmodule gebruikt dit. Zet de Routes API aan in hetzelfde Cloud Console-project."
+          "help": "Optioneel. Alleen de verkeersmodule gebruikt dit. Zet de Routes API aan in hetzelfde Cloud Console-project.",
+          "helpOwnProject": "Optioneel. Alleen de verkeersmodule gebruikt dit. Zet de Routes API aan in een Google Cloud-project."
         },
-        "clientIdInvalid": "Dat lijkt niet te kloppen. Een Client ID eindigt op {suffix}."
+        "clientIdInvalid": "Dat lijkt niet te kloppen. Een Client ID eindigt op {suffix}.",
+        "ready": {
+          "titleBoth": "Google Agenda en Google Foto's zijn klaar voor gebruik",
+          "titleCalendar": "Google Agenda is klaar voor gebruik",
+          "titlePhotos": "Google Foto's is klaar voor gebruik",
+          "helpBoth": "Je hoeft niets in te stellen. Meld je aan met Google waar je ze gebruikt.",
+          "helpOne": "Je hoeft niets in te stellen. Meld je aan met Google waar je het gebruikt.",
+          "connectCalendar": "Google Agenda koppelen →",
+          "photosHowItWorks": "Importeren uit Google Foto's: zo werkt het →"
+        },
+        "ownApp": {
+          "title": "Je eigen Google-app gebruiken",
+          "hintClosed": "De meeste huishoudens hebben dit niet nodig.",
+          "hintOpen": "Voor wie liever een eigen Google Cloud-project beheert.",
+          "hintSaved": "Staat open omdat je een eigen app hebt opgeslagen.",
+          "warning": "Als je je eigen app opslaat, moet iedereen die al met Google is aangemeld zich opnieuw aanmelden, want een aanmelding werkt alleen met de app waar die vandaan komt."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Niet geconfigureerd",
         "connected": "Verbonden",
-        "partial": "{configured} van {total}"
+        "partial": "{configured} van {total}",
+        "ready": "Klaar",
+        "ownApp": "Eigen Google-app in gebruik"
       }
     },
     "networkPage": {
@@ -3315,11 +3345,11 @@
       "viewMonth": "Maandraster",
       "viewMultiWeek": "Multiweekraster",
       "viewRolling": "Rollende weken",
-      "googleAuthExpired": "Google Calendar-verificatie verlopen. Verifieer opnieuw via Instellingen → Agenda.",
+      "googleAuthExpired": "Google Agenda-verificatie verlopen. Verifieer opnieuw via Instellingen → Agenda.",
       "sources": "Bronnen",
       "allSources": "Alle bronnen",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Agenda",
+      "googleCalendarNumbered": "Google Agenda {n}",
       "publicHolidays": "Officiële feestdagen",
       "titleFilterMode": "Afspraken tonen",
       "titleFilterExclude": "Alles behalve",
@@ -3595,8 +3625,8 @@
       "wrapEventTitles": "Lange titels over meerdere regels",
       "sources": "Bronnen",
       "allSources": "Alle bronnen",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Agenda",
+      "googleCalendarNumbered": "Google Agenda {n}",
       "publicHolidays": "Officiële feestdagen",
       "titleFilterMode": "Afspraken tonen",
       "titleFilterExclude": "Alles behalve",
@@ -3915,7 +3945,16 @@
       "allFailed": "De foto's konden niet worden opgeslagen. Controleer de verbinding en probeer het opnieuw.",
       "failedNote": "{failed} konden niet worden opgeslagen.",
       "disconnect": "Google Foto's loskoppelen",
-      "genericError": "Er ging iets mis. Probeer het opnieuw."
+      "genericError": "Er ging iets mis. Probeer het opnieuw.",
+      "hosted": {
+        "intro": "Kies foto's in Google Foto's en ze worden op deze Home Screens bewaard.",
+        "finishOnGoogle": "Rond het aanmelden af in het Google-tabblad.",
+        "comesBack": "Daarna kom je vanzelf hier terug.",
+        "pasteInstead": "Niet teruggekomen? Plak een code",
+        "pasteIntro": "Als de Google-pagina je een code liet zien, plak die hier.",
+        "startOver": "Opnieuw beginnen",
+        "signIn": "Inloggen met Google"
+      }
     },
     "meal-planner": {
       "viewWeek": "Weekraster",
@@ -4844,7 +4883,7 @@
       "feedNamePlaceholder": "Feednaam",
       "newFeedNamePlaceholder": "Feednaam (bv. Werk, Sport)",
       "addFeed": "+ Feed toevoegen",
-      "helpText": "Voeg ICS/iCal-feed-URL's toe vanuit Google Calendar, Apple Calendar, Outlook, Nextcloud of een andere dienst die .ics-feeds aanbiedt.",
+      "helpText": "Voeg ICS/iCal-feed-URL's toe vanuit Google Agenda, Apple Calendar, Outlook, Nextcloud of een andere dienst die .ics-feeds aanbiedt.",
       "checking": "Link controleren…",
       "checkFailedHint": "Controleer of de link eindigt op .ics of begint met webcal://",
       "addAnyway": "Toch toevoegen",

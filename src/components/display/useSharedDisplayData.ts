@@ -25,8 +25,22 @@ import type { HourlyWeather, WeatherAlert } from '@/lib/weather/types';
 import type { FetchError } from '@/lib/fetch-error';
 import { householdTimeFormat } from '@/lib/clock-time';
 
-/** Fetch weather + calendar data once, shared across all screen rotations. */
-export function useSharedDisplayData(screens: Screen[], settings: DisplaySettings): SharedDisplayData {
+/** Whether the hub asked walls to stop fetching calendars while asleep (see the calendar route). */
+function pausesWhileAsleep(calendarData: unknown): boolean {
+  return !!calendarData && typeof calendarData === 'object' && !Array.isArray(calendarData)
+    && (calendarData as { pauseWhileAsleep?: unknown }).pauseWhileAsleep === true;
+}
+
+/**
+ * Fetch weather + calendar data once, shared across all screen rotations.
+ * `asleep` is the wall's sleep state: calendars rest while it sleeps when the
+ * hub asks (hubs on Home Screens' own Google app, whose quota they share).
+ */
+export function useSharedDisplayData(
+  screens: Screen[],
+  settings: DisplaySettings,
+  { asleep = false }: { asleep?: boolean } = {},
+): SharedDisplayData {
   const { members: familyMembers, groups: familyGroups, revision: familyRevision, error: familyError } = useFamilyData();
   const familyState = familyRevision ? undefined : familyError ? 'failed' as const : 'loading' as const;
   // Bumped by plugin 'refresh' events to force re-fetch
@@ -148,11 +162,19 @@ export function useSharedDisplayData(screens: Screen[], settings: DisplaySetting
   // advance or a forced refresh keeps the events already on the wall while
   // the new request is in flight or failing.
   const calendarDatasetKey = buildCalendarUrl(calendarIdList, hasFeedSources, null, 0);
+  // The hub's own say on each answer: hubs on Home Screens' Google app share
+  // one Google quota, so an asleep wall stops asking and the events on it
+  // stay put; waking fetches straight away. Held in state so the answer that
+  // sets it re-renders this hook, which is what turns the pause on.
+  const [calendarRestsAsleep, setCalendarRestsAsleep] = useState(false);
   const [calendarData, calendarError, calendarUpdatedAt] = useFetchData(
     calendarUrl,
     CALENDAR_REFRESH_MS,
-    { datasetKey: calendarDatasetKey },
+    { datasetKey: calendarDatasetKey, paused: asleep && calendarRestsAsleep },
   );
+  useEffect(() => {
+    setCalendarRestsAsleep(pausesWhileAsleep(calendarData));
+  }, [calendarData]);
 
   // Failure ≠ empty: the calendar modules must distinguish "the fetch is
   // failing" (keep last-good events, badge them as saved) from "the calendar

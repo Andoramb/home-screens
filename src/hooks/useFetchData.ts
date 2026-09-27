@@ -80,6 +80,12 @@ export interface FetchDataOptions {
    * render per poll.
    */
   stampEveryFetch?: boolean;
+  /**
+   * Stop polling for now and keep what is on screen. Lifting it fetches at
+   * once when the cached answer has gone stale, so data a sleeping wall
+   * stopped asking for is current again the moment it wakes.
+   */
+  paused?: boolean;
 }
 
 /**
@@ -118,7 +124,7 @@ export function useFetchData<T>(
   refreshMs: number,
   options: FetchDataOptions = {},
 ): [T | null, FetchError | null, number | null] {
-  const { datasetKey, stampEveryFetch = false } = options;
+  const { datasetKey, stampEveryFetch = false, paused = false } = options;
   const t = useTranslate('core');
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<FetchError | null>(null);
@@ -255,7 +261,7 @@ export function useFetchData<T>(
       if (held && held.data !== shown.current) show(held.data, held.fetchedAt);
     });
     // While beats name this read, they decide when it is fetched.
-    const interval = setInterval(() => {
+    const interval = paused ? undefined : setInterval(() => {
       if (followedRevision(url) === undefined) fetchAndCache();
     }, refreshMs);
 
@@ -263,17 +269,17 @@ export function useFetchData<T>(
     const cached = displayCache.get<T>(url);
     if (cached) show(cached.data, cached.fetchedAt);
     // Cold start or stale: fetch now. A stale entry stays on screen meanwhile.
-    if (!cached || cached.stale) fetchAndCache();
+    if (!paused && (!cached || cached.stale)) fetchAndCache();
 
     return () => {
       controller.abort();
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
       unsubscribe();
       window.removeEventListener('displaycache:invalidate', onInvalidate);
       window.removeEventListener('displaycache:refresh', onRefresh);
       window.removeEventListener('displaycache:replace', onReplace);
     };
-  }, [url, refreshMs, t]);
+  }, [url, refreshMs, t, paused]);
 
   return [data, error, updatedAt];
 }

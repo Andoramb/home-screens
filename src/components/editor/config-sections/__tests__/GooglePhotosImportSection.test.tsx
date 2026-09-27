@@ -32,8 +32,14 @@ function jsonResponse(body: unknown, status = 200) {
 interface Finished { total: number; done: number; skipped: number; failed: number }
 
 /** The hub for one picking session whose picks are in at once, and whose import ends as `job`. */
+const OWN_APP = {
+  calendar: { mode: 'own', hostedAvailable: false },
+  photos: { mode: 'own', hostedAvailable: false },
+};
+
 function hubAnswers(job: Finished) {
   editorFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+    if (url === '/api/auth/google/apps') return jsonResponse(OWN_APP);
     if (url === '/api/google-picker/status') return jsonResponse({ connected: true, credentialsConfigured: true });
     if (url === '/api/google-picker/session' && init?.method === 'POST') {
       return jsonResponse({ id: 'sess-1', pickerUri: 'https://photos.google.com/picker/sess-1', pollIntervalMs: 1000 });
@@ -51,6 +57,7 @@ async function importPicks(job: Finished) {
   vi.spyOn(window, 'open').mockReturnValue(null);
   const onImported = vi.fn();
   const view = render(<GooglePhotosImportSection onImported={onImported} />, { wrapper: Wrapper });
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); }); // which app signs in
   fireEvent.click(view.getByText('Import from Google Photos'));
   await act(async () => { await vi.advanceTimersByTimeAsync(0); }); // status
   fireEvent.click(view.getByText('Choose photos'));
@@ -87,5 +94,105 @@ describe('GooglePhotosImportSection when an import finishes', () => {
     const { view } = await importPicks({ total: 2, done: 0, skipped: 2, failed: 0 });
     expect(view.getByText('2 were already in your library.')).toBeTruthy();
     expect(view.queryByText(/Saved 0/)).toBeNull();
+  });
+});
+
+/** A hub that answers the sign-in routes: which app, and whether Photos is signed in. */
+function signInAnswers(apps: unknown, connected: () => boolean) {
+  editorFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+    if (url === '/api/auth/google/apps') return jsonResponse(apps);
+    if (url === '/api/google-picker/status') return jsonResponse({ connected: connected(), credentialsConfigured: true });
+    if (url === '/api/google-picker/auth' && !init?.method) return jsonResponse({ url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1' });
+    if (url === '/api/google-picker/auth' && init?.method === 'POST') return jsonResponse({ connected: true });
+    throw new Error(`unexpected request ${url}`);
+  });
+}
+
+async function renderSection() {
+  const view = render(<GooglePhotosImportSection onImported={vi.fn()} />, { wrapper: Wrapper });
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); }); // which app signs in
+  await act(async () => { await vi.advanceTimersByTimeAsync(0); }); // Photos status
+  return view;
+}
+
+const HOSTED = {
+  calendar: { mode: 'hosted', hostedAvailable: true },
+  photos: { mode: 'hosted', hostedAvailable: true },
+};
+
+describe('GooglePhotosImportSection with Home Screens\' own Google app', () => {
+  it('shows none of the new sign-in screens while the switch is off', async () => {
+    signInAnswers({
+      calendar: { mode: null, hostedAvailable: false },
+      photos: { mode: null, hostedAvailable: false },
+    }, () => false);
+    const view = await renderSection();
+    expect(view.getByRole('button', { name: 'Import from Google Photos' })).toBeTruthy();
+    expect(view.queryByTestId('google-photos-hosted')).toBeNull();
+  });
+
+  it('keeps a household on its own app on today\'s flow, even with the switch on', async () => {
+    signInAnswers({ ...HOSTED, photos: { mode: 'own', hostedAvailable: true } }, () => false);
+    const view = await renderSection();
+    expect(view.queryByTestId('google-photos-hosted')).toBeNull();
+    fireEvent.click(view.getByText('Import from Google Photos'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(view.getByPlaceholderText('Paste the code or link here')).toBeTruthy();
+  });
+
+  it('keeps the old view when the hub cannot say which app signs in', async () => {
+    editorFetch.mockImplementation(async () => { throw new Error('offline'); });
+    const view = await renderSection();
+    expect(view.getByRole('button', { name: 'Import from Google Photos' })).toBeTruthy();
+    expect(view.queryByTestId('google-photos-hosted')).toBeNull();
+  });
+
+  it('offers Google\'s button, waits for the sign-in, and moves on by itself when it lands', async () => {
+    let signedIn = false;
+    signInAnswers(HOSTED, () => signedIn);
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const view = await renderSection();
+    expect(view.getByText('Pick photos in Google Photos and they\'re saved to this Home Screens.')).toBeTruthy();
+
+    fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(open).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?x=1', '_blank', 'noopener');
+    expect(view.getByText('Finish signing in on the Google tab.')).toBeTruthy();
+
+    signedIn = true;
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(view.getByText('Choose photos')).toBeTruthy();
+  });
+
+  it('keeps the paste box as a fallback, and Start over goes back to the button', async () => {
+    signInAnswers(HOSTED, () => false);
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const view = await renderSection();
+    fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+
+    fireEvent.click(view.getByText('Didn\'t come back? Paste a code'));
+    expect(view.getByText('If the Google page showed you a code, paste it here.')).toBeTruthy();
+    fireEvent.click(view.getByText('Start over'));
+    expect(view.getByRole('button', { name: 'Sign in with Google' })).toBeTruthy();
+  });
+
+  it('finishes a sign-in from a pasted code', async () => {
+    let signedIn = false;
+    signInAnswers(HOSTED, () => signedIn);
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const view = await renderSection();
+    fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    fireEvent.click(view.getByText('Didn\'t come back? Paste a code'));
+    fireEvent.change(view.getByPlaceholderText('Paste the code or link here'), { target: { value: '4/0Abc' } });
+    signedIn = true;
+    fireEvent.click(view.getByText('Finish sign-in'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(editorFetch).toHaveBeenCalledWith('/api/google-picker/auth', expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ code: '4/0Abc' }),
+    }));
+    expect(view.getByText('Choose photos')).toBeTruthy();
   });
 });

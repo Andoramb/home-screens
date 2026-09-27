@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: What Home Screens keeps on your hub, what the Google sign-in and our small anonymous usage report involve, and what the homescreens.dev website collects.
-effective: '2026-09-26'
+effective: '2026-09-27'
 layout: legal
 nextjs:
   metadata:
@@ -37,7 +37,7 @@ When you sign in with Google, Home Screens asks for only what it needs:
 
 **Where it goes.** Calendar events and photos go straight from Google to your hub. They are kept on your hub and nowhere else.
 
-**Signing in.** Google Calendar sign-in happens directly between your hub and Google. For Google Photos, Google gives your hub a short-lived code, and your hub trades that code for sign-in keys through our sign-in helper at auth.homescreens.dev. The helper adds Home Screens' app password and passes the request straight to Google. It does the same when the keys need renewing. It does not store or log the codes or keys, and it never sees your calendar events or photos. To block abuse it counts requests per network address for one minute, and keeps nothing after that.
+**Signing in.** Home Screens' app passwords stay on our sign-in helper at auth.homescreens.dev, so they never ship inside the software. For Google Calendar, your hub asks Google for a short code itself; once you've typed it, your hub collects its sign-in keys through the helper. For Google Photos, Google gives your hub a short-lived code, and your hub trades that code for sign-in keys through the helper. Either way, the helper adds Home Screens' app password and passes the request straight to Google. It does the same when the keys need renewing, about once an hour. It does not store or log the codes or keys, and it never sees your calendar events or photos. To block abuse it counts requests per network address for one minute, and keeps nothing after that. If you connect Google with your own Google app instead, your hub talks to Google directly and the helper isn't involved.
 
 **What we never do.** We don't sell Google data, use it for ads, share it with anyone, or use it to develop, improve or train AI or machine learning models. No person at Home Screens can read it, because it never reaches us.
 

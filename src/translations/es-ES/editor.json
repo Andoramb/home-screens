@@ -560,7 +560,16 @@
         "pausedBadge": "En pausa",
         "removeTitle": "Quitar {name}",
         "credentialsSetupPrefix": "Añade tu acceso de Google en la página ",
-        "credentialsSetupSuffix": " primero."
+        "credentialsSetupSuffix": " primero.",
+        "settingsIntegrationsLink": "Ajustes → Claves de API",
+        "hosted": {
+          "codeIntroPart1": "En tu móvil u ordenador, abre ",
+          "codeIntroPart2": " y escribe este código:",
+          "waiting": "Esperando a que termines en Google…",
+          "cancel": "Cancelar",
+          "help": "Muestra tus calendarios de Google en tus displays. Terminarás de iniciar sesión en tu móvil u ordenador con un código corto.",
+          "signIn": "Iniciar sesión con Google"
+        }
       },
       "icloud": {
         "heading": "Calendario de iCloud",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Guía paso a paso",
         "calendarBand": {
           "title": "Para tu calendario",
-          "help": "Google necesita que primero crees un acceso para tu casa. Crea una credencial OAuth del tipo «TVs and Limited Input devices» en la Google Cloud Console y pega aquí las dos mitades."
+          "help": "Google necesita que primero crees un acceso para tu casa. Crea una credencial OAuth del tipo «TVs and Limited Input devices» en la Google Cloud Console y pega aquí las dos mitades.",
+          "helpOwnApp": "Crea una credencial OAuth del tipo «TVs and Limited Input devices» en la Google Cloud Console y pega aquí las dos mitades."
         },
         "photosBand": {
           "title": "Para importar Google Fotos",
-          "help": "Un acceso distinto al del calendario, del tipo «Web application». Solo hace falta si quieres traer fotos. Si no, sáltatelo."
+          "help": "Un acceso distinto al del calendario, del tipo «Web application». Solo hace falta si quieres traer fotos. Si no, sáltatelo.",
+          "helpOwnApp": "Un acceso distinto al del calendario, del tipo «Web application»."
         },
         "mapsBand": {
           "title": "Para los tiempos de trayecto",
-          "help": "Opcional. Solo lo usa el módulo de tráfico. Activa la API Routes en el mismo proyecto de Cloud Console."
+          "help": "Opcional. Solo lo usa el módulo de tráfico. Activa la API Routes en el mismo proyecto de Cloud Console.",
+          "helpOwnProject": "Opcional. Solo lo usa el módulo de tráfico. Activa la API Routes en un proyecto de Google Cloud."
         },
-        "clientIdInvalid": "Eso no parece correcto. Un Client ID termina en {suffix}."
+        "clientIdInvalid": "Eso no parece correcto. Un Client ID termina en {suffix}.",
+        "ready": {
+          "titleBoth": "Google Calendar y Google Fotos están listos para usar",
+          "titleCalendar": "Google Calendar está listo para usar",
+          "titlePhotos": "Google Fotos está listo para usar",
+          "helpBoth": "No hace falta configurar nada. Inicia sesión con Google donde los uses.",
+          "helpOne": "No hace falta configurar nada. Inicia sesión con Google donde lo uses.",
+          "connectCalendar": "Conectar Google Calendar →",
+          "photosHowItWorks": "Importar desde Google Fotos: cómo funciona →"
+        },
+        "ownApp": {
+          "title": "Usar tu propia app de Google",
+          "hintClosed": "La mayoría de las casas no lo necesita.",
+          "hintOpen": "Para quien prefiera tener su propio proyecto de Google Cloud.",
+          "hintSaved": "Abierto porque has guardado una.",
+          "warning": "Si guardas tu propia app, quien ya haya iniciado sesión con Google tendrá que volver a hacerlo, porque cada inicio de sesión solo funciona con la app con la que se hizo."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Sin configurar",
         "connected": "Conectado",
-        "partial": "{configured} de {total}"
+        "partial": "{configured} de {total}",
+        "ready": "Listo",
+        "ownApp": "Usando tu propia app de Google"
       }
     },
     "networkPage": {
@@ -3915,7 +3945,16 @@
       "allFailed": "No se pudieron guardar las fotos. Revisa la conexión e inténtalo de nuevo.",
       "failedNote": "{failed} no se pudieron guardar.",
       "disconnect": "Desconectar Google Fotos",
-      "genericError": "Algo salió mal. Inténtalo de nuevo."
+      "genericError": "Algo salió mal. Inténtalo de nuevo.",
+      "hosted": {
+        "intro": "Elige fotos en Google Fotos y se guardarán en este Home Screens.",
+        "finishOnGoogle": "Termina de iniciar sesión en la pestaña de Google.",
+        "comesBack": "Volverás aquí automáticamente.",
+        "pasteInstead": "¿No has vuelto? Pega un código",
+        "pasteIntro": "Si la página de Google te mostró un código, pégalo aquí.",
+        "startOver": "Empezar de nuevo",
+        "signIn": "Iniciar sesión con Google"
+      }
     },
     "meal-planner": {
       "viewWeek": "Cuadrícula semanal",

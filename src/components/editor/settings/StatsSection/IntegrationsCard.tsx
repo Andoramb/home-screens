@@ -33,7 +33,7 @@ export function IntegrationsCard({ stats }: { stats: SystemStats }) {
           space to break on, so without truncate it just overflows). */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1.5">
         {CONNECTABLE_SERVICES.map((service) => {
-          const connected = isServiceConnected(service, configuredKeys);
+          const connected = isServiceConnected(service, configuredKeys, stats.app.googleApps);
           return (
             <div key={service.id} className="flex items-center gap-2 text-xs min-w-0">
               <span className={`inline-flex items-center justify-center w-[22px] h-[22px] rounded-md text-[10px] font-semibold font-mono border shrink-0 ${

@@ -8,12 +8,11 @@ import { LogoMark } from '@/components/LogoMark'
 /**
  * OAuth redirect helper for the Google Photos import in Home Screens.
  *
- * Google will not redirect to a hub's LAN address, so every user registers
- * this public page as the redirect URI on their own OAuth web client. The
- * page never talks to any server: it just shows the ?code from the URL so
- * the user can paste it back into their editor. The code is useless without
- * the client secret, which only their own hub has, and it expires within
- * minutes.
+ * Google will not redirect to a hub's LAN address, so this public page is
+ * the redirect URI on Home Screens' own Google app and on every household's
+ * own web client. The page never talks to any server: it just shows the
+ * ?code from the URL so the user can paste it back into their editor. The
+ * code works once and expires within minutes.
  */
 export default function ConnectGooglePage() {
   const [code, setCode] = useState<string | null>(null)
@@ -61,8 +60,8 @@ export default function ConnectGooglePage() {
         {code ? (
           <>
             <p className="mt-3 text-sm leading-relaxed text-slate-400">
-              Copy this code, then go back to the Home Screens editor and paste
-              it in the box that says &ldquo;Paste the code or link here&rdquo;.
+              Copy this code, then go back to Home Screens and paste it in the
+              box under Import from Google Photos.
             </p>
             <div className="mt-5 break-all rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 font-mono text-sm text-emerald-400">
               {code}
@@ -74,21 +73,23 @@ export default function ConnectGooglePage() {
               {copied ? 'Copied!' : 'Copy code'}
             </button>
             <p className="mt-4 text-xs text-slate-500">
-              This code only works with your own Home Screens and expires in a
-              few minutes. You can close this tab after pasting it.
+              This code works once and expires in a few minutes. You can close
+              this tab after pasting it.
             </p>
           </>
         ) : error ? (
           <p className="mt-3 text-sm leading-relaxed text-slate-400">
             No problem. Close this tab and start again from the editor whenever
-            you like: Background, then Local, then Import from Google Photos.
+            you like: open a Photo Slideshow or Full-Screen Photo Viewer, set its
+            source to Local Photos, then choose Import from Google Photos.
           </p>
         ) : (
           <p className="mt-3 text-sm leading-relaxed text-slate-400">
             Google sends you back to this page after you sign in for the Google
-            Photos import. Start the sign-in from the editor (Background, then
-            Local, then Import from Google Photos) and you will land back here
-            with a code to copy.
+            Photos import. Start the sign-in from the editor (open a Photo
+            Slideshow or Full-Screen Photo Viewer, set its source to Local
+            Photos, then choose Import from Google Photos) and you will land
+            back here with a code to copy.
           </p>
         )}
 

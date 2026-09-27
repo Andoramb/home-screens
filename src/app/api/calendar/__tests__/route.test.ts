@@ -32,6 +32,12 @@ vi.mock('@/lib/config', () => ({
   readConfig: vi.fn(),
 }));
 
+// Which Google app Calendar signs in with; the household's own unless a test says otherwise.
+const calendarSignInMode = vi.hoisted(() => ({ current: 'own' as 'own' | 'hosted' | null }));
+vi.mock('@/lib/google-token-stores', () => ({
+  googleCalendarTokenStore: { getMode: async () => calendarSignInMode.current },
+}));
+
 import { fetchCalendarEvents } from '@/lib/google-calendar';
 import { fetchICalEvents } from '@/lib/ical-calendar';
 import { fetchICloudEvents } from '@/lib/caldav-calendar';
@@ -109,7 +115,41 @@ beforeEach(() => {
   mockListICloudAccounts.mockReset();
   mockListICloudAccounts.mockResolvedValue([]);
   mockReadConfig.mockReset();
+  calendarSignInMode.current = 'own';
   cache.clear();
+});
+
+// ---------------------------------------------------------------------------
+// Resting while the wall sleeps
+// ---------------------------------------------------------------------------
+describe('pauseWhileAsleep', () => {
+  it('asks walls to rest while asleep when Google calendars come through Home Screens\' own app', async () => {
+    calendarSignInMode.current = 'hosted';
+    mockReadConfig.mockResolvedValue(makeConfig({ googleCalendarIds: ['family'] }));
+    mockFetchGoogle.mockResolvedValue({ events: [], results: [{ id: 'family', ok: true }] });
+
+    const body = await (await GET(makeRequest())).json();
+    expect(body.pauseWhileAsleep).toBe(true);
+  });
+
+  it('leaves a household on its own Google app polling around the clock', async () => {
+    mockReadConfig.mockResolvedValue(makeConfig({ googleCalendarIds: ['family'] }));
+    mockFetchGoogle.mockResolvedValue({ events: [], results: [{ id: 'family', ok: true }] });
+
+    const body = await (await GET(makeRequest())).json();
+    expect(body).not.toHaveProperty('pauseWhileAsleep');
+  });
+
+  it('does not ask when no Google calendar is in the request', async () => {
+    calendarSignInMode.current = 'hosted';
+    mockReadConfig.mockResolvedValue(makeConfig({
+      icalSources: [{ id: 'ics-1', type: 'ical', name: 'School', url: 'https://example.com/cal.ics', color: '#ff0000', enabled: true }],
+    }));
+    mockFetchICal.mockResolvedValue({ events: [], results: [{ id: 'ics-1', ok: true }] });
+
+    const body = await (await GET(makeRequest())).json();
+    expect(body).not.toHaveProperty('pauseWhileAsleep');
+  });
 });
 
 // ---------------------------------------------------------------------------

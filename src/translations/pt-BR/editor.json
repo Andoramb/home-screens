@@ -535,7 +535,7 @@
     },
     "calendarPage": {
       "google": {
-        "heading": "Google Calendar",
+        "heading": "Google Agenda",
         "checkingConnection": "Verificando conexão…",
         "connected": "Conectado ao Google",
         "disconnect": "Desconectar",
@@ -560,7 +560,16 @@
         "pausedBadge": "Pausado",
         "removeTitle": "Remover {name}",
         "credentialsSetupPrefix": "Adicione o seu acesso do Google na página ",
-        "credentialsSetupSuffix": " primeiro."
+        "credentialsSetupSuffix": " primeiro.",
+        "settingsIntegrationsLink": "Configurações → Chaves de API",
+        "hosted": {
+          "codeIntroPart1": "No seu celular ou computador, abra ",
+          "codeIntroPart2": " e digite este código:",
+          "waiting": "Aguardando você terminar no Google…",
+          "cancel": "Cancelar",
+          "help": "Mostra seus calendários do Google nos seus displays. Você vai concluir o login no celular ou computador com um código curto.",
+          "signIn": "Fazer login com o Google"
+        }
       },
       "icloud": {
         "heading": "Calendário do iCloud",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Guia passo a passo",
         "calendarBand": {
           "title": "Para o seu calendário",
-          "help": "O Google exige que você crie um acesso para a sua casa primeiro. Crie uma credencial OAuth do tipo “TVs and Limited Input devices” no Google Cloud Console e cole as duas partes aqui."
+          "help": "O Google exige que você crie um acesso para a sua casa primeiro. Crie uma credencial OAuth do tipo “TVs and Limited Input devices” no Google Cloud Console e cole as duas partes aqui.",
+          "helpOwnApp": "Crie uma credencial OAuth do tipo “TVs and Limited Input devices” no Google Cloud Console e cole as duas partes aqui."
         },
         "photosBand": {
           "title": "Para importar o Google Fotos",
-          "help": "Um acesso separado do calendário, do tipo “Web application”. Só é preciso se você quiser trazer fotos. Se não, pule."
+          "help": "Um acesso separado do calendário, do tipo “Web application”. Só é preciso se você quiser trazer fotos. Se não, pule.",
+          "helpOwnApp": "Um acesso separado do calendário, do tipo “Web application”."
         },
         "mapsBand": {
           "title": "Para tempos de trajeto",
-          "help": "Opcional. Só o módulo de trânsito usa isto. Ative a Routes API no mesmo projeto do Cloud Console."
+          "help": "Opcional. Só o módulo de trânsito usa isto. Ative a Routes API no mesmo projeto do Cloud Console.",
+          "helpOwnProject": "Opcional. Só o módulo de trânsito usa isto. Ative a Routes API em um projeto do Google Cloud."
         },
-        "clientIdInvalid": "Isso não parece certo. Um Client ID termina em {suffix}."
+        "clientIdInvalid": "Isso não parece certo. Um Client ID termina em {suffix}.",
+        "ready": {
+          "titleBoth": "O Google Agenda e o Google Fotos estão prontos para usar",
+          "titleCalendar": "O Google Agenda está pronto para usar",
+          "titlePhotos": "O Google Fotos está pronto para usar",
+          "helpBoth": "Não precisa configurar nada. Entre com o Google onde for usá-los.",
+          "helpOne": "Não precisa configurar nada. Entre com o Google onde for usá-lo.",
+          "connectCalendar": "Conectar o Google Agenda →",
+          "photosHowItWorks": "Importar do Google Fotos: como funciona →"
+        },
+        "ownApp": {
+          "title": "Usar seu próprio app do Google",
+          "hintClosed": "A maioria das casas não precisa disso.",
+          "hintOpen": "Para quem prefere ter o próprio projeto no Google Cloud.",
+          "hintSaved": "Aberto porque você salvou um.",
+          "warning": "Se você salvar seu próprio app, quem já entrou com o Google vai precisar entrar de novo, porque um login só funciona com o app de onde veio."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Não configurado",
         "connected": "Conectado",
-        "partial": "{configured} de {total}"
+        "partial": "{configured} de {total}",
+        "ready": "Pronto",
+        "ownApp": "Usando seu próprio app do Google"
       }
     },
     "networkPage": {
@@ -3315,11 +3345,11 @@
       "viewMonth": "Grade mensal",
       "viewMultiWeek": "Grade multissemanal",
       "viewRolling": "Semanas contínuas",
-      "googleAuthExpired": "A autenticação do Google Calendar expirou. Autentique novamente em Configurações → Calendário.",
+      "googleAuthExpired": "A autenticação do Google Agenda expirou. Autentique novamente em Configurações → Calendário.",
       "sources": "Fontes",
       "allSources": "Todas as fontes",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Agenda",
+      "googleCalendarNumbered": "Google Agenda {n}",
       "publicHolidays": "Feriados nacionais",
       "titleFilterMode": "Mostrar eventos",
       "titleFilterExclude": "Todos exceto",
@@ -3595,8 +3625,8 @@
       "wrapEventTitles": "Quebrar títulos longos",
       "sources": "Fontes",
       "allSources": "Todas as fontes",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Agenda",
+      "googleCalendarNumbered": "Google Agenda {n}",
       "publicHolidays": "Feriados nacionais",
       "titleFilterMode": "Mostrar eventos",
       "titleFilterExclude": "Todos exceto",
@@ -3915,7 +3945,16 @@
       "allFailed": "Não foi possível salvar as fotos. Verifique a conexão e tente de novo.",
       "failedNote": "{failed} não puderam ser salvas.",
       "disconnect": "Desconectar Google Fotos",
-      "genericError": "Algo deu errado. Tente de novo."
+      "genericError": "Algo deu errado. Tente de novo.",
+      "hosted": {
+        "intro": "Escolha fotos no Google Fotos e elas serão salvas neste Home Screens.",
+        "finishOnGoogle": "Conclua o login na aba do Google.",
+        "comesBack": "Depois você volta para cá automaticamente.",
+        "pasteInstead": "Não voltou? Cole um código",
+        "pasteIntro": "Se a página do Google mostrou um código, cole aqui.",
+        "startOver": "Recomeçar",
+        "signIn": "Fazer login com o Google"
+      }
     },
     "meal-planner": {
       "viewWeek": "Grade semanal",
@@ -4844,7 +4883,7 @@
       "feedNamePlaceholder": "Nome do feed",
       "newFeedNamePlaceholder": "Nome do feed (ex.: Trabalho, Esportes)",
       "addFeed": "+ Adicionar feed",
-      "helpText": "Adicione URLs de feeds ICS/iCal do Google Calendar, Apple Calendar, Outlook, Nextcloud ou qualquer serviço que forneça feeds .ics.",
+      "helpText": "Adicione URLs de feeds ICS/iCal do Google Agenda, Apple Calendar, Outlook, Nextcloud ou qualquer serviço que forneça feeds .ics.",
       "checking": "Verificando o link…",
       "checkFailedHint": "Confira se o link termina em .ics ou começa com webcal://",
       "addAnyway": "Adicionar mesmo assim",

@@ -4,8 +4,10 @@ import { useCallback, useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import { INPUT_CLASS } from '@/components/ui/input-classes';
 import { editorFetch } from '@/lib/editor-fetch';
+import GoogleSignInButton from '@/components/ui/GoogleSignInButton';
 import { useLibraryImportJob } from '@/hooks/useLibraryImportJob';
 import { useGooglePickerSession } from '@/hooks/useGooglePickerSession';
+import { useGoogleApps } from '@/hooks/useGoogleApps';
 import { useTranslate } from '@/i18n';
 
 /** Where Google Photos picks land in the media library. */
@@ -21,6 +23,11 @@ interface PickerStatus {
   credentialsConfigured: boolean;
 }
 
+/** How often the panel looks for a sign-in landing while the Google tab is open. */
+const SIGN_IN_POLL_MS = 3000;
+/** A Google sign-in link is good for 10 minutes; stop looking after that. */
+const SIGN_IN_POLL_LIMIT_MS = 10 * 60_000;
+
 /**
  * "Import from Google Photos" — the Picker API flow. The user signs in once
  * (auth-code flow; the code comes back via the homescreens.dev helper page
@@ -34,14 +41,24 @@ interface PickerStatus {
  * and session polling in useGooglePickerSession (shared with the phone's
  * Photos tab); an expired session ends with a clear message instead of
  * polling forever.
+ *
+ * With Home Screens' own Google app (HS_GOOGLE_HOSTED) there is nothing to
+ * set up, so the panel offers Google's sign-in button straight away instead
+ * of behind a button, waits for the sign-in to land while the Google tab is
+ * open, and keeps the paste box only as a fallback. A household on its own
+ * Google app, or a hub with the switch off, gets exactly the flow below.
  */
 export function GooglePhotosImportSection({ onImported }: Props) {
   const t = useTranslate('editor');
+  const { apps, loading: appsLoading } = useGoogleApps();
+  const hosted = apps?.photos.mode === 'hosted';
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<PickerStatus | null>(null);
   const [pasted, setPasted] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Home Screens' app only: signing in is a step of its own, not a paste box.
+  const [signInStep, setSignInStep] = useState<'start' | 'waiting' | 'paste'>('start');
 
   const {
     start: startImportJob, running: importing, job, errorCode, reset: resetJob,
@@ -61,8 +78,24 @@ export function GooglePhotosImportSection({ onImported }: Props) {
   }, []);
 
   useEffect(() => {
-    if (open) refreshStatus();
-  }, [open, refreshStatus]);
+    if (open || hosted) refreshStatus();
+  }, [open, hosted, refreshStatus]);
+
+  // While the Google tab is open, look for the sign-in landing, so the panel
+  // moves on by itself once the hub has it.
+  const connected = status?.connected === true;
+  useEffect(() => {
+    if (!hosted || signInStep !== 'waiting' || connected) return;
+    const startedAt = Date.now();
+    const timer = setInterval(() => {
+      if (Date.now() - startedAt > SIGN_IN_POLL_LIMIT_MS) {
+        clearInterval(timer);
+        return;
+      }
+      void refreshStatus();
+    }, SIGN_IN_POLL_MS);
+    return () => clearInterval(timer);
+  }, [hosted, signInStep, connected, refreshStatus]);
 
   const { session, open: openSession, cancel: cancelPicking } = useGooglePickerSession((end, sessionId) => {
     if (end === 'picked') {
@@ -83,6 +116,7 @@ export function GooglePhotosImportSection({ onImported }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       window.open(data.url, '_blank', 'noopener');
+      setSignInStep('waiting');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('configSections.googlePhotosImport.genericError'));
     }
@@ -101,6 +135,7 @@ export function GooglePhotosImportSection({ onImported }: Props) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setPasted('');
+      setSignInStep('start');
       await refreshStatus();
     } catch (err) {
       setError(err instanceof Error ? err.message : t('configSections.googlePhotosImport.genericError'));
@@ -126,6 +161,7 @@ export function GooglePhotosImportSection({ onImported }: Props) {
 
   const disconnect = async () => {
     await editorFetch('/api/google-picker/status', { method: 'DELETE' });
+    setSignInStep('start');
     await refreshStatus();
   };
 
@@ -145,7 +181,81 @@ export function GooglePhotosImportSection({ onImported }: Props) {
   const jobFailed = !!job && !importing && savedCount === 0;
   const jobSucceeded = !!job && !importing && savedCount > 0;
 
-  if (!open) {
+  // Which app signs in decides which panel this is; show neither until it's known.
+  if (appsLoading) return null;
+
+  if (hosted && !connected) {
+    return (
+      <div className="rounded-lg border border-hs-border-strong bg-hs-card/40 p-2.5" data-testid="google-photos-hosted">
+        <p className="text-xs font-semibold text-hs-text-primary">
+          {t('configSections.googlePhotosImport.importButton')}
+        </p>
+        {!status ? (
+          <p className="mt-1 text-[11px] text-hs-text-muted">{t('configSections.googlePhotosImport.checking')}</p>
+        ) : signInStep === 'waiting' ? (
+          <>
+            <p className="mt-2 mb-2.5 flex items-center gap-2 text-xs text-hs-text-muted">
+              <span
+                aria-hidden="true"
+                className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-hs-border-strong border-t-hs-accent-hover"
+              />
+              {t('configSections.googlePhotosImport.hosted.finishOnGoogle')}
+            </p>
+            <p className="text-[11px] leading-[1.45] text-hs-text-muted">
+              {t('configSections.googlePhotosImport.hosted.comesBack')}{' '}
+              <button
+                type="button"
+                onClick={() => setSignInStep('paste')}
+                className="text-hs-text-faint underline hover:text-hs-text-muted"
+              >
+                {t('configSections.googlePhotosImport.hosted.pasteInstead')}
+              </button>
+            </p>
+          </>
+        ) : signInStep === 'paste' ? (
+          <>
+            <p className="mt-0.5 text-[11px] leading-[1.45] text-hs-text-muted">
+              {t('configSections.googlePhotosImport.hosted.pasteIntro')}
+            </p>
+            <input
+              type="text"
+              value={pasted}
+              onChange={(e) => setPasted(e.target.value)}
+              placeholder={t('configSections.googlePhotosImport.pastePlaceholder')}
+              className={`${INPUT_CLASS} mt-2`}
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <Button size="sm" variant="primary" onClick={finishSignIn} disabled={busy || !pasted.trim()}>
+                {t('configSections.googlePhotosImport.finishSignIn')}
+              </Button>
+              <button
+                type="button"
+                onClick={() => { setPasted(''); setError(null); setSignInStep('start'); }}
+                className="text-[11px] text-hs-text-faint underline hover:text-hs-text-muted"
+              >
+                {t('configSections.googlePhotosImport.hosted.startOver')}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="mt-0.5 mb-2.5 text-[11px] leading-[1.45] text-hs-text-muted">
+              {t('configSections.googlePhotosImport.hosted.intro')}
+            </p>
+            <GoogleSignInButton
+              size="sm"
+              label={t('configSections.googlePhotosImport.hosted.signIn')}
+              onClick={signIn}
+              disabled={busy}
+            />
+          </>
+        )}
+        {error && <p className="mt-2 text-[11px] text-hs-warning leading-relaxed">{error}</p>}
+      </div>
+    );
+  }
+
+  if (!open && !hosted) {
     return (
       <Button size="sm" onClick={() => setOpen(true)}>
         {t('configSections.googlePhotosImport.importButton')}

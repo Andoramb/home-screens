@@ -61,6 +61,14 @@
   --hs-group-accent-4: #a78bfa; /* violet */
 
   --hs-logo-wordmark:    rgba(103, 232, 249, 0.9);
+
+  /* Google's "Sign in with Google" button, dark theme. The values are
+     Google's branding rules, not ours; see GoogleSignInButton.tsx. */
+  --hs-gsi-bg:         #131314;
+  --hs-gsi-border:     #8e918f;
+  --hs-gsi-text:       #e3e3e3;
+  --hs-gsi-logo-bg:    #ffffff;
+  --hs-gsi-hover:      rgba(227, 227, 227, 0.08);
 }
 
 [data-theme="light"] {
@@ -116,6 +124,13 @@
   --hs-group-accent-4: #7c3aed; /* violet */
 
   --hs-logo-wordmark:    #0e7490;
+
+  /* Google's "Sign in with Google" button, light theme */
+  --hs-gsi-bg:         #ffffff;
+  --hs-gsi-border:     #747775;
+  --hs-gsi-text:       #1f1f1f;
+  --hs-gsi-logo-bg:    transparent;
+  --hs-gsi-hover:      rgba(31, 31, 31, 0.08);
 }
 
 @theme inline {

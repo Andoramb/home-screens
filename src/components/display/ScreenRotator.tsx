@@ -119,8 +119,6 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   // being edited must show that screen, whatever the rotation thinks.
   const startScreenRef = useRef<string | null>(initialScreenId ?? null);
   const [pinnedScreenId, setPinnedScreenId] = useState<string | null>(initialScreenId ?? null);
-  // Shared data needs all screens (for weather provider detection), not just active profile screens
-  const sharedData = useSharedDisplayData(allScreens, settings);
 
   // Viewport measurement lives here (not in ScreenRenderer) so it persists across screen transitions
   const [viewportSize, setViewportSize] = useState({ w: 0, h: 0 });
@@ -323,6 +321,11 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
 
   // A photo sent from a phone reaches the slideshows here within a few beats.
   useLibraryRefresh();
+
+  // Shared data needs all screens (for weather provider detection), not just
+  // active profile screens. After useDisplayControl because an asleep wall
+  // may rest its calendar polling.
+  const sharedData = useSharedDisplayData(allScreens, settings, { asleep: displayState === 'asleep' });
 
   /**
    * Whether the wall is showing live content a finger may act on.

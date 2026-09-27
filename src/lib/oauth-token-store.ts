@@ -24,6 +24,29 @@ export interface StoredOAuthTokens {
   scope?: string;
 }
 
+/**
+ * Thrown by `getAccessToken` when a renewal could not happen right now: the
+ * token endpoint (or Home Screens' sign-in helper in front of it) was
+ * unreachable, busy, rate limiting or erroring. The grant itself was not
+ * refused, so callers treat this as an outage (the wall keeps its saved
+ * events) and never as "sign in again".
+ */
+export class TokenRenewalUnavailableError extends Error {
+  constructor() {
+    super("Couldn't reach Google to renew the sign-in. Try again in a few minutes.");
+    this.name = 'TokenRenewalUnavailableError';
+  }
+}
+
+/**
+ * The token endpoint's answers (RFC 6749 section 5.2) that mean the grant or
+ * the app itself is not accepted, so no retry will help and the household
+ * has to sign in again (or fix its own app). Every other failure, including
+ * the sign-in helper's own `rate_limited` and `temporarily_unavailable`, is
+ * an outage that passes.
+ */
+const REFUSED_GRANT_ERRORS = new Set(['invalid_grant', 'invalid_client', 'unauthorized_client']);
+
 export interface OAuthTokenStoreOptions {
   /** Path of the tokens JSON file, relative to process.cwd(). */
   tokensPath: string;
@@ -54,13 +77,18 @@ export interface OAuthTokenStore {
   /**
    * A currently valid access token, refreshing proactively (60s before
    * expiry, single-flight, refresh token preserved). Null when there is no
-   * usable grant — including when a refresh is rejected (grant revoked).
+   * usable grant, including when the provider refuses a refresh (grant
+   * revoked). Throws TokenRenewalUnavailableError when a refresh could not
+   * happen right now and the current token has already expired.
    */
   getAccessToken(): Promise<string | null>;
   /**
    * Liveness check: does the grant still actually work? Costs nothing while
    * the cached access token is fresh; otherwise performs one refresh. Status
-   * endpoints use this so a revoked grant surfaces as "not connected".
+   * endpoints use this so a revoked grant surfaces as "not connected". A
+   * renewal that could not happen right now counts as connected: nothing
+   * refused the grant, and asking the household to sign in again would not
+   * help.
    */
   verifyConnected(): Promise<boolean>;
   /** Best-effort revoke (when revokeUrl is set), then clear the tokens file. */
@@ -117,20 +145,39 @@ export function createOAuthTokenStore(opts: OAuthTokenStoreOptions): OAuthTokenS
       log.error('Token refresh impossible:', err instanceof Error ? err.message : err);
       return null;
     }
-    const res = await fetchWithTimeout(client.tokenUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        ...client.params,
-        refresh_token: tokens.refresh_token!,
-        grant_type: 'refresh_token',
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok || !data.access_token) {
-      log.error('Token refresh failed:', data.error_description || data.error || res.status);
-      return null;
+    let res: Response;
+    try {
+      res = await fetchWithTimeout(client.tokenUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          ...client.params,
+          refresh_token: tokens.refresh_token!,
+          grant_type: 'refresh_token',
+        }),
+      });
+    } catch (err) {
+      log.warn('Token refresh could not reach the token endpoint:', err instanceof Error ? err.message : err);
+      return renewalUnavailable(tokens);
     }
+    const data = (await res.json().catch(() => null)) as {
+      access_token?: string;
+      refresh_token?: string;
+      expires_in?: number;
+      scope?: string;
+      error?: string;
+      error_description?: string;
+    } | null;
+    if (!res.ok || !data?.access_token) {
+      const reason = data?.error_description || data?.error || res.status;
+      if (data?.error && REFUSED_GRANT_ERRORS.has(data.error)) {
+        log.error('Token refresh refused, sign in again:', reason);
+        return null;
+      }
+      log.warn('Token refresh failed for now:', reason);
+      return renewalUnavailable(tokens);
+    }
+    const accessToken = data.access_token;
     return withDataTransaction(async () => {
       // Check AFTER acquiring the same lock as restore. A network response
       // can arrive while restore holds the lock, before its generation bump.
@@ -142,13 +189,25 @@ export function createOAuthTokenStore(opts: OAuthTokenStoreOptions): OAuthTokenS
       }
       await saveTokens({
         ...tokens,
-        access_token: data.access_token,
+        access_token: accessToken,
         expiry_date: Date.now() + (data.expires_in ?? 3600) * 1000,
         refresh_token: data.refresh_token || tokens.refresh_token,
         scope: data.scope ?? tokens.scope,
       });
-      return data.access_token;
+      return accessToken;
     });
+  }
+
+  /**
+   * A refresh that could not happen right now. We refresh a minute early, so
+   * the current token may still work; hand it out until it expires, then say
+   * the renewal is unavailable rather than that the grant is gone.
+   */
+  function renewalUnavailable(tokens: StoredOAuthTokens): string {
+    if (tokens.access_token && tokens.expiry_date && tokens.expiry_date > Date.now()) {
+      return tokens.access_token;
+    }
+    throw new TokenRenewalUnavailableError();
   }
 
   async function getAccessToken(): Promise<string | null> {
@@ -185,7 +244,12 @@ export function createOAuthTokenStore(opts: OAuthTokenStoreOptions): OAuthTokenS
   }
 
   async function verifyConnected(): Promise<boolean> {
-    return (await getAccessToken()) !== null;
+    try {
+      return (await getAccessToken()) !== null;
+    } catch (err) {
+      if (err instanceof TokenRenewalUnavailableError) return true;
+      throw err;
+    }
   }
 
   async function disconnect(): Promise<void> {

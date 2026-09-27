@@ -6,6 +6,7 @@ import { withAuth } from '@/lib/api-utils';
 import { readConfig } from '@/lib/config';
 import { getAllProfiles, getAllScreens } from '@/lib/display-filter';
 import { getSecretStatus } from '@/lib/secrets';
+import { getGoogleAppsStatus } from '@/lib/google-token-stores';
 import { readTelemetryData } from '@/lib/telemetry';
 import { getLocalHardwareStats } from '@/lib/hardware-stats-server';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
@@ -56,6 +57,7 @@ export const GET = withAuth(async () => {
     diskStats,
     config,
     secretStatus,
+    googleApps,
     telemetryData,
     hardware,
   ] = await Promise.all([
@@ -65,6 +67,7 @@ export const GET = withAuth(async () => {
     getDiskStats(cwd),
     readConfig().catch(() => null),
     getSecretStatus().catch(() => ({} as Record<string, boolean>)),
+    getGoogleAppsStatus().catch(() => null),
     readTelemetryData().catch(() => null),
     getLocalHardwareStats().catch(() => null),
   ]);
@@ -119,6 +122,7 @@ export const GET = withAuth(async () => {
       moduleTypes: moduleTypeCounts,
       profiles: config ? getAllProfiles(config).length : 0,
       configuredSecrets,
+      googleApps,
       configSize,
     },
     telemetry: {

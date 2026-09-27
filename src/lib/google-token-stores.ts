@@ -1,5 +1,6 @@
 import { createGoogleTokenStore } from './google-token-store';
 import { hostedCalendarClient, hostedPhotosClient } from './google-hosted';
+import type { GoogleAppsStatus } from './google-apps';
 
 /**
  * The two Google grant instances, in their own module rather than inside
@@ -20,7 +21,7 @@ export const googleCalendarTokenStore = createGoogleTokenStore({
   clientSecretKey: 'google_client_secret',
   hosted: hostedCalendarClient,
   missingCredentialsMessage:
-    'Google Calendar Client ID and Secret are not configured. Add them in Settings → Integrations.',
+    'Google Calendar needs both a Client ID and a Client Secret. Add them in Settings → API keys.',
   logName: 'google-auth',
 });
 
@@ -31,6 +32,18 @@ export const googlePickerTokenStore = createGoogleTokenStore({
   clientSecretKey: 'google_web_client_secret',
   hosted: hostedPhotosClient,
   missingCredentialsMessage:
-    'Google Photos import needs a web Client ID and Secret. Add them in Settings → Integrations.',
+    'Google Photos import needs both a Photos Import Client ID and Secret. Add them in Settings → API keys.',
   logName: 'google-picker',
 });
+
+/** Which app each integration signs in with, for the editor's Google screens. */
+export async function getGoogleAppsStatus(): Promise<GoogleAppsStatus> {
+  const [calendarMode, photosMode] = await Promise.all([
+    googleCalendarTokenStore.getMode(),
+    googlePickerTokenStore.getMode(),
+  ]);
+  return {
+    calendar: { mode: calendarMode, hostedAvailable: googleCalendarTokenStore.hostedAvailable() },
+    photos: { mode: photosMode, hostedAvailable: googlePickerTokenStore.hostedAvailable() },
+  };
+}

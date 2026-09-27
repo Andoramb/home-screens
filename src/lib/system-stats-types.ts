@@ -5,6 +5,7 @@
  */
 
 import type { HardwareStats } from '@/lib/hardware-stats';
+import type { GoogleAppsStatus } from '@/lib/google-apps';
 
 export interface DiskInfo {
   total: number;
@@ -38,6 +39,8 @@ export interface SystemStats {
     moduleTypes: Record<string, number>;
     profiles: number;
     configuredSecrets: string[];
+    /** Which Google app Calendar and Photos sign in with; null when it couldn't be read. */
+    googleApps: GoogleAppsStatus | null;
     configSize: number;
   };
   telemetry?: {

@@ -7,6 +7,7 @@ import { fetchHolidayEvents } from '@/lib/holidays';
 import { budgetEvents, mergeSourceStatus, recordSourceStatus, withSavedEvents, type SourceFetchResult } from '@/lib/calendar-source-status';
 import type { CalendarEvent, CalendarSourceStatus, ICalSource, ICloudSource } from '@/types/config';
 import { logger } from '@/lib/logger';
+import { googleCalendarTokenStore } from '@/lib/google-token-stores';
 
 const log = logger('calendar');
 
@@ -17,6 +18,13 @@ const GOOGLE_NOT_SIGNED_IN = 'googleNotSignedIn';
 interface CalendarPayload {
   events: CalendarEvent[];
   sourceStatus: CalendarSourceStatus[];
+  /**
+   * Set when the Google calendars come through Home Screens' own Google app,
+   * whose quota every such hub shares: a wall stops asking while it sleeps
+   * and asks again when it wakes. Households on their own app keep polling
+   * around the clock, as they always have.
+   */
+  pauseWhileAsleep?: true;
 }
 
 export const dynamic = 'force-dynamic';
@@ -220,7 +228,12 @@ const { GET, cache } = cachedProxyRoute<CalendarPayload, CalendarParams>({
     // events" once scaled into the grid fetch and silently truncated month
     // grids to the nearest few days. Upcoming-first budgeting only when the
     // cap is exceeded — see budgetEvents for the three-bucket policy.
-    return { events: budgetEvents(merged, CALENDAR_FETCH_MAX_EVENTS, timezone), sourceStatus };
+    const pauseWhileAsleep = calendarIds.length > 0 && (await googleCalendarTokenStore.getMode()) === 'hosted';
+    return {
+      events: budgetEvents(merged, CALENDAR_FETCH_MAX_EVENTS, timezone),
+      sourceStatus,
+      ...(pauseWhileAsleep ? { pauseWhileAsleep: true as const } : {}),
+    };
   },
   errorMessage: 'Failed to fetch calendar events',
 });

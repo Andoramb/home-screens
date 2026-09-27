@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import worker, { type Env } from './worker';
-import { PHOTOS_CLIENT_ID, REDIRECT_URI } from './config';
+import { CALENDAR_CLIENT_ID, DEVICE_CODE_GRANT, PHOTOS_CLIENT_ID, REDIRECT_URI } from './config';
 
 const SECRET = 'photos-web-secret';
+const CALENDAR_SECRET = 'calendar-tv-secret';
 const TOKEN_ENDPOINT = 'https://auth.homescreens.dev/google/photos/token';
+const CALENDAR_ENDPOINT = 'https://auth.homescreens.dev/google/calendar/token';
 
 interface Upstream { url: string; body: URLSearchParams }
 
@@ -16,16 +18,20 @@ function googleAnswers(status: number, body: Record<string, unknown>) {
   }));
 }
 
-function post(form: Record<string, string> | string, headers: Record<string, string> = {}) {
+function post(form: Record<string, string> | string, headers: Record<string, string> = {}, endpoint = TOKEN_ENDPOINT) {
   const body = typeof form === 'string' ? form : new URLSearchParams(form).toString();
-  return new Request(TOKEN_ENDPOINT, {
+  return new Request(endpoint, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded', ...headers },
     body,
   });
 }
 
-const env = (overrides: Partial<Env> = {}): Env => ({ GOOGLE_PHOTOS_CLIENT_SECRET: SECRET, ...overrides });
+const env = (overrides: Partial<Env> = {}): Env => ({
+  GOOGLE_PHOTOS_CLIENT_SECRET: SECRET,
+  GOOGLE_CALENDAR_CLIENT_SECRET: CALENDAR_SECRET,
+  ...overrides,
+});
 
 beforeEach(() => {
   upstream = [];
@@ -95,8 +101,8 @@ describe('google sign-in helper', () => {
     expect(upstream).toHaveLength(0);
   });
 
-  it('answers only POST on its one path', async () => {
-    const other = await worker.fetch(new Request('https://auth.homescreens.dev/google/calendar/token', { method: 'POST' }), env());
+  it('answers only POST on its own paths', async () => {
+    const other = await worker.fetch(new Request('https://auth.homescreens.dev/google/drive/token', { method: 'POST' }), env());
     const get = await worker.fetch(new Request(TOKEN_ENDPOINT), env());
 
     expect(other.status).toBe(404);
@@ -143,5 +149,76 @@ describe('google sign-in helper', () => {
       error: 'temporarily_unavailable',
       error_description: "Couldn't reach Google. Try again in a few minutes.",
     });
+  });
+});
+
+describe('google sign-in helper: Calendar', () => {
+  const postCalendar = (form: Record<string, string>) => post(form, {}, CALENDAR_ENDPOINT);
+
+  it('adds the Calendar secret when a hub collects a finished short-code sign-in', async () => {
+    const res = await worker.fetch(postCalendar({
+      grant_type: DEVICE_CODE_GRANT,
+      device_code: 'AH-1Ng2x',
+      client_id: 'someone-elses-client',
+      client_secret: 'someone-elses-secret',
+      scope: 'https://www.googleapis.com/auth/drive',
+    }), env());
+
+    expect(res.status).toBe(200);
+    expect(upstream[0].url).toBe('https://oauth2.googleapis.com/token');
+    expect(Object.fromEntries(upstream[0].body)).toEqual({
+      client_id: CALENDAR_CLIENT_ID,
+      client_secret: CALENDAR_SECRET,
+      grant_type: DEVICE_CODE_GRANT,
+      device_code: 'AH-1Ng2x',
+    });
+  });
+
+  it('adds the Calendar secret to a Calendar renewal', async () => {
+    await worker.fetch(postCalendar({ grant_type: 'refresh_token', refresh_token: '1//calendar' }), env());
+
+    expect(Object.fromEntries(upstream[0].body)).toEqual({
+      client_id: CALENDAR_CLIENT_ID,
+      client_secret: CALENDAR_SECRET,
+      grant_type: 'refresh_token',
+      refresh_token: '1//calendar',
+    });
+  });
+
+  it("passes Google's \"still waiting\" answer back so the hub keeps polling", async () => {
+    googleAnswers(428, { error: 'authorization_pending', error_description: 'Precondition Required' });
+
+    const res = await worker.fetch(postCalendar({ grant_type: DEVICE_CODE_GRANT, device_code: 'AH-1Ng2x' }), env());
+
+    expect(res.status).toBe(428);
+    expect((await res.json()).error).toBe('authorization_pending');
+  });
+
+  it.each([
+    ['a sign-in code (that is the Photos app\'s step)', { grant_type: 'authorization_code', code: 'x' }, 'unsupported_grant_type'],
+    ['client credentials', { grant_type: 'client_credentials' }, 'unsupported_grant_type'],
+    ['a device poll without its code', { grant_type: DEVICE_CODE_GRANT }, 'invalid_request'],
+  ])('refuses %s without calling Google', async (_label, form, error) => {
+    const res = await worker.fetch(postCalendar(form), env());
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe(error);
+    expect(upstream).toHaveLength(0);
+  });
+
+  it('keeps each app to its own secret: Calendar is not set up while Photos is', async () => {
+    const calendar = await worker.fetch(
+      postCalendar({ grant_type: 'refresh_token', refresh_token: '1//x' }),
+      env({ GOOGLE_CALENDAR_CLIENT_SECRET: undefined }),
+    );
+    const photos = await worker.fetch(
+      post({ grant_type: 'refresh_token', refresh_token: '1//x' }),
+      env({ GOOGLE_CALENDAR_CLIENT_SECRET: undefined }),
+    );
+
+    expect(calendar.status).toBe(503);
+    expect(photos.status).toBe(200);
+    expect(upstream).toHaveLength(1);
+    expect(upstream[0].body.get('client_id')).toBe(PHOTOS_CLIENT_ID);
   });
 });

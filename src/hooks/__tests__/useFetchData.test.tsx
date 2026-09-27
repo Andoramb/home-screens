@@ -471,3 +471,47 @@ describe('useFetchData asked to refresh', () => {
     expect(requestCount).toBe(1);
   });
 });
+
+describe('useFetchData while paused', () => {
+  const url = '/api/calendar?timeMin=2026-09-27';
+
+  it('stops polling and keeps what is on screen', async () => {
+    responses.set(url, { events: ['kept'] });
+    const { result, rerender } = renderHook(
+      ({ paused }) => useFetchData<{ events: string[] }>(url, 20, { paused }),
+      { initialProps: { paused: false } },
+    );
+    await waitFor(() => expect(result.current[0]).toEqual({ events: ['kept'] }));
+
+    rerender({ paused: true });
+    const asked = requestCount;
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(requestCount).toBe(asked);
+    expect(result.current[0]).toEqual({ events: ['kept'] });
+    expect(result.current[1]).toBeNull();
+  });
+
+  it('asks again at once when the pause lifts on a stale answer, then keeps polling', async () => {
+    responses.set(url, { events: ['night'] });
+    const { result, rerender } = renderHook(
+      ({ paused }) => useFetchData<{ events: string[] }>(url, 20, { paused }),
+      { initialProps: { paused: false } },
+    );
+    await waitFor(() => expect(result.current[0]).toEqual({ events: ['night'] }));
+    rerender({ paused: true });
+    await new Promise((resolve) => setTimeout(resolve, 60)); // the answer goes stale
+
+    responses.set(url, { events: ['morning'] });
+    rerender({ paused: false });
+    await waitFor(() => expect(result.current[0]).toEqual({ events: ['morning'] }));
+    await morePolls(2);
+  });
+
+  it('asks nothing when it starts paused, and shows what the cache holds', async () => {
+    displayCache.set(url, { events: ['cached'] }, 20);
+    const { result } = renderHook(() => useFetchData<{ events: string[] }>(url, 20, { paused: true }));
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    expect(requestCount).toBe(0);
+    expect(result.current[0]).toEqual({ events: ['cached'] });
+  });
+});

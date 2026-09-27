@@ -19,7 +19,7 @@ vi.mock('@/lib/secrets', () => ({
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
-import { createOAuthTokenStore, type OAuthTokenStoreOptions } from '@/lib/oauth-token-store';
+import { createOAuthTokenStore, TokenRenewalUnavailableError, type OAuthTokenStoreOptions } from '@/lib/oauth-token-store';
 
 function tokenResponse(extras: Record<string, unknown> = {}) {
   return {
@@ -116,6 +116,45 @@ describe('createOAuthTokenStore', () => {
 
     expect(token).toBeNull();
     expect(JSON.parse(tokensContent!).refresh_token).toBe('rt-revoked');
+  });
+
+  it('also treats a refused app (invalid_client) as needing a new sign-in', async () => {
+    tokensContent = JSON.stringify({ refresh_token: 'rt-1', access_token: 'stale' });
+    mockFetch.mockResolvedValue(new Response(JSON.stringify({ error: 'invalid_client' }), { status: 401 }));
+
+    expect(await createOAuthTokenStore(idOnlyOpts()).getAccessToken()).toBeNull();
+  });
+
+  it.each([
+    ['Google is down', () => new Response(JSON.stringify({ error: 'temporarily_unavailable' }), { status: 503 })],
+    ['the sign-in helper is rate limiting', () => new Response(JSON.stringify({ error: 'rate_limited' }), { status: 429 })],
+    ['a proxy answers with an HTML error page', () => new Response('<html>Bad gateway</html>', { status: 502 })],
+    ['the network is down', () => { throw new TypeError('fetch failed'); }],
+  ])('treats a renewal that fails because %s as an outage, never as "sign in again"', async (_, answer) => {
+    vi.useFakeTimers();
+    const grant = { refresh_token: 'rt-1', access_token: 'at-expired', expiry_date: Date.now() - 1000 };
+    tokensContent = JSON.stringify(grant);
+    mockFetch.mockImplementation(async () => answer());
+    const store = createOAuthTokenStore(idOnlyOpts());
+
+    const token = store.getAccessToken();
+    const outcome = expect(token).rejects.toBeInstanceOf(TokenRenewalUnavailableError);
+    await vi.advanceTimersByTimeAsync(10_000); // fetchWithTimeout's own retries
+    await outcome;
+
+    // Still connected, and the grant is untouched for the next try.
+    const verified = store.verifyConnected();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(await verified).toBe(true);
+    expect(JSON.parse(tokensContent!)).toEqual(grant);
+  });
+
+  it('keeps handing out the current token while it lasts when an early renewal fails', async () => {
+    // Renewals start a minute before expiry, so a failed one can fall back.
+    tokensContent = JSON.stringify({ refresh_token: 'rt-1', access_token: 'at-still-good', expiry_date: Date.now() + 30_000 });
+    mockFetch.mockImplementation(async () => { throw new TypeError('fetch failed'); });
+
+    expect(await createOAuthTokenStore(idOnlyOpts()).getAccessToken()).toBe('at-still-good');
   });
 
   it('disconnect without revokeUrl clears the file and makes no revoke request', async () => {

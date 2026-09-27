@@ -535,7 +535,7 @@
     },
     "calendarPage": {
       "google": {
-        "heading": "Google Calendar",
+        "heading": "Google Kalender",
         "checkingConnection": "Verbindung wird geprüft …",
         "connected": "Mit Google verbunden",
         "disconnect": "Verbindung trennen",
@@ -560,7 +560,16 @@
         "pausedBadge": "Pausiert",
         "removeTitle": "{name} entfernen",
         "credentialsSetupPrefix": "Füge deine Google-Anmeldung auf der Seite ",
-        "credentialsSetupSuffix": " zuerst hinzu."
+        "credentialsSetupSuffix": " zuerst hinzu.",
+        "settingsIntegrationsLink": "Einstellungen → API-Schlüssel",
+        "hosted": {
+          "codeIntroPart1": "Öffne auf deinem Handy oder Computer ",
+          "codeIntroPart2": " und gib diesen Code ein:",
+          "waiting": "Warten, bis du bei Google fertig bist …",
+          "cancel": "Abbrechen",
+          "help": "Zeigt deine Google-Kalender auf deinen Displays an. Du schließt die Anmeldung mit einem kurzen Code auf deinem Handy oder Computer ab.",
+          "signIn": "Über Google anmelden"
+        }
       },
       "icloud": {
         "heading": "iCloud-Kalender",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Schritt-für-Schritt-Anleitung",
         "calendarBand": {
           "title": "Für deinen Kalender",
-          "help": "Google verlangt, dass du zuerst eine Anmeldung für dein Zuhause anlegst. Erstelle in der Google Cloud Console eine OAuth-Anmeldung vom Typ „TVs and Limited Input devices“ und füge dann beide Hälften hier ein."
+          "help": "Google verlangt, dass du zuerst eine Anmeldung für dein Zuhause anlegst. Erstelle in der Google Cloud Console eine OAuth-Anmeldung vom Typ „TVs and Limited Input devices“ und füge dann beide Hälften hier ein.",
+          "helpOwnApp": "Erstelle in der Google Cloud Console eine OAuth-Anmeldung vom Typ „TVs and Limited Input devices“ und füge dann beide Hälften hier ein."
         },
         "photosBand": {
           "title": "Zum Importieren von Google Fotos",
-          "help": "Eine eigene Anmeldung, getrennt von der für den Kalender, vom Typ „Web application“. Nur nötig, wenn du Fotos holen willst. Sonst überspringen."
+          "help": "Eine eigene Anmeldung, getrennt von der für den Kalender, vom Typ „Web application“. Nur nötig, wenn du Fotos holen willst. Sonst überspringen.",
+          "helpOwnApp": "Eine eigene Anmeldung, getrennt von der für den Kalender, vom Typ „Web application“."
         },
         "mapsBand": {
           "title": "Für Fahrzeiten",
-          "help": "Optional. Nur das Verkehrs-Modul nutzt das. Aktiviere die Routes API im selben Cloud-Console-Projekt."
+          "help": "Optional. Nur das Verkehrs-Modul nutzt das. Aktiviere die Routes API im selben Cloud-Console-Projekt.",
+          "helpOwnProject": "Optional. Nur das Verkehrs-Modul nutzt das. Aktiviere die Routes API in einem Google-Cloud-Projekt."
         },
-        "clientIdInvalid": "Das sieht nicht richtig aus. Eine Client-ID endet auf {suffix}."
+        "clientIdInvalid": "Das sieht nicht richtig aus. Eine Client-ID endet auf {suffix}.",
+        "ready": {
+          "titleBoth": "Google Kalender und Google Fotos sind startklar",
+          "titleCalendar": "Google Kalender ist startklar",
+          "titlePhotos": "Google Fotos ist startklar",
+          "helpBoth": "Nichts einzurichten. Melde dich dort mit Google an, wo du sie nutzt.",
+          "helpOne": "Nichts einzurichten. Melde dich dort mit Google an, wo du den Dienst nutzt.",
+          "connectCalendar": "Google Kalender verbinden →",
+          "photosHowItWorks": "Aus Google Fotos importieren: So geht's →"
+        },
+        "ownApp": {
+          "title": "Eigene Google-App verwenden",
+          "hintClosed": "Die meisten Haushalte brauchen das nicht.",
+          "hintOpen": "Für alle, die lieber ihr eigenes Google-Cloud-Projekt betreiben.",
+          "hintSaved": "Offen, weil du eine gespeichert hast.",
+          "warning": "Wenn du eine eigene App speicherst, müssen sich alle, die schon mit Google angemeldet sind, neu anmelden, denn eine Anmeldung funktioniert nur mit der App, von der sie stammt."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Nicht konfiguriert",
         "connected": "Verbunden",
-        "partial": "{configured} von {total}"
+        "partial": "{configured} von {total}",
+        "ready": "Bereit",
+        "ownApp": "Eigene Google-App aktiv"
       }
     },
     "networkPage": {
@@ -3315,11 +3345,11 @@
       "viewMonth": "Monatsraster",
       "viewMultiWeek": "Mehrwochenraster",
       "viewRolling": "Laufende Wochen",
-      "googleAuthExpired": "Google Calendar-Anmeldung abgelaufen. Bitte unter Einstellungen → Kalender erneut anmelden.",
+      "googleAuthExpired": "Anmeldung bei Google Kalender abgelaufen. Bitte unter Einstellungen → Kalender erneut anmelden.",
       "sources": "Quellen",
       "allSources": "Alle Quellen",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Kalender",
+      "googleCalendarNumbered": "Google Kalender {n}",
       "publicHolidays": "Feiertage",
       "titleFilterMode": "Termine anzeigen",
       "titleFilterExclude": "Alle außer",
@@ -3595,8 +3625,8 @@
       "wrapEventTitles": "Lange Termintitel umbrechen",
       "sources": "Quellen",
       "allSources": "Alle Quellen",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Kalender",
+      "googleCalendarNumbered": "Google Kalender {n}",
       "publicHolidays": "Feiertage",
       "titleFilterMode": "Termine anzeigen",
       "titleFilterExclude": "Alle außer",
@@ -3915,7 +3945,16 @@
       "allFailed": "Die Fotos konnten nicht gespeichert werden. Prüfe die Verbindung und versuche es erneut.",
       "failedNote": "{failed} konnten nicht gespeichert werden.",
       "disconnect": "Google Fotos trennen",
-      "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+      "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+      "hosted": {
+        "intro": "Wähle Fotos in Google Fotos aus, dann speichert Home Screens sie hier.",
+        "finishOnGoogle": "Schließe die Anmeldung im Google-Tab ab.",
+        "comesBack": "Danach kommst du automatisch hierher zurück.",
+        "pasteInstead": "Nicht zurückgekommen? Code einfügen",
+        "pasteIntro": "Wenn die Google-Seite dir einen Code gezeigt hat, füge ihn hier ein.",
+        "startOver": "Neu beginnen",
+        "signIn": "Über Google anmelden"
+      }
     },
     "meal-planner": {
       "viewWeek": "Wochenraster",
@@ -4844,7 +4883,7 @@
       "feedNamePlaceholder": "Feed-Name",
       "newFeedNamePlaceholder": "Feed-Name (z. B. Arbeit, Sport)",
       "addFeed": "+ Feed hinzufügen",
-      "helpText": "Füge ICS-/iCal-Feed-URLs aus Google Calendar, Apple Calendar, Outlook, Nextcloud oder einem anderen Dienst hinzu, der .ics-Feeds bereitstellt.",
+      "helpText": "Füge ICS-/iCal-Feed-URLs aus Google Kalender, Apple Calendar, Outlook, Nextcloud oder einem anderen Dienst hinzu, der .ics-Feeds bereitstellt.",
       "checking": "Link wird geprüft…",
       "checkFailedHint": "Prüfe, ob der Link auf .ics endet oder mit webcal:// beginnt",
       "addAnyway": "Trotzdem hinzufügen",

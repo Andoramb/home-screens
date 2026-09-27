@@ -15,9 +15,16 @@ import { DEFAULT_MODULE_STYLE } from '@/types/config';
 import { useSharedDisplayData } from '../useSharedDisplayData';
 
 const fetchedUrls: string[] = [];
+/** What the calendar read answers, and whether it was asked to pause, per render. */
+let calendarAnswer: unknown = null;
+const calendarPaused: boolean[] = [];
 vi.mock('@/hooks/useFetchData', () => ({
-  useFetchData: (url: string) => {
+  useFetchData: (url: string, _refreshMs: number, options?: { paused?: boolean }) => {
     if (url) fetchedUrls.push(url);
+    if (url.startsWith('/api/calendar')) {
+      calendarPaused.push(options?.paused ?? false);
+      return [calendarAnswer, null, null];
+    }
     return [null, null];
   },
 }));
@@ -48,6 +55,8 @@ function makeWeatherScreen(provider: string): Screen {
 
 afterEach(() => {
   fetchedUrls.length = 0;
+  calendarPaused.length = 0;
+  calendarAnswer = null;
 });
 
 describe('useSharedDisplayData weather fetch gating', () => {
@@ -75,5 +84,33 @@ describe('useSharedDisplayData weather fetch gating', () => {
       '/api/weather?lat=44.7133&lon=-93.4227&units=imperial&provider=openweathermap',
     );
     expect(weatherUrls).toHaveLength(2);
+  });
+});
+
+describe('useSharedDisplayData calendar polling while the wall sleeps', () => {
+  const googleSettings = () => makeSettings({ calendar: { googleCalendarIds: ['family@example.com'] } } as Partial<DisplaySettings>);
+
+  it('pauses an asleep wall when the hub asks (Home Screens\' own Google app)', () => {
+    calendarAnswer = { events: [], sourceStatus: [], pauseWhileAsleep: true };
+    const { rerender } = renderHook(({ asleep }) => useSharedDisplayData([], googleSettings(), { asleep }), {
+      initialProps: { asleep: true },
+    });
+    expect(calendarPaused.at(-1)).toBe(true);
+
+    // Waking lifts the pause; useFetchData asks again at once.
+    rerender({ asleep: false });
+    expect(calendarPaused.at(-1)).toBe(false);
+  });
+
+  it('keeps polling an asleep wall when the hub does not ask (the household\'s own Google app)', () => {
+    calendarAnswer = { events: [], sourceStatus: [] };
+    renderHook(() => useSharedDisplayData([], googleSettings(), { asleep: true }));
+    expect(calendarPaused.every((paused) => !paused)).toBe(true);
+  });
+
+  it('never pauses an awake wall', () => {
+    calendarAnswer = { events: [], sourceStatus: [], pauseWhileAsleep: true };
+    renderHook(() => useSharedDisplayData([], googleSettings(), { asleep: false }));
+    expect(calendarPaused.every((paused) => !paused)).toBe(true);
   });
 });

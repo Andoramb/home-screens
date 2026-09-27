@@ -201,7 +201,7 @@ describe('pollDeviceToken', () => {
     mockedGetSecret.mockResolvedValue(null);
 
     await expect(pollDeviceToken('device-code')).rejects.toThrow(
-      'Google Calendar Client ID and Secret are not configured',
+      'Google Calendar needs both a Client ID and a Client Secret',
     );
   });
 

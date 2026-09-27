@@ -535,7 +535,7 @@
     },
     "calendarPage": {
       "google": {
-        "heading": "Google Calendar",
+        "heading": "Google Kalender",
         "checkingConnection": "Tjekker forbindelsen…",
         "connected": "Forbundet til Google",
         "disconnect": "Afbryd",
@@ -560,7 +560,16 @@
         "pausedBadge": "Sat på pause",
         "removeTitle": "Fjern {name}",
         "credentialsSetupPrefix": "Tilføj dit Google-login på siden ",
-        "credentialsSetupSuffix": " først."
+        "credentialsSetupSuffix": " først.",
+        "settingsIntegrationsLink": "Indstillinger → API-nøgler",
+        "hosted": {
+          "codeIntroPart1": "Åbn ",
+          "codeIntroPart2": " på din telefon eller computer, og skriv denne kode:",
+          "waiting": "Venter på, at du bliver færdig hos Google…",
+          "cancel": "Annullér",
+          "help": "Viser dine Google-kalendere på dine skærme. Du afslutter login på din telefon eller computer med en kort kode.",
+          "signIn": "Log ind med Google"
+        }
       },
       "icloud": {
         "heading": "iCloud-kalender",
@@ -1267,17 +1276,36 @@
         "stepByStep": "Trin-for-trin-guide",
         "calendarBand": {
           "title": "Til din kalender",
-          "help": "Google kræver, at du først laver et login til dit eget hjem. Opret en OAuth-adgang af typen “TVs and Limited Input devices” i Google Cloud Console, og indsæt så begge dele her."
+          "help": "Google kræver, at du først laver et login til dit eget hjem. Opret en OAuth-adgang af typen “TVs and Limited Input devices” i Google Cloud Console, og indsæt så begge dele her.",
+          "helpOwnApp": "Opret en OAuth-adgang af typen “TVs and Limited Input devices” i Google Cloud Console, og indsæt så begge dele her."
         },
         "photosBand": {
           "title": "Til import fra Google Fotos",
-          "help": "Et separat login fra kalenderens, af typen “Web application”. Kun nødvendigt, hvis du vil hente billeder ind. Ellers spring det over."
+          "help": "Et separat login fra kalenderens, af typen “Web application”. Kun nødvendigt, hvis du vil hente billeder ind. Ellers spring det over.",
+          "helpOwnApp": "Et separat login fra kalenderens, af typen “Web application”."
         },
         "mapsBand": {
           "title": "Til køretider",
-          "help": "Valgfrit. Kun trafikmodulet bruger det. Slå Routes API til i det samme Cloud Console-projekt."
+          "help": "Valgfrit. Kun trafikmodulet bruger det. Slå Routes API til i det samme Cloud Console-projekt.",
+          "helpOwnProject": "Valgfrit. Kun trafikmodulet bruger det. Slå Routes API til i et Google Cloud-projekt."
         },
-        "clientIdInvalid": "Det ser ikke rigtigt ud. Et Client ID slutter på {suffix}."
+        "clientIdInvalid": "Det ser ikke rigtigt ud. Et Client ID slutter på {suffix}.",
+        "ready": {
+          "titleBoth": "Google Kalender og Google Fotos er klar til brug",
+          "titleCalendar": "Google Kalender er klar til brug",
+          "titlePhotos": "Google Fotos er klar til brug",
+          "helpBoth": "Ingen opsætning nødvendig. Log ind med Google der, hvor du bruger dem.",
+          "helpOne": "Ingen opsætning nødvendig. Log ind med Google der, hvor du bruger det.",
+          "connectCalendar": "Forbind Google Kalender →",
+          "photosHowItWorks": "Importér fra Google Fotos: sådan virker det →"
+        },
+        "ownApp": {
+          "title": "Brug din egen Google-app",
+          "hintClosed": "De fleste hjem har ikke brug for det.",
+          "hintOpen": "Til dem, der hellere vil have deres eget Google Cloud-projekt.",
+          "hintSaved": "Åben, fordi du har gemt din egen app.",
+          "warning": "Hvis du gemmer din egen app, skal alle, der allerede er logget ind med Google, logge ind igen, fordi et login kun virker med den app, det kom fra."
+        }
       },
       "immich": {
         "name": "Immich",
@@ -1324,7 +1352,9 @@
       "status": {
         "notConfigured": "Ikke konfigureret",
         "connected": "Forbundet",
-        "partial": "{configured} af {total}"
+        "partial": "{configured} af {total}",
+        "ready": "Klar",
+        "ownApp": "Bruger din egen Google-app"
       }
     },
     "networkPage": {
@@ -3318,8 +3348,8 @@
       "googleAuthExpired": "Login til Google Kalender er udløbet. Log ind igen under Indstillinger → Kalender.",
       "sources": "Kilder",
       "allSources": "Alle kilder",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Kalender",
+      "googleCalendarNumbered": "Google Kalender {n}",
       "publicHolidays": "Helligdage",
       "titleFilterMode": "Vis begivenheder",
       "titleFilterExclude": "Alle undtagen",
@@ -3595,8 +3625,8 @@
       "wrapEventTitles": "Ombryd lange titler",
       "sources": "Kilder",
       "allSources": "Alle kilder",
-      "googleCalendar": "Google Calendar",
-      "googleCalendarNumbered": "Google Calendar {n}",
+      "googleCalendar": "Google Kalender",
+      "googleCalendarNumbered": "Google Kalender {n}",
       "publicHolidays": "Helligdage",
       "titleFilterMode": "Vis begivenheder",
       "titleFilterExclude": "Alle undtagen",
@@ -3915,7 +3945,16 @@
       "allFailed": "Fotoene kunne ikke gemmes. Tjek forbindelsen, og prøv igen.",
       "failedNote": "{failed} kunne ikke gemmes.",
       "disconnect": "Afbryd Google Fotos",
-      "genericError": "Noget gik galt. Prøv igen."
+      "genericError": "Noget gik galt. Prøv igen.",
+      "hosted": {
+        "intro": "Vælg billeder i Google Fotos, så bliver de gemt her i Home Screens.",
+        "finishOnGoogle": "Afslut login i Google-fanen.",
+        "comesBack": "Du kommer automatisk tilbage hertil bagefter.",
+        "pasteInstead": "Kom du ikke tilbage? Indsæt en kode",
+        "pasteIntro": "Hvis Google-siden viste dig en kode, så indsæt den her.",
+        "startOver": "Start forfra",
+        "signIn": "Log ind med Google"
+      }
     },
     "meal-planner": {
       "viewWeek": "Ugegitter",

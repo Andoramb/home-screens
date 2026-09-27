@@ -1,6 +1,6 @@
 import type { auth as googleAuth } from '@googleapis/calendar';
 import { fetchWithTimeout } from '@/lib/api-utils';
-import type { StoredGoogleTokens } from '@/lib/google-token-store';
+import { SignInHelperUnreachableError, type GoogleClientMode, type StoredGoogleTokens } from '@/lib/google-token-store';
 import { googleCalendarTokenStore } from '@/lib/google-token-stores';
 import { logger } from '@/lib/logger';
 
@@ -28,7 +28,7 @@ interface DeviceCodeResponse {
 /** Request a device code + user code from Google. */
 export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
   const clientId = await store.getClientId();
-  if (!clientId) throw new Error('Google Calendar Client ID is not configured. Add it in Settings → Integrations.');
+  if (!clientId) throw new Error('Google Calendar Client ID is not configured. Add it in Settings → API keys.');
 
   const res = await fetchWithTimeout(DEVICE_CODE_URL, {
     method: 'POST',
@@ -51,11 +51,23 @@ export async function requestDeviceCode(): Promise<DeviceCodeResponse> {
 export async function pollDeviceToken(
   deviceCode: string,
 ): Promise<{ status: 'pending' | 'success' | 'expired' | 'denied'; error?: string }> {
-  const { ok, data: body, client } = await store.requestToken({
-    device_code: deviceCode,
-    grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-  });
+  let result: Awaited<ReturnType<typeof store.requestToken>>;
+  try {
+    result = await store.requestToken({
+      device_code: deviceCode,
+      grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
+    });
+  } catch (err) {
+    // Home Screens' sign-in helper could not be reached. The code on screen
+    // is still good for its whole lifetime, so keep waiting rather than end
+    // a sign-in the family may be halfway through.
+    if (err instanceof SignInHelperUnreachableError) return { status: 'pending' };
+    throw err;
+  }
+  const { ok, status: httpStatus, data: body, client } = result;
   const data = body as StoredGoogleTokens & { expires_in?: number; error?: string; error_description?: string };
+  // Busy or briefly down (Google, or the helper's rate limit): same reason.
+  if (!ok && (httpStatus === 429 || httpStatus >= 500)) return { status: 'pending' };
 
   if (ok && data.access_token) {
     // Success — convert expires_in (relative seconds) to expiry_date (absolute ms)
@@ -121,4 +133,9 @@ export async function disconnect(): Promise<void> {
 
 export async function hasGoogleCredentials(): Promise<boolean> {
   return store.hasCredentials();
+}
+
+/** Which app Calendar signs in with; the editor shows its new sign-in screens only for Home Screens' app. */
+export async function getCalendarSignInMode(): Promise<GoogleClientMode | null> {
+  return store.getMode();
 }

@@ -48,7 +48,8 @@ interface Props {
   label: string;
   secretKey: SecretKey;
   placeholder: string;
-  helpText: string;
+  /** The grey line under the box; leave out when the surrounding card already says it. */
+  helpText?: string;
   status: boolean;
   onSaved: () => void;
   /** Try the value against its service before saving; a failed check keeps the value in the form. */
@@ -192,7 +193,7 @@ export default function SecretField({
       {saveStatus === 'error' && (
         <span className="text-xs text-hs-danger">{errorMsg}</span>
       )}
-      <p className="text-xs text-hs-text-faint mt-1">{helpText}</p>
+      {helpText && <p className="text-xs text-hs-text-faint mt-1">{helpText}</p>}
     </div>
   );
 }

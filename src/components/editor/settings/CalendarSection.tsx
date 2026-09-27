@@ -9,6 +9,7 @@ import Toggle from '@/components/ui/Toggle';
 import Button from '@/components/ui/Button';
 import { useGoogleDeviceFlow } from '@/hooks/useGoogleDeviceFlow';
 import { useGoogleCalendars } from '@/hooks/useGoogleCalendars';
+import HostedCalendarSignIn from './HostedCalendarSignIn';
 import ICalFeedManager from './ICalFeedManager';
 import ICloudCalendarManager from './ICloudCalendarManager';
 import CalendarPeopleManager from './CalendarPeopleManager';
@@ -52,6 +53,7 @@ export default function CalendarSection({ values, onChange }: Props) {
 
   const {
     credentialsConfigured,
+    mode: googleMode,
     googleConnected,
     googleCalendars,
     googleLoading,
@@ -170,6 +172,19 @@ export default function CalendarSection({ values, onChange }: Props) {
         <p className="text-xs text-hs-warning">{combinedError}</p>
       )}
     </>
+  ) : googleMode === 'hosted' ? (
+    // Home Screens' own Google app: nothing to set up, so Google's button
+    // and the short code. A household's own app keeps the view below.
+    <HostedCalendarSignIn
+      userCode={deviceFlow.userCode}
+      verificationUrl={deviceFlow.verificationUrl}
+      polling={deviceFlow.deviceFlowPolling}
+      onStart={deviceFlow.startDeviceFlow}
+      onCancel={deviceFlow.cancel}
+      onCopyCode={copyUserCode}
+      codeCopied={codeCopied}
+      error={combinedError}
+    />
   ) : !credentialsConfigured ? (
     <div className="space-y-2">
       <p className="text-xs text-hs-text-muted">

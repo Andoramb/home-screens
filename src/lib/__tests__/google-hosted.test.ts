@@ -39,6 +39,7 @@ const CALENDAR_TOKENS = 'data/google-tokens.json';
 const PICKER_TOKENS = 'data/google-picker-tokens.json';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const HELPER_URL = 'https://auth.homescreens.dev/google/photos/token';
+const CALENDAR_HELPER_URL = 'https://auth.homescreens.dev/google/calendar/token';
 
 interface Call { url: string; body: URLSearchParams }
 
@@ -61,9 +62,8 @@ function seed(path: string, tokens: Record<string, unknown>) {
   files.set(path, JSON.stringify(tokens));
 }
 
-function enableHosted({ calendarSecret = 'hosted-calendar-secret' }: { calendarSecret?: string | null } = {}) {
+function enableHosted() {
   vi.stubEnv('HS_GOOGLE_HOSTED', '1');
-  if (calendarSecret) vi.stubEnv('HS_GOOGLE_CALENDAR_CLIENT_SECRET', calendarSecret);
 }
 
 function saveOwnPhotosApp() {
@@ -85,7 +85,7 @@ beforeEach(() => {
   vi.unstubAllGlobals();
   // Keep a developer's own shell settings out of the tests.
   vi.stubEnv('HS_GOOGLE_HOSTED', '');
-  vi.stubEnv('HS_GOOGLE_CALENDAR_CLIENT_SECRET', '');
+  vi.stubEnv('HS_GOOGLE_CALENDAR_TOKEN_URL', '');
   vi.stubEnv('HS_GOOGLE_PHOTOS_TOKEN_URL', '');
 });
 
@@ -100,13 +100,13 @@ describe('switched off (the default)', () => {
 
     expect(await hasPickerCredentials()).toBe(false);
     expect(await hasGoogleCredentials()).toBe(false);
-    await expect(getPickerAuthUrl()).rejects.toThrow('web Client ID');
+    await expect(getPickerAuthUrl()).rejects.toThrow('Photos Import Client ID and Secret');
     await expect(requestDeviceCode()).rejects.toThrow('Client ID is not configured');
     expect(calls).toHaveLength(0);
   });
 
-  it('stays off when only the Calendar secret is present', async () => {
-    vi.stubEnv('HS_GOOGLE_CALENDAR_CLIENT_SECRET', 'hosted-calendar-secret');
+  it('stays off with only a helper address set', async () => {
+    vi.stubEnv('HS_GOOGLE_CALENDAR_TOKEN_URL', 'http://localhost:8787/google/calendar/token');
     expect(await hasGoogleCredentials()).toBe(false);
     expect(await googleCalendarTokenStore.getMode()).toBeNull();
   });
@@ -150,7 +150,7 @@ describe("the household's own Google app always wins", () => {
     secrets.set('google_client_id', 'own-tv-id');
     const calls = answerWith({ device_code: 'dc', user_code: 'ABCD-EFGH' });
 
-    await expect(getPickerAuthUrl()).rejects.toThrow('web Client ID');
+    await expect(getPickerAuthUrl()).rejects.toThrow('Photos Import Client ID and Secret');
     expect(await hasPickerCredentials()).toBe(false);
     // Starting a device flow needs only the id, exactly as before.
     await requestDeviceCode();
@@ -206,6 +206,19 @@ describe("Home Screens' own app (switch on, nothing saved)", () => {
     expect(calls[0].url).toBe('http://localhost:8787/google/photos/token');
   });
 
+  it('Photos: stays connected while the sign-in helper is down or busy, instead of asking to sign in again', async () => {
+    enableHosted();
+    const grant = { access_token: 'ya29.old', refresh_token: '1//hosted', expiry_date: Date.now() - 1000, client_mode: 'hosted' };
+    seed(PICKER_TOKENS, grant);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(
+      JSON.stringify({ error: 'rate_limited', error_description: 'Too many sign-in requests. Try again in a minute.' }),
+      { status: 429, headers: { 'Retry-After': '0' } },
+    )));
+
+    expect(await isPickerConnected()).toBe(true);
+    expect(tokensIn(PICKER_TOKENS)).toEqual(grant);
+  });
+
   it('Photos: says so plainly when the sign-in helper is down, and saves nothing', async () => {
     enableHosted();
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
@@ -217,25 +230,43 @@ describe("Home Screens' own app (switch on, nothing saved)", () => {
     expect(tokensIn(PICKER_TOKENS)).toBeNull();
   });
 
-  it('Calendar: signs in straight with Google using the build-supplied secret', async () => {
+  it('Calendar: asks Google for the code itself, then collects the sign-in through the helper, holding no secret', async () => {
     enableHosted();
     const calls = answerWith({ ...grantResponse, device_code: 'dc', user_code: 'ABCD-EFGH' });
 
     expect(await hasGoogleCredentials()).toBe(true);
     await requestDeviceCode();
+    expect(calls[0].url).toBe('https://oauth2.googleapis.com/device/code');
     expect(calls[0].body.get('client_id')).toBe(HOSTED_CALENDAR_CLIENT_ID);
 
     expect(await pollDeviceToken('dc')).toEqual({ status: 'success' });
-    expect(calls[1].url).toBe(GOOGLE_TOKEN_URL);
+    expect(calls[1].url).toBe(CALENDAR_HELPER_URL);
     expect(calls[1].body.get('client_id')).toBe(HOSTED_CALENDAR_CLIENT_ID);
-    expect(calls[1].body.get('client_secret')).toBe('hosted-calendar-secret');
+    expect(calls[1].body.has('client_secret')).toBe(false);
     expect(tokensIn(CALENDAR_TOKENS)).toMatchObject({ client_mode: 'hosted' });
   });
 
-  it('Calendar: stays off when the build did not supply its secret', async () => {
-    enableHosted({ calendarSecret: null });
-    expect(await hasGoogleCredentials()).toBe(false);
-    await expect(requestDeviceCode()).rejects.toThrow('Client ID is not configured');
+  it('Calendar: renews through the helper, holding no secret', async () => {
+    enableHosted();
+    seed(CALENDAR_TOKENS, { access_token: 'ya29.old', refresh_token: '1//hosted', expiry_date: Date.now() - 1000, client_mode: 'hosted' });
+    const calls = answerWith(grantResponse);
+
+    expect(await googleCalendarTokenStore.getAccessToken()).toBe('ya29.new');
+    expect(calls[0].url).toBe(CALENDAR_HELPER_URL);
+    expect(calls[0].body.get('grant_type')).toBe('refresh_token');
+    expect(calls[0].body.has('client_secret')).toBe(false);
+  });
+
+  it.each([
+    ['the helper is unreachable', () => { throw new TypeError('fetch failed'); }],
+    ['the helper is busy', () => new Response(JSON.stringify({ error: 'rate_limited' }), { status: 429, headers: { 'Retry-After': '0' } })],
+    ['Google is briefly down', () => new Response(JSON.stringify({ error: 'temporarily_unavailable' }), { status: 503 })],
+  ])('Calendar: keeps waiting on the short code when %s', async (_, answer) => {
+    enableHosted();
+    vi.stubGlobal('fetch', vi.fn(async () => answer()));
+
+    expect(await pollDeviceToken('dc')).toEqual({ status: 'pending' });
+    expect(tokensIn(CALENDAR_TOKENS)).toBeNull();
   });
 });
 

@@ -10023,6 +10023,15 @@
       ]
     },
     {
+      "path": "/api/auth/google/apps",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "session"
+        }
+      ]
+    },
+    {
       "path": "/api/auth/google/device",
       "methods": [
         {

@@ -1,4 +1,5 @@
 import type { SecretKey } from '@/components/editor/settings/shared/SecretField';
+import type { GoogleAppsStatus } from '@/lib/google-apps';
 import { weatherProviderName } from '@/lib/weather-provider-names';
 
 /**
@@ -71,11 +72,18 @@ export function servicesForPage(page: ConnectableService['page']): ConnectableSe
   return CONNECTABLE_SERVICES.filter((s) => s.page === page);
 }
 
-/** True when every key the service needs is present in the configured set. */
+/**
+ * True when every key the service needs is present in the configured set, or
+ * for Google, when Calendar signs in with Home Screens' own app and so needs
+ * no keys at all. `googleApps` is what the hub reports; leave it out and
+ * Google is judged by its keys alone, as it always was.
+ */
 export function isServiceConnected(
   service: ConnectableService,
   configuredKeys: Iterable<string>,
+  googleApps?: GoogleAppsStatus | null,
 ): boolean {
+  if (service.id === 'google' && googleApps?.calendar.mode === 'hosted') return true;
   const configured = new Set(configuredKeys);
   return requiredKeysOf(service).every((k) => configured.has(k));
 }

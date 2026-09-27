@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useTranslate } from '@/i18n';
 import { editorFetch } from '@/lib/editor-fetch';
 import type { ICalSource, ICloudSource } from '@/types/config';
+import type { GoogleClientMode } from '@/lib/google-token-store';
 import { logger } from '@/lib/logger';
 
 const log = logger('useGoogleCalendars');
@@ -30,6 +31,8 @@ interface UseGoogleCalendarsOptions {
 
 interface UseGoogleCalendarsReturn {
   credentialsConfigured: boolean;
+  /** Which Google app signs in; 'hosted' is Home Screens' own, which gets the new sign-in screens. */
+  mode: GoogleClientMode | null;
   googleConnected: boolean;
   googleCalendars: GoogleCalendar[];
   googleLoading: boolean;
@@ -42,6 +45,7 @@ interface UseGoogleCalendarsReturn {
 export function useGoogleCalendars({ values, onChange, onAuthError }: UseGoogleCalendarsOptions): UseGoogleCalendarsReturn {
   const t = useTranslate('core');
   const [credentialsConfigured, setCredentialsConfigured] = useState(false);
+  const [mode, setMode] = useState<GoogleClientMode | null>(null);
   const [googleConnected, setGoogleConnected] = useState(false);
   const [googleCalendars, setGoogleCalendars] = useState<GoogleCalendar[]>([]);
   const [googleLoading, setGoogleLoading] = useState(true);
@@ -84,6 +88,7 @@ export function useGoogleCalendars({ values, onChange, onAuthError }: UseGoogleC
         const res = await editorFetch('/api/auth/google/status');
         const data = await res.json();
         setCredentialsConfigured(!!data.credentialsConfigured);
+        setMode(data.mode === 'own' || data.mode === 'hosted' ? data.mode : null);
         setGoogleConnected(data.connected);
         if (data.connected) await fetchCalendars();
       } catch (err) {
@@ -112,6 +117,7 @@ export function useGoogleCalendars({ values, onChange, onAuthError }: UseGoogleC
 
   return {
     credentialsConfigured,
+    mode,
     googleConnected,
     googleCalendars,
     googleLoading,

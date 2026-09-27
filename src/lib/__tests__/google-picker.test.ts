@@ -124,7 +124,7 @@ beforeEach(() => {
 describe('getPickerAuthUrl', () => {
   it('throws without web client credentials', async () => {
     mockedGetSecret.mockResolvedValue(null);
-    await expect(getPickerAuthUrl()).rejects.toThrow('web Client ID');
+    await expect(getPickerAuthUrl()).rejects.toThrow('Photos Import Client ID and Secret');
   });
 
   it('builds the consent URL with the picker scope and helper redirect', async () => {
