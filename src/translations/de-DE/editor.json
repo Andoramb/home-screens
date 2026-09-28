@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Zeit zu Hause ({city}). Zu Hause ist es jetzt {time}."
+  },
+  "connectGoogle": {
+    "finishing": "Anmeldung wird abgeschlossen…",
+    "connectedTitle": "Google Fotos ist verbunden",
+    "connectedBody": "Du kannst diesen Tab jetzt schließen. Klicke dann im Editor auf {choosePhotos}, um loszulegen.",
+    "closeTab": "Tab schließen",
+    "closeBlocked": "Dein Browser hat den Tab offen gelassen. Du kannst ihn selbst schließen.",
+    "expiredTitle": "Diese Anmeldung ist abgelaufen",
+    "expiredBody": "Eine Anmeldung klappt nur einmal und muss innerhalb von 10 Minuten abgeschlossen sein. Klicke im Editor noch einmal auf {importButton}.",
+    "cancelledTitle": "Anmeldung abgebrochen",
+    "cancelledBody": "Kein Problem. Du kannst es im Editor jederzeit noch einmal versuchen.",
+    "failedTitle": "Anmeldung konnte nicht abgeschlossen werden",
+    "backToEditor": "Zurück zum Editor"
   }
 }

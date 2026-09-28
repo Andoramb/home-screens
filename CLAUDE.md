@@ -35,6 +35,7 @@ Next.js 16 + React 19 (App Router), Tailwind v4, Zustand (editor state), @dnd-ki
 | `(editor)` | `/editor` | Layout editor plus Settings. |
 | `(remote)` | `/remote` | Phone remote and family surfaces (chores, meals, timers, lists, photos). Manages data; the editor styles the display. |
 | `(auth)` | `/login` | Authentication. |
+| `(connect)` | `/editor/connect/google` | Where a Google Photos sign-in comes back to the hub (only with `HS_GOOGLE_HOSTED`). Under `/editor` for the login gate, outside the editor layout. |
 | `api/` | `/api/*` | One `route.ts` per endpoint. All external services (weather, calendar, stocks...) are proxied server-side to hold secrets and avoid CORS. |
 
 ### Code shared between surfaces

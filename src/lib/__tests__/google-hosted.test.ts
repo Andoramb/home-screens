@@ -1,3 +1,4 @@
+import { createHash } from 'crypto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Home Screens' own Google apps: off unless HS_GOOGLE_HOSTED=1, and never
@@ -34,6 +35,7 @@ const {
   REDIRECT_URI,
 } = await import('@/lib/google-picker');
 const { googleCalendarTokenStore, googlePickerTokenStore } = await import('@/lib/google-token-stores');
+const { clearPendingSignIn } = await import('@/lib/google-picker-sign-in');
 
 const CALENDAR_TOKENS = 'data/google-tokens.json';
 const PICKER_TOKENS = 'data/google-picker-tokens.json';
@@ -87,6 +89,7 @@ beforeEach(() => {
   vi.stubEnv('HS_GOOGLE_HOSTED', '');
   vi.stubEnv('HS_GOOGLE_CALENDAR_TOKEN_URL', '');
   vi.stubEnv('HS_GOOGLE_PHOTOS_TOKEN_URL', '');
+  clearPendingSignIn();
 });
 
 afterEach(() => {
@@ -118,7 +121,7 @@ describe("the household's own Google app always wins", () => {
     saveOwnPhotosApp();
     const calls = answerWith(grantResponse);
 
-    const authUrl = new URL(await getPickerAuthUrl());
+    const authUrl = new URL((await getPickerAuthUrl()).url);
     expect(authUrl.searchParams.get('client_id')).toBe('own-web-id');
     expect(await exchangePickerCode('4/0AdLIrY-code')).toEqual({ ok: true });
 
@@ -172,7 +175,7 @@ describe("Home Screens' own app (switch on, nothing saved)", () => {
     enableHosted();
     const calls = answerWith(grantResponse);
 
-    const authUrl = new URL(await getPickerAuthUrl());
+    const authUrl = new URL((await getPickerAuthUrl()).url);
     expect(authUrl.searchParams.get('client_id')).toBe(HOSTED_PHOTOS_CLIENT_ID);
     expect(authUrl.searchParams.get('redirect_uri')).toBe(REDIRECT_URI);
 
@@ -202,6 +205,7 @@ describe("Home Screens' own app (switch on, nothing saved)", () => {
     vi.stubEnv('HS_GOOGLE_PHOTOS_TOKEN_URL', 'http://localhost:8787/google/photos/token');
     const calls = answerWith(grantResponse);
 
+    await getPickerAuthUrl();
     await exchangePickerCode('4/0AdLIrY-code');
     expect(calls[0].url).toBe('http://localhost:8787/google/photos/token');
   });
@@ -223,6 +227,7 @@ describe("Home Screens' own app (switch on, nothing saved)", () => {
     enableHosted();
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('fetch failed'); }));
 
+    await getPickerAuthUrl();
     expect(await exchangePickerCode('4/0AdLIrY-code')).toEqual({
       ok: false,
       error: "Couldn't reach the Home Screens sign-in helper. Try again in a few minutes.",
@@ -300,7 +305,140 @@ describe('switching between apps', () => {
     expect(await isPickerConnected()).toBe(false);
 
     answerWith(grantResponse);
+    await getPickerAuthUrl();
     await exchangePickerCode('4/0AdLIrY-code');
     expect(await isPickerConnected()).toBe(true);
+  });
+});
+
+describe('straight back to the hub (switch on)', () => {
+  const HUB = 'http://192.168.1.50:3000';
+
+  function linkParams(url: string) {
+    return new URL(url).searchParams;
+  }
+
+  function s256(verifier: string) {
+    return createHash('sha256').update(verifier).digest('base64url');
+  }
+
+  it("Home Screens' app: the link carries the hub's address, a one-time value and PKCE, and the code is redeemed with the verifier", async () => {
+    enableHosted();
+    const calls = answerWith(grantResponse);
+
+    const link = await getPickerAuthUrl(HUB);
+    expect(link.returnsToHub).toBe(true);
+    const params = linkParams(link.url);
+    const state = params.get('state')!;
+    const [nonce, address] = state.split('.');
+    expect(nonce).toMatch(/^[\w-]{43}$/);
+    expect(Buffer.from(address, 'base64url').toString()).toBe(HUB);
+    expect(params.get('code_challenge_method')).toBe('S256');
+
+    expect(await exchangePickerCode('4/0AdLIrY-code', state)).toEqual({ ok: true });
+    expect(calls[0].url).toBe(HELPER_URL);
+    const verifier = calls[0].body.get('code_verifier')!;
+    expect(s256(verifier)).toBe(params.get('code_challenge'));
+    expect(calls[0].body.has('client_secret')).toBe(false);
+    expect(tokensIn(PICKER_TOKENS)).toMatchObject({ client_mode: 'hosted' });
+  });
+
+  it("the household's own app gets the same return, straight to Google with its own secret", async () => {
+    enableHosted();
+    saveOwnPhotosApp();
+    const calls = answerWith(grantResponse);
+
+    const link = await getPickerAuthUrl(HUB);
+    const params = linkParams(link.url);
+    expect(params.get('client_id')).toBe('own-web-id');
+    expect(await exchangePickerCode('4/0AdLIrY-code', params.get('state')!)).toEqual({ ok: true });
+
+    expect(calls[0].url).toBe(GOOGLE_TOKEN_URL);
+    expect(calls[0].body.get('client_secret')).toBe('own-web-secret');
+    expect(s256(calls[0].body.get('code_verifier')!)).toBe(params.get('code_challenge'));
+    expect(tokensIn(PICKER_TOKENS)).not.toHaveProperty('client_mode');
+  });
+
+  it('a pasted code uses the waiting sign-in, and a link without a confirmed address still gets PKCE', async () => {
+    enableHosted();
+    const calls = answerWith(grantResponse);
+
+    const link = await getPickerAuthUrl(null);
+    expect(link.returnsToHub).toBe(false);
+    const params = linkParams(link.url);
+    expect(params.get('state')).toMatch(/^[\w-]{43}$/);
+
+    expect(await exchangePickerCode('4/0AdLIrY-code')).toEqual({ ok: true });
+    expect(s256(calls[0].body.get('code_verifier')!)).toBe(params.get('code_challenge'));
+  });
+
+  it('each sign-in works once', async () => {
+    enableHosted();
+    const calls = answerWith(grantResponse);
+    const state = linkParams((await getPickerAuthUrl(HUB)).url).get('state')!;
+
+    expect(await exchangePickerCode('4/0AdLIrY-code', state)).toEqual({ ok: true });
+    expect(await exchangePickerCode('4/0AdLIrY-code', state)).toMatchObject({ ok: false, expired: true });
+    expect(await exchangePickerCode('4/0AdLIrY-code')).toMatchObject({ ok: false, expired: true });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('a sign-in expires after 10 minutes', async () => {
+    enableHosted();
+    const calls = answerWith(grantResponse);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      const state = linkParams((await getPickerAuthUrl(HUB)).url).get('state')!;
+      vi.advanceTimersByTime(10 * 60_000 + 1);
+      expect(await exchangePickerCode('4/0AdLIrY-code', state)).toMatchObject({ ok: false, expired: true });
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(calls).toHaveLength(0);
+  });
+
+  it("refuses a code whose one-time value isn't this hub's, without cancelling the real sign-in", async () => {
+    enableHosted();
+    const calls = answerWith(grantResponse);
+    const state = linkParams((await getPickerAuthUrl(HUB)).url).get('state')!;
+    const forged = `${'A'.repeat(43)}.${Buffer.from(HUB).toString('base64url')}`;
+
+    expect(await exchangePickerCode('4/attacker-code', forged)).toMatchObject({ ok: false, expired: true });
+    expect(await exchangePickerCode('4/attacker-code', '')).toMatchObject({ ok: false, expired: true });
+    expect(calls).toHaveLength(0);
+
+    expect(await exchangePickerCode('4/0AdLIrY-code', state)).toEqual({ ok: true });
+  });
+
+  it('a newer sign-in replaces the waiting one', async () => {
+    enableHosted();
+    answerWith(grantResponse);
+    const first = linkParams((await getPickerAuthUrl(HUB)).url).get('state')!;
+    const second = linkParams((await getPickerAuthUrl(HUB)).url).get('state')!;
+
+    expect(await exchangePickerCode('4/0AdLIrY-code', first)).toMatchObject({ ok: false, expired: true });
+    expect(await exchangePickerCode('4/0AdLIrY-code', second)).toEqual({ ok: true });
+  });
+
+  it("calls a code Google won't take any more an expired sign-in", async () => {
+    enableHosted();
+    answerWith({ error: 'invalid_grant', error_description: 'Bad Request' }, 400);
+    const state = linkParams((await getPickerAuthUrl(HUB)).url).get('state')!;
+
+    expect(await exchangePickerCode('4/0AdLIrY-code', state)).toEqual({
+      ok: false,
+      expired: true,
+      error: 'That sign-in has expired. Each one works once, within 10 minutes. Sign in with Google again.',
+    });
+    expect(tokensIn(PICKER_TOKENS)).toBeNull();
+  });
+
+  it('with the switch off, a code coming back through the return page is refused and nothing is sent', async () => {
+    saveOwnPhotosApp();
+    const calls = answerWith(grantResponse);
+    await getPickerAuthUrl(HUB);
+
+    expect(await exchangePickerCode('4/0AdLIrY-code', 'anything')).toMatchObject({ ok: false, expired: true });
+    expect(calls).toHaveLength(0);
   });
 });

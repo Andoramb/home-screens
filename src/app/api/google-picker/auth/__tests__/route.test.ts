@@ -14,8 +14,8 @@ vi.mock('@/lib/google-picker', () => ({
   exchangePickerCode: (...args: unknown[]) => mockExchange(...args),
 }));
 
-function getRequest() {
-  return new NextRequest('http://localhost/api/google-picker/auth');
+function getRequest(query = '', headers: Record<string, string> = {}) {
+  return new NextRequest(`http://localhost/api/google-picker/auth${query}`, { headers });
 }
 
 function postRequest(body: unknown) {
@@ -38,10 +38,30 @@ describe('/api/google-picker/auth', () => {
   }
 
   it('GET returns the sign-in URL', async () => {
-    mockGetAuthUrl.mockResolvedValue('https://accounts.google.com/o/oauth2/v2/auth?x=1');
+    mockGetAuthUrl.mockResolvedValue({ url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1', returnsToHub: false });
     const { GET } = await importRoute();
     const json = await (await GET(getRequest())).json();
     expect(json.url).toContain('accounts.google.com');
+    expect(json.returnsToHub).toBe(false);
+    expect(mockGetAuthUrl).toHaveBeenCalledWith(null);
+  });
+
+  it("GET passes on the editor's address only when it names the host the request reached", async () => {
+    mockGetAuthUrl.mockResolvedValue({ url: 'https://accounts.google.com/', returnsToHub: true });
+    const { GET } = await importRoute();
+
+    await GET(getRequest('?origin=http%3A%2F%2F192.168.1.50%3A3000', { host: '192.168.1.50:3000' }));
+    expect(mockGetAuthUrl).toHaveBeenLastCalledWith('http://192.168.1.50:3000');
+
+    await GET(getRequest('?origin=http%3A%2F%2F192.168.1.99%3A3000', { host: '192.168.1.50:3000' }));
+    expect(mockGetAuthUrl).toHaveBeenLastCalledWith(null);
+
+    // A forwarded host counts only from a peer the server stamped as a trusted proxy.
+    const proxied = { host: '127.0.0.1:3000', 'x-forwarded-host': 'hub.lan' };
+    await GET(getRequest('?origin=https%3A%2F%2Fhub.lan', proxied));
+    expect(mockGetAuthUrl).toHaveBeenLastCalledWith(null);
+    await GET(getRequest('?origin=https%3A%2F%2Fhub.lan', { ...proxied, 'x-hs-via-trusted-proxy': '1' }));
+    expect(mockGetAuthUrl).toHaveBeenLastCalledWith('https://hub.lan');
   });
 
   it('GET surfaces missing-credentials errors', async () => {
@@ -56,8 +76,21 @@ describe('/api/google-picker/auth', () => {
     mockExchange.mockResolvedValue({ ok: true });
     const { POST } = await importRoute();
     const json = await (await POST(postRequest({ code: '4/0AdLIrY' }))).json();
-    expect(mockExchange).toHaveBeenCalledWith('4/0AdLIrY');
+    expect(mockExchange).toHaveBeenCalledWith('4/0AdLIrY', undefined);
     expect(json).toEqual({ connected: true });
+  });
+
+  it("POST passes the return page's state on, and says when the sign-in expired", async () => {
+    mockExchange.mockResolvedValue({ ok: false, error: 'That sign-in has expired.', expired: true });
+    const { POST } = await importRoute();
+
+    const response = await POST(postRequest({ code: '4/0AdLIrY', state: 'nonce.aHR0cA' }));
+    expect(mockExchange).toHaveBeenCalledWith('4/0AdLIrY', 'nonce.aHR0cA');
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: 'That sign-in has expired.', expired: true });
+
+    expect((await POST(postRequest({ code: 'x', state: 42 }))).status).toBe(400);
+    expect(mockExchange).toHaveBeenCalledTimes(1);
   });
 
   it('POST rejects a missing code and passes through exchange failures', async () => {

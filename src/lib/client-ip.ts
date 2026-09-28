@@ -30,6 +30,19 @@ import { normalizeIp } from './ip-allowlist';
  */
 export const CLIENT_IP_HEADER = 'x-hs-client-ip';
 
+/**
+ * Server-stamped header: `1` when the TCP peer is one of HS_TRUSTED_PROXIES,
+ * so a forwarded header (`X-Forwarded-Host`) describes the real client, and
+ * `0` otherwise. Written by `server-ip-patch.ts` over anything the client sent.
+ */
+export const VIA_TRUSTED_PROXY_HEADER = 'x-hs-via-trusted-proxy';
+
+/** Whether a request's TCP peer is one of the trusted proxies. */
+export function isTrustedProxyPeer(peerAddress: string | null | undefined, trustedProxies: string[]): boolean {
+  const peer = peerAddress ? normalizeIp(peerAddress) : '';
+  return peer !== '' && trustedProxies.includes(peer);
+}
+
 /** Parse the HS_TRUSTED_PROXIES env value (comma-separated exact IPs). */
 export function parseTrustedProxies(raw: string | undefined): string[] {
   return (raw ?? '')

@@ -64,6 +64,46 @@ describe('google sign-in helper', () => {
     });
   });
 
+  it("passes a sign-in's PKCE verifier on to Google", async () => {
+    const verifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+
+    const res = await worker.fetch(post({ grant_type: 'authorization_code', code: '4/0AdLIrY-code', code_verifier: verifier }), env());
+
+    expect(res.status).toBe(200);
+    expect(Object.fromEntries(upstream[0].body)).toEqual({
+      client_id: PHOTOS_CLIENT_ID,
+      client_secret: SECRET,
+      grant_type: 'authorization_code',
+      code: '4/0AdLIrY-code',
+      redirect_uri: REDIRECT_URI,
+      code_verifier: verifier,
+    });
+  });
+
+  it.each([
+    ['too short', 'x'.repeat(42)],
+    ['too long', 'x'.repeat(129)],
+    ['not URL-safe', `${'x'.repeat(42)}+`],
+    ['empty', ''],
+  ])('refuses a PKCE verifier that is %s without calling Google', async (_label, verifier) => {
+    const res = await worker.fetch(post({ grant_type: 'authorization_code', code: 'x', code_verifier: verifier }), env());
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('invalid_request');
+    expect(upstream).toHaveLength(0);
+  });
+
+  it('passes a PKCE verifier only with a sign-in code', async () => {
+    const verifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk';
+
+    await worker.fetch(post({ grant_type: 'refresh_token', refresh_token: '1//hosted', code_verifier: verifier }), env());
+    await worker.fetch(post({ grant_type: DEVICE_CODE_GRANT, device_code: 'AH-1', code_verifier: verifier }, {}, CALENDAR_ENDPOINT), env());
+    await worker.fetch(post({ grant_type: 'refresh_token', refresh_token: '1//cal', code_verifier: verifier }, {}, CALENDAR_ENDPOINT), env());
+
+    expect(upstream).toHaveLength(3);
+    for (const call of upstream) expect(call.body.has('code_verifier')).toBe(false);
+  });
+
   it('adds the secret to a refresh token', async () => {
     await worker.fetch(post({ grant_type: 'refresh_token', refresh_token: '1//hosted', client_id: PHOTOS_CLIENT_ID }), env());
 

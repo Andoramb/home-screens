@@ -23,8 +23,15 @@ export interface HsServer {
   stop(): Promise<void>;
 }
 
-/** Boot a production Next server from a fresh sandbox. Requires `npm run build` to have run. */
-export async function launchServer(dataFiles: Record<string, unknown> = {}): Promise<HsServer> {
+/**
+ * Boot a production Next server from a fresh sandbox. Requires `npm run build`
+ * to have run. `env` adds server settings a spec needs (a switch, a local
+ * stand-in for an outside service).
+ */
+export async function launchServer(
+  dataFiles: Record<string, unknown> = {},
+  env: Record<string, string> = {},
+): Promise<HsServer> {
   if (!existsSync(path.join(REPO_ROOT, '.next', 'BUILD_ID'))) {
     throw new Error('No production build found. Run `npm run build` before `npm run test:e2e`.');
   }
@@ -36,6 +43,7 @@ export async function launchServer(dataFiles: Record<string, unknown> = {}): Pro
     NODE_ENV: 'production',
     HS_TRUSTED_PROXIES: '127.0.0.1',
     HS_DISABLE_AUTO_UPDATE: '1',
+    ...env,
   };
   // The server pins its data root from HOME_SCREENS_DIR ahead of cwd, so a
   // stray export in the developer's shell would point this worker at the real

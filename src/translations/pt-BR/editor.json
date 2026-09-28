@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Horário de casa ({city}). Agora em casa: {time}."
+  },
+  "connectGoogle": {
+    "finishing": "Concluindo o login…",
+    "connectedTitle": "O Google Fotos está conectado",
+    "connectedBody": "Você pode fechar esta aba. Volte ao editor e clique em {choosePhotos} para começar.",
+    "closeTab": "Fechar esta aba",
+    "closeBlocked": "Seu navegador não deixou fechar esta aba. Você pode fechá-la por conta própria.",
+    "expiredTitle": "Esse login expirou",
+    "expiredBody": "Cada login só vale uma vez e precisa ser concluído em até 10 minutos. Comece de novo clicando em {importButton}.",
+    "cancelledTitle": "O login foi cancelado",
+    "cancelledBody": "Sem problemas. Comece de novo pelo editor quando quiser.",
+    "failedTitle": "Não foi possível concluir o login",
+    "backToEditor": "Voltar ao editor"
   }
 }

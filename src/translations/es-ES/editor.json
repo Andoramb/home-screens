@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Hora de casa ({city}). Ahora en casa: {time}."
+  },
+  "connectGoogle": {
+    "finishing": "Terminando de iniciar sesión…",
+    "connectedTitle": "Google Fotos está conectado",
+    "connectedBody": "Ya puedes cerrar esta pestaña. En el editor, pulsa {choosePhotos} para empezar.",
+    "closeTab": "Cerrar esta pestaña",
+    "closeBlocked": "Tu navegador no ha dejado cerrar esta pestaña. Puedes cerrarla a mano.",
+    "expiredTitle": "Ese inicio de sesión ha caducado",
+    "expiredBody": "Cada inicio de sesión solo sirve una vez y caduca a los 10 minutos. Para empezar de nuevo, pulsa {importButton} en el editor.",
+    "cancelledTitle": "Se ha cancelado el inicio de sesión",
+    "cancelledBody": "No pasa nada. Vuelve a empezar desde el editor cuando quieras.",
+    "failedTitle": "No se pudo terminar de iniciar sesión",
+    "backToEditor": "Volver al editor"
   }
 }

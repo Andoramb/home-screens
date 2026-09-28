@@ -110,6 +110,9 @@ async function waitForJob(jobId: string) {
 
 beforeEach(() => {
   vi.unstubAllGlobals();
+  // These cover the household's own app with Home Screens' app off; keep a
+  // developer's shell setting out of them.
+  vi.stubEnv('HS_GOOGLE_HOSTED', '');
   mockedGetSecret.mockReset();
   mockMkdir.mockReset().mockResolvedValue(undefined);
   mockReaddir.mockReset().mockRejectedValue(new Error('ENOENT'));
@@ -129,12 +132,18 @@ describe('getPickerAuthUrl', () => {
 
   it('builds the consent URL with the picker scope and helper redirect', async () => {
     setupCredentials();
-    const url = new URL(await getPickerAuthUrl());
+    const link = await getPickerAuthUrl('http://192.168.1.50:3000');
+    const url = new URL(link.url);
     expect(url.origin + url.pathname).toBe('https://accounts.google.com/o/oauth2/v2/auth');
     expect(url.searchParams.get('scope')).toBe('https://www.googleapis.com/auth/photospicker.mediaitems.readonly');
     expect(url.searchParams.get('redirect_uri')).toBe(REDIRECT_URI);
     expect(url.searchParams.get('access_type')).toBe('offline');
     expect(url.searchParams.get('prompt')).toBe('consent');
+    // Home Screens' app is off here, so the link is exactly what it always was.
+    expect([...url.searchParams.keys()].sort()).toEqual(
+      ['access_type', 'client_id', 'prompt', 'redirect_uri', 'response_type', 'scope'],
+    );
+    expect(link.returnsToHub).toBe(false);
   });
 });
 

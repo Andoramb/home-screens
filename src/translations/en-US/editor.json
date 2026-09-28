@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Home time ({city}). It is {time} at home."
+  },
+  "connectGoogle": {
+    "finishing": "Finishing sign-in…",
+    "connectedTitle": "Google Photos is connected",
+    "connectedBody": "You can close this tab. Back in the editor, click {choosePhotos} to start.",
+    "closeTab": "Close this tab",
+    "closeBlocked": "Your browser kept this tab open. You can close it yourself.",
+    "expiredTitle": "That sign-in has expired",
+    "expiredBody": "Each sign-in works once, within 10 minutes. Start again with {importButton} in the editor.",
+    "cancelledTitle": "Sign-in was cancelled",
+    "cancelledBody": "No problem. Start again from the editor whenever you like.",
+    "failedTitle": "Couldn't finish signing in",
+    "backToEditor": "Back to the editor"
   }
 }

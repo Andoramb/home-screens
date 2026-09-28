@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Tijd thuis ({city}). Thuis is het nu {time}."
+  },
+  "connectGoogle": {
+    "finishing": "Aanmelden wordt afgerond…",
+    "connectedTitle": "Google Foto's is gekoppeld",
+    "connectedBody": "Je kunt dit tabblad sluiten. Klik in de editor op {choosePhotos} om te beginnen.",
+    "closeTab": "Tabblad sluiten",
+    "closeBlocked": "Je browser heeft dit tabblad opengelaten. Je kunt het zelf sluiten.",
+    "expiredTitle": "Deze aanmelding is verlopen",
+    "expiredBody": "Een aanmelding werkt maar één keer en moet binnen 10 minuten worden afgerond. Klik in de editor opnieuw op {importButton}.",
+    "cancelledTitle": "Aanmelden geannuleerd",
+    "cancelledBody": "Geen probleem. Begin opnieuw vanuit de editor wanneer je wilt.",
+    "failedTitle": "Aanmelden kon niet worden afgerond",
+    "backToEditor": "Terug naar de editor"
   }
 }

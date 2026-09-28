@@ -97,12 +97,17 @@ describe('GooglePhotosImportSection when an import finishes', () => {
   });
 });
 
-/** A hub that answers the sign-in routes: which app, and whether Photos is signed in. */
-function signInAnswers(apps: unknown, connected: () => boolean) {
+/**
+ * A hub that answers the sign-in routes: which app, whether Photos is signed
+ * in, and whether its sign-in link comes back to the hub.
+ */
+function signInAnswers(apps: unknown, connected: () => boolean, returnsToHub = true) {
   editorFetch.mockImplementation(async (url: string, init?: RequestInit) => {
     if (url === '/api/auth/google/apps') return jsonResponse(apps);
     if (url === '/api/google-picker/status') return jsonResponse({ connected: connected(), credentialsConfigured: true });
-    if (url === '/api/google-picker/auth' && !init?.method) return jsonResponse({ url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1' });
+    if (url.startsWith('/api/google-picker/auth?') && !init?.method) {
+      return jsonResponse({ url: 'https://accounts.google.com/o/oauth2/v2/auth?x=1', returnsToHub });
+    }
     if (url === '/api/google-picker/auth' && init?.method === 'POST') return jsonResponse({ connected: true });
     throw new Error(`unexpected request ${url}`);
   });
@@ -131,13 +136,53 @@ describe('GooglePhotosImportSection with Home Screens\' own Google app', () => {
     expect(view.queryByTestId('google-photos-hosted')).toBeNull();
   });
 
-  it('keeps a household on its own app on today\'s flow, even with the switch on', async () => {
-    signInAnswers({ ...HOSTED, photos: { mode: 'own', hostedAvailable: true } }, () => false);
+  it('keeps a household on its own app on today\'s flow while the switch is off', async () => {
+    signInAnswers(OWN_APP, () => false, false);
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    const view = await renderSection();
+    fireEvent.click(view.getByText('Import from Google Photos'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(view.getByText('Sign in with Google, then paste the code you get at the end.')).toBeTruthy();
+    expect(view.getByPlaceholderText('Paste the code or link here')).toBeTruthy();
+
+    fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(open).toHaveBeenCalled();
+    // Still today's view, and nothing polls for a sign-in that ends on the copy page.
+    expect(view.getByText('Sign in with Google, then paste the code you get at the end.')).toBeTruthy();
+    const statusChecks = () => editorFetch.mock.calls.filter(([url]) => url === '/api/google-picker/status').length;
+    const before = statusChecks();
+    await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+    expect(statusChecks()).toBe(before);
+  });
+
+  it('brings a household on its own app back to the hub too once the switch is on', async () => {
+    let signedIn = false;
+    signInAnswers({ ...HOSTED, photos: { mode: 'own', hostedAvailable: true } }, () => signedIn);
+    vi.spyOn(window, 'open').mockReturnValue(null);
     const view = await renderSection();
     expect(view.queryByTestId('google-photos-hosted')).toBeNull();
     fireEvent.click(view.getByText('Import from Google Photos'));
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
-    expect(view.getByPlaceholderText('Paste the code or link here')).toBeTruthy();
+
+    fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    expect(view.getByText('Finish signing in on the Google tab.')).toBeTruthy();
+
+    signedIn = true;
+    await act(async () => { await vi.advanceTimersByTimeAsync(3000); });
+    expect(view.getByText('Choose photos')).toBeTruthy();
+  });
+
+  it('goes straight to the paste box when the sign-in link cannot come back to this hub', async () => {
+    signInAnswers(HOSTED, () => false, false);
+    vi.spyOn(window, 'open').mockReturnValue(null);
+    const view = await renderSection();
+    fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+    await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+
+    expect(view.queryByText('Finish signing in on the Google tab.')).toBeNull();
+    expect(view.getByText('If the Google page showed you a code, paste it here.')).toBeTruthy();
   });
 
   it('keeps the old view when the hub cannot say which app signs in', async () => {
@@ -156,6 +201,8 @@ describe('GooglePhotosImportSection with Home Screens\' own Google app', () => {
 
     fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
     await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+    // The hub is told the address this editor is on, so the sign-in can come back to it.
+    expect(editorFetch).toHaveBeenCalledWith(`/api/google-picker/auth?origin=${encodeURIComponent(window.location.origin)}`);
     expect(open).toHaveBeenCalledWith('https://accounts.google.com/o/oauth2/v2/auth?x=1', '_blank', 'noopener');
     expect(view.getByText('Finish signing in on the Google tab.')).toBeTruthy();
 

@@ -1,7 +1,7 @@
 import { describe, it, expect, afterAll } from 'vitest';
 import http from 'node:http';
 import type { AddressInfo } from 'node:net';
-import { CLIENT_IP_HEADER, parseTrustedProxies, resolveClientIp } from '../client-ip';
+import { CLIENT_IP_HEADER, VIA_TRUSTED_PROXY_HEADER, isTrustedProxyPeer, parseTrustedProxies, resolveClientIp } from '../client-ip';
 import { installClientIpStamping } from '../server-ip-patch';
 
 describe('parseTrustedProxies', () => {
@@ -53,6 +53,16 @@ describe('resolveClientIp', () => {
   });
 });
 
+describe('isTrustedProxyPeer', () => {
+  it('trusts only a peer on the list, IPv4-mapped or not', () => {
+    expect(isTrustedProxyPeer('127.0.0.1', ['127.0.0.1'])).toBe(true);
+    expect(isTrustedProxyPeer('::ffff:127.0.0.1', ['127.0.0.1'])).toBe(true);
+    expect(isTrustedProxyPeer('10.0.0.66', ['127.0.0.1'])).toBe(false);
+    expect(isTrustedProxyPeer('127.0.0.1', [])).toBe(false);
+    expect(isTrustedProxyPeer(undefined, ['127.0.0.1'])).toBe(false);
+  });
+});
+
 describe('installClientIpStamping (live http server)', () => {
   const servers: http.Server[] = [];
   afterAll(() => {
@@ -62,11 +72,20 @@ describe('installClientIpStamping (live http server)', () => {
   async function requestWithHeaders(headers: Record<string, string>): Promise<{
     stamped: string | string[] | undefined;
     xff: string | string[] | undefined;
+    viaProxy: string | string[] | undefined;
   }> {
     installClientIpStamping();
-    let seen: { stamped: string | string[] | undefined; xff: string | string[] | undefined } | null = null;
+    let seen: {
+      stamped: string | string[] | undefined;
+      xff: string | string[] | undefined;
+      viaProxy: string | string[] | undefined;
+    } | null = null;
     const server = http.createServer((req, res) => {
-      seen = { stamped: req.headers[CLIENT_IP_HEADER], xff: req.headers['x-forwarded-for'] };
+      seen = {
+        stamped: req.headers[CLIENT_IP_HEADER],
+        xff: req.headers['x-forwarded-for'],
+        viaProxy: req.headers[VIA_TRUSTED_PROXY_HEADER],
+      };
       res.end('ok');
     });
     servers.push(server);
@@ -83,6 +102,11 @@ describe('installClientIpStamping (live http server)', () => {
       [CLIENT_IP_HEADER]: '192.168.1.52', // even a pre-stamped header is overwritten
     });
     expect(stamped).toBe('127.0.0.1');
+  });
+
+  it('overwrites a client-sent trusted-proxy flag (no proxies are trusted here)', async () => {
+    const { viaProxy } = await requestWithHeaders({ [VIA_TRUSTED_PROXY_HEADER]: '1' });
+    expect(viaProxy).toBe('0');
   });
 
   it('stamps the peer address when no headers are sent', async () => {

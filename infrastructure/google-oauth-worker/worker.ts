@@ -19,7 +19,8 @@
  *
  * Two endpoints, form-encoded, each accepting only its app's steps:
  *   POST /google/photos/token
- *     grant_type=authorization_code with code        (signing in)
+ *     grant_type=authorization_code with code        (signing in; the hub's
+ *       code_verifier comes along when its sign-in link carried PKCE)
  *     grant_type=refresh_token with refresh_token    (renewing a sign-in)
  *   POST /google/calendar/token
  *     grant_type=urn:ietf:params:oauth:grant-type:device_code with device_code
@@ -50,6 +51,8 @@ export interface Env {
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 /** A code or refresh token is a few hundred bytes; nothing legitimate comes close. */
 const MAX_BODY_BYTES = 8_192;
+/** RFC 7636's code_verifier: 43 to 128 unreserved characters. */
+const CODE_VERIFIER = /^[A-Za-z0-9._~-]{43,128}$/;
 
 function errorResponse(status: number, error: string, description: string, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify({ error, error_description: description }), {
@@ -88,7 +91,17 @@ const APPS: Record<string, HostedApp> = {
       if (grantType === 'authorization_code') {
         const code = form.get('code');
         if (!code) return { ok: false, error: 'invalid_request', description: 'Missing sign-in code.' };
-        return { ok: true, grant: { grant_type: grantType, code, redirect_uri: REDIRECT_URI } };
+        const grant: Record<string, string> = { grant_type: grantType, code, redirect_uri: REDIRECT_URI };
+        // A hub that sends people straight back to itself signs in with
+        // PKCE, and Google then refuses the code without its verifier.
+        const verifier = form.get('code_verifier');
+        if (verifier !== null) {
+          if (!CODE_VERIFIER.test(verifier)) {
+            return { ok: false, error: 'invalid_request', description: 'Malformed code verifier.' };
+          }
+          grant.code_verifier = verifier;
+        }
+        return { ok: true, grant };
       }
       if (grantType === 'refresh_token') return refreshGrant(form);
       return { ok: false, error: 'unsupported_grant_type', description: 'Only sign-in codes and refresh tokens are accepted.' };

@@ -1,6 +1,7 @@
 /**
  * Stamps the real TCP peer address onto every incoming HTTP request as
- * `x-hs-client-ip`, before Next.js (proxy or route handlers) sees it.
+ * `x-hs-client-ip`, and whether that peer is a trusted proxy as
+ * `x-hs-via-trusted-proxy`, before Next.js (proxy or route handlers) sees it.
  *
  * Why a prototype patch: App Router route handlers receive a web-standard
  * Request with no socket access, and the bundled Next server only fills
@@ -15,7 +16,13 @@
  */
 import http from 'node:http';
 import https from 'node:https';
-import { CLIENT_IP_HEADER, parseTrustedProxies, resolveClientIp } from './client-ip';
+import {
+  CLIENT_IP_HEADER,
+  VIA_TRUSTED_PROXY_HEADER,
+  isTrustedProxyPeer,
+  parseTrustedProxies,
+  resolveClientIp,
+} from './client-ip';
 
 const INSTALLED_FLAG = Symbol.for('home-screens.clientIpPatchInstalled');
 
@@ -28,6 +35,7 @@ function stampClientIp(req: http.IncomingMessage, trustedProxies: string[]): voi
     Array.isArray(xff) ? xff.join(',') : xff,
     trustedProxies,
   );
+  req.headers[VIA_TRUSTED_PROXY_HEADER] = isTrustedProxyPeer(req.socket?.remoteAddress, trustedProxies) ? '1' : '0';
 }
 
 function wrapEmit(proto: { emit: EmitFn }, trustedProxies: string[]): void {

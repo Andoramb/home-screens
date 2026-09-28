@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Heure de la maison ({city}). Il est {time} à la maison."
+  },
+  "connectGoogle": {
+    "finishing": "Finalisation de la connexion…",
+    "connectedTitle": "Google Photos est connecté",
+    "connectedBody": "Vous pouvez fermer cet onglet. Dans l'éditeur, cliquez sur {choosePhotos} pour commencer.",
+    "closeTab": "Fermer cet onglet",
+    "closeBlocked": "Votre navigateur a laissé cet onglet ouvert. Vous pouvez le fermer vous-même.",
+    "expiredTitle": "Cette connexion a expiré",
+    "expiredBody": "Chaque connexion ne fonctionne qu'une seule fois, et pendant 10 minutes seulement. Recommencez en cliquant sur {importButton} dans l'éditeur.",
+    "cancelledTitle": "Connexion annulée",
+    "cancelledBody": "Pas de souci. Recommencez depuis l'éditeur quand vous voulez.",
+    "failedTitle": "Impossible de terminer la connexion",
+    "backToEditor": "Retour à l'éditeur"
   }
 }

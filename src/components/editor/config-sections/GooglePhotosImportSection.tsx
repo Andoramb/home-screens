@@ -44,20 +44,24 @@ const SIGN_IN_POLL_LIMIT_MS = 10 * 60_000;
  *
  * With Home Screens' own Google app (HS_GOOGLE_HOSTED) there is nothing to
  * set up, so the panel offers Google's sign-in button straight away instead
- * of behind a button, waits for the sign-in to land while the Google tab is
- * open, and keeps the paste box only as a fallback. A household on its own
- * Google app, or a hub with the switch off, gets exactly the flow below.
+ * of behind a button. With the switch on, every sign-in (the household's own
+ * app too) comes straight back to the hub (/editor/connect/google), so the
+ * panel waits for it to land while the Google tab is open and keeps the paste
+ * box only as a fallback. A hub with the switch off gets exactly the flow
+ * below.
  */
 export function GooglePhotosImportSection({ onImported }: Props) {
   const t = useTranslate('editor');
   const { apps, loading: appsLoading } = useGoogleApps();
   const hosted = apps?.photos.mode === 'hosted';
+  // With the switch on, sign-in links bring people back here on their own.
+  const returnsToHub = apps?.photos.hostedAvailable === true;
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<PickerStatus | null>(null);
   const [pasted, setPasted] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Home Screens' app only: signing in is a step of its own, not a paste box.
+  // With the switch on, signing in is a step of its own, not a paste box.
   const [signInStep, setSignInStep] = useState<'start' | 'waiting' | 'paste'>('start');
 
   const {
@@ -85,7 +89,7 @@ export function GooglePhotosImportSection({ onImported }: Props) {
   // moves on by itself once the hub has it.
   const connected = status?.connected === true;
   useEffect(() => {
-    if (!hosted || signInStep !== 'waiting' || connected) return;
+    if (signInStep !== 'waiting' || connected) return;
     const startedAt = Date.now();
     const timer = setInterval(() => {
       if (Date.now() - startedAt > SIGN_IN_POLL_LIMIT_MS) {
@@ -95,7 +99,7 @@ export function GooglePhotosImportSection({ onImported }: Props) {
       void refreshStatus();
     }, SIGN_IN_POLL_MS);
     return () => clearInterval(timer);
-  }, [hosted, signInStep, connected, refreshStatus]);
+  }, [signInStep, connected, refreshStatus]);
 
   const { session, open: openSession, cancel: cancelPicking } = useGooglePickerSession((end, sessionId) => {
     if (end === 'picked') {
@@ -112,11 +116,13 @@ export function GooglePhotosImportSection({ onImported }: Props) {
     setError(null);
     setBusy(true);
     try {
-      const res = await editorFetch('/api/google-picker/auth');
+      // The address this editor is on, so the sign-in can come back to it.
+      const res = await editorFetch(`/api/google-picker/auth?origin=${encodeURIComponent(window.location.origin)}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       window.open(data.url, '_blank', 'noopener');
-      setSignInStep('waiting');
+      // A link without this hub's address ends on the copy-a-code page.
+      setSignInStep(data.returnsToHub ? 'waiting' : 'paste');
     } catch (err) {
       setError(err instanceof Error ? err.message : t('configSections.googlePhotosImport.genericError'));
     }
@@ -184,6 +190,72 @@ export function GooglePhotosImportSection({ onImported }: Props) {
   // Which app signs in decides which panel this is; show neither until it's known.
   if (appsLoading) return null;
 
+  // Signing in once links come back to the hub (switch on): the Google
+  // button, then waiting for the sign-in to land, with the paste box as a
+  // fallback. Home Screens' app and the household's own app share it.
+  const signInSteps = (
+    <div>
+      {signInStep === 'waiting' ? (
+        <>
+          <p className="mt-2 mb-2.5 flex items-center gap-2 text-xs text-hs-text-muted">
+            <span
+              aria-hidden="true"
+              className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-hs-border-strong border-t-hs-accent-hover"
+            />
+            {t('configSections.googlePhotosImport.hosted.finishOnGoogle')}
+          </p>
+          <p className="text-[11px] leading-[1.45] text-hs-text-muted">
+            {t('configSections.googlePhotosImport.hosted.comesBack')}{' '}
+            <button
+              type="button"
+              onClick={() => setSignInStep('paste')}
+              className="text-hs-text-faint underline hover:text-hs-text-muted"
+            >
+              {t('configSections.googlePhotosImport.hosted.pasteInstead')}
+            </button>
+          </p>
+        </>
+      ) : signInStep === 'paste' ? (
+        <>
+          <p className="mt-0.5 text-[11px] leading-[1.45] text-hs-text-muted">
+            {t('configSections.googlePhotosImport.hosted.pasteIntro')}
+          </p>
+          <input
+            type="text"
+            value={pasted}
+            onChange={(e) => setPasted(e.target.value)}
+            placeholder={t('configSections.googlePhotosImport.pastePlaceholder')}
+            className={`${INPUT_CLASS} mt-2`}
+          />
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <Button size="sm" variant="primary" onClick={finishSignIn} disabled={busy || !pasted.trim()}>
+              {t('configSections.googlePhotosImport.finishSignIn')}
+            </Button>
+            <button
+              type="button"
+              onClick={() => { setPasted(''); setError(null); setSignInStep('start'); }}
+              className="text-[11px] text-hs-text-faint underline hover:text-hs-text-muted"
+            >
+              {t('configSections.googlePhotosImport.hosted.startOver')}
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="mt-0.5 mb-2.5 text-[11px] leading-[1.45] text-hs-text-muted">
+            {t('configSections.googlePhotosImport.hosted.intro')}
+          </p>
+          <GoogleSignInButton
+            size="sm"
+            label={t('configSections.googlePhotosImport.hosted.signIn')}
+            onClick={signIn}
+            disabled={busy}
+          />
+        </>
+      )}
+    </div>
+  );
+
   if (hosted && !connected) {
     return (
       <div className="rounded-lg border border-hs-border-strong bg-hs-card/40 p-2.5" data-testid="google-photos-hosted">
@@ -192,64 +264,7 @@ export function GooglePhotosImportSection({ onImported }: Props) {
         </p>
         {!status ? (
           <p className="mt-1 text-[11px] text-hs-text-muted">{t('configSections.googlePhotosImport.checking')}</p>
-        ) : signInStep === 'waiting' ? (
-          <>
-            <p className="mt-2 mb-2.5 flex items-center gap-2 text-xs text-hs-text-muted">
-              <span
-                aria-hidden="true"
-                className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-hs-border-strong border-t-hs-accent-hover"
-              />
-              {t('configSections.googlePhotosImport.hosted.finishOnGoogle')}
-            </p>
-            <p className="text-[11px] leading-[1.45] text-hs-text-muted">
-              {t('configSections.googlePhotosImport.hosted.comesBack')}{' '}
-              <button
-                type="button"
-                onClick={() => setSignInStep('paste')}
-                className="text-hs-text-faint underline hover:text-hs-text-muted"
-              >
-                {t('configSections.googlePhotosImport.hosted.pasteInstead')}
-              </button>
-            </p>
-          </>
-        ) : signInStep === 'paste' ? (
-          <>
-            <p className="mt-0.5 text-[11px] leading-[1.45] text-hs-text-muted">
-              {t('configSections.googlePhotosImport.hosted.pasteIntro')}
-            </p>
-            <input
-              type="text"
-              value={pasted}
-              onChange={(e) => setPasted(e.target.value)}
-              placeholder={t('configSections.googlePhotosImport.pastePlaceholder')}
-              className={`${INPUT_CLASS} mt-2`}
-            />
-            <div className="mt-2 flex items-center justify-between gap-2">
-              <Button size="sm" variant="primary" onClick={finishSignIn} disabled={busy || !pasted.trim()}>
-                {t('configSections.googlePhotosImport.finishSignIn')}
-              </Button>
-              <button
-                type="button"
-                onClick={() => { setPasted(''); setError(null); setSignInStep('start'); }}
-                className="text-[11px] text-hs-text-faint underline hover:text-hs-text-muted"
-              >
-                {t('configSections.googlePhotosImport.hosted.startOver')}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="mt-0.5 mb-2.5 text-[11px] leading-[1.45] text-hs-text-muted">
-              {t('configSections.googlePhotosImport.hosted.intro')}
-            </p>
-            <GoogleSignInButton
-              size="sm"
-              label={t('configSections.googlePhotosImport.hosted.signIn')}
-              onClick={signIn}
-              disabled={busy}
-            />
-          </>
-        )}
+        ) : signInSteps}
         {error && <p className="mt-2 text-[11px] text-hs-warning leading-relaxed">{error}</p>}
       </div>
     );
@@ -271,6 +286,8 @@ export function GooglePhotosImportSection({ onImported }: Props) {
         <p className="text-[11px] text-hs-text-muted leading-relaxed">
           {t('configSections.googlePhotosImport.credentialsNeeded')}
         </p>
+      ) : !status.connected && returnsToHub ? (
+        signInSteps
       ) : !status.connected ? (
         <>
           <p className="text-[11px] text-hs-text-muted leading-relaxed">

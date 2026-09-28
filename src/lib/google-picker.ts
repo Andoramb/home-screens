@@ -1,6 +1,7 @@
 import { fetchWithTimeout } from '@/lib/api-utils';
 import { googlePickerTokenStore } from '@/lib/google-token-stores';
 import { SignInHelperUnreachableError } from '@/lib/google-token-store';
+import { beginSignIn, takeSignIn } from '@/lib/google-picker-sign-in';
 import {
   reserveLibraryImport,
   abandonLibraryImport,
@@ -25,7 +26,10 @@ import {
  * the picker scope is rejected by the device-code flow, and Google won't
  * register plain-http LAN redirect URIs — so the redirect lands on the
  * static helper page at homescreens.dev, which shows the user a code to
- * paste back into the editor. Token persistence/refresh/revocation lives in
+ * paste back into the editor. With Home Screens' own Google app switched on
+ * (HS_GOOGLE_HOSTED), that page sends the code straight back to the hub
+ * instead, guarded by a one-time value and PKCE (google-picker-sign-in.ts),
+ * for the household's own app too. Token persistence/refresh/revocation lives in
  * the shared google-token-store (also used by the calendar integration),
  * which also decides whether the household's own app or Home Screens' app
  * signs in; with Home Screens' app, codes and refreshes go through its
@@ -48,8 +52,27 @@ export async function hasPickerCredentials(): Promise<boolean> {
   return store.hasCredentials();
 }
 
-/** The Google sign-in URL the editor opens in a new tab. */
-export async function getPickerAuthUrl(): Promise<string> {
+/** Shown when a code comes back after its sign-in was replaced, used or timed out. */
+export const SIGN_IN_EXPIRED_MESSAGE =
+  'That sign-in has expired. Each one works once, within 10 minutes. Sign in with Google again.';
+
+export interface PickerSignInLink {
+  /** The Google sign-in URL the editor opens in a new tab. */
+  url: string;
+  /**
+   * The link carries this hub's address, so homescreens.dev can send the
+   * code straight back here (when the address is on a home network).
+   */
+  returnsToHub: boolean;
+}
+
+/**
+ * The Google sign-in link. `hubAddress` is this hub's confirmed origin
+ * (`confirmHubAddress`); it and PKCE ride along only with Home Screens' own
+ * Google app switched on, so with the switch off the link is exactly what it
+ * always was.
+ */
+export async function getPickerAuthUrl(hubAddress: string | null = null): Promise<PickerSignInLink> {
   const { clientId } = await store.getClient();
   const params = new URLSearchParams({
     client_id: clientId,
@@ -61,7 +84,13 @@ export async function getPickerAuthUrl(): Promise<string> {
     // which would silently break imports an hour later.
     prompt: 'consent',
   });
-  return `${AUTH_URL}?${params}`;
+  if (!store.hostedAvailable()) return { url: `${AUTH_URL}?${params}`, returnsToHub: false };
+
+  const { state, codeChallenge } = beginSignIn(hubAddress);
+  params.set('state', state);
+  params.set('code_challenge', codeChallenge);
+  params.set('code_challenge_method', 'S256');
+  return { url: `${AUTH_URL}?${params}`, returnsToHub: hubAddress !== null };
 }
 
 /** Accepts either the bare code or the full pasted redirect URL. */
@@ -77,14 +106,35 @@ export function extractAuthCode(pasted: string): string | null {
   }
 }
 
-export async function exchangePickerCode(pasted: string): Promise<{ ok: true } | { ok: false; error: string }> {
+export type PickerExchangeResult =
+  | { ok: true }
+  /** `expired`: the sign-in this code belongs to is gone; the fix is signing in again. */
+  | { ok: false; error: string; expired?: true };
+
+/**
+ * Redeem a sign-in code. `state` is set when the code came back through the
+ * hub's return page, and never for a pasted code.
+ */
+export async function exchangePickerCode(pasted: string, state?: string): Promise<PickerExchangeResult> {
   const code = extractAuthCode(pasted);
   if (!code) return { ok: false, error: 'That code does not look right. Paste the code (or the whole link) from the sign-in page.' };
+
+  const grant: Record<string, string> = { code, grant_type: 'authorization_code', redirect_uri: REDIRECT_URI };
+  const pkce = store.hostedAvailable();
+  if (pkce) {
+    const pending = takeSignIn(state);
+    if (!pending) return { ok: false, error: SIGN_IN_EXPIRED_MESSAGE, expired: true };
+    grant.code_verifier = pending.verifier;
+  } else if (state !== undefined) {
+    // Only a link made with the switch on comes back through the return
+    // page; with it off there is nothing to check the code against.
+    return { ok: false, error: SIGN_IN_EXPIRED_MESSAGE, expired: true };
+  }
 
   let result: Awaited<ReturnType<typeof store.requestToken>>;
   try {
     result = await store.requestToken(
-      { code, grant_type: 'authorization_code', redirect_uri: REDIRECT_URI },
+      grant,
       // The authorization code is single-use: a retry after a timeout or 5xx
       // would replay a code Google may already have redeemed, turning a
       // transient blip into an invalid_grant that forces a full re-approval.
@@ -105,6 +155,9 @@ export async function exchangePickerCode(pasted: string): Promise<{ ok: true } |
     error_description?: string;
   };
   if (!ok || !data.access_token) {
+    // With PKCE, a code Google no longer accepts (used, too old, or from a
+    // sign-in this hub replaced) is an expired sign-in, not a fault.
+    if (pkce && data.error === 'invalid_grant') return { ok: false, error: SIGN_IN_EXPIRED_MESSAGE, expired: true };
     return { ok: false, error: data.error_description || data.error || 'Sign-in failed. Please try again.' };
   }
   await store.saveGrant({

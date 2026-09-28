@@ -5100,5 +5100,18 @@
   },
   "homeTime": {
     "hint": "Tid derhjemme ({city}). Derhjemme er klokken {time}."
+  },
+  "connectGoogle": {
+    "finishing": "Afslutter login…",
+    "connectedTitle": "Google Fotos er forbundet",
+    "connectedBody": "Du kan lukke denne fane. Gå tilbage til editoren, og klik på {choosePhotos} for at komme i gang.",
+    "closeTab": "Luk denne fane",
+    "closeBlocked": "Din browser lod fanen være åben. Du kan selv lukke den.",
+    "expiredTitle": "Det login er udløbet",
+    "expiredBody": "Hvert login virker én gang og kun i 10 minutter. Klik på {importButton} i editoren for at starte forfra.",
+    "cancelledTitle": "Login blev annulleret",
+    "cancelledBody": "Det gør ikke noget. Du kan starte forfra i editoren, når du har lyst.",
+    "failedTitle": "Login kunne ikke afsluttes",
+    "backToEditor": "Tilbage til editoren"
   }
 }
