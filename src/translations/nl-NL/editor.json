@@ -2385,6 +2385,7 @@
     },
     "yourPicturesHeading": "Je eigen foto's",
     "sourceKeyMissing": "Deze bron heeft een sleutel nodig die nog niet is ingesteld, dus het scherm houdt de laatste foto. Voeg de sleutel toe bij Instellingen, of kies een andere bron.",
+    "pickerHint": "Kies hieronder één vaste afbeelding, of zet Auto-rotatie hierboven aan zodat Home Screens automatisch door een bron roteert.",
     "shadeGroup": "Shade",
     "shadeEnable": "Shade background",
     "shadeStyleLabel": "Style",
