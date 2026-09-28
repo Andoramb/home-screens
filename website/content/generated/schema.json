@@ -8138,6 +8138,15 @@
           "description": "Unsplash search words; other sources ignore it"
         },
         {
+          "name": "unsplashCollections",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Unsplash collection IDs to rotate photos from (e.g. \"I6rVqHIQXO0\" from unsplash.com/collections/I6rVqHIQXO0/october). Takes priority over `query` when non-empty."
+        },
+        {
           "name": "intervalMinutes",
           "optional": false,
           "type": {
@@ -11526,6 +11535,15 @@
         },
         {
           "method": "POST",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/unsplash/collections/{id}",
+      "methods": [
+        {
+          "method": "GET",
           "access": "session"
         }
       ]

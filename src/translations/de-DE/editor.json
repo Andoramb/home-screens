@@ -2468,6 +2468,16 @@
       "albumLabel": "Album-Link",
       "albumHelp": "Öffne das Album auf deinem iPhone, aktiviere „Öffentliche Website“ und füge den Link hier ein."
     },
+    "unsplash": {
+      "modeQuery": "Suchbegriff",
+      "modeCollections": "Sammlungen",
+      "collectionPlaceholder": "Sammlungs-ID oder unsplash.com/collections/...-Link",
+      "addCollection": "Sammlung hinzufügen",
+      "removeCollection": "Sammlung entfernen",
+      "checking": "Wird geprüft...",
+      "collectionNotFound": "Sammlung nicht gefunden. ID oder Link prüfen.",
+      "collectionValid": "{title} ({count} Fotos)"
+    },
     "needsKey": "Braucht einen kostenlosen Schlüssel",
     "starterHeading": "Hintergründe, die bei Home Screens dabei sind",
     "groups": {

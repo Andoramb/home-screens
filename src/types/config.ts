@@ -347,6 +347,8 @@ export interface BackgroundRotation {
   source?: 'unsplash' | 'nasa-apod' | 'immich' | 'icloud';
   /** Unsplash search words; other sources ignore it */
   query: string;
+  /** Unsplash collection IDs to rotate photos from (e.g. "I6rVqHIQXO0" from unsplash.com/collections/I6rVqHIQXO0/october). Takes priority over `query` when non-empty. */
+  unsplashCollections?: string[];
   /** Minutes between images */
   intervalMinutes: number;
   /** Immich album to use */

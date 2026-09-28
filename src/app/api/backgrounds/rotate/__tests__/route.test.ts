@@ -43,7 +43,10 @@ vi.mock('@/lib/json-store', () => ({
 
 vi.mock('@/lib/config', () => ({ readConfig: vi.fn().mockResolvedValue({}) }));
 vi.mock('@/lib/thumbnails', () => ({ removeThumbnails: vi.fn() }));
-vi.mock('@/lib/display-filter', () => ({ findScreenById: vi.fn() }));
+vi.mock('@/lib/display-filter', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/display-filter')>();
+  return { ...actual, findScreenById: vi.fn(), findDisplayForScreen: vi.fn() };
+});
 vi.mock('@/lib/immich', () => ({ immichFetch: vi.fn() }));
 vi.mock('@/lib/icloud-album', () => ({ fetchSharedStreamsAlbum: vi.fn() }));
 vi.mock('@/lib/icloud-link', () => ({ fetchCloudKitAlbum: vi.fn() }));
@@ -61,7 +64,7 @@ vi.mock('@/lib/api-utils', async (importOriginal) => {
 });
 
 import { Writable } from 'stream';
-import { findScreenById } from '@/lib/display-filter';
+import { findScreenById, findDisplayForScreen } from '@/lib/display-filter';
 import { immichFetch } from '@/lib/immich';
 import { fetchSharedStreamsAlbum } from '@/lib/icloud-album';
 import { fetchCloudKitAlbum } from '@/lib/icloud-link';
@@ -73,6 +76,7 @@ import { readConfig } from '@/lib/config';
 import { GET } from '@/app/api/backgrounds/rotate/route';
 
 const mockFindScreen = vi.mocked(findScreenById);
+const mockFindDisplay = vi.mocked(findDisplayForScreen);
 const mockImmichFetch = vi.mocked(immichFetch);
 const mockICloudAlbum = vi.mocked(fetchSharedStreamsAlbum);
 const mockCloudKit = vi.mocked(fetchCloudKitAlbum);
@@ -281,6 +285,105 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
     // Metadata fetch + image download.
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(fsMock.writeFile).toHaveBeenCalled();
+    // No owning display resolved by default, so no orientation param.
+    expect(mockFetch.mock.calls[0][0]).not.toContain('orientation=');
+  });
+
+  it('uses the collections param instead of query when unsplashCollections is set', async () => {
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          source: 'unsplash',
+          query: 'mountains',
+          unsplashCollections: ['I6rVqHIQXO0', 'abc123'],
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    mockUnsplashKey.mockResolvedValue('unsplash-key');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'photo42', urls: { regular: 'https://images.unsplash.com/photo42' } }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([7, 7, 7]), { status: 200 }));
+
+    await GET(rotateReq());
+
+    const requestedUrl = mockFetch.mock.calls[0][0] as string;
+    expect(requestedUrl).toContain('collections=I6rVqHIQXO0,abc123');
+    expect(requestedUrl).not.toContain('query=');
+  });
+
+  it('includes the orientation param when the owning display resolves dimensions', async () => {
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: unsplashRotation }));
+    mockFindDisplay.mockReturnValue({
+      id: 'd1',
+      name: 'Kitchen',
+      screens: [],
+      displayWidth: 1024,
+      displayHeight: 600,
+    } as never);
+    mockUnsplashKey.mockResolvedValue('unsplash-key');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'photo42', urls: { regular: 'https://images.unsplash.com/photo42' } }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([7, 7, 7]), { status: 200 }));
+
+    await GET(rotateReq());
+
+    const requestedUrl = mockFetch.mock.calls[0][0] as string;
+    expect(requestedUrl).toContain('orientation=landscape');
+  });
+
+  it('invalidates the cached entry when unsplashCollections changes between requests', async () => {
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          source: 'unsplash',
+          query: 'mountains',
+          unsplashCollections: ['new-collection'],
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    seedCache({
+      s1: {
+        path: '/api/backgrounds/serve?file=rotation-unsplash-old.jpg',
+        source: 'unsplash',
+        query: 'mountains',
+        unsplashCollections: JSON.stringify(['old-collection']),
+        fetchedAt: Date.now(),
+        intervalMinutes: 60,
+      },
+    });
+    mockUnsplashKey.mockResolvedValue('unsplash-key');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'photo99', urls: { regular: 'https://images.unsplash.com/photo99' } }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([9]), { status: 200 }));
+
+    const res = await GET(rotateReq());
+    const json = await res.json();
+
+    // A fresh fetch happened (not the stale cache), because the collections
+    // key no longer matches what's stored in the cache entry.
+    expect(json).toEqual({
+      path: '/api/backgrounds/serve?file=rotation-unsplash-photo99.jpg',
+      fresh: true,
+    });
   });
 });
 
