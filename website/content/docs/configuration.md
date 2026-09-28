@@ -145,6 +145,10 @@ Account credentials (Apple ID + app-specific password) are **not** stored in the
 
 {% type-reference name="BackgroundRotation" /%}
 
+#### BackgroundShade
+
+{% type-reference name="BackgroundShade" /%}
+
 ### ModuleInstance
 
 {% type-reference name="ModuleInstance" /%}
