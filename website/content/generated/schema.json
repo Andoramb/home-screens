@@ -8184,6 +8184,55 @@
         }
       ]
     },
+    "BackgroundShade": {
+      "name": "BackgroundShade",
+      "kind": "interface",
+      "description": "Overlay dimming/vignette drawn over a screen's background, between the image and its modules",
+      "fields": [
+        {
+          "name": "enabled",
+          "optional": false,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Turn the shade on"
+        },
+        {
+          "name": "style",
+          "optional": false,
+          "type": {
+            "kind": "string",
+            "text": "\"both\" | \"even\" | \"topBottom\" | \"edges\"",
+            "values": [
+              "even",
+              "topBottom",
+              "edges",
+              "both"
+            ]
+          },
+          "description": "How the shade is shaped over the background"
+        },
+        {
+          "name": "strength",
+          "optional": false,
+          "type": {
+            "kind": "number",
+            "text": "number"
+          },
+          "description": "Overlay intensity, 0-100"
+        },
+        {
+          "name": "color",
+          "optional": false,
+          "type": {
+            "kind": "string",
+            "text": "string"
+          },
+          "description": "Shade color (hex or rgb())"
+        }
+      ]
+    },
     "ModuleInstance": {
       "name": "ModuleInstance",
       "kind": "interface",
