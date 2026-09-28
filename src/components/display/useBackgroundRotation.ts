@@ -27,6 +27,7 @@ export function buildRotationKey(screens: Screen[]): string {
           id: s.id,
           source: r.source || 'unsplash',
           query: r.query,
+          unsplashCollections: r.unsplashCollections ?? null,
           intervalMinutes: r.intervalMinutes,
           immichAlbumId: r.immichAlbumId ?? null,
           immichPersonId: r.immichPersonId ?? null,

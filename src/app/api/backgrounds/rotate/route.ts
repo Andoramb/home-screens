@@ -12,7 +12,7 @@ import { writeLibraryFile } from '@/lib/library-files';
 import { MAX_IMPORT_IMAGE_BYTES } from '@/lib/media-formats';
 import { removeThumbnails } from '@/lib/thumbnails';
 import { fetchWithTimeout, withDisplayAuth } from '@/lib/api-utils';
-import { findScreenById } from '@/lib/display-filter';
+import { findScreenById, findDisplayForScreen, orientDimensions } from '@/lib/display-filter';
 import {
   ROTATION_FILE_RE,
   referencedRotationFiles,
@@ -63,21 +63,38 @@ async function pruneRotationFiles(cache: BackgroundCache): Promise<void> {
   }
 }
 
-/** The canvas a screen is painted on: its display's own size, or the shared one. */
+/** The canvas a screen is painted on: its own display's size, oriented by
+ *  transform, falling back to the shared/global size. Mirrors
+ *  filterConfigForDisplay's shallow global-then-per-display merge order so
+ *  this can never disagree with what the display renders. */
 function canvasOf(config: ScreenConfiguration, screenId: string): { w: number; h: number } {
-  const owner = config.displays?.find((display) => display.screens.some((s) => s.id === screenId));
-  return {
-    w: owner?.displayWidth ?? config.settings?.displayWidth ?? DEFAULT_DISPLAY_WIDTH,
-    h: owner?.displayHeight ?? config.settings?.displayHeight ?? DEFAULT_DISPLAY_HEIGHT,
-  };
+  const display = findDisplayForScreen(config, screenId);
+  const width = display?.displayWidth ?? config.settings?.displayWidth ?? DEFAULT_DISPLAY_WIDTH;
+  const height = display?.displayHeight ?? config.settings?.displayHeight ?? DEFAULT_DISPLAY_HEIGHT;
+  const transform = display?.displayTransform ?? config.settings?.displayTransform;
+  const oriented = orientDimensions(width, height, transform);
+  return { w: oriented.width, h: oriented.height };
 }
 
-async function fetchAndSavePhoto(query: string, accessKey: string, canvas: { w: number; h: number }): Promise<string | null> {
+async function fetchAndSavePhoto(
+  rotation: BackgroundRotation,
+  accessKey: string,
+  canvas: { w: number; h: number },
+): Promise<string | null> {
   // A photo shaped like the wall: a portrait photo on a landscape wall was
   // blown up to fill the width and cropped to a strip.
   const orientation = canvas.w > canvas.h * 1.1 ? 'landscape' : canvas.h > canvas.w * 1.1 ? 'portrait' : 'squarish';
+  // Collections take priority over a free-text query: `/photos/random` does
+  // server-side sampling across every listed collection in one call, which
+  // is far more robust than paginating `/collections/{id}/photos` ourselves
+  // against a large or edge-case collection.
+  const base = rotation.unsplashCollections?.length
+    ? `collections=${rotation.unsplashCollections.map((id) => encodeURIComponent(id)).join(',')}`
+    : `query=${encodeURIComponent(rotation.query)}`;
+
+  // Fetch random photo metadata from Unsplash
   const res = await fetchWithTimeout(
-    `https://api.unsplash.com/photos/random?query=${encodeURIComponent(query)}&orientation=${orientation}&content_filter=high`,
+    `https://api.unsplash.com/photos/random?${base}&orientation=${orientation}&content_filter=high`,
     { headers: { Authorization: `Client-ID ${accessKey}` } },
   );
   if (!res.ok) return null;
@@ -228,7 +245,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
 
   const rotation = screen.backgroundRotation;
   const source = rotation?.source || 'unsplash';
-  if (!rotation?.enabled || (source === 'unsplash' && !rotation.query) || (source !== 'unsplash' && source !== 'nasa-apod' && source !== 'immich' && source !== 'icloud')) {
+  if (!rotation?.enabled || (source === 'unsplash' && !rotation.query && !rotation.unsplashCollections?.length) || (source !== 'unsplash' && source !== 'nasa-apod' && source !== 'immich' && source !== 'icloud')) {
     return NextResponse.json({ path: screen.backgroundImage || null });
   }
 
@@ -240,6 +257,9 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     ? JSON.stringify({ a: rotation.immichAlbumId, p: rotation.immichPersonId, f: rotation.immichFavoritesOnly })
     : undefined;
   const icloudAlbum = source === 'icloud' ? (rotation.icloudAlbumUrl || '') : undefined;
+  const unsplashCollectionsKey = source === 'unsplash' && rotation.unsplashCollections?.length
+    ? JSON.stringify(rotation.unsplashCollections)
+    : undefined;
 
   // Check if cached entry is still fresh
   if (
@@ -249,6 +269,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     entry.intervalMinutes === (rotation.intervalMinutes || 60) &&
     entry.immichFilters === immichFilters &&
     entry.icloudAlbum === icloudAlbum &&
+    entry.unsplashCollections === unsplashCollectionsKey &&
     now - entry.fetchedAt < intervalMs
   ) {
     return NextResponse.json({ path: entry.path, fresh: false });
@@ -269,7 +290,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
       if (!accessKey) {
         return NextResponse.json({ path: entry?.path || screen.backgroundImage || null });
       }
-      newPath = await fetchAndSavePhoto(rotation.query, accessKey, canvasOf(config, screenId));
+      newPath = await fetchAndSavePhoto(rotation, accessKey, canvasOf(config, screenId));
     }
 
     if (newPath) {
@@ -281,6 +302,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
         intervalMinutes: rotation.intervalMinutes || 60,
         immichFilters,
         icloudAlbum,
+        unsplashCollections: unsplashCollectionsKey,
       };
       // Merge into whatever is on disk now, not into the snapshot read before
       // the fetch above, so a rotation that finished for another screen while
