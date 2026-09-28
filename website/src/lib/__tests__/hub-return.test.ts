@@ -1,3 +1,6 @@
+// Runs under the repo root's vitest, like the Worker tests in
+// infrastructure/. The website installs no test tools, so its own
+// typecheck (website/tsconfig.json) leaves __tests__ out.
 import { describe, it, expect } from 'vitest'
 import { hubReturnOrigin } from '../hub-return'
 
