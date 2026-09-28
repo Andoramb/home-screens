@@ -231,6 +231,27 @@ export function findScreenById(
 }
 
 /**
+ * Find the display that OWNS a given screen id, mirroring `findScreenById`'s
+ * search order. Unlike `findScreenById`, there is no legacy-pool fallback to
+ * return: a screen living in `config.screens` has no owning `DisplayNode`, so
+ * this returns `null` for it just the same as for a screen that doesn't
+ * exist anywhere. Callers that need per-display canvas dimensions (e.g. the
+ * background rotation route choosing an Unsplash orientation) use this to
+ * find the override source before falling back to the global settings.
+ */
+export function findDisplayForScreen(
+  config: ScreenConfiguration,
+  screenId: string,
+): DisplayNode | null {
+  if (config.displays) {
+    for (const display of config.displays) {
+      if (display.screens.some((s) => s.id === screenId)) return display;
+    }
+  }
+  return null;
+}
+
+/**
  * Filter a config to the screens, profiles, and settings that apply to a
  * single named display. Returns `null` if the display is not registered.
  *

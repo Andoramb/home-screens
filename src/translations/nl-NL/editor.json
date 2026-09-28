@@ -2341,6 +2341,16 @@
       "albumLabel": "Albumlink",
       "albumHelp": "Open het album op je iPhone, zet 'Openbare website' aan en plak de link hier."
     },
+    "unsplash": {
+      "modeQuery": "Zoekopdracht",
+      "modeCollections": "Collecties",
+      "collectionPlaceholder": "Collectie-ID of unsplash.com/collections/...-link",
+      "addCollection": "Collectie toevoegen",
+      "removeCollection": "Collectie verwijderen",
+      "checking": "Bezig met controleren...",
+      "collectionNotFound": "Collectie niet gevonden. Controleer de ID of link.",
+      "collectionValid": "{title} ({count} foto's)"
+    },
     "needsKey": "Heeft een gratis sleutel nodig",
     "starterHeading": "Achtergronden die bij Home Screens zitten",
     "groups": {

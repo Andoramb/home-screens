@@ -2341,6 +2341,16 @@
       "albumLabel": "Lien de l'album",
       "albumHelp": "Sur votre iPhone, ouvrez l'album, activez « Site web public », puis collez le lien ici."
     },
+    "unsplash": {
+      "modeQuery": "Recherche",
+      "modeCollections": "Collections",
+      "collectionPlaceholder": "ID de collection ou lien unsplash.com/collections/...",
+      "addCollection": "Ajouter une collection",
+      "removeCollection": "Retirer la collection",
+      "checking": "Vérification...",
+      "collectionNotFound": "Collection introuvable. Vérifiez l'ID ou le lien.",
+      "collectionValid": "{title} ({count} photos)"
+    },
     "needsKey": "Nécessite une clé gratuite",
     "starterHeading": "Les arrière-plans fournis avec Home Screens",
     "groups": {

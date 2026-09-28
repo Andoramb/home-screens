@@ -2341,6 +2341,16 @@
       "albumLabel": "Albumlink",
       "albumHelp": "Åbn albummet på din iPhone, slå 'Offentligt websted' til, og indsæt linket her."
     },
+    "unsplash": {
+      "modeQuery": "Søgeord",
+      "modeCollections": "Samlinger",
+      "collectionPlaceholder": "Samlings-ID eller unsplash.com/collections/... link",
+      "addCollection": "Tilføj samling",
+      "removeCollection": "Fjern samling",
+      "checking": "Kontrollerer...",
+      "collectionNotFound": "Samling ikke fundet. Tjek ID'et eller linket.",
+      "collectionValid": "{title} ({count} billeder)"
+    },
     "needsKey": "Kræver en gratis nøgle",
     "starterHeading": "Baggrunde, der følger med Home Screens",
     "groups": {

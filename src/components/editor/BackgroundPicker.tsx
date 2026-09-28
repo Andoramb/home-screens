@@ -10,7 +10,7 @@ import LocalBackgrounds from './LocalBackgrounds';
 import UnsplashBrowser from './UnsplashBrowser';
 import NasaBrowser from './NasaBrowser';
 import ImmichBrowser from './ImmichBrowser';
-import { Lock } from 'lucide-react';
+import { Lock, Plus, X } from 'lucide-react';
 import AccordionSection from './AccordionSection';
 import PropertyGroup from './PropertyGroup';
 import Toggle from '@/components/ui/Toggle';
@@ -84,6 +84,145 @@ function ImmichRotationFields({ rotation, onChange }: {
   );
 }
 
+/** Extracts a collection ID from `.../collections/ID/anything`; a bare ID (no
+ *  URL shape) passes through unchanged. Shared by `CollectionsRotationFields`. */
+const COLLECTION_URL_RE = /\/collections\/([^/]+)/;
+function parseCollectionId(raw: string): string {
+  const trimmed = raw.trim();
+  const match = COLLECTION_URL_RE.exec(trimmed);
+  return match ? match[1] : trimmed;
+}
+
+interface CollectionValidation {
+  status: 'idle' | 'loading' | 'ok' | 'error';
+  title?: string;
+  totalPhotos?: number;
+  coverPhotoUrl?: string | null;
+  error?: string;
+}
+
+/**
+ * Collections-mode rotation fields: a repeatable list of Unsplash collection
+ * ID/URL inputs. Each row validates itself against
+ * `/api/unsplash/collections/<id>` on blur (same debounce-on-commit shape as
+ * the `missingPath` HEAD-check above) so a mistyped ID surfaces before the
+ * screen ships with it.
+ */
+function CollectionsRotationFields({ collections, onChange }: {
+  collections: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const t = useTranslate('editor');
+  const [validations, setValidations] = useState<Record<number, CollectionValidation>>({});
+  // Local, uncommitted text per row — a row is only parsed into an ID and
+  // pushed up to config on blur, so an in-progress URL paste doesn't get
+  // rewritten mid-keystroke into whatever the regex extracts from it yet.
+  // Initialized from the incoming config once; the parent remounts this
+  // component (via `key={selectedScreenId}`) on screen switch, so it never
+  // needs to resync afterward.
+  const [rows, setRows] = useState<string[]>(collections.length > 0 ? collections : ['']);
+
+  const validateRow = useCallback(async (index: number, id: string) => {
+    if (!id) {
+      setValidations((prev) => { const next = { ...prev }; delete next[index]; return next; });
+      return;
+    }
+    setValidations((prev) => ({ ...prev, [index]: { status: 'loading' } }));
+    try {
+      const res = await editorFetch(`/api/unsplash/collections/${encodeURIComponent(id)}`);
+      if (!res.ok) {
+        setValidations((prev) => ({ ...prev, [index]: { status: 'error', error: t('backgroundPicker.unsplash.collectionNotFound') } }));
+        return;
+      }
+      const data = await res.json();
+      setValidations((prev) => ({
+        ...prev,
+        [index]: { status: 'ok', title: data.title, totalPhotos: data.totalPhotos, coverPhotoUrl: data.coverPhotoUrl },
+      }));
+    } catch {
+      setValidations((prev) => ({ ...prev, [index]: { status: 'error', error: t('backgroundPicker.unsplash.collectionNotFound') } }));
+    }
+  }, [t]);
+
+  const updateRow = (index: number, value: string) => {
+    const next = [...rows];
+    next[index] = value;
+    setRows(next);
+  };
+
+  const commitRow = (index: number, value: string) => {
+    const parsed = parseCollectionId(value);
+    const next = [...rows];
+    next[index] = parsed;
+    setRows(next);
+    onChange(next.filter((id) => id.trim()));
+    validateRow(index, parsed);
+  };
+
+  const removeRow = (index: number) => {
+    const next = rows.filter((_, i) => i !== index);
+    setRows(next.length > 0 ? next : ['']);
+    onChange(next.filter((id) => id.trim()));
+    setValidations((prev) => { const next = { ...prev }; delete next[index]; return next; });
+  };
+
+  const addRow = () => setRows([...rows, '']);
+
+  return (
+    <div className="space-y-1.5">
+      {rows.map((row, index) => {
+        const validation = validations[index];
+        return (
+          <div key={index} className="space-y-1">
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={row}
+                onChange={(e) => updateRow(index, e.target.value)}
+                onBlur={(e) => commitRow(index, e.target.value)}
+                placeholder={t('backgroundPicker.unsplash.collectionPlaceholder')}
+                className={'mt-0.5 block w-full rounded bg-hs-card border border-hs-border-strong text-xs text-hs-text-body px-2 py-1 focus:outline-none focus:border-hs-accent'}
+              />
+              <button
+                type="button"
+                onClick={() => removeRow(index)}
+                aria-label={t('backgroundPicker.unsplash.removeCollection')}
+                className="mt-0.5 shrink-0 rounded p-1 text-hs-text-faint hover:text-hs-danger hover:bg-hs-hover"
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
+              </button>
+            </div>
+            {validation?.status === 'loading' && (
+              <span className="block text-[10px] text-hs-text-faint">{t('backgroundPicker.unsplash.checking')}</span>
+            )}
+            {validation?.status === 'error' && (
+              <span className="block text-[10px] text-hs-danger">{validation.error}</span>
+            )}
+            {validation?.status === 'ok' && (
+              <div className="flex items-center gap-1.5 text-[10px] text-hs-text-faint">
+                {validation.coverPhotoUrl && (
+                  <img src={validation.coverPhotoUrl} alt="" className="h-5 w-5 rounded object-cover" />
+                )}
+                <span className="truncate">
+                  {t('backgroundPicker.unsplash.collectionValid', { title: validation.title || '', count: validation.totalPhotos ?? 0 })}
+                </span>
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={addRow}
+        className="flex items-center gap-1 text-[10px] text-hs-text-muted hover:text-hs-text-secondary"
+      >
+        <Plus className="h-3 w-3" aria-hidden="true" />
+        {t('backgroundPicker.unsplash.addCollection')}
+      </button>
+    </div>
+  );
+}
+
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
   // Opens on the backgrounds that ship with Home Screens. Unsplash used to be
@@ -99,6 +238,7 @@ export default function BackgroundPicker() {
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
   const rotationSource = currentScreen?.backgroundRotation?.source || 'unsplash';
+  const unsplashCollectionsMode = (currentScreen?.backgroundRotation?.unsplashCollections?.length ?? 0) > 0;
 
   // Interval options. Re-built per locale (cheap; rebuilds only when `t`
   // identity changes). Labels run through `t()` so de-DE renders idiomatic
@@ -231,21 +371,71 @@ export default function BackgroundPicker() {
                   )}
                 </label>
                 {rotationSource === 'unsplash' && (
-                  <label className="block">
-                    <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.searchQueryLabel')}</span>
-                    <input
-                      type="text"
-                      value={currentScreen.backgroundRotation!.query}
-                      onChange={(e) => {
-                        if (!selectedScreenId) return;
-                        updateScreen(selectedScreenId, {
-                          backgroundRotation: { ...currentScreen.backgroundRotation!, query: e.target.value },
-                        });
-                      }}
-                      placeholder={t('backgroundPicker.searchQueryPlaceholder')}
-                      className={rotationFieldClass}
-                    />
-                  </label>
+                  <>
+                    {/* Mode is inferred from data, not stored separately: a
+                        non-empty `unsplashCollections` means collections mode,
+                        otherwise the free-text query. Matches this codebase's
+                        preference for deriving UI state from config rather
+                        than tracking UI-only state. */}
+                    <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
+                      {([
+                        { id: 'query' as const, label: t('backgroundPicker.unsplash.modeQuery') },
+                        { id: 'collections' as const, label: t('backgroundPicker.unsplash.modeCollections') },
+                      ]).map((entry) => {
+                        const active = entry.id === (unsplashCollectionsMode ? 'collections' : 'query');
+                        return (
+                          <button
+                            key={entry.id}
+                            type="button"
+                            onClick={() => {
+                              if (!selectedScreenId) return;
+                              updateScreen(selectedScreenId, {
+                                backgroundRotation: {
+                                  ...currentScreen.backgroundRotation!,
+                                  unsplashCollections: entry.id === 'collections'
+                                    ? (currentScreen.backgroundRotation!.unsplashCollections?.length ? currentScreen.backgroundRotation!.unsplashCollections : [''])
+                                    : undefined,
+                                },
+                              });
+                            }}
+                            className={`truncate rounded px-2 py-1 text-[11px] ${
+                              active ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'
+                            }`}
+                          >
+                            {entry.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {unsplashCollectionsMode ? (
+                      <CollectionsRotationFields
+                        key={selectedScreenId}
+                        collections={currentScreen.backgroundRotation!.unsplashCollections || []}
+                        onChange={(ids) => {
+                          if (!selectedScreenId) return;
+                          updateScreen(selectedScreenId, {
+                            backgroundRotation: { ...currentScreen.backgroundRotation!, unsplashCollections: ids },
+                          });
+                        }}
+                      />
+                    ) : (
+                      <label className="block">
+                        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.searchQueryLabel')}</span>
+                        <input
+                          type="text"
+                          value={currentScreen.backgroundRotation!.query}
+                          onChange={(e) => {
+                            if (!selectedScreenId) return;
+                            updateScreen(selectedScreenId, {
+                              backgroundRotation: { ...currentScreen.backgroundRotation!, query: e.target.value },
+                            });
+                          }}
+                          placeholder={t('backgroundPicker.searchQueryPlaceholder')}
+                          className={rotationFieldClass}
+                        />
+                      </label>
+                    )}
+                  </>
                 )}
                 {rotationSource === 'icloud' && (
                   <label className="block">

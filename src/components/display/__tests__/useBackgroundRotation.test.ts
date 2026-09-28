@@ -64,6 +64,18 @@ describe('buildRotationKey', () => {
     expect(a).not.toBe(b);
   });
 
+  it('changes when unsplashCollections changes', () => {
+    const a = buildRotationKey([screen('s1', { source: 'unsplash', unsplashCollections: ['coll-1'] })]);
+    const b = buildRotationKey([screen('s1', { source: 'unsplash', unsplashCollections: ['coll-2'] })]);
+    expect(a).not.toBe(b);
+  });
+
+  it('distinguishes an unset unsplashCollections from a set one', () => {
+    const blank = buildRotationKey([screen('s1', { source: 'unsplash', query: 'mountains' })]);
+    const withCollections = buildRotationKey([screen('s1', { source: 'unsplash', unsplashCollections: ['coll-1'] })]);
+    expect(blank).not.toBe(withCollections);
+  });
+
   it('treats undefined Immich fields consistently (does not collapse to same key as set values)', () => {
     const blank = buildRotationKey([screen('s1', { immichAlbumId: undefined })]);
     const setVal = buildRotationKey([screen('s1', { immichAlbumId: 'real' })]);
