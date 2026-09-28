@@ -17,6 +17,8 @@ beforeEach(async () => {
   // Each test's dynamic import gets a fresh module: the beacon's due time is
   // kept in memory, and one test's beacon must not hold back the next's.
   vi.resetModules();
+  // Beacons only go out from a production server.
+  vi.stubEnv('NODE_ENV', 'production');
   tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'home-screens-telemetry-test-'));
   origCwd = process.cwd;
   process.cwd = () => tmpDir;
@@ -25,6 +27,7 @@ beforeEach(async () => {
 
 afterEach(async () => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   process.cwd = origCwd;
   await fs.rm(tmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 });
 });
@@ -853,6 +856,26 @@ describe('maybeSendBeacon', () => {
 
     await maybeSendBeacon(config);
     expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('never reports from a dev server, not even an install ID', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
+    const { maybeSendBeacon } = await import('../telemetry');
+
+    await maybeSendBeacon(makeConfig());
+    expect(fetchSpy).not.toHaveBeenCalled();
+    await expect(fs.access(TELEMETRY_PATH)).rejects.toThrow();
+  });
+
+  it('never reports from a production server with the kill switch set', async () => {
+    vi.stubEnv('HS_DISABLE_TELEMETRY', '1');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(null, { status: 204 }));
+    const { maybeSendBeacon } = await import('../telemetry');
+
+    await maybeSendBeacon(makeConfig());
+    expect(fetchSpy).not.toHaveBeenCalled();
+    await expect(fs.access(TELEMETRY_PATH)).rejects.toThrow();
   });
 
   it('sends on first run when no lastBeaconAt exists', async () => {

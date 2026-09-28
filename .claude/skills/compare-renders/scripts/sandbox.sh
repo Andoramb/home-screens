@@ -34,7 +34,9 @@ case "$cmd" in
     if [ -n "$assets" ]; then cp "$assets"/* "$sb/public/backgrounds/"; fi
     # HS_DISABLE_AUTO_UPDATE: a sandbox is a production server outside git, so
     # a seeded config with automatic updates on would try to update this machine.
-    (cd "$sb" && env -u HOME_SCREENS_DIR NODE_ENV=production HS_DISABLE_AUTO_UPDATE=1 "$root/node_modules/.bin/next" start -p "$port" -H 127.0.0.1 > "$sb/server.log" 2>&1 &)
+    # HS_DISABLE_TELEMETRY: a fresh data/ has no install ID, so a seeded config
+    # with telemetry on would report every sandbox as a new install.
+    (cd "$sb" && env -u HOME_SCREENS_DIR NODE_ENV=production HS_DISABLE_AUTO_UPDATE=1 HS_DISABLE_TELEMETRY=1 "$root/node_modules/.bin/next" start -p "$port" -H 127.0.0.1 > "$sb/server.log" 2>&1 &)
     for _ in $(seq 1 60); do
       if curl -sf -o /dev/null "http://127.0.0.1:$port/login"; then echo "http://127.0.0.1:$port"; exit 0; fi
       sleep 0.5

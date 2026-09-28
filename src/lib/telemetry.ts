@@ -448,10 +448,20 @@ async function sendBeacon(payload: TelemetryBeacon): Promise<boolean> {
 }
 
 /**
+ * Only an installed production server reports. A dev server or a test sandbox
+ * starts from a fresh data/, so each one would count as a new install; test
+ * and sandbox servers also set the kill switch.
+ */
+function beaconAllowed(): boolean {
+  return process.env.NODE_ENV === 'production' && process.env.HS_DISABLE_TELEMETRY !== '1';
+}
+
+/**
  * Main entry point — called from GET /api/config (fire-and-forget).
- * Checks opt-in and 24h interval, then sends.
+ * Checks the server, the opt-out and the 24h interval, then sends.
  */
 export async function maybeSendBeacon(config: ScreenConfiguration): Promise<void> {
+  if (!beaconAllowed()) return;
   // Opt-out check: undefined means enabled (opt-out model)
   if (config.settings.telemetryEnabled === false) return;
   if (Date.now() < nextBeaconDueAt) return;

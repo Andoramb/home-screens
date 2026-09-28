@@ -37,12 +37,15 @@ export async function launchServer(
   }
   const sandboxDir = createSandbox(dataFiles);
   const port = await getFreePort();
-  // A sandbox must never install a real update on the machine running the tests.
+  // A sandbox must never install a real update on the machine running the
+  // tests, or report itself as a new install when a seeded config leaves
+  // telemetry on.
   const childEnv: NodeJS.ProcessEnv = {
     ...process.env,
     NODE_ENV: 'production',
     HS_TRUSTED_PROXIES: '127.0.0.1',
     HS_DISABLE_AUTO_UPDATE: '1',
+    HS_DISABLE_TELEMETRY: '1',
     ...env,
   };
   // The server pins its data root from HOME_SCREENS_DIR ahead of cwd, so a
