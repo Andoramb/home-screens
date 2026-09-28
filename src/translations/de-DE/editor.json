@@ -2512,6 +2512,7 @@
     },
     "yourPicturesHeading": "Deine eigenen Bilder",
     "sourceKeyMissing": "Für diese Quelle fehlt ein API-Schlüssel, deshalb behält der Bildschirm sein letztes Bild. Trage den Schlüssel in den Einstellungen ein oder wähle eine andere Quelle.",
+    "pickerHint": "Wähle unten ein einzelnes festes Bild, oder aktiviere oben die automatische Rotation, damit Home Screens automatisch durch eine Quelle rotiert.",
     "shadeGroup": "Abdunklung",
     "shadeEnable": "Hintergrund abdunkeln",
     "shadeStyleLabel": "Stil",

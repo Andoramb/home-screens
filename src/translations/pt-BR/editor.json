@@ -2512,6 +2512,7 @@
     },
     "yourPicturesHeading": "Suas próprias fotos",
     "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
+    "pickerHint": "Escolha uma única imagem fixa abaixo, ou ative a Auto-rotação acima para que o Home Screens gire automaticamente por uma fonte.",
     "shadeGroup": "Escurecimento",
     "shadeEnable": "Escurecer o plano de fundo",
     "shadeStyleLabel": "Estilo",

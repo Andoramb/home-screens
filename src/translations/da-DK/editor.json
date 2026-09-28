@@ -2512,6 +2512,7 @@
     },
     "yourPicturesHeading": "Dine egne billeder",
     "sourceKeyMissing": "Denne kilde kræver en API-nøgle, som ikke er sat op, så skærmen beholder sit sidste billede. Tilføj nøglen under Indstillinger, eller vælg en anden kilde.",
+    "pickerHint": "Vælg et enkelt fast billede nedenfor, eller slå Auto-rotation til ovenfor for at lade Home Screens rotere automatisk gennem en kilde.",
     "shadeGroup": "Dæmpning",
     "shadeEnable": "Dæmp baggrunden",
     "shadeStyleLabel": "Stil",

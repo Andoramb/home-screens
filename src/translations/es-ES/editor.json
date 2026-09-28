@@ -2512,6 +2512,7 @@
     },
     "yourPicturesHeading": "Tus propias fotos",
     "sourceKeyMissing": "Esta fuente necesita una clave de API que no está puesta, así que la pantalla se queda con la última imagen. Añade la clave en Ajustes, o elige otra fuente.",
+    "pickerHint": "Elige una sola imagen fija abajo, o activa la Auto-rotación arriba para que Home Screens rote automáticamente por una fuente.",
     "shadeGroup": "Oscurecimiento",
     "shadeEnable": "Oscurecer el fondo",
     "shadeStyleLabel": "Estilo",

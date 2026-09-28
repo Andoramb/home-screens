@@ -144,6 +144,17 @@ function CollectionsRotationFields({ collections, onChange }: {
     }
   }, [t]);
 
+  // Re-validate every already-saved row once on mount: this component
+  // remounts on screen switch (`key={selectedScreenId}` in the parent), which
+  // would otherwise wipe the title/thumb/count shown for collections that
+  // were already validated before the user navigated away.
+  useEffect(() => {
+    rows.forEach((row, index) => {
+      if (row.trim()) validateRow(index, row.trim());
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per mount only; `rows` and `validateRow` change identity on every keystroke/callback rebuild and must not re-trigger this
+  }, []);
+
   const updateRow = (index: number, value: string) => {
     const next = [...rows];
     next[index] = value;
@@ -561,6 +572,12 @@ export default function BackgroundPicker() {
           </div>
         </div>
       )}
+
+      {/* These tabs pick a single fixed image; they're independent of the
+          Auto-rotate section above, which drives a rotating background
+          instead. Both can point at Unsplash, so callers land here confused
+          about which one is "the" Unsplash setting without this line. */}
+      <p className="text-[10px] text-hs-text-faint leading-relaxed">{t('backgroundPicker.pickerHint')}</p>
 
       {/* Two rows rather than one scrolling row: four tabs do not fit across a
           288px panel, and a strip that scrolls sideways hid Immich behind an
