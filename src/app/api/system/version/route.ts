@@ -5,6 +5,7 @@ import { parseUpdateChannel } from '@/lib/semver';
 import { isUpgradeRunning } from '@/lib/upgrade';
 import { readConfig } from '@/lib/config';
 import { readFailedUpdate } from '@/lib/upgrade-failed-state';
+import { readRestartNeeded } from '@/lib/restart-needed-state';
 import { readAutoUpdateState } from '@/lib/auto-update-state';
 import { resolveAutoUpdateSettings, type AutoUpdateState } from '@/lib/auto-update-policy';
 import { describeAutoUpdateSchedule } from '@/lib/auto-update-scheduler';
@@ -27,10 +28,11 @@ export const GET = withAuth(async (request: NextRequest) => {
   // be offered (see update-policy.ts). Unreadable means unknown, never blocked.
   const config = await readConfig().catch(() => null);
   const localSchema = config?.version ?? null;
-  const [info, tags, lastFailedUpdate, autoUpdateState] = await Promise.all([
+  const [info, tags, lastFailedUpdate, restartNeeded, autoUpdateState] = await Promise.all([
     getVersionInfo({ force: forceCheck, channel, localSchema }),
     getVersionTags({ force: forceCheck, channel }),
     readFailedUpdate(),
+    readRestartNeeded(),
     readAutoUpdateState(),
   ]);
 
@@ -40,6 +42,7 @@ export const GET = withAuth(async (request: NextRequest) => {
     tags: tags.slice(0, 20), // Last 20 versions
     upgradeRunning: isUpgradeRunning(),
     lastFailedUpdate,
+    restartNeeded,
     localSchema,
     autoUpdate: {
       enabled: autoSettings.enabled,

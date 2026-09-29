@@ -490,7 +490,11 @@ export function useSleepManager(
         if (sleepMs > 0 && idle >= dimMs + sleepMs) {
           applyBrightnessOverride(null);
           applyDisplayState('asleep', 'idle');
-        } else if (idle >= dimMs) {
+        } else if (idle >= dimMs && displayStateRef.current !== 'asleep') {
+          // Idle only ever darkens. An explicit sleep (the remote's Sleep, a
+          // rule, brightness 0) zeroes the idle clock, so with idle sleep off
+          // this branch used to lift it straight back to dimmed on the next
+          // tick, and a display cutting its screen's power lit it again.
           applyBrightnessOverride(null);
           applyDisplayState('dimmed', 'idle');
         }

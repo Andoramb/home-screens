@@ -39,6 +39,7 @@ PACKAGES_DISPLAY="
     wtype
     wlr-randr
     wlopm
+    kanshi
 "
 
 # Fonts

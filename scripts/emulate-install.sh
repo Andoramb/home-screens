@@ -200,6 +200,21 @@ cleanup() {
     info "Stopping sandboxed hub (PID ${HUB_PID})..."
     kill "${HUB_PID}" 2>/dev/null || true
   fi
+  # Killing the subshell leaves `next start`'s next-server child holding the
+  # port, and the next run's health check then passes against this stale hub
+  # (its data dir deleted below), failing every spoke check with a 403. Stop
+  # whatever is listening on the port from inside our sandbox.
+  # Matched on the sandbox's unique name: lsof reports the resolved path
+  # (/private/var/..., single slashes) while HUB_SANDBOX keeps TMPDIR's form.
+  if [ -n "${HUB_SANDBOX}" ]; then
+    local listener sandbox_name
+    sandbox_name="$(basename "${HUB_SANDBOX}")"
+    for listener in $(lsof -ti tcp:"${HUB_PORT}" -sTCP:LISTEN 2>/dev/null); do
+      case "$(lsof -a -p "${listener}" -d cwd -Fn 2>/dev/null | sed -n 's/^n//p')" in
+        */"${sandbox_name}") kill "${listener}" 2>/dev/null || true ;;
+      esac
+    done
+  fi
   # The sandbox is symlinks plus its own data/ dir, so removing it can never
   # reach the real repo — but only ever rm a path we created ourselves.
   if [ -n "${HUB_SANDBOX}" ]; then
@@ -689,6 +704,14 @@ start_sandbox_hub() {
     exit 1
   fi
 
+  # The health check below only asks whether something answers on the port,
+  # so a hub left over from an earlier run would pass it and every spoke
+  # check would then run against that stranger.
+  if lsof -i :"${HUB_PORT}" -sTCP:LISTEN &>/dev/null; then
+    err "Hub port ${HUB_PORT} is already in use (a hub left from an earlier run?). Stop it: kill \$(lsof -ti tcp:${HUB_PORT} -sTCP:LISTEN)"
+    exit 1
+  fi
+
   HUB_SANDBOX="$(mktemp -d "${TMPDIR:-/tmp}/hs-emulate-hub.XXXXXX")"
 
   # ls -A, not a glob: .next is a dotfile and is the one directory we can't
@@ -769,7 +792,7 @@ stub_gui_packages() {
   #
   # Said out loud rather than quietly narrowing what the run covers: this rig
   # does NOT verify that the kiosk packages install on Raspberry Pi OS.
-  warn "chromium/labwc/wtype/wlr-randr/wlopm are stubbed — package install is NOT covered here."
+  warn "chromium/labwc/wtype/wlr-randr/wlopm/kanshi are stubbed; package install is NOT covered here."
   # dpkg-deb, not equivs: equivs shells out to dpkg-buildpackage once per
   # package, which took longer inside the emulated VM than the entire rest of
   # the run. A hand-built control file is the same result in a second.
@@ -777,7 +800,7 @@ stub_gui_packages() {
   if ! out=$(ssh_script <<'GUIPKGS'
 set -e
 rm -rf ~/stubpkgs && mkdir -p ~/stubpkgs && cd ~/stubpkgs
-for pkg in chromium labwc wtype wlr-randr wlopm fonts-noto-color-emoji; do
+for pkg in chromium labwc wtype wlr-randr wlopm kanshi fonts-noto-color-emoji; do
   mkdir -p "${pkg}/DEBIAN"
   cat > "${pkg}/DEBIAN/control" <<EOF
 Package: ${pkg}
@@ -811,7 +834,7 @@ install_kiosk_stubs() {
   local out
   if ! out=$(ssh_script <<'STUBS'
 set -e
-for b in chromium wlr-randr wtype labwc wlopm; do
+for b in chromium wlr-randr wtype labwc wlopm kanshi; do
   printf '#!/bin/sh\necho "$(basename $0) $*" >> /tmp/kiosk-argv.log\nexit 0\n' > "/tmp/stub-${b}"
   sudo install -m 0755 "/tmp/stub-${b}" "/usr/local/bin/${b}"
 done

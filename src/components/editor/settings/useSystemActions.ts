@@ -17,11 +17,22 @@ import {
 
 const log = logger('system-settings');
 
+export type PowerAction = 'reboot' | 'restart-service';
+
+/**
+ * Which control asked, so the outcome shows beside it: the "If something
+ * seems stuck" buttons, or the restart-to-finish-updating notice at the top
+ * of the page.
+ */
+export type PowerSource = 'actions' | 'restart-notice';
+
 export type PowerState =
   | { status: 'idle' }
-  | { status: 'pending'; action: string }
-  | { status: 'ok'; action: string }
-  | { status: 'error'; message: string };
+  | { status: 'pending'; action: PowerAction; source: PowerSource }
+  | { status: 'ok'; action: PowerAction; source: PowerSource }
+  /** The device answered that it needs its password first; the page shows the prompt, then asks again. */
+  | { status: 'needs-password'; action: PowerAction; source: PowerSource }
+  | { status: 'error'; message: string; source: PowerSource };
 
 interface Options {
   onUpgrade: (tag: string, currentVersion: string | null) => void;
@@ -57,7 +68,10 @@ export interface SystemActions {
   handleRollback: (tag: string) => Promise<void>;
   /** Clears the "an update was undone" line. Optimistic; the marker is removed in the background. */
   handleDismissFailedUpdate: () => void;
-  handlePowerAction: (action: 'reboot' | 'restart-service') => Promise<void>;
+  handlePowerAction: (action: PowerAction, source?: PowerSource) => Promise<void>;
+  /** The device password was accepted: send the restart that asked for it again, without a second confirm. */
+  handlePowerPasswordGranted: () => void;
+  handlePowerPasswordCancel: () => void;
   handleCancelUpgrade: () => Promise<void>;
 }
 
@@ -256,7 +270,38 @@ export function useSystemActions({ onUpgrade, onRollback }: Options): SystemActi
     );
   }
 
-  async function handlePowerAction(action: 'reboot' | 'restart-service') {
+  async function sendPowerAction(action: PowerAction, source: PowerSource) {
+    setPowerState({ status: 'pending', action, source });
+    try {
+      const res = await editorFetch('/api/system/power', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      if (res.ok) {
+        setPowerState({ status: 'ok', action, source });
+        return;
+      }
+      const data = await res.json().catch(() => ({}));
+      if (data.needsSudoPassword) {
+        setPowerState({ status: 'needs-password', action, source });
+        return;
+      }
+      setPowerState({
+        status: 'error',
+        message: data.error || t('settings.systemPage.powerStatus.unknownError'),
+        source,
+      });
+    } catch {
+      setPowerState({
+        status: 'error',
+        message: t('common.serverUnreachable'),
+        source,
+      });
+    }
+  }
+
+  async function handlePowerAction(action: PowerAction, source: PowerSource = 'actions') {
     await confirmAndRun(
       {
         title: action === 'reboot'
@@ -269,31 +314,17 @@ export function useSystemActions({ onUpgrade, onRollback }: Options): SystemActi
           ? t('settings.systemPage.powerDialog.rebootConfirm')
           : t('settings.systemPage.powerDialog.restartConfirm'),
       },
-      async () => {
-        setPowerState({ status: 'pending', action });
-        try {
-          const res = await editorFetch('/api/system/power', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action }),
-          });
-          if (res.ok) {
-            setPowerState({ status: 'ok', action });
-          } else {
-            const data = await res.json();
-            setPowerState({
-              status: 'error',
-              message: data.error || t('settings.systemPage.powerStatus.unknownError'),
-            });
-          }
-        } catch {
-          setPowerState({
-            status: 'error',
-            message: t('common.serverUnreachable'),
-          });
-        }
-      },
+      () => sendPowerAction(action, source),
     );
+  }
+
+  function handlePowerPasswordGranted() {
+    if (powerState.status !== 'needs-password') return;
+    void sendPowerAction(powerState.action, powerState.source);
+  }
+
+  function handlePowerPasswordCancel() {
+    setPowerState({ status: 'idle' });
   }
 
   async function handleCancelUpgrade() {
@@ -342,6 +373,8 @@ export function useSystemActions({ onUpgrade, onRollback }: Options): SystemActi
     handleRollback,
     handleDismissFailedUpdate,
     handlePowerAction,
+    handlePowerPasswordGranted,
+    handlePowerPasswordCancel,
     handleCancelUpgrade,
   };
 }

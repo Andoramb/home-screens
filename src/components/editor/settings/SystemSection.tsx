@@ -11,7 +11,8 @@ import { formatDateInTZ } from '@/lib/timezone';
 import { useEditorHouseholdTimezone } from '@/components/editor/useEditorHouseholdClock';
 import { UPDATE_CHANNELS, classifyVersion, compareSemver, type UpdateChannel } from '@/lib/semver';
 import { isDowngradeBlocked, lowestUnmetFloor } from '@/lib/update-policy';
-import { useSystemActions } from './useSystemActions';
+import SudoPasswordPrompt from '@/components/editor/SudoPasswordPrompt';
+import { useSystemActions, type PowerSource, type PowerState } from './useSystemActions';
 
 interface Props {
   onUpgrade: (tag: string, currentVersion: string | null) => void;
@@ -52,8 +53,24 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
     handleRollback,
     handleDismissFailedUpdate,
     handlePowerAction,
+    handlePowerPasswordGranted,
+    handlePowerPasswordCancel,
     handleCancelUpgrade,
   } = useSystemActions({ onUpgrade, onRollback });
+
+  // A failed request can be tried again; one in flight, sent, or waiting on
+  // the device password cannot be sent twice.
+  const powerBusy = powerState.status === 'pending'
+    || powerState.status === 'ok'
+    || powerState.status === 'needs-password';
+  const powerStatusFor = (source: PowerSource) => (
+    <PowerStatusLine
+      state={powerState}
+      source={source}
+      onPasswordGranted={handlePowerPasswordGranted}
+      onPasswordCancel={handlePowerPasswordCancel}
+    />
+  );
 
   const allTags = versionInfo?.tags ?? [];
   const visibleTags = showAllTags ? allTags : allTags.slice(0, VISIBLE_ROLLBACK_TAGS);
@@ -265,6 +282,36 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
             >
               {t('settings.systemPage.failedUpdate.dismiss')}
             </button>
+          </div>
+        )}
+
+        {/* The update is installed but the wall runs the old launcher until
+            the device restarts. No dismiss: it stays true until then, and a
+            restart clears it by itself. */}
+        {versionInfo.restartNeeded && (
+          <div
+            data-testid="system-restart-needed"
+            className="mt-3 rounded-lg border p-3 bg-hs-accent-soft border-hs-accent/30"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-hs-accent-hover">
+                  {t('settings.systemPage.restartNeeded.title')}
+                </p>
+                <p className="text-xs mt-0.5 text-hs-accent-hover/70">
+                  {t('settings.systemPage.restartNeeded.line')}
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handlePowerAction('reboot', 'restart-notice')}
+                disabled={powerBusy}
+              >
+                {t('settings.systemPage.restartNeeded.button')}
+              </Button>
+            </div>
+            {powerStatusFor('restart-notice')}
           </div>
         )}
       </section>
@@ -480,7 +527,7 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
             variant="secondary"
             size="sm"
             onClick={() => handlePowerAction('restart-service')}
-            disabled={powerState.status !== 'idle'}
+            disabled={powerBusy}
             data-field-id="system.restartService"
           >
             {t('settings.systemPage.actions.restartService')}
@@ -489,32 +536,13 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
             variant="danger"
             size="sm"
             onClick={() => handlePowerAction('reboot')}
-            disabled={powerState.status !== 'idle'}
+            disabled={powerBusy}
             data-field-id="system.rebootSystem"
           >
             {t('settings.systemPage.actions.rebootSystem')}
           </Button>
         </div>
-        {powerState.status === 'ok' && powerState.action === 'restart-service' && (
-          <p className="text-xs text-hs-success mt-2">
-            {t('settings.systemPage.powerStatus.restartScheduled')}
-          </p>
-        )}
-        {powerState.status === 'ok' && powerState.action === 'reboot' && (
-          <p className="text-xs text-hs-success mt-2">
-            {t('settings.systemPage.powerStatus.rebootScheduled')}
-          </p>
-        )}
-        {powerState.status === 'error' && (
-          <p className="text-xs text-hs-danger mt-2">
-            {powerState.message}
-          </p>
-        )}
-        {powerState.status === 'pending' && (
-          <p className="text-xs text-hs-text-faint mt-2">
-            {t('settings.systemPage.powerStatus.processing')}
-          </p>
-        )}
+        {powerStatusFor('actions')}
         <p className="text-xs text-hs-text-faint mt-2">
           {t('settings.systemPage.actions.help')}
         </p>
@@ -559,4 +587,47 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
       )}
     </div>
   );
+}
+
+/**
+ * How a restart request went, shown under the control that asked for it: the
+ * "If something seems stuck" buttons or the restart-to-finish notice.
+ */
+function PowerStatusLine({
+  state,
+  source,
+  onPasswordGranted,
+  onPasswordCancel,
+}: {
+  state: PowerState;
+  source: PowerSource;
+  onPasswordGranted: () => void;
+  onPasswordCancel: () => void;
+}) {
+  const t = useTranslate('editor');
+  if (state.status === 'idle' || state.source !== source) return null;
+  switch (state.status) {
+    case 'pending':
+      return (
+        <p className="text-xs text-hs-text-faint mt-2">
+          {t('settings.systemPage.powerStatus.processing')}
+        </p>
+      );
+    case 'ok':
+      return (
+        <p className="text-xs text-hs-success mt-2" role="status">
+          {state.action === 'reboot'
+            ? t('settings.systemPage.powerStatus.rebootScheduled')
+            : t('settings.systemPage.powerStatus.restartScheduled')}
+        </p>
+      );
+    case 'needs-password':
+      return <SudoPasswordPrompt compact onGranted={onPasswordGranted} onCancel={onPasswordCancel} />;
+    case 'error':
+      return (
+        <p className="text-xs text-hs-danger mt-2" role="alert">
+          {state.message}
+        </p>
+      );
+  }
 }

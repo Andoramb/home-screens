@@ -1,17 +1,24 @@
 /**
  * Kiosk display management — syncs display settings to kiosk.conf
- * (read by kiosk-launcher.sh on boot) and applies wlr-randr live.
+ * (read by kiosk-launcher.sh on boot) and puts them on the screen live
+ * through scripts/kiosk-outputs.sh.
  */
 import { promises as fs } from 'fs';
 import { execFile } from 'child_process';
 import path from 'path';
+import { appScriptPath } from '@/lib/app-dir';
+import { getDataRoot } from '@/lib/data-root';
 import { DISPLAY_TRANSFORMS, findMainDisplay, isValidTouchMatrix } from '@/lib/display-filter';
 import type { ScreenConfiguration } from '@/types/config';
 
 const KIOSK_CONF = 'data/kiosk.conf';
 
+// The file and the scripts that read it are found by the install's pinned
+// path, never process.cwd(): after an update swaps the release trees the
+// working directory is the old tree, and a save landing before the service
+// restarts would write the old tree's file and run the old tree's scripts.
 function getKioskConfPath(): string {
-  return path.join(process.cwd(), KIOSK_CONF);
+  return path.join(getDataRoot(), KIOSK_CONF);
 }
 
 export interface HubPanel {
@@ -118,107 +125,47 @@ export async function syncKioskConf(config: ScreenConfiguration): Promise<boolea
  */
 export function applyLabwcRc(): Promise<void> {
   return new Promise((resolve) => {
-    execFile('bash', [path.join(process.cwd(), 'scripts', 'labwc-rc.sh')], { timeout: 5000 }, () => resolve());
+    execFile('bash', [appScriptPath('labwc-rc.sh')], { timeout: 5000 }, () => resolve());
   });
 }
 
-/** Fallback when nothing can be detected: the port a Pi almost always uses. */
-const FALLBACK_OUTPUT = 'HDMI-A-1';
-
-/**
- * The output name to drive, read out of `wlr-randr`'s report.
- *
- * Each output is a block: an unindented name line, then indented properties,
- * one of which is `Enabled: yes` or `Enabled: no`. Disabled connectors are
- * listed too, so taking the first line put the rotation on a dark screen
- * whenever a second port was connected but switched off. The same parse lives
- * in both kiosk launchers as literal copies (they ship with no lib beside
- * them); scripts/__tests__/output-detection.test.ts keeps the three in step.
- *
- * Still first-past-the-post when several outputs are live: choosing between
- * two working screens is a setting we do not have yet, not a guess to make
- * here.
- */
-export function parseWlrRandrOutput(stdout: string): string {
-  let first = '';
-  let current = '';
-  for (const line of stdout.split('\n')) {
-    if (line.trim() === '') continue;
-    if (!/^\s/.test(line)) {
-      current = line.trim().split(/\s+/)[0] ?? '';
-      if (!first) first = current;
-    } else if (/^\s+Enabled:\s*yes\b/.test(line) && current) {
-      return current;
-    }
-  }
-  return first || FALLBACK_OUTPUT;
-}
-
-/**
- * Detect the Wayland output name via wlr-randr.
- */
-function detectOutput(): Promise<string> {
-  return new Promise((resolve) => {
-    execFile('wlr-randr', [], {
-      env: { ...process.env, XDG_RUNTIME_DIR: `/run/user/${process.getuid?.() ?? 1000}`, WAYLAND_DISPLAY: 'wayland-0' },
-      timeout: 5000,
-    }, (err, stdout) => {
-      if (err || !stdout) return resolve(FALLBACK_OUTPUT);
-      resolve(parseWlrRandrOutput(stdout));
-    });
-  });
-}
-
-/**
- * Run a single wlr-randr command with Wayland env vars.
- * Resolves true on success, false on failure.
- */
-function wlrRandr(...args: string[]): Promise<boolean> {
-  return new Promise((resolve) => {
-    execFile('wlr-randr', args, {
-      env: { ...process.env, XDG_RUNTIME_DIR: `/run/user/${process.getuid?.() ?? 1000}`, WAYLAND_DISPLAY: 'wayland-0' },
-      timeout: 5000,
-    }, (err) => resolve(!err));
-  });
-}
-
-// Serialize concurrent apply calls so interleaved wlr-randr commands
-// don't leave the display in an inconsistent state.
+// Serialize applies so a quick second save cannot interleave its reload with
+// the first one's.
 let applyQueue: Promise<boolean> = Promise.resolve(false);
 
 /**
- * Apply display transform and mode via wlr-randr immediately (no reboot).
- * Transform and mode are applied as separate calls so a mode failure
- * (e.g. resolution not in EDID) doesn't prevent the transform from applying.
+ * Put kiosk.conf's rotation and resolution on the screen now, without a
+ * reboot. Call it after `syncKioskConf` has written the file: the script reads
+ * kiosk.conf, not the config passed around here.
  *
- * Returns true if the transform was applied successfully.
+ * scripts/kiosk-outputs.sh is the only writer of the screen's settings. It
+ * hands them to the kiosk session's kanshi, which also puts them back when
+ * the monitor reconnects, and sets them once with wlr-randr where kanshi
+ * cannot (not installed yet, not running until the next restart). It never
+ * starts kanshi from here: this process is the home-screens service, and
+ * anything it starts is killed on the service's next restart. On a machine
+ * with no compositor (a laptop, Docker) it does nothing, and says so with
+ * its own exit status.
+ *
+ * Resolves true when the script ran to completion, which includes finding no
+ * kiosk session to set.
  */
-export function applyDisplaySettings(config: ScreenConfiguration): Promise<boolean> {
-  const next = applyQueue.catch(() => false).then(() => doApplyDisplaySettings(config));
+export function applyDisplaySettings(): Promise<boolean> {
+  const next = applyQueue.catch(() => false).then(runKioskOutputs);
   applyQueue = next;
   return next;
 }
 
-async function doApplyDisplaySettings(config: ScreenConfiguration): Promise<boolean> {
-  const { width: w, height: h, transform } = resolveHubPanel(config);
+/** kiosk-outputs.sh's exit status for "no kiosk session here": nothing to set, nothing wrong. */
+const NO_KIOSK_SESSION = 3;
 
-  // Detect the connected output name
-  const output = await detectOutput();
-  let applied = false;
-
-  // Apply transform (rotation) — independent of mode
-  applied = await wlrRandr('--output', output, '--transform', transform);
-
-  // Apply mode (best-effort: try EDID mode, then custom-mode, then skip)
-  if (w && h) {
-    const mw = Math.max(w, h);
-    const mh = Math.min(w, h);
-    const mode = `${mw}x${mh}`;
-    const modeOk = await wlrRandr('--output', output, '--mode', mode);
-    if (!modeOk) {
-      await wlrRandr('--output', output, '--custom-mode', mode);
-    }
-  }
-
-  return applied;
+function runKioskOutputs(): Promise<boolean> {
+  return new Promise((resolve) => {
+    execFile(
+      'bash',
+      [appScriptPath('kiosk-outputs.sh'), 'apply'],
+      { timeout: 10000 },
+      (err) => resolve(!err || err.code === NO_KIOSK_SESSION),
+    );
+  });
 }

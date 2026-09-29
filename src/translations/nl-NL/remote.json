@@ -559,7 +559,7 @@
       }
     },
     "power": {
-      "heading": "Stroom",
+      "heading": "Aan/uit",
       "restartService": {
         "label": "Home Screens opnieuw starten",
         "description": "Lost de meeste haperingen op. Je instellingen blijven bewaard.",
@@ -573,6 +573,11 @@
         "confirmTitle": "Apparaat opnieuw opstarten?",
         "confirmBody": "Alles stopt tijdens het opstarten. Deze afstandsbediening verbindt over ongeveer een minuut opnieuw.",
         "confirmButton": "Opnieuw opstarten"
+      },
+      "restartNeeded": {
+        "title": "Opnieuw opstarten om de update af te ronden",
+        "description": "Een deel van de laatste update werkt pas nadat het apparaat opnieuw is opgestart.",
+        "button": "Nu opnieuw opstarten"
       }
     },
     "family": {

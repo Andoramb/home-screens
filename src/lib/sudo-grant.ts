@@ -15,6 +15,7 @@
 import { spawn } from 'child_process';
 import { NextResponse } from 'next/server';
 import { getAppDir, appScriptPath } from './app-dir';
+import { parseLastLineObject } from './script-output';
 
 const SCRIPT_TIMEOUT_MS = 30_000;
 
@@ -49,12 +50,7 @@ function scriptPath(): { cwd: string; script: string } {
 }
 
 function parseLastLine(output: string): Record<string, unknown> {
-  const lines = output.trim().split('\n');
-  try {
-    return JSON.parse(lines[lines.length - 1]);
-  } catch {
-    return { ok: false, error: 'The device gave an unexpected answer.' };
-  }
+  return parseLastLineObject(output, { ok: false, error: 'The device gave an unexpected answer.' });
 }
 
 function runAction(action: string, stdinText?: string): Promise<Record<string, unknown>> {

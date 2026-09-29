@@ -38,6 +38,7 @@ describe('buildKioskBundle', () => {
     expect(paths).toContain('kiosk-update.sh');
     expect(paths).toContain('kiosk-update-install.sh');
     expect(paths).toContain('kiosk-power-agent.sh');
+    expect(paths).toContain('kiosk-outputs.sh');
     expect(paths).toContain('system/kiosk-update-privileged.sh');
     expect(paths).toContain('system/home-screens-kiosk-update.timer');
   });

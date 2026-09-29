@@ -754,6 +754,94 @@ describe('runUpgrade — tarball path', () => {
 
 // ── runRollback ────────────────────────────────────────────────────────────
 
+describe('setup-system step: restart to finish updating', () => {
+  // setup-system writes the marker the System page reads itself (it comes from
+  // the release being installed; see restart-marker.test.ts). The pipeline
+  // only tells the update window, on the finished event.
+  beforeEach(() => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+  });
+
+  type Progress = { type: string; step?: string; restartNeeded?: boolean; line?: string };
+  function capture() {
+    const events: Progress[] = [];
+    upgradeModule.subscribeToEvents((e) => events.push(e as Progress));
+    return {
+      events,
+      complete: () => events.findLast((e) => e.type === 'progress' && e.step === 'complete'),
+    };
+  }
+
+  it('says so on the finished event when the kiosk session changed', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"packages,session-packages,labwc-rc,launcher"}' });
+    const { events, complete } = capture();
+
+    await upgradeModule.runUpgrade('v1.2.0');
+
+    expect(complete()?.restartNeeded).toBe(true);
+    expect(events.some((e) => e.type === 'output' && e.step === 'setup-system' && e.line === 'A restart is needed to finish (session-packages, launcher)')).toBe(true);
+  });
+
+  it('says so from the restart step on, for a window whose connection drops before the finished event', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"launcher"}' });
+    const { events } = capture();
+
+    await upgradeModule.runUpgrade('v1.2.0');
+
+    const progress = events.filter((e) => e.type === 'progress');
+    const restart = progress.filter((e) => e.step === 'restart');
+    expect(restart.length).toBeGreaterThan(0);
+    expect(restart.every((e) => e.restartNeeded === true)).toBe(true);
+    // Nothing before setup-system has run can know yet.
+    const before = progress.slice(0, progress.findIndex((e) => e.step === 'setup-system') + 1);
+    expect(before.some((e) => e.restartNeeded)).toBe(false);
+  });
+
+  it('says nothing when setup-system changed nothing the wall needs a restart for', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"labwc-rc,cmdline"}' });
+    const { complete } = capture();
+
+    await upgradeModule.runUpgrade('v1.2.0');
+
+    expect(complete()?.restartNeeded).toBeUndefined();
+  });
+
+  it('says nothing when setup-system changed nothing at all, or printed something unreadable', async () => {
+    for (const output of ['{"ok":true,"changed":null}', 'no json here']) {
+      setupSpawnForSuccess({ 'setup-system': output });
+      const { complete } = capture();
+      await upgradeModule.runUpgrade('v1.2.0');
+      expect(complete()?.restartNeeded).toBeUndefined();
+    }
+  });
+
+  it('starts each install without the previous one\'s restart', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"launcher"}' });
+    await upgradeModule.runUpgrade('v1.2.0');
+
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":null}' });
+    const { complete } = capture();
+    await upgradeModule.runUpgrade('v1.2.1');
+
+    expect(complete()?.restartNeeded).toBeUndefined();
+  });
+
+  it('says so for a step back too', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"launcher"}' });
+    const { complete } = capture();
+    await upgradeModule.runRollback('v1.1.0');
+    expect(complete()?.restartNeeded).toBe(true);
+  });
+
+  it('says so on the git path', async () => {
+    mockHasReleaseTarball.mockResolvedValue(false);
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"bash-profile"}' });
+    const { complete } = capture();
+    await upgradeModule.runUpgrade('v1.2.0');
+    expect(complete()?.restartNeeded).toBe(true);
+  });
+});
+
 describe('runUpgrade — install path guard', () => {
   function release(tag: string, body: string) {
     return { tag_name: tag, name: tag, body, draft: false, prerelease: false, published_at: '', assets: [] };

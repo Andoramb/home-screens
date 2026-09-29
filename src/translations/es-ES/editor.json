@@ -1609,6 +1609,11 @@
         "line": "La actualización a {tag} no arrancó, así que esta pantalla volvió a v{version}.",
         "dismiss": "Entendido"
       },
+      "restartNeeded": {
+        "title": "Reinicia para terminar la actualización",
+        "line": "Parte de la última actualización no empezará a funcionar hasta que se reinicie el dispositivo. La pantalla se quedará en negro uno o dos minutos.",
+        "button": "Reiniciar ahora"
+      },
       "channel": {
         "heading": "Qué actualizaciones recibir",
         "stable": {
@@ -3177,6 +3182,15 @@
       "inProgress": "No cierres esta página ni apagues el dispositivo"
     },
     "successDefault": "¡Actualización completada!",
+    "successRollback": "¡Has vuelto a {tag}!",
+    "restartNeeded": "Falta un paso para terminar: reiniciar el dispositivo. Podrás hacerlo desde esta página en cuanto se recargue.",
+    "reload": {
+      "shuttingDown": "Home Screens se está reiniciando…",
+      "waitingNew": "Esperando a que Home Screens vuelva… ({seconds} s)",
+      "waitingOld": "Terminando la actualización… ({seconds} s)",
+      "ready": "Listo. Recargando la página…",
+      "reloading": "Recargando la página…"
+    },
     "doneButton": "Hecho",
     "status": {
       "inProgress": "En curso",

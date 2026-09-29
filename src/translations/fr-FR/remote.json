@@ -573,6 +573,11 @@
         "confirmTitle": "Redémarrer l'appareil ?",
         "confirmBody": "Tout s'arrête pendant le redémarrage. Cette télécommande se reconnecte dans environ une minute.",
         "confirmButton": "Redémarrer l'appareil"
+      },
+      "restartNeeded": {
+        "title": "Redémarrer pour terminer la mise à jour",
+        "description": "Une partie de la dernière mise à jour ne prend effet qu'après le redémarrage de l'appareil.",
+        "button": "Redémarrer maintenant"
       }
     },
     "family": {

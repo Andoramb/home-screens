@@ -452,6 +452,26 @@ export default function SettingsSheet({ open, onClose, onBackup, backupBusy, bac
         <div className="px-5 pb-6">
           <h3 className="text-xs font-semibold text-hs-text-faint uppercase tracking-wider mb-1">{t('settingsSheet.power.heading')}</h3>
 
+          {/* An update finished that the wall only picks up after a restart.
+              Parents may never open the editor, so the phone says it too; the
+              button asks through the same confirm as Reboot Device below. */}
+          {stats?.restartNeeded && (
+            <div
+              data-testid="remote-restart-needed"
+              className="rounded-2xl border border-hs-accent/40 bg-hs-accent-soft p-4 mt-2 mb-2"
+            >
+              <div className="text-[15px] font-semibold text-hs-text-primary">{t('settingsSheet.power.restartNeeded.title')}</div>
+              <div className="text-[13px] text-hs-text-muted mt-1">{t('settingsSheet.power.restartNeeded.description')}</div>
+              <button
+                type="button"
+                onClick={() => setConfirmPower('reboot')}
+                className="mt-3 w-full min-h-[48px] rounded-xl bg-hs-accent text-white text-[15px] font-bold active:scale-[0.97]"
+              >
+                {t('settingsSheet.power.restartNeeded.button')}
+              </button>
+            </div>
+          )}
+
           <div className="divide-y divide-hs-border">
             <PowerRow
               label={t('settingsSheet.power.restartService.label')}

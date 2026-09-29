@@ -50,6 +50,41 @@ test('system stats render from GET /api/system/stats', async ({ page }) => {
   // Memory (50%) and Disk (25%) usage bars render their computed percentages.
   await expect(page.getByText('50%')).toBeVisible();
   await expect(page.getByText('25%')).toBeVisible();
+
+  // No update is waiting on a restart, so the Power section does not ask.
+  await expect(page.getByTestId('remote-restart-needed')).toHaveCount(0);
+});
+
+test('a restart an update still needs is offered above Power and asks like Reboot Device', async ({ page }) => {
+  await stubStats(page, {
+    ...STATS,
+    restartNeeded: { reasons: ['launcher'], tag: 'v1.14.0', at: '2026-09-27T12:00:00Z' },
+  });
+  const powerPosts: Array<{ action?: string }> = [];
+  await page.route('**/api/system/power', (route: Route) => {
+    powerPosts.push(route.request().postDataJSON());
+    return route.fulfill({ json: { ok: true } });
+  });
+
+  await page.goto('/remote');
+  await openSheet(page);
+  const notice = page.getByTestId('remote-restart-needed');
+  await expect(notice.getByText('Restart to finish the update')).toBeVisible();
+  await expect(notice.getByText('Part of the last update only starts working after the device restarts.')).toBeVisible();
+
+  // Finger-sized, like the rest of the phone.
+  const button = notice.getByRole('button', { name: 'Restart now' });
+  const box = await button.boundingBox();
+  expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+
+  // It opens the same confirm as Reboot Device. As there, the only tap made
+  // is the one that backs out: a confirmed reboot maps to a real `sudo reboot`.
+  await button.click();
+  await expect(page.getByText('Reboot the device?')).toBeVisible();
+  await page.getByRole('button', { name: 'Cancel', exact: true }).click();
+  await expect(page.getByText('Reboot the device?')).toBeHidden();
+  await expect(notice).toBeVisible();
+  expect(powerPosts.length).toBe(0);
 });
 
 test('theme toggle applies data-theme and persists across reload', async ({ page }) => {

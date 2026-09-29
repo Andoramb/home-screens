@@ -9,6 +9,7 @@ import { getSecretStatus } from '@/lib/secrets';
 import { getGoogleAppsStatus } from '@/lib/google-token-stores';
 import { readTelemetryData } from '@/lib/telemetry';
 import { getLocalHardwareStats } from '@/lib/hardware-stats-server';
+import { readRestartNeeded } from '@/lib/restart-needed-state';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import type { SystemStats } from '@/lib/system-stats-types';
 
@@ -60,6 +61,7 @@ export const GET = withAuth(async () => {
     googleApps,
     telemetryData,
     hardware,
+    restartNeeded,
   ] = await Promise.all([
     fileSize(path.join(dataDir, 'config.json')),
     dirSize(path.join(dataDir, 'backups')),
@@ -70,6 +72,7 @@ export const GET = withAuth(async () => {
     getGoogleAppsStatus().catch(() => null),
     readTelemetryData().catch(() => null),
     getLocalHardwareStats().catch(() => null),
+    readRestartNeeded().catch(() => null),
   ]);
 
   // Count modules across all screens on every display. Reading
@@ -133,6 +136,7 @@ export const GET = withAuth(async () => {
       enabled: config?.settings?.telemetryEnabled !== false,
     },
     hardware,
+    restartNeeded,
   };
   return NextResponse.json(payload);
 }, 'Failed to gather system stats');

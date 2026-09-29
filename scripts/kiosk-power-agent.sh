@@ -8,7 +8,10 @@
 # display-only spokes alike), polls the hub's power-state endpoint, and drives
 # the panel with wlopm, which speaks the wlr-output-power-management protocol
 # labwc implements. Unlike `wlr-randr --off`, wlopm keeps the output in the
-# layout, so the Chromium window, rotation and mode all survive.
+# layout, so the Chromium window, rotation and mode all survive. Some monitors
+# drop off the HDMI connection once their signal stops, though, and come back
+# as a new output with labwc's defaults; kanshi (see kiosk-outputs.sh) puts
+# the rotation and resolution back when they do.
 #
 # The hub decides, this script obeys. `GET /api/display/power-state` answers
 # `off` only while the display has opted in (Sleep & dimming > "Switch the

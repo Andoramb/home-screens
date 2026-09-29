@@ -1609,6 +1609,11 @@
         "line": "Das Update auf {tag} ist nicht gestartet, deshalb ist dieses Display zu v{version} zurückgekehrt.",
         "dismiss": "Verstanden"
       },
+      "restartNeeded": {
+        "title": "Neu starten, um das Update abzuschließen",
+        "line": "Ein Teil des letzten Updates funktioniert erst nach einem Neustart des Geräts. Das Display bleibt dabei ein bis zwei Minuten dunkel.",
+        "button": "Jetzt neu starten"
+      },
       "channel": {
         "heading": "Welche Updates du bekommst",
         "stable": {
@@ -3177,6 +3182,15 @@
       "inProgress": "Diese Seite nicht schließen und das Gerät nicht ausschalten"
     },
     "successDefault": "Aktualisierung abgeschlossen!",
+    "successRollback": "Zurück zu {tag} hat geklappt!",
+    "restartNeeded": "Noch ein Schritt: Das Gerät muss neu gestartet werden, um das Update abzuschließen. Sobald die Seite neu geladen ist, kannst du das hier tun.",
+    "reload": {
+      "shuttingDown": "Home Screens startet neu …",
+      "waitingNew": "Warten, bis Home Screens wieder da ist … ({seconds} s)",
+      "waitingOld": "Die letzten Schritte laufen noch … ({seconds} s)",
+      "ready": "Alles bereit. Die Seite wird neu geladen …",
+      "reloading": "Die Seite wird neu geladen …"
+    },
     "doneButton": "Fertig",
     "status": {
       "inProgress": "Läuft",

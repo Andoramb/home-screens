@@ -65,6 +65,7 @@ build_bundle() {
   printf '#!/usr/bin/env bash\n# updater v%s\nexit 0\n' "${version}" > "${STAGE}/kiosk-update.sh"
   printf '#!/usr/bin/env bash\nexit 0\n' > "${STAGE}/kiosk-update-install.sh"
   printf '#!/usr/bin/env bash\n# power agent v%s\nexit 0\n' "${version}" > "${STAGE}/kiosk-power-agent.sh"
+  printf '#!/usr/bin/env bash\n# screen settings v%s\nexit 0\n' "${version}" > "${STAGE}/kiosk-outputs.sh"
   printf '<html>NEW SPLASH %s</html>\n' "${version}" > "${STAGE}/share/connecting.html"
   printf '#!/usr/bin/env bash\nexit 0\n' > "${STAGE}/system/reporter.sh"
 
@@ -79,6 +80,7 @@ write_manifest() {
     '{version: $v, sha256: $s, restartAdvised: $r, files: [
        {path: "kiosk-launcher-display.sh"}, {path: "kiosk-update.sh"},
        {path: "kiosk-update-install.sh"}, {path: "kiosk-power-agent.sh"},
+       {path: "kiosk-outputs.sh"},
        {path: "share/connecting.html"}, {path: "system/reporter.sh"}
      ]}' > "${STATE}/manifest.json"
 }
@@ -106,6 +108,9 @@ grep -q 'NEW-LAUNCHER' "${APP_DIR}/scripts/kiosk-launcher.sh" \
 grep -q 'NEW SPLASH' "${APP_DIR}/share/connecting.html" \
   || fail "splash was not replaced"
 [ -x "${APP_DIR}/scripts/kiosk-launcher.sh" ] || fail "launcher lost its exec bit"
+grep -q 'screen settings v2.0.0' "${APP_DIR}/scripts/kiosk-outputs.sh" \
+  || fail "kiosk-outputs.sh was not installed"
+[ -x "${APP_DIR}/scripts/kiosk-outputs.sh" ] || fail "kiosk-outputs.sh is not executable"
 
 echo "Test 2: the bundle launcher lands at kiosk-launcher.sh, not its repo name"
 # ~/.bash_profile execs scripts/kiosk-launcher.sh on every Pi in the field, so

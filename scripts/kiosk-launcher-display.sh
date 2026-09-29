@@ -50,8 +50,8 @@ curl -fsS --max-time 5 "${HEALTH_URL}" >/dev/null 2>&1 && HUB_UP="true"
 
 # The update check runs BEFORE any of the boot side effects below, because it
 # can end in `exec "$0"`. Anything started first would be started twice: the
-# backgrounded wlr-randr/wtype subshells survive an exec, so a relaunching boot
-# would fire two delayed rotations at the same output.
+# backgrounded screen-settings and wtype subshells survive an exec, so a
+# relaunching boot would set the screen up twice.
 if [ "${HUB_UP}" = "true" ] && [ -z "${HS_KIOSK_RELAUNCHED:-}" ]; then
   # The hub answered, so this is the cheapest moment to pull the shell layer
   # forward: we are about to start Chromium anyway, so applying an update and
@@ -75,14 +75,20 @@ if [ "${HUB_UP}" = "true" ] && [ -z "${HS_KIOSK_RELAUNCHED:-}" ]; then
   fi
 fi
 
-# Apply rotation/resolution in the background. Same flow as the full install.
-if [ -n "${DISPLAY_TRANSFORM}" ] || [ -n "${DISPLAY_MODE}" ]; then
-  # Pick the first ENABLED output. wlr-randr lists disabled connectors too
-  # ("Enabled: no"), so taking the first line put the rotation on a dark screen
-  # whenever a second port was connected but switched off, including for anyone
-  # who tried `wlr-randr --output X --off` to get out of the way. Falls back to
-  # the first output named, then to HDMI-A-1, so a machine that reports nothing
-  # behaves as it always did.
+# Rotation and resolution, from kiosk.conf. Same flow as the full install:
+# kiosk-outputs.sh hands them to kanshi and starts it, and kanshi puts them
+# back whenever a monitor reconnects; labwc itself forgets them. The wait lets
+# labwc finish bringing its outputs up.
+#
+# The helper can be missing for one boot. A kiosk-update.sh from before it
+# existed installs only the files it knows, this launcher among them, and
+# relaunches straight into it; the next update check fetches the rest. Until
+# then set the screen once, the way this launcher always did, rather than
+# leave a portrait wall sideways. The awk is the one in kiosk-outputs.sh
+# (scripts/__tests__/output-detection.test.ts keeps the two identical).
+if [ -x "${APP_DIR}/scripts/kiosk-outputs.sh" ]; then
+  (sleep 1 && "${APP_DIR}/scripts/kiosk-outputs.sh" start) &
+elif [ -n "${DISPLAY_TRANSFORM}" ] || [ -n "${DISPLAY_MODE}" ]; then
   OUTPUT=$(wlr-randr 2>/dev/null | awk '/^[^[:space:]]/{n=$1;if(f=="")f=n}/^[[:space:]]+Enabled: yes/{if(n!=""){print n;d=1;exit}}END{if(!d)print(f!=""?f:"HDMI-A-1")}')
   [ -n "${DISPLAY_TRANSFORM}" ] && (sleep 1 && wlr-randr --output "${OUTPUT}" --transform "${DISPLAY_TRANSFORM}") &
   [ -n "${DISPLAY_MODE}" ] && \

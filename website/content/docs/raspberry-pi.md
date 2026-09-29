@@ -13,7 +13,7 @@ Everyday tasks on the Pi are done in the editor, listed first. The rest of this 
 ## Without a terminal
 
 - **Orientation:** Settings > Screen > Rotation & appearance. The picture turns straight away, no reboot.
-- **Update or roll back:** Settings > System & updates. **Check for Updates** installs the latest release; the list under **If an update caused trouble** goes back to any earlier one. Sometimes a big update needs a smaller one installed first. Home Screens offers that one, and then offers the big one when it is done. An earlier version that can no longer read your saved settings is listed but not offered.
+- **Update or roll back:** Settings > System & updates. **Check for Updates** installs the latest release; the list under **If an update caused trouble** goes back to any earlier one. Sometimes a big update needs a smaller one installed first. Home Screens offers that one, and then offers the big one when it is done. An earlier version that can no longer read your saved settings is listed but not offered. An update that changed the Pi's own setup says **Restart to finish the update** and offers **Restart now** until the device restarts.
 - **Restart:** the same page has **Restart Home Screens** (a few seconds) and **Restart the whole device** (a minute or two).
 - **When something is wrong:** Settings > Status shows the display's state and the Pi's temperature, memory and storage, and its **Diagnostics bundle** button packs up logs and settings, with passwords and keys removed, for a bug report.
 - **Everything else** is in [Troubleshooting](/docs/troubleshooting), which starts every answer from the editor.
@@ -152,16 +152,27 @@ With **Install updates automatically** on (Settings > System & updates, under ad
 
 Change orientation in the editor under **Settings > Screen** where you can. It applies straight away with no reboot, and it is saved.
 
-If you need to do it from the command line:
+If you need to do it from the command line, run this as the normal user, not with `sudo`:
 
 ```bash
-XDG_RUNTIME_DIR=/run/user/1000 WAYLAND_DISPLAY=wayland-0 \
-  bash /opt/home-screens/current/scripts/rotate-display.sh 90
+bash /opt/home-screens/current/scripts/rotate-display.sh 90
 ```
 
-The accepted values are `0`, `90`, `180`, and `270`. The two environment variables are required; without them the script cannot talk to the display and exits without changing anything, which over SSH it will do every time.
+The accepted values are `0`, `90`, `180`, and `270`. The picture turns straight away, and the rotation is kept when the monitor reconnects, the same as a change made in the editor. If the script cannot reach the screen, for example over SSH as a different user than the one the kiosk runs as, it says the rotation is saved and takes effect at the next restart. It refuses to run as root.
 
 Treat this as a stopgap. It does not update your saved settings, so the next upgrade puts the orientation back to whatever **Settings > Screen** says.
+
+## Keeping the rotation when the monitor reconnects
+
+labwc, the program that draws the kiosk, forgets a screen's rotation and resolution when the monitor disconnects. Some monitors disconnect whenever they lose signal: in standby, when **Switch the screen's power off too** cuts the signal while the display sleeps, or when someone presses the monitor's power button or changes its input. Without help, a portrait wall wakes up in landscape.
+
+Home Screens keeps them with kanshi, which puts the saved rotation and resolution back within a moment of the monitor reappearing.
+
+- The values come from `data/kiosk.conf`. When the kiosk starts, `scripts/kiosk-outputs.sh` writes them to `~/.config/kanshi/config` and starts kanshi; saving a new rotation or resolution rewrites the file and reloads it. A kanshi config that Home Screens did not write is moved to `config.before-home-screens` the first time.
+- A resolution the monitor does not list is set once, as before, and a reconnect loses it. The rotation is kept either way. A save or a start while the monitor is disconnected keeps the resolution that was already in place.
+- Rotation lines from older installs (`wlr-randr ... --transform`) are taken out of `~/.config/labwc/autostart`, because they would run after kanshi and win with an old angle. Other lines there are left alone.
+- Pis set up by the installer or the ready-made image have kanshi. The update that brings it installs it, but the running kiosk only starts it after a restart, so **Settings > System & updates** says **Restart to finish the update** until then. A display-only Pi installs it through its normal self-update and restarts its kiosk overnight.
+- To check it on the Pi: `pgrep -a kanshi` shows it running, and `sudo journalctl -b -t home-screens-kanshi -t home-screens-outputs` shows what it applied.
 
 ## Chromium won't start
 
@@ -175,7 +186,7 @@ Treat this as a stopgap. It does not update your saved settings, so the next upg
 
 First check whether the screen is genuinely powered off or just showing black. Home Screens dims and sleeps by drawing a black layer over the page; unless you turned on **Switch the screen's power off too** in **Settings > Screen > Sleep & dimming**, the monitor stays on and lit the whole time. So if the panel is still backlit, this is the sleep schedule, and you can change it on that page. If the panel has actually powered down and that setting is off, that is your monitor or the Wayland compositor, not Home Screens.
 
-When the setting is on, a small helper in the kiosk session (`scripts/kiosk-power-agent.sh`) asks the hub whether this display should be powered (every 15 seconds while the screen is on, every 3 while it is off, so the screen goes dark up to 15 seconds after the display falls asleep and lights up again almost at once) and drives the panel with `wlopm`, which uses the compositor's output power protocol so the browser window, rotation and resolution survive. The hub answers "off" only while the display's own browser reports that it is asleep and is still checking in; a display that stops checking in gets its screen back within a minute and a half, and the helper always restores power when it exits. Pis set up by the installer or the ready-made image have `wlopm`; a display-only Pi installed earlier gets the helper through its normal self-update and installs the package on the same pass.
+When the setting is on, a small helper in the kiosk session (`scripts/kiosk-power-agent.sh`) asks the hub whether this display should be powered (every 15 seconds while the screen is on, every 3 while it is off, so the screen goes dark up to 15 seconds after the display falls asleep and lights up again almost at once) and drives the panel with `wlopm`, which uses the compositor's output power protocol so the browser window stays put. A monitor that disconnects while its signal is off comes back with its rotation through kanshi; see [Keeping the rotation when the monitor reconnects](#keeping-the-rotation-when-the-monitor-reconnects). The hub answers "off" only while the display's own browser reports that it is asleep and is still checking in; a display that stops checking in gets its screen back within a minute and a half, and the helper always restores power when it exits. Pis set up by the installer or the ready-made image have `wlopm`; a display-only Pi installed earlier gets the helper through its normal self-update and installs the package on the same pass. On a hub, the update that adds it only takes effect after a restart, which **Settings > System & updates** offers.
 
 The compositor (labwc) should prevent screen blanking. To inspect the display state, run:
 

@@ -68,6 +68,8 @@ The editor's **Settings > Screen** page sets the size of the canvas your modules
 
 Go to **Settings > System & updates** and click **Check for Updates**, then **Update Now**. The update downloads a pre-built release from GitHub, swaps it in, and restarts. No build step is needed on the Pi.
 
+Some updates change parts of the Pi's own setup that only take effect after the whole device restarts. When one does, the page says **Restart to finish the update** and offers **Restart now**. The family remote's Settings sheet shows the same note.
+
 You can also drive it from the command line; see [Upgrade and rollback via API](/docs/raspberry-pi#upgrade-and-rollback-via-api).
 
 ### How do I rollback after a bad update?
@@ -116,7 +118,7 @@ Each choice also sees everything above it in that list, so someone on Early acce
 
 ### Can Home Screens install updates by itself?
 
-Yes. Turn on **Show advanced options** at the bottom of **Settings > System & updates**, then switch on **Install updates automatically** and pick a **Time of day** when nobody is looking at the screen. Once a day at that time it installs any new version of the updates you picked under **Which updates to get**, and the screen restarts for about a minute.
+Yes. Turn on **Show advanced options** at the bottom of **Settings > System & updates**, then switch on **Install updates automatically** and pick a **Time of day** when nobody is looking at the screen. Once a day at that time it installs any new version of the updates you picked under **Which updates to get**, and the screen restarts for about a minute. If an update needs the whole device restarted to finish, it leaves that to you: **Settings > System & updates** and the remote's Settings sheet say **Restart to finish the update** until someone does.
 
 It is careful about what it installs:
 

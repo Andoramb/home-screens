@@ -14,6 +14,16 @@ vi.mock('child_process', () => ({
   execFile: vi.fn(),
 }));
 
+// The install's own path, which is not the working directory after an update
+// has swapped the release trees.
+vi.mock('@/lib/app-dir', () => ({
+  appScriptPath: (...segments: string[]) => ['/opt/home-screens/current/scripts', ...segments].join('/'),
+}));
+
+vi.mock('@/lib/data-root', () => ({
+  getDataRoot: () => '/opt/home-screens/current',
+}));
+
 import { syncKioskConf, applyDisplaySettings } from '../kiosk';
 
 function makeConfig(overrides: Partial<ScreenConfiguration['settings']> = {}, rawOverrides: Record<string, unknown> = {}): ScreenConfiguration {
@@ -149,160 +159,74 @@ describe('applyDisplaySettings', () => {
     vi.clearAllMocks();
   });
 
+  type Callback = (err: Error | null, stdout?: string, stderr?: string) => void;
+
   /** Simulate execFile — call (cmd, args, opts, callback) */
-  function mockExecSuccess(stdout = '') {
+  function mockExec(result: Error | null = null) {
     mockExecFile.mockImplementation((_cmd: unknown, _args: unknown, _opts: unknown, cb: unknown) => {
-      (cb as (...a: unknown[]) => void)(null, stdout, '');
+      (cb as Callback)(result, '', '');
       return {} as ReturnType<typeof execFile>;
     });
   }
 
-  it('detects output name from wlr-randr and applies transform', async () => {
-    // First call: detectOutput (wlr-randr with no args)
-    // Subsequent calls: wlr-randr --output ...
-    mockExecFile.mockImplementation((_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
-      const argArr = args as string[];
-      if (argArr.length === 0) {
-        // detectOutput — return a display name
-        (cb as (...a: unknown[]) => void)(null, 'HDMI-A-2 (some info)\n', '');
-      } else {
-        // wlr-randr --output ... — success
-        (cb as (...a: unknown[]) => void)(null, '', '');
-      }
+  it('hands the screen settings to kiosk-outputs.sh apply', async () => {
+    mockExec();
+
+    expect(await applyDisplaySettings()).toBe(true);
+
+    expect(mockExecFile).toHaveBeenCalledOnce();
+    const [cmd, args, opts] = mockExecFile.mock.calls[0] as unknown as [string, string[], { timeout: number }];
+    expect(cmd).toBe('bash');
+    expect(args).toEqual(['/opt/home-screens/current/scripts/kiosk-outputs.sh', 'apply']);
+    expect(opts.timeout).toBeGreaterThan(0);
+  });
+
+  it('never runs wlr-randr itself', async () => {
+    mockExec();
+
+    await applyDisplaySettings();
+
+    const commands = mockExecFile.mock.calls.map((c) => c[0]);
+    expect(commands).not.toContain('wlr-randr');
+  });
+
+  it('resolves false when the script fails', async () => {
+    mockExec(new Error('exit 1'));
+
+    expect(await applyDisplaySettings()).toBe(false);
+  });
+
+  it('resolves true when the script found no kiosk session to set (a laptop, Docker)', async () => {
+    mockExec(Object.assign(new Error('exit 3'), { code: 3 }));
+
+    expect(await applyDisplaySettings()).toBe(true);
+  });
+
+  it('runs one apply at a time, in the order they were asked for', async () => {
+    const pending: Callback[] = [];
+    mockExecFile.mockImplementation((_cmd: unknown, _args: unknown, _opts: unknown, cb: unknown) => {
+      pending.push(cb as Callback);
       return {} as ReturnType<typeof execFile>;
     });
 
-    const result = await applyDisplaySettings(makeConfig({ displayTransform: '90' as never }));
-    expect(result).toBe(true);
+    const first = applyDisplaySettings();
+    const second = applyDisplaySettings();
+    await Promise.resolve();
+    await Promise.resolve();
+    // The second save waits for the first script run to finish.
+    expect(pending).toHaveLength(1);
 
-    // Should have called wlr-randr with the detected output
-    const transformCall = mockExecFile.mock.calls.find((c) => {
-      const args = c[1] as string[];
-      return args.includes('--transform');
-    });
-    expect(transformCall).toBeDefined();
-    expect((transformCall![1] as string[])).toContain('HDMI-A-2');
-    expect((transformCall![1] as string[])).toContain('90');
+    pending[0](null);
+    expect(await first).toBe(true);
+    await vi.waitFor(() => expect(pending).toHaveLength(2));
+    pending[1](new Error('boom'));
+    expect(await second).toBe(false);
   });
 
-  it('falls back to HDMI-A-1 when wlr-randr detection fails', async () => {
-    mockExecFile.mockImplementation((_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
-      const argArr = args as string[];
-      if (argArr.length === 0) {
-        // detectOutput fails
-        (cb as (...a: unknown[]) => void)(new Error('not found'), '', '');
-      } else {
-        (cb as (...a: unknown[]) => void)(null, '', '');
-      }
-      return {} as ReturnType<typeof execFile>;
-    });
-
-    await applyDisplaySettings(makeConfig());
-
-    // Should have used HDMI-A-1 as fallback
-    const transformCall = mockExecFile.mock.calls.find((c) => {
-      const args = c[1] as string[];
-      return args.includes('--transform');
-    });
-    expect(transformCall).toBeDefined();
-    expect((transformCall![1] as string[])).toContain('HDMI-A-1');
-  });
-
-  it('applies normal transform when displayTransform is unset', async () => {
-    mockExecSuccess('HDMI-A-1\n');
-
-    await applyDisplaySettings(makeConfig({ displayTransform: undefined }));
-
-    const transformCall = mockExecFile.mock.calls.find((c) => {
-      const args = c[1] as string[];
-      return args.includes('--transform');
-    });
-    expect(transformCall).toBeDefined();
-    expect((transformCall![1] as string[])).toContain('normal');
-  });
-
-  it('applies display mode with max dimension first', async () => {
-    mockExecSuccess('HDMI-A-1\n');
-
-    await applyDisplaySettings(makeConfig({ displayWidth: 1080, displayHeight: 1920 }));
-
-    const modeCall = mockExecFile.mock.calls.find((c) => {
-      const args = c[1] as string[];
-      return args.includes('--mode');
-    });
-    expect(modeCall).toBeDefined();
-    expect((modeCall![1] as string[])).toContain('1920x1080');
-  });
-
-  it('tries --custom-mode when --mode fails', async () => {
-    mockExecFile.mockImplementation((_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
-      const argArr = args as string[];
-      if (argArr.includes('--mode')) {
-        // Mode fails (not in EDID)
-        (cb as (...a: unknown[]) => void)(new Error('mode not available'), '', '');
-      } else {
-        (cb as (...a: unknown[]) => void)(null, 'HDMI-A-1\n', '');
-      }
-      return {} as ReturnType<typeof execFile>;
-    });
-
-    await applyDisplaySettings(makeConfig({ displayWidth: 1080, displayHeight: 1920 }));
-
-    const customModeCall = mockExecFile.mock.calls.find((c) => {
-      const args = c[1] as string[];
-      return args.includes('--custom-mode');
-    });
-    expect(customModeCall).toBeDefined();
-  });
-
-  it('skips mode application when dimensions are zero', async () => {
-    mockExecSuccess('HDMI-A-1\n');
-
-    await applyDisplaySettings(makeConfig({ displayWidth: 0, displayHeight: 0 }));
-
-    const modeCall = mockExecFile.mock.calls.find((c) => {
-      const args = c[1] as string[];
-      return args.includes('--mode') || args.includes('--custom-mode');
-    });
-    expect(modeCall).toBeUndefined();
-  });
-
-  it('returns false when transform command fails', async () => {
-    mockExecFile.mockImplementation((_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
-      const argArr = args as string[];
-      if (argArr.length === 0) {
-        (cb as (...a: unknown[]) => void)(null, 'HDMI-A-1\n', '');
-      } else if (argArr.includes('--transform')) {
-        (cb as (...a: unknown[]) => void)(new Error('transform failed'), '', '');
-      } else {
-        (cb as (...a: unknown[]) => void)(null, '', '');
-      }
-      return {} as ReturnType<typeof execFile>;
-    });
-
-    const result = await applyDisplaySettings(makeConfig({ displayWidth: 0, displayHeight: 0 }));
-    expect(result).toBe(false);
-  });
-
-  it('serializes concurrent calls', async () => {
-    const callOrder: string[] = [];
-    mockExecFile.mockImplementation((_cmd: unknown, args: unknown, _opts: unknown, cb: unknown) => {
-      const argArr = args as string[];
-      if (argArr.includes('--transform')) {
-        callOrder.push(argArr[argArr.indexOf('--transform') + 1]);
-      }
-      (cb as (...a: unknown[]) => void)(null, 'HDMI-A-1\n', '');
-      return {} as ReturnType<typeof execFile>;
-    });
-
-    const p1 = applyDisplaySettings(makeConfig({ displayTransform: '90' as never, displayWidth: 0, displayHeight: 0 }));
-    const p2 = applyDisplaySettings(makeConfig({ displayTransform: '180' as never, displayWidth: 0, displayHeight: 0 }));
-
-    await Promise.all([p1, p2]);
-
-    // Both transforms should have been applied in order
-    expect(callOrder).toContain('90');
-    expect(callOrder).toContain('180');
-    expect(callOrder.indexOf('90')).toBeLessThan(callOrder.indexOf('180'));
+  it('keeps going after a failed apply', async () => {
+    mockExec(new Error('exit 1'));
+    expect(await applyDisplaySettings()).toBe(false);
+    mockExec();
+    expect(await applyDisplaySettings()).toBe(true);
   });
 });

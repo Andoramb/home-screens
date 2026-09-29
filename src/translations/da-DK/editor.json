@@ -1609,6 +1609,11 @@
         "line": "Opdateringen til {tag} startede ikke, så denne skærm gik tilbage til v{version}.",
         "dismiss": "Forstået"
       },
+      "restartNeeded": {
+        "title": "Genstart for at afslutte opdateringen",
+        "line": "En del af den seneste opdatering virker først, når enheden er genstartet. Skærmen bliver mørk i et minut eller to.",
+        "button": "Genstart nu"
+      },
       "channel": {
         "heading": "Hvilke opdateringer du får",
         "stable": {
@@ -3177,6 +3182,15 @@
       "inProgress": "Luk ikke denne side, og sluk ikke enheden"
     },
     "successDefault": "Opdateringen er færdig!",
+    "successRollback": "Du er tilbage på {tag}.",
+    "restartNeeded": "Et trin mere: Enheden skal genstartes for at afslutte opdateringen. Når siden er genindlæst, kan du gøre det herfra.",
+    "reload": {
+      "shuttingDown": "Home Screens genstarter…",
+      "waitingNew": "Venter på, at Home Screens er tilbage… ({seconds} s)",
+      "waitingOld": "Afslutter opdateringen… ({seconds} s)",
+      "ready": "Klar. Siden genindlæses…",
+      "reloading": "Siden genindlæses…"
+    },
     "doneButton": "Færdig",
     "status": {
       "inProgress": "I gang",

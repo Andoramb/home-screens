@@ -1606,8 +1606,13 @@
         "blockedDowngradeLine": "Teruggaan naar v{version} zou instellingen achterlaten die deze versie niet kan lezen."
       },
       "failedUpdate": {
-        "line": "De update naar {tag} is niet gestart, dus dit scherm is teruggegaan naar v{version}.",
+        "line": "De update naar {tag} is niet gestart, dus dit display is teruggegaan naar v{version}.",
         "dismiss": "Begrepen"
+      },
+      "restartNeeded": {
+        "title": "Opnieuw opstarten om de update af te ronden",
+        "line": "Een deel van de laatste update werkt pas nadat het apparaat opnieuw is opgestart. Het display gaat dan een minuut of twee op zwart.",
+        "button": "Nu opnieuw opstarten"
       },
       "channel": {
         "heading": "Welke updates je krijgt",
@@ -3177,6 +3182,15 @@
       "inProgress": "Sluit deze pagina niet en zet het apparaat niet uit"
     },
     "successDefault": "Upgrade voltooid!",
+    "successRollback": "Terug naar {tag} is gelukt!",
+    "restartNeeded": "Nog één stap: het apparaat moet opnieuw opstarten om de update af te ronden. Dat kan hier zodra de pagina is herladen.",
+    "reload": {
+      "shuttingDown": "Home Screens start opnieuw…",
+      "waitingNew": "Wachten tot Home Screens terug is… ({seconds} s)",
+      "waitingOld": "De update wordt afgerond… ({seconds} s)",
+      "ready": "Home Screens is terug. De pagina wordt herladen…",
+      "reloading": "De pagina wordt herladen…"
+    },
     "doneButton": "Klaar",
     "status": {
       "inProgress": "Bezig",

@@ -70,7 +70,7 @@ A **routine** is a saved list of timed steps, each with its own emoji and length
 
 ### The gear
 
-The gear in the top corner opens a sheet with the Pi's name, uptime, memory and storage; **Backup All Data** and **Restore Backup**; a light, dark or system theme for the remote (separate from the editor's); and **Restart Home Screens** and **Reboot Device**, each of which asks for a second tap within three seconds. Everything on this sheet needs you signed in once a password is set.
+The gear in the top corner opens a sheet with the Pi's name, uptime, memory and storage; **Backup All Data** and **Restore Backup**; a light, dark or system theme for the remote (separate from the editor's); and **Restart Home Screens** and **Reboot Device**, each of which asks for a second tap within three seconds. After an update that needs the Pi restarted to finish, **Restart to finish the update** sits above those two, and its **Restart now** asks the same question as **Reboot Device**. Everything on this sheet needs you signed in once a password is set.
 
 Two banners can appear above the Control tab: a reminder when you have not backed up in a while (the interval is under Settings > Backups & data in the editor), and a note when a new version is out (switched on under Settings > System & updates).
 

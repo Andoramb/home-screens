@@ -1606,8 +1606,13 @@
         "blockedDowngradeLine": "Revenir à v{version} laisserait des réglages que cette version ne peut pas lire."
       },
       "failedUpdate": {
-        "line": "La mise à jour vers {tag} n'a pas démarré, cet écran est donc revenu à v{version}.",
+        "line": "La mise à jour vers {tag} n'a pas démarré, cet affichage est donc revenu à v{version}.",
         "dismiss": "Compris"
+      },
+      "restartNeeded": {
+        "title": "Redémarrer pour terminer la mise à jour",
+        "line": "Une partie de la dernière mise à jour ne prend effet qu'après le redémarrage de l'appareil. L'affichage s'éteint pendant une minute ou deux.",
+        "button": "Redémarrer maintenant"
       },
       "channel": {
         "heading": "Quelles mises à jour recevoir",
@@ -3177,6 +3182,15 @@
       "inProgress": "Ne ferme pas cette page et n'éteins pas l'appareil"
     },
     "successDefault": "Mise à niveau terminée !",
+    "successRollback": "Retour à {tag} terminé !",
+    "restartNeeded": "Encore une étape : l'appareil doit redémarrer pour terminer. Une fois rechargée, cette page te proposera de le faire.",
+    "reload": {
+      "shuttingDown": "Home Screens redémarre…",
+      "waitingNew": "En attente du retour de Home Screens… ({seconds} s)",
+      "waitingOld": "Finalisation de la mise à jour… ({seconds} s)",
+      "ready": "C'est prêt. Rechargement de la page…",
+      "reloading": "Rechargement de la page…"
+    },
     "doneButton": "Terminé",
     "status": {
       "inProgress": "En cours",

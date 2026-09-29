@@ -38,11 +38,16 @@ vi.mock('@/lib/upgrade-failed-state', () => ({
   readFailedUpdate: vi.fn(async () => ({ tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' })),
 }));
 
+vi.mock('@/lib/restart-needed-state', () => ({
+  readRestartNeeded: vi.fn(async () => null),
+}));
+
 import { NextRequest } from 'next/server';
 import { GET } from '../route';
 import { getVersionInfo, getVersionTags } from '@/lib/version';
 import { isUpgradeRunning } from '@/lib/upgrade';
 import { readAutoUpdateState } from '@/lib/auto-update-state';
+import { readRestartNeeded } from '@/lib/restart-needed-state';
 
 const mockInfo = vi.mocked(getVersionInfo);
 const mockTags = vi.mocked(getVersionTags);
@@ -81,6 +86,14 @@ describe('GET /api/system/version', () => {
     expect(body.tags).toHaveLength(1);
     expect(body.upgradeRunning).toBe(true);
     expect(body.lastFailedUpdate).toEqual({ tag: 'v2.0.0', reason: 'did-not-start', at: '2026-09-18T10:00:00Z' });
+  });
+
+  it('says when an update this boot installed still needs a restart', async () => {
+    expect((await (await GET(getRequest())).json()).restartNeeded).toBeNull();
+
+    const owed = { reasons: ['launcher', 'session-packages'], tag: 'v1.1.0', at: '2026-09-27T12:00:00Z' };
+    vi.mocked(readRestartNeeded).mockResolvedValueOnce(owed);
+    expect((await (await GET(getRequest())).json()).restartNeeded).toEqual(owed);
   });
 
   it('caps the returned tag list at 20', async () => {

@@ -127,6 +127,70 @@ hs_sudo_check() {
 
 HS_SUDO_NEEDS_PASSWORD_MSG="This device is not set up to let Home Screens make system changes without a password."
 
+# hs_launcher_changed <desired> <launcher> <previous-launcher>
+# True when the kiosk session would start differently from the launcher it is
+# running now. A tarball update swaps in a tree that does not carry the
+# generated launcher, so a missing file only says the tree is new: the tree it
+# replaced, kept beside it as current.rollback until the new release has
+# started, holds the launcher the running session came from.
+hs_launcher_changed() {
+  local desired="$1" launcher="$2" previous="$3" before
+  before="${launcher}"
+  [ -f "${before}" ] || before="${previous}"
+  [ ! -f "${before}" ] || [ "$(cat "${before}")" != "${desired}" ]
+}
+
+# hs_installs_session_package <package>...
+# True when one of the packages just installed is a program the kiosk session
+# starts and keeps running: wlopm behind the panel power agent, kanshi behind
+# the screen settings. A session that started without them goes on without
+# them until the device restarts. Every other package either works as soon as
+# it is installed or only matters at the next boot, so installing vim or a
+# font must not ask anyone to restart a wall that is not out of date.
+hs_installs_session_package() {
+  local pkg
+  for pkg in "$@"; do
+    case "${pkg}" in
+      wlopm|kanshi) return 0 ;;
+    esac
+  done
+  return 1
+}
+
+# hs_record_restart_changes <comma-separated change names>
+# Adds setup-system's changes to data/restart-needed.json for this boot, so the
+# app can offer the restart some of them need (src/lib/restart-needed.ts
+# decides which). Written here, from the release being installed, because an
+# update runs the pipeline of the release it replaces, which may know nothing
+# about this file. Only a kiosk session that is already running can be out of
+# date, so the image build, first boot (it runs before autologin) and a fresh
+# install record nothing. HS_BOOT_ID_PATH is a test seam, never set on a device.
+hs_record_restart_changes() {
+  [ "${HS_CHROOT:-0}" = "1" ] && return 0
+  local boot_id_file="${HS_BOOT_ID_PATH:-/proc/sys/kernel/random/boot_id}"
+  [ -r "${boot_id_file}" ] || return 0
+  pgrep -u "${USER:-}" -x labwc >/dev/null 2>&1 || return 0
+  HS_CHANGES="$1" HS_BOOT_ID_FILE="${boot_id_file}" \
+  HS_MARKER="${APP_DIR}/data/restart-needed.json" HS_PACKAGE="${APP_DIR}/package.json" \
+  node -e '
+    const fs = require("fs");
+    const bootId = fs.readFileSync(process.env.HS_BOOT_ID_FILE, "utf8").trim();
+    if (!bootId) process.exit(0);
+    const file = process.env.HS_MARKER;
+    let earlier = [];
+    try {
+      const old = JSON.parse(fs.readFileSync(file, "utf8"));
+      if (old && old.bootId === bootId && Array.isArray(old.changed)) earlier = old.changed;
+    } catch {}
+    let version = null;
+    try { version = JSON.parse(fs.readFileSync(process.env.HS_PACKAGE, "utf8")).version || null; } catch {}
+    const changed = [...new Set([...earlier, ...process.env.HS_CHANGES.split(",").filter(Boolean)])];
+    fs.mkdirSync(require("path").dirname(file), { recursive: true });
+    fs.writeFileSync(file + ".tmp", JSON.stringify({ bootId, changed, version, at: new Date().toISOString() }, null, 2) + "\n");
+    fs.renameSync(file + ".tmp", file);
+  ' 2>/dev/null || true
+}
+
 action="${1:-}"
 shift || true
 
@@ -800,7 +864,7 @@ EOF_JOB
     # 0. Ensure required system packages are installed
     # fonts-dejavu-core is what the generic-family aliases below point at. It
     # is present on Desktop images already; Lite needs it named explicitly.
-    REQUIRED_PACKAGES="chromium labwc wtype wlr-randr wlopm fonts-noto-color-emoji fonts-dejavu-core plymouth plymouth-themes vim"
+    REQUIRED_PACKAGES="chromium labwc wtype wlr-randr wlopm kanshi fonts-noto-color-emoji fonts-dejavu-core plymouth plymouth-themes vim"
     missing=""
     for pkg in ${REQUIRED_PACKAGES}; do
       if ! dpkg -s "${pkg}" &>/dev/null; then
@@ -818,6 +882,10 @@ EOF_JOB
       sudo apt-get update -qq
       sudo apt-get install -y -qq ${missing}
       changed="${changed}packages,"
+      # shellcheck disable=SC2086
+      if hs_installs_session_package ${missing}; then
+        changed="${changed}session-packages,"
+      fi
     fi
 
     # 0b. Generic font-family aliases (see setup_font_aliases in lib/common.sh).
@@ -1065,6 +1133,13 @@ GENEOF
       if [ ! -f "${KIOSK_CONF}" ] || [ "$(cat "${KIOSK_CONF}")" != "${DESIRED_KIOSK}" ]; then
         echo "${DESIRED_KIOSK}" > "${KIOSK_CONF}"
         changed="${changed}kiosk-conf,"
+        # Put the new rotation and resolution on the running screen, as a
+        # save in the editor does, so this change does not wait for a restart
+        # (step 8b turns touch to match). With no kiosk session running (the
+        # image build, first boot, a fresh install) the script does nothing.
+        if [ -x "${SCRIPT_DIR}/kiosk-outputs.sh" ]; then
+          "${SCRIPT_DIR}/kiosk-outputs.sh" apply || true
+        fi
       fi
       # Fix ownership so the Next.js server (running as $USER) can update kiosk.conf
       if [ "$(id -u)" -eq 0 ] && [ -n "${USER}" ] && [ "${USER}" != "root" ]; then
@@ -1079,12 +1154,6 @@ GENEOF
 # the cursor, then starts Chromium.  When this script (or Chromium) exits,
 # labwc exits too, and the autologin cycle restarts everything.
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-KIOSK_CONF="${APP_DIR}/data/kiosk.conf"
-
-# Load display config (generated by setup-system from config.json)
-DISPLAY_TRANSFORM=""
-DISPLAY_MODE=""
-[ -f "${KIOSK_CONF}" ] && source "${KIOSK_CONF}"
 
 # Load port (default 3000)
 PORT=3000
@@ -1093,22 +1162,12 @@ if [ -f "${APP_DIR}/data/port.conf" ]; then
   [[ "${_p}" =~ ^[0-9]+$ ]] && PORT="${_p}"
 fi
 
-# Apply rotation and resolution in the background (split into separate calls
-# so a mode failure does not prevent the transform from applying).
-if [ -n "${DISPLAY_TRANSFORM}" ] || [ -n "${DISPLAY_MODE}" ]; then
-  # Pick the first ENABLED output. wlr-randr lists disabled connectors too
-  # ("Enabled: no"), so taking the first line put the rotation on a dark screen
-  # whenever a second port was connected but switched off, including for anyone
-  # who tried `wlr-randr --output X --off` to get out of the way. Falls back to
-  # the first output named, then to HDMI-A-1, so a machine that reports nothing
-  # behaves as it always did.
-  OUTPUT=$(wlr-randr 2>/dev/null | awk '"'"'/^[^[:space:]]/{n=$1;if(f=="")f=n}/^[[:space:]]+Enabled: yes/{if(n!=""){print n;d=1;exit}}END{if(!d)print(f!=""?f:"HDMI-A-1")}'"'"')
-  [ -n "${DISPLAY_TRANSFORM}" ] && \
-    (sleep 1 && wlr-randr --output "${OUTPUT}" --transform "${DISPLAY_TRANSFORM}") &
-  [ -n "${DISPLAY_MODE}" ] && \
-    (sleep 2 && wlr-randr --output "${OUTPUT}" --mode "${DISPLAY_MODE}" 2>/dev/null \
-      || wlr-randr --output "${OUTPUT}" --custom-mode "${DISPLAY_MODE}" 2>/dev/null \
-      || true) &
+# Rotation and resolution, from kiosk.conf. kiosk-outputs.sh hands them to
+# kanshi and starts it, and kanshi puts them back whenever a monitor
+# reconnects; labwc itself forgets them. The wait lets labwc finish bringing
+# its outputs up.
+if [ -x "${APP_DIR}/scripts/kiosk-outputs.sh" ]; then
+  (sleep 1 && "${APP_DIR}/scripts/kiosk-outputs.sh" start) &
 fi
 
 # Hide cursor — triggers the HideCursor keybind defined in labwc rc.xml.
@@ -1186,10 +1245,14 @@ exec chromium \
   --num-raster-threads=2 \
   --force-gpu-mem-available-mb=256'
 
+    # Reported only when the running session's launcher is really different;
+    # the file itself is (re)written whenever this tree's copy is not current.
+    if hs_launcher_changed "${DESIRED_LAUNCHER}" "${LAUNCHER}" "${APP_DIR}.rollback/scripts/kiosk-launcher.sh"; then
+      changed="${changed}launcher,"
+    fi
     if [ ! -f "${LAUNCHER}" ] || [ "$(cat "${LAUNCHER}")" != "${DESIRED_LAUNCHER}" ]; then
       echo "${DESIRED_LAUNCHER}" > "${LAUNCHER}"
       chmod +x "${LAUNCHER}"
-      changed="${changed}launcher,"
     fi
     # Fix ownership when running as root during image build
     if [ "$(id -u)" -eq 0 ] && [ -n "${USER}" ] && [ "${USER}" != "root" ]; then
@@ -1211,6 +1274,18 @@ exec chromium \
     if [ -f "${LABWC_DIR}/autostart" ] && grep -q 'chromium' "${LABWC_DIR}/autostart"; then
       sed -i '/chromium/d' "${LABWC_DIR}/autostart"
       changed="${changed}labwc-autostart,"
+    fi
+    #     The same installs, and rotate-display.sh until kanshi took over the
+    #     screen settings, rotated from autostart with wlr-randr. That line
+    #     runs after kanshi has applied the rotation from kiosk.conf, so a
+    #     stale angle in it would win at every boot. Only the rotation
+    #     lines go: any other wlr-randr line there is its owner's.
+    if [ -f "${LABWC_DIR}/autostart" ] && grep -q 'wlr-randr.*--transform' "${LABWC_DIR}/autostart"; then
+      sed -i '/wlr-randr.*--transform/d' "${LABWC_DIR}/autostart"
+      case ",${changed}" in
+        *,labwc-autostart,*) ;;
+        *) changed="${changed}labwc-autostart," ;;
+      esac
     fi
 
     # Fix ownership when running as root during image build.
@@ -1555,6 +1630,7 @@ nmcli connection modify "$CONNECTION_UUID" 802-11-wireless.powersave 2 2>/dev/nu
     # Remove trailing comma
     changed="${changed%,}"
     if [ -n "${changed}" ]; then
+      hs_record_restart_changes "${changed}"
       echo "{\"ok\":true,\"changed\":\"${changed}\"}"
     else
       echo "{\"ok\":true,\"changed\":null}"

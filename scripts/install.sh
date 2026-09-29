@@ -60,7 +60,7 @@ if [ -z "${_SCRIPT_DIR}" ] || [ ! -f "${_SCRIPT_DIR}/lib/common.sh" ]; then
   # set is what the hub serves back through /api/display/kiosk-bundle.
   for _f in reporter.sh home-screens-reporter.service home-screens-reporter.timer \
             kiosk-launcher-display.sh kiosk-update.sh kiosk-update-install.sh \
-            kiosk-update-privileged.sh rotate-display.sh \
+            kiosk-update-privileged.sh rotate-display.sh kiosk-outputs.sh \
             home-screens-kiosk-update.service home-screens-kiosk-update.timer; do
     curl -fsSL "${_BASE}/${_f}" -o "${_TMP}/${_f}"
   done
@@ -254,8 +254,9 @@ if [ "${DISPLAY_ONLY}" = "true" ]; then
   sudo apt-get update -qq
   # python3 is what the kiosk launcher uses to turn off Chromium's translate prompt.
   # wlopm is what the panel power agent drives the screen with; see
-  # scripts/kiosk-power-agent.sh.
-  sudo apt-get install -y -qq chromium labwc wtype wlr-randr wlopm fonts-noto-color-emoji fonts-dejavu-core curl jq python3
+  # scripts/kiosk-power-agent.sh. kanshi keeps the screen's rotation and
+  # resolution when a monitor reconnects; see scripts/kiosk-outputs.sh.
+  sudo apt-get install -y -qq chromium labwc wtype wlr-randr wlopm kanshi fonts-noto-color-emoji fonts-dejavu-core curl jq python3
   if [ "${PI_VARIANT}" = "lite" ]; then
     sudo apt-get install -y -qq fonts-noto-core libpam-systemd dbus-user-session
   fi

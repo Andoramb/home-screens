@@ -9,6 +9,8 @@ import { migrateUp, getLatestSchemaVersion } from './migrations';
 import { settleFamilyMigration } from './family-data';
 import { assertUpgradePathAllowed, parseReleaseMarkers, UpgradePathError, versionOfTag } from './update-policy';
 import { fetchReleaseByTag, getPackageVersion, hasReleaseTarball, GITHUB_REPO, type GitHubRelease } from './version';
+import { parseSetupSystemChanges, restartNeededFor } from './restart-needed';
+import { parseLastLineObject } from './script-output';
 
 /** Explicit APP_DIR — safe to use after the atomic swap when process.cwd() is stale.
  *  See app-dir.ts for how a non-default install path is found. */
@@ -40,6 +42,8 @@ interface UpgradeProgress {
   error?: string;
   /** The preflight found no passwordless sudo; the editor asks for the device password and retries. */
   needsSudoPassword?: boolean;
+  /** From setup-system on: the install changed something the wall only picks up after a restart. */
+  restartNeeded?: boolean;
 }
 
 /** A preflight failure that carries what the editor needs to offer a fix. */
@@ -170,13 +174,7 @@ function runUpgradeScript(
 }
 
 function parseResult(output: string): Record<string, unknown> {
-  const lines = output.split('\n');
-  const lastLine = lines[lines.length - 1];
-  try {
-    return JSON.parse(lastLine);
-  } catch {
-    return { ok: false, error: `Unexpected output: ${output}` };
-  }
+  return parseLastLineObject(output, { ok: false, error: `Unexpected output: ${output}` });
 }
 
 interface UpgradeState {
@@ -187,6 +185,8 @@ interface UpgradeState {
   listeners: Set<EventCallback>;
   /** True once the deploy step is active — cancel must be blocked */
   deploying: boolean;
+  /** The running install's setup-system changed something only a restart picks up. */
+  restartNeeded: boolean;
 }
 
 // Only one upgrade can run at a time, and that has to hold across the whole
@@ -203,6 +203,7 @@ const currentUpgrade: UpgradeState = upgradeGlobals[upgradeStateKey] ??= {
   progress: { step: 'idle', progress: 0, message: 'Idle' },
   listeners: new Set(),
   deploying: false,
+  restartNeeded: false,
 };
 
 export function isUpgradeRunning(): boolean {
@@ -223,7 +224,14 @@ export function subscribeToEvents(cb: EventCallback): () => void {
   };
 }
 
-function emit(progress: UpgradeProgress) {
+function emit(update: UpgradeProgress) {
+  // Once setup-system has found that the install owes a restart, every event
+  // after it says so, not only the finished one: the editor's connection
+  // usually drops while the service restarts, and the last event it heard is
+  // all it has to go on.
+  const progress: UpgradeProgress = currentUpgrade.restartNeeded && update.step !== 'error'
+    ? { ...update, restartNeeded: true }
+    : update;
   currentUpgrade.progress = progress;
   for (const cb of currentUpgrade.listeners) {
     try {
@@ -391,7 +399,16 @@ function setupSystemStep(progress: number): PipelineStep {
     run: async () => {
       // After the atomic swap, process.cwd() points to the rollback tree.
       // Use the explicit APP_DIR constant to run setup-system on the new code.
-      await runUpgradeScript('setup-system', [], streamTo('setup-system'), { cwd: APP_DIR });
+      const output = await runUpgradeScript('setup-system', [], streamTo('setup-system'), { cwd: APP_DIR });
+      // Some of what it changed is only read when the kiosk session starts,
+      // so the running wall keeps the old version until the device restarts.
+      // setup-system itself records that for the System page and the phone
+      // (restart-needed-state.ts); this only tells the update window.
+      const reasons = restartNeededFor(parseSetupSystemChanges(output));
+      if (reasons.length > 0) {
+        currentUpgrade.restartNeeded = true;
+        emitOutput('setup-system', `A restart is needed to finish (${reasons.join(', ')})`);
+      }
     },
   };
 }
@@ -459,6 +476,7 @@ async function runGuardedPipeline({ steps, onError }: GuardedPipelineOptions): P
   currentUpgrade.running = true;
   currentUpgrade.cancelled = false;
   currentUpgrade.deploying = false;
+  currentUpgrade.restartNeeded = false;
 
   try {
     await runPipeline(steps);

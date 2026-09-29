@@ -33,6 +33,7 @@ vi.mock('@/lib/kiosk', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/kiosk')>()),
   syncKioskConf: vi.fn().mockResolvedValue(undefined),
   applyDisplaySettings: vi.fn().mockResolvedValue(true),
+  applyLabwcRc: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@/lib/telemetry', () => ({
@@ -45,7 +46,7 @@ import { readConfigCached } from '@/lib/config-cache';
 import { CONFIG_REVISION_HEADER } from '@/lib/config-revision';
 import { HUB_TIMEZONE_HEADER } from '@/lib/timezone';
 import { withDataTransaction } from '@/lib/data-transaction';
-import { applyDisplaySettings } from '@/lib/kiosk';
+import { applyDisplaySettings, applyLabwcRc, syncKioskConf } from '@/lib/kiosk';
 import { INVALID_CONFIGS } from '@/lib/__tests__/invalid-config-matrix';
 
 const dummyConfig = {
@@ -287,6 +288,44 @@ describe('PUT /api/config', () => {
 
     expect((await PUT(makePutRequest(after))).status).toBe(200);
     expect(applyDisplaySettings).toHaveBeenCalledOnce();
+  });
+
+  it('puts a changed rotation on the screen only after kiosk.conf is written, and turns touch last', async () => {
+    const main = { id: 'main', name: 'Main', screens: dummyConfig.screens, displayWidth: 1080, displayHeight: 1920 };
+    const before = { ...dummyConfig, displays: [{ ...main, displayTransform: '90' }] };
+    const after = { ...dummyConfig, displays: [{ ...main, displayTransform: '270' }] };
+    vi.mocked(readConfig).mockResolvedValue(before as never);
+    const order: string[] = [];
+    let finishSync: (wrote: boolean) => void = () => {};
+    vi.mocked(syncKioskConf).mockImplementationOnce(() => new Promise((resolve) => {
+      finishSync = (wrote) => { order.push('kiosk.conf'); resolve(wrote); };
+    }));
+    vi.mocked(applyDisplaySettings).mockImplementationOnce(async () => { order.push('screen'); return true; });
+    vi.mocked(applyLabwcRc).mockImplementationOnce(async () => { order.push('touch'); });
+
+    expect((await PUT(makePutRequest(after))).status).toBe(200);
+    // The script reads kiosk.conf, so nothing may run before the write lands.
+    expect(applyDisplaySettings).not.toHaveBeenCalled();
+
+    finishSync(true);
+    await vi.waitFor(() => expect(order).toEqual(['kiosk.conf', 'screen', 'touch']));
+  });
+
+  it('puts the screen back in step when kiosk.conf had to be rewritten, with no rotation change in the save', async () => {
+    // rotate-display.sh on the device changes kiosk.conf and the screen, not
+    // the config. The next save writes the file back; the screen must follow
+    // it, or touch turns back while the picture stays rotated.
+    const main = { id: 'main', name: 'Main', screens: dummyConfig.screens, displayWidth: 1080, displayHeight: 1920, displayTransform: 'normal' };
+    const config = { ...dummyConfig, displays: [main] };
+    vi.mocked(readConfig).mockResolvedValue(config as never);
+    vi.mocked(syncKioskConf).mockResolvedValueOnce(true);
+    const order: string[] = [];
+    vi.mocked(applyDisplaySettings).mockImplementationOnce(async () => { order.push('screen'); return true; });
+    vi.mocked(applyLabwcRc).mockImplementationOnce(async () => { order.push('touch'); });
+
+    expect((await PUT(makePutRequest(config))).status).toBe(200);
+
+    await vi.waitFor(() => expect(order).toEqual(['screen', 'touch']));
   });
 
   it('saves when the sent revision matches the config on disk', async () => {

@@ -573,6 +573,11 @@
         "confirmTitle": "Genstart enheden?",
         "confirmBody": "Alt stopper, mens den genstarter. Denne fjernbetjening forbinder igen om cirka et minut.",
         "confirmButton": "Genstart enheden"
+      },
+      "restartNeeded": {
+        "title": "Genstart for at afslutte opdateringen",
+        "description": "En del af den seneste opdatering virker først, når enheden er genstartet.",
+        "button": "Genstart nu"
       }
     },
     "family": {

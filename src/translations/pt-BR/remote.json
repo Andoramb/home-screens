@@ -568,11 +568,16 @@
         "confirmButton": "Reiniciar"
       },
       "reboot": {
-        "label": "Reiniciar dispositivo",
+        "label": "Reiniciar aparelho",
         "description": "Reinicialização completa do sistema",
         "confirmTitle": "Reiniciar o aparelho?",
         "confirmBody": "Tudo para enquanto ele reinicia. Este controle reconecta em cerca de um minuto.",
         "confirmButton": "Reiniciar aparelho"
+      },
+      "restartNeeded": {
+        "title": "Reinicie para concluir a atualização",
+        "description": "Parte da última atualização só começa a funcionar depois que o aparelho reiniciar.",
+        "button": "Reiniciar agora"
       }
     },
     "family": {

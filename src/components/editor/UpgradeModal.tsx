@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
-import { ArrowUp, RotateCcw, Check, X } from 'lucide-react';
+import { ArrowUp, RotateCcw, Check, X, Info } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
 import Button from '@/components/ui/Button';
 import ModalFrame from '@/components/ui/ModalFrame';
@@ -203,6 +203,11 @@ function UpgradeAttempt({
     [isRollback, targetTag, t],
   );
 
+  // Going back a version is not an upgrade, and must not read like one.
+  const finishedLine = isRollback
+    ? t('upgradeModal.successRollback', { tag: targetTag })
+    : t('upgradeModal.successDefault');
+
   const HeaderIcon = isRollback ? RotateCcw : ArrowUp;
 
   const statusBadge = failed ? (
@@ -260,7 +265,9 @@ function UpgradeAttempt({
         <div className="px-6 pt-4 pb-3.5 border-b border-hs-border flex-shrink-0">
           <div className="flex items-baseline justify-between mb-2">
             <span className="text-[13px] text-hs-text-secondary truncate mr-3">
-              {progress.message}
+              {/* The server words its progress in English; the finished
+                  state has its own line in every language. */}
+              {done ? finishedLine : progress.message}
             </span>
             <span
               className={`text-[13px] font-mono font-semibold flex-shrink-0 ${
@@ -370,6 +377,19 @@ function UpgradeAttempt({
           )
         )}
 
+        {/* The page reloads as soon as the new version answers, onto the
+            System page, which offers the restart. This only says what comes
+            next; a button here would meet a server that is restarting. */}
+        {done && progress.restartNeeded && (
+          <div
+            data-testid="upgrade-restart-needed"
+            className="flex items-start gap-2.5 px-6 py-3 border-t border-hs-border bg-hs-accent-soft flex-shrink-0"
+          >
+            <Info size={14} className="text-hs-accent-hover flex-shrink-0 mt-0.5" aria-hidden />
+            <p className="text-xs text-hs-accent-hover">{t('upgradeModal.restartNeeded')}</p>
+          </div>
+        )}
+
         <div className="flex items-center justify-between gap-4 px-6 py-3.5 border-t border-hs-border-strong flex-shrink-0">
           {!done && !failed && (
             <>
@@ -387,7 +407,7 @@ function UpgradeAttempt({
             <>
               <p className="text-xs text-hs-success flex items-center gap-1.5 truncate">
                 <Check size={12} strokeWidth={3} className="flex-shrink-0" />
-                {reloadStatus || t('upgradeModal.successDefault')}
+                {reloadStatus || finishedLine}
               </p>
               <Button variant="primary" onClick={onComplete}>
                 {t('upgradeModal.doneButton')}

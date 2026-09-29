@@ -81,6 +81,8 @@ ROTATE_SRC="$(find_src rotate-display.sh)"
 [ -n "${ROTATE_SRC}" ] && install -m 0755 "${ROTATE_SRC}" "${APP_DIR}/scripts/rotate-display.sh"
 POWER_SRC="$(find_src kiosk-power-agent.sh)"
 [ -n "${POWER_SRC}" ] && install -m 0755 "${POWER_SRC}" "${APP_DIR}/scripts/kiosk-power-agent.sh"
+OUTPUTS_SRC="$(find_src kiosk-outputs.sh)"
+[ -n "${OUTPUTS_SRC}" ] && install -m 0755 "${OUTPUTS_SRC}" "${APP_DIR}/scripts/kiosk-outputs.sh"
 
 SPLASH_SRC=""
 if [ -f "${SRC_DIR}/share/connecting.html" ]; then

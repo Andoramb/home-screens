@@ -573,6 +573,11 @@
         "confirmTitle": "Gerät neu starten?",
         "confirmBody": "Während des Neustarts steht alles still. Diese Fernbedienung verbindet sich in etwa einer Minute wieder.",
         "confirmButton": "Neu starten"
+      },
+      "restartNeeded": {
+        "title": "Neu starten, um das Update abzuschließen",
+        "description": "Ein Teil des letzten Updates funktioniert erst nach einem Neustart des Geräts.",
+        "button": "Jetzt neu starten"
       }
     },
     "family": {

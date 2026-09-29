@@ -1609,6 +1609,11 @@
         "line": "A atualização para {tag} não iniciou, então esta tela voltou para v{version}.",
         "dismiss": "Entendi"
       },
+      "restartNeeded": {
+        "title": "Reinicie para concluir a atualização",
+        "line": "Parte da última atualização só começa a funcionar depois que o aparelho reiniciar. A tela fica escura por um ou dois minutos.",
+        "button": "Reiniciar agora"
+      },
       "channel": {
         "heading": "Quais atualizações receber",
         "stable": {
@@ -3177,6 +3182,15 @@
       "inProgress": "Não feche esta página nem desligue o dispositivo"
     },
     "successDefault": "Atualização concluída!",
+    "successRollback": "Você voltou para {tag}.",
+    "restartNeeded": "Falta só um passo: reiniciar o aparelho. Você vai poder fazer isso aqui assim que a página recarregar.",
+    "reload": {
+      "shuttingDown": "O Home Screens está reiniciando…",
+      "waitingNew": "Esperando o Home Screens voltar… ({seconds} s)",
+      "waitingOld": "Finalizando a atualização… ({seconds} s)",
+      "ready": "Tudo certo. Recarregando a página…",
+      "reloading": "Recarregando a página…"
+    },
     "doneButton": "Pronto",
     "status": {
       "inProgress": "Em andamento",

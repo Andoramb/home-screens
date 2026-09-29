@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import { execFileSync } from 'child_process';
 import path from 'path';
-import { parseWlrRandrOutput } from '@/lib/kiosk';
 
 /**
  * Which Wayland output the kiosk drives.
@@ -14,35 +13,29 @@ import { parseWlrRandrOutput } from '@/lib/kiosk';
  * `wlr-randr --output DP-1 --off` to get a second monitor out of the way left
  * DP-1 in the listing and kept losing to it.
  *
- * Three copies do this parse and they cannot share code at runtime: the spoke
- * launcher ships to display-only devices on its own, upgrade.sh emits the hub
- * launcher as a literal string, and the editor's live-apply path is
- * TypeScript. This file holds all three to the same behaviour.
+ * The parse used to live in three copies (both kiosk launchers and the
+ * editor's live-apply path). scripts/kiosk-outputs.sh is now the writer of the
+ * screen's settings. The display-only launcher keeps one copy for the boot on
+ * which an older updater has installed it without the helper, and that copy
+ * must stay identical. Nothing else may go back to setting the screen itself.
  */
 
 const SCRIPTS = path.join(process.cwd(), 'scripts');
 const read = (rel: string) => readFileSync(path.join(SCRIPTS, rel), 'utf-8');
 
-/** The awk program out of a launcher's OUTPUT= line. */
-function awkProgram(source: string, { generated }: { generated: boolean }): string {
-  const line = source
-    .split('\n')
-    .find((l) => l.includes('OUTPUT=$(wlr-randr') && l.includes('awk'));
+/** The awk program out of a script's OUTPUT= line. */
+function awkProgram(source: string): string {
+  const line = source.split('\n').find((l) => l.trimStart().startsWith('OUTPUT=$(') && l.includes('awk'));
   if (!line) throw new Error('no OUTPUT= detection line found');
-  // The hub launcher lives inside a single-quoted bash string, so its quotes
-  // are written with the '"'"' idiom and have to be unescaped first.
-  const unescaped = generated ? line.split(`'"'"'`).join("'") : line;
-  const match = unescaped.match(/awk '(.*)'\)/);
+  const match = line.match(/awk '(.*)'\)$/);
   if (!match) throw new Error(`could not read the awk program from: ${line}`);
   return match[1];
 }
 
-const SPOKE = awkProgram(read('kiosk-launcher-display.sh'), { generated: false });
-const HUB = awkProgram(read('upgrade.sh'), { generated: true });
+const PROGRAM = awkProgram(read('kiosk-outputs.sh'));
 
-/** Run an awk program the way the launcher does. */
-const runAwk = (program: string, input: string) =>
-  execFileSync('awk', [program], { input, encoding: 'utf8' }).trim();
+/** Run the awk program the way the script does. */
+const detect = (input: string) => execFileSync('awk', [PROGRAM], { input, encoding: 'utf8' }).trim();
 
 /** One output block as wlr-randr prints it. */
 const block = (name: string, enabled: boolean) =>
@@ -88,26 +81,36 @@ const CASES: Array<{ name: string; input: string; want: string }> = [
 ];
 
 describe('output detection', () => {
-  describe.each([
-    ['the spoke launcher', (input: string) => runAwk(SPOKE, input)],
-    ['the hub launcher', (input: string) => runAwk(HUB, input)],
-    ['the editor live-apply path', (input: string) => parseWlrRandrOutput(input)],
-  ])('%s', (_label, detect) => {
-    it.each(CASES)('$name', ({ input, want }) => {
-      expect(detect(input)).toBe(want);
-    });
-  });
-
-  it('keeps the two launcher copies identical', () => {
-    // They ship separately and have drifted before; see chromium-flags.test.ts
-    // for the flag list this mirrors.
-    expect(HUB).toBe(SPOKE);
+  it.each(CASES)('$name', ({ input, want }) => {
+    expect(detect(input)).toBe(want);
   });
 
   it('selects on Enabled rather than on line order', () => {
-    for (const program of [HUB, SPOKE]) {
-      expect(program).toContain('Enabled: yes');
-      expect(program).not.toContain('head -1');
-    }
+    expect(PROGRAM).toContain('Enabled: yes');
+    expect(PROGRAM).not.toContain('head -1');
+  });
+
+  it('keeps the display-only launcher\'s fallback copy identical', () => {
+    expect(awkProgram(read('kiosk-launcher-display.sh'))).toBe(PROGRAM);
+  });
+
+  it('leaves the screen settings to kiosk-outputs.sh', () => {
+    // A launcher that runs wlr-randr again is a second writer: its one-shot
+    // rotation is gone the next time the monitor reconnects, and it can land
+    // after kanshi's and undo it.
+    const hubLauncher = read('upgrade.sh').match(/DESIRED_LAUNCHER='[\s\S]*?--force-gpu-mem-available-mb=256'/)?.[0];
+    expect(hubLauncher).toBeDefined();
+    expect(hubLauncher).toContain('kiosk-outputs.sh" start');
+    expect(hubLauncher).not.toContain('wlr-randr');
+    // The display-only launcher only reaches wlr-randr when the helper is
+    // missing (see launcher-rotation.test.ts for what it does then).
+    const spoke = read('kiosk-launcher-display.sh');
+    const helperCall = spoke.indexOf('kiosk-outputs.sh" start');
+    const fallback = spoke.indexOf('\nelif [ -n "${DISPLAY_TRANSFORM}" ]');
+    expect(helperCall).toBeGreaterThan(-1);
+    expect(fallback).toBeGreaterThan(helperCall);
+    expect(spoke.indexOf('wlr-randr')).toBeGreaterThan(fallback);
+    expect(read('rotate-display.sh')).toContain('kiosk-outputs.sh" apply');
+    expect(readFileSync(path.join(process.cwd(), 'src', 'lib', 'kiosk.ts'), 'utf-8')).not.toContain("'wlr-randr'");
   });
 });

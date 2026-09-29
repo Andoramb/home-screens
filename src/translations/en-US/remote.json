@@ -573,6 +573,11 @@
         "confirmTitle": "Reboot the device?",
         "confirmBody": "Everything stops while it reboots. This remote reconnects in about a minute.",
         "confirmButton": "Reboot"
+      },
+      "restartNeeded": {
+        "title": "Restart to finish the update",
+        "description": "Part of the last update only starts working after the device restarts.",
+        "button": "Restart now"
       }
     },
     "family": {

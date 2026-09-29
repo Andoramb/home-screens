@@ -166,6 +166,7 @@ dest_for() {
     kiosk-update.sh)           echo "${APP_DIR}/scripts/kiosk-update.sh" ;;
     kiosk-update-install.sh)   echo "${APP_DIR}/scripts/kiosk-update-install.sh" ;;
     kiosk-power-agent.sh)      echo "${APP_DIR}/scripts/kiosk-power-agent.sh" ;;
+    kiosk-outputs.sh)          echo "${APP_DIR}/scripts/kiosk-outputs.sh" ;;
     rotate-display.sh)         echo "${APP_DIR}/scripts/rotate-display.sh" ;;
     share/connecting.html)     echo "${APP_DIR}/share/connecting.html" ;;
     *) ;;
@@ -297,6 +298,7 @@ install_file() {
 for from in \
   rotate-display.sh \
   kiosk-power-agent.sh \
+  kiosk-outputs.sh \
   kiosk-update-install.sh \
   kiosk-launcher-display.sh
 do

@@ -9,6 +9,7 @@ import {
 } from '@/lib/semver';
 import { fetchWithTimeout } from '@/lib/api-utils';
 import type { FailedUpdate } from '@/lib/upgrade-failed-state';
+import type { RestartNeeded } from '@/lib/restart-needed-state';
 import type { AutoUpdateInfo } from '@/lib/auto-update-policy';
 import {
   parseReleaseMarkers,
@@ -78,6 +79,8 @@ export interface VersionResponse extends VersionInfo {
   upgradeRunning: boolean;
   /** An update that never started and was undone; null once dismissed. */
   lastFailedUpdate: FailedUpdate | null;
+  /** An update this boot installed that the wall only picks up after a restart; null once the Pi restarts. */
+  restartNeeded: RestartNeeded | null;
   /** Schema stamped on the saved config, for judging a step back. Null when unreadable. */
   localSchema: number | null;
   /** The automatic update setting, its last run and when the next one is. */

@@ -166,14 +166,16 @@ The [Calendars](/docs/calendars) page walks through all three ways of connecting
 
 1. **Settings > Screen > Rotation & appearance** has the orientation. Change it and the picture turns straight away, no reboot, and the choice sticks. Start here; anything changed elsewhere is eventually replaced by this setting.
 2. If the picture is the right way up but everything is squashed or cut off, the resolution on the same page does not match the panel. Pick the one that matches.
+3. **Sideways only after the screen has been off** (asleep with **Switch the screen's power off too**, or switched off at the monitor): your monitor disconnects from the Pi while it is off and comes back as a new screen. Home Screens puts the rotation back when that happens. Update Home Screens, then restart the device when **Settings > System & updates** says **Restart to finish the update**. On the Pi, `sudo journalctl -b -t home-screens-kanshi` shows the rotation being put back.
+4. **Sideways right after an update, and you had turned the screen outside Home Screens** (with the Pi desktop's Screen Configuration tool, or a line of your own in labwc's autostart): Home Screens now keeps the rotation itself and starts from its own setting, which was never changed. Set the orientation in step 1 and it stays. Your earlier screen setup is kept on the Pi as `~/.config/kanshi/config.before-home-screens`.
 
-**If you are comfortable with a terminal** and cannot reach the editor, the Pi has a rotation helper. Run it from a keyboard on the Pi itself, as the normal user, not with `sudo`:
+**If you are comfortable with a terminal** and cannot reach the editor, the Pi has a rotation helper. Run it on the Pi, over SSH or from a keyboard, as the normal user, not with `sudo`:
 
 ```bash
 bash /opt/home-screens/current/scripts/rotate-display.sh 90   # 0, 90, 180 or 270
 ```
 
-Set the same orientation in the editor afterwards so it survives the next update. The saved value lives in `data/kiosk.conf` as `DISPLAY_TRANSFORM`.
+When it cannot reach the screen (no kiosk running for that user) it says the rotation is saved and takes effect at the next restart. Set the same orientation in the editor afterwards so it survives the next update. The saved value lives in `data/kiosk.conf` as `DISPLAY_TRANSFORM`.
 
 ---
 

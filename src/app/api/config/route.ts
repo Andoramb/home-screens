@@ -138,25 +138,29 @@ async function saveConfig(request: NextRequest, config: ScreenConfiguration): Pr
       );
     }
 
-    // Keep kiosk.conf in sync so kiosk-launcher.sh picks up changes on next boot
-    // and, when it changed, have labwc line touch up with the new rotation.
-    syncKioskConf(saved)
-      .then((wrote) => (wrote ? applyLabwcRc() : undefined))
-      .catch((e) => log.error('kiosk.conf sync failed:', e));
-
-    // Apply display rotation/mode immediately via wlr-randr (no reboot needed).
-    // Only attempt when display settings actually changed.
-    // Compared as the hub's resolved screen, not the raw globals: in a
-    // multi-display config the rotation is edited on the main display's node.
+    // Put a changed rotation or resolution on the screen now (no reboot
+    // needed). Compared as the hub's resolved screen, not the raw globals: in
+    // a multi-display config the rotation is edited on the main display's node.
     const before = seen.prev ? resolveHubPanel(seen.prev) : null;
     const after = resolveHubPanel(saved);
     const displayChanged = !before
       || before.transform !== after.transform
       || before.width !== after.width
       || before.height !== after.height;
-    if (displayChanged) {
-      applyDisplaySettings(saved).catch(() => {});
-    }
+
+    // In order: kiosk.conf first, because applying the screen settings reads
+    // it (and the launcher reads it at the next boot); then the screen; then,
+    // when the file changed, labwc's touch matrix to match the new rotation.
+    // The screen follows the file as well as the config: rotate-display.sh
+    // changes the file and the screen without the config knowing, and a save
+    // that put the file back while leaving the screen alone turned touch one
+    // way and the picture the other.
+    syncKioskConf(saved)
+      .then(async (wrote) => {
+        if (wrote || displayChanged) await applyDisplaySettings();
+        if (wrote) await applyLabwcRc();
+      })
+      .catch((e) => log.error('kiosk.conf sync failed:', e));
 
     return NextResponse.json(saved, { headers: withRevision(saved) });
   });

@@ -1609,6 +1609,11 @@
         "line": "The update to {tag} did not start, so this display went back to v{version}.",
         "dismiss": "Got it"
       },
+      "restartNeeded": {
+        "title": "Restart to finish the update",
+        "line": "Part of the last update only starts working after the device restarts. The display goes dark for a minute or two.",
+        "button": "Restart now"
+      },
       "channel": {
         "heading": "Which updates to get",
         "stable": {
@@ -3177,6 +3182,15 @@
       "inProgress": "Do not close this page or power off the device"
     },
     "successDefault": "Upgrade complete!",
+    "successRollback": "You're back on {tag}.",
+    "restartNeeded": "One more step: restart the device to finish the update. You can do it here once the page reloads.",
+    "reload": {
+      "shuttingDown": "Home Screens is restarting…",
+      "waitingNew": "Waiting for Home Screens to come back… ({seconds}s)",
+      "waitingOld": "Finishing the update… ({seconds}s)",
+      "ready": "Ready. Reloading the page…",
+      "reloading": "Reloading the page…"
+    },
     "doneButton": "Done",
     "status": {
       "inProgress": "In progress",

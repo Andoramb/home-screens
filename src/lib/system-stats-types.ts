@@ -6,6 +6,7 @@
 
 import type { HardwareStats } from '@/lib/hardware-stats';
 import type { GoogleAppsStatus } from '@/lib/google-apps';
+import type { RestartNeeded } from '@/lib/restart-needed-state';
 
 export interface DiskInfo {
   total: number;
@@ -51,4 +52,7 @@ export interface SystemStats {
   /** Hub's own in-process hardware snapshot. Falls back to this when the
    * selected display hasn't reported via the bash reporter. */
   hardware?: HardwareStats | null;
+  /** An update this boot installed that the wall only picks up after a
+   * restart. The phone's Settings sheet offers the restart. */
+  restartNeeded?: RestartNeeded | null;
 }

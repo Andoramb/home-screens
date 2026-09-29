@@ -30,10 +30,12 @@ log() {
 # root the spoke has, so it installs them here: a fixed list, no caller
 # input, so the sudoers grant stays one reviewable capability. Best-effort
 # and bounded: a spoke with no route to the archive just keeps its black
-# overlay (the power agent waits for wlopm rather than exiting). This runs
-# before the staging check so the updater can call the helper with nothing
-# staged, on its timer tick, purely to retry a package that failed before.
-for pkg in wlopm; do
+# overlay (the power agent waits for wlopm rather than exiting), and sets its
+# rotation once at boot the old way (kiosk-outputs.sh falls back when kanshi
+# is missing). This runs before the staging check so the updater can call the
+# helper with nothing staged, on its timer tick, purely to retry a package
+# that failed before.
+for pkg in wlopm kanshi; do
   if ! dpkg -s "${pkg}" >/dev/null 2>&1; then
     if timeout 180 apt-get install -y -qq -o DPkg::Lock::Timeout=60 "${pkg}" >/dev/null 2>&1; then
       log "installed package ${pkg}"

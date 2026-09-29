@@ -120,6 +120,12 @@ const VERSION_DOWNGRADE_BLOCKED = {
   tags: [{ tag: 'v1.2.3', version: '1.2.3', commit: 'abc1234', schema: 13 }],
 };
 
+/** An update this boot installed changed what the wall only picks up at a restart. */
+const VERSION_RESTART_NEEDED = {
+  ...VERSION_UP_TO_DATE,
+  restartNeeded: { reasons: ['session-packages', 'launcher'], tag: 'v1.2.3', at: '2026-09-27T12:00:00Z' },
+};
+
 /** finalize-deploy put the previous tree back after a release never started. */
 const VERSION_AFTER_FAILED_UPDATE = {
   ...VERSION_UP_TO_DATE,
@@ -628,7 +634,34 @@ test.describe('Defaults › System', () => {
     // System Actions render but are NOT clicked here.
     await expect(page.getByRole('button', { name: 'Restart Home Screens' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Restart the whole device' })).toBeVisible();
+    // Nothing owes a restart, so the page does not ask for one.
+    await expect(page.getByTestId('system-restart-needed')).toHaveCount(0);
 
+    assertNoRealSystemCall(stubs);
+  });
+
+  test('a restart an update still needs is offered through the page\'s own restart confirm', async ({ page, request }) => {
+    await putConfig(request, baseConfig());
+    const stubs = await setupSystemStubs(page, { version: VERSION_RESTART_NEEDED });
+
+    await page.goto('/editor/settings?section=defaults&page=system');
+    const notice = page.getByTestId('system-restart-needed');
+    await expect(notice.getByText('Restart to finish the update')).toBeVisible();
+    await expect(notice.getByText('Part of the last update only starts working after the device restarts.', { exact: false })).toBeVisible();
+
+    // The button asks with the same dialog as "Restart the whole device".
+    // Never confirmed: a reboot that slipped past the stub would restart the
+    // machine running the suite.
+    await notice.getByRole('button', { name: 'Restart now' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Restart the whole device')).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Reboot', exact: true })).toBeVisible();
+    await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+    await expect(dialog).toBeHidden();
+
+    // Still owed, still offered, and nothing was sent.
+    await expect(notice.getByRole('button', { name: 'Restart now' })).toBeEnabled();
+    expect(stubs.posted['/api/system/power']).toBeUndefined();
     assertNoRealSystemCall(stubs);
   });
 
@@ -1036,5 +1069,37 @@ test.describe('Defaults › System', () => {
     assertNoRealSystemCall(stubs);
     const posted = stubs.posted['/api/system/rollback'] as Array<{ tag: string }>;
     expect(posted?.[0]?.tag).toBe('v1.2.2');
+  });
+
+  test('a finished step back says so, and still asks for the restart when the connection dropped first', async ({ page, request }) => {
+    await putConfig(request, baseConfig());
+    // upgradeRunning keeps the window from reloading the page under the test.
+    const stubs = await setupSystemStubs(page, { version: { ...VERSION_UP_TO_DATE, upgradeRunning: true } });
+    // The usual ending: the restart step is the last thing the window hears,
+    // then the service restarts and the stream ends without a finished event.
+    const events = [
+      { step: 'preflight', progress: 5, message: 'Checking...' },
+      { step: 'restart', progress: 90, message: 'Restarting service...', restartNeeded: true },
+    ];
+    await page.route('**/api/system/status', (route) =>
+      route.fulfill({
+        contentType: 'text/event-stream',
+        body: events.map((e) => `event: progress\ndata: ${JSON.stringify(e)}\n\n`).join(''),
+      }),
+    );
+
+    await page.goto('/editor/settings?section=defaults&page=system');
+    await page.getByRole('button', { name: 'Go back to this' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: 'Go back to v1.2.2' }).click();
+
+    await expect(page.getByRole('heading', { name: 'Rolling back to v1.2.2' })).toBeVisible({ timeout: 15_000 });
+    // Going back is not called an upgrade.
+    await expect(page.getByText("You're back on v1.2.2.")).toBeVisible();
+    await expect(page.getByText('Upgrade complete!')).toHaveCount(0);
+    await expect(page.getByTestId('upgrade-restart-needed')).toHaveText(
+      'One more step: restart the device to finish the update. You can do it here once the page reloads.',
+    );
+
+    assertNoRealSystemCall(stubs);
   });
 });

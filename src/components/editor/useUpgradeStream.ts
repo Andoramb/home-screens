@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, type Dispatch, type RefObject, type SetStateAction } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
+import { useTranslate } from '@/i18n';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -12,6 +13,13 @@ export interface ProgressData {
   error?: string;
   /** Set on a failed preflight when the fix is the device password (see SudoPasswordPrompt). */
   needsSudoPassword?: boolean;
+  /**
+   * Set once the install has found the device still needs a restart to finish
+   * the update: on the restart step's events as well as the finished one,
+   * because the connection often drops during the restart and the finished
+   * event never arrives.
+   */
+  restartNeeded?: boolean;
 }
 
 export type StepState = 'done' | 'active' | 'pending' | 'error';
@@ -121,6 +129,7 @@ function handleProgressEvent(ctx: StreamContext, event: MessageEvent): void {
       message: data.message,
       error: data.error,
       needsSudoPassword: data.needsSudoPassword === true,
+      restartNeeded: data.restartNeeded === true,
     });
 
     if (
@@ -179,6 +188,7 @@ function handleStreamError(ctx: StreamContext): void {
       step: 'complete',
       progress: 100,
       message: 'Server restarted. Reconnecting...',
+      restartNeeded: current.restartNeeded === true,
     });
     ctx.setDone(true);
   } else if (!ctx.hasSeenRealStep.current) {
@@ -327,8 +337,18 @@ export function useUpgradeStream(
       hasSeenRealStep,
       progressRef,
       activeStepRef,
-      setProgress,
-      setActiveStep,
+      // The refs are what a dropped connection is judged by, so they take
+      // each event as it is handled, not at the next render: the last event
+      // and the end of the stream can arrive together, and the render
+      // between them that the refs used to wait for never happens.
+      setProgress: (p) => {
+        progressRef.current = p;
+        setProgress(p);
+      },
+      setActiveStep: (step) => {
+        activeStepRef.current = step;
+        setActiveStep(step);
+      },
       setDone,
       setFailed,
     };
@@ -360,13 +380,20 @@ export function useUpgradeStream(
 
 export function useWaitForServer(done: boolean): string | null {
   const [reloadStatus, setReloadStatus] = useState<string | null>(null);
+  // Read through a ref: the wait below is one long-running effect that must
+  // not restart when the dictionary object changes.
+  const t = useTranslate('editor');
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     if (!done) return;
     let cancelled = false;
+    const say = (key: string, seconds?: number) =>
+      setReloadStatus(tRef.current(`upgradeModal.reload.${key}`, seconds === undefined ? undefined : { seconds }));
 
     async function waitForServer() {
-      setReloadStatus('Server is shutting down...');
+      say('shuttingDown');
       // Wait past the nohup restart delay (3s) plus buffer
       await new Promise((r) => setTimeout(r, 4000));
 
@@ -378,7 +405,7 @@ export function useWaitForServer(done: boolean): string | null {
         const elapsed = Math.round((Date.now() - start) / 1000);
 
         if (!serverResponded) {
-          setReloadStatus(`Waiting for new server to start... (${elapsed}s)`);
+          say('waitingNew', elapsed);
         }
 
         try {
@@ -391,13 +418,13 @@ export function useWaitForServer(done: boolean): string | null {
           if (res.ok) {
             const data = await res.json();
             if (!data.upgradeRunning) {
-              setReloadStatus('New server is ready — reloading page...');
+              say('ready');
               window.location.reload();
               return;
             }
             // Old server still running — update message
             serverResponded = true;
-            setReloadStatus(`Waiting for old server to finish... (${elapsed}s)`);
+            say('waitingOld', elapsed);
           }
         } catch {
           // Server not responding yet — expected during restart
@@ -408,7 +435,7 @@ export function useWaitForServer(done: boolean): string | null {
 
       // Fallback: reload anyway after timeout
       if (!cancelled) {
-        setReloadStatus('Reloading...');
+        say('reloading');
         window.location.reload();
       }
     }
