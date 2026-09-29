@@ -416,7 +416,44 @@ function accessOfCachedProxyRoute(call: ts.CallExpression, where: string): DocsA
   return value;
 }
 
-function accessOf(init: ts.Expression, source: ts.SourceFile, where: string): DocsAccess {
+/** Handlers a wrapper or factory built, by local name. */
+type BuiltHandlers = Map<string, () => DocsAccess>;
+
+/** True for `withAuth(...)`, `cachedProxyRoute(...)` and the like, not for any other call a route file makes. */
+function buildsHandler(init: ts.Expression, source: ts.SourceFile): boolean {
+  if (!ts.isCallExpression(init)) return false;
+  const callee = init.expression.getText(source);
+  return callee === 'cachedProxyRoute' || callee in WRAPPER_ACCESS;
+}
+
+/**
+ * Access for a hand-written handler. One that makes no auth check of its own
+ * but hands the request to a handler a wrapper built takes that handler's
+ * access: `const { GET: cachedGET } = cachedProxyRoute(...)` followed by
+ * `export async function GET(request) { ... await cachedGET(request) ... }`
+ * is as guarded as `cachedGET` is.
+ */
+function accessOfHandler(handler: ts.Node, source: ts.SourceFile, where: string, built: BuiltHandlers): DocsAccess {
+  const own = accessOfBody(handler.getText(source));
+  if (own !== 'open') return own;
+
+  const inherited = new Set<DocsAccess>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression)) {
+      const access = built.get(node.expression.text);
+      if (access) inherited.add(access());
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(handler);
+
+  if (inherited.size > 1) {
+    throw new Error(`${where}: a handler calls wrapped handlers with different access (${[...inherited].join(', ')})`);
+  }
+  return [...inherited][0] ?? 'open';
+}
+
+function accessOf(init: ts.Expression, source: ts.SourceFile, where: string, built: BuiltHandlers): DocsAccess {
   if (ts.isCallExpression(init)) {
     const callee = init.expression.getText(source);
     if (callee === 'cachedProxyRoute') return accessOfCachedProxyRoute(init, where);
@@ -424,7 +461,7 @@ function accessOf(init: ts.Expression, source: ts.SourceFile, where: string): Do
     if (!access) throw new Error(`${where}: unknown route wrapper "${callee}" (classify it in WRAPPER_ACCESS)`);
     return access;
   }
-  if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) return accessOfBody(init.getText(source));
+  if (ts.isArrowFunction(init) || ts.isFunctionExpression(init)) return accessOfHandler(init, source, where, built);
   throw new Error(`${where}: cannot tell how this handler is authenticated`);
 }
 
@@ -460,13 +497,14 @@ export function extractRoutes(): DocsRoute[] {
       // serves. Routes export either inline (`export const GET = ...`) or
       // through a list at the bottom (`export { GET, cache }`).
       const locals = new Map<string, () => DocsAccess>();
+      const built: BuiltHandlers = new Map();
       const exported = new Map<string, string>(); // method -> local name
       for (const statement of source.statements) {
         const inline = ts.canHaveModifiers(statement)
           && Boolean(ts.getModifiers(statement)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword));
         if (ts.isFunctionDeclaration(statement) && statement.name) {
           const name = statement.name.text;
-          locals.set(name, () => accessOfBody(statement.getText(source)));
+          locals.set(name, () => accessOfHandler(statement, source, where, built));
           if (inline) exported.set(name, name);
         } else if (ts.isVariableStatement(statement)) {
           for (const decl of statement.declarationList.declarations) {
@@ -480,7 +518,9 @@ export function extractRoutes(): DocsRoute[] {
                 ? decl.name.elements.flatMap((el) => (ts.isIdentifier(el.name) ? [el.name.text] : []))
                 : [];
             for (const name of names) {
-              locals.set(name, () => accessOf(init, source, where));
+              const access = () => accessOf(init, source, where, built);
+              locals.set(name, access);
+              if (buildsHandler(init, source)) built.set(name, access);
               if (inline) exported.set(name, name);
             }
           }
