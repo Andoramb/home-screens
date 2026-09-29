@@ -13,6 +13,7 @@ import type { RewardData } from '@/lib/reward-data';
 import { choreMarks, planCompletionsUpdate, updateCompletionsAtomic } from '@/lib/chore-completion-data';
 import { CHORE_HISTORY_DAYS, addDaysISO } from '@/components/modules/chore-chart/types';
 import { householdToday } from '@/lib/household-day';
+import { contentRevision } from '@/lib/content-revision';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,8 +75,17 @@ export const GET = async (request: NextRequest) => {
       // with a wrong clock still shows and ticks the household's day.
       // The household settings ride along, so a phone's rules line and sheet
       // follow a change made on another screen without a reload.
+      // `?chores=1` adds the chore list and its revision, for the phone and
+      // the kids' page, which keep a copy of it and must notice another
+      // phone's edit. The wall never asks: it reads the list from the heartbeat.
+      const chores = saved && request.nextUrl.searchParams.get('chores') === '1' ? saved.chores : null;
       return NextResponse.json(
-        { ...choreMarks(marks), today, ...(saved ? { settings: readChoreSettings(saved.settings) } : {}) },
+        {
+          ...choreMarks(marks),
+          today,
+          ...(saved ? { settings: readChoreSettings(saved.settings) } : {}),
+          ...(chores ? { chores, choresRevision: contentRevision(chores) } : {}),
+        },
         { headers: revalidatedHeaders(answered) },
       );
     });

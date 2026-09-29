@@ -114,6 +114,12 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   // ── Lifted state (shared between Today + Manage views) ──
   const { members, groups, revision: familyRevision } = useFamilyData();
   const [chores, setChores] = useState<ChoreDefinition[]>(choreData.chores ?? []);
+  // The list as last received from or saved to the hub, and the list on screen
+  // right now: an edit not yet saved shows as the two differing, and a poll
+  // that finds another phone's edit must not replace it.
+  const cleanChoresRef = useRef<ChoreDefinition[]>(chores);
+  const choresRef = useRef(chores);
+  choresRef.current = chores;
   // Saves go through one session (`lib/chore-client.ts`): they run in order,
   // each quoting the revision the previous one was answered with, so a list
   // from an older copy cannot overwrite what another phone saved since.
@@ -127,6 +133,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   const settingsSaveRef = useRef(0);
   const adoptChores = useCallback((snapshot: ChoreSnapshot) => {
     adoptedRef.current = snapshot.chores;
+    cleanChoresRef.current = snapshot.chores;
     session.adopt(snapshot);
     setChores(snapshot.chores);
     setChoreSettings(snapshot.settings);
@@ -198,6 +205,8 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       if (outcome.kind === 'conflict') {
         adoptChores(outcome.snapshot);
         setLastWarning(t('choresTab.changedElsewhere'));
+      } else if (outcome.kind === 'saved') {
+        cleanChoresRef.current = chores;
       }
     },
     // The session rejects on any other failure; without that a 500 resolved
@@ -276,18 +285,28 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
     try {
       // The kids' page never looks further back than yesterday, so it asks
       // for the recent history; the grown-ups' history strip needs it all.
-      const res = await editorFetch(isAdmin ? '/api/chores' : choresUrl(), { signal: controller.signal });
+      // `chores=1` adds the chore list's revision, so a list another phone
+      // edited or deleted from is picked up here too, not only its ticks.
+      const res = await editorFetch(`${isAdmin ? '/api/chores?' : `${choresUrl()}&`}chores=1`, { signal: controller.signal });
       if (!res.ok) return;
       const data = await res.json();
       if (!isMountedRef.current || controller.signal.aborted) return;
       applyMarks(data);
+      if (
+        Array.isArray(data?.chores)
+        && typeof data.choresRevision === 'string'
+        && data.choresRevision !== session.currentRevision
+        && choresRef.current === cleanChoresRef.current
+      ) {
+        adoptChores({ chores: data.chores, settings: readChoreSettings(data.settings), revision: data.choresRevision });
+      }
       if (typeof data?.today === 'string') setHubToday(data.today);
       if (data?.settings && settingsSave === settingsSaveRef.current) {
         const next = readChoreSettings(data.settings);
         setChoreSettings((prev) => (prev.grabLimit === next.grabLimit && prev.grabHold === next.grabHold ? prev : next));
       }
     } catch { /* silent (includes AbortError) */ }
-  }, [applyMarks, isAdmin]);
+  }, [applyMarks, adoptChores, isAdmin, session]);
 
   const showBalances = !!config.showPoints;
   const fetchRewards = useCallback(async () => {
@@ -310,13 +329,17 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   }, [fetchCompletions]);
 
   // Read only while the balances or the Rewards view are on screen.
-  const wantsRewards = showBalances || subView === 'rewards';
+  const inRewardsView = subView === 'rewards';
+  const wantsRewards = showBalances || inRewardsView;
+  // Also re-read on entering or leaving the Rewards view: the balances beside
+  // the progress header may be up to a poll old, and a redeem or a list edit
+  // built from them is refused.
   useEffect(() => {
     if (!wantsRewards) return;
     fetchRewards();
     const interval = setInterval(fetchRewards, 15_000);
     return () => clearInterval(interval);
-  }, [fetchRewards, wantsRewards]);
+  }, [fetchRewards, wantsRewards, inRewardsView]);
 
   // Today is the hub's calendar day once it has said so: a phone with a wrong
   // clock (or near midnight) must not show or tick a different day than the
@@ -481,10 +504,15 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       const data: ChoreToggleResponse = await res.json();
       if (!isMountedRef.current) return;
       applyMarks(data);
-      // The rewards a toggle moved points in; the reward list itself did not
-      // change, so the revision a save quotes stays the one already held.
+      // Only what a toggle moves: balances and the redemption history. The
+      // answer also carries the reward list, but this phone's copy of the list
+      // is the one its revision belongs to. Taking the list without its
+      // revision would show another phone's new reward and then have the
+      // next reward save here refused as stale.
       const moved = data.rewards;
-      if (moved) setRewardsData((prev) => (prev ? { ...prev, ...moved } : prev));
+      if (moved) {
+        setRewardsData((prev) => (prev ? { ...prev, balances: moved.balances, redemptions: moved.redemptions } : prev));
+      }
       if (data.overspent) {
         const { memberId, balance } = data.overspent;
         const owed = Math.abs(balance);

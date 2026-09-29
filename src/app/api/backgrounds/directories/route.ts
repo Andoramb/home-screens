@@ -139,6 +139,11 @@ export const POST = withAuth(async (request: NextRequest) => {
   return NextResponse.json({ path: relativePath }, { status: 201 });
 }, 'Failed to create directory');
 
+/** `.DS_Store`, `._IMG_1.jpg`, `Thumbs.db`, `desktop.ini`: files the operating system adds, never the family's. */
+function isSystemClutter(name: string): boolean {
+  return name.startsWith('.') || /^(thumbs\.db|desktop\.ini)$/i.test(name);
+}
+
 export const DELETE = withAuth(async (request: NextRequest) => {
   const body = await parseJsonBody<{ path?: unknown }>(request);
   if (body instanceof NextResponse) return body;
@@ -170,15 +175,19 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Path is not a directory' }, { status: 400 });
   }
 
-  // Refuse if directory contains files
+  // Refuse if directory contains files. The clutter a Mac or Windows PC leaves
+  // in a folder it has opened is not something anyone can see or move from
+  // here, so a folder holding only that counts as empty and takes it along.
   const entries = await fs.readdir(resolved);
-  if (entries.length > 0) {
+  const leftovers = entries.filter(isSystemClutter);
+  if (entries.length > leftovers.length) {
     return NextResponse.json(
       { error: 'Directory is not empty. Delete all photos first.' },
       { status: 409 },
     );
   }
 
+  for (const name of leftovers) await fs.rm(path.join(resolved, name), { force: true });
   await fs.rmdir(resolved);
   return NextResponse.json({ deleted: dirPath });
 }, 'Failed to delete directory');

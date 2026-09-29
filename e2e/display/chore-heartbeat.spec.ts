@@ -186,7 +186,7 @@ test.describe('the chores and rewards reads revalidate', () => {
 
   test('the kids\' page asks for the recent history and the browser revalidates it', async ({ page, request, sandboxDir }) => {
     await setUp(request, sandboxDir);
-    const first = page.waitForResponse((r) => r.url().endsWith('/api/chores?days=31') && r.request().method() === 'GET');
+    const first = page.waitForResponse((r) => r.url().endsWith('/api/chores?days=31&chores=1') && r.request().method() === 'GET');
     await page.goto('/chores');
     const answered = await first;
     const etag = await answered.headerValue('etag');
@@ -194,7 +194,7 @@ test.describe('the chores and rewards reads revalidate', () => {
     expect((await answered.request().sizes()).responseBodySize).toBeGreaterThan(0);
 
     // The next read sends the ETag back on its own and gets nothing new.
-    const next = page.waitForRequest((r) => r.url().endsWith('/api/chores?days=31') && r.method() === 'GET');
+    const next = page.waitForRequest((r) => r.url().endsWith('/api/chores?days=31&chores=1') && r.method() === 'GET');
     await page.reload();
     const request2 = await next;
     expect((await request2.allHeaders())['if-none-match']).toBe(etag);

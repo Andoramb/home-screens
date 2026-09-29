@@ -21,6 +21,7 @@ const mockFs = vi.hoisted(() => ({
   readdir: vi.fn(),
   stat: vi.fn(),
   rmdir: vi.fn(async () => undefined),
+  rm: vi.fn(async () => undefined),
 }));
 vi.mock('fs', () => ({ promises: mockFs }));
 
@@ -131,6 +132,21 @@ describe('DELETE /api/backgrounds/directories', () => {
     const res = await DELETE(bodyRequest('DELETE', { path: 'Vacation' }));
     expect(res.status).toBe(409);
     expect((await res.json()).error).toMatch(/not empty/);
+    expect(mockFs.rmdir).not.toHaveBeenCalled();
+  });
+
+  it('treats a folder holding only system clutter as empty, and clears it out', async () => {
+    mockFs.readdir.mockResolvedValue(['.DS_Store', 'Thumbs.db']);
+    const res = await DELETE(bodyRequest('DELETE', { path: 'Vacation' }));
+    expect(res.status).toBe(200);
+    expect(mockFs.rm).toHaveBeenCalledTimes(2);
+    expect(mockFs.rmdir).toHaveBeenCalled();
+  });
+
+  it('still refuses when a photo sits beside the clutter', async () => {
+    mockFs.readdir.mockResolvedValue(['.DS_Store', 'photo.jpg']);
+    const res = await DELETE(bodyRequest('DELETE', { path: 'Vacation' }));
+    expect(res.status).toBe(409);
     expect(mockFs.rmdir).not.toHaveBeenCalled();
   });
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, type PointerEvent as ReactPointerEvent } from 'react';
+import { useCallback, useEffect, useRef, useSyncExternalStore, type PointerEvent as ReactPointerEvent } from 'react';
 import { FolderInput, Lock, Monitor, MonitorUp, Trash2, X } from 'lucide-react';
 import { useFormattingLocale, useTranslate } from '@/i18n';
 import type { MediaInventoryItem } from '@/lib/media-inventory';
@@ -86,6 +86,21 @@ const ACTION: React.CSSProperties = {
  * big it is, which wall shows it, and offers what can be done with it; when
  * it has to stay, a line says why instead of offering a button that fails.
  */
+const SIDEWAYS_QUERY = '(orientation: landscape) and (max-height: 520px)';
+
+/** True on a phone held sideways: wide, and too short for a panel under the photo. */
+function useSideways(): boolean {
+  return useSyncExternalStore(
+    (onChange) => {
+      const query = window.matchMedia(SIDEWAYS_QUERY);
+      query.addEventListener('change', onChange);
+      return () => query.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia(SIDEWAYS_QUERY).matches,
+    () => false,
+  );
+}
+
 export default function PhotoViewer({
   items,
   index,
@@ -100,6 +115,7 @@ export default function PhotoViewer({
 }: PhotoViewerProps) {
   const t = useTranslate('remote');
   const tCore = useTranslate('core');
+  const sideways = useSideways();
   const locale = useFormattingLocale();
   const item = items[index];
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
@@ -215,7 +231,11 @@ export default function PhotoViewer({
         <span style={{ width: 44 }} />
       </div>
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 0', position: 'relative' }}>
+      {/* A phone turned sideways has no height to spare for a panel under the
+          photo: the panel moves beside it and scrolls, and the photo keeps the
+          whole height. */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: sideways ? 'row' : 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px 0', position: 'relative' }}>
         {item.kind === 'video' ? (
           <video
             key={item.path}
@@ -244,10 +264,21 @@ export default function PhotoViewer({
         style={{
           flex: 'none',
           background: '#141414',
-          borderTop: '1px solid #262626',
-          borderRadius: '20px 20px 0 0',
           padding: '16px 16px',
-          paddingBottom: 'max(30px, env(safe-area-inset-bottom))',
+          ...(sideways
+            ? {
+                width: 'min(340px, 45%)',
+                overflowY: 'auto',
+                borderLeft: '1px solid #262626',
+                borderRadius: '20px 0 0 0',
+                paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+                paddingRight: 'max(16px, env(safe-area-inset-right))',
+              }
+            : {
+                borderTop: '1px solid #262626',
+                borderRadius: '20px 20px 0 0',
+                paddingBottom: 'max(30px, env(safe-area-inset-bottom))',
+              }),
         }}
       >
         <div data-testid="photo-viewer-facts">
@@ -326,6 +357,7 @@ export default function PhotoViewer({
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );

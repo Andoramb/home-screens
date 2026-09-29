@@ -220,6 +220,18 @@ describe('GET /api/chores', () => {
     expect(json).toEqual({ completions: [], grabs: [], bonusResets: {}, today: daysAgo(0), settings: { grabLimit: 1, grabHold: 'day' } });
   });
 
+  it('adds the chore list and its revision only when ?chores=1 asks for them', async () => {
+    const plain = await (await GET(getRequest())).json();
+    expect(plain.chores).toBeUndefined();
+    expect(plain.choresRevision).toBeUndefined();
+
+    const withList = await (await GET(getRequest('?chores=1'))).json();
+    expect(Array.isArray(withList.chores)).toBe(true);
+    expect(withList.chores.some((c: { id: string }) => c.id === 'chore-pts5')).toBe(true);
+    expect(typeof withList.choresRevision).toBe('string');
+    expect(withList.choresRevision).not.toBe('');
+  });
+
   it('writes back to disk when purgeOld evicts at least one completion', async () => {
     seedCompletions([
       {

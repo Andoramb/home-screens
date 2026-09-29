@@ -273,7 +273,10 @@ export const POST = withAuth(async (request: NextRequest) => {
   const uploadedPaths: string[] = [];
 
   for (const file of files) {
-    const safeName = sanitizeName(file.name);
+    // A name already in the folder keeps its file: screens and slideshows point
+    // at it, and a different picture with the same name (two cameras both make
+    // IMG_0001.jpg) must not replace it. The new one gets the next free name.
+    const safeName = await freeName(dir, sanitizeName(file.name));
     const filePath = path.join(dir, safeName);
     // Stream to disk in chunks. formData() above already holds the one
     // unavoidable in-memory copy; buffering again via arrayBuffer() would
@@ -290,6 +293,20 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   return NextResponse.json({ paths: uploadedPaths }, { status: 201 });
 }, 'Failed to upload background');
+
+/** `name`, or `name-2`, `name-3`... before the extension, whichever is not taken in `dir`. */
+async function freeName(dir: string, name: string): Promise<string> {
+  const ext = path.extname(name);
+  const stem = name.slice(0, name.length - ext.length);
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? name : `${stem}-${n}${ext}`;
+    try {
+      await fs.access(path.join(dir, candidate));
+    } catch {
+      return candidate;
+    }
+  }
+}
 
 /**
  * The library-relative path a DELETE body names, in the exact spelling the
