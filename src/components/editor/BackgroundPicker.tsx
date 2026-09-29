@@ -326,7 +326,7 @@ export default function BackgroundPicker() {
   // the default tab and dead-ended in "add a free API key", so the first thing
   // anyone wants to change needed a signup first.
   const [tab, setTab] = useState<'unsplash' | 'nasa' | 'immich' | 'local'>('local');
-  const { config, selectedDisplayId, selectedScreenId, updateScreen } = useEditorStore();
+  const { config, selectedDisplayId, selectedScreenId, updateScreen, updateScreenRotation, updateScreenShade } = useEditorStore();
   const { status: secretStatus } = useSecretStatus();
   const hasUnsplashKey = !!secretStatus.unsplash_access_key;
   const hasNasaKey = !!secretStatus.nasa_api_key;
@@ -392,22 +392,19 @@ export default function BackgroundPicker() {
     if (!selectedScreenId) return;
     const current = currentScreen?.backgroundRotation;
     const defaultSource: BackgroundRotationSourceId = hasUnsplashKey ? 'unsplash' : hasNasaKey ? 'nasa-apod' : hasImmichKey ? 'immich' : 'icloud';
-    const updated: BackgroundRotation = {
+    updateScreenRotation(selectedScreenId, {
       enabled,
       sources: current?.sources?.length ? current.sources : [defaultSource],
       query: current?.query || 'nature landscape',
       intervalMinutes: current?.intervalMinutes || 60,
-    };
-    updateScreen(selectedScreenId, { backgroundRotation: updated });
+    });
   };
 
   const toggleRotationSource = (id: BackgroundRotationSourceId, checked: boolean) => {
     if (!selectedScreenId || !currentScreen?.backgroundRotation) return;
     const current = currentScreen.backgroundRotation.sources ?? [];
     const sources = checked ? [...current, id] : current.filter((s) => s !== id);
-    updateScreen(selectedScreenId, {
-      backgroundRotation: { ...currentScreen.backgroundRotation, sources },
-    });
+    updateScreenRotation(selectedScreenId, { sources });
   };
 
   const rotationFieldClass = 'mt-0.5 block w-full rounded bg-hs-card border border-hs-border-strong text-xs text-hs-text-body px-2 py-1 focus:outline-none focus:border-hs-accent';
@@ -416,17 +413,16 @@ export default function BackgroundPicker() {
   const shadeEnabled = shade?.enabled ?? false;
   const setShadeEnabled = (enabled: boolean) => {
     if (!selectedScreenId) return;
-    const updated: BackgroundShade = {
+    updateScreenShade(selectedScreenId, {
       enabled,
       style: shade?.style || 'topBottom',
       strength: shade?.strength ?? 40,
       color: shade?.color || '#000000',
-    };
-    updateScreen(selectedScreenId, { shade: updated });
+    });
   };
   const updateShade = (updates: Partial<BackgroundShade>) => {
-    if (!selectedScreenId || !shade) return;
-    updateScreen(selectedScreenId, { shade: { ...shade, ...updates } });
+    if (!selectedScreenId) return;
+    updateScreenShade(selectedScreenId, updates);
   };
 
   return (
@@ -495,13 +491,10 @@ export default function BackgroundPicker() {
                                         type="button"
                                         onClick={() => {
                                           if (!selectedScreenId) return;
-                                          updateScreen(selectedScreenId, {
-                                            backgroundRotation: {
-                                              ...currentScreen.backgroundRotation!,
-                                              unsplashCollections: mode.id === 'collections'
-                                                ? (currentScreen.backgroundRotation!.unsplashCollections?.length ? currentScreen.backgroundRotation!.unsplashCollections : [''])
-                                                : undefined,
-                                            },
+                                          updateScreenRotation(selectedScreenId, {
+                                            unsplashCollections: mode.id === 'collections'
+                                              ? (currentScreen.backgroundRotation!.unsplashCollections?.length ? currentScreen.backgroundRotation!.unsplashCollections : [''])
+                                              : undefined,
                                           });
                                         }}
                                         className={`truncate rounded px-2 py-1 text-[11px] ${
@@ -519,9 +512,7 @@ export default function BackgroundPicker() {
                                     collections={currentScreen.backgroundRotation!.unsplashCollections || []}
                                     onChange={(ids) => {
                                       if (!selectedScreenId) return;
-                                      updateScreen(selectedScreenId, {
-                                        backgroundRotation: { ...currentScreen.backgroundRotation!, unsplashCollections: ids },
-                                      });
+                                      updateScreenRotation(selectedScreenId, { unsplashCollections: ids });
                                     }}
                                   />
                                 ) : (
@@ -532,9 +523,7 @@ export default function BackgroundPicker() {
                                       value={currentScreen.backgroundRotation!.query}
                                       onChange={(e) => {
                                         if (!selectedScreenId) return;
-                                        updateScreen(selectedScreenId, {
-                                          backgroundRotation: { ...currentScreen.backgroundRotation!, query: e.target.value },
-                                        });
+                                        updateScreenRotation(selectedScreenId, { query: e.target.value });
                                       }}
                                       placeholder={t('backgroundPicker.searchQueryPlaceholder')}
                                       className={rotationFieldClass}
@@ -551,9 +540,7 @@ export default function BackgroundPicker() {
                                   value={currentScreen.backgroundRotation!.icloudAlbumUrl || ''}
                                   onChange={(e) => {
                                     if (!selectedScreenId) return;
-                                    updateScreen(selectedScreenId, {
-                                      backgroundRotation: { ...currentScreen.backgroundRotation!, icloudAlbumUrl: e.target.value || undefined },
-                                    });
+                                    updateScreenRotation(selectedScreenId, { icloudAlbumUrl: e.target.value || undefined });
                                   }}
                                   placeholder="https://www.icloud.com/sharedalbum/#..."
                                   className={rotationFieldClass}
@@ -568,9 +555,7 @@ export default function BackgroundPicker() {
                                 rotation={currentScreen.backgroundRotation!}
                                 onChange={(updates) => {
                                   if (!selectedScreenId) return;
-                                  updateScreen(selectedScreenId, {
-                                    backgroundRotation: { ...currentScreen.backgroundRotation!, ...updates },
-                                  });
+                                  updateScreenRotation(selectedScreenId, updates);
                                 }}
                               />
                             )}
@@ -584,9 +569,7 @@ export default function BackgroundPicker() {
                                 folder={currentScreen.backgroundRotation!.localFolder || ''}
                                 onChange={(folder) => {
                                   if (!selectedScreenId) return;
-                                  updateScreen(selectedScreenId, {
-                                    backgroundRotation: { ...currentScreen.backgroundRotation!, localFolder: folder || undefined },
-                                  });
+                                  updateScreenRotation(selectedScreenId, { localFolder: folder || undefined });
                                 }}
                               />
                             )}
@@ -603,9 +586,7 @@ export default function BackgroundPicker() {
                     value={currentScreen.backgroundRotation!.intervalMinutes}
                     onChange={(e) => {
                       if (!selectedScreenId) return;
-                      updateScreen(selectedScreenId, {
-                        backgroundRotation: { ...currentScreen.backgroundRotation!, intervalMinutes: Number(e.target.value) },
-                      });
+                      updateScreenRotation(selectedScreenId, { intervalMinutes: Number(e.target.value) });
                     }}
                     className={rotationFieldClass}
                   >

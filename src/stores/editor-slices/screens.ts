@@ -139,5 +139,31 @@ export function createScreenSlice(
         ),
       }), { coalesce: COALESCE_KEYS.updateScreen(id) });
     },
+
+    updateScreenRotation: (id, updates) => {
+      const { selectedDisplayId } = get();
+      mutateConfig((config) => ({
+        config: withActiveScreens(
+          config,
+          selectedDisplayId,
+          getActiveScreens(config, selectedDisplayId).map((s) =>
+            s.id === id ? { ...s, backgroundRotation: { ...s.backgroundRotation, ...updates } as Screen['backgroundRotation'] } : s,
+          ),
+        ),
+      }), { coalesce: COALESCE_KEYS.screenRotation(id) });
+    },
+
+    updateScreenShade: (id, updates) => {
+      const { selectedDisplayId } = get();
+      mutateConfig((config) => ({
+        config: withActiveScreens(
+          config,
+          selectedDisplayId,
+          getActiveScreens(config, selectedDisplayId).map((s) =>
+            s.id === id ? { ...s, shade: { ...s.shade, ...updates } as Screen['shade'] } : s,
+          ),
+        ),
+      }), { coalesce: COALESCE_KEYS.screenShade(id) });
+    },
   };
 }

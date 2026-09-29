@@ -8,6 +8,8 @@ import type {
   ModuleSize,
   GlobalSettings,
   Screen,
+  BackgroundRotation,
+  BackgroundShade,
   Profile,
   DisplayNode,
   DisplayNodeSettings,
@@ -143,6 +145,12 @@ export interface ScreenActions {
   copyScreensFromDisplay: (sourceDisplayId: string) => void;
   reorderScreens: (fromIndex: number, toIndex: number) => void;
   updateScreen: (id: string, updates: Partial<Screen>) => void;
+  /** Merges onto the screen's live `backgroundRotation`, not a snapshot the
+   *  caller had — avoids two rapid field edits (e.g. typing a query while a
+   *  collection row is still validating) clobbering each other. */
+  updateScreenRotation: (id: string, updates: Partial<BackgroundRotation>) => void;
+  /** Same live-merge guarantee as `updateScreenRotation`, for `shade`. */
+  updateScreenShade: (id: string, updates: Partial<BackgroundShade>) => void;
 }
 
 export interface SettingsActions {
