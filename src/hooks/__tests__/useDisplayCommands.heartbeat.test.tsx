@@ -152,6 +152,20 @@ describe('the show-photo command', () => {
     ]);
   });
 
+  it('passes a picture\'s size along, and ignores a size that is not two positive numbers', async () => {
+    const showPhoto = await run(
+      photo('sized.jpg', { width: 3000, height: 4000 }),
+      photo('half.jpg', { width: 3000 }),
+      photo('bad.jpg', { width: 0, height: 'tall' }),
+    );
+
+    expect(showPhoto.mock.calls).toEqual([
+      [{ url: '/api/backgrounds/serve?file=sized.jpg', kind: 'image', durationMs: 60_000, width: 3000, height: 4000 }],
+      [{ url: '/api/backgrounds/serve?file=half.jpg', kind: 'image', durationMs: 60_000 }],
+      [{ url: '/api/backgrounds/serve?file=bad.jpg', kind: 'image', durationMs: 60_000 }],
+    ]);
+  });
+
   it('skips a photo whose time ran out more than a minute ago', async () => {
     const now = Date.now();
     const showPhoto = await run(

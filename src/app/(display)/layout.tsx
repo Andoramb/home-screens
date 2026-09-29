@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import '@/app/globals.css';
 import PluginGlobals from '@/components/PluginGlobals';
 import { readConfig } from '@/lib/config';
-import { I18nProvider, preloadDateLocale } from '@/i18n';
+import { I18nProvider, preloadDateLocale, resolveShippedLocale } from '@/i18n';
 import { DEFAULT_LOCALE } from '@/i18n/manifest';
 import { buildLocaleBlob } from '@/i18n/server-blob';
 
@@ -47,7 +47,7 @@ export default async function DisplayLayout({ children }: { children: React.Reac
   // formattingLocale falls back to locale (the cascade also lives in
   // <I18nProvider> for client consumers, but the server preload needs
   // the resolved value here so the cache is warm for first paint).
-  const formattingLocale = config?.settings?.formattingLocale ?? locale;
+  const formattingLocale = config?.settings?.formattingLocale ?? resolveShippedLocale(locale);
   const [blob] = await Promise.all([
     buildLocaleBlob(locale, ['core', 'modules', 'weather']),
     preloadDateLocale(locale),

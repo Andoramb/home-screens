@@ -500,7 +500,7 @@ export default function PhotosTab({ directory }: { directory: string }) {
     try {
       const result = await createLibraryFolder(name, parent || undefined);
       if (!result.ok || !result.data) {
-        showToast(t('photosTab.failedCreateFolder'), 'error');
+        showToast(t(result.status === 409 ? 'photosTab.folderExists' : 'photosTab.failedCreateFolder'), 'error');
         return;
       }
       created = result.data.path;
@@ -1000,7 +1000,13 @@ export default function PhotosTab({ directory }: { directory: string }) {
         <DeleteConfirm
           {...deletePlan(sheet.paths)}
           items={visible}
-          walls={wallsText(currentPath)}
+          walls={(() => {
+            // Only the walls that play what is being deleted: a video does not
+            // come off a slideshow that shows photos.
+            const gone = new Set(sheet.paths);
+            const names = wallsOf(currentPath, kindsOf(visible.filter((item) => gone.has(item.path))));
+            return names.length > 0 ? words.names(names) : null;
+          })()}
           onConfirm={() => void runDelete(sheet.paths, sheet.from)}
           onCancel={() => setSheet(null)}
         />

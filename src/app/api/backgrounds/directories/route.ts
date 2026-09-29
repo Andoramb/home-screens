@@ -133,6 +133,13 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Maximum folder depth is 2' }, { status: 400 });
   }
 
+  // A folder that is already there is not "created": say so, so the phone
+  // does not announce a new folder that is the old one.
+  const taken = await fs.stat(resolvedNew).then(() => true, () => false);
+  if (taken) {
+    return NextResponse.json({ error: "There's already a folder with that name here." }, { status: 409 });
+  }
+
   await fs.mkdir(resolvedNew, { recursive: true });
 
   const relativePath = path.relative(BGS, resolvedNew);

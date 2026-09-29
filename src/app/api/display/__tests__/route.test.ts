@@ -588,6 +588,19 @@ describe('POST /api/display/show-photo', () => {
     expect(mintMediaToken).not.toHaveBeenCalled();
   });
 
+  it('sends a picture\'s size as people see it, so the wall asks for a copy that fits', async () => {
+    const sharp = (await import('sharp')).default;
+    // Stored sideways (orientation 6): shown as 30 wide and 60 high.
+    await sharp({ create: { width: 60, height: 30, channels: 3, background: '#39c' } })
+      .withMetadata({ orientation: 6 })
+      .jpeg()
+      .toFile(path.join(library, 'nature', 'sideways.jpg'));
+
+    await show({ file: 'nature/sideways.jpg' });
+
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'show-photo', expect.objectContaining({ width: 30, height: 60 }));
+  });
+
   it('clamps the duration to between 5 seconds and 10 minutes, in whole seconds', async () => {
     const cases: Array<[number, number]> = [
       [1, 5_000],

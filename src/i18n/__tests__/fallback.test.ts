@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveLocaleChain, lookupKey } from '@/i18n/fallback';
+import { resolveLocaleChain, resolveShippedLocale, lookupKey } from '@/i18n/fallback';
 import type { Dictionary } from '@/i18n/types';
 
 describe('resolveLocaleChain', () => {
@@ -119,5 +119,14 @@ describe('lookupKey', () => {
     };
     // Polish "few" → 2; not present → falls back to `other`.
     expect(lookupKey(sparse, 'foo', { count: 2 }, 'pl-PL')).toBe('2 fallback');
+  });
+});
+
+describe('resolveShippedLocale', () => {
+  it('keeps a shipped locale, maps a region of a shipped language to it, and falls back to English otherwise', () => {
+    expect(resolveShippedLocale('da-DK')).toBe('da-DK');
+    expect(resolveShippedLocale('de-AT')).toBe('de-DE');
+    expect(resolveShippedLocale('pt-PT')).toBe('pt-BR');
+    expect(resolveShippedLocale('ja-JP')).toBe('en-US');
   });
 });

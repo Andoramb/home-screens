@@ -873,7 +873,7 @@ export default function PropertyPanel({
         </AccordionSection>
 
         <div className="pt-3 border-t border-hs-border-strong space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 [&>button]:min-w-0 [&>button]:whitespace-normal">
             <Button
               disabled={atFront}
               onClick={() => reorderModule(selectedScreenId, selectedModule.id, 'front')}

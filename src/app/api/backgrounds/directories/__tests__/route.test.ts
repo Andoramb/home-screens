@@ -71,6 +71,16 @@ describe('GET /api/backgrounds/directories', () => {
 describe('POST /api/backgrounds/directories', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Nothing by that name yet.
+    mockFs.stat.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+  });
+
+  it('answers 409, and creates nothing, when the folder already exists', async () => {
+    mockFs.stat.mockResolvedValue({ isDirectory: () => true });
+    const res = await POST(bodyRequest('POST', { name: 'Beach' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/already a folder/);
+    expect(mockFs.mkdir).not.toHaveBeenCalled();
   });
 
   it('rejects a missing name with 400', async () => {

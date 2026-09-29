@@ -215,7 +215,13 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
               && (p.kind === 'image' || p.kind === 'video')
               && typeof p.durationMs === 'number' && p.durationMs > 0
             ) {
-              handlersRef.current.showPhoto({ url: p.url, kind: p.kind, durationMs: p.durationMs });
+              const sized = typeof p.width === 'number' && p.width > 0 && typeof p.height === 'number' && p.height > 0;
+              handlersRef.current.showPhoto({
+                url: p.url,
+                kind: p.kind,
+                durationMs: p.durationMs,
+                ...(sized ? { width: p.width as number, height: p.height as number } : {}),
+              });
             }
             break;
           }

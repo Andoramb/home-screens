@@ -24,7 +24,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { Dictionary, TranslateFn } from './types';
-import { resolveLocaleChain, lookupKey } from './fallback';
+import { resolveLocaleChain, resolveShippedLocale, lookupKey } from './fallback';
 import { DEFAULT_LOCALE, FALLBACK_LOCALE } from './manifest';
 import { getCachedNamespace, hydrateFromBlob, loadNamespace } from './loader';
 import { preloadDateLocale } from './formatters';
@@ -113,7 +113,7 @@ export function I18nProvider({
   // here (not at consumer sites) so the cascade lives in exactly one
   // place; downstream code can read `useFormattingLocale()` without
   // knowing the rule.
-  const resolvedFormattingLocale = formattingLocale ?? locale;
+  const resolvedFormattingLocale = formattingLocale ?? resolveShippedLocale(locale);
   // Hydration runs once in the lazy initializer — safe under React 19 Strict
   // Mode because the initializer is invoked once per mount even if the
   // function component double-renders. No render-side mutation; the loader

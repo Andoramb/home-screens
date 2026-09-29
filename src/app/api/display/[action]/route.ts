@@ -24,6 +24,7 @@ import { safeLibraryPath } from '@/lib/library-files';
 import { cleanLibraryPath } from '@/lib/library-moves';
 import { mediaKindOf } from '@/lib/media-formats';
 import { mintMediaToken } from '@/lib/media-token';
+import { readImageDimensions } from '@/lib/image-dimensions';
 import type { ModuleInstance, Screen, ScreenConfiguration } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -331,13 +332,16 @@ async function handleShowPhoto(
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });
   if (displayId instanceof NextResponse) return displayId;
   let url = `/api/backgrounds/serve?file=${encodeURIComponent(file)}`;
+  // The picture's size as people see it, so the wall asks for a copy that fits
+  // it whole rather than one that covers the screen.
+  const size = kind === 'image' ? await readImageDimensions(absolute, (await fs.stat(absolute)).size) : undefined;
   if (kind === 'video') {
     // Bound to the same `file` value the serve route reads back.
     const token = await mintMediaToken(file);
     if (token) url += `&mt=${encodeURIComponent(token)}`;
   }
   const durationMs = seconds * 1000;
-  enqueueCommand(displayId, 'show-photo', { url, kind, durationMs, expiresAt: Date.now() + durationMs });
+  enqueueCommand(displayId, 'show-photo', { url, kind, durationMs, expiresAt: Date.now() + durationMs, ...(size ?? {}) });
   return NextResponse.json({ ok: true, command: 'show-photo', durationMs });
 }
 

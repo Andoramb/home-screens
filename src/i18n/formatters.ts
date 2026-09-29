@@ -63,7 +63,10 @@ const LOCALE_PENDING = new Map<string, Promise<DateFnsLocale>>();
  * bundler emit one chunk per locale.
  */
 async function importDateFnsLocale(tag: string): Promise<DateFnsLocale> {
-  switch (tag) {
+  // Any region of a shipped language reads with that language's day and month
+  // names (`de-AT` in German), like the rest of the app.
+  const language = tag.split('-')[0];
+  switch (language === 'pt' ? 'pt-BR' : language === 'en' ? 'en-US' : language) {
     case 'en-US': {
       const m = await import('date-fns/locale/en-US');
       return m.enUS;

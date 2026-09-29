@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { imageSize } from 'image-size';
 import { readConfig } from '@/lib/config';
 import { scanMediaUsage, scanMissingMedia, slideshowFolders } from '@/lib/media-usage';
 import { withAuth } from '@/lib/api-utils';
 import { libraryRoot } from '@/lib/library-files';
-import { IMAGE_FILE_RE, MAX_IMPORT_IMAGE_BYTES, VIDEO_FILE_RE } from '@/lib/media-formats';
+import { IMAGE_FILE_RE, VIDEO_FILE_RE } from '@/lib/media-formats';
+import { readImageDimensions } from '@/lib/image-dimensions';
 import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
 import type {
   MediaInventory,
@@ -16,13 +16,6 @@ import type {
 } from '@/lib/media-inventory';
 
 export const dynamic = 'force-dynamic';
-
-/**
- * First stage of dimension reading: sane files carry their headers in the
- * first few KiB, so probe only this much instead of buffering whole phone
- * JPEGs (a library of those would cost the Pi seconds of disk per page open).
- */
-const HEADER_PROBE_BYTES = 64 * 1024;
 
 /** Dimensions are re-read only when a file's size or mtime changes; a page
  *  refresh after one delete must not re-parse every header in the library.
@@ -38,50 +31,6 @@ const dimensionCache = new Map<string, DimensionCacheEntry>();
 /** Stable output order regardless of readdir ordering. */
 function byPath<T extends { path: string }>(a: T, b: T): number {
   return a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
-}
-
-function dimensionsOf(dims: {
-  width: number | undefined;
-  height: number | undefined;
-}): { width: number; height: number } | undefined {
-  const { width, height } = dims;
-  return typeof width === 'number' && Number.isFinite(width)
-    && typeof height === 'number' && Number.isFinite(height)
-    ? { width, height }
-    : undefined;
-}
-
-/**
- * Two-stage dimension read. Stage one reads only the first 64 KiB, since
- * dimension headers live in the first few KiB of sane files and buffering
- * whole phone JPEGs would hammer the Pi's disk for seconds per page open.
- * A stage-one throw usually means truncation: the dimension info sits past
- * the probe (e.g. a fat EXIF segment pushing the JPEG's SOF marker out),
- * so stage two retries once against the whole file, capped at the largest
- * image the library ever accepts. A stage-two throw means the file is
- * genuinely corrupt, and the caller ships it without dimensions.
- */
-async function readImageDimensions(
-  full: string,
-  size: number,
-): Promise<{ width: number; height: number } | undefined> {
-  try {
-    const fh = await fs.open(full, 'r');
-    try {
-      const buf = Buffer.alloc(Math.min(HEADER_PROBE_BYTES, size));
-      const { bytesRead } = await fh.read(buf, 0, buf.length, 0);
-      return dimensionsOf(imageSize(buf.subarray(0, bytesRead)));
-    } finally {
-      await fh.close();
-    }
-  } catch {
-    if (size > MAX_IMPORT_IMAGE_BYTES) return undefined;
-    try {
-      return dimensionsOf(imageSize(await fs.readFile(full)));
-    } catch {
-      return undefined;
-    }
-  }
 }
 
 async function cachedImageDimensions(
