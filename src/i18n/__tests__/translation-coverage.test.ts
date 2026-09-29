@@ -506,6 +506,11 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'editor|backgroundPicker.intervals.minutes',
     'editor|backgroundPicker.sourceLabel',
     'editor|backgroundPicker.tabs.local',
+    // "Collections" and "photo(s)" are the same words in French.
+    'editor|backgroundPicker.unsplash.modeCollections',
+    'editor|backgroundPicker.unsplash.collectionValid',
+    'editor|backgroundPicker.local.photoCountOne',
+    'editor|backgroundPicker.local.photoCountOther',
     'editor|choreChartModal.choreForm.dateLabel',
     'editor|choreChartModal.choreForm.ticketsLabel',
     'modules|chore-chart.choreSummary.ticketCountPlural',

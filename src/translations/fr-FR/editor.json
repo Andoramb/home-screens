@@ -2445,7 +2445,16 @@
       "nasaApod": "Image du jour NASA",
       "icloud": "Album partagé iCloud",
       "unsplash": "Unsplash",
-      "immich": "Immich"
+      "immich": "Immich",
+      "local": "Dossier de la bibliothèque locale"
+    },
+    "local": {
+      "folderLabel": "Dossier",
+      "browse": "Parcourir",
+      "allPhotosRoot": "Tous les arrière-plans (dossier racine)",
+      "photoCountOne": "{count} photo",
+      "photoCountOther": "{count} photos",
+      "noPhotosInFolder": "Aucune photo dans ce dossier pour le moment."
     },
     "tabs": {
       "nasa": "NASA",

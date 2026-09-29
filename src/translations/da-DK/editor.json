@@ -2445,7 +2445,16 @@
       "nasaApod": "NASA's dagens billede",
       "icloud": "Delt iCloud-album",
       "unsplash": "Unsplash",
-      "immich": "Immich"
+      "immich": "Immich",
+      "local": "Lokal biblioteksmappe"
+    },
+    "local": {
+      "folderLabel": "Mappe",
+      "browse": "Gennemse",
+      "allPhotosRoot": "Alle baggrunde (rodmappe)",
+      "photoCountOne": "{count} foto",
+      "photoCountOther": "{count} fotos",
+      "noPhotosInFolder": "Ingen fotos i denne mappe endnu."
     },
     "tabs": {
       "nasa": "NASA",

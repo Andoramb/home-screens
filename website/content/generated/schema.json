@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 15,
   "categories": [
     "Full Screen",
     "Time & Date",
@@ -7027,7 +7027,7 @@
             "text": "number"
           },
           "description": "Config schema version. The app updates it when it upgrades an older file; never edit it by hand",
-          "default": 14
+          "default": 15
         },
         {
           "name": "settings",
@@ -8114,19 +8114,13 @@
           "description": "Turn rotation on"
         },
         {
-          "name": "source",
-          "optional": true,
+          "name": "sources",
+          "optional": false,
           "type": {
-            "kind": "string",
-            "text": "\"immich\" | \"icloud\" | \"unsplash\" | \"nasa-apod\"",
-            "values": [
-              "unsplash",
-              "nasa-apod",
-              "immich",
-              "icloud"
-            ]
+            "kind": "array",
+            "text": "BackgroundRotationSourceId[]"
           },
-          "description": "Where the images come from"
+          "description": "Every source currently drawn from. Rotation picks uniformly at random among these each interval. Empty/undefined falls back to whatever the editor's default-source resolution seeds on first enable (see `setRotationEnabled` in BackgroundPicker.tsx)."
         },
         {
           "name": "query",
@@ -8190,6 +8184,15 @@
             "text": "string"
           },
           "description": "Public iCloud shared album link, or just its token"
+        },
+        {
+          "name": "localFolder",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "string"
+          },
+          "description": "Local media library folder to rotate through, relative to the library root"
         }
       ]
     },

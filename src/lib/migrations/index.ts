@@ -9,6 +9,7 @@ import { v10ToV11 } from './v10-to-v11';
 import { v11ToV12 } from './v11-to-v12';
 import { v12ToV13 } from './v12-to-v13';
 import { v13ToV14 } from './v13-to-v14';
+import { v14ToV15 } from './v14-to-v15';
 
 interface Migration {
   version: number;
@@ -95,6 +96,9 @@ const migrations: Migration[] = [
   // Migration 014: an unset time format is written down as 12h, and clocks on
   // the old English default date pattern follow the household's language.
   v13ToV14,
+  // Migration 015: background rotation's single `source` enum became a
+  // `sources` array so several sources can be enabled at once.
+  v14ToV15,
 ];
 
 /** @internal Get all migrations sorted by version */

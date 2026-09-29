@@ -25,7 +25,7 @@ export function buildRotationKey(screens: Screen[]): string {
         const r = s.backgroundRotation!;
         return {
           id: s.id,
-          source: r.source || 'unsplash',
+          sources: r.sources,
           query: r.query,
           unsplashCollections: r.unsplashCollections ?? null,
           intervalMinutes: r.intervalMinutes,
@@ -33,6 +33,7 @@ export function buildRotationKey(screens: Screen[]): string {
           immichPersonId: r.immichPersonId ?? null,
           immichFavoritesOnly: r.immichFavoritesOnly ?? false,
           icloudAlbumUrl: r.icloudAlbumUrl ?? null,
+          localFolder: r.localFolder ?? null,
         };
       }),
   );

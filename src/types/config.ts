@@ -340,11 +340,19 @@ export interface ModuleInstance {
   backgroundProvider?: boolean;
 }
 
+/** Every source rotation can currently draw photos from. */
+export type BackgroundRotationSourceId = 'unsplash' | 'nasa-apod' | 'immich' | 'icloud' | 'local';
+
 export interface BackgroundRotation {
   /** Turn rotation on */
   enabled: boolean;
-  /** Where the images come from */
-  source?: 'unsplash' | 'nasa-apod' | 'immich' | 'icloud';
+  /**
+   * Every source currently drawn from. Rotation picks uniformly at random
+   * among these each interval. Empty/undefined falls back to whatever the
+   * editor's default-source resolution seeds on first enable (see
+   * `setRotationEnabled` in BackgroundPicker.tsx).
+   */
+  sources: BackgroundRotationSourceId[];
   /** Unsplash search words; other sources ignore it */
   query: string;
   /** Unsplash collection IDs to rotate photos from (e.g. "I6rVqHIQXO0" from unsplash.com/collections/I6rVqHIQXO0/october). Takes priority over `query` when non-empty. */
@@ -363,6 +371,8 @@ export interface BackgroundRotation {
    * Public share link (icloud.com/sharedalbum/#TOKEN) or bare token.
    */
   icloudAlbumUrl?: string;
+  /** Local media library folder to rotate through, relative to the library root */
+  localFolder?: string;
 }
 
 /** Overlay dimming/vignette drawn over a screen's background, between the image and its modules */

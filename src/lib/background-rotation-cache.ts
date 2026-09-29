@@ -9,7 +9,10 @@ import { createJsonStore } from '@/lib/json-store';
 
 export interface RotationCacheEntry {
   path: string;
-  source: string;
+  /** Every source the screen's rotation was configured to draw from at fetch time, stable-sorted-JSON. */
+  sources: string;
+  /** The one source actually picked (at random) for this fetch; kept so a poll inside the interval doesn't re-pick. */
+  pickedSource: string;
   query: string;
   fetchedAt: number;
   intervalMinutes: number;

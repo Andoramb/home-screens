@@ -62,8 +62,8 @@ describe('migrations', () => {
     expect(JSON.stringify(config)).toBe(original);
   });
 
-  it('getLatestSchemaVersion returns 14', () => {
-    expect(getLatestSchemaVersion()).toBe(14);
+  it('getLatestSchemaVersion returns 15', () => {
+    expect(getLatestSchemaVersion()).toBe(15);
   });
 });
 
@@ -298,9 +298,9 @@ describe('migration edge cases: legacy + multi-display registry', () => {
     const { config: result, migrationsRun } = migrateUp(config);
 
     expect(result.version).toBe(getLatestSchemaVersion());
-    expect(result.version).toBe(14);
-    // v2 through v14 run (v1 is the starting point, not re-applied).
-    expect(migrationsRun).toHaveLength(13);
+    expect(result.version).toBe(15);
+    // v2 through v15 run (v1 is the starting point, not re-applied).
+    expect(migrationsRun).toHaveLength(14);
     // Legacy single-display shape is preserved untouched: v2 leaves non-flag
     // modules alone, v3/v4/v5 are pure version bumps, v6 only touches
     // next-view countdowns (this fixture has no modules at all), v7 only
@@ -328,9 +328,9 @@ describe('migration edge cases: legacy + multi-display registry', () => {
 
     const { config: result, migrationsRun } = migrateUp(config);
 
-    expect(result.version).toBe(14);
-    // Only v4 through v14 remain to run from a v3 config.
-    expect(migrationsRun).toHaveLength(11);
+    expect(result.version).toBe(15);
+    // Only v4 through v15 remain to run from a v3 config.
+    expect(migrationsRun).toHaveLength(12);
     // The registry is passed through verbatim. Seeding a sibling `main` is the
     // editor store's addDisplay job (see stores/__tests__/editor-store.test.ts),
     // never a migration's — so a registry without `main` must stay that way.
@@ -800,7 +800,7 @@ describe('migration v11: starter backgrounds moved to /starter-backgrounds/', ()
 
     const { config: result, migrationsRun } = migrateUp(config);
 
-    expect(result.version).toBe(14);
+    expect(result.version).toBe(15);
     expect(migrationsRun).toContainEqual(expect.stringMatching(/^v11: /));
     expect(result.screens[0].backgroundImage).toBe('/starter-backgrounds/plum.svg');
   });
@@ -841,9 +841,9 @@ describe('migration v12: retired dev update channel renamed to rc', () => {
 
     const { config: result, migrationsRun } = migrateUp(config);
 
-    expect(result.version).toBe(14);
+    expect(result.version).toBe(15);
     expect(migrationsRun).toContainEqual(expect.stringMatching(/^v12: /));
-    expect(migrationsRun.at(-1)).toMatch(/^v14: /);
+    expect(migrationsRun.at(-1)).toMatch(/^v15: /);
     expect(result.settings.updateChannel).toBe('rc');
   });
 });
@@ -856,8 +856,8 @@ describe('migration v13: preserve family inputs for the coordinated fold', () =>
     const personSources = { 'family-alex': ['work'] };
     config.settings.calendar = { ...config.settings.calendar, people, personSources };
     const before = structuredClone(config);
-    const { config: migrated } = migrateUp(config);
-    expect(migrated.version).toBe(14);
+    const { config: migrated } = migrateUp(config, 13);
+    expect(migrated.version).toBe(13);
     expect(migrated.settings.calendar.people).toEqual(people);
     expect(migrated.settings.calendar.personSources).toEqual(personSources);
     expect(config).toEqual(before);
@@ -910,5 +910,71 @@ describe('migration v14: unset clock formats follow the language from here on', 
     const before = structuredClone(config);
     migrateUp(config, 14);
     expect(config).toEqual(before);
+  });
+});
+
+describe('migration v15: backgroundRotation.source (singular) folded into sources (array)', () => {
+  it('wraps a legacy single source into a one-element sources array, keeping every other rotation field', () => {
+    const config = makeConfig(13);
+    config.screens[0].backgroundRotation = {
+      enabled: true,
+      source: 'immich',
+      query: '',
+      intervalMinutes: 45,
+      immichAlbumId: 'album-1',
+      immichFavoritesOnly: true,
+    } as never;
+    const before = structuredClone(config);
+
+    const { config: migrated } = migrateUp(config, 15);
+
+    expect(migrated.version).toBe(15);
+    expect(migrated.screens[0].backgroundRotation).toEqual({
+      enabled: true,
+      query: '',
+      intervalMinutes: 45,
+      immichAlbumId: 'album-1',
+      immichFavoritesOnly: true,
+      sources: ['immich'],
+    });
+    // Lossless and non-mutating: the original config object is untouched.
+    expect(config).toEqual(before);
+  });
+
+  it('leaves a screen with no rotation, or rotation not enabled, unchanged beyond the version bump', () => {
+    const config = makeConfig(13);
+    config.screens.push({
+      id: 'disabled',
+      name: 'Screen 2',
+      backgroundImage: '',
+      modules: [],
+      backgroundRotation: { enabled: false, source: 'unsplash', query: 'x', intervalMinutes: 60 } as never,
+    });
+
+    const { config: migrated } = migrateUp(config, 15);
+
+    expect(migrated.version).toBe(15);
+    expect(migrated.screens[0].backgroundRotation).toBeUndefined();
+    // Not enabled → left exactly as-is, including the old singular field.
+    expect(migrated.screens[1].backgroundRotation).toEqual({ enabled: false, source: 'unsplash', query: 'x', intervalMinutes: 60 });
+  });
+
+  it('leaves an already-migrated sources array untouched', () => {
+    const config = makeConfig(13);
+    config.screens[0].backgroundRotation = {
+      enabled: true,
+      sources: ['unsplash', 'immich'],
+      query: 'mountains',
+      intervalMinutes: 60,
+    } as never;
+
+    const { config: migrated } = migrateUp(config, 15);
+
+    expect(migrated.screens[0].backgroundRotation).toEqual({
+      enabled: true,
+      sources: ['unsplash', 'immich'],
+      query: 'mountains',
+      intervalMinutes: 60,
+    });
   });
 });

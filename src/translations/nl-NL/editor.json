@@ -2445,7 +2445,16 @@
       "nasaApod": "NASA-foto van de dag",
       "icloud": "Gedeeld iCloud-album",
       "unsplash": "Unsplash",
-      "immich": "Immich"
+      "immich": "Immich",
+      "local": "Lokale bibliotheekmap"
+    },
+    "local": {
+      "folderLabel": "Map",
+      "browse": "Bladeren",
+      "allPhotosRoot": "Alle achtergronden (hoofdmap)",
+      "photoCountOne": "{count} foto",
+      "photoCountOther": "{count} foto's",
+      "noPhotosInFolder": "Nog geen foto's in deze map."
     },
     "tabs": {
       "nasa": "NASA",
