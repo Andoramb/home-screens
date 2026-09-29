@@ -11,7 +11,7 @@ function screen(id: string, rotation: Partial<NonNullable<Screen['backgroundRota
     modules: [],
     backgroundRotation: {
       enabled: true,
-      source: 'immich',
+      sources: ['immich'],
       query: '',
       intervalMinutes: 30,
       ...rotation,
@@ -23,14 +23,14 @@ describe('buildRotationKey', () => {
   it('returns the empty-array sentinel when no screens have rotation enabled', () => {
     const screens: Screen[] = [
       { id: 'a', name: 'a', backgroundImage: '', modules: [] },
-      { id: 'b', name: 'b', backgroundImage: '', modules: [], backgroundRotation: { enabled: false, query: '', intervalMinutes: 30 } },
+      { id: 'b', name: 'b', backgroundImage: '', modules: [], backgroundRotation: { enabled: false, sources: [], query: '', intervalMinutes: 30 } },
     ];
     // '[]' is the sentinel that the consuming useEffect uses to skip polling.
     expect(buildRotationKey(screens)).toBe('[]');
   });
 
   it('includes source, query, and interval', () => {
-    const key = buildRotationKey([screen('s1', { source: 'unsplash', query: 'mountains', intervalMinutes: 15 })]);
+    const key = buildRotationKey([screen('s1', { sources: ['unsplash'], query: 'mountains', intervalMinutes: 15 })]);
     expect(key).toContain('unsplash');
     expect(key).toContain('mountains');
     expect(key).toContain('15');
@@ -59,20 +59,20 @@ describe('buildRotationKey', () => {
   });
 
   it('changes when icloudAlbumUrl changes', () => {
-    const a = buildRotationKey([screen('s1', { source: 'icloud', icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#AAA111' })]);
-    const b = buildRotationKey([screen('s1', { source: 'icloud', icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#BBB222' })]);
+    const a = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#AAA111' })]);
+    const b = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#BBB222' })]);
     expect(a).not.toBe(b);
   });
 
   it('changes when unsplashCollections changes', () => {
-    const a = buildRotationKey([screen('s1', { source: 'unsplash', unsplashCollections: ['coll-1'] })]);
-    const b = buildRotationKey([screen('s1', { source: 'unsplash', unsplashCollections: ['coll-2'] })]);
+    const a = buildRotationKey([screen('s1', { sources: ['unsplash'], unsplashCollections: ['coll-1'] })]);
+    const b = buildRotationKey([screen('s1', { sources: ['unsplash'], unsplashCollections: ['coll-2'] })]);
     expect(a).not.toBe(b);
   });
 
   it('distinguishes an unset unsplashCollections from a set one', () => {
-    const blank = buildRotationKey([screen('s1', { source: 'unsplash', query: 'mountains' })]);
-    const withCollections = buildRotationKey([screen('s1', { source: 'unsplash', unsplashCollections: ['coll-1'] })]);
+    const blank = buildRotationKey([screen('s1', { sources: ['unsplash'], query: 'mountains' })]);
+    const withCollections = buildRotationKey([screen('s1', { sources: ['unsplash'], unsplashCollections: ['coll-1'] })]);
     expect(blank).not.toBe(withCollections);
   });
 

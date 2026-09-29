@@ -99,6 +99,9 @@ function seedCache(entries: Record<string, unknown>): void {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // clearAllMocks resets call history but not a mock's return value, so a
+  // sticky mockReturnValue from one test would otherwise leak into the next.
+  mockFindDisplay.mockReturnValue(null);
   cacheState.value = {}; // empty rotation cache by default
   fsMock.readFile.mockRejectedValue(new Error('ENOENT'));
   fsMock.writeFile.mockResolvedValue(undefined);
@@ -146,7 +149,7 @@ describe('GET /api/backgrounds/rotate — validation & fallbacks', () => {
     mockFindScreen.mockReturnValue(
       screen({
         backgroundImage: '/bg.jpg',
-        backgroundRotation: { enabled: true, source: 'unsplash' } as never,
+        backgroundRotation: { enabled: true, sources: ['unsplash'] } as never,
       }),
     );
 
@@ -160,7 +163,7 @@ describe('GET /api/backgrounds/rotate — validation & fallbacks', () => {
     mockFindScreen.mockReturnValue(
       screen({
         backgroundImage: '/bg.jpg',
-        backgroundRotation: { enabled: true, source: 'bogus' } as never,
+        backgroundRotation: { enabled: true, sources: ['bogus'] } as never,
       }),
     );
 
@@ -174,7 +177,7 @@ describe('GET /api/backgrounds/rotate — validation & fallbacks', () => {
 describe('GET /api/backgrounds/rotate — Immich rotation', () => {
   const immichRotation = {
     enabled: true,
-    source: 'immich',
+    sources: ['immich'],
     intervalMinutes: 60,
   } as never;
 
@@ -183,7 +186,8 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
     seedCache({
       s1: {
         path: '/api/backgrounds/serve?file=rotation-immich-old.jpg',
-        source: 'immich',
+        sources: JSON.stringify(['immich']),
+        pickedSource: 'immich',
         query: undefined,
         fetchedAt: Date.now(),
         intervalMinutes: 60,
@@ -240,7 +244,7 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
 describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
   const unsplashRotation = {
     enabled: true,
-    source: 'unsplash',
+    sources: ['unsplash'],
     query: 'mountains',
     intervalMinutes: 60,
   } as never;
@@ -285,8 +289,9 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
     // Metadata fetch + image download.
     expect(mockFetch).toHaveBeenCalledTimes(2);
     expect(fsMock.writeFile).toHaveBeenCalled();
-    // No owning display resolved by default, so no orientation param.
-    expect(mockFetch.mock.calls[0][0]).not.toContain('orientation=');
+    // No owning display resolved and no global canvas configured, so canvasOf
+    // falls back to DEFAULT_DISPLAY_WIDTH/HEIGHT (1080x1920 — portrait).
+    expect(mockFetch.mock.calls[0][0]).toContain('orientation=portrait');
   });
 
   it('uses the collections param instead of query when unsplashCollections is set', async () => {
@@ -294,7 +299,7 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
       screen({
         backgroundRotation: {
           enabled: true,
-          source: 'unsplash',
+          sources: ['unsplash'],
           query: 'mountains',
           unsplashCollections: ['I6rVqHIQXO0', 'abc123'],
           intervalMinutes: 60,
@@ -348,7 +353,7 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
       screen({
         backgroundRotation: {
           enabled: true,
-          source: 'unsplash',
+          sources: ['unsplash'],
           query: 'mountains',
           unsplashCollections: ['new-collection'],
           intervalMinutes: 60,
@@ -358,7 +363,8 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
     seedCache({
       s1: {
         path: '/api/backgrounds/serve?file=rotation-unsplash-old.jpg',
-        source: 'unsplash',
+        sources: JSON.stringify(['unsplash']),
+        pickedSource: 'unsplash',
         query: 'mountains',
         unsplashCollections: JSON.stringify(['old-collection']),
         fetchedAt: Date.now(),
@@ -388,7 +394,7 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
 });
 
 describe('GET /api/backgrounds/rotate: Unsplash sized to the wall', () => {
-  const unsplashRotation = { enabled: true, source: 'unsplash', query: 'lakes', intervalMinutes: 60 } as never;
+  const unsplashRotation = { enabled: true, sources: ['unsplash'], query: 'lakes', intervalMinutes: 60 } as never;
 
   function photoResponse() {
     return new Response(JSON.stringify({
@@ -403,6 +409,10 @@ describe('GET /api/backgrounds/rotate: Unsplash sized to the wall', () => {
       displays: [{ id: 'kitchen', name: 'Kitchen', displayWidth: 1920, displayHeight: 1080, screens: [{ id: 's1' }] }],
       screens: [],
     } as never);
+    // findDisplayForScreen is fully mocked in this file (not delegated to the
+    // real implementation), so it must be told directly what it would have
+    // resolved from the config above.
+    mockFindDisplay.mockReturnValue({ id: 'kitchen', name: 'Kitchen', displayWidth: 1920, displayHeight: 1080, screens: [] } as never);
     mockFindScreen.mockReturnValue(screen({ backgroundRotation: unsplashRotation }));
     mockUnsplashKey.mockResolvedValue('unsplash-key');
     mockFetch
@@ -431,10 +441,107 @@ describe('GET /api/backgrounds/rotate: Unsplash sized to the wall', () => {
   });
 });
 
+describe('GET /api/backgrounds/rotate — multi-source selection', () => {
+  it('skips a source missing its required config in favor of a configured one', async () => {
+    // Unsplash is listed but has neither query nor collections, so it can
+    // never be the one picked, however Math.random() happens to land —
+    // Immich is the only actually-configured source in this list.
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          sources: ['unsplash', 'immich'],
+          query: '',
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    mockImmichFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'asset1' }]), { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { 'content-type': 'image/jpeg' } }),
+      );
+
+    const res = await GET(rotateReq());
+    const json = await res.json();
+
+    // Only the configured source (Immich) was ever eligible; Unsplash's
+    // fetch path (which needs an access key first) was never touched.
+    expect(json).toEqual({ path: '/api/backgrounds/serve?file=rotation-immich-asset1.jpg', fresh: true });
+    expect(mockUnsplashKey).not.toHaveBeenCalled();
+  });
+
+  it('only ever picks from rotation.sources, never a source left off the list', async () => {
+    // iCloud is the only listed source; even though Immich would resolve if
+    // called, it must never be, because it isn't in `sources`.
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          sources: ['icloud'],
+          icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#B125ON9t3mbLNC',
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    mockICloudAlbum.mockResolvedValue([
+      { url: 'https://cvws.icloud-content.com/p', type: 'image', guid: 'only' },
+    ]);
+    mockFetch.mockResolvedValue(new Response(new Uint8Array([1]), { status: 200, headers: { 'content-type': 'image/png' } }));
+
+    const res = await GET(rotateReq());
+    const json = await res.json();
+
+    expect(json).toEqual({ path: '/api/backgrounds/serve?file=rotation-icloud-only.png', fresh: true });
+    expect(mockImmichFetch).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the cached entry when the sources list changes, even mid-interval', async () => {
+    // Pin the random pick to the first eligible source (icloud) so this test
+    // only exercises cache invalidation, not source selection.
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          sources: ['icloud', 'immich'],
+          icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#B125ON9t3mbLNC',
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    // Cached entry was fetched while `sources` was just `['icloud']` — still
+    // within the interval, but the configured set has grown since.
+    seedCache({
+      s1: {
+        path: '/api/backgrounds/serve?file=rotation-icloud-old.jpg',
+        sources: JSON.stringify(['icloud']),
+        pickedSource: 'icloud',
+        query: undefined,
+        fetchedAt: Date.now(),
+        intervalMinutes: 60,
+      },
+    });
+    mockICloudAlbum.mockResolvedValue([
+      { url: 'https://cvws.icloud-content.com/p', type: 'image', guid: 'new' },
+    ]);
+    mockImmichFetch.mockResolvedValue(new Response('', { status: 500 }));
+    mockFetch.mockResolvedValue(new Response(new Uint8Array([1]), { status: 200, headers: { 'content-type': 'image/png' } }));
+
+    const res = await GET(rotateReq());
+    const json = await res.json();
+
+    // A fresh fetch happened rather than serving the stale entry — the
+    // `sources` key on the cache entry no longer matches the current list.
+    expect(json).toEqual({ path: '/api/backgrounds/serve?file=rotation-icloud-new.png', fresh: true });
+    randomSpy.mockRestore();
+  });
+});
+
 describe('GET /api/backgrounds/rotate — NASA APOD rotation', () => {
   const apodRotation = {
     enabled: true,
-    source: 'nasa-apod',
+    sources: ['nasa-apod'],
     intervalMinutes: 60,
   } as never;
 
@@ -490,7 +597,7 @@ describe('GET /api/backgrounds/rotate — NASA APOD rotation', () => {
 describe('GET /api/backgrounds/rotate — iCloud rotation', () => {
   const icloudRotation = {
     enabled: true,
-    source: 'icloud',
+    sources: ['icloud'],
     icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#B125ON9t3mbLNC',
     intervalMinutes: 60,
   } as never;
@@ -525,7 +632,7 @@ describe('GET /api/backgrounds/rotate — iCloud rotation', () => {
     mockFindScreen.mockReturnValue(screen({
       backgroundRotation: {
         enabled: true,
-        source: 'icloud',
+        sources: ['icloud'],
         icloudAlbumUrl: 'https://photos.icloud.com/shared/album/03c4SA2q7HwyPw7YOwfXTn0mg',
         intervalMinutes: 60,
       } as never,
@@ -561,7 +668,8 @@ describe('GET /api/backgrounds/rotate — iCloud rotation', () => {
     seedCache({
       s1: {
         path: '/api/backgrounds/serve?file=rotation-icloud-old.jpg',
-        source: 'icloud',
+        sources: JSON.stringify(['icloud']),
+        pickedSource: 'icloud',
         query: undefined,
         fetchedAt: Date.now(),
         intervalMinutes: 60,
@@ -580,7 +688,8 @@ describe('GET /api/backgrounds/rotate — iCloud rotation', () => {
     seedCache({
       s1: {
         path: '/api/backgrounds/serve?file=rotation-icloud-old.jpg',
-        source: 'icloud',
+        sources: JSON.stringify(['icloud']),
+        pickedSource: 'icloud',
         query: undefined,
         fetchedAt: Date.now(),
         intervalMinutes: 60,
@@ -610,7 +719,8 @@ describe('GET /api/backgrounds/rotate — iCloud rotation', () => {
         ...cacheState.value,
         s2: {
           path: '/api/backgrounds/serve?file=rotation-unsplash-other.jpg',
-          source: 'unsplash',
+          sources: JSON.stringify(['unsplash']),
+          pickedSource: 'unsplash',
           query: 'x',
           fetchedAt: Date.now(),
           intervalMinutes: 60,
@@ -629,7 +739,7 @@ describe('GET /api/backgrounds/rotate — iCloud rotation', () => {
 describe('GET /api/backgrounds/rotate — rotation file pruning', () => {
   const icloudRotation = {
     enabled: true,
-    source: 'icloud',
+    sources: ['icloud'],
     icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#B125ON9t3mbLNC',
     intervalMinutes: 60,
   } as never;
@@ -644,7 +754,8 @@ describe('GET /api/backgrounds/rotate — rotation file pruning', () => {
     seedCache({
       s2: {
         path: '/api/backgrounds/serve?file=rotation-unsplash-kept.jpg',
-        source: 'unsplash',
+        sources: JSON.stringify(['unsplash']),
+        pickedSource: 'unsplash',
         query: 'x',
         fetchedAt: 0,
         intervalMinutes: 60,
@@ -684,7 +795,8 @@ describe('GET /api/backgrounds/rotate — rotation file pruning', () => {
     seedCache({
       s1: {
         path: '/api/backgrounds/serve?file=rotation-icloud-old.jpg',
-        source: 'icloud',
+        sources: JSON.stringify(['icloud']),
+        pickedSource: 'icloud',
         query: undefined,
         fetchedAt: Date.now(),
         intervalMinutes: 60,

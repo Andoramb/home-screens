@@ -273,7 +273,7 @@ test.describe('background picker', () => {
     await putConfig(request, baseConfig({
       screens: [makeScreen('screen-1', 'Screen 1', [textModule('ROTATING')], {
         backgroundImage: '/starter-backgrounds/ocean.svg',
-        backgroundRotation: { enabled: true, source: 'unsplash', query: 'nature landscape', intervalMinutes: 60 },
+        backgroundRotation: { enabled: true, sources: ['unsplash'], query: 'nature landscape', intervalMinutes: 60 },
       })],
     }));
     await page.goto('/editor');
