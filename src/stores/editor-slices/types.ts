@@ -8,6 +8,8 @@ import type {
   ModuleSize,
   GlobalSettings,
   Screen,
+  BackgroundRotation,
+  BackgroundShade,
   Profile,
   DisplayNode,
   DisplayNodeSettings,
@@ -195,6 +197,12 @@ export interface ScreenActions {
   updateScreen: (id: string, updates: Partial<Screen>) => void;
   /** Set a picture picked by hand as the screen's background, turning its rotation off (`pickedBackground`). */
   pickScreenBackground: (id: string, backgroundImage: string) => void;
+  /** Merges onto the screen's live `backgroundRotation`, not a snapshot the
+   *  caller had — avoids two rapid field edits (e.g. typing a query while a
+   *  collection row is still validating) clobbering each other. */
+  updateScreenRotation: (id: string, updates: Partial<BackgroundRotation>) => void;
+  /** Same live-merge guarantee as `updateScreenRotation`, for `shade`. */
+  updateScreenShade: (id: string, updates: Partial<BackgroundShade>) => void;
 }
 
 export interface SettingsActions {
