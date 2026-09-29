@@ -7,6 +7,7 @@ import { wallConfigEtag } from './wall-config';
 import { choresEtag, rewardsEtag } from './chore-revisions';
 import { householdToday } from './household-day';
 import { libraryRevision } from './library-revision';
+import { calendarRevision } from './calendar-revision';
 
 async function orUndefined(read: () => Promise<string>): Promise<string | undefined> {
   try {
@@ -35,5 +36,5 @@ export async function readDisplayRevisions(): Promise<DisplayRevisions> {
     orUndefined(() => choresEtag(today)),
     orUndefined(() => rewardsEtag(today)),
   ]);
-  return { buildId, plugins, config, timer, chores, rewards, library: libraryRevision() };
+  return { buildId, plugins, config, timer, chores, rewards, library: libraryRevision(), calendar: calendarRevision() };
 }

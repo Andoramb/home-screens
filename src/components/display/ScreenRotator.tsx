@@ -16,7 +16,7 @@ import PhotoShowOverlay from './PhotoShowOverlay';
 import NetworkIndicator from './NetworkIndicator';
 import PaginationDots from './PaginationDots';
 import { useDisplayControl } from './useDisplayControl';
-import { useLibraryRefresh } from '@/hooks/useLibraryRefresh';
+import { useCalendarRefresh, useLibraryRefresh } from '@/hooks/useRevisionRefresh';
 import { useDisplayRules } from './useDisplayRules';
 import { useBackgroundRotation } from './useBackgroundRotation';
 import { screenBackgroundSrc } from '@/lib/screen-background';
@@ -319,8 +319,10 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     hubTransport: !preview,
   });
 
-  // A photo sent from a phone reaches the slideshows here within a few beats.
+  // A photo sent from a phone reaches the slideshows here within a few beats,
+  // and a Google Calendar sign-in reaches the calendar the same way.
   useLibraryRefresh();
+  useCalendarRefresh();
 
   // Shared data needs all screens (for weather provider detection), not just
   // active profile screens. After useDisplayControl because an asleep wall

@@ -15,6 +15,8 @@ import { I18nProvider } from '@/i18n/provider';
 import enUSEditor from '@/translations/en-US/editor.json';
 import enUSCore from '@/translations/en-US/core.json';
 import type { GoogleAppsStatus } from '@/lib/google-apps';
+import { useEditorStore } from '@/stores/editor-store';
+import type { ScreenConfiguration } from '@/types/config';
 
 const editorFetch = vi.fn();
 vi.mock('@/lib/editor-fetch', () => ({
@@ -144,5 +146,53 @@ describe('Google Calendar on the Calendar page', () => {
     fireEvent.click(view.getByRole('button', { name: 'Cancel' }));
     expect(view.queryByText('WXCP-RMTQ')).toBeNull();
     expect(view.getByRole('button', { name: 'Sign in with Google' })).toBeTruthy();
+  });
+
+  it('redraws the calendar badges from a fresh read once the sign-in finishes, not from the status before it', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    useEditorStore.setState({
+      config: {
+        screens: [],
+        settings: { timezone: 'America/Chicago', calendar: { googleCalendarIds: ['family'], icalSources: [] } },
+      } as unknown as ScreenConfiguration,
+    });
+    const notSignedIn = { id: 'family', name: 'Family', ok: false, messageKey: 'googleNotSignedIn', fetchedAt: Date.now() - 60_000 };
+    const updated = { id: 'family', name: 'Family', ok: true, fetchedAt: Date.now() };
+    let signedIn = false;
+    editorFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url === '/api/auth/google/status') return jsonResponse({ connected: false, credentialsConfigured: true, mode: 'own' });
+      if (url === '/api/auth/google/device' && init?.method === 'POST') {
+        return jsonResponse({ user_code: 'WXCP-RMTQ', verification_url: 'https://www.google.com/device', device_code: 'dc', interval: 5, expires_in: 1800 });
+      }
+      if (url === '/api/auth/google/device') {
+        signedIn = true;
+        return jsonResponse({ status: 'success' });
+      }
+      if (url === '/api/calendars') return jsonResponse([{ id: 'family', summary: 'Family', backgroundColor: '#88c', primary: false }]);
+      // The latest status any display fetch recorded: still the one from before the sign-in.
+      if (url === '/api/calendar/status') return jsonResponse({ sourceStatus: [notSignedIn] });
+      if (url.startsWith('/api/calendar')) return jsonResponse({ events: [], sourceStatus: [signedIn ? updated : notSignedIn] });
+      if (url.startsWith('/api/holidays')) return jsonResponse([]);
+      if (url === '/api/icloud/accounts') return jsonResponse([]);
+      return jsonResponse({});
+    });
+    try {
+      const view = render(<CalendarSection values={{ ...values, selectedCalendarIds: ['family'] }} onChange={vi.fn()} />, { wrapper: Wrapper });
+      await act(async () => {});
+      fireEvent.click(view.getByRole('button', { name: 'Sign in with Google' }));
+      await act(async () => {});
+      expect(view.getByText('WXCP-RMTQ')).toBeTruthy();
+
+      await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+
+      expect(view.getByText('Family')).toBeTruthy();
+      expect(view.container.querySelector('[data-source-health="ok"]')).toBeTruthy();
+      expect(view.container.querySelector('[data-source-health="failing"]')).toBeNull();
+      const reads = editorFetch.mock.calls.map(([url]) => url as string).filter((url) => url.startsWith('/api/calendar?') || url === '/api/calendar');
+      expect(reads).toHaveLength(1);
+    } finally {
+      vi.useRealTimers();
+      useEditorStore.setState({ config: null });
+    }
   });
 });

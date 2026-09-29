@@ -42,7 +42,7 @@ export default function CalendarSection({ values, onChange }: Props) {
   const t = useTranslate('editor');
 
   const [availableCountries, setAvailableCountries] = useState<HolidayCountry[]>([]);
-  const { health, recordSourceHealth } = useCalendarSourceHealth();
+  const { health, recordSourceHealth, recheckSourceHealth } = useCalendarSourceHealth();
 
   // Track auth errors from useGoogleCalendars separately so they show in the right place
   const [authError, setAuthError] = useState<string | null>(null);
@@ -72,6 +72,8 @@ export default function CalendarSection({ values, onChange }: Props) {
       setAuthError(null);
       setGoogleConnected(true);
       await fetchCalendars(true);
+      // The badges still show the status from before the sign-in.
+      recheckSourceHealth();
     },
   });
 

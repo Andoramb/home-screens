@@ -78,8 +78,16 @@ export type SourceHealthMap = Map<string, CalendarSourceStatus>;
  * `recordSourceHealth` lets a source that was just checked in the editor
  * (an iCal link probed before saving) show its badge immediately instead of
  * waiting for the next display fetch to report it.
+ *
+ * `recheckSourceHealth` asks with one regular fetch, for when the latest
+ * status is known to be out of date: right after a Google sign-in it still
+ * says "needs to sign in again" until a display next fetches.
  */
-export function useCalendarSourceHealth(): { health: SourceHealthMap; recordSourceHealth: (status: CalendarSourceStatus) => void } {
+export function useCalendarSourceHealth(): {
+  health: SourceHealthMap;
+  recordSourceHealth: (status: CalendarSourceStatus) => void;
+  recheckSourceHealth: () => void;
+} {
   const [health, setHealth] = useState<SourceHealthMap>(() => new Map());
   // Statuses this page probed itself, stamped with when the probe landed.
   // `apply` below replaces the whole map, so without this a feed added while
@@ -91,54 +99,81 @@ export function useCalendarSourceHealth(): { health: SourceHealthMap; recordSour
     recordedRef.current.set(status.id, { at: Date.now(), status });
     setHealth((prev) => new Map(prev).set(status.id, status));
   }, []);
-  // Widest window any display on the hub renders, for the cold-start fallback
+  // Widest window any display on the hub renders, for the regular fetch
   // below. Scoped to every display, not the selected one: this fetch seeds a
   // process-wide map, so it has to cover whatever the busiest grid draws.
   const calendarQuery = useCalendarFetchQuery('all');
+  const calendarQueryRef = useRef(calendarQuery);
+  calendarQueryRef.current = calendarQuery;
+
+  const apply = useCallback((list: CalendarSourceStatus[], startedAt: number) => {
+    const next = new Map(list.map((s) => [s.id, s] as const));
+    for (const [id, recorded] of recordedRef.current) {
+      if (recorded.at > startedAt) next.set(id, recorded.status);
+    }
+    setHealth(next);
+  }, []);
+
+  // One regular fetch, using the window the displays themselves would ask
+  // for: a bare fetch here would seed each source's saved-events set with an
+  // upcoming-only window, and a source that failed before the first display
+  // fetch would then fall back to a set holding no past days, emptying every
+  // grid's past cells while its future weeks render. Nothing set up yet: the
+  // route would only answer 400. Read at fetch time, not as an effect
+  // dependency: adding the first feed must not re-ask for health, or that
+  // newer question's stale answer would overwrite the badge the link check
+  // just earned.
+  const fetchFreshStatus = useCallback(async (signal: AbortSignal): Promise<CalendarSourceStatus[] | null> => {
+    if (!hasAnyCalendarSource(useEditorStore.getState().config?.settings?.calendar)) return null;
+    const query = calendarQueryRef.current;
+    const res = await editorFetch(`/api/calendar${query ? `?${query}` : ''}`, { signal });
+    if (!res.ok) return null;
+    const body = await res.json();
+    return Array.isArray(body.sourceStatus) ? body.sourceStatus : null;
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     const startedAt = Date.now();
-    const apply = (list: CalendarSourceStatus[]) => {
-      if (controller.signal.aborted) return;
-      const next = new Map(list.map((s) => [s.id, s] as const));
-      for (const [id, recorded] of recordedRef.current) {
-        if (recorded.at > startedAt) next.set(id, recorded.status);
-      }
-      setHealth(next);
-    };
     (async () => {
       try {
         const res = await editorFetch('/api/calendar/status', { signal: controller.signal });
         if (res.ok) {
           const body = await res.json();
-          if (Array.isArray(body.sourceStatus) && body.sourceStatus.length > 0) { apply(body.sourceStatus); return; }
+          if (Array.isArray(body.sourceStatus) && body.sourceStatus.length > 0) {
+            if (!controller.signal.aborted) apply(body.sourceStatus, startedAt);
+            return;
+          }
         }
         // Empty status = no display fetch has happened yet this process, so
         // there is nothing cached to show. Fetch once to get badges on a fresh
-        // setup, using the window the displays themselves would ask for: a
-        // bare fetch here would seed each source's saved-events set with an
-        // upcoming-only window, and a source that failed before the first
-        // display fetch would then fall back to a set holding no past days,
-        // emptying every grid's past cells while its future weeks render.
-        // Nothing set up yet: the route would only answer 400. Read at fetch
-        // time, not as an effect dependency: adding the first feed must not
-        // re-ask for health, or that newer question's stale answer would
-        // overwrite the badge the link check just earned.
-        if (!hasAnyCalendarSource(useEditorStore.getState().config?.settings?.calendar)) return;
-        const fallback = await editorFetch(`/api/calendar${calendarQuery ? `?${calendarQuery}` : ''}`, { signal: controller.signal });
-        if (!fallback.ok) return;
-        const body = await fallback.json();
-        if (Array.isArray(body.sourceStatus)) apply(body.sourceStatus);
+        // setup.
+        const list = await fetchFreshStatus(controller.signal);
+        if (list && !controller.signal.aborted) apply(list, startedAt);
       } catch { /* no sources configured or fetch failed: no badges */ }
     })();
     return () => controller.abort();
     // Re-reads health when the window changes (a display switch, a new grid
-    // module). Cheap: the status GET costs nothing, and the fallback below
+    // module). Cheap: the status GET costs nothing, and the fallback fetch
     // stops firing as soon as any fetch has happened this process.
-  }, [calendarQuery]);
+  }, [calendarQuery, apply, fetchFreshStatus]);
 
-  return { health, recordSourceHealth };
+  // A newer recheck supersedes an older one still out.
+  const recheckRef = useRef<AbortController | null>(null);
+  useEffect(() => () => recheckRef.current?.abort(), []);
+  const recheckSourceHealth = useCallback(() => {
+    recheckRef.current?.abort();
+    const controller = new AbortController();
+    recheckRef.current = controller;
+    const startedAt = Date.now();
+    fetchFreshStatus(controller.signal)
+      .then((list) => {
+        if (list && !controller.signal.aborted) apply(list, startedAt);
+      })
+      .catch(() => { /* keep the badges it has */ });
+  }, [apply, fetchFreshStatus]);
+
+  return { health, recordSourceHealth, recheckSourceHealth };
 }
 
 /** Green "Updated 4 minutes ago" or amber "Not updating"; nothing while unknown. */

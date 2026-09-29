@@ -54,6 +54,7 @@ const mockReadConfig = vi.mocked(readConfig);
 
 // Lazily import GET so mocks are in place before module evaluation
 const { GET, cache } = await import('@/app/api/calendar/route');
+const { bumpCalendarRevision, calendarRevision, CALENDAR_REVISION_HEADER } = await import('@/lib/calendar-revision');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1108,6 +1109,39 @@ describe('Google sign-in classification', () => {
       expect(status).toMatchObject({ ok: false, messageKey: 'googleNotSignedIn' });
     }
     expect(body.sourceStatus[0].name).toBe('family');
+  });
+
+  it('asks Google again right after a sign-in instead of handing back the cached sign-in answer', async () => {
+    mockReadConfig.mockResolvedValue(makeConfig({ googleCalendarIds: ['family@gmail.com'] }));
+    mockFetchGoogle.mockRejectedValue(NOT_SIGNED_IN);
+    await GET(makeRequest());
+
+    // Signed in again: until the revision moves, the cached answer still stands.
+    mockFetchGoogle.mockReset();
+    mockFetchGoogle.mockResolvedValue({ events: [makeEvent('g1', '2026-03-13T10:00:00Z', 'Practice')], results: [{ id: 'family@gmail.com', ok: true }] });
+    const cached = await (await GET(makeRequest())).json();
+    expect(cached.sourceStatus[0]).toMatchObject({ ok: false, messageKey: 'googleNotSignedIn' });
+    expect(mockFetchGoogle).not.toHaveBeenCalled();
+
+    bumpCalendarRevision();
+    const fresh = await (await GET(makeRequest())).json();
+    expect(mockFetchGoogle).toHaveBeenCalledTimes(1);
+    expect(fresh.sourceStatus[0]).toMatchObject({ id: 'family@gmail.com', ok: true });
+    expect(fresh.events.map((e: CalendarEvent) => e.title)).toEqual(['Practice']);
+  });
+
+  it('says which calendar revision each answer was read at, cached or not', async () => {
+    mockReadConfig.mockResolvedValue(makeConfig({ googleCalendarIds: ['family@gmail.com'] }));
+    mockFetchGoogle.mockRejectedValue(NOT_SIGNED_IN);
+    const before = calendarRevision();
+
+    expect((await GET(makeRequest())).headers.get(CALENDAR_REVISION_HEADER)).toBe(before);
+    expect((await GET(makeRequest())).headers.get(CALENDAR_REVISION_HEADER)).toBe(before);
+
+    bumpCalendarRevision();
+    const after = (await GET(makeRequest())).headers.get(CALENDAR_REVISION_HEADER);
+    expect(after).toBe(calendarRevision());
+    expect(after).not.toBe(before);
   });
 
   it('keeps the outage key for a Google failure that is not a sign-in problem', async () => {

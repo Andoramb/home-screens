@@ -12,6 +12,7 @@
 import { displayFetch } from '@/lib/display-fetch';
 import { followedRevision } from '@/lib/display-heartbeat';
 import { LIBRARY_REVISION_HEADER } from '@/lib/library-revision';
+import { CALENDAR_REVISION_HEADER } from '@/lib/calendar-revision';
 import { logger } from '@/lib/logger';
 
 const log = logger('display-cache');
@@ -36,13 +37,17 @@ interface CacheEntry {
  * The revision a fetched answer is at: its own ETag, which for every read the
  * heartbeat reports on is the very value the heartbeat names, so a read made
  * before the first beat already counts as current when that beat arrives.
- * A slideshow list says instead which library revision it was read at
- * (`useLibraryRefresh` compares that with the heartbeat's). Without either
- * (an older hub, a stubbed answer), `asked`: the revision the latest beat
- * named when the request went out, which the answer is at least as new as.
+ * A slideshow list says instead which library revision it was read at, and
+ * a calendar answer which calendar revision (`useRevisionRefresh` compares
+ * those with the heartbeat's). Without any (an older hub, a stubbed answer),
+ * `asked`: the revision the latest beat named when the request went out,
+ * which the answer is at least as new as.
  */
 export function answerRevision(res: Response, asked: string | undefined): string | undefined {
-  return res.headers?.get?.('ETag') ?? res.headers?.get?.(LIBRARY_REVISION_HEADER) ?? asked;
+  return res.headers?.get?.('ETag')
+    ?? res.headers?.get?.(LIBRARY_REVISION_HEADER)
+    ?? res.headers?.get?.(CALENDAR_REVISION_HEADER)
+    ?? asked;
 }
 
 export interface CacheStats {
@@ -216,9 +221,10 @@ class DisplayDataCache {
   /**
    * Ask whatever shows the cached URLs the test accepts to read them again,
    * for reads that are behind rather than wrong and whose answers say which
-   * revision they are at (a slideshow list's `X-Library-Revision`). Unlike
-   * `invalidateWhere` the entry stays until an answer replaces it, so a read
-   * that fails leaves it behind and the caller can ask again. A reader that
+   * revision they are at (a slideshow list's `X-Library-Revision`, a
+   * calendar's `X-Calendar-Revision`). Unlike `invalidateWhere` the entry
+   * stays until an answer replaces it, so a read that fails leaves it behind
+   * and the caller can ask again. A reader that
    * takes the request on cancels the event; a URL no reader took is dropped,
    * so the next one to show it reads it fresh instead of the old answer.
    */

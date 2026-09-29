@@ -21,6 +21,7 @@ import { householdToday, hubTimezone } from '@/lib/household-day';
 import { wallEtag } from '@/lib/wall-config';
 import { readDisplayRevisions } from '@/lib/display-revisions';
 import { bumpLibraryRevision, libraryRevision } from '@/lib/library-revision';
+import { bumpCalendarRevision, calendarRevision } from '@/lib/calendar-revision';
 
 const CONFIG = { screens: [], settings: { timezone: 'UTC' } } as unknown as ScreenConfiguration;
 
@@ -44,6 +45,7 @@ describe('readDisplayRevisions', () => {
       chores: '"chores-2026-09-25"',
       rewards: '"rewards-2026-09-25"',
       library: libraryRevision(),
+      calendar: calendarRevision(),
     });
   });
 
@@ -53,6 +55,15 @@ describe('readDisplayRevisions', () => {
     const after = (await readDisplayRevisions()).library;
     expect(after).toBeDefined();
     expect(after).not.toBe(before);
+  });
+
+  it('names a new calendar revision once a Google Calendar sign-in bumps it, and leaves the library alone', async () => {
+    const before = await readDisplayRevisions();
+    bumpCalendarRevision();
+    const after = await readDisplayRevisions();
+    expect(after.calendar).toBeDefined();
+    expect(after.calendar).not.toBe(before.calendar);
+    expect(after.library).toBe(before.library);
   });
 
   it("names the chores and rewards by the ETags their reads answer with on the household's day", async () => {
