@@ -33,6 +33,10 @@ test('the profile switcher activates a profile and persists it to config', async
 
 test('the switcher offers All screens, never toggles off silently, and says what it did', async ({ page, request }) => {
   await putConfig(request, profileConfig('p1'));
+  // The display's own heartbeat beats the page-load profile, and the hub keeps
+  // the last one in memory across tests in this worker. Another spec's
+  // heartbeat (activeProfile null by default) would press All screens here.
+  await postHeartbeat(request, { activeProfile: 'p1' });
   await page.goto('/remote');
 
   // Scoped to the switcher: the confirmation toast is a button too, and its
@@ -61,6 +65,7 @@ test('a heartbeat reporting no profile beats the page-load profile', async ({ pa
   // running with no profile. That null is a real answer, not missing data:
   // the switcher must show All screens and let Morning be picked again.
   await putConfig(request, profileConfig('p1'));
+  await postHeartbeat(request, { activeProfile: 'p1' });
   await page.goto('/remote');
   const chips = page.getByTestId('profile-switcher');
   await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
