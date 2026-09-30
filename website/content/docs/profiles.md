@@ -77,7 +77,7 @@ Drag profiles by the grip handle to reorder them. **Order matters** -- when mult
 
 ### Setting the active profile
 
-Use the **Active Profile** dropdown at the top of the Profiles section to manually select which profile is active. Choose "None (show all screens)" to disable manual profile selection.
+Use the **Showing right now** dropdown at the top of the Profiles tab to pick which profile is showing. Choose **Every screen** to show them all. A scheduled profile takes over when its time comes, whatever is picked here.
 
 ---
 

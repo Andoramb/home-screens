@@ -66,16 +66,16 @@ Add your household under **Settings > Family** (see [Family](/docs/family)), the
 The same list drives three options on both calendar modules, under **What shows** in the module's settings:
 
 - **Name tags** puts each person's initials, in their colour, where the calendar dot goes, so two events called "Practice" read as Ella's and Noah's. Calendars nobody owns keep a plain dot.
-- **Colour key** can list calendars, people or [groups](/docs/family#groups). With groups, five kids collapse to one "Kids" row drawn as a stack of their avatars, then anyone in no group, then **Everyone** for shared calendars and holidays. Only people and groups with an event in view appear.
+- **Color key** can list calendars, people or [groups](/docs/family#groups). With groups, five kids collapse to one "Kids" row drawn as a stack of their avatars, then anyone in no group, then **Everyone** for shared calendars and holidays. Only people and groups with an event in view appear.
 - **Show only these people** points a screen at a few people or a group. It follows the family list, so adding someone to "Kids" adds them to every screen that shows the Kids. Shared calendars and holidays stay visible unless you untick **Also show shared calendars and holidays**. It applies together with the calendar tick boxes above it.
 
 ## Public holidays
 
-**Public holidays** adds a country's holidays to every calendar module. Pick the country and they appear alongside your own events, styled a little differently so they are easy to tell apart.
+**Public Holidays** adds a country's holidays to every calendar module. Pick the country and they appear alongside your own events, styled a little differently so they are easy to tell apart.
 
 ## How much to show
 
-**Days ahead** at the top of the page is the furthest any calendar module looks. A module can narrow it further in its own settings, but not widen it.
+**Days Ahead** at the top of the page is the furthest any calendar module looks. A module can narrow it further in its own settings, but not widen it.
 
 ## API keys {% #api-keys %}
 

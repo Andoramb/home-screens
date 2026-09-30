@@ -44,6 +44,18 @@ The picture fills the whole screen without being stretched; a landscape photo on
 
 ---
 
+## Shading a background
+
+A bright photo can make light text hard to read. Under the background picker, switch on **Shade background** to lay a soft shade over the picture:
+
+- **Style**: **Even** puts the same shade over the whole picture. **Top and bottom** shades a band along the top and the bottom and leaves the middle clear. **Edges** fades in toward every edge, like an old photo. **Both** combines the top and bottom bands with the edges.
+- **Strength**: how strong the shade is, 40% to start with
+- **Color**: black to start with; any color works, for a warm or tinted shade
+
+Each screen has its own shade, and the editor shows it exactly as the wall will.
+
+---
+
 ## Uploading custom images
 
 1. Click an empty part of the canvas to deselect any module
@@ -59,7 +71,7 @@ The Upload Background button opens a file chooser; there is no drop zone to drag
 ### Constraints
 
 - **Maximum file size:** 10 MB per image, 200 MB per video
-- **Allowed types:** JPEG, PNG, WebP, GIF, AVIF images; MP4, WebM, MOV videos (used by the Video module and mixed-media slideshows)
+- **Allowed types:** JPEG, PNG, WebP, GIF, AVIF, SVG images; MP4, WebM, MOV videos (used by the Video module and mixed-media slideshows)
 - Filenames are sanitized on upload, special characters are replaced with underscores
 
 ---
@@ -262,11 +274,12 @@ While rotation is on it replaces whatever fixed background the screen had. Picki
 
 | Format | Extension | MIME Type |
 |---|---|---|
-| JPEG | `.jpg`, `.jpeg` | `image/jpeg` |
+| JPEG | `.jpg`, `.jpeg`, `.jfif`, `.pjpeg`, `.pjp` | `image/jpeg` |
 | PNG | `.png` | `image/png` |
 | WebP | `.webp` | `image/webp` |
 | GIF | `.gif` | `image/gif` |
 | AVIF | `.avif` | `image/avif` |
+| SVG | `.svg` (needs a `viewBox`, or a width and height) | `image/svg+xml` |
 
 ### Recommended dimensions
 

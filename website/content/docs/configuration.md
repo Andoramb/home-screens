@@ -39,10 +39,11 @@ Home Screens stores all configuration as JSON files on disk. The main config fil
 | `data/plugins/` | Installed plugin bundles and manifests | `/api/plugins/*` |
 | `data/plugin-tokens/` | Per-plugin account tokens from server-side auth adapters | `/api/plugins/auth/*` |
 | `data/plugin-secrets/` | Per-plugin secrets you enter yourself, kept outside `data/plugins/` because a plugin upgrade replaces that folder wholesale | `/api/plugins/secrets` |
+| `data/custom-icons/` | The family's own icons: `index.json` lists them, and each picture sits beside it as a `.webp` named by its content | `/api/custom-icons` |
 
 Chore definitions and chore completions are **two separate files**. Copying only `data/chores.json` leaves every completion (and therefore every earned point) behind.
 
-Other files under `data/` (`backups/`, `kiosk.conf`, `telemetry.json`, `background-cache.json`) are written and managed by the app; they are not meant to be edited by hand.
+Other files under `data/` (`backups/`, `thumbnails/`, `kiosk.conf`, `telemetry.json`, `background-cache.json`) are written and managed by the app; they are not meant to be edited by hand.
 
 The main config is read via `GET /api/config` and written via `PUT /api/config`. If you have set an editor password, both endpoints require an `hs-session` cookie: `PUT` accepts nothing else, and `GET` also accepts a display bearer token. With no password set, authentication is off and both are open on your local network.
 
@@ -350,8 +351,8 @@ A clean config exits with status `0` and a "Config is valid" summary. Any errors
 
 ## Backup & Restore
 
-- **Export** from the editor's Data section or the remote's Settings sheet downloads a backup as JSON. The bundle contains your config, chores, chore completions, meals, and rewards.
-- **Import** replaces the current config with an uploaded JSON file (available in both the editor and the remote)
+- **Export** from the editor's Data section or the remote's Settings sheet downloads a backup as JSON. The bundle contains your config, family, chores, chore completions, rewards, meals, routines, to-do lists and school timetables, plus your icons when **Include your icons** is on.
+- **Import** replaces everything the uploaded file carries (available in both the editor and the remote); a section the file leaves out, such as the icons, is kept as it is
 - A configurable **backup reminder** shows a toast in the editor and a banner on the remote when you haven't backed up recently (Settings > Backups & data)
 
 ### Backing up your keys
@@ -360,7 +361,7 @@ By default a backup carries no keys at all. **This part needs an editor password
 
 In the editor, **Settings > Backups & data > Save a copy** has two checkboxes:
 
-- **Include my API keys and connected accounts** adds your weather and map keys, your Google, iCloud, Immich and OneDrive sign-ins, your plugin logins, and your editor password to the file. Both boxes start unticked every time you open the page, so an accidental tick never becomes your standing default.
+- **Include my keys and connected accounts** adds your weather and map keys, your Google, iCloud, Immich and OneDrive sign-ins, your plugin logins, and your editor password to the file. Both boxes start unticked every time you open the page, so an accidental tick never becomes your standing default.
 - **Protect them with a password** locks that part of the file. You choose the password, and you need it again to put the keys back.
 
 A backup that carries keys is named `home-screens-backup-with-keys-<date>.json`, so you can tell it apart in a downloads folder.

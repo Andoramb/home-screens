@@ -24,7 +24,7 @@ Preflight gate before any commit: `npx tsc --noEmit`, `npm run lint`, `npm test`
 
 ## Tech Stack
 
-Next.js 16 + React 19 (App Router), Tailwind v4, Zustand (editor state), @dnd-kit (editor drag-and-drop), Framer Motion (editor panels only; screen transitions use the View Transitions API in `ScreenRotator`), Vitest, Playwright. Path alias `@/*` maps to `./src/*`.
+Next.js 16 + React 19 (App Router), Tailwind v4, Zustand (editor state), @dnd-kit (editor drag-and-drop), Framer Motion (editor panels, plus the full-screen calendar's view switch and the meal planner's Today view; screen transitions use the View Transitions API in `ScreenRotator`), Vitest, Playwright. Path alias `@/*` maps to `./src/*`.
 
 ## Architecture
 
@@ -81,7 +81,7 @@ Every `ModuleInstance` has three AND-combined visibility gates: `enabled` (toggl
 A plugin is an IIFE bundle plus manifest loaded at runtime from `data/plugins/`, typed as `plugin:<moduleType>`. Plugins use `window.__HS_SDK__` and `pluginFetch`, which goes through `/api/plugins/proxy/[pluginId]` (SSRF hardening, 60 req/min, 240 for `localNetwork` plugins). A manifest `auth` field declares a host-run OAuth2 or Garmin SSO adapter (`/api/plugins/auth/*`); tokens live in `data/plugin-tokens/` and the proxy injects and refreshes them. The real SDK contract is the host's `PluginGlobals.tsx`, not the template typings. Plugin manifests may ship `translations` that register under namespace `plugin:<pluginId>`.
 
 ### Multi-display (hub and spoke)
-`ScreenConfiguration.displays?: DisplayNode[]` is optional. Unset means legacy single-display mode with `config.screens` as the source of truth, which is still the default. When set, each `DisplayNode` (including `main`, which is a regular node seeded from the globals at migration time) owns its own `screens`, dimensions, transform and optional profiles. Each Pi polls `/api/display/commands?display=<id>` every 3 s and posts status; that drain is the wall's heartbeat, and its `revisions` (build, plugin list, config ETag, timer session, chores and rewards ETags, from `src/lib/display-revisions.ts`) tell `useLiveConfig`, `TimerOverlay` and `useFetchData` (for the reads `display-heartbeat.ts` lists) when to fetch (`src/lib/display-heartbeat.ts`); per-display command queues, the in-memory heartbeat `statusMap` and viewport reports live in `src/lib/display-commands.ts` (`__default__` for legacy callers, `all` broadcasts). Editor screen mutations go through `getActiveScreens` / `withActiveScreens` so edits target the selected display. `validateDisplays` enforces slug, uniqueness and size caps. Display-only Pis (`scripts/install.sh --display-only`) run a Chromium kiosk against the hub with no Node.
+`ScreenConfiguration.displays?: DisplayNode[]` is optional. Unset means legacy single-display mode with `config.screens` as the source of truth, which is still the default. When set, each `DisplayNode` (including `main`, which is a regular node seeded from the globals at migration time) owns its own `screens`, dimensions, transform and optional profiles. Each Pi polls `/api/display/commands?display=<id>` every 3 s and posts status; that drain is the wall's heartbeat, and its `revisions` (build, plugin list, config ETag, timer session, chores and rewards ETags, media library, calendar sources, from `src/lib/display-revisions.ts`) tell `useLiveConfig`, `TimerOverlay` and `useFetchData` (for the reads `display-heartbeat.ts` lists) when to fetch (`src/lib/display-heartbeat.ts`), and `library` and `calendar` drive early re-reads through `src/hooks/useRevisionRefresh.ts`; per-display command queues, the in-memory heartbeat `statusMap` and viewport reports live in `src/lib/display-commands.ts` (`__default__` for legacy callers, `all` broadcasts). Editor screen mutations go through `getActiveScreens` / `withActiveScreens` so edits target the selected display. `validateDisplays` enforces slug, uniqueness and size caps. Display-only Pis (`scripts/install.sh --display-only`) run a Chromium kiosk against the hub with no Node.
 
 Settings is split into **Defaults** (shared values, pages listed in `DEFAULT_PAGE_IDS`) and **Per display** (one page per display, every field an `OverrideRow` with explicit Override / Reset). `src/lib/settings-route.ts` parses and canonicalizes the settings URL and maps retired ids. `src/lib/display-defaults-backlinks.ts` tells a Defaults page which displays override its fields.
 
@@ -91,13 +91,14 @@ Settings is split into **Defaults** (shared values, pages listed in `DEFAULT_PAG
 | `config.json` | `src/lib/config.ts` | Layout, displays, settings. `GET/PUT /api/config`; `updateConfigAtomic` for queued read-modify-write. Editor loads it into `src/stores/editor-store.ts`, edits in memory, saves via PUT. |
 | `secrets.json` | | API keys. |
 | `family.json` | `src/lib/family-data.ts` | Shared roster for chores, calendars, rewards, timetables. |
-| `chores.json`, `chore-completions.json` | `src/lib/chore-data.ts` | Definitions and history. |
+| `chores.json`, `chore-completions.json`, `rewards.json` | `src/lib/chore-data.ts`, `src/lib/reward-data.ts` | Chore definitions and history; rewards, balances and redemptions. |
 | `meals.json` | `src/lib/meal-data.ts` | Meal planner state and settings, shared by `/remote` and every module instance. |
 | `todos.json` | `src/lib/todo-data.ts` | Shared to-do lists; a `todo` module points at a `listId` and never carries items. Only door is `/api/todo/lists*`. |
 | `routines.json`, `timer-session.json` | `src/lib/timer-data.ts` | Authored routines vs hot running session; displays derive countdowns from timestamps. |
 | `timetables.json` | `src/lib/timetable-data.ts` | School bell times and one week per family member, revision-checked (409 on stale save). |
 | `school-holidays.json` | `src/lib/school-holidays.ts` | Last-good OpenHolidays cache; only DE, FR, NL have data. |
 | `icloud-accounts.json` | `src/lib/icloud-accounts.ts` | CalDAV app passwords, never returned by the API. |
+| `custom-icons/` | `src/lib/custom-icon-data.ts` | The family's own icons. `index.json` goes through the data transaction; the pictures are `<hash>.webp` beside it, written before the index names them and kept out of the journal. |
 | `plugins/`, `plugin-tokens/` | `src/lib/plugin-loader.ts`, `src/lib/plugin-auth.ts` | Bundles and OAuth tokens, kept apart so upgrades cannot wipe tokens. |
 
 Stores that take part in family changes or backup restore go through `src/lib/data-transaction.ts`, a reentrant per-root coordinator with a durable journal. Keep reference checks and their writes inside it, and make any new multi-file write path participate. The app is one process that serializes its own writes; there is no cross-process lock.

@@ -111,7 +111,7 @@ Steps 1 through 9 are walked through in [Adding a New Module](#adding-a-new-modu
 ### State Management
 
 - **Editor**: Zustand store (`src/stores/editor-store.ts`) manages config, selection, and dirty state
-- **Display**: server-fetched config with client-side polling (no Zustand needed)
+- **Display**: config rendered by the server, then fetched again only when the heartbeat reports a new config ETag (no Zustand needed)
 
 ### Data Flow
 
@@ -142,7 +142,8 @@ graph TB
 
     Editor -- "Zustand store\nPUT /api/config" --> ConfigAPI
     ConfigAPI -- "read / write" --> Config
-    Display -- "GET /api/config\n(poll every 3s)" --> ConfigAPI
+    Display -- "GET /api/display/commands\n(heartbeat every 3s)" --> API
+    Display -- "GET /api/config\n(when the heartbeat ETag changes)" --> ConfigAPI
     API -- "read keys" --> Secrets
     API --> Weather
     API --> ESPN
@@ -191,18 +192,19 @@ API routes live in `src/app/api/*/route.ts` and serve as server-side proxies for
 | Category | Routes | Purpose |
 |---|---|---|
 | **Auth** | `auth/login`, `auth/logout`, `auth/status`, `auth/password`, `auth/display-token`, `auth/revoke-sessions`, `auth/google`, `auth/ip-allowlist` | Authentication, session management, display token, IP allowlist |
-| **System** | `system/status`, `system/version`, `system/build-id`, `system/changelog`, `system/power`, `system/upgrade`, `system/rollback`, `system/backups`, `system/update-notification` | Server management and deployment |
+| **System** | `system/status`, `system/version`, `system/build-id`, `system/changelog`, `system/power`, `system/upgrade`, `system/rollback`, `system/backups`, `system/update-notification`, `system/timezone`, `system/sudo-grant`, `system/stats`, `system/diagnostics`, `system/address` | Server management and deployment, the device clock's time zone, the passwordless-sudo repair, status and diagnostics, and the hub's LAN address for a kiosk running on the hub |
 | **Config** | `config`, `secrets`, `backup`, `backup/credentials`, `backup/reminder` | Read/write config, manage API keys, config backups |
 | **Weather** | `weather`, `rain-map` | Weather data ({% $stats.weatherProviderCount %} providers) and rain radar tiles |
 | **Calendar** | `calendar`, `calendar/status`, `calendars`, `icloud/accounts`, `icloud/calendars`, `holidays` | Google Calendar events and per-source health, iCloud CalDAV accounts and calendars, holiday feeds |
 | **Data** | `jokes`, `quote`, `news`, `history`, `stocks`, `crypto`, `sports`, `standings`, `todoist`, `air-quality`, `traffic`, `nasa` | External data proxies |
-| **Family data** | `chores`, `rewards`, `meals`, `timers/routines`, `timers/session`, `todo/lists` | Local chore, reward, meal-plan, timer-routine, and to-do list state |
-| **Displays** | `displays`, `display/[action]`, `display/hw-stats`, `display/console-log`, `display/kiosk-bundle`, `display/kiosk-bootstrap` | Display registry and heartbeats, remote control, hardware telemetry, log capture, kiosk self-update bundle for display-only Pis |
+| **Family data** | `family`, `family/groups`, `chores`, `chores/grab`, `chores/skip`, `chores/put-back`, `chores/settings`, `rewards`, `meals`, `timers/routines`, `timers/session`, `todo/lists`, `timetables/*` | The family roster and groups, and local chore, reward, meal-plan, timer-routine, to-do list and school timetable state |
+| **Displays** | `displays`, `display/[action]`, `display/hw-stats`, `display/console-log`, `display/kiosk-bundle`, `display/kiosk-bootstrap`, `display/power-state` | Display registry and heartbeats, remote control, hardware telemetry, log capture, kiosk self-update bundle for display-only Pis, screen power for the kiosk's power helper |
 | **Plugins** | `plugins/registry`, `plugins/installed`, `plugins/install`, `plugins/install-external`, `plugins/manifest/*`, `plugins/bundle/*`, `plugins/asset/*`, `plugins/dev`, `plugins/migrate-config`, `plugins/proxy/*`, `plugins/secrets/*`, `plugins/settings/*`, `plugins/auth/*` | Plugin registry, install lifecycle, asset serving, API proxy, secrets, settings, server-side auth |
 | **Network** | `system/network`, `system/network/wifi/*`, `system/network/hostname`, `system/network/ip`, `system/network/confirm`, `system/network/diagnostics` | WiFi scan and connect, hostname, static IP, and connectivity checks |
 | **Photos** | `google-picker/auth`, `google-picker/session`, `google-picker/import`, `google-picker/status`, `immich/*`, `onedrive/*`, `icloud/photos`, `icloud/import` | Google Photos Picker import, Immich, OneDrive, and iCloud photo sources |
 | **i18n** | `i18n/[locale]` | Serves locale dictionaries by namespace |
-| **Utility** | `backgrounds`, `geocode`, `image-proxy`, `time`, `unsplash`, `immich` | Background images, geocoding, image proxying, server time, Unsplash and Immich photos |
+| **Media** | `backgrounds`, `backgrounds/inventory`, `backgrounds/directories`, `backgrounds/move`, `backgrounds/rotate`, `backgrounds/serve`, `custom-icons`, `custom-icons/[id]`, `custom-icons/serve`, `backup/custom-icons` | The shared picture and video library, background rotation, and the family's own icons |
+| **Utility** | `geocode`, `image-proxy`, `time`, `unsplash` | Geocoding, image proxying, server time, Unsplash photos |
 
 ### Display Control
 
@@ -403,15 +405,16 @@ A new route needs test coverage of its own, or the `ROUTE_DECISIONS` ratchet fro
 
 | Hook | Purpose |
 |---|---|
-| `useFetchData(url, interval)` | Polls an API endpoint at a set interval |
+| `useFetchData(url, interval)` | Fetches an API endpoint at a set interval; the reads `src/lib/display-heartbeat.ts` lists fetch when the heartbeat reports a new revision instead |
 | `useModuleConfig(mod, screenId)` | Returns `{ config, set }` for one module instance; reads *and* writes config through the editor store |
 | `useRotatingIndex(length, interval)` | Cycles through an array index on a timer |
 | `useScaledFontSize(base, ratio)` | Calculates responsive font sizes |
 | `useSleepManager(sleep, timezone)` | Manages display sleep/dim state. The second argument is the display timezone, used to evaluate sleep schedule windows against the same zone as screen and module schedules |
-| `useDisplayCommands(handlers, displayId?)` | Polls for remote commands and reports display status. Passing `displayId` targets that display's queue and registers it with the hub |
+| `useDisplayCommands(handlers, displayId?, drain?)` | Runs the 3-second heartbeat: drains remote commands (or, with `drain` false, as in the editor's preview, only reads the revisions) and hands the `revisions` to their readers. Passing `displayId` targets that display's queue and registers it with the hub |
+| `useStatusReporter(...)` | Posts the display's status (screen, profile, display state, brightness) every 30 seconds and on any change |
 | `useTZClock(timezone)` | Provides a live-updating `Date` for a given timezone |
 | `useIdleCursor(seconds)` | Hides cursor after idle period, restores on mousemove |
-| `useLiveConfig(screens, settings, profiles)` | Polls for config changes on the display |
+| `useLiveConfig(screens, settings, profiles)` | Fetches the display's config again when the heartbeat reports a new config ETag |
 | `useCanvasZoom()` | Manages editor canvas zoom/pan state with trackpad and keyboard support |
 | `useUndoRedoShortcuts()` | Keyboard shortcuts for undo/redo (Cmd+Z, Cmd+Shift+Z) |
 | `useAuthImage(src)` | Converts API-served image URLs to authenticated blob URLs |
