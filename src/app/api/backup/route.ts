@@ -11,7 +11,7 @@ import { readTodoData, validateTodoData, settleTodoMigration } from '@/lib/todo-
 import { readSavedTimetables, validateTimetableData } from '@/lib/timetable-data';
 import { writeBackupState } from '@/lib/backup-state';
 import { withAuth, parseJsonBody, getClientIP } from '@/lib/api-utils';
-import { validateConfigForWrite } from '@/lib/config-validation';
+import { newerSchemaProblem, validateConfigForWrite } from '@/lib/config-validation';
 import { planCredentialRestore } from '@/lib/backup-credentials';
 import { withFamilyData } from '@/lib/family-api';
 import { readFamilyData, familyValidationError } from '@/lib/family-data';
@@ -176,7 +176,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     delete body._passphrase;
 
     if (body.config !== undefined) {
-      const err = validateConfigForWrite(body.config);
+      const err = validateConfigForWrite(body.config) ?? newerSchemaProblem(body.config);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
     }
     // Same gate for the lists: the file is written whole, and a malformed one
@@ -262,7 +262,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   // Legacy format: raw ScreenConfiguration object
   if (body.screens && Array.isArray(body.screens) && body.settings) {
-    const err = validateConfigForWrite(body);
+    const err = validateConfigForWrite(body) ?? newerSchemaProblem(body);
     if (err) return NextResponse.json({ error: err }, { status: 400 });
     await withDataTransaction(async () => {
       const planned = await planFamilyRestore({ config: body as unknown as ScreenConfiguration });

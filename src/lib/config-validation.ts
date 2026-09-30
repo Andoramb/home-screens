@@ -1,4 +1,5 @@
 import type { ScreenConfiguration } from '@/types/config';
+import { getLatestSchemaVersion } from '@/lib/migrations';
 import { validateDisplays, validateAllSchedules, isValidDisplayTransform, isValidTouchMatrix, DISPLAY_TRANSFORMS, TOUCH_MATRIX_ERROR } from '@/lib/display-filter';
 
 /**
@@ -33,4 +34,19 @@ export function validateConfigForWrite(value: unknown): string | null {
   } catch {
     return 'Invalid config: malformed screens, displays or schedules';
   }
+}
+
+/**
+ * Why a config from a backup cannot be put back on this version, or `null`.
+ *
+ * A backup made by a newer Home Screens carries a newer schema. This version
+ * has no migration that reads it, so writing it as is leaves the hub running
+ * on a layout it only half understands, with a version number that tells the
+ * update checks the wrong thing. Only the restore paths ask: the editor's own
+ * save sends back the version it was given.
+ */
+export function newerSchemaProblem(value: unknown): string | null {
+  const version = (value as { version?: unknown } | null)?.version;
+  if (typeof version !== 'number' || version <= getLatestSchemaVersion()) return null;
+  return 'This backup was made by a newer version of Home Screens. Update Home Screens first, then restore the backup again.';
 }

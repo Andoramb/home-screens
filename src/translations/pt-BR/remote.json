@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "Reabrir?",
       "description": "\"{chore}\" fica livre de novo. Quem já ganhou tickets com ela não perde nada."
-    }
+    },
+    "loadError": "Não foi possível carregar suas tarefas. Veja se o hub está ligado e tente de novo.",
+    "retry": "Tentar de novo"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Ir para hoje",
@@ -276,6 +278,11 @@
         "title": "Excluir \"{name}\"?",
         "description": "Isso também vai remover a refeição de qualquer horário planejado.",
         "confirmLabel": "Excluir refeição"
+      },
+      "suggestWeek": {
+        "title": "Trocar as refeições desta semana?",
+        "description": "Sugerir escolhe refeições novas para a semana toda. As refeições já planejadas para esta semana serão trocadas.",
+        "confirmLabel": "Trocar refeições"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Reconfortante",
         "kid-friendly": "Para crianças"
       }
-    }
+    },
+    "loadError": "Não foi possível carregar suas refeições. Veja se o hub está ligado e tente de novo.",
+    "retry": "Tentar de novo",
+    "saveFailed": "Não deu para salvar. Tente de novo."
   },
   "mealForm": {
     "titleNew": "Adicionar refeição",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Resgatar por {cost} tickets",
       "emptyKid": "Nenhuma recompensa ainda. Um adulto pode adicionar pelo celular.",
       "balanceLabelNamed": "tickets de {name}",
-      "switchHint": "Não é {name}? Escolha seu nome na aba Hoje."
+      "switchHint": "Não é {name}? Escolha seu nome na aba Hoje.",
+      "refused": "Não deu certo. Não há mais tickets suficientes para isso.",
+      "failed": "Não deu certo. Tente de novo."
     },
     "manage": {
       "heading": "Recompensas",
@@ -894,7 +906,8 @@
     "showingOn": "Aparecendo em {names}",
     "showingOnDisplay": "Aparecendo na tela",
     "waitingForDisplay": "Aguardando uma tela assumir…",
-    "notShowing": "Nenhuma tela está mostrando ainda. Confira se alguma tela está ligada."
+    "notShowing": "Nenhuma tela está mostrando ainda. Confira se alguma tela está ligada.",
+    "changedElsewhere": "Outra pessoa alterou as rotinas. Sua última alteração não foi salva. Tente de novo."
   },
   "lists": {
     "title": "Listas",

@@ -82,6 +82,13 @@
         "keepMine": "Keep mine"
       },
       "savedToDisplay": "Saved to {name}"
+    },
+    "loadError": {
+      "title": "Home Screens couldn't open your saved setup",
+      "body": "One of its saved files is damaged or can't be read right now. Nothing has been deleted. Try again, or put back a backup below.",
+      "retry": "Try again",
+      "retrying": "Trying again…",
+      "detailLabel": "What Home Screens said"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Rename",
       "duplicate": "Duplicate",
       "delete": "Delete"
-    }
+    },
+    "newScreenName": "Screen {number}",
+    "copyName": "{name} copy"
   },
   "screenSearch": {
     "buttonAriaLabel": "Find a screen or module",
@@ -2123,7 +2132,12 @@
         "enableAriaLabel": "Enable {id}",
         "disableAriaLabel": "Disable {id}",
         "uninstallTitle": "Uninstall",
-        "uninstallAriaLabel": "Uninstall {id}"
+        "uninstallAriaLabel": "Uninstall {id}",
+        "uninstallConfirm": {
+          "title": "Uninstall {name}?",
+          "message": "It comes off every screen that shows it. Its saved settings and sign-in are deleted too.",
+          "confirmLabel": "Uninstall"
+        }
       },
       "updates": {
         "allUpToDate": "All plugins are up to date",
@@ -2354,7 +2368,8 @@
       "formErrorWidth": "Width must be between {min} and {max}. Check for a missing digit: most screens are 1080 or 1920 across.",
       "formErrorHeight": "Height must be between {min} and {max}. Check for a missing digit: most screens are 1080 or 1920 tall.",
       "softwareUpdateWaiting": "Update waiting",
-      "softwareNeedsSetup": "Needs setup"
+      "softwareNeedsSetup": "Needs setup",
+      "mainDisplayName": "Main Display"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3248,7 +3263,9 @@
     "importButton": "Add these screens",
     "savedAt": "Saved {date}",
     "screenPillSingular": "{name} · {count} module",
-    "screenPillPlural": "{name} · {count} modules"
+    "screenPillPlural": "{name} · {count} modules",
+    "importedName": "{name} (imported)",
+    "importedNameNumbered": "{name} (imported {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -4935,7 +4952,58 @@
   },
   "templatePicker": {
     "title": "Templates",
-    "loadFailed": "Failed to load \"{name}\""
+    "loadFailed": "Failed to load \"{name}\"",
+    "categories": {
+      "All": "All",
+      "Dashboard": "Dashboard",
+      "Weather": "Weather",
+      "Productivity": "Productivity",
+      "Media": "Media",
+      "Sports": "Sports",
+      "Finance": "Finance"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Family Dashboard",
+        "description": "Clock, calendar, weather, today's chores, countdown, and greeting: a complete family hub."
+      },
+      "weather-station": {
+        "name": "Weather Station",
+        "description": "Multiple weather views, rain map, sunrise/sunset, air quality, and moon phase."
+      },
+      "minimal-clock": {
+        "name": "Minimal Clock",
+        "description": "A single large clock: clean and distraction-free."
+      },
+      "info-board": {
+        "name": "Info Board",
+        "description": "News, stock ticker, word of the day, history, and quotes."
+      },
+      "photo-frame": {
+        "name": "Photo Frame",
+        "description": "Full-screen photo slideshow: turn your display into a digital picture frame."
+      },
+      "sports-hub": {
+        "name": "Sports Hub",
+        "description": "Live scores and league standings."
+      },
+      "productivity": {
+        "name": "Productivity",
+        "description": "Todoist tasks, calendar, countdown timer, and year progress."
+      },
+      "morning-dashboard": {
+        "name": "Morning Dashboard",
+        "description": "Weather, calendar, traffic, and a greeting to start your day."
+      },
+      "kitchen-display": {
+        "name": "Kitchen Display",
+        "description": "Meal planner, clock, calendar, garbage day, and sticky notes for the kitchen."
+      },
+      "news-finance": {
+        "name": "News & Finance",
+        "description": "News headlines, stock prices, and crypto tracker."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Modules",

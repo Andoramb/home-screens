@@ -82,6 +82,13 @@
         "keepMine": "Garder les miennes"
       },
       "savedToDisplay": "Enregistré sur {name}"
+    },
+    "loadError": {
+      "title": "Home Screens n'a pas pu ouvrir ta configuration enregistrée",
+      "body": "L'un des fichiers enregistrés est abîmé ou ne peut pas être lu pour le moment. Rien n'a été supprimé. Réessaie, ou remets une sauvegarde ci-dessous.",
+      "retry": "Réessayer",
+      "retrying": "Nouvel essai…",
+      "detailLabel": "Ce que Home Screens a indiqué"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Renommer",
       "duplicate": "Dupliquer",
       "delete": "Supprimer"
-    }
+    },
+    "newScreenName": "Écran {number}",
+    "copyName": "{name} (copie)"
   },
   "screenSearch": {
     "buttonAriaLabel": "Trouver un écran ou un module",
@@ -2123,7 +2132,12 @@
         "enableAriaLabel": "Activer {id}",
         "disableAriaLabel": "Désactiver {id}",
         "uninstallTitle": "Désinstaller",
-        "uninstallAriaLabel": "Désinstaller {id}"
+        "uninstallAriaLabel": "Désinstaller {id}",
+        "uninstallConfirm": {
+          "title": "Désinstaller {name} ?",
+          "message": "Il disparaît de tous les écrans qui l'affichent. Ses réglages enregistrés et sa connexion sont supprimés aussi.",
+          "confirmLabel": "Désinstaller"
+        }
       },
       "updates": {
         "allUpToDate": "Tous les plugins sont à jour",
@@ -2354,7 +2368,8 @@
       "formErrorWidth": "La largeur doit être comprise entre {min} et {max}. Vérifie qu'il ne manque pas un chiffre : la plupart des écrans font 1080 ou 1920 de large.",
       "formErrorHeight": "La hauteur doit être comprise entre {min} et {max}. Vérifie qu'il ne manque pas un chiffre : la plupart des écrans font 1080 ou 1920 de haut.",
       "softwareUpdateWaiting": "Mise à jour en attente",
-      "softwareNeedsSetup": "Configuration requise"
+      "softwareNeedsSetup": "Configuration requise",
+      "mainDisplayName": "Affichage principal"
     },
     "header": {
       "backToEditor": "Éditeur",
@@ -3248,7 +3263,9 @@
     "importButton": "Ajouter ces écrans",
     "savedAt": "Enregistrée le {date}",
     "screenPillSingular": "{name} · {count} module",
-    "screenPillPlural": "{name} · {count} modules"
+    "screenPillPlural": "{name} · {count} modules",
+    "importedName": "{name} (importé)",
+    "importedNameNumbered": "{name} (importé {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3461,7 +3478,7 @@
       "datePresetShortWeekday": "lun. 5 janv.",
       "datePresetMonthDayYear": "5 janvier 2026",
       "datePresetShortMonthDayYear": "5 janv. 2026",
-      "datePresetSlashMDY": "05/01/2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05/01/2026",
       "datePresetIso": "2026-01-05",
       "datePresetWeekday": "lundi",
@@ -3557,7 +3574,7 @@
       "datePresetShortWeekday": "lun. 5 janv.",
       "datePresetMonthDayYear": "5 janvier 2026",
       "datePresetShortMonthDayYear": "5 janv. 2026",
-      "datePresetSlashMDY": "05/01/2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05/01/2026",
       "datePresetIso": "2026-01-05",
       "invalidFormat": "Format invalide",
@@ -4935,7 +4952,58 @@
   },
   "templatePicker": {
     "title": "Modèles",
-    "loadFailed": "Échec du chargement de « {name} »"
+    "loadFailed": "Échec du chargement de « {name} »",
+    "categories": {
+      "All": "Tous",
+      "Dashboard": "Tableau de bord",
+      "Weather": "Météo",
+      "Productivity": "Productivité",
+      "Media": "Médias",
+      "Sports": "Sport",
+      "Finance": "Finances"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Tableau de bord familial",
+        "description": "Horloge, calendrier, météo, tâches du jour, compte à rebours et message d'accueil : tout pour la famille au même endroit."
+      },
+      "weather-station": {
+        "name": "Station météo",
+        "description": "Plusieurs vues météo, carte des pluies, lever et coucher du soleil, qualité de l'air et phase de la lune."
+      },
+      "minimal-clock": {
+        "name": "Horloge épurée",
+        "description": "Une seule grande horloge : sobre et sans distraction."
+      },
+      "info-board": {
+        "name": "Tableau d'infos",
+        "description": "Actualités, cours de la bourse, mot du jour, histoire et citations."
+      },
+      "photo-frame": {
+        "name": "Cadre photo",
+        "description": "Diaporama de photos en plein écran : transforme ton écran en cadre photo numérique."
+      },
+      "sports-hub": {
+        "name": "Coin sport",
+        "description": "Scores en direct et classements."
+      },
+      "productivity": {
+        "name": "Productivité",
+        "description": "Tâches Todoist, calendrier, compte à rebours et avancement de l'année."
+      },
+      "morning-dashboard": {
+        "name": "Tableau de bord du matin",
+        "description": "Météo, calendrier, trafic et un message d'accueil pour bien commencer la journée."
+      },
+      "kitchen-display": {
+        "name": "Écran de cuisine",
+        "description": "Planning des repas, horloge, calendrier, jour des poubelles et pense-bêtes pour la cuisine."
+      },
+      "news-finance": {
+        "name": "Actualités et finance",
+        "description": "Gros titres, cours des actions et suivi des cryptomonnaies."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Modules",

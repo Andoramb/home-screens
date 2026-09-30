@@ -372,5 +372,11 @@
     "title": "Nog geen tijdzone.",
     "body": "Je schermen gebruiken de klok van de hub ({zone}), dus tijden kunnen afwijken.",
     "action": "Tijdzone kiezen"
+  },
+  "routeError": {
+    "title": "Deze pagina kan nu niet worden geladen",
+    "body": "Home Screens heeft moeite met het lezen van de opgeslagen gegevens. Het probeert het zo vanzelf opnieuw.",
+    "help": "Als dit niet weggaat, kan een volwassene Home Screens op een computer openen en bij Instellingen een back-up terugzetten.",
+    "retry": "Opnieuw proberen"
   }
 }

@@ -6,6 +6,7 @@ import { createJsonStore } from './json-store';
 import { withDataTransaction, onDataTransactionCommit, readTransactionFile, durableWriteFile, getDataRoot } from './data-transaction';
 import { planConfigMigrationBackup } from './config-migration-backup';
 import { migrateUp, getLatestSchemaVersion } from './migrations';
+import { repairConfigShape } from './config-repair';
 // Circular with config-cache (it reads via readConfig, we invalidate it on
 // write) — safe because both sides only touch the other at call time, never
 // during module init.
@@ -67,23 +68,32 @@ const configStore = createJsonStore<ScreenConfiguration>({
 onDataTransactionCommit(invalidateConfigReadCache);
 
 export function readConfig(): Promise<ScreenConfiguration> {
-  return withDataTransaction(async () => {
-    const config = await configStore.read();
-    if ((config.version ?? 0) < getLatestSchemaVersion()) {
-      // Persist while still holding the coordinator. Detached writes could
-      // otherwise land after a family transaction releases its lock.
-      try {
-        return await updateConfigAtomic((current) => current);
-      } catch (error) {
-        // The original parsed config remains useful when a schema migration
-        // or its persistence fails. Mutating callers still use the strict
-        // updateConfigAtomic path and cannot silently overwrite these errors.
-        log.error('Could not migrate configuration; using the saved configuration.', error);
-        return config;
-      }
+  return withDataTransaction(async () => drawable(await readSavedConfig()));
+}
+
+/** The saved config, with a module a hand edit left half-written made safe to draw. */
+function drawable(config: ScreenConfiguration): ScreenConfiguration {
+  const repaired = repairConfigShape(config);
+  if (repaired !== config) log.warn('The saved layout holds a module with missing pieces; showing it with plain stand-ins.');
+  return repaired;
+}
+
+async function readSavedConfig(): Promise<ScreenConfiguration> {
+  const config = await configStore.read();
+  if ((config.version ?? 0) < getLatestSchemaVersion()) {
+    // Persist while still holding the coordinator. Detached writes could
+    // otherwise land after a family transaction releases its lock.
+    try {
+      return await updateConfigAtomic((current) => current);
+    } catch (error) {
+      // The original parsed config remains useful when a schema migration
+      // or its persistence fails. Mutating callers still use the strict
+      // updateConfigAtomic path and cannot silently overwrite these errors.
+      log.error('Could not migrate configuration; using the saved configuration.', error);
+      return config;
     }
-    return config;
-  });
+  }
+  return config;
 }
 
 /**

@@ -82,6 +82,13 @@
         "keepMine": "Conservar los míos"
       },
       "savedToDisplay": "Guardado en {name}"
+    },
+    "loadError": {
+      "title": "Home Screens no pudo abrir tu configuración guardada",
+      "body": "Uno de los archivos guardados está dañado o no se puede leer ahora. No se ha borrado nada. Inténtalo de nuevo o recupera una copia de seguridad más abajo.",
+      "retry": "Intentar de nuevo",
+      "retrying": "Intentando de nuevo…",
+      "detailLabel": "Lo que dijo Home Screens"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Renombrar",
       "duplicate": "Duplicar",
       "delete": "Eliminar"
-    }
+    },
+    "newScreenName": "Pantalla {number}",
+    "copyName": "{name} (copia)"
   },
   "screenSearch": {
     "buttonAriaLabel": "Buscar una pantalla o un módulo",
@@ -2123,7 +2132,12 @@
         "enableAriaLabel": "Activar {id}",
         "disableAriaLabel": "Desactivar {id}",
         "uninstallTitle": "Desinstalar",
-        "uninstallAriaLabel": "Desinstalar {id}"
+        "uninstallAriaLabel": "Desinstalar {id}",
+        "uninstallConfirm": {
+          "title": "¿Desinstalar {name}?",
+          "message": "Se quita de todas las pantallas que lo muestran. También se borran sus ajustes guardados y su inicio de sesión.",
+          "confirmLabel": "Desinstalar"
+        }
       },
       "updates": {
         "allUpToDate": "Todos los plugins están al día",
@@ -2354,7 +2368,8 @@
       "formErrorWidth": "El ancho tiene que estar entre {min} y {max}. Mira si falta un dígito: la mayoría de las pantallas miden 1080 o 1920 de ancho.",
       "formErrorHeight": "El alto tiene que estar entre {min} y {max}. Mira si falta un dígito: la mayoría de las pantallas miden 1080 o 1920 de alto.",
       "softwareUpdateWaiting": "Actualización pendiente",
-      "softwareNeedsSetup": "Requiere configuración"
+      "softwareNeedsSetup": "Requiere configuración",
+      "mainDisplayName": "Display principal"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3248,7 +3263,9 @@
     "importButton": "Añadir estas pantallas",
     "savedAt": "Guardado el {date}",
     "screenPillSingular": "{name} · {count} módulo",
-    "screenPillPlural": "{name} · {count} módulos"
+    "screenPillPlural": "{name} · {count} módulos",
+    "importedName": "{name} (importada)",
+    "importedNameNumbered": "{name} (importada {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -4935,7 +4952,58 @@
   },
   "templatePicker": {
     "title": "Plantillas",
-    "loadFailed": "No se pudo cargar «{name}»"
+    "loadFailed": "No se pudo cargar «{name}»",
+    "categories": {
+      "All": "Todas",
+      "Dashboard": "Panel",
+      "Weather": "Tiempo",
+      "Productivity": "Productividad",
+      "Media": "Multimedia",
+      "Sports": "Deportes",
+      "Finance": "Finanzas"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Panel familiar",
+        "description": "Reloj, calendario, tiempo, tareas de hoy, cuenta atrás y saludo: todo para la familia en un solo lugar."
+      },
+      "weather-station": {
+        "name": "Estación meteorológica",
+        "description": "Varias vistas del tiempo, mapa de lluvia, amanecer y atardecer, calidad del aire y fase de la luna."
+      },
+      "minimal-clock": {
+        "name": "Reloj minimalista",
+        "description": "Un solo reloj grande: limpio y sin distracciones."
+      },
+      "info-board": {
+        "name": "Tablón de información",
+        "description": "Noticias, cotizaciones de bolsa, palabra del día, historia y citas."
+      },
+      "photo-frame": {
+        "name": "Marco de fotos",
+        "description": "Pase de fotos a pantalla completa: convierte tu pantalla en un marco de fotos digital."
+      },
+      "sports-hub": {
+        "name": "Centro deportivo",
+        "description": "Resultados en directo y clasificaciones."
+      },
+      "productivity": {
+        "name": "Productividad",
+        "description": "Tareas de Todoist, calendario, cuenta atrás y progreso del año."
+      },
+      "morning-dashboard": {
+        "name": "Panel de la mañana",
+        "description": "Tiempo, calendario, tráfico y un saludo para empezar el día."
+      },
+      "kitchen-display": {
+        "name": "Pantalla de cocina",
+        "description": "Plan de comidas, reloj, calendario, día de la basura y notas adhesivas para la cocina."
+      },
+      "news-finance": {
+        "name": "Noticias y finanzas",
+        "description": "Titulares, precios de acciones y seguimiento de criptomonedas."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Módulos",

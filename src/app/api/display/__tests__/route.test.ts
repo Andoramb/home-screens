@@ -1168,6 +1168,20 @@ describe('POST /api/display/alert', () => {
     expect(res.status).toBe(200);
   });
 
+  it('rejects a title or message that is not text, and queues nothing', async () => {
+    for (const body of [
+      { title: 'Dinner', message: { text: 'is ready' } },
+      { title: { text: 'Dinner' } },
+      { title: ['Dinner'], message: 'is ready' },
+      { message: 42 },
+    ]) {
+      vi.mocked(enqueueCommand).mockClear();
+      const res = await POST(makeRequest(body), makeParams('alert'));
+      expect(res.status, JSON.stringify(body)).toBe(400);
+      expect(enqueueCommand).not.toHaveBeenCalled();
+    }
+  });
+
   it('rejects alert with neither title nor message', async () => {
     const res = await POST(makeRequest({ type: 'info' }), makeParams('alert'));
     expect(res.status).toBe(400);

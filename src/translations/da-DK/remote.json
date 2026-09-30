@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "Sæt den tilbage?",
       "description": "»{chore}« bliver ledig igen. Ingen mister de billetter, de allerede har fået for den."
-    }
+    },
+    "loadError": "Dine pligter kunne ikke hentes. Tjek, at hubben er tændt, og prøv igen.",
+    "retry": "Prøv igen"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Spring til i dag",
@@ -276,6 +278,11 @@
         "title": "Slet \"{name}\"?",
         "description": "Dette vil også fjerne måltidet fra alle planlagte tidspunkter.",
         "confirmLabel": "Slet måltid"
+      },
+      "suggestWeek": {
+        "title": "Erstat denne uges måltider?",
+        "description": "Foreslå vælger nye måltider til hele ugen. De måltider, der allerede er planlagt i denne uge, bliver erstattet.",
+        "confirmLabel": "Erstat måltider"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Trøstemad",
         "kid-friendly": "Børnevenlig"
       }
-    }
+    },
+    "loadError": "Dine måltider kunne ikke hentes. Tjek, at hubben er tændt, og prøv igen.",
+    "retry": "Prøv igen",
+    "saveFailed": "Kunne ikke gemme. Prøv igen."
   },
   "mealForm": {
     "titleNew": "Tilføj måltid",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Indløs for {cost} billetter",
       "emptyKid": "Ingen belønninger endnu. En voksen kan tilføje nogle fra sin telefon.",
       "balanceLabelNamed": "billetter til {name}",
-      "switchHint": "Er du ikke {name}? Vælg dit navn under I dag."
+      "switchHint": "Er du ikke {name}? Vælg dit navn under I dag.",
+      "refused": "Det gik ikke igennem. Der er ikke længere billetter nok til det.",
+      "failed": "Det gik ikke igennem. Prøv igen."
     },
     "manage": {
       "heading": "Belønninger",
@@ -893,7 +905,8 @@
     "showingOn": "Vises på {names}",
     "showingOnDisplay": "Vises på skærmen",
     "waitingForDisplay": "Venter på, at en skærm tager den…",
-    "notShowing": "Ingen skærm viser den endnu. Tjek, at en skærm er tændt."
+    "notShowing": "Ingen skærm viser den endnu. Tjek, at en skærm er tændt.",
+    "changedElsewhere": "En anden har ændret rutinerne. Din seneste ændring blev ikke gemt. Prøv igen."
   },
   "lists": {
     "title": "Lister",

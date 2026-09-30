@@ -1,5 +1,6 @@
+import { fitModuleToDisplay } from './module-utils';
 import { v4 as uuidv4 } from 'uuid';
-import type { ScreenConfiguration, Screen, Profile, ModuleInstance } from '@/types/config';
+import type { ScreenConfiguration, Screen, Profile } from '@/types/config';
 import type { LayoutExport } from '@/types/layout-export';
 import { migrateScreens, getLatestSchemaVersion } from '@/lib/migrations';
 
@@ -68,6 +69,12 @@ export function createLayoutExport(
 interface ImportOptions {
   mode: 'add' | 'replace';
   applyVisual?: boolean;
+  /**
+   * The name for an imported screen whose own name is taken, in the
+   * household's language: "Home (imported)", then "Home (imported 2)".
+   * English when the caller has no translations to hand.
+   */
+  importedName?: (name: string, number?: number) => string;
 }
 
 export function importLayout(
@@ -76,6 +83,8 @@ export function importLayout(
   options: ImportOptions,
 ): ScreenConfiguration {
   const { mode, applyVisual = false } = options;
+  const importedName = options.importedName
+    ?? ((name: string, number?: number) => (number ? `${name} (imported ${number})` : `${name} (imported)`));
 
   // Modules exported under an older schema are migrated first: the merged
   // config already sits on the latest version, so nothing downstream would
@@ -88,32 +97,8 @@ export function importLayout(
   );
 
   // Scale and clamp modules to fit the target display
-  const srcW = layout.metadata.sourceDisplay.width;
-  const srcH = layout.metadata.sourceDisplay.height;
-  const tgtW = existingConfig.settings.displayWidth;
-  const tgtH = existingConfig.settings.displayHeight;
-  const needsScale = srcW !== tgtW || srcH !== tgtH;
-
-  function scaleModule(m: ModuleInstance): ModuleInstance {
-    if (!needsScale) return m;
-    const MIN_SIZE = 60;
-    const scaleX = tgtW / srcW;
-    const scaleY = tgtH / srcH;
-
-    let w = Math.max(MIN_SIZE, Math.round(m.size.w * scaleX));
-    let h = Math.max(MIN_SIZE, Math.round(m.size.h * scaleY));
-    let x = Math.round(m.position.x * scaleX);
-    let y = Math.round(m.position.y * scaleY);
-
-    // Clamp size to display bounds
-    w = Math.min(w, tgtW);
-    h = Math.min(h, tgtH);
-    // Clamp position so the module stays fully on-canvas
-    x = Math.max(0, Math.min(x, tgtW - w));
-    y = Math.max(0, Math.min(y, tgtH - h));
-
-    return { ...m, position: { x, y }, size: { w, h } };
-  }
+  const source = { width: layout.metadata.sourceDisplay.width, height: layout.metadata.sourceDisplay.height };
+  const target = { width: existingConfig.settings.displayWidth, height: existingConfig.settings.displayHeight };
 
   // Build an ID mapping: old → new for screens, modules, and profiles
   const screenIdMap = new Map<string, string>();
@@ -128,11 +113,11 @@ export function importLayout(
     // Resolve name conflicts
     let name = screen.name;
     if (existingNames.has(name)) {
-      name = `${name} (imported)`;
+      name = importedName(screen.name);
       // Handle unlikely double-conflict
       let counter = 2;
       while (existingNames.has(name)) {
-        name = `${screen.name} (imported ${counter})`;
+        name = importedName(screen.name, counter);
         counter++;
       }
     }
@@ -143,7 +128,7 @@ export function importLayout(
       id: newScreenId,
       name,
       modules: screen.modules.map((m) => ({
-        ...scaleModule(m),
+        ...fitModuleToDisplay(m, source, target),
         id: uuidv4(),
       })),
     };

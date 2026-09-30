@@ -1089,7 +1089,8 @@
   "qr-code": {
     "name": "Código QR",
     "empty": "Añade un enlace o tu Wi-Fi en el editor y aparecerá aquí",
-    "scanToConnect": "Escanea para conectar"
+    "scanToConnect": "Escanea para conectar",
+    "tooLong": "Es demasiado texto para un solo código QR. Acórtalo en el editor y aparecerá aquí"
   },
   "display-control": {
     "prev": "Anterior",

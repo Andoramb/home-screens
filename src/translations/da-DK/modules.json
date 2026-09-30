@@ -1084,7 +1084,8 @@
   "qr-code": {
     "name": "QR-kode",
     "empty": "Tilføj et link eller dit wi-fi i editoren, så vises det her",
-    "scanToConnect": "Scan for at forbinde"
+    "scanToConnect": "Scan for at forbinde",
+    "tooLong": "Det er for meget tekst til én QR-kode. Gør den kortere i editoren, så vises den her"
   },
   "display-control": {
     "prev": "Forrige",

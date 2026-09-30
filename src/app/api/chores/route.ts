@@ -3,11 +3,11 @@ import type { NextRequest } from 'next/server';
 import type { ChoreCompletion, ChoreToggleRequest } from '@/types/config';
 import { publicErrorResponse, parseJsonBody, isValidISODate } from '@/lib/api-utils';
 import { readChoreData } from '@/lib/chore-data';
-import { readFamilyData } from '@/lib/family-data';
+import { familyResponse, readFamilyData } from '@/lib/family-data';
 import { atGrabLimit, checkBonusComplete, grabHolds, resetViewDay, countsSinceReset, readChoreSettings, isBonusChore, pruneChoreMarks, tickEndsGrabs, type BonusCheck } from '@/lib/chore-bonus';
 import { withFamilyData, validateMemberReferences } from '@/lib/family-api';
 import { commitDataTransaction, withDataTransaction, type TransactionChange } from '@/lib/data-transaction';
-import { choresEtag, holdsEtag, revalidatedHeaders } from '@/lib/chore-revisions';
+import { choresEtag, choresPageEtag, holdsEtag, revalidatedHeaders } from '@/lib/chore-revisions';
 import { planPointsMove } from '@/lib/reward-data';
 import type { RewardData } from '@/lib/reward-data';
 import { choreMarks, planCompletionsUpdate, updateCompletionsAtomic } from '@/lib/chore-completion-data';
@@ -46,7 +46,9 @@ export const GET = async (request: NextRequest) => {
       const today = await householdToday();
       // Walls and phones ask every few seconds and the lists change a few
       // times a day: an unchanged answer is a stat of two files, not a read.
-      const etag = await choresEtag(today);
+      const withChores = request.nextUrl.searchParams.get('chores') === '1';
+      const etagOf = withChores ? choresPageEtag : choresEtag;
+      const etag = await etagOf(today);
       if (holdsEtag(request, etag)) return new NextResponse(null, { status: 304, headers: revalidatedHeaders(etag) });
 
       // Only persist when the clean-up actually evicted something. Returning
@@ -64,7 +66,7 @@ export const GET = async (request: NextRequest) => {
         return next;
       });
       // A clean-up wrote the file, so the answer is a revision later.
-      const answered = cleaned ? await choresEtag(today) : etag;
+      const answered = cleaned ? await etagOf(today) : etag;
       // A shorter history is the same clean-up with a nearer cutoff: it keeps
       // what holds a put-back chore closed and the grabs that still hold, so
       // today and this week draw exactly as they do from the whole history.
@@ -78,13 +80,20 @@ export const GET = async (request: NextRequest) => {
       // `?chores=1` adds the chore list and its revision, for the phone and
       // the kids' page, which keep a copy of it and must notice another
       // phone's edit. The wall never asks: it reads the list from the heartbeat.
-      const chores = saved && request.nextUrl.searchParams.get('chores') === '1' ? saved.chores : null;
+      // The family comes with it: the kids' page has no session to read
+      // `/api/family` with, and already shows these names.
+      const chores = saved && withChores ? saved.chores : null;
+      let family: ReturnType<typeof familyResponse> | null = null;
+      if (chores) {
+        try { family = familyResponse(await readFamilyData()); } catch { /* unreadable: the page keeps the family it has */ }
+      }
       return NextResponse.json(
         {
           ...choreMarks(marks),
           today,
           ...(saved ? { settings: readChoreSettings(saved.settings) } : {}),
           ...(chores ? { chores, choresRevision: contentRevision(chores) } : {}),
+          ...(family ? { family } : {}),
         },
         { headers: revalidatedHeaders(answered) },
       );

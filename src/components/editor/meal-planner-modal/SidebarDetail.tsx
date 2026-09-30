@@ -1,5 +1,6 @@
 'use client';
 
+import { ingredientsToSave } from '@/lib/meal-ingredients';
 import { useState, useEffect, useMemo } from 'react';
 import type { SavedMeal, MealIngredient, GroceryCategory } from '@/types/config';
 import { MEAL_TAGS, FOOD_EMOJIS, normalizeTag, DEFAULT_MEAL_EMOJI } from '@/lib/meal-constants';
@@ -141,10 +142,7 @@ export default function SidebarDetail({ meal, onSave, onDelete, onToggleFavorite
       servings: servings || undefined,
       difficulty: difficulty,
       tags: tags.length > 0 ? tags : undefined,
-      ingredients:
-        ingredients.filter((i) => i.name.trim()).length > 0
-          ? ingredients.filter((i) => i.name.trim())
-          : undefined,
+      ingredients: ingredientsToSave(ingredients),
       recipeUrl: recipeUrl.trim() || undefined,
       notes: notes.trim() || undefined,
       rating: rating || undefined,

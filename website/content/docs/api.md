@@ -396,7 +396,7 @@ curl "http://<hub>:3000/api/display/power-state?display=kitchen&applied=on"
 
 Returns chore completion records, the bonus chores someone has grabbed, and when each "when I put it back" bonus chore was last put back. Automatically purges entries older than 90 days. Public on the LAN with no authentication so the kid-facing `/chores` view works even when the editor password is set.
 
-**Query:** `days` (optional, a whole number from 1 to 90) sends only that many days of history before today. Completions that still keep a "when I put it back" chore done, and grabs that still hold, come whatever their age, so today and this week look the same as with the whole history. The wall and the kids' page ask for `?days=31`, which covers a 30-day streak. Anything else is a `400`.
+**Query:** `days` (optional, a whole number from 1 to 90) sends only that many days of history before today. Completions that still keep a "when I put it back" chore done, and grabs that still hold, come whatever their age, so today and this week look the same as with the whole history. The wall and the kids' page ask for `?days=31`, which covers a 30-day streak. Anything else is a `400`. `chores=1` (optional) adds the chore list as `chores`, its `choresRevision`, and the `family`: the phone and the kids' page send it so they notice a chore or a person another phone changed.
 
 **Caching:** the answer carries an `ETag` and `Cache-Control: no-cache`, so a browser checks before reusing it. A request whose `If-None-Match` matches gets an empty `304`. The `ETag` is the same for every `days`, and changes when the chores, their settings or the completions are saved, when the household's day changes, or after an update. `GET /api/rewards` works the same way for the rewards, balances and redemptions.
 
@@ -613,15 +613,19 @@ Visual timers and routines, managed from the remote's Timers tab. Routines are f
 
 Returns the saved routine list. Display access.
 
-**Response:** `{ "routines": [ { "id": "...", "name": "...", "icon": "...", "view": "ring", "sound": true, "steps": [ { "id": "...", "label": "...", "icon": "...", "durationSec": 120, "waitForTap": true } ] } ] }`
+**Response:** `{ "routines": [ { "id": "...", "name": "...", "icon": "...", "view": "ring", "sound": true, "steps": [ { "id": "...", "label": "...", "icon": "...", "durationSec": 120, "waitForTap": true } ] } ], "revision": "..." }`
+
+`revision` names this copy of the list. A save sends it back.
 
 `view` is one of `ring`, `face`, `cascade`, or `path`. A step with `waitForTap: true` holds at 0:00 with a "Done!" tap target instead of auto-advancing.
 
 ### PUT /api/timers/routines
 
-Replaces the routine list wholesale (the list is capped at 50 and edited from a single form, so replace-the-list avoids partial-update merge rules). Validation is all-or-nothing: one bad routine rejects the whole write with `400`. An empty list is a legitimate write, it's how the last routine is deleted. Requires a valid session.
+Replaces the routine list wholesale (the list is capped at 50, so replace-the-list avoids partial-update merge rules). Validation is all-or-nothing: one bad routine rejects the whole write with `400`. An empty list is a legitimate write, it's how the last routine is deleted. Requires a valid session.
 
-**Body:** `{ "routines": [ ... ] }`: same shape as the GET response.
+**Body:** `{ "routines": [ ... ], "revision": "..." }`: the list in the same shape as the GET response, and the `revision` of the copy it was built from (from GET or the previous save). A save with no revision is a `400`.
+
+When someone else saved first, the answer is a `409` with `"reason": "revision"` and the current `routines` and `revision`. Make the change again on top of that list and send it with the new revision.
 
 ### GET /api/timers/session
 

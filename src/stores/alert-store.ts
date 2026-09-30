@@ -59,6 +59,9 @@ export function splitAlerts(alerts: DisplayAlert[], maxVisible: number): { urgen
   return { urgent, banners: banners.slice(-Math.max(0, maxVisible)) };
 }
 
+/** The longest delay `setTimeout` keeps (about 24.8 days). */
+const MAX_TIMER_MS = 2_147_483_647;
+
 let counter = 0;
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -102,10 +105,12 @@ export const useAlertStore = create<AlertState>((set, get) => ({
     });
 
     if (duration > 0) {
+      // A timer longer than this fires at once, so an alert asked to stay for
+      // a month would vanish as it appeared.
       const handle = setTimeout(() => {
         timers.delete(id);
         get().dismissAlert(id);
-      }, duration);
+      }, Math.min(duration, MAX_TIMER_MS));
       timers.set(id, handle);
     }
   },

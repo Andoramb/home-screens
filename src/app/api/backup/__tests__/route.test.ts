@@ -309,6 +309,16 @@ describe('POST /api/backup — restore', () => {
     expect((await readConfig()).screens[0].id).toBe('default');
   });
 
+  it('refuses a backup made by a newer version, as a bundle or a bare config, and writes nothing', async () => {
+    const newer = { version: 9999, screens: [{ id: 'from-the-future', name: 'Later', modules: [] }], settings: {} };
+    for (const body of [{ _type: 'home-screens-backup', config: newer }, newer]) {
+      const res = await POST(postReq(body));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error).toMatch(/newer version of Home Screens/);
+      expect((await readConfig()).screens[0].id).toBe('default');
+    }
+  });
+
   it('rejects a bundle whose config is missing settings', async () => {
     const res = await POST(
       postReq({

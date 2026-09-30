@@ -62,7 +62,11 @@ vi.mock('@/lib/reward-data', () => ({
   planPointsMove: vi.fn(),
 }));
 
-vi.mock('@/lib/family-data', () => ({ readFamilyData: vi.fn(), settleFamilyMigration: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('@/lib/family-data', () => ({
+  readFamilyData: vi.fn(),
+  settleFamilyMigration: vi.fn().mockResolvedValue(undefined),
+  familyResponse: (data: { members: unknown[]; groups?: unknown[] }) => ({ members: data.members, groups: data.groups ?? [], revision: 'family-r1' }),
+}));
 vi.mock('@/lib/data-transaction', () => ({
   durableRemove: async (file: string) => {
     const { promises: fs } = await import('fs');
@@ -230,6 +234,10 @@ describe('GET /api/chores', () => {
     expect(withList.chores.some((c: { id: string }) => c.id === 'chore-pts5')).toBe(true);
     expect(typeof withList.choresRevision).toBe('string');
     expect(withList.choresRevision).not.toBe('');
+    // The family rides along: the kids' page has no session to read it with.
+    expect(plain.family).toBeUndefined();
+    expect(withList.family.revision).toBe('family-r1');
+    expect(Array.isArray(withList.family.members)).toBe(true);
   });
 
   it('writes back to disk when purgeOld evicts at least one completion', async () => {

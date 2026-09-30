@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { validateConfigForWrite } from '@/lib/config-validation';
+import { newerSchemaProblem, validateConfigForWrite } from '@/lib/config-validation';
+import { getLatestSchemaVersion } from '@/lib/migrations';
 import { INVALID_CONFIGS } from './invalid-config-matrix';
 
 describe('validateConfigForWrite', () => {
@@ -24,5 +25,20 @@ describe('validateConfigForWrite', () => {
   it('turns a validator crash on a malformed document into a refusal', () => {
     // `modules` is a number, which the schedule walk cannot iterate.
     expect(validateConfigForWrite({ screens: [{ id: 's1', modules: 5 }], settings: {} })).toMatch(/Invalid config/);
+  });
+});
+
+describe('newerSchemaProblem', () => {
+  const latest = getLatestSchemaVersion();
+
+  it('refuses a config from a newer version, in words a family can act on', () => {
+    expect(newerSchemaProblem({ version: latest + 1, screens: [], settings: {} })).toMatch(/newer version of Home Screens/);
+  });
+
+  it('accepts this version, an older one, and a config with no version', () => {
+    expect(newerSchemaProblem({ version: latest })).toBeNull();
+    expect(newerSchemaProblem({ version: 1 })).toBeNull();
+    expect(newerSchemaProblem({ screens: [] })).toBeNull();
+    expect(newerSchemaProblem(null)).toBeNull();
   });
 });

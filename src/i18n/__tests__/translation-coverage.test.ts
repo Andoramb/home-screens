@@ -644,6 +644,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|photosTab.viewer.label',
   ]),
   'nl-NL': new Set([
+    // "Media" is the Dutch word too (a template category).
+    'editor|templatePicker.categories.Media',
     // "Bonus" is the same word in this language (bonus chores).
     'modules|chore-chart.bonus.heading',
     'modules|chore-chart.choreForm.kindBonus',

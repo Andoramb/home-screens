@@ -119,6 +119,42 @@ export function appendOnTop(
 }
 
 /**
+ * One module from a display of one shape, placed on a display of another:
+ * position and size stretched by each axis, then held inside the canvas.
+ * Stretching by axis (rather than by one factor) keeps a full-screen module
+ * full-screen and a module on the right edge on the right edge. A display of
+ * the same size hands the module back as it is.
+ *
+ * Shared by layout import and "Copy screens from": a screen drawn for a
+ * portrait wall and copied as is onto a landscape one left half its modules
+ * below the bottom edge, where they could not be seen, clicked or resized.
+ */
+export function fitModuleToDisplay(
+  m: ModuleInstance,
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+): ModuleInstance {
+  if (from.width === to.width && from.height === to.height) return m;
+  if (!(from.width > 0 && from.height > 0)) return m;
+  const scaleX = to.width / from.width;
+  const scaleY = to.height / from.height;
+
+  let w = Math.max(MIN_SIZE, Math.round(m.size.w * scaleX));
+  let h = Math.max(MIN_SIZE, Math.round(m.size.h * scaleY));
+  let x = Math.round(m.position.x * scaleX);
+  let y = Math.round(m.position.y * scaleY);
+
+  // Clamp size to display bounds
+  w = Math.min(w, to.width);
+  h = Math.min(h, to.height);
+  // Clamp position so the module stays fully on-canvas
+  x = Math.max(0, Math.min(x, to.width - w));
+  y = Math.max(0, Math.min(y, to.height - h));
+
+  return { ...m, position: { x, y }, size: { w, h } };
+}
+
+/**
  * Uniformly scale every module's position and size so the entire layout
  * fits within `newWidth × newHeight`.  Uses `min(scaleX, scaleY)` so
  * relative proportions are preserved.  Results are snapped to the grid

@@ -18,6 +18,15 @@ export const dynamic = 'force-dynamic';
 const MIN_PASSWORD_LENGTH = 8;
 const limiter = createRateLimiter(5, 15 * 60 * 1000); // 5 attempts / 15 min
 
+/**
+ * 400, not 401: the person is signed in and typed the old password wrong. The
+ * editor reads a 401 as a session that ran out and sends them to the login
+ * page, which closed the dialog with no word about what was wrong.
+ */
+function wrongCurrentPassword(): NextResponse {
+  return NextResponse.json({ error: 'Invalid current password', code: 'wrong_password' }, { status: 400 });
+}
+
 export async function POST(request: NextRequest) {
   try {
     const ip = getClientIP(request);
@@ -54,7 +63,7 @@ export async function POST(request: NextRequest) {
       const valid = await verifyPassword(currentPassword);
       if (!valid) {
         limiter.recordFailure(ip);
-        return NextResponse.json({ error: 'Invalid current password' }, { status: 401 });
+        return wrongCurrentPassword();
       }
       limiter.clear(ip);
       await clearPassword();
@@ -85,7 +94,7 @@ export async function POST(request: NextRequest) {
       const valid = await verifyPassword(currentPassword);
       if (!valid) {
         limiter.recordFailure(ip);
-        return NextResponse.json({ error: 'Invalid current password' }, { status: 401 });
+        return wrongCurrentPassword();
       }
       limiter.clear(ip);
     }

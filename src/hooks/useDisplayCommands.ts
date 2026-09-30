@@ -90,6 +90,31 @@ function currentBrowserStats(): BrowserStats | undefined {
 
 const HEARTBEAT_MS = 3_000;
 
+const KEY_RELOAD_AT = 'hs-display-key-reload-at';
+const KEY_RELOAD_EVERY_MS = 60_000;
+
+/**
+ * Whether a wall the hub just refused should reload to pick up a new key.
+ *
+ * The key is handed to the page when it is rendered, so a wall that was open
+ * when a grown-up made a new key (or first set a password) holds one the hub
+ * no longer accepts, and every beat after that is refused: no commands, no
+ * layout changes, no way to tell it to reload. Loading the page again gets
+ * the current key. At most once a minute, remembered across the reload, so
+ * a wall the hub keeps refusing for another reason does not spin.
+ */
+function reloadForNewKey(): boolean {
+  try {
+    const last = Number(sessionStorage.getItem(KEY_RELOAD_AT)) || 0;
+    if (Date.now() - last < KEY_RELOAD_EVERY_MS) return false;
+    sessionStorage.setItem(KEY_RELOAD_AT, String(Date.now()));
+    return true;
+  } catch {
+    // No storage to remember the reload in: reloading could loop, so do not.
+    return false;
+  }
+}
+
 /**
  * Whether an editor is currently watching this display's shared-state
  * snapshot, as signaled by `sharedStateWatched` on the commands-drain
@@ -191,11 +216,15 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
             break;
           case 'alert': {
             const p = cmd.payload;
-            if (p && (p.title || p.message)) {
+            // Only text is drawn: whatever else a hub queued is left out
+            // rather than handed to the overlay.
+            const title = typeof p?.title === 'string' ? p.title : '';
+            const message = typeof p?.message === 'string' ? p.message : '';
+            if (p && (title || message)) {
               handlersRef.current.showAlert({
                 type: (p.type as AlertType) ?? 'info',
-                title: (p.title as string) ?? '',
-                message: (p.message as string) ?? '',
+                title,
+                message,
                 duration: typeof p.duration === 'number' ? p.duration : undefined,
                 icon: typeof p.icon === 'string' ? p.icon : undefined,
                 dismissible: typeof p.dismissible === 'boolean' ? p.dismissible : undefined,
@@ -270,6 +299,10 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
           drain ? withDisplayParam('/api/display/commands', displayId) : '/api/display/revisions',
         );
         if (!mounted) return;
+        if (res.status === 401 && drain && reloadForNewKey()) {
+          handlersRef.current.reload();
+          return;
+        }
         if (!res.ok) {
           await publishBuildIdAlone();
           return;

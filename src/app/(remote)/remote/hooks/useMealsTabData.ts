@@ -9,6 +9,8 @@ import { useMealsLibrary } from './useMealsLibrary';
 import { useMealsGrocery } from './useMealsGrocery';
 import type { MealsConfirmAction } from '../components/meals-shared';
 
+const MEALS_POLL_MS = 15_000;
+
 /**
  * Everything the Meals tab renders, wired together from focused hooks:
  * `useMealsData` (fetch/save), `useMealsWeekNav` (which week + wall clock),
@@ -28,6 +30,7 @@ export function useMealsTabData() {
     setSettings,
     globalTimeFormat,
     loading,
+    loadError,
     saving,
     setSaving,
     saveError,
@@ -43,16 +46,24 @@ export function useMealsTabData() {
 
   const weekNav = useMealsWeekNav(settings);
 
-  // Load once, and again whenever the phone comes back to this page. A tab
-  // left open on Sunday's plan would otherwise keep an hours-old copy, and
-  // the first tap on it would have to be re-applied against the hub's copy.
+  // Load once, again whenever the phone comes back to this page or back
+  // onto the network, and every so often while it is open. A tab left open
+  // on Sunday's plan would otherwise keep an hours-old copy, a grocery item
+  // ticked on another phone would never show, and a load that failed during
+  // a Wi-Fi blip would leave the tab empty for good.
   useEffect(() => {
     fetchData();
-    const onVisibilityChange = () => {
+    const whenVisible = () => {
       if (document.visibilityState === 'visible') fetchData();
     };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', whenVisible);
+    window.addEventListener('online', fetchData);
+    const poll = setInterval(whenVisible, MEALS_POLL_MS);
+    return () => {
+      document.removeEventListener('visibilitychange', whenVisible);
+      window.removeEventListener('online', fetchData);
+      clearInterval(poll);
+    };
   }, [fetchData]);
 
   const planActions = useMealsPlanActions({
@@ -106,6 +117,8 @@ export function useMealsTabData() {
     settings,
     globalTimeFormat,
     loading,
+    loadError,
+    retryLoad: fetchData,
     saving,
     saveError,
     setSaveError,

@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "¿Volver a abrirla?",
       "description": "«{chore}» vuelve a estar disponible. Los tickets que ya se ganaron con ella no se pierden."
-    }
+    },
+    "loadError": "No se pudieron cargar tus tareas. Comprueba que el hub está encendido y vuelve a intentarlo.",
+    "retry": "Intentar de nuevo"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Ir a hoy",
@@ -276,6 +278,11 @@
         "title": "¿Eliminar «{name}»?",
         "description": "También se quitará de cualquier hueco planeado.",
         "confirmLabel": "Eliminar comida"
+      },
+      "suggestWeek": {
+        "title": "¿Cambiar las comidas de esta semana?",
+        "description": "Sugerir elige comidas nuevas para toda la semana. Las comidas ya planeadas para esta semana se cambiarán por otras.",
+        "confirmLabel": "Cambiar comidas"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Reconfortante",
         "kid-friendly": "Para niños"
       }
-    }
+    },
+    "loadError": "No se pudieron cargar tus comidas. Comprueba que el hub está encendido y vuelve a intentarlo.",
+    "retry": "Intentar de nuevo",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   },
   "mealForm": {
     "titleNew": "Añadir comida",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Canjear por {cost} tickets",
       "emptyKid": "Aún no hay premios. Una persona mayor puede añadirlos desde su teléfono.",
       "balanceLabelNamed": "tickets de {name}",
-      "switchHint": "¿No eres {name}? Elige tu nombre en la pestaña Hoy."
+      "switchHint": "¿No eres {name}? Elige tu nombre en la pestaña Hoy.",
+      "refused": "No se pudo canjear. Ya no hay suficientes tickets para eso.",
+      "failed": "No se pudo canjear. Inténtalo de nuevo."
     },
     "manage": {
       "heading": "Premios",
@@ -893,7 +905,8 @@
     "showingOn": "En marcha en {names}",
     "showingOnDisplay": "En marcha en la pantalla",
     "waitingForDisplay": "Esperando a que una pantalla lo muestre…",
-    "notShowing": "Ninguna pantalla lo muestra todavía. Comprueba que hay una pantalla encendida."
+    "notShowing": "Ninguna pantalla lo muestra todavía. Comprueba que hay una pantalla encendida.",
+    "changedElsewhere": "Otra persona ha cambiado las rutinas. Tu último cambio no se guardó. Inténtalo de nuevo."
   },
   "lists": {
     "title": "Listas",

@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "Put it back?",
       "description": "{chore} opens up again. Tickets already earned for it stay earned."
-    }
+    },
+    "loadError": "Couldn't load your chores. Check the hub is on and try again.",
+    "retry": "Try again"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Jump to today",
@@ -276,6 +278,11 @@
         "title": "Delete \"{name}\"?",
         "description": "This will also remove it from any planned slots.",
         "confirmLabel": "Delete Meal"
+      },
+      "suggestWeek": {
+        "title": "Replace this week's meals?",
+        "description": "Suggest picks new meals for the whole week. The meals already planned for this week will be replaced.",
+        "confirmLabel": "Replace meals"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Comfort",
         "kid-friendly": "Kid-Friendly"
       }
-    }
+    },
+    "loadError": "Couldn't load your meals. Check the hub is on and try again.",
+    "retry": "Try again",
+    "saveFailed": "That didn't save. Try again."
   },
   "mealForm": {
     "titleNew": "Add Meal",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Redeem for {cost} tickets",
       "emptyKid": "No rewards yet. A grown-up can add some from their phone.",
       "balanceLabelNamed": "tickets for {name}",
-      "switchHint": "Not {name}? Pick your name on the Today tab."
+      "switchHint": "Not {name}? Pick your name on the Today tab.",
+      "refused": "That didn't go through. There aren't enough tickets for it any more.",
+      "failed": "That didn't go through. Try again."
     },
     "manage": {
       "heading": "Rewards",
@@ -893,7 +905,8 @@
     "showingOn": "Showing on {names}",
     "showingOnDisplay": "Showing on the display",
     "waitingForDisplay": "Waiting for a display to pick it up…",
-    "notShowing": "No display is showing this yet. Check that a display is on."
+    "notShowing": "No display is showing this yet. Check that a display is on.",
+    "changedElsewhere": "Someone else changed the routines. Your last change wasn't saved. Please try it again."
   },
   "lists": {
     "title": "Lists",

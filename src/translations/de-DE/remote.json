@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "Wieder freigeben?",
       "description": "„{chore}“ ist dann wieder frei. Schon verdiente Tickets bleiben erhalten."
-    }
+    },
+    "loadError": "Deine Aufgaben konnten nicht geladen werden. Prüfe, ob der Hub an ist, und versuch es noch einmal.",
+    "retry": "Noch einmal versuchen"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Zu heute springen",
@@ -276,6 +278,11 @@
         "title": "„{name}“ löschen?",
         "description": "Damit wird die Mahlzeit auch aus allen geplanten Zeitfenstern entfernt.",
         "confirmLabel": "Mahlzeit löschen"
+      },
+      "suggestWeek": {
+        "title": "Mahlzeiten dieser Woche ersetzen?",
+        "description": "Vorschlagen wählt neue Mahlzeiten für die ganze Woche aus. Die für diese Woche schon geplanten Mahlzeiten werden ersetzt.",
+        "confirmLabel": "Mahlzeiten ersetzen"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Wohlfühl",
         "kid-friendly": "Kindgerecht"
       }
-    }
+    },
+    "loadError": "Deine Mahlzeiten konnten nicht geladen werden. Prüfe, ob der Hub an ist, und versuch es noch einmal.",
+    "retry": "Noch einmal versuchen",
+    "saveFailed": "Das hat nicht geklappt. Versuch es noch einmal."
   },
   "mealForm": {
     "titleNew": "Mahlzeit hinzufügen",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Einlösen für {cost} Tickets",
       "emptyKid": "Noch keine Belohnungen. Ein Erwachsener kann welche am Handy hinzufügen.",
       "balanceLabelNamed": "Tickets von {name}",
-      "switchHint": "Nicht {name}? Wähle deinen Namen im Tab „Heute“."
+      "switchHint": "Nicht {name}? Wähle deinen Namen im Tab „Heute“.",
+      "refused": "Das hat nicht geklappt. Dafür sind nicht mehr genug Tickets da.",
+      "failed": "Das hat nicht geklappt. Versuch es noch einmal."
     },
     "manage": {
       "heading": "Belohnungen",
@@ -893,7 +905,8 @@
     "showingOn": "Läuft auf {names}",
     "showingOnDisplay": "Läuft auf dem Display",
     "waitingForDisplay": "Warte, bis ein Display ihn übernimmt…",
-    "notShowing": "Noch kein Display zeigt ihn an. Prüfe, ob ein Display eingeschaltet ist."
+    "notShowing": "Noch kein Display zeigt ihn an. Prüfe, ob ein Display eingeschaltet ist.",
+    "changedElsewhere": "Jemand anderes hat die Abläufe geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal."
   },
   "lists": {
     "title": "Listen",

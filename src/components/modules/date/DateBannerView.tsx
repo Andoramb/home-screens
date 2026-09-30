@@ -1,21 +1,21 @@
 'use client';
 
 import { getDateInfoValues } from '@/lib/date-info';
-import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
+import { useTranslate, useFormattingLocale, formatDateSync, dayMonthPattern } from '@/i18n';
 import { TEXT_OPACITY } from '@/lib/constants';
 import type { DateViewProps } from './types';
 
 export default function DateBannerView({ config, now, scaledFontSize, containerRef }: DateViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
-  const dayNumber = formatDateSync(now, 'd', { locale });
-  const monthName = formatDateSync(now, 'MMMM', { locale });
+  // Day and month in the order this language writes them ("29. SEPTEMBER").
+  const dayAndMonth = formatDateSync(now, dayMonthPattern(locale, 'long'), { locale });
   const dayName = formatDateSync(now, 'EEEE', { locale });
   const year = formatDateSync(now, 'yyyy', { locale });
 
   const parts: string[] = [];
   if (config.showDayName) parts.push(dayName.toUpperCase());
-  parts.push(`${monthName.toUpperCase()} ${dayNumber}`);
+  parts.push(dayAndMonth.toUpperCase());
   if (config.showYear) parts.push(year);
 
   const { weekNumber, dayOfYear } = getDateInfoValues(now);

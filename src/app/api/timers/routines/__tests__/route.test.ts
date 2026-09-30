@@ -50,15 +50,42 @@ function req(body?: unknown): NextRequest {
   });
 }
 
+async function currentRevision(): Promise<string> {
+  return (await (await getRoutines(req())).json()).revision;
+}
+
 async function saveRoutines(routines: Routine[]) {
-  const res = await putRoutines(req({ routines }));
+  const res = await putRoutines(req({ routines, revision: await currentRevision() }));
   expect(res.status).toBe(200);
 }
 
 describe('/api/timers/routines', () => {
   it('GET returns an empty list initially', async () => {
     const res = await getRoutines(req());
-    expect(await res.json()).toEqual({ routines: [] });
+    expect(await res.json()).toEqual({ routines: [], revision: expect.any(String) });
+  });
+
+  it('PUT refuses a list built from an older copy, and hands back the current one', async () => {
+    const stale = await currentRevision();
+    await saveRoutines([routine]);
+
+    const bedtime = { ...routine, id: 'r-bedtime', name: 'Bedtime' };
+    const res = await putRoutines(req({ routines: [bedtime], revision: stale }));
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.reason).toBe('revision');
+    expect(body.routines.map((r: Routine) => r.name)).toEqual(['Morning routine']);
+
+    // Made again on top of the list it was handed, both are kept.
+    const again = await putRoutines(req({ routines: [...body.routines, bedtime], revision: body.revision }));
+    expect(again.status).toBe(200);
+    expect((await again.json()).routines.map((r: Routine) => r.name)).toEqual(['Morning routine', 'Bedtime']);
+  });
+
+  it('PUT refuses a save that quotes no revision', async () => {
+    const res = await putRoutines(req({ routines: [routine] }));
+    expect(res.status).toBe(400);
+    expect((await (await getRoutines(req())).json()).routines).toEqual([]);
   });
 
   it('PUT persists a valid list and GET returns it', async () => {
@@ -71,7 +98,7 @@ describe('/api/timers/routines', () => {
 
   it('PUT rejects an invalid list without writing', async () => {
     await saveRoutines([routine]);
-    const res = await putRoutines(req({ routines: [{ ...routine, steps: [] }] }));
+    const res = await putRoutines(req({ routines: [{ ...routine, steps: [] }], revision: await currentRevision() }));
     expect(res.status).toBe(400);
     const after = await (await getRoutines(req())).json();
     expect(after.routines).toHaveLength(1);
@@ -80,7 +107,7 @@ describe('/api/timers/routines', () => {
   it('PUT accepts an empty list (deleting the last routine)', async () => {
     await saveRoutines([routine]);
     await saveRoutines([]);
-    expect(await (await getRoutines(req())).json()).toEqual({ routines: [] });
+    expect((await (await getRoutines(req())).json()).routines).toEqual([]);
   });
 });
 

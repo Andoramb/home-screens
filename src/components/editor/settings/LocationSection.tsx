@@ -249,7 +249,8 @@ export default function LocationSection({ values, onChange }: Props) {
   async function lookupLocation() {
     if (!locationQuery.trim()) return;
     setLocationStatus({ message: t('settings.locationPage.status.lookingUp'), kind: 'progress' });
-    onChange({ locationName: null });
+    // The saved place keeps its name until a new one is found: a lookup that
+    // fails changes nothing, so it must not leave the town without a name.
     try {
       const res = await editorFetch(`/api/geocode?q=${encodeURIComponent(locationQuery.trim())}`);
       if (res.ok) {
@@ -295,7 +296,6 @@ export default function LocationSection({ values, onChange }: Props) {
 
   function detectLocation() {
     setLocationStatus({ message: t('settings.locationPage.status.detecting'), kind: 'progress' });
-    onChange({ locationName: null });
 
     // Browser geolocation requires HTTPS — fall back to IP geolocation on non-secure origins
     if (!navigator.geolocation || window.location.protocol === 'http:') {
@@ -328,7 +328,9 @@ export default function LocationSection({ values, onChange }: Props) {
           // Coordinates alone are still worth keeping.
         }
         const { updates, filled } = fillUnsetZone(newLat, newLon, lookedUpZone);
-        onChange({ ...(name ? { locationName: name } : {}), ...updates });
+        // The coordinates above are new, so the old name no longer fits them
+        // even when the new place could not be named.
+        onChange({ locationName: name, ...updates });
         setLocationStatus({
           message: name
             ? t('settings.locationPage.status.detected', { name })

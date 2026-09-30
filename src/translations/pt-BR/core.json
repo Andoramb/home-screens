@@ -374,5 +374,11 @@
     "title": "Ainda sem fuso horário.",
     "body": "Suas telas usam o relógio do hub ({zone}), então os horários podem estar errados.",
     "action": "Escolher fuso horário"
+  },
+  "routeError": {
+    "title": "Esta página não pode ser carregada agora",
+    "body": "O Home Screens está com dificuldade para ler os dados salvos. Ele vai tentar de novo sozinho em instantes.",
+    "help": "Se isso não passar, um adulto pode abrir o Home Screens em um computador e restaurar um backup nas Configurações.",
+    "retry": "Tentar de novo"
   }
 }

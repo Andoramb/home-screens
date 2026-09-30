@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { format } from 'date-fns';
 import Toggle from '@/components/ui/Toggle';
 import ColorPicker from '@/components/ui/ColorPicker';
 import LabeledField from '@/components/ui/LabeledField';
@@ -11,7 +10,8 @@ import TimezoneSelect from '@/components/editor/TimezoneSelect';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { useTZClock } from '@/hooks/useTZClock';
 import { useEditorHouseholdTimezone } from '@/components/editor/useEditorHouseholdClock';
-import { useTranslate } from '@/i18n';
+import { formatDateSync, useFormattingLocale, useTranslate } from '@/i18n';
+import { dateModulePattern } from '@/lib/date-module-format';
 import type { ModuleInstance, DateView } from '@/types/config';
 
 /** Which config fields are relevant for each view */
@@ -36,6 +36,7 @@ type DateConfigType = {
 
 export function DateConfigSection({ mod, screenId }: { mod: ModuleInstance; screenId: string }) {
   const t = useTranslate('editor');
+  const locale = useFormattingLocale();
   const { config: c, set } = useModuleConfig<DateConfigType>(mod, screenId);
   const globalTimezone = useEditorHouseholdTimezone();
   // The preview reads the date the module will show: its own zone, else the
@@ -70,7 +71,7 @@ export function DateConfigSection({ mod, screenId }: { mod: ModuleInstance; scre
   // Live date format preview
   let datePreview = '';
   try {
-    datePreview = format(previewNow, dateFormatVal);
+    datePreview = formatDateSync(previewNow, dateModulePattern(dateFormatVal, locale), { locale });
   } catch {
     datePreview = t('configSections.date.invalidFormat');
   }

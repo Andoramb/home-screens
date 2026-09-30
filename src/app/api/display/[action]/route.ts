@@ -583,6 +583,14 @@ async function handleAlert(
       { status: 400 },
     );
   }
+  // The wall draws both as text. Anything else (an object, a list) used to be
+  // queued as it came and crash the wall that tried to draw it.
+  for (const field of ['title', 'message'] as const) {
+    const value = body[field];
+    if (value !== undefined && value !== null && typeof value !== 'string') {
+      return NextResponse.json({ error: `${field} must be text` }, { status: 400 });
+    }
+  }
   const VALID_ALERT_TYPES = new Set(['info', 'warning', 'urgent']);
   const alertType = VALID_ALERT_TYPES.has(body.type as string) ? body.type : 'info';
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });

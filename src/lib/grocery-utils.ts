@@ -43,11 +43,17 @@ export function generateGroceryList(
     const meal = mealMap.get(entry.mealId);
     if (!meal?.ingredients) continue;
     for (const ing of meal.ingredients) {
+      // A row saved with no name (older meals from the phone) is not an item.
+      if (typeof ing.name !== 'string' || !ing.name.trim()) continue;
       // The per-row category select is a fourth control on a three-tap row, so
       // most ingredients arrive without one and every item ended up under a
       // single OTHER heading. Guess from the name when the household did not
-      // say; an explicit category always wins.
-      const cat = ing.category || guessGroceryCategory(ing.name) || 'other';
+      // say; a category that names an aisle always wins. "Other" names none:
+      // the phone used to save it on every row nobody touched, so it is read
+      // as "did not say", and the same ingredient from two meals lands in one
+      // aisle, once.
+      const said = ing.category && ing.category !== 'other' ? ing.category : undefined;
+      const cat = said || guessGroceryCategory(ing.name) || 'other';
       // Merge 'seafood' into 'meat' bucket for display
       const displayCat = cat === 'seafood' ? 'meat' : cat;
       if (!grouped.has(displayCat)) grouped.set(displayCat, new Map());

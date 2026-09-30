@@ -3,6 +3,7 @@
 import { getDateInfoValues } from '@/lib/date-info';
 import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
 import { TEXT_OPACITY } from '@/lib/constants';
+import { dateModulePattern } from '@/lib/date-module-format';
 import type { DateViewProps } from './types';
 
 export default function DateMinimalView({ config, now, scaledFontSize, containerRef }: DateViewProps) {
@@ -11,9 +12,9 @@ export default function DateMinimalView({ config, now, scaledFontSize, container
   const dateFormat = config.dateFormat || 'MMMM d';
   let dateStr: string;
   try {
-    dateStr = formatDateSync(now, dateFormat, { locale });
+    dateStr = formatDateSync(now, dateModulePattern(dateFormat, locale), { locale });
   } catch {
-    dateStr = formatDateSync(now, 'MMMM d', { locale });
+    dateStr = formatDateSync(now, dateModulePattern('MMMM d', locale), { locale });
   }
 
   const { weekNumber, dayOfYear } = getDateInfoValues(now);

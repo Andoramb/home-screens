@@ -196,13 +196,14 @@ export function useTodoLists({ selectedListId, onSelectList }: Options) {
     [lists, resolveId, write],
   );
 
+  /** Resolves to whether the item was saved, so the add bar can hand back text that was not. */
   const addItem = useCallback(
-    (listId: string, text: string) => {
+    (listId: string, text: string): Promise<boolean> => {
       const clean = text.trim();
-      if (!clean) return;
+      if (!clean) return Promise.resolve(true);
       const temp = tempId();
       const item: TodoListItem = { id: temp, text: clean, completed: false, createdAt: new Date().toISOString() };
-      void write(
+      return write(
         (ls, r) => patchList(ls, listId, r, (l) => ({ ...l, items: [...l.items, item] })),
         (r) => addItemRequest(r(listId), clean),
         (created) => {
@@ -210,7 +211,7 @@ export function useTodoLists({ selectedListId, onSelectList }: Options) {
           // id can be pointed at the real one before anything taps it.
           if (created) idMapRef.current.set(temp, created.id);
         },
-      );
+      ).then((saved) => saved !== null);
     },
     [write],
   );

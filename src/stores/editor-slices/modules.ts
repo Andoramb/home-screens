@@ -17,6 +17,30 @@ import { COALESCE_KEYS } from '@/stores/editor-save';
 import type { EditorGet, ModuleActions, MutateConfig } from './types';
 
 /** Module CRUD, geometry, and bulk rescaling on the active display's screens. */
+/**
+ * For a full-screen module: make it fill the canvas (a no-op when it does)
+ * and say the move or resize is dealt with. False for every other module.
+ */
+function fillCanvasInstead(get: EditorGet, mutateConfig: MutateConfig, screenId: string, moduleId: string): boolean {
+  const { config, selectedDisplayId } = get();
+  if (!config) return false;
+  const mod = getActiveScreens(config, selectedDisplayId)
+    .find((s) => s.id === screenId)?.modules.find((m) => m.id === moduleId);
+  if (!mod || !getModuleDefinition(mod.type)?.fillsCanvas) return false;
+  const dims = getActiveDimensions(config, selectedDisplayId);
+  const fills = mod.position.x === 0 && mod.position.y === 0 && mod.size.w === dims.width && mod.size.h === dims.height;
+  if (!fills) {
+    mutateConfig((current) => ({
+      config: updateModuleInConfig(current, selectedDisplayId, screenId, moduleId, (m) => ({
+        ...m,
+        position: { x: 0, y: 0 },
+        size: { w: dims.width, h: dims.height },
+      })),
+    }));
+  }
+  return true;
+}
+
 export function createModuleSlice(
   get: EditorGet,
   mutateConfig: MutateConfig,
@@ -138,8 +162,15 @@ export function createModuleSlice(
     // clips at its border, so the resize handle at the module's far corner
     // becomes unreachable and the drag clamp (which assumes the module fits)
     // pins it in place.
+    //
+    // A full-screen module has one place to be: the whole canvas. It has no
+    // Position & Size fields, so one that was dragged or resized could only
+    // be put back with undo. Moving or resizing it lands it filling the
+    // canvas, which changes nothing for one that already does and is the way
+    // back for one an older version let out of place.
     moveModule: (screenId, moduleId, position, opts) => {
       const { selectedDisplayId } = get();
+      if (fillCanvasInstead(get, mutateConfig, screenId, moduleId)) return;
       mutateConfig((config) => {
         const dims = getActiveDimensions(config, selectedDisplayId);
         return {
@@ -173,6 +204,7 @@ export function createModuleSlice(
 
     resizeModule: (screenId, moduleId, size) => {
       const { selectedDisplayId } = get();
+      if (fillCanvasInstead(get, mutateConfig, screenId, moduleId)) return;
       mutateConfig((config) => {
         const dims = getActiveDimensions(config, selectedDisplayId);
         return {

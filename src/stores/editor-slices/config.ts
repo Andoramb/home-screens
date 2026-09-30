@@ -1,5 +1,5 @@
 import type { ScreenConfiguration } from '@/types/config';
-import { editorFetch } from '@/lib/editor-fetch';
+import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import {
   findMainDisplay,
   validateAllSchedules,
@@ -50,13 +50,23 @@ function readRevision(res: Response): string | null {
   return res.headers?.get?.(CONFIG_REVISION_HEADER) ?? null;
 }
 
+/** The hub refused to hand over the saved setup; `detail` is what it said. */
+class LoadFailure extends Error {
+  constructor(message: string, readonly detail: string | null) {
+    super(message);
+  }
+}
+
 /** Load, save, and whole-config import. */
 export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions {
   return {
     loadConfig: async () => {
       try {
         const res = await editorFetch('/api/config');
-        if (!res.ok) throw new Error(`Load failed: ${res.status}`);
+        if (!res.ok) {
+          const body = await res.json().catch(() => null) as { error?: unknown } | null;
+          throw new LoadFailure(`Load failed: ${res.status}`, typeof body?.error === 'string' ? body.error : null);
+        }
         const config: ScreenConfiguration = await res.json();
         if (!config.screens) throw new Error('Invalid config');
         const configRevision = readRevision(res);
@@ -91,6 +101,7 @@ export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions
           configRevision,
           hubTimezone,
           configGeneration: get().configGeneration + 1,
+          loadError: null,
           saveConflict: null,
           saveError: null,
           saveErrorKind: null,
@@ -105,6 +116,12 @@ export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions
         });
       } catch (err) {
         log.error('Failed to load config:', err);
+        // Only while there is nothing to show: a reload that fails keeps the
+        // setup already on screen. A session that ran out is on its way to
+        // the login page, which is its own explanation.
+        if (!get().config && !isSessionExpired(err)) {
+          set({ loadError: { detail: err instanceof LoadFailure ? err.detail : null } });
+        }
       }
     },
 
@@ -301,6 +318,7 @@ export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions
       const firstId = activeScreens[0]?.id ?? null;
       set({
         config: parsed,
+        loadError: null,
         ...(revision ? { configRevision: revision } : {}),
         configGeneration: state.configGeneration + 1,
         saveConflict: null,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useConfirmStore } from '@/stores/confirm-store';
 import { useState, useEffect, useCallback } from 'react';
 import { X, Trash2, ToggleLeft, ToggleRight, AlertTriangle, CheckCircle, Code2, ExternalLink, FileText, Loader2, PackageSearch, Download, Settings2 } from 'lucide-react';
 import ModalFrame, { EscHint } from '@/components/ui/ModalFrame';
@@ -131,8 +132,19 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
     setConfirmPlugin(null);
   };
 
-  const handleUninstall = (pluginId: string) =>
-    runAction(pluginId, 'DELETE', { pluginId });
+  // Asked first, like deleting a module or a screen: uninstalling takes the
+  // plugin off every screen and deletes its saved settings and sign-in.
+  const handleUninstall = async (pluginId: string) => {
+    const name = registry.find((r) => r.id === pluginId)?.name ?? pluginId;
+    const confirmed = await useConfirmStore.getState().confirm({
+      title: t('settings.pluginStorePanel.installed.uninstallConfirm.title', { name }),
+      message: t('settings.pluginStorePanel.installed.uninstallConfirm.message'),
+      confirmLabel: t('settings.pluginStorePanel.installed.uninstallConfirm.confirmLabel'),
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    await runAction(pluginId, 'DELETE', { pluginId });
+  };
 
   const handleToggle = (pluginId: string, enabled: boolean) =>
     runAction(pluginId, 'PATCH', { pluginId, enabled });
@@ -547,7 +559,7 @@ function InstalledTab({
           <div className="flex items-center gap-3 p-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-hs-text-primary">{plugin.id}</span>
+                <span className="text-sm font-medium text-hs-text-primary" title={plugin.id}>{matchingRegistryEntry?.name ?? plugin.id}</span>
                 <span className="text-xs text-hs-text-muted">v{plugin.version}</span>
                 {plugin.source === 'external' && (
                   <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-800/60 text-hs-warning rounded">

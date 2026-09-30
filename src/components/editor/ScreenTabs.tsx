@@ -230,7 +230,7 @@ export default function ScreenTabs() {
           <button
             className="w-full px-3 py-1.5 text-left text-sm text-hs-text-body hover:bg-hs-card"
             onClick={() => {
-              addScreen();
+              addScreen(t('screenTabs.newScreenName', { number: screens.length + 1 }));
               setAddMenuPos(null);
             }}
           >
@@ -278,7 +278,10 @@ export default function ScreenTabs() {
           <button
             className="w-full px-3 py-1.5 text-left text-sm text-hs-text-body hover:bg-hs-card"
             onClick={() => {
-              duplicateScreen(contextMenu.screenId);
+              duplicateScreen(
+                contextMenu.screenId,
+                t('screenTabs.copyName', { name: screens.find((s) => s.id === contextMenu.screenId)?.name ?? '' }),
+              );
               setContextMenu(null);
             }}
           >

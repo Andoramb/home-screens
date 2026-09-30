@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "Weer openzetten?",
       "description": "Dan kan “{chore}” weer gedaan worden. Wie er al tickets voor kreeg, mag die houden."
-    }
+    },
+    "loadError": "Je klusjes konden niet worden geladen. Kijk of de hub aanstaat en probeer het opnieuw.",
+    "retry": "Opnieuw proberen"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Naar vandaag",
@@ -276,6 +278,11 @@
         "title": "\"{name}\" verwijderen?",
         "description": "Hiermee wordt de maaltijd ook uit alle geplande momenten verwijderd.",
         "confirmLabel": "Maaltijd verwijderen"
+      },
+      "suggestWeek": {
+        "title": "Maaltijden van deze week vervangen?",
+        "description": "Voorstellen kiest nieuwe maaltijden voor de hele week. De maaltijden die al voor deze week gepland zijn, worden vervangen.",
+        "confirmLabel": "Maaltijden vervangen"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Comfort",
         "kid-friendly": "Kindvriendelijk"
       }
-    }
+    },
+    "loadError": "Je maaltijden konden niet worden geladen. Kijk of de hub aanstaat en probeer het opnieuw.",
+    "retry": "Opnieuw proberen",
+    "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
   },
   "mealForm": {
     "titleNew": "Maaltijd toevoegen",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Inwisselen voor {cost} tickets",
       "emptyKid": "Nog geen beloningen. Een volwassene kan ze toevoegen via de telefoon.",
       "balanceLabelNamed": "tickets van {name}",
-      "switchHint": "Ben jij niet {name}? Kies je naam op het tabblad Vandaag."
+      "switchHint": "Ben jij niet {name}? Kies je naam op het tabblad Vandaag.",
+      "refused": "Dat is niet gelukt. Er zijn niet meer genoeg tickets voor.",
+      "failed": "Dat is niet gelukt. Probeer het opnieuw."
     },
     "manage": {
       "heading": "Beloningen",
@@ -893,7 +905,8 @@
     "showingOn": "Te zien op {names}",
     "showingOnDisplay": "Te zien op het scherm",
     "waitingForDisplay": "Wachten tot een scherm hem oppakt…",
-    "notShowing": "Nog geen scherm laat hem zien. Controleer of er een scherm aanstaat."
+    "notShowing": "Nog geen scherm laat hem zien. Controleer of er een scherm aanstaat.",
+    "changedElsewhere": "Iemand anders heeft de routines gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw."
   },
   "lists": {
     "title": "Lijsten",

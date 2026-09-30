@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useSheetTapGuard } from '@/hooks/useSheetTapGuard';
 import { useTranslate } from '@/i18n';
 
@@ -44,6 +45,9 @@ export default function ConfirmSheet({
   const resolvedCancelLabel = cancelLabel ?? tCore('actions.cancel');
   const [openedAt] = useState(() => Date.now());
   useSheetTapGuard(guardTaps);
+  // A sheet says it is a modal dialog, so the keyboard has to treat it as
+  // one: focus moves into it, Tab stays inside it, Escape closes it.
+  const dialogRef = useFocusTrap<HTMLDivElement>({ focus: 'container' });
   const settled = (action: () => void) => () => {
     if (Date.now() - openedAt < settleMs) return;
     action();
@@ -67,11 +71,20 @@ export default function ConfirmSheet({
           wording, and the label-only form silently resolves to the trigger
           during the render that opens the sheet. */}
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape') return;
+          // One Escape closes one sheet: the one on top, where focus is.
+          e.stopPropagation();
+          onCancel();
+        }}
         data-testid="confirm-sheet"
         style={{
+          outline: 'none',
           width: '100%',
           background: 'var(--hs-bg-panel)',
           borderRadius: '20px 20px 0 0',

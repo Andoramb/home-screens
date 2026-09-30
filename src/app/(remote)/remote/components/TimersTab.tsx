@@ -412,11 +412,11 @@ export default function TimersTab() {
           routine={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
           onSave={async (next) => {
-            const others = routines.filter((r) => r.id !== next.id);
-            const isNew = editing === 'new';
-            const ok = await saveRoutines(isNew ? [...routines, next] : [...others, next].sort(
-              (a, b) => routines.findIndex((r) => r.id === a.id) - routines.findIndex((r) => r.id === b.id),
-            ));
+            // In place when it is still in the list, else at the end: a new
+            // routine, or one another phone deleted while it was being edited.
+            const ok = await saveRoutines((list) => (list.some((r) => r.id === next.id)
+              ? list.map((r) => (r.id === next.id ? next : r))
+              : [...list, next]));
             if (ok) setEditing(null);
             return ok;
           }}
@@ -424,7 +424,7 @@ export default function TimersTab() {
             editing === 'new'
               ? undefined
               : async () => {
-                  const ok = await saveRoutines(routines.filter((r) => r.id !== editing.id));
+                  const ok = await saveRoutines((list) => list.filter((r) => r.id !== editing.id));
                   if (ok) setEditing(null);
                   return ok;
                 }

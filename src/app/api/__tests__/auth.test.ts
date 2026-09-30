@@ -490,7 +490,9 @@ describe('POST /api/auth/password', () => {
       );
       const json = await res.json();
 
-      expect(res.status).toBe(401);
+      // Not a 401, which the editor reads as a session that ran out.
+      expect(res.status).toBe(400);
+      expect(json.code).toBe('wrong_password');
       expect(json.error).toBe('Invalid current password');
     });
 
@@ -607,7 +609,9 @@ describe('POST /api/auth/password', () => {
       );
       const json = await res.json();
 
-      expect(res.status).toBe(401);
+      // Not a 401, which the editor reads as a session that ran out.
+      expect(res.status).toBe(400);
+      expect(json.code).toBe('wrong_password');
       expect(json.error).toBe('Invalid current password');
     });
   });

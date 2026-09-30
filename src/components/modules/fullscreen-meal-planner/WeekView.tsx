@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { FIT_MEASURE_ATTR } from '@/hooks/useFitScale';
 import { SLOT_META, getLocalizedDayNames, getMealSlotLabelKey, resolveMealWithEntry, toISODate, getWeekDatesForRange, getWeekRange, formatMealTime, resolvePlannedMealTime } from '@/lib/meal-constants';
 import { useFormattingLocale, useTranslate, formatDateSync } from '@/i18n';
 import type { MealPlannerViewProps } from './meal-planner-utils';
@@ -67,7 +68,9 @@ export default function WeekView({
 
       {/* Day rows */}
       {!weekEmpty && (
-      <div className="fmp-scroll" style={{ flex: 1, minHeight: 0, padding: `0 ${pad}px`, display: 'flex', flexDirection: 'column', gap: s * 0.6 }}>
+      // Measured by the module's fit loop: all seven days have to fit in this
+      // box, since nobody can scroll a wall.
+      <div className="fmp-scroll" {...{ [FIT_MEASURE_ATTR]: '' }} style={{ flex: 1, minHeight: 0, padding: `0 ${pad}px`, display: 'flex', flexDirection: 'column', gap: s * 0.6 }}>
         {weekDates.map((date) => {
           const isToday = date === todayISO;
           const dayPast = isPast(date);

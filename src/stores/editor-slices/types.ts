@@ -34,6 +34,13 @@ export interface EditorCoreState extends EditorSelection {
    */
   isDirty: boolean;
   isSaving: boolean;
+  /**
+   * Set while the saved setup could not be loaded at all (a damaged file, or
+   * a hub that cannot read it), with whatever the hub said about it. The
+   * editor and Settings show this in place of "Loading…", with a way to put
+   * a backup back.
+   */
+  loadError: { detail: string | null } | null;
   saveError: string | null;
   /** Why the last save failed, so the toolbar can say something useful. */
   saveErrorKind: SaveErrorKind | null;
@@ -135,10 +142,12 @@ export interface ModuleActions {
 }
 
 export interface ScreenActions {
-  addScreen: () => void;
+  /** `name` is the new screen's name in the household's language ("Screen 4"). */
+  addScreen: (name?: string) => void;
   removeScreen: (id: string) => void;
   /** Clone a screen (fresh screen + module ids, "<name> copy") right after the original, selected. */
-  duplicateScreen: (id: string) => void;
+  /** `copyName` is the copy's name in the household's language ("Home copy"). */
+  duplicateScreen: (id: string, copyName?: string) => void;
   /** Clone every screen of another display onto the active one, with new ids. */
   copyScreensFromDisplay: (sourceDisplayId: string) => void;
   reorderScreens: (fromIndex: number, toIndex: number) => void;
@@ -169,7 +178,11 @@ export interface RuleActions {
 }
 
 export interface DisplayActions {
-  addDisplay: (display: Omit<DisplayNode, 'screens'> & { screens?: Screen[] }) => void;
+  /**
+   * `mainName` names the main display this creates when the first display
+   * added is another one, in the household's language.
+   */
+  addDisplay: (display: Omit<DisplayNode, 'screens'> & { screens?: Screen[] }, mainName?: string) => void;
   updateDisplay: (id: string, updates: Partial<DisplayNode>) => void;
   removeDisplay: (id: string) => void;
 }
@@ -185,6 +198,8 @@ export interface LayoutActions {
      * does not leave the blank screen behind in the rotation.
      */
     replaceEmptyScreenId?: string;
+    /** See `ImportOptions.importedName`. */
+    importedName?: (name: string, number?: number) => string;
   }) => void;
 }
 

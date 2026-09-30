@@ -37,6 +37,10 @@ export default function TemplatePicker({ onSelect, onClose }: TemplatePickerProp
       ? TEMPLATE_CATALOG
       : TEMPLATE_CATALOG.filter((t) => t.category === category);
 
+  // The catalog's own names are English; the picker shows them in the
+  // household's language.
+  const nameOf = (template: TemplateMeta) => tEditor(`templatePicker.templates.${template.id}.name`);
+
   const handleSelect = async (template: TemplateMeta) => {
     setLoading(template.id);
     setError(null);
@@ -44,7 +48,7 @@ export default function TemplatePicker({ onSelect, onClose }: TemplatePickerProp
       const layout = await loadTemplate(template, orientation);
       onSelect(layout);
     } catch {
-      setError(tEditor('templatePicker.loadFailed', { name: template.name }));
+      setError(tEditor('templatePicker.loadFailed', { name: nameOf(template) }));
     } finally {
       setLoading(null);
     }
@@ -75,7 +79,7 @@ export default function TemplatePicker({ onSelect, onClose }: TemplatePickerProp
                   : 'bg-hs-card text-hs-text-muted hover:text-hs-text-body'
               }`}
             >
-              {cat}
+              {tEditor(`templatePicker.categories.${cat}`)}
             </button>
           ))}
         </div>
@@ -97,14 +101,14 @@ export default function TemplatePicker({ onSelect, onClose }: TemplatePickerProp
               >
                 <div className="flex items-start justify-between mb-1.5">
                   <span className="text-sm font-medium text-hs-text-body">
-                    {template.name}
+                    {nameOf(template)}
                   </span>
                   <span className="shrink-0 rounded-full bg-hs-card/60 px-2 py-0.5 text-[10px] text-hs-text-muted">
-                    {template.category}
+                    {tEditor(`templatePicker.categories.${template.category}`)}
                   </span>
                 </div>
                 <p className="text-xs text-hs-text-faint mb-3 line-clamp-2">
-                  {template.description}
+                  {tEditor(`templatePicker.templates.${template.id}.description`)}
                 </p>
                 <div className="flex items-center gap-1.5">
                   {template.moduleTypes.slice(0, 5).map((type) => {

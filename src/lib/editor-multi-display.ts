@@ -283,10 +283,10 @@ export function updateScreenModulesInConfig(
  * on. The legacy shared profile pool is deep-cloned — in multi-display mode
  * profiles are per-display.
  */
-export function buildBootstrapMain(config: ScreenConfiguration): DisplayNode {
+export function buildBootstrapMain(config: ScreenConfiguration, name = 'Main Display'): DisplayNode {
   return {
     id: MAIN_DISPLAY_ID,
-    name: 'Main Display',
+    name,
     screens: structuredClone(config.screens),
     profiles: structuredClone(config.profiles ?? []),
     // structuredClone preserves screen ids, so the copied rules keep targeting

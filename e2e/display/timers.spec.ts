@@ -155,7 +155,8 @@ const ROUTINE = {
 };
 
 async function startRoutine(request: APIRequestContext, view: TimerView) {
-  const put = await request.put('/api/timers/routines', { data: ROUTINE });
+  const { revision } = await (await request.get('/api/timers/routines')).json();
+  const put = await request.put('/api/timers/routines', { data: { ...ROUTINE, revision } });
   expect(put.ok()).toBe(true);
   const res = await request.post('/api/timers/session', {
     data: { action: 'start', kind: 'routine', routineId: 'r1', targets: 'all', view, sound: false },

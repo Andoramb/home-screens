@@ -481,7 +481,7 @@ export default function DisplaysIndexPage() {
   const handleAdd = async (display: DisplayNode) => {
     setAdding(false);
     setAdoptingId(null);
-    await mutateAndSave(() => addDisplay(display));
+    await mutateAndSave(() => addDisplay(display, t('settings.displaysIndex.mainDisplayName')));
   };
 
   /**

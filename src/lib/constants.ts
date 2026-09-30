@@ -35,6 +35,8 @@ export function deriveDisplayTransform(
 
 // Config file path
 export const CONFIG_FILE_PATH = 'data/config.json';
+/** The family roster. Here, not in family-data, so code that only needs to know where the file is does not load the family store. */
+export const FAMILY_FILE_PATH = 'data/family.json';
 
 // Backgrounds directory
 export const BACKGROUNDS_DIR = 'public/backgrounds';

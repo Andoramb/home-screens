@@ -10,7 +10,9 @@ import { selectRotatingScreens } from '@/lib/rotating-screens';
 import PluginServiceLayer from './PluginServiceLayer';
 import SleepOverlay from './SleepOverlay';
 import AlertOverlay from './AlertOverlay';
+import OverlayBoundary from './OverlayBoundary';
 import { useAlertStore } from '@/stores/alert-store';
+import { usePhotoShowStore } from '@/stores/photo-show-store';
 import TimerOverlay from './TimerOverlay';
 import PhotoShowOverlay from './PhotoShowOverlay';
 import NetworkIndicator from './NetworkIndicator';
@@ -91,6 +93,9 @@ interface ScreenRotatorProps {
    */
   configEtag?: string;
 }
+
+const clearAlerts = () => useAlertStore.getState().clearAlerts();
+const hideShownPhoto = () => usePhotoShowStore.getState().hide();
 
 export default function ScreenRotator({ screens: initialScreens, settings: initialSettings, hubTimezone, profiles: initialProfiles, rules: initialRules, displayToken, displayId, initialDisplays, initialScreenId, preview = false, configEtag }: ScreenRotatorProps) {
   // Set display token before any fetches fire — useLayoutEffect runs before useEffect
@@ -718,7 +723,9 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
       )}
 
       <NetworkIndicator displayState={displayState} scale={scale} />
-      <AlertOverlay alertSettings={settings.alerts} displayState={displayState} viewport={viewportSize} />
+      <OverlayBoundary name="alert" onFail={clearAlerts}>
+        <AlertOverlay alertSettings={settings.alerts} displayState={displayState} viewport={viewportSize} />
+      </OverlayBoundary>
 
       {/* A takeover implies wake: suppress the sleep overlay rather than
           calling wake() — the sleep manager re-asserts a scheduled sleep
@@ -743,8 +750,16 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
           while urgent alerts (9998) still surface above it. */}
       {/* A preview must neither show nor control the live routine. The overlay
           owns its polling and step-done writes, so leave it unmounted here. */}
-      {!preview && <TimerOverlay displayId={displayId} viewport={viewportSize} />}
-      {!preview && <PhotoShowOverlay viewport={viewportSize} />}
+      {!preview && (
+        <OverlayBoundary name="timer">
+          <TimerOverlay displayId={displayId} viewport={viewportSize} />
+        </OverlayBoundary>
+      )}
+      {!preview && (
+        <OverlayBoundary name="photo" onFail={hideShownPhoto}>
+          <PhotoShowOverlay viewport={viewportSize} />
+        </OverlayBoundary>
+      )}
 
       {/* The wall runs on the hub's clock while no zone is saved, so the
           preview says so where the parent is looking. Not on a real wall:

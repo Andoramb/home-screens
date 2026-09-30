@@ -34,7 +34,8 @@ test.beforeEach(async ({ request }) => {
   // A session left running by another spec in this worker would put the
   // replace-confirm sheet in front of the taps below.
   await request.post('/api/timers/session', { data: { action: 'cancel' } }).catch(() => {});
-  await request.put('/api/timers/routines', { data: { routines: [] } });
+  const { revision } = await (await request.get('/api/timers/routines')).json();
+  await request.put('/api/timers/routines', { data: { routines: [], revision } });
 });
 
 test('Back closes an open sheet instead of leaving the remote', async ({ page }) => {

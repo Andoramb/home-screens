@@ -95,14 +95,15 @@ export default function FullscreenMealPlannerModule({
   // canvas at `medium` (see `px` in meal-planner-utils). A larger
   // typographySize, a long dish name or a five-course day can push them past
   // the canvas, so the rendered stack is measured and shrunk to fit — the
-  // same loop fullscreen weather uses. The week view reflows on its own and
-  // keeps its factor at 1 by never being measured.
+  // same loop fullscreen weather uses. The week view is measured too: its
+  // seven day rows are a fixed stack, and on a landscape wall (1080 high)
+  // they ran past the bottom, with Saturday off the screen and no way to
+  // scroll a wall to it.
   //
   // Deps are content *shape*, not array identities: the number of meals the
   // view draws and how much text they carry. A refetch that returns the same
   // plan must not restart the bisection.
   const { mealCount, textLength } = useMemo(() => {
-    if (view === 'week') return { mealCount: 0, textLength: 0 };
     let count = 0;
     let length = 0;
     // A meal typed straight into the day draws text like any other, so it has
@@ -113,7 +114,12 @@ export default function FullscreenMealPlannerModule({
       count += 1;
       length += name.length + (meal?.notes?.length ?? 0) + (meal?.tags?.join('').length ?? 0);
     };
-    if (view === 'next-meal') {
+    if (view === 'week') {
+      for (const entry of plan) {
+        const { meal, name } = resolveMealWithEntry(entry.date, entry.slot, plan, savedMeals);
+        tally(name, meal);
+      }
+    } else if (view === 'next-meal') {
       const next = getNextPlannedMeal(todayISO, currentHour, fullPlan, savedMeals, slots);
       tally(next?.name ?? null, next?.meal ?? null);
     } else {
@@ -125,15 +131,13 @@ export default function FullscreenMealPlannerModule({
     return { mealCount: count, textLength: length };
   }, [view, todayISO, currentHour, fullPlan, plan, savedMeals, slots]);
 
-  // The week view never renders the measured stack, so its ref stays null
-  // and the loop is a no-op there.
   const stackRef = useRef<HTMLDivElement>(null);
   const { factor: fit, settled: fitSettled } = useFitScale(stackRef, [
     view, config.typographySize, config.density, dims.w, dims.h,
     config.showEmoji, config.showPrepTime, config.showTags, config.showDifficulty, config.showTitle,
     slots.length, mealCount, textLength,
   ]);
-  const s = bu * typoMul * (view === 'week' ? 1 : fit);
+  const s = bu * typoMul * fit;
 
   const pad = s * 2 * d;
   const headerFont = "var(--font-dm-serif), 'DM Serif Display', Georgia, serif";
@@ -211,8 +215,6 @@ export default function FullscreenMealPlannerModule({
         >
           {t(mealError ? 'common.notUpdating' : 'meal-planner.loading')}
         </div>
-      ) : view === 'week' ? (
-        <WeekView {...viewProps} />
       ) : (
         <div
           ref={stackRef}
@@ -228,6 +230,7 @@ export default function FullscreenMealPlannerModule({
             overflow: 'hidden',
           }}
         >
+          {view === 'week' && <WeekView {...viewProps} />}
           {view === 'today' && <TodayView {...viewProps} />}
           {view === 'menu-board' && <MenuBoardView {...viewProps} />}
           {view === 'next-meal' && <NextMealView {...viewProps} plan={fullPlan} />}

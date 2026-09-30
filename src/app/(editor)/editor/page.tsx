@@ -11,6 +11,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
+import ConfigLoadError from '@/components/editor/ConfigLoadError';
 import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
 import { usePluginStore } from '@/stores/plugin-store';
 import { useAutoSave } from '@/hooks/useAutoSave';
@@ -48,6 +49,7 @@ export default function EditorPage() {
     moveModule,
     addModule,
   } = useEditorStore();
+  const loadError = useEditorStore((state) => state.loadError);
 
 
   const { isDirty, saveConfig } = useAutoSave();
@@ -126,7 +128,7 @@ export default function EditorPage() {
     (event: DragEndEvent) => {
       setActivePaletteType(null);
       const { active, over, delta, activatorEvent } = event;
-      if (!selectedScreenId || !over) return;
+      if (!selectedScreenId) return;
 
       const data = active.data.current;
       const snap = useEditorStore.getState().snapEnabled;
@@ -139,7 +141,7 @@ export default function EditorPage() {
       const displayW = dims.width;
       const displayH = dims.height;
 
-      if (data?.source === 'palette' && over.id === 'canvas-drop') {
+      if (data?.source === 'palette' && over?.id === 'canvas-drop') {
         const scale = canvasScaleRef.current;
         const moduleType = data.moduleType as ModuleType;
         // Resolve through the registry so plugin-registered modules use their
@@ -168,6 +170,10 @@ export default function EditorPage() {
         const dropY = align(Math.max(0, Math.min(displayH - defaultSize.h, rawY)));
         addModule(selectedScreenId, data.moduleType as ModuleType, { x: dropX, y: dropY });
       } else if (data?.source === 'canvas') {
+        // No `over` check: a module dragged far enough that its own box is
+        // wholly off the canvas has nothing under it, and the position below
+        // is held inside the canvas either way. The ghost showed it at the
+        // edge, so the edge is where it lands.
         const moduleId = data.moduleId as string;
         const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
         const screen = activeScreens.find((s) => s.id === selectedScreenId);
@@ -221,6 +227,8 @@ export default function EditorPage() {
   // it back with the panel reset to its Browse tab. A module whose plugin is
   // momentarily unregistered renders its own placeholder (DraggableModule), so
   // there is nothing to hide during a swap.
+  if (!config && loadError) return <ConfigLoadError />;
+
   if (!config || (pluginLoading && !pluginsEverLoaded)) {
     return (
       <div className="h-screen flex items-center justify-center text-hs-text-faint">

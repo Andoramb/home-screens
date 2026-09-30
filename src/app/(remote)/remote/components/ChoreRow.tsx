@@ -40,6 +40,12 @@ interface ChoreRowProps {
   onMenu?: () => void;
   /** The person and day on screen: picking another redraws the list without it counting as the row moving. */
   view: string;
+  /**
+   * A line under the row, for a tap that did not go through ("That didn't
+   * save"). Under the row, not in a banner above the list: a banner moves
+   * every row down just as someone goes to tap again.
+   */
+  notice?: string | null;
 }
 
 /**
@@ -58,6 +64,7 @@ export default function ChoreRow({
   onLongPress,
   onMenu,
   view,
+  notice,
 }: ChoreRowProps) {
   const t = useTranslate('remote');
   const done = assignment.isCompleted;
@@ -255,9 +262,15 @@ export default function ChoreRow({
       {rowInner}
     </button>
   );
-  if (!onMenu) return rowButton;
+  const noticeLine = notice ? (
+    <p role="status" data-testid={`chore-notice-${assignment.choreId}`} style={{ margin: '-2px 4px 8px', fontSize: 12.5, color: 'var(--hs-text-muted)' }}>
+      {notice}
+    </p>
+  ) : null;
+  if (!onMenu) return <>{rowButton}{noticeLine}</>;
 
   return (
+    <>
     <div ref={rowRef as React.RefObject<HTMLDivElement>} style={{ display: 'flex', alignItems: 'stretch', gap: 4, marginBottom: 6 }}>
       {rowButton}
       <button
@@ -273,5 +286,7 @@ export default function ChoreRow({
         <MoreHorizontal size={20} aria-hidden />
       </button>
     </div>
+    {noticeLine}
+    </>
   );
 }

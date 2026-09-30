@@ -82,6 +82,13 @@
         "keepMine": "De mijne houden"
       },
       "savedToDisplay": "Opgeslagen op {name}"
+    },
+    "loadError": {
+      "title": "Home Screens kon je opgeslagen instellingen niet openen",
+      "body": "Een van de opgeslagen bestanden is beschadigd of kan nu niet worden gelezen. Er is niets verwijderd. Probeer het opnieuw of zet hieronder een back-up terug.",
+      "retry": "Opnieuw proberen",
+      "retrying": "Opnieuw proberen…",
+      "detailLabel": "Wat Home Screens meldde"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Hernoemen",
       "duplicate": "Dupliceren",
       "delete": "Verwijderen"
-    }
+    },
+    "newScreenName": "Scherm {number}",
+    "copyName": "{name} kopie"
   },
   "screenSearch": {
     "buttonAriaLabel": "Een scherm of module zoeken",
@@ -2123,7 +2132,12 @@
         "enableAriaLabel": "{id} inschakelen",
         "disableAriaLabel": "{id} uitschakelen",
         "uninstallTitle": "Verwijderen",
-        "uninstallAriaLabel": "{id} verwijderen"
+        "uninstallAriaLabel": "{id} verwijderen",
+        "uninstallConfirm": {
+          "title": "{name} verwijderen?",
+          "message": "Het verdwijnt van elk scherm waarop het staat. De opgeslagen instellingen en de aanmelding worden ook verwijderd.",
+          "confirmLabel": "Verwijderen"
+        }
       },
       "updates": {
         "allUpToDate": "Alle plugins zijn bijgewerkt",
@@ -2354,7 +2368,8 @@
       "formErrorWidth": "Breedte moet tussen {min} en {max} liggen. Kijk of er een cijfer ontbreekt: de meeste schermen zijn 1080 of 1920 breed.",
       "formErrorHeight": "Hoogte moet tussen {min} en {max} liggen. Kijk of er een cijfer ontbreekt: de meeste schermen zijn 1080 of 1920 hoog.",
       "softwareUpdateWaiting": "Update staat klaar",
-      "softwareNeedsSetup": "Instellen nodig"
+      "softwareNeedsSetup": "Instellen nodig",
+      "mainDisplayName": "Hoofddisplay"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3248,7 +3263,9 @@
     "importButton": "Deze schermen toevoegen",
     "savedAt": "Opgeslagen {date}",
     "screenPillSingular": "{name} met {count} module",
-    "screenPillPlural": "{name} met {count} modules"
+    "screenPillPlural": "{name} met {count} modules",
+    "importedName": "{name} (geïmporteerd)",
+    "importedNameNumbered": "{name} (geïmporteerd {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -4935,7 +4952,58 @@
   },
   "templatePicker": {
     "title": "Sjablonen",
-    "loadFailed": "Laden van \"{name}\" mislukt"
+    "loadFailed": "Laden van \"{name}\" mislukt",
+    "categories": {
+      "All": "Alle",
+      "Dashboard": "Overzicht",
+      "Weather": "Weer",
+      "Productivity": "Productiviteit",
+      "Media": "Media",
+      "Sports": "Sport",
+      "Finance": "Financiën"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Gezinsoverzicht",
+        "description": "Klok, agenda, weer, de klusjes van vandaag, aftelling en begroeting: alles voor het gezin op één plek."
+      },
+      "weather-station": {
+        "name": "Weerstation",
+        "description": "Meerdere weerweergaven, regenkaart, zonsopkomst en zonsondergang, luchtkwaliteit en maanfase."
+      },
+      "minimal-clock": {
+        "name": "Eenvoudige klok",
+        "description": "Eén grote klok: rustig en zonder afleiding."
+      },
+      "info-board": {
+        "name": "Infobord",
+        "description": "Nieuws, beurskoersen, woord van de dag, geschiedenis en citaten."
+      },
+      "photo-frame": {
+        "name": "Fotolijst",
+        "description": "Fotodiashow op het hele scherm: maak van je scherm een digitale fotolijst."
+      },
+      "sports-hub": {
+        "name": "Sporthoek",
+        "description": "Live uitslagen en standen."
+      },
+      "productivity": {
+        "name": "Productiviteit",
+        "description": "Todoist-taken, agenda, aftelling en voortgang van het jaar."
+      },
+      "morning-dashboard": {
+        "name": "Ochtendoverzicht",
+        "description": "Weer, agenda, verkeer en een begroeting om de dag te beginnen."
+      },
+      "kitchen-display": {
+        "name": "Keukenscherm",
+        "description": "Maaltijdplanner, klok, agenda, afvaldag en plakbriefjes voor de keuken."
+      },
+      "news-finance": {
+        "name": "Nieuws en financiën",
+        "description": "Nieuwskoppen, aandelenkoersen en cryptokoersen."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Modules",

@@ -1084,7 +1084,8 @@
   "qr-code": {
     "name": "QR code",
     "empty": "Add a link or your Wi-Fi in the editor and it shows here",
-    "scanToConnect": "Scan to connect"
+    "scanToConnect": "Scan to connect",
+    "tooLong": "That's too much text for one QR code. Shorten it in the editor and it shows here"
   },
   "display-control": {
     "prev": "Previous",

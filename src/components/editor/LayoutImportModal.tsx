@@ -53,7 +53,14 @@ export default function LayoutImportModal({
   const handleImport = async () => {
     setError(null);
     try {
-      importLayoutAction(layout, { mode: 'add', applyVisual, replaceEmptyScreenId });
+      importLayoutAction(layout, {
+        mode: 'add',
+        applyVisual,
+        replaceEmptyScreenId,
+        importedName: (name, number) => (number
+          ? t('layoutImportModal.importedNameNumbered', { name, number })
+          : t('layoutImportModal.importedName', { name })),
+      });
       await saveConfig();
       onClose();
     } catch {
@@ -158,7 +165,7 @@ export default function LayoutImportModal({
               {visual.transitionEffect
                 ? t('layoutImportModal.visualSummaryWithTransition', {
                     seconds: visual.rotationIntervalMs / 1000,
-                    transition: visual.transitionEffect,
+                    transition: t(`settings.defaultDisplayPage.transitionOptions.${visual.transitionEffect}`),
                   })
                 : t('layoutImportModal.visualSummary', {
                     seconds: visual.rotationIntervalMs / 1000,

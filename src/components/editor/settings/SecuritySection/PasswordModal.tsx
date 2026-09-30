@@ -31,6 +31,10 @@ interface PasswordModalProps {
  */
 export default function PasswordModal({ mode, onClose, onStatusChange, onDisplayTokenChange }: PasswordModalProps) {
   const t = useTranslate('editor');
+  const tCore = useTranslate('core');
+  /** What the hub said, in the household's language where it is a mistake we know. */
+  const refusal = (data: { error?: string; code?: string }, fallback: string) =>
+    data.code === 'wrong_password' ? tCore('login.errors.wrongPassword') : data.error || fallback;
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -97,7 +101,7 @@ export default function PasswordModal({ mode, onClose, onStatusChange, onDisplay
       const data = await res.json();
       if (!res.ok) {
         setModalStatus({
-          message: data.error || t('settings.securityPage.errors.changeFailed'),
+          message: refusal(data, t('settings.securityPage.errors.changeFailed')),
           kind: 'error',
         });
         return;
@@ -129,7 +133,7 @@ export default function PasswordModal({ mode, onClose, onStatusChange, onDisplay
       const data = await res.json();
       if (!res.ok) {
         setModalStatus({
-          message: data.error || t('settings.securityPage.errors.disableFailed'),
+          message: refusal(data, t('settings.securityPage.errors.disableFailed')),
           kind: 'error',
         });
         return;

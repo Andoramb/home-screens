@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { useFocusTrap } from '@/hooks/useFocusTrap';
 import { useSheetTapGuard } from '@/hooks/useSheetTapGuard';
 
 /**
@@ -30,6 +31,9 @@ export default function BottomSheet({
   guardTaps?: boolean;
 }) {
   useSheetTapGuard(guardTaps);
+  // A sheet says it is a modal dialog, so the keyboard has to treat it as
+  // one: focus moves into it, Tab stays inside it, Escape closes it.
+  const dialogRef = useFocusTrap<HTMLDivElement>({ focus: 'container' });
   return (
     <div
       style={{
@@ -44,11 +48,20 @@ export default function BottomSheet({
       onClick={onClose}
     >
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-label={title}
+        tabIndex={-1}
+        onKeyDown={(e) => {
+          if (e.key !== 'Escape') return;
+          // One Escape closes one sheet: the one on top, where focus is.
+          e.stopPropagation();
+          onClose();
+        }}
         data-testid={testId}
         style={{
+          outline: 'none',
           width: '100%',
           maxWidth: 640,
           maxHeight: '90dvh',

@@ -11,7 +11,10 @@ export const REWARD_REPAIR_POLICY = 'remove-missing-members-disable-if-none-rema
  * history with the person's id and name copied in.
  *
  * Removal takes the person off every reward and drops their balance;
- * redemptions keep their ids because they are facts about the past.
+ * redemptions keep their ids because they are facts about the past. A reward
+ * that was only theirs is disabled, as on restore: an empty `memberIds` means
+ * everyone, so stripping the last name alone would hand one child's private
+ * reward to the whole family.
  *
  * Restore repairs eligibility a failed legacy deletion left behind: missing
  * people come off a reward, and a reward left with nobody is disabled rather
@@ -25,7 +28,11 @@ export const rewardReferences: MemberReferenceDomain = {
     const next = structuredClone(doc);
     if (!Array.isArray(next.rewards)) throw new FamilyError('The saved rewards are invalid.', 409);
     next.balances = withoutKeys(next.balances, removed);
-    next.rewards = next.rewards.map((reward: Doc) => ({ ...reward, memberIds: stripIds(reward.memberIds, removed) }));
+    next.rewards = next.rewards.map((reward: Doc) => {
+      const memberIds = stripIds(reward.memberIds, removed);
+      const leftWithNobody = Array.isArray(reward.memberIds) && reward.memberIds.length > 0 && memberIds.length === 0;
+      return { ...reward, memberIds, ...(leftWithNobody ? { enabled: false } : {}) };
+    });
     return next;
   },
   planRestore(doc, members): RestorePlan {

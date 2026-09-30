@@ -362,7 +362,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
             {t('canvas.emptyDisplay.body')}
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Button variant="primary" size="sm" onClick={addScreen}>
+            <Button variant="primary" size="sm" onClick={() => addScreen(t('screenTabs.newScreenName', { number: 1 }))}>
               <Plus className="h-3.5 w-3.5" />
               {t('canvas.emptyDisplay.addScreen')}
             </Button>

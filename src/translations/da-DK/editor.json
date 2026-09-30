@@ -82,6 +82,13 @@
         "keepMine": "Behold mine"
       },
       "savedToDisplay": "Gemt til {name}"
+    },
+    "loadError": {
+      "title": "Home Screens kunne ikke åbne din gemte opsætning",
+      "body": "En af de gemte filer er beskadiget eller kan ikke læses lige nu. Intet er blevet slettet. Prøv igen, eller læg en sikkerhedskopi tilbage nedenfor.",
+      "retry": "Prøv igen",
+      "retrying": "Prøver igen…",
+      "detailLabel": "Det sagde Home Screens"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Omdøb",
       "duplicate": "Duplikér",
       "delete": "Slet"
-    }
+    },
+    "newScreenName": "Skærm {number}",
+    "copyName": "{name} kopi"
   },
   "screenSearch": {
     "buttonAriaLabel": "Find en skærm eller et modul",
@@ -2123,7 +2132,12 @@
         "enableAriaLabel": "Slå {id} til",
         "disableAriaLabel": "Slå {id} fra",
         "uninstallTitle": "Afinstallér",
-        "uninstallAriaLabel": "Afinstallér {id}"
+        "uninstallAriaLabel": "Afinstallér {id}",
+        "uninstallConfirm": {
+          "title": "Afinstallér {name}?",
+          "message": "Den forsvinder fra alle skærme, der viser den. Dens gemte indstillinger og login slettes også.",
+          "confirmLabel": "Afinstallér"
+        }
       },
       "updates": {
         "allUpToDate": "Alle plugins er opdaterede",
@@ -2354,7 +2368,8 @@
       "formErrorWidth": "Bredden skal være mellem {min} og {max}. Se efter et manglende ciffer: de fleste skærme er 1080 eller 1920 brede.",
       "formErrorHeight": "Højden skal være mellem {min} og {max}. Se efter et manglende ciffer: de fleste skærme er 1080 eller 1920 høje.",
       "softwareUpdateWaiting": "Opdatering venter",
-      "softwareNeedsSetup": "Skal sættes op"
+      "softwareNeedsSetup": "Skal sættes op",
+      "mainDisplayName": "Hoveddisplay"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3248,7 +3263,9 @@
     "importButton": "Tilføj disse skærme",
     "savedAt": "Gemt {date}",
     "screenPillSingular": "{name} · {count} modul",
-    "screenPillPlural": "{name} · {count} moduler"
+    "screenPillPlural": "{name} · {count} moduler",
+    "importedName": "{name} (importeret)",
+    "importedNameNumbered": "{name} (importeret {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -4935,7 +4952,58 @@
   },
   "templatePicker": {
     "title": "Skabeloner",
-    "loadFailed": "Kunne ikke indlæse \"{name}\""
+    "loadFailed": "Kunne ikke indlæse \"{name}\"",
+    "categories": {
+      "All": "Alle",
+      "Dashboard": "Overblik",
+      "Weather": "Vejr",
+      "Productivity": "Produktivitet",
+      "Media": "Medier",
+      "Sports": "Sport",
+      "Finance": "Økonomi"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Familieoverblik",
+        "description": "Ur, kalender, vejr, dagens pligter, nedtælling og hilsen: alt til familien samlet ét sted."
+      },
+      "weather-station": {
+        "name": "Vejrstation",
+        "description": "Flere vejrvisninger, regnkort, solopgang og solnedgang, luftkvalitet og månefase."
+      },
+      "minimal-clock": {
+        "name": "Enkelt ur",
+        "description": "Ét stort ur: enkelt og uden forstyrrelser."
+      },
+      "info-board": {
+        "name": "Infotavle",
+        "description": "Nyheder, aktiekurser, dagens ord, historie og citater."
+      },
+      "photo-frame": {
+        "name": "Fotoramme",
+        "description": "Fotodiasshow i fuld skærm: gør din skærm til en digital fotoramme."
+      },
+      "sports-hub": {
+        "name": "Sportshjørne",
+        "description": "Livescorer og stillinger."
+      },
+      "productivity": {
+        "name": "Produktivitet",
+        "description": "Todoist-opgaver, kalender, nedtælling og årets forløb."
+      },
+      "morning-dashboard": {
+        "name": "Morgenoverblik",
+        "description": "Vejr, kalender, trafik og en hilsen til at starte dagen."
+      },
+      "kitchen-display": {
+        "name": "Køkkenskærm",
+        "description": "Madplan, ur, kalender, affaldsdag og huskesedler til køkkenet."
+      },
+      "news-finance": {
+        "name": "Nyheder og økonomi",
+        "description": "Overskrifter, aktiekurser og kryptokurser."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Moduler",

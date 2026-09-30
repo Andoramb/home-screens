@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import type { FamilyGroup, FamilyMember } from '@/types/family';
-import { useFamilyData } from '@/hooks/useFamilyData';
+import { isFamilySnapshot, useFamilyData, type FamilySnapshot } from '@/hooks/useFamilyData';
 import { useDebouncedSave } from '@/hooks/useDebouncedSave';
 import { Sunrise, Sun, Sunset, Clock, Settings, Hand } from 'lucide-react';
 import type {
@@ -94,6 +94,9 @@ function defaultMemberFor(members: FamilyMember[], groups: FamilyGroup[], chores
   return members[0]?.id ?? '';
 }
 
+/** How often a chore save that failed is sent again. */
+const SAVE_RETRY_MS = 10_000;
+
 interface ChoresTabProps {
   /** Display settings read from the first chore module placed on a screen. */
   config: ChoreChartConfig;
@@ -105,14 +108,22 @@ interface ChoresTabProps {
   choreData: ChoreSnapshot;
   /** When false, hides Manage sub-view and restricts Rewards to redeem/history only. */
   isAdmin?: boolean;
+  /**
+   * The family, for the kids' page: it is open with no session, so it cannot
+   * read the roster itself. It comes with the page and then with each chores
+   * read. The phone leaves this out and reads the family as usual.
+   */
+  family?: FamilySnapshot;
 }
 
-export default function ChoresTab({ config, choreData, isAdmin = false }: ChoresTabProps) {
+export default function ChoresTab({ config, choreData, isAdmin = false, family }: ChoresTabProps) {
   const locale = useFormattingLocale();
   const t = useTranslate('remote');
   const tModules = useTranslate('modules');
   // ── Lifted state (shared between Today + Manage views) ──
-  const { members, groups, revision: familyRevision } = useFamilyData();
+  const [roster, setRoster] = useState(family);
+  const followsRoster = !!family;
+  const { members, groups, revision: familyRevision, loaded: familyLoaded, error: familyError, refresh: refreshFamily } = useFamilyData(roster);
   const [chores, setChores] = useState<ChoreDefinition[]>(choreData.chores ?? []);
   // The list as last received from or saved to the hub, and the list on screen
   // right now: an edit not yet saved shows as the two differing, and a poll
@@ -194,8 +205,25 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
   // Debounced auto-save. `skipInitial` skips the first effect run after mount
   // (initial state comes from props), and `flushOnUnmount` ensures any pending
   // save in the debounce window runs before the component unmounts.
+  // A save that failed is sent again: when the phone is back on the network,
+  // and every few seconds until it lands. The list on screen already shows
+  // the change, so leaving it unsent meant a chore that looked saved and was
+  // gone after a reload.
+  const [unsaved, setUnsaved] = useState(false);
+  const [saveAttempt, setSaveAttempt] = useState(0);
+  useEffect(() => {
+    if (!unsaved) return;
+    const again = () => setSaveAttempt((n) => n + 1);
+    window.addEventListener('online', again);
+    const id = setInterval(again, SAVE_RETRY_MS);
+    return () => {
+      window.removeEventListener('online', again);
+      clearInterval(id);
+    };
+  }, [unsaved]);
+
   useDebouncedSave({
-    values: [chores],
+    values: [chores, saveAttempt],
     flushOnUnmount: true,
     save: async () => {
       if (chores === adoptedRef.current) return;
@@ -204,9 +232,13 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       // the change made here has to be made again on top of it.
       if (outcome.kind === 'conflict') {
         adoptChores(outcome.snapshot);
+        setUnsaved(false);
         setLastWarning(t('choresTab.changedElsewhere'));
       } else if (outcome.kind === 'saved') {
         cleanChoresRef.current = chores;
+        setUnsaved(false);
+        const failed = t('choresTab.saveFailed');
+        setLastWarning((warning) => (warning === failed ? null : warning));
       }
     },
     // The session rejects on any other failure; without that a 500 resolved
@@ -215,6 +247,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
     onError: (err) => {
       if (isSessionExpired(err)) return;
       log.error('Chore auto-save failed:', err);
+      setUnsaved(true);
       setLastWarning(t('choresTab.saveFailed'));
     },
   });
@@ -300,13 +333,17 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       ) {
         adoptChores({ chores: data.chores, settings: readChoreSettings(data.settings), revision: data.choresRevision });
       }
+      if (followsRoster && isFamilySnapshot(data?.family)) {
+        const next: FamilySnapshot = data.family;
+        setRoster((prev) => (prev?.revision === next.revision ? prev : next));
+      }
       if (typeof data?.today === 'string') setHubToday(data.today);
       if (data?.settings && settingsSave === settingsSaveRef.current) {
         const next = readChoreSettings(data.settings);
         setChoreSettings((prev) => (prev.grabLimit === next.grabLimit && prev.grabHold === next.grabHold ? prev : next));
       }
     } catch { /* silent (includes AbortError) */ }
-  }, [applyMarks, adoptChores, isAdmin, session]);
+  }, [applyMarks, adoptChores, isAdmin, session, followsRoster]);
 
   const showBalances = !!config.showPoints;
   const fetchRewards = useCallback(async () => {
@@ -327,6 +364,16 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       fetchAbortRef.current?.abort();
     };
   }, [fetchCompletions]);
+
+  // Back on the network: read again now, not at the next poll.
+  useEffect(() => {
+    const onOnline = () => {
+      refreshFamily();
+      void fetchCompletions();
+    };
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [refreshFamily, fetchCompletions]);
 
   // Read only while the balances or the Rewards view are on screen.
   const inRewardsView = subView === 'rewards';
@@ -474,6 +521,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
     const plan = planChoreToggle(completions, choreId, selectedMemberId, day, (c) => !chore || countsSinceReset(chore, c, bonusResets, resetViewDay(day, realToday)));
 
     // Optimistic update
+    const before = completions;
     setCompletions(plan.completions);
 
     try {
@@ -504,6 +552,8 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
       const data: ChoreToggleResponse = await res.json();
       if (!isMountedRef.current) return;
       applyMarks(data);
+      // This one saved, so a "that didn't save" under the row has been answered.
+      setRowNotice((notice) => (notice?.choreId === choreId ? null : notice));
       // Only what a toggle moves: balances and the redemption history. The
       // answer also carries the reward list, but this phone's copy of the list
       // is the one its revision belongs to. Taking the list without its
@@ -522,8 +572,20 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
           owed,
         }));
       }
-    } catch {
-      if (isMountedRef.current) fetchCompletions();
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      // Nothing was saved, so the tick comes off again now, with a word under
+      // the row about why. Left on until the next poll, it looked done (and,
+      // with no network, stayed looking done) and then quietly was not.
+      setCompletions((current) => (current === plan.completions ? before : current));
+      if (finishesEverything) {
+        clearTimeout(celebrationTimer.current);
+        setCelebration(null);
+      }
+      if (!isSessionExpired(err)) {
+        setRowNotice({ choreId, memberId: selectedMemberId, date: day, text: t('choresTab.saveFailed') });
+      }
+      void fetchCompletions();
     } finally {
       if (isMountedRef.current) {
         setToggling((prev) => {
@@ -835,6 +897,30 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
           }}
           onOpenSettings={() => setShowSettings(true)}
         />
+      ) : !familyLoaded && familyError ? (
+        /* The family could not be read (a Wi-Fi blip as the tab opened). Said
+           as that: "no chores set up yet" would send a grown-up off to set up
+           chores that are all still there. */
+        <div style={{ textAlign: 'center', padding: '48px 16px' }} data-testid="chores-load-error">
+          <p role="alert" style={{ fontSize: 14, color: 'var(--hs-text-faint)', marginBottom: 16 }}>{t('choresTab.loadError')}</p>
+          <button
+            onClick={refreshFamily}
+            className="press-btn"
+            style={{
+              padding: '10px 24px',
+              minHeight: 44,
+              borderRadius: 10,
+              border: 'none',
+              cursor: 'pointer',
+              background: 'var(--hs-hover)',
+              color: 'var(--hs-text-primary)',
+              fontSize: 14,
+              fontWeight: 600,
+            }}
+          >
+            {t('choresTab.retry')}
+          </button>
+        </div>
       ) : members.length === 0 || chores.length === 0 ? (
         /* Empty state */
         <div style={{ textAlign: 'center', padding: '48px 16px' }}>
@@ -1142,6 +1228,7 @@ export default function ChoresTab({ config, choreData, isAdmin = false }: Chores
                             onLongPress={isAdmin && canEdit ? () => openMenu(assignment.choreId) : undefined}
                             onMenu={isAdmin && canEdit ? () => openMenu(assignment.choreId) : undefined}
                             view={`${selectedMemberId}:${viewingDate}`}
+                            notice={rowNotice && rowNotice.choreId === assignment.choreId && rowNotice.memberId === selectedMemberId && rowNotice.date === viewingDate ? rowNotice.text : null}
                           />
                         );
                       })}

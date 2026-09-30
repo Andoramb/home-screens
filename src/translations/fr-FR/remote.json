@@ -171,7 +171,9 @@
     "putBackConfirm": {
       "title": "La remettre en jeu ?",
       "description": "« {chore} » redevient libre. Les tickets déjà gagnés avec cette tâche ne sont pas perdus."
-    }
+    },
+    "loadError": "Impossible de charger tes tâches. Vérifie que le hub est allumé et réessaie.",
+    "retry": "Réessayer"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Aller à aujourd'hui",
@@ -276,6 +278,11 @@
         "title": "Supprimer « {name} » ?",
         "description": "Cela le retirera aussi de tous les créneaux prévus.",
         "confirmLabel": "Supprimer le repas"
+      },
+      "suggestWeek": {
+        "title": "Remplacer les repas de cette semaine ?",
+        "description": "Suggérer choisit de nouveaux repas pour toute la semaine. Les repas déjà prévus pour cette semaine seront remplacés.",
+        "confirmLabel": "Remplacer les repas"
       }
     },
     "weekView": {
@@ -310,7 +317,10 @@
         "comfort": "Réconfortant",
         "kid-friendly": "Pour enfants"
       }
-    }
+    },
+    "loadError": "Impossible de charger tes repas. Vérifie que le hub est allumé et réessaie.",
+    "retry": "Réessayer",
+    "saveFailed": "Ça n'a pas été enregistré. Réessaie."
   },
   "mealForm": {
     "titleNew": "Ajouter un repas",
@@ -492,7 +502,9 @@
       "confirmLabelPlural": "Échanger pour {cost} tickets",
       "emptyKid": "Aucune récompense pour l'instant. Un grand peut en ajouter depuis son téléphone.",
       "balanceLabelNamed": "tickets de {name}",
-      "switchHint": "Ce n'est pas {name} ? Choisis ton nom dans l'onglet Aujourd'hui."
+      "switchHint": "Ce n'est pas {name} ? Choisis ton nom dans l'onglet Aujourd'hui.",
+      "refused": "Ça n'a pas marché. Il n'y a plus assez de tickets pour ça.",
+      "failed": "Ça n'a pas marché. Réessaie."
     },
     "manage": {
       "heading": "Récompenses",
@@ -893,7 +905,8 @@
     "showingOn": "Affiché sur {names}",
     "showingOnDisplay": "Affiché sur l'écran",
     "waitingForDisplay": "En attente qu'un écran le prenne…",
-    "notShowing": "Aucun écran ne l'affiche encore. Vérifie qu'un écran est allumé."
+    "notShowing": "Aucun écran ne l'affiche encore. Vérifie qu'un écran est allumé.",
+    "changedElsewhere": "Quelqu'un d'autre a modifié les routines. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît."
   },
   "lists": {
     "title": "Listes",

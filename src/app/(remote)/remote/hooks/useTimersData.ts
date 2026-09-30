@@ -1,22 +1,28 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslate } from '@/i18n';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import { materializeSession } from '@/lib/timer-logic';
 import type { MaterializedTimerSession, Routine, TimerSession, TimerTargets, TimerView } from '@/types/timers';
 import { resolveTimerTargets, useDisplayTarget } from '../display-target';
 
 const SESSION_POLL_MS = 2_000;
+const ROUTINES_POLL_MS = 15_000;
+/** How many times a save is made again on top of a list another phone just saved. */
+const SAVE_ATTEMPTS = 3;
 
 export type TimerControlAction = 'pause' | 'resume' | 'skip' | 'add-minute' | 'step-done' | 'cancel';
 
 /**
  * Data + actions behind the /remote Timers tab. Polls the active session
  * while the tab is mounted and materializes it locally every second, so the
- * control card counts down smoothly between polls. Routines load once and
- * are replaced wholesale on save (small list, single form surface).
+ * control card counts down smoothly between polls. Routines are replaced
+ * wholesale on save; each save quotes the revision of the list it was built
+ * from, so a routine another phone made meanwhile is never dropped.
  */
 export function useTimersData() {
+  const t = useTranslate('remote');
   const { displays, timerTargetIds: targetIds, setTimerTargetIds: setTargetIds } = useDisplayTarget();
   const [routines, setRoutines] = useState<Routine[]>([]);
   const [routinesLoaded, setRoutinesLoaded] = useState(false);
@@ -50,25 +56,43 @@ export function useTimersData() {
   // list, so treating a blip as empty would let the next save wipe every
   // saved routine. Failure blocks saving until a retry succeeds.
   const [routinesError, setRoutinesError] = useState(false);
-  const loadRoutines = useCallback(async () => {
-    setRoutinesError(false);
+  // The revision of the list on screen, quoted by the next save.
+  const revisionRef = useRef<string | null>(null);
+  // A save is out: a poll that read the file before it must not land after it.
+  const savingRef = useRef(0);
+  const routinesRef = useRef<Routine[]>([]);
+  const adopt = useCallback((list: Routine[], revision: string) => {
+    if (revisionRef.current !== revision) setRoutines(list);
+    routinesRef.current = list;
+    revisionRef.current = revision;
+    setRoutinesLoaded(true);
+  }, []);
+  const readRoutines = useCallback(async (quiet: boolean) => {
+    if (!quiet) setRoutinesError(false);
+    const saves = savingRef.current;
     try {
       const res = await editorFetch('/api/timers/routines');
       if (!res.ok) {
-        setRoutinesError(true);
+        if (!quiet) setRoutinesError(true);
         return;
       }
-      const json = (await res.json()) as { routines: Routine[] };
-      setRoutines(json.routines);
-      setRoutinesLoaded(true);
+      const json = (await res.json()) as { routines: Routine[]; revision: string };
+      if (saves !== savingRef.current) return;
+      adopt(json.routines, json.revision);
+      setRoutinesError(false);
     } catch (e) {
-      if (!isSessionExpired(e)) setRoutinesError(true);
+      if (!quiet && !isSessionExpired(e)) setRoutinesError(true);
     }
-  }, []);
+  }, [adopt]);
+  const loadRoutines = useCallback(() => readRoutines(false), [readRoutines]);
 
+  // Polled, so a routine made on another phone shows up here while the tab
+  // is open. A poll that fails keeps the list on screen.
   useEffect(() => {
-    void loadRoutines();
-  }, [loadRoutines]);
+    void readRoutines(false);
+    const id = setInterval(() => void readRoutines(true), ROUTINES_POLL_MS);
+    return () => clearInterval(id);
+  }, [readRoutines]);
 
   const live: MaterializedTimerSession | null = useMemo(
     () => materializeSession(serverSession, now),
@@ -131,29 +155,48 @@ export function useTimersData() {
     [post],
   );
 
-  const saveRoutines = useCallback(async (next: Routine[]): Promise<boolean> => {
+  /**
+   * Save one change to the list: `change` is given the current list and
+   * returns the next one. When another phone saved first, the change is made
+   * again on top of its list, so a routine made there is kept and the one
+   * made here still lands.
+   */
+  const saveRoutines = useCallback(async (change: (list: Routine[]) => Routine[]): Promise<boolean> => {
     // Refuse to write while the on-disk list has never been read — the
-    // caller would be deriving `next` from an empty placeholder.
+    // caller would be deriving the next list from an empty placeholder.
     if (!routinesLoaded) return false;
     setError(null);
+    savingRef.current += 1;
     try {
-      const res = await editorFetch('/api/timers/routines', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ routines: next }),
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        setError(typeof json.error === 'string' ? json.error : 'Something went wrong');
-        return false;
+      let list = routinesRef.current;
+      for (let attempt = 0; attempt < SAVE_ATTEMPTS; attempt++) {
+        const res = await editorFetch('/api/timers/routines', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ routines: change(list), revision: revisionRef.current }),
+        });
+        const json = await res.json();
+        if (res.status === 409 && json.reason === 'revision' && Array.isArray(json.routines) && typeof json.revision === 'string') {
+          adopt(json.routines, json.revision);
+          list = json.routines;
+          continue;
+        }
+        if (!res.ok) {
+          setError(typeof json.error === 'string' ? json.error : 'Something went wrong');
+          return false;
+        }
+        adopt(json.routines, json.revision);
+        return true;
       }
-      setRoutines(json.routines);
-      return true;
+      setError(t('timers.changedElsewhere'));
+      return false;
     } catch (e) {
       if (!isSessionExpired(e)) setError('Something went wrong');
       return false;
+    } finally {
+      savingRef.current += 1;
     }
-  }, [routinesLoaded]);
+  }, [routinesLoaded, adopt, t]);
 
   return {
     routines,
