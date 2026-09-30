@@ -16,8 +16,16 @@ async function fetchAndSavePhoto(rotation: BackgroundRotation, canvas: Canvas | 
   if (!accessKey) return null;
 
   const orientation = orientationFor(canvas);
-  const base = rotation.unsplashCollections?.length
-    ? `collections=${rotation.unsplashCollections.map((id) => encodeURIComponent(id)).join(',')}`
+  // `unsplashMode` is explicit so switching the editor's toggle back to
+  // "Search query" doesn't fall through to a stale `unsplashCollections`
+  // array that the UI still shows entered but is no longer the active mode.
+  // Older configs saved before this field existed have no `unsplashMode`;
+  // for those, infer collections mode the old way (non-empty array).
+  const useCollections = rotation.unsplashMode
+    ? rotation.unsplashMode === 'collections' && !!rotation.unsplashCollections?.length
+    : !!rotation.unsplashCollections?.length;
+  const base = useCollections
+    ? `collections=${rotation.unsplashCollections!.map((id) => encodeURIComponent(id)).join(',')}`
     : `query=${encodeURIComponent(rotation.query)}`;
   const orientationParam = orientation ? `&orientation=${orientation}` : '';
 

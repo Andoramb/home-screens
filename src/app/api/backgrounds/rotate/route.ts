@@ -128,6 +128,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   const unsplashCollectionsKey = rotation.sources.includes('unsplash') && rotation.unsplashCollections?.length
     ? JSON.stringify(rotation.unsplashCollections)
     : undefined;
+  const unsplashModeKey = rotation.sources.includes('unsplash') ? (rotation.unsplashMode || '') : undefined;
 
   // Check if cached entry is still fresh. `sources` must match the whole
   // configured set (not just the picked one) so adding or removing a source
@@ -143,6 +144,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     entry.immichFilters === immichFilters &&
     entry.icloudAlbum === icloudAlbum &&
     entry.unsplashCollections === unsplashCollectionsKey &&
+    entry.unsplashMode === unsplashModeKey &&
     now - entry.fetchedAt < intervalMs
   ) {
     return NextResponse.json({ path: entry.path, fresh: false });
@@ -166,6 +168,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
         immichFilters,
         icloudAlbum,
         unsplashCollections: unsplashCollectionsKey,
+        unsplashMode: unsplashModeKey,
       };
       // Merge into whatever is on disk now, not into the snapshot read before
       // the fetch above, so a rotation that finished for another screen while

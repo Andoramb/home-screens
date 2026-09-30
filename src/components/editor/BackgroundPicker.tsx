@@ -335,7 +335,11 @@ export default function BackgroundPicker() {
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
   const rotationSources = currentScreen?.backgroundRotation?.sources ?? [];
-  const unsplashCollectionsMode = (currentScreen?.backgroundRotation?.unsplashCollections?.length ?? 0) > 0;
+  // Explicit `unsplashMode` wins; older configs saved before it existed fall
+  // back to inferring from a non-empty `unsplashCollections` array.
+  const unsplashCollectionsMode = currentScreen?.backgroundRotation?.unsplashMode
+    ? currentScreen.backgroundRotation.unsplashMode === 'collections'
+    : (currentScreen?.backgroundRotation?.unsplashCollections?.length ?? 0) > 0;
 
   // Interval options. Re-built per locale (cheap; rebuilds only when `t`
   // identity changes). Labels run through `t()` so de-DE renders idiomatic
@@ -474,11 +478,12 @@ export default function BackgroundPicker() {
                           <div className="mt-1.5 ml-5 space-y-2">
                             {entry.id === 'unsplash' && (
                               <>
-                                {/* Mode is inferred from data, not stored separately: a
-                                    non-empty `unsplashCollections` means collections mode,
-                                    otherwise the free-text query. Matches this codebase's
-                                    preference for deriving UI state from config rather
-                                    than tracking UI-only state. */}
+                                {/* Mode is stored explicitly (`unsplashMode`) rather than
+                                    inferred from which field is non-empty, so switching
+                                    the toggle back and forth keeps whatever was typed into
+                                    the query field AND whatever collections were entered —
+                                    neither gets discarded just because it's not the active
+                                    one right now. */}
                                 <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
                                   {([
                                     { id: 'query' as const, label: t('backgroundPicker.unsplash.modeQuery') },
@@ -492,9 +497,12 @@ export default function BackgroundPicker() {
                                         onClick={() => {
                                           if (!selectedScreenId) return;
                                           updateScreenRotation(selectedScreenId, {
-                                            unsplashCollections: mode.id === 'collections'
-                                              ? (currentScreen.backgroundRotation!.unsplashCollections?.length ? currentScreen.backgroundRotation!.unsplashCollections : [''])
-                                              : undefined,
+                                            unsplashMode: mode.id,
+                                            // Seed one empty row the first time collections mode
+                                            // is opened; leaves an existing array untouched.
+                                            unsplashCollections: mode.id === 'collections' && !currentScreen.backgroundRotation!.unsplashCollections?.length
+                                              ? ['']
+                                              : currentScreen.backgroundRotation!.unsplashCollections,
                                           });
                                         }}
                                         className={`truncate rounded px-2 py-1 text-[11px] ${

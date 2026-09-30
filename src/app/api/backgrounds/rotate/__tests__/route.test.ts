@@ -323,6 +323,71 @@ describe('GET /api/backgrounds/rotate — Unsplash rotation', () => {
     expect(requestedUrl).not.toContain('query=');
   });
 
+  it('uses query, not a leftover unsplashCollections array, when unsplashMode is explicitly "query"', async () => {
+    // Reproduces the reported bug: switching the editor's toggle back to
+    // "Search query" keeps `unsplashCollections` around (so re-entering
+    // collections mode doesn't lose it) instead of clearing it. The fetch
+    // must key off `unsplashMode`, not "is unsplashCollections non-empty",
+    // or it would silently keep drawing from the old collection.
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          sources: ['unsplash'],
+          query: 'space',
+          unsplashCollections: ['leftover-collection'],
+          unsplashMode: 'query',
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    mockUnsplashKey.mockResolvedValue('unsplash-key');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'photo42', urls: { regular: 'https://images.unsplash.com/photo42' } }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([7, 7, 7]), { status: 200 }));
+
+    await GET(rotateReq());
+
+    const requestedUrl = mockFetch.mock.calls[0][0] as string;
+    expect(requestedUrl).toContain('query=space');
+    expect(requestedUrl).not.toContain('collections=');
+  });
+
+  it('uses collections, not query, when unsplashMode is explicitly "collections"', async () => {
+    mockFindScreen.mockReturnValue(
+      screen({
+        backgroundRotation: {
+          enabled: true,
+          sources: ['unsplash'],
+          query: 'space',
+          unsplashCollections: ['active-collection'],
+          unsplashMode: 'collections',
+          intervalMinutes: 60,
+        } as never,
+      }),
+    );
+    mockUnsplashKey.mockResolvedValue('unsplash-key');
+    mockFetch
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ id: 'photo42', urls: { regular: 'https://images.unsplash.com/photo42' } }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response(new Uint8Array([7, 7, 7]), { status: 200 }));
+
+    await GET(rotateReq());
+
+    const requestedUrl = mockFetch.mock.calls[0][0] as string;
+    expect(requestedUrl).toContain('collections=active-collection');
+    expect(requestedUrl).not.toContain('query=');
+  });
+
   it('includes the orientation param when the owning display resolves dimensions', async () => {
     mockFindScreen.mockReturnValue(screen({ backgroundRotation: unsplashRotation }));
     mockFindDisplay.mockReturnValue({

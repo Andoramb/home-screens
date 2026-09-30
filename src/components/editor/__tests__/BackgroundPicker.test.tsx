@@ -14,7 +14,7 @@ import BackgroundPicker from '../BackgroundPicker';
 // exercising the checklist without pulling in a real /api/secrets round trip.
 vi.mock('@/hooks/useSecretStatus', () => ({
   useSecretStatus: () => ({
-    status: { unsplash_access_key: false, nasa_api_key: false, immich_api_key: false, immich_url: false },
+    status: { unsplash_access_key: true, nasa_api_key: false, immich_api_key: false, immich_url: false },
     loading: false,
     error: false,
     hasStatus: true,
@@ -109,5 +109,50 @@ describe('BackgroundPicker — multi-source rotation checklist', () => {
     // The removed source's setting value is preserved on the object even
     // though it's no longer shown — unchecking only edits `sources`.
     expect(rotation?.localFolder).toBe('vacation');
+  });
+});
+
+describe('BackgroundPicker — Unsplash query/collections toggle', () => {
+  it('switching to collections mode and back preserves both the query text and the collection rows', () => {
+    seedStore({
+      enabled: true,
+      sources: ['unsplash'],
+      query: 'space',
+      intervalMinutes: 60,
+    });
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    // Starts in query mode with the existing query shown.
+    const queryInput = () => container.querySelector('input[placeholder]') as HTMLInputElement | null;
+    expect(queryInput()?.value).toBe('space');
+
+    // Switch to collections mode and enter one collection id.
+    const modeButtons = Array.from(container.querySelectorAll('button')) as HTMLButtonElement[];
+    const collectionsBtn = modeButtons.find((b) => b.textContent === enUSEditor.backgroundPicker.unsplash.modeCollections)!;
+    fireEvent.click(collectionsBtn);
+
+    let rotation = currentRotation();
+    expect(rotation?.unsplashMode).toBe('collections');
+    // The query text is still on the object even though its field isn't shown.
+    expect(rotation?.query).toBe('space');
+
+    const collectionInput = container.querySelector('input[type="text"]') as HTMLInputElement;
+    fireEvent.change(collectionInput, { target: { value: 'abc123' } });
+    fireEvent.blur(collectionInput, { target: { value: 'abc123' } });
+
+    rotation = currentRotation();
+    expect(rotation?.unsplashCollections).toEqual(['abc123']);
+
+    // Switch back to query mode: the collection just entered must NOT be
+    // discarded, only hidden — this was the bug where the toggle nulled out
+    // `unsplashCollections` whenever query mode was selected.
+    const queryBtn = modeButtons.find((b) => b.textContent === enUSEditor.backgroundPicker.unsplash.modeQuery)!;
+    fireEvent.click(queryBtn);
+
+    rotation = currentRotation();
+    expect(rotation?.unsplashMode).toBe('query');
+    expect(rotation?.unsplashCollections).toEqual(['abc123']);
+    expect(rotation?.query).toBe('space');
+    expect(queryInput()?.value).toBe('space');
   });
 });

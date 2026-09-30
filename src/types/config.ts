@@ -355,8 +355,17 @@ export interface BackgroundRotation {
   sources: BackgroundRotationSourceId[];
   /** Unsplash search words; other sources ignore it */
   query: string;
-  /** Unsplash collection IDs to rotate photos from (e.g. "I6rVqHIQXO0" from unsplash.com/collections/I6rVqHIQXO0/october). Takes priority over `query` when non-empty. */
+  /** Unsplash collection IDs to rotate photos from (e.g. "I6rVqHIQXO0" from unsplash.com/collections/I6rVqHIQXO0/october). Kept around even while `unsplashMode` is `'query'` so switching back doesn't lose it. */
   unsplashCollections?: string[];
+  /**
+   * Which of `query`/`unsplashCollections` the Unsplash source actually draws
+   * from. Explicit rather than inferred from which field is non-empty, so the
+   * editor's query/collections toggle can switch the active one without
+   * discarding whatever was typed into the other. Undefined (older configs
+   * saved before this field existed) falls back to inferring from
+   * `unsplashCollections` being non-empty.
+   */
+  unsplashMode?: 'query' | 'collections';
   /** Minutes between images */
   intervalMinutes: number;
   /** Immich album to use */
