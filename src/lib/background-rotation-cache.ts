@@ -19,6 +19,7 @@ export interface RotationCacheEntry {
   immichFilters?: string;
   icloudAlbum?: string;
   unsplashCollections?: string;
+  unsplashMode?: string;
 }
 
 export type BackgroundCache = Record<string, RotationCacheEntry>;

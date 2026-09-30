@@ -22,6 +22,11 @@ export const backgroundSourceProviders: Record<BackgroundRotationSourceId, Backg
 };
 
 export function isSourceConfigured(source: BackgroundRotationSourceId, rotation: BackgroundRotation): boolean {
-  if (source === 'unsplash') return !!rotation.query || !!rotation.unsplashCollections?.length;
+  if (source === 'unsplash') {
+    const usingCollections = rotation.unsplashMode
+      ? rotation.unsplashMode === 'collections'
+      : !!rotation.unsplashCollections?.length;
+    return usingCollections ? !!rotation.unsplashCollections?.length : !!rotation.query;
+  }
   return true;
 }
