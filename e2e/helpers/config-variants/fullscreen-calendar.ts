@@ -496,12 +496,14 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     expect: async (mod) => { await expect(mod.locator('[data-day-badge]')).toHaveText('RULE BADGE'); },
   },
   {
-    // Specific-days matching: a rule pinned to today's day-of-month badges
-    // only today's cell in the month grid.
+    // Specific-days matching: a rule pinned to today's month and day-of-month
+    // badges only today's cell in the month grid. The month constraint matters:
+    // the grid's spillover rows show the neighbouring months' days too, so a
+    // bare day-of-month rule also badges last month's 30th when today is the 30th.
     type: 'fullscreen-calendar', name: 'day-rules-specific-days', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
     config: {
       view: 'month-grid',
-      dayRules: [{ id: 'd1', match: { dayOfMonth: new Date().getDate() }, badgeText: 'MATCH DAY', badgeColor: '#f97316' }],
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, badgeText: 'MATCH DAY', badgeColor: '#f97316' }],
     },
     expect: async (mod) => {
       await expect(mod.locator('[data-day-badge]', { hasText: 'MATCH DAY' })).toBeVisible();
