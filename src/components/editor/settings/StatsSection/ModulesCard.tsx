@@ -2,6 +2,8 @@
 
 import { useTranslate } from '@/i18n';
 import { MODULE_PALETTE, MODULE_OTHER_COLOR } from './metadata';
+import { resolveModuleLabel } from '@/lib/module-registry';
+import type { ModuleType } from '@/types/config';
 import type { SystemStats } from '@/lib/system-stats-types';
 
 export function ModulesCard({ stats }: { stats: SystemStats }) {
@@ -14,7 +16,7 @@ export function ModulesCard({ stats }: { stats: SystemStats }) {
   const restTotal = restTypes.reduce((sum, [, n]) => sum + n, 0);
   const moduleSegments: Array<{ label: string; count: number; color: string }> = [
     ...topTypes.map(([type, count], i) => ({
-      label: type,
+      label: resolveModuleLabel(type as ModuleType, t),
       count,
       color: MODULE_PALETTE[i % MODULE_PALETTE.length],
     })),

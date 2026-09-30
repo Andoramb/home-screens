@@ -58,7 +58,8 @@
     "sleepDisplay": "Dormir display",
     "sendAlert": "Enviar aviso",
     "waitingFor": "Esperando a {name}…",
-    "waitingForAll": "Esperando a las pantallas…"
+    "waitingForAll": "Esperando a las pantallas…",
+    "waitingForUnnamed": "Esperando a la pantalla…"
   },
   "brightnessCard": {
     "label": "Brillo",
@@ -478,7 +479,8 @@
     "clearOnDisplay": "Borrar avisos en {name}",
     "clearOnAll": "Borrar avisos en todas las pantallas",
     "clearingButton": "Borrando…",
-    "showingNow": "({count} en pantalla)"
+    "showingNow": "({count} en pantalla)",
+    "clearOnUnnamed": "Borrar avisos en la pantalla"
   },
   "rewardsView": {
     "changedElsewhere": "Otra persona ha cambiado las recompensas. Tu último cambio no se guardó. Inténtalo de nuevo.",
@@ -855,7 +857,10 @@
     "newRoutine": "Nueva rutina",
     "editRoutine": "Editar rutina",
     "emptyHint": "Una rutina es un temporizador paso a paso, como la rutina de la mañana: vestirse, lavarse los dientes, hacer la cama. Crea una y ponla en la pantalla.",
-    "routineMeta": "{steps} pasos · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} paso · {minutes} min",
+      "other": "{steps} pasos · {minutes} min"
+    },
     "stepCount": "Paso {current} de {total}",
     "pause": "Pausa",
     "resume": "Seguir",
@@ -906,7 +911,14 @@
     "showingOnDisplay": "En marcha en la pantalla",
     "waitingForDisplay": "Esperando a que una pantalla lo muestre…",
     "notShowing": "Ninguna pantalla lo muestra todavía. Comprueba que hay una pantalla encendida.",
-    "changedElsewhere": "Otra persona ha cambiado las rutinas. Tu último cambio no se guardó. Inténtalo de nuevo."
+    "changedElsewhere": "Otra persona ha cambiado las rutinas. Tu último cambio no se guardó. Inténtalo de nuevo.",
+    "whyNoSave": {
+      "name": "Ponle un nombre a la rutina para guardarla.",
+      "stepName": "Ponle un nombre a cada paso para guardar.",
+      "stepLength": "Cada paso tiene que durar al menos {seconds} segundos."
+    },
+    "quickTooShort": "Un temporizador tiene que durar al menos {seconds} segundos.",
+    "stepLimit": "Una rutina puede tener hasta {count} pasos."
   },
   "lists": {
     "title": "Listas",
@@ -1009,7 +1021,9 @@
     "profileSwitched": "{name} ha cambiado a {profile}",
     "profileCleared": "{name} muestra todas las páginas",
     "profileFailed": "No se pudo cambiar el perfil en {name}",
-    "hubBack": "Home Screens ha vuelto"
+    "hubBack": "Home Screens ha vuelto",
+    "alertSentUnnamed": "Aviso enviado a la pantalla",
+    "alertsClearedUnnamed": "Avisos borrados en la pantalla"
   },
   "tabNotSetUp": {
     "chores": {

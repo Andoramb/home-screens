@@ -301,6 +301,12 @@ export default function TimersTab() {
             {t('timers.start')}
           </button>
         </div>
+        {/* Something is typed and Start is off: say why, as the routine form does. */}
+        {customTotalSec === null && (customMinutes !== '' || customSeconds !== '') && (
+          <p role="status" data-testid="quick-why-no-start" className="mt-2 text-[12.5px] text-hs-text-muted">
+            {t('timers.quickTooShort', { seconds: 5 })}
+          </p>
+        )}
         <div className="mt-3 flex items-center justify-between gap-2">
           <div className="flex gap-1.5 flex-wrap">
             {(Object.keys(TIMER_VIEW_LABEL_KEYS) as TimerView[]).map((view) => (
@@ -370,7 +376,7 @@ export default function TimersTab() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-bold text-hs-text-primary truncate">{routine.name}</div>
                   <div className="text-[12px] text-hs-text-faint">
-                    {t('timers.routineMeta', { steps: routine.steps.length, minutes: totalMin })}
+                    {t('timers.routineMeta', { count: routine.steps.length, steps: routine.steps.length, minutes: totalMin })}
                     {' · '}
                     {t(TIMER_VIEW_LABEL_KEYS[routine.view])}
                   </div>

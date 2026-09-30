@@ -58,7 +58,8 @@
     "sleepDisplay": "Sleep Display",
     "sendAlert": "Send Alert",
     "waitingFor": "Waiting for {name}…",
-    "waitingForAll": "Waiting for the displays…"
+    "waitingForAll": "Waiting for the displays…",
+    "waitingForUnnamed": "Waiting for the display…"
   },
   "brightnessCard": {
     "label": "Brightness",
@@ -478,7 +479,8 @@
     "clearOnDisplay": "Clear alerts on {name}",
     "clearOnAll": "Clear alerts on every display",
     "clearingButton": "Clearing…",
-    "showingNow": "({count} showing now)"
+    "showingNow": "({count} showing now)",
+    "clearOnUnnamed": "Clear alerts on the display"
   },
   "rewardsView": {
     "changedElsewhere": "Someone else changed the rewards. Your last change wasn't saved. Please try it again.",
@@ -855,7 +857,10 @@
     "newRoutine": "New routine",
     "editRoutine": "Edit routine",
     "emptyHint": "A routine is a step-by-step timer, like a morning routine: get dressed, brush teeth, make your bed. Make one and start it on the display.",
-    "routineMeta": "{steps} steps · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} step · {minutes} min",
+      "other": "{steps} steps · {minutes} min"
+    },
     "stepCount": "Step {current} of {total}",
     "pause": "Pause",
     "resume": "Resume",
@@ -906,7 +911,14 @@
     "showingOnDisplay": "Showing on the display",
     "waitingForDisplay": "Waiting for a display to pick it up…",
     "notShowing": "No display is showing this yet. Check that a display is on.",
-    "changedElsewhere": "Someone else changed the routines. Your last change wasn't saved. Please try it again."
+    "changedElsewhere": "Someone else changed the routines. Your last change wasn't saved. Please try it again.",
+    "whyNoSave": {
+      "name": "Give the routine a name to save.",
+      "stepName": "Give every step a name to save.",
+      "stepLength": "Every step needs to last at least {seconds} seconds."
+    },
+    "quickTooShort": "A timer needs to last at least {seconds} seconds.",
+    "stepLimit": "A routine can have up to {count} steps."
   },
   "lists": {
     "title": "Lists",
@@ -1009,7 +1021,9 @@
     "profileSwitched": "{name} switched to {profile}",
     "profileCleared": "{name} is showing all screens",
     "profileFailed": "Couldn't switch the profile on {name}",
-    "hubBack": "Home Screens is back"
+    "hubBack": "Home Screens is back",
+    "alertSentUnnamed": "Alert sent to the display",
+    "alertsClearedUnnamed": "Alerts cleared on the display"
   },
   "tabNotSetUp": {
     "chores": {

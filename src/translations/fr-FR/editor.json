@@ -520,7 +520,8 @@
         "detectedViaIp": "Lieu trouvé grâce à votre connexion internet : {name}.",
         "detectedCoords": "Lieu trouvé : {lat}, {lon}.",
         "detectFailed": "Erreur : impossible de détecter le lieu",
-        "zoneSet": "Fuseau horaire réglé sur {zone} pour correspondre."
+        "zoneSet": "Fuseau horaire réglé sur {zone} pour correspondre.",
+        "notFound": "Aucun lieu trouvé sous ce nom. Essaie avec une ville proche."
       },
       "queryLabel": "Votre ville ou code postal",
       "clockCheck": {
@@ -747,7 +748,8 @@
         "plaintextConfirm": "Restaurer",
         "wrongPassword": "Ce mot de passe n'a pas fonctionné. Réessayez, ou restaurez sans vos clés.",
         "damagedKeys": "Les clés de ce fichier sont endommagées et illisibles. Vous pouvez tout de même restaurer le reste.",
-        "reloadFailed": "Votre sauvegarde a été restaurée, mais l'éditeur n'a pas pu se recharger. Actualisez la page pour la voir."
+        "reloadFailed": "Votre sauvegarde a été restaurée, mais l'éditeur n'a pas pu se recharger. Actualisez la page pour la voir.",
+        "finished": "Restauration terminée. Tout ce que contenait cette sauvegarde est de retour."
       },
       "description": "Sauvegardez tout, restaurez une sauvegarde ou repartez d'un modèle.",
       "restoreConfirm": {
@@ -1998,7 +2000,9 @@
         "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
         "setFailed": "Échec de la définition du mot de passe",
         "changeFailed": "Échec du changement de mot de passe",
-        "disableFailed": "Échec de la désactivation de l'authentification"
+        "disableFailed": "Échec de la désactivation de l'authentification",
+        "passwordTooShort": "Le mot de passe doit avoir au moins {count} caractères.",
+        "invalidAddress": "« {entry} » n'est pas une adresse réseau. Essaie avec une adresse comme 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Mot de passe défini ! L'authentification est maintenant activée.",

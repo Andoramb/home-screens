@@ -520,7 +520,8 @@
         "detectedViaIp": "{name} gevonden via je internetverbinding.",
         "detectedCoords": "{lat}, {lon} gevonden.",
         "detectFailed": "Fout: locatie kon niet worden gedetecteerd",
-        "zoneSet": "Tijdzone op {zone} gezet, zodat die klopt."
+        "zoneSet": "Tijdzone op {zone} gezet, zodat die klopt.",
+        "notFound": "Geen plaats met die naam gevonden. Probeer een plaats in de buurt."
       },
       "queryLabel": "Je plaats of postcode",
       "clockCheck": {
@@ -747,7 +748,8 @@
         "plaintextConfirm": "Terugzetten",
         "wrongPassword": "Dat wachtwoord werkte niet. Probeer het opnieuw of zet terug zonder je sleutels.",
         "damagedKeys": "De sleutels in dit bestand zijn beschadigd en onleesbaar. Al het andere kun je nog wel terugzetten.",
-        "reloadFailed": "Je back-up is teruggezet, maar de editor kon niet herladen. Ververs de pagina om het te zien."
+        "reloadFailed": "Je back-up is teruggezet, maar de editor kon niet herladen. Ververs de pagina om het te zien.",
+        "finished": "Terugzetten voltooid. Alles uit die back-up is weer terug."
       },
       "description": "Bewaar een kopie van alles, zet die terug of begin met een sjabloon.",
       "restoreConfirm": {
@@ -1998,7 +2000,9 @@
         "passwordsDoNotMatch": "Wachtwoorden komen niet overeen",
         "setFailed": "Wachtwoord instellen mislukt",
         "changeFailed": "Wachtwoord wijzigen mislukt",
-        "disableFailed": "Authenticatie uitschakelen mislukt"
+        "disableFailed": "Authenticatie uitschakelen mislukt",
+        "passwordTooShort": "Het wachtwoord moet minstens {count} tekens hebben.",
+        "invalidAddress": "\"{entry}\" is geen netwerkadres. Probeer er een zoals 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Wachtwoord ingesteld! Authenticatie is nu ingeschakeld.",

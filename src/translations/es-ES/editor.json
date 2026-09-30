@@ -520,7 +520,8 @@
         "detectedViaIp": "Encontrado por tu conexión a internet: {name}.",
         "detectedCoords": "Encontrado: {lat}, {lon}.",
         "detectFailed": "Error: no se pudo detectar la ubicación",
-        "zoneSet": "Zona horaria ajustada a {zone} para que coincida."
+        "zoneSet": "Zona horaria ajustada a {zone} para que coincida.",
+        "notFound": "No se encontró ningún lugar con ese nombre. Prueba con un pueblo cercano."
       },
       "queryLabel": "Tu ciudad o código postal",
       "clockCheck": {
@@ -747,7 +748,8 @@
         "plaintextConfirm": "Restaurar",
         "wrongPassword": "Esa contraseña no ha funcionado. Inténtalo de nuevo o restaura sin tus claves.",
         "damagedKeys": "Las claves de este archivo están dañadas y no se pueden leer. Aun así puedes restaurar todo lo demás.",
-        "reloadFailed": "Tu copia se restauró, pero el editor no pudo recargarse. Actualiza la página para verlo."
+        "reloadFailed": "Tu copia se restauró, pero el editor no pudo recargarse. Actualiza la página para verlo.",
+        "finished": "Restauración terminada. Todo lo que había en esa copia está de vuelta."
       },
       "description": "Guarda una copia de todo, restáurala o empieza desde una plantilla.",
       "restoreConfirm": {
@@ -1998,7 +2000,9 @@
         "passwordsDoNotMatch": "Las contraseñas no coinciden",
         "setFailed": "No se pudo definir la contraseña",
         "changeFailed": "No se pudo cambiar la contraseña",
-        "disableFailed": "No se pudo desactivar la autenticación"
+        "disableFailed": "No se pudo desactivar la autenticación",
+        "passwordTooShort": "La contraseña necesita al menos {count} caracteres.",
+        "invalidAddress": "«{entry}» no es una dirección de red. Prueba con una como 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "¡Contraseña definida! La autenticación está ahora activada.",

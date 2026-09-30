@@ -58,7 +58,8 @@
     "sleepDisplay": "Slumr skærm",
     "sendAlert": "Send advarsel",
     "waitingFor": "Venter på {name}…",
-    "waitingForAll": "Venter på skærmene…"
+    "waitingForAll": "Venter på skærmene…",
+    "waitingForUnnamed": "Venter på skærmen…"
   },
   "brightnessCard": {
     "label": "Lysstyrke",
@@ -478,7 +479,8 @@
     "clearOnDisplay": "Ryd beskeder på {name}",
     "clearOnAll": "Ryd beskeder på alle skærme",
     "clearingButton": "Rydder…",
-    "showingNow": "({count} vises nu)"
+    "showingNow": "({count} vises nu)",
+    "clearOnUnnamed": "Ryd beskeder på skærmen"
   },
   "rewardsView": {
     "changedElsewhere": "En anden har ændret belønningerne. Din seneste ændring blev ikke gemt. Prøv igen.",
@@ -855,7 +857,10 @@
     "newRoutine": "Ny rutine",
     "editRoutine": "Rediger rutine",
     "emptyHint": "En rutine er en timer med trin, som en morgenrutine: tag tøj på, børst tænder, red din seng. Lav en og start den på skærmen.",
-    "routineMeta": "{steps} trin · {minutes} min.",
+    "routineMeta": {
+      "one": "{steps} trin · {minutes} min.",
+      "other": "{steps} trin · {minutes} min."
+    },
     "stepCount": "Trin {current} af {total}",
     "pause": "Pause",
     "resume": "Fortsæt",
@@ -906,7 +911,14 @@
     "showingOnDisplay": "Vises på skærmen",
     "waitingForDisplay": "Venter på, at en skærm tager den…",
     "notShowing": "Ingen skærm viser den endnu. Tjek, at en skærm er tændt.",
-    "changedElsewhere": "En anden har ændret rutinerne. Din seneste ændring blev ikke gemt. Prøv igen."
+    "changedElsewhere": "En anden har ændret rutinerne. Din seneste ændring blev ikke gemt. Prøv igen.",
+    "whyNoSave": {
+      "name": "Giv rutinen et navn for at gemme.",
+      "stepName": "Giv hvert trin et navn for at gemme.",
+      "stepLength": "Hvert trin skal vare mindst {seconds} sekunder."
+    },
+    "quickTooShort": "En timer skal vare mindst {seconds} sekunder.",
+    "stepLimit": "En rutine kan have op til {count} trin."
   },
   "lists": {
     "title": "Lister",
@@ -1009,7 +1021,9 @@
     "profileSwitched": "{name} skiftede til {profile}",
     "profileCleared": "{name} viser alle sider",
     "profileFailed": "Kunne ikke skifte profil på {name}",
-    "hubBack": "Home Screens er tilbage"
+    "hubBack": "Home Screens er tilbage",
+    "alertSentUnnamed": "Besked sendt til skærmen",
+    "alertsClearedUnnamed": "Beskeder ryddet på skærmen"
   },
   "tabNotSetUp": {
     "chores": {

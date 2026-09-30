@@ -47,7 +47,7 @@ import {
   type WeekDifference,
 } from '@/lib/timetable-layout';
 import { ink } from '@/lib/constants';
-import { formatClockTime } from '@/lib/clock-time';
+import { formatClockTime, formatClockTimeBare } from '@/lib/clock-time';
 import { parseISODate } from '@/lib/todo-due-labels';
 import { pickGridTimeColor, pickPillTextColor } from '@/lib/calendar-color';
 import { dayMonthPattern, dayOfMonthPattern, formatDateSync, fullDatePattern, useFormattingLocale, useTranslate } from '@/i18n';
@@ -261,6 +261,9 @@ export default function WeekCard({
   };
 
   const clock = (time: string) => formatClockTime(time, timeFormat);
+  /** The gutter's times, which give up their AM or PM on a card too narrow for it. */
+  const gutterClock = (time: string) =>
+    metrics.gutterBareTimes ? formatClockTimeBare(time, timeFormat) : clock(time);
 
   /** What the gutter's times are drawn at: their floor, or less if it will not fit. */
   const timeSize = `${metrics.gutterTimePx.toFixed(1)}px`;
@@ -550,7 +553,7 @@ export default function WeekCard({
           />
 
           {model.days.map((day, index) => {
-            const short = on(day.date, 'EEEEEE');
+            const short = on(day.date, day.letter ? 'EEEEE' : 'EEEEEE');
             const number = on(day.date, day.showMonth ? dayWithMonth : dayNumber);
             // The lit day keeps its date even where the quiet columns give
             // theirs up for width, because it is the one column somebody is
@@ -712,7 +715,7 @@ export default function WeekCard({
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
-                        {clock(cell.start)}
+                        {gutterClock(cell.start)}
                       </span>
                     )}
                     {cell.kind === 'period' && cell.start && (
@@ -725,7 +728,7 @@ export default function WeekCard({
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
-                        {clock(cell.start)}
+                        {gutterClock(cell.start)}
                       </span>
                     )}
                     {cell.kind === 'period' && cell.end && (
@@ -738,7 +741,7 @@ export default function WeekCard({
                           fontVariantNumeric: 'tabular-nums',
                         }}
                       >
-                        {clock(cell.end)}
+                        {gutterClock(cell.end)}
                       </span>
                     )}
                   </>

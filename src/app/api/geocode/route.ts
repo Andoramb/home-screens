@@ -107,5 +107,5 @@ export const GET = withAuth(async (request: NextRequest) => {
     }
   }
 
-  return NextResponse.json({ error: 'Location not found' }, { status: 404 });
+  return NextResponse.json({ error: 'Location not found', code: 'location_not_found' }, { status: 404 });
 }, 'Geocoding request failed');

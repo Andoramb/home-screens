@@ -520,7 +520,8 @@
         "detectedViaIp": "Found {name} from your internet connection.",
         "detectedCoords": "Found {lat}, {lon}.",
         "detectFailed": "Error: Could not detect location",
-        "zoneSet": "Time zone set to {zone} to match."
+        "zoneSet": "Time zone set to {zone} to match.",
+        "notFound": "No place by that name was found. Try a nearby town."
       },
       "queryLabel": "Your town or zip code",
       "clockCheck": {
@@ -747,7 +748,8 @@
         "plaintextConfirm": "Restore",
         "wrongPassword": "That password did not work. Try again, or restore without your keys.",
         "damagedKeys": "The keys in this file are damaged and cannot be read. You can still restore everything else.",
-        "reloadFailed": "Your backup was restored, but the editor could not reload. Refresh the page to see it."
+        "reloadFailed": "Your backup was restored, but the editor could not reload. Refresh the page to see it.",
+        "finished": "Restore finished. Everything from that backup is back."
       },
       "description": "Save a copy of everything, put it back, or start from a template.",
       "restoreConfirm": {
@@ -1998,7 +2000,9 @@
         "passwordsDoNotMatch": "Passwords do not match",
         "setFailed": "Failed to set password",
         "changeFailed": "Failed to change password",
-        "disableFailed": "Failed to disable authentication"
+        "disableFailed": "Failed to disable authentication",
+        "passwordTooShort": "The password needs at least {count} characters.",
+        "invalidAddress": "\"{entry}\" is not a network address. Try one like 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Password set! Authentication is now enabled.",

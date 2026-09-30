@@ -58,7 +58,8 @@
     "sleepDisplay": "Display schlafen legen",
     "sendAlert": "Hinweis senden",
     "waitingFor": "Warte auf {name}…",
-    "waitingForAll": "Warte auf die Displays…"
+    "waitingForAll": "Warte auf die Displays…",
+    "waitingForUnnamed": "Warte auf das Display…"
   },
   "brightnessCard": {
     "label": "Helligkeit",
@@ -478,7 +479,8 @@
     "clearOnDisplay": "Meldungen auf {name} löschen",
     "clearOnAll": "Meldungen auf allen Displays löschen",
     "clearingButton": "Wird gelöscht…",
-    "showingNow": "({count} gerade sichtbar)"
+    "showingNow": "({count} gerade sichtbar)",
+    "clearOnUnnamed": "Meldungen auf dem Display löschen"
   },
   "rewardsView": {
     "changedElsewhere": "Jemand anderes hat die Belohnungen geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
@@ -855,7 +857,10 @@
     "newRoutine": "Neue Routine",
     "editRoutine": "Routine bearbeiten",
     "emptyHint": "Eine Routine ist ein Timer mit Schritten, z. B. eine Morgenroutine: anziehen, Zähne putzen, Bett machen. Erstelle eine und starte sie auf dem Display.",
-    "routineMeta": "{steps} Schritte · {minutes} Min.",
+    "routineMeta": {
+      "one": "{steps} Schritt · {minutes} Min.",
+      "other": "{steps} Schritte · {minutes} Min."
+    },
     "stepCount": "Schritt {current} von {total}",
     "pause": "Pause",
     "resume": "Weiter",
@@ -906,7 +911,14 @@
     "showingOnDisplay": "Läuft auf dem Display",
     "waitingForDisplay": "Warte, bis ein Display ihn übernimmt…",
     "notShowing": "Noch kein Display zeigt ihn an. Prüfe, ob ein Display eingeschaltet ist.",
-    "changedElsewhere": "Jemand anderes hat die Abläufe geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal."
+    "changedElsewhere": "Jemand anderes hat die Abläufe geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
+    "whyNoSave": {
+      "name": "Gib dem Ablauf einen Namen, um zu speichern.",
+      "stepName": "Gib jedem Schritt einen Namen, um zu speichern.",
+      "stepLength": "Jeder Schritt muss mindestens {seconds} Sekunden dauern."
+    },
+    "quickTooShort": "Ein Timer muss mindestens {seconds} Sekunden dauern.",
+    "stepLimit": "Ein Ablauf kann bis zu {count} Schritte haben."
   },
   "lists": {
     "title": "Listen",
@@ -1009,7 +1021,9 @@
     "profileSwitched": "{name} zeigt jetzt {profile}",
     "profileCleared": "{name} zeigt alle Bildschirme",
     "profileFailed": "Das Profil auf {name} konnte nicht gewechselt werden",
-    "hubBack": "Home Screens ist wieder da"
+    "hubBack": "Home Screens ist wieder da",
+    "alertSentUnnamed": "Meldung an das Display gesendet",
+    "alertsClearedUnnamed": "Meldungen auf dem Display gelöscht"
   },
   "tabNotSetUp": {
     "chores": {

@@ -520,7 +520,8 @@
         "detectedViaIp": "{name} über deine Internetverbindung gefunden.",
         "detectedCoords": "{lat}, {lon} gefunden.",
         "detectFailed": "Fehler: Standort konnte nicht erkannt werden",
-        "zoneSet": "Die Zeitzone steht jetzt passend dazu auf {zone}."
+        "zoneSet": "Die Zeitzone steht jetzt passend dazu auf {zone}.",
+        "notFound": "Kein Ort mit diesem Namen gefunden. Versuch es mit einem Ort in der Nähe."
       },
       "queryLabel": "Dein Ort oder deine Postleitzahl",
       "clockCheck": {
@@ -747,7 +748,8 @@
         "plaintextConfirm": "Wiederherstellen",
         "wrongPassword": "Dieses Passwort hat nicht funktioniert. Versuch es erneut oder stelle ohne deine Schlüssel wieder her.",
         "damagedKeys": "Die Schlüssel in dieser Datei sind beschädigt und nicht lesbar. Alles andere kannst du trotzdem wiederherstellen.",
-        "reloadFailed": "Dein Backup wurde wiederhergestellt, aber der Editor konnte nicht neu laden. Lade die Seite neu, um es zu sehen."
+        "reloadFailed": "Dein Backup wurde wiederhergestellt, aber der Editor konnte nicht neu laden. Lade die Seite neu, um es zu sehen.",
+        "finished": "Wiederherstellung abgeschlossen. Alles aus dieser Sicherung ist wieder da."
       },
       "description": "Alles sichern, wiederherstellen oder mit einer Vorlage neu anfangen.",
       "restoreConfirm": {
@@ -1998,7 +2000,9 @@
         "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
         "setFailed": "Passwort konnte nicht festgelegt werden",
         "changeFailed": "Passwort konnte nicht geändert werden",
-        "disableFailed": "Anmeldung konnte nicht deaktiviert werden"
+        "disableFailed": "Anmeldung konnte nicht deaktiviert werden",
+        "passwordTooShort": "Das Passwort braucht mindestens {count} Zeichen.",
+        "invalidAddress": "„{entry}“ ist keine Netzwerkadresse. Versuch es mit einer wie 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Passwort festgelegt! Die Anmeldung ist jetzt aktiviert.",

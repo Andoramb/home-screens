@@ -386,7 +386,7 @@ Turn on **Auto-activate on schedule** for a profile and set the days of the week
 
 ### Manual Activation
 
-**Showing right now** at the top of the Profiles tab picks a profile by hand, and the family remote has the same pills. A profile picked by hand overrides any scheduled one.
+**Showing right now** at the top of the Profiles tab picks a profile by hand, and the family remote has the same pills. A profile picked by hand is used while no scheduled profile is due. When a profile's schedule says it is that profile's time, the scheduled one takes over, and the one you picked comes back when the schedule ends.
 
 ## Module Scheduling
 

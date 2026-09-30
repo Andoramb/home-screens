@@ -221,6 +221,9 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
   );
   const controlsDisabled = onlineTargets.length === 0;
   const targetName = allMode ? null : (targetEntries[0]?.name ?? t('displayHero.theDisplay'));
+  // A household with one display never named it. "The display" stands in as
+  // a heading, but inside a sentence it needs that sentence's own wording.
+  const targetUnnamed = !allMode && (!hasMultipleDisplays || !targetEntries[0]?.name);
 
   // "Kitchen didn't respond" — names the online targets that never confirmed.
   const noConfirmToast = useCallback(() => {
@@ -404,6 +407,7 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
                 sleepPending={sleepPending.expected !== null}
                 disabled={controlsDisabled}
                 targetName={targetName}
+                targetUnnamed={targetUnnamed}
                 onSleepWake={handleSleepWake}
                 onAlertOpen={() => setAlertOpen(true)}
               />
@@ -438,6 +442,7 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
                 open={alertOpen}
                 onClose={() => setAlertOpen(false)}
                 targetName={targetName}
+                targetUnnamed={targetUnnamed}
                 activeAlerts={activeAlerts}
                 onSent={nudgeAllPolls}
               />

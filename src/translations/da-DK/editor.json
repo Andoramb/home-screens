@@ -520,7 +520,8 @@
         "detectedViaIp": "Fandt {name} via din internetforbindelse.",
         "detectedCoords": "Fandt {lat}, {lon}.",
         "detectFailed": "Fejl: Kunne ikke finde placeringen",
-        "zoneSet": "Tidszonen er sat til {zone}, så den passer."
+        "zoneSet": "Tidszonen er sat til {zone}, så den passer.",
+        "notFound": "Der blev ikke fundet noget sted med det navn. Prøv en by i nærheden."
       },
       "queryLabel": "Din by eller dit postnummer",
       "clockCheck": {
@@ -747,7 +748,8 @@
         "plaintextConfirm": "Gendan",
         "wrongPassword": "Den adgangskode virkede ikke. Prøv igen, eller gendan uden dine nøgler.",
         "damagedKeys": "Nøglerne i filen er beskadigede og kan ikke læses. Du kan stadig gendanne alt det andet.",
-        "reloadFailed": "Din sikkerhedskopi blev gendannet, men editoren kunne ikke genindlæse. Genindlæs siden for at se det."
+        "reloadFailed": "Din sikkerhedskopi blev gendannet, men editoren kunne ikke genindlæse. Genindlæs siden for at se det.",
+        "finished": "Gendannelse færdig. Alt fra den sikkerhedskopi er tilbage."
       },
       "description": "Gem en kopi af det hele, læg den tilbage, eller start fra en skabelon.",
       "restoreConfirm": {
@@ -1998,7 +2000,9 @@
         "passwordsDoNotMatch": "Adgangskoderne er ikke ens",
         "setFailed": "Kunne ikke gemme adgangskoden",
         "changeFailed": "Kunne ikke skifte adgangskode",
-        "disableFailed": "Kunne ikke slå login fra"
+        "disableFailed": "Kunne ikke slå login fra",
+        "passwordTooShort": "Adgangskoden skal have mindst {count} tegn.",
+        "invalidAddress": "\"{entry}\" er ikke en netværksadresse. Prøv en som 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Adgangskoden er gemt! Login er nu slået til.",

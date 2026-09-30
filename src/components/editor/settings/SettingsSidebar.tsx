@@ -733,15 +733,17 @@ function SidebarItem({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 px-3.5 py-1.5 text-[13px] transition-colors border-l-2 ${
+      className={`w-full flex items-start gap-2.5 px-3.5 py-1.5 text-[13px] transition-colors border-l-2 ${
         active
           ? 'text-hs-text-primary bg-hs-card border-hs-accent'
           : 'text-hs-text-muted hover:text-hs-text-body hover:bg-hs-hover border-transparent'
       }`}
     >
-      <Icon className="w-4 h-4 shrink-0" />
-      <span className="flex-1 min-w-0 truncate text-left">{label}</span>
-      {badge && <span className="text-[10px] text-hs-text-faint tabular-nums">{badge}</span>}
+      <Icon className="mt-0.5 w-4 h-4 shrink-0" />
+      {/* A label too long for one line takes a second, never an ellipsis:
+          "Sistema y actualizacio…" is a word nobody can finish. */}
+      <span className="flex-1 min-w-0 break-words text-left leading-snug">{label}</span>
+      {badge && <span className="mt-0.5 text-[10px] text-hs-text-faint tabular-nums">{badge}</span>}
     </button>
   );
 }

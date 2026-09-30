@@ -4,13 +4,35 @@ import { CloudRain, Droplets, Wind } from 'lucide-react';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import { TEXT_OPACITY } from '@/lib/constants';
 import { useFormattingLocale, useTranslate } from '@/i18n';
+import { useElementBox } from '@/hooks/useElementBox';
 import { WeatherStat } from '../WeatherStat';
 import { WeatherEmptyState } from './WeatherEmptyState';
 import { getLocalizedConditionLabel } from './condition-label';
 import type { WeatherViewProps } from './types';
 
+/**
+ * The narrowest an hour column is drawn, in em of the view's size: its widest
+ * line is the time ("12 AM") or the rain chance with its icon ("35%").
+ */
+const HOUR_COLUMN_EM = 2.5;
+/** The gap between hour columns, in em. */
+const HOUR_GAP_EM = 0.35;
+
+/** How many hour columns a row this wide holds whole. */
+export function hoursThatFit(rowWidthPx: number, fontSizePx: number): number {
+  if (!(rowWidthPx > 0) || !(fontSizePx > 0)) return Infinity;
+  const column = HOUR_COLUMN_EM * fontSizePx;
+  const gap = HOUR_GAP_EM * fontSizePx;
+  return Math.max(1, Math.floor((rowWidthPx + gap) / (column + gap)));
+}
+
 export default function WeatherHourlyView({ config, hourly, forecast, timezone, timeFormat, scaledFontSize }: WeatherViewProps) {
   const hours = hourly.slice(0, config.hoursToShow);
+  // Only the hours that fit whole are drawn: the row used to be sliced by the
+  // card's edge, with half an hour showing and the rest hidden. The row is
+  // measured, and the count follows it as the card is resized.
+  const [rowRef, rowBox] = useElementBox<HTMLDivElement>();
+  const upcoming = hours.slice(1, 1 + hoursThatFit(rowBox.width, scaledFontSize));
   const locale = useFormattingLocale();
   const t = useTranslate('modules');
   const tWeather = useTranslate('weather');
@@ -49,12 +71,12 @@ export default function WeatherHourlyView({ config, hourly, forecast, timezone, 
           {/* Divider */}
           <div className="self-stretch w-px opacity-30 bg-current shrink-0" />
 
-          {/* Upcoming hours */}
-          <div className="flex flex-1 min-w-0 min-h-0 items-stretch justify-around">
-            {hours.slice(1).map((hour, i) => {
+          {/* Upcoming hours, as many as fit whole. */}
+          <div ref={rowRef} className="flex flex-1 min-w-0 min-h-0 items-stretch justify-around gap-x-[0.35em] overflow-hidden" data-testid="weather-hours">
+            {upcoming.map((hour, i) => {
               const Icon = getWeatherIcon(hour.icon, config.iconSet);
               return (
-                <div key={i} className="flex flex-col items-center justify-evenly min-h-0">
+                <div key={i} className="flex flex-col items-center justify-evenly min-h-0 whitespace-nowrap">
                   <span style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.secondary }}>
                     {new Date(hour.time).toLocaleTimeString(locale, {
                       hour: 'numeric',

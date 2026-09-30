@@ -93,10 +93,25 @@ export default function SaveStatus() {
   } else {
     body = (
       <>
-        <Check className="w-3.5 h-3.5 text-hs-success" />
-        <span className="text-xs text-hs-success">
-          {displayName ? t('page.toolbar.savedToDisplay', { name: displayName }) : t('common.saved')}
-        </span>
+        <Check className="w-3.5 h-3.5 shrink-0 text-hs-success" />
+        {/* On a tight window the display's name is dropped: it is already in
+            the switcher on the left, and the full sentence took the room the
+            screen tabs need. */}
+        {displayName ? (
+          <>
+            <span className="hidden whitespace-nowrap text-xs text-hs-success 2xl:inline">
+              {t('page.toolbar.savedToDisplay', { name: displayName })}
+            </span>
+            <span
+              className="whitespace-nowrap text-xs text-hs-success 2xl:hidden"
+              title={t('page.toolbar.savedToDisplay', { name: displayName })}
+            >
+              {t('common.saved')}
+            </span>
+          </>
+        ) : (
+          <span className="whitespace-nowrap text-xs text-hs-success">{t('common.saved')}</span>
+        )}
       </>
     );
   }

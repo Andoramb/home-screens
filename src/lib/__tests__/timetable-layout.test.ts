@@ -758,12 +758,21 @@ describe('cardBaseFontSize', () => {
   });
 
   it('lets the times give way once the gutter would take a quarter of the card', () => {
-    // A phone-narrow card on a 12-hour clock: the gutter stops growing and the
-    // times step down inside it rather than losing their last digits.
+    // A phone-narrow card on a 12-hour clock: the gutter stops growing. The
+    // times are already at their smallest, so they give up their AM or PM
+    // rather than lose its last letter ("10:35 AI"), and what is left is
+    // drawn whole.
     const metrics = cardMetrics(frameInput(FRAME_CARDS.A6, { cardWidth: 180, timeFormat: '12h' }));
     expect(metrics.gutterPx).toBeLessThanOrEqual(180 * 0.28);
-    expect(metrics.gutterPx).toBeGreaterThanOrEqual(metrics.gutterTimePx * TIME_EM['12h']);
+    expect(metrics.gutterBareTimes).toBe(true);
+    expect(metrics.gutterPx).toBeGreaterThanOrEqual(metrics.gutterTimePx * TIME_EM['24h']);
     expect(metrics.gutterTimePx).toBeLessThan(16);
+  });
+
+  it('keeps the AM and PM wherever the gutter has room for them', () => {
+    expect(cardMetrics(frameInput(FRAME_CARDS.A1, { timeFormat: '12h' })).gutterBareTimes).toBe(false);
+    // A 24-hour clock has none to give up.
+    expect(cardMetrics(frameInput(FRAME_CARDS.A6, { cardWidth: 180, timeFormat: '24h' })).gutterBareTimes).toBe(false);
   });
 
   it('drops the packing chip when the lit row has no height for it', () => {

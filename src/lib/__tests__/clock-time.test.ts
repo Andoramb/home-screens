@@ -152,3 +152,13 @@ describe('parity with formatMealTime', () => {
     expect(formatMealTime(undefined, '12h')).toBe('');
   });
 });
+
+describe('formatClockTimeBare', () => {
+  it('leaves the AM or PM off a 12-hour time, and a 24-hour time as it is', async () => {
+    const { formatClockTimeBare } = await import('../clock-time');
+    expect(formatClockTimeBare('10:35', '12h')).toBe('10:35');
+    expect(formatClockTimeBare('13:20', '12h')).toBe('1:20');
+    expect(formatClockTimeBare('13:20', '24h')).toBe('13:20');
+    expect(formatClockTimeBare('', '12h')).toBe('');
+  });
+});

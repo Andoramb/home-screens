@@ -267,7 +267,9 @@ export default function LocationSection({ values, onChange }: Props) {
       } else {
         const err = await res.json();
         setLocationStatus({
-          message: t('settings.locationPage.status.error', { message: err.error }),
+          message: err.code === 'location_not_found'
+            ? t('settings.locationPage.status.notFound')
+            : t('settings.locationPage.status.error', { message: err.error }),
           kind: 'error',
         });
       }

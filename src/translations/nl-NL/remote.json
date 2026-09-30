@@ -58,7 +58,8 @@
     "sleepDisplay": "Display slapen",
     "sendAlert": "Melding sturen",
     "waitingFor": "Wachten op {name}…",
-    "waitingForAll": "Wachten op de schermen…"
+    "waitingForAll": "Wachten op de schermen…",
+    "waitingForUnnamed": "Wachten op het scherm…"
   },
   "brightnessCard": {
     "label": "Helderheid",
@@ -478,7 +479,8 @@
     "clearOnDisplay": "Meldingen wissen op {name}",
     "clearOnAll": "Meldingen wissen op alle schermen",
     "clearingButton": "Wissen…",
-    "showingNow": "({count} nu in beeld)"
+    "showingNow": "({count} nu in beeld)",
+    "clearOnUnnamed": "Meldingen wissen op het scherm"
   },
   "rewardsView": {
     "changedElsewhere": "Iemand anders heeft de beloningen gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
@@ -855,7 +857,10 @@
     "newRoutine": "Nieuwe routine",
     "editRoutine": "Routine bewerken",
     "emptyHint": "Een routine is een timer met stappen, zoals een ochtendroutine: aankleden, tanden poetsen, bed opmaken. Maak er een en start hem op het scherm.",
-    "routineMeta": "{steps} stappen · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} stap · {minutes} min",
+      "other": "{steps} stappen · {minutes} min"
+    },
     "stepCount": "Stap {current} van {total}",
     "pause": "Pauze",
     "resume": "Verder",
@@ -906,7 +911,14 @@
     "showingOnDisplay": "Te zien op het scherm",
     "waitingForDisplay": "Wachten tot een scherm hem oppakt…",
     "notShowing": "Nog geen scherm laat hem zien. Controleer of er een scherm aanstaat.",
-    "changedElsewhere": "Iemand anders heeft de routines gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw."
+    "changedElsewhere": "Iemand anders heeft de routines gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
+    "whyNoSave": {
+      "name": "Geef de routine een naam om op te slaan.",
+      "stepName": "Geef elke stap een naam om op te slaan.",
+      "stepLength": "Elke stap moet minstens {seconds} seconden duren."
+    },
+    "quickTooShort": "Een timer moet minstens {seconds} seconden duren.",
+    "stepLimit": "Een routine kan maximaal {count} stappen hebben."
   },
   "lists": {
     "title": "Lijsten",
@@ -1009,7 +1021,9 @@
     "profileSwitched": "{name} staat nu op {profile}",
     "profileCleared": "{name} toont alle pagina's",
     "profileFailed": "Het profiel op {name} kon niet worden gewisseld",
-    "hubBack": "Home Screens is er weer"
+    "hubBack": "Home Screens is er weer",
+    "alertSentUnnamed": "Melding verstuurd naar het scherm",
+    "alertsClearedUnnamed": "Meldingen gewist op het scherm"
   },
   "tabNotSetUp": {
     "chores": {

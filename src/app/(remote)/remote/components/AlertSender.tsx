@@ -12,6 +12,8 @@ interface AlertSenderProps {
   onClose: () => void;
   /** Display name for the confirmation toast; null when broadcasting to all. */
   targetName: string | null;
+  /** The one display of a household that never named it: sentences say "the display". */
+  targetUnnamed?: boolean;
   /**
    * Alerts the target display(s) report on screen right now, or null when
    * unknown (no heartbeat yet). Drives the "Clear alerts" row: hidden count
@@ -42,7 +44,7 @@ const DURATIONS = [
   { labelKey: 'durationPersistent', value: 0 },
 ] as const;
 
-export default function AlertSender({ open, onClose, targetName, activeAlerts, onSent }: AlertSenderProps) {
+export default function AlertSender({ open, onClose, targetName, targetUnnamed = false, activeAlerts, onSent }: AlertSenderProps) {
   const t = useTranslate('remote');
   const [type, setType] = useState<'info' | 'warning' | 'urgent'>('info');
   const [title, setTitle] = useState('');
@@ -95,7 +97,9 @@ export default function AlertSender({ open, onClose, targetName, activeAlerts, o
         setMessage('');
         onClose();
         showToast(
-          targetName
+          targetUnnamed
+            ? t('feedback.alertSentUnnamed')
+            : targetName
             ? t('feedback.alertSent', { name: targetName })
             : t('feedback.alertSentAll'),
         );
@@ -112,7 +116,9 @@ export default function AlertSender({ open, onClose, targetName, activeAlerts, o
       onSent();
       onClose();
       showToast(
-        targetName
+        targetUnnamed
+          ? t('feedback.alertsClearedUnnamed')
+          : targetName
           ? t('feedback.alertsCleared', { name: targetName })
           : t('feedback.alertsClearedAll'),
       );
@@ -199,12 +205,15 @@ export default function AlertSender({ open, onClose, targetName, activeAlerts, o
 
           <div>
             <span className="block text-xs font-medium text-hs-text-faint mb-1.5">{t('alertSender.durationLabel')}</span>
-            <div className="flex gap-2 overflow-x-auto scrollbar-none">
+            {/* The chips share the row, each as wide as its word plus an even
+                share of what is left; a row that scrolled sideways cut the
+                last chip at the edge of the phone in the longer languages. */}
+            <div className="flex flex-wrap gap-2">
               {DURATIONS.map((d) => (
                 <button
                   key={d.value}
                   onClick={() => setDuration(d.value)}
-                  className={`shrink-0 px-3.5 py-2 min-h-[44px] rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${
+                  className={`flex-auto whitespace-nowrap px-2 py-2 min-h-[44px] rounded-lg text-xs font-semibold transition-all active:scale-[0.98] ${
                     duration === d.value
                       ? 'bg-hs-active text-hs-text-primary'
                       : 'bg-hs-input text-hs-text-faint'
@@ -239,7 +248,9 @@ export default function AlertSender({ open, onClose, targetName, activeAlerts, o
               ? t('alertSender.clearingButton')
               : clear.state === 'error'
                 ? t('alertSender.failedButton')
-                : targetName
+                : targetUnnamed
+                  ? t('alertSender.clearOnUnnamed')
+                  : targetName
                   ? t('alertSender.clearOnDisplay', { name: targetName })
                   : t('alertSender.clearOnAll')}
             {activeAlerts !== null && activeAlerts > 0 && (

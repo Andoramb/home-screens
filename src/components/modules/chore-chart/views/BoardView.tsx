@@ -182,11 +182,14 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
                             <span className="shrink-0" style={{ fontSize: '1.15em', lineHeight: 1.1 }}>{isCompleted ? '✅' : '☐'}</span>
                           )}
                           {chore.emoji && <span className="shrink-0 flex items-center" style={{ height: '1.25em' }}><ChoreIcon value={chore.emoji} size={choreIconSize(fontSize)} color="currentColor" /></span>}
-                          {/* Two lines at most: a long chore name ellipsises instead of
-                              stacking one word per line in a narrow column. */}
+                          {/* Three lines at most: a long chore name ellipsises instead of
+                              stacking one word per line in a narrow column. A word wider
+                              than the column breaks onto the next line (with a hyphen where
+                              the browser knows the language); it used to run under the edge
+                              of the card and lose its last letter ("dishwashe"). */}
                           <span
                             className="min-w-0"
-                            style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+                            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere', hyphens: 'auto' }}
                           >
                             {hinting ? <HoldHint color={member.color} /> : chore.name}
                           </span>

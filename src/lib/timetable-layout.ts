@@ -269,6 +269,12 @@ interface DayHead {
   showDate: boolean;
   showMonth: boolean;
   word: boolean;
+  /**
+   * The weekday is down to its first letter. The last rung: five cards across
+   * leave a day column narrower than "Mo" at the header's smallest size, and
+   * the headers ran into each other ("MoTuWeTh").
+   */
+  letter?: boolean;
 }
 
 /** The " · " the day line hangs its care clause off. */
@@ -1361,6 +1367,8 @@ export interface CardMetrics {
   gutterPx: number;
   /** The size those times are drawn at, in CSS pixels. */
   gutterTimePx: number;
+  /** The gutter's times are drawn without their AM or PM, which is all a narrow card has room for. */
+  gutterBareTimes: boolean;
   /** How many of its times a period row has the height to show. */
   gutterTimes: GutterTimes;
   /**
@@ -1537,7 +1545,7 @@ const CARE_LINE = 1.25;
  * the floor give way, and the times step down rather than lose their last
  * digits.
  */
-function gutterMetrics(input: CardMetricsInput, base: number, times: GutterTimes): { px: number; timePx: number } {
+function gutterMetrics(input: CardMetricsInput, base: number, times: GutterTimes): { px: number; timePx: number; bare: boolean } {
   const wanted = (times === 'range' ? GUTTER_EM.range : GUTTER_EM.start) * base;
   let timePx = smallPrintPx(base, CARD_TEXT.detail);
 
@@ -1545,7 +1553,7 @@ function gutterMetrics(input: CardMetricsInput, base: number, times: GutterTimes
   // a row standing for periods 7 to 10 is unreadable without one. With no
   // times on the period rows and nothing folded the gutter holds numbers alone.
   const folded = input.rows?.some((row) => row.kind === 'fold') ?? false;
-  if (times === 'none' && !folded) return { px: wanted, timePx };
+  if (times === 'none' && !folded) return { px: wanted, timePx, bare: false };
 
   // The clock the component formats with, resolved once by the module. A
   // fallback here that disagreed with the component's was a bug: a household
@@ -1554,11 +1562,24 @@ function gutterMetrics(input: CardMetricsInput, base: number, times: GutterTimes
   const width = TIME_WIDTH_EM[input.timeFormat];
   let px = Math.max(wanted, timePx * width + GUTTER_PAD_PX);
   const cap = Math.max(wanted, input.cardWidth * GUTTER_MAX_SHARE);
+  let bare = false;
   if (px > cap) {
     px = cap;
-    timePx = Math.max(GUTTER_MIN_TIME_PX, (px - GUTTER_PAD_PX) / width);
+    const fitted = (px - GUTTER_PAD_PX) / width;
+    if (fitted < GUTTER_MIN_TIME_PX && input.timeFormat === '12h') {
+      // Even at their smallest the times do not fit with their AM or PM, and
+      // the floor holding them up meant every row lost its last letter
+      // ("10:35 AI"). A school day does not need the day period to be read,
+      // so it goes, and the hour and minutes are drawn whole.
+      bare = true;
+      const bareWidth = TIME_WIDTH_EM['24h'];
+      timePx = Math.min(timePx, Math.max(GUTTER_MIN_TIME_PX, (px - GUTTER_PAD_PX) / bareWidth));
+      px = Math.min(cap, Math.max(wanted, timePx * bareWidth + GUTTER_PAD_PX));
+    } else {
+      timePx = Math.max(GUTTER_MIN_TIME_PX, fitted);
+    }
   }
-  return { px, timePx };
+  return { px, timePx, bare };
 }
 
 /**
@@ -2131,6 +2152,7 @@ export function cardMetrics(input: CardMetricsInput): CardMetrics {
     widthPx: Math.max(0, input.cardWidth - (input.padding ?? CARD_PADDING_PX) * 2),
     gutterPx: gutter.px,
     gutterTimePx: gutter.timePx,
+    gutterBareTimes: gutter.bare,
     gutterTimes: gutter.times,
     gutterFoldTime: gutterRowPx(base, gutter.timePx, 'start') <= rowPx * FOLD_ROW_FR,
     focusLabelLines,
@@ -2301,6 +2323,8 @@ export interface DayColumn {
    * row that already has five columns to fit.
    */
   showMonth: boolean;
+  /** The weekday is drawn as its first letter: the column has no room for two. */
+  letter: boolean;
   cells: PlacedCell[];
 }
 
@@ -2737,7 +2761,8 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
         + (form.word ? wordEm : 0);
       if (wanted * px <= available) return form;
     }
-    return ladder[ladder.length - 1];
+    // Nothing fits, not even the weekday on its own: one letter of it does.
+    return { ...ladder[ladder.length - 1], letter: true };
   };
 
   /**
@@ -3169,11 +3194,22 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
       isFocus,
       showDate: (showDayDates || isFocus) && head.showDate,
       showMonth: wantsMonth && head.showMonth,
+      letter: head.letter === true,
       closedLabel: focus.closedDays[day],
       endsAfterPeriod: endsAfter,
       shortLabel: focus.shortDays[day]?.label,
       cells,
     });
+  }
+
+  // One form across the row: "M Tu W T F" reads as a mistake, and the lit
+  // column keeps its wash to say which day is today.
+  if (days.some((day) => day.letter)) {
+    for (const day of days) {
+      day.letter = true;
+      day.showDate = false;
+      day.showMonth = false;
+    }
   }
 
   const careUntil = school.care?.until[focus.focusDay];

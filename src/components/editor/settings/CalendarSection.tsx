@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { X } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
 import type { ICalSource, ICloudSource } from '@/types/config';
@@ -14,13 +14,10 @@ import ICalFeedManager from './ICalFeedManager';
 import ICloudCalendarManager from './ICloudCalendarManager';
 import CalendarPeopleManager from './CalendarPeopleManager';
 import { SettingsArea, SourceBlock, SourceHealthBadge, SourceHealthError, useCalendarSourceHealth } from './calendar-settings-bits';
-import { useTranslate } from '@/i18n';
+import { useLocale, useTranslate } from '@/i18n';
+import { localizedHolidayCountries, type HolidayCountry } from '@/lib/holiday-countries';
 import { settingsPath } from '@/lib/settings-route';
 
-interface HolidayCountry {
-  countryCode: string;
-  name: string;
-}
 
 interface CalendarSettings {
   selectedCalendarIds: string[];
@@ -42,6 +39,8 @@ export default function CalendarSection({ values, onChange }: Props) {
   const t = useTranslate('editor');
 
   const [availableCountries, setAvailableCountries] = useState<HolidayCountry[]>([]);
+  const locale = useLocale();
+  const countryOptions = useMemo(() => localizedHolidayCountries(availableCountries, locale), [availableCountries, locale]);
   const { health, recordSourceHealth, recheckSourceHealth } = useCalendarSourceHealth();
 
   // Track auth errors from useGoogleCalendars separately so they show in the right place
@@ -400,7 +399,7 @@ export default function CalendarSection({ values, onChange }: Props) {
               className="w-full rounded-md bg-hs-card border border-hs-border-strong px-2.5 py-1.5 text-sm text-hs-text-body focus:border-hs-accent focus:outline-none"
             >
               <option value="">{t('settings.calendarPage.holidays.none')}</option>
-              {availableCountries.map((c) => (
+              {countryOptions.map((c) => (
                 <option key={c.countryCode} value={c.countryCode}>
                   {c.name}
                 </option>

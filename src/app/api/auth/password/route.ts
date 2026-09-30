@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
     if (newPassword.length < MIN_PASSWORD_LENGTH) {
       return NextResponse.json(
-        { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` },
+        { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters`, code: 'password_too_short', minLength: MIN_PASSWORD_LENGTH },
         { status: 400 },
       );
     }

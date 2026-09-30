@@ -58,7 +58,8 @@
     "sleepDisplay": "Dormir tela",
     "sendAlert": "Enviar aviso",
     "waitingFor": "Aguardando {name}…",
-    "waitingForAll": "Aguardando as telas…"
+    "waitingForAll": "Aguardando as telas…",
+    "waitingForUnnamed": "Aguardando a tela…"
   },
   "brightnessCard": {
     "label": "Brilho",
@@ -478,7 +479,8 @@
     "clearOnDisplay": "Limpar avisos em {name}",
     "clearOnAll": "Limpar avisos em todas as telas",
     "clearingButton": "Limpando…",
-    "showingNow": "({count} na tela agora)"
+    "showingNow": "({count} na tela agora)",
+    "clearOnUnnamed": "Limpar avisos na tela"
   },
   "rewardsView": {
     "changedElsewhere": "Outra pessoa alterou as recompensas. Sua última alteração não foi salva. Tente de novo.",
@@ -856,7 +858,10 @@
     "newRoutine": "Nova rotina",
     "editRoutine": "Editar rotina",
     "emptyHint": "Uma rotina é um timer passo a passo, como a rotina da manhã: se vestir, escovar os dentes, arrumar a cama. Crie uma e inicie na tela.",
-    "routineMeta": "{steps} passos · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} passo · {minutes} min",
+      "other": "{steps} passos · {minutes} min"
+    },
     "stepCount": "Passo {current} de {total}",
     "pause": "Pausar",
     "resume": "Continuar",
@@ -907,7 +912,14 @@
     "showingOnDisplay": "Aparecendo na tela",
     "waitingForDisplay": "Aguardando uma tela assumir…",
     "notShowing": "Nenhuma tela está mostrando ainda. Confira se alguma tela está ligada.",
-    "changedElsewhere": "Outra pessoa alterou as rotinas. Sua última alteração não foi salva. Tente de novo."
+    "changedElsewhere": "Outra pessoa alterou as rotinas. Sua última alteração não foi salva. Tente de novo.",
+    "whyNoSave": {
+      "name": "Dê um nome à rotina para salvar.",
+      "stepName": "Dê um nome a cada passo para salvar.",
+      "stepLength": "Cada passo precisa durar pelo menos {seconds} segundos."
+    },
+    "quickTooShort": "Um timer precisa durar pelo menos {seconds} segundos.",
+    "stepLimit": "Uma rotina pode ter até {count} passos."
   },
   "lists": {
     "title": "Listas",
@@ -1010,7 +1022,9 @@
     "profileSwitched": "{name} mudou para {profile}",
     "profileCleared": "{name} está mostrando todas as páginas",
     "profileFailed": "Não foi possível trocar o perfil em {name}",
-    "hubBack": "O Home Screens voltou"
+    "hubBack": "O Home Screens voltou",
+    "alertSentUnnamed": "Aviso enviado para a tela",
+    "alertsClearedUnnamed": "Avisos limpos na tela"
   },
   "tabNotSetUp": {
     "chores": {
