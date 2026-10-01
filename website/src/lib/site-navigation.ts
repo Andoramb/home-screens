@@ -12,4 +12,4 @@ export const siteNavLinks = [
 ];
 
 /** Community Discord invite link. */
-export const DISCORD_INVITE_URL = 'https://discord.gg/KafmFuSNU';
+export const DISCORD_INVITE_URL = 'https://discord.gg/9VyEasG5w';

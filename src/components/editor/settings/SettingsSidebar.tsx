@@ -31,7 +31,7 @@ import {
 
 const DOCS_URL = 'https://homescreens.dev/docs';
 const GITHUB_URL = 'https://github.com/home-screens/home-screens';
-const DISCORD_URL = 'https://discord.gg/KafmFuSNU';
+const DISCORD_URL = 'https://discord.gg/9VyEasG5w';
 
 /** lucide-react ships no GitHub or Discord brand mark, so these are inline SVGs. */
 function GithubIcon(props: React.ComponentPropsWithoutRef<'svg'>) {
