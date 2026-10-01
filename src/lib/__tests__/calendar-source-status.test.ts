@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   budgetEvents, mergeSourceStatus, resetCalendarSourceState, settleSourceFetches, withSavedEvents,
 } from '@/lib/calendar-source-status';
@@ -40,6 +40,14 @@ const mk = (id: string, end: string, sourceId = 's1'): CalendarEvent =>
 describe('withSavedEvents', () => {
   const winStart = new Date(2026, 6, 1);
   const winEnd = new Date(2026, 7, 1);
+
+  // Saved rows age out 90 days after they end, measured from the real clock,
+  // so pin it to the July 2026 fixtures or they expire as the calendar moves on.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 6, 15, 12));
+  });
+  afterEach(() => vi.useRealTimers());
 
   it("substitutes a failing source's last-good events", () => {
     const good = [mk('e1', '2026-07-10T10:00:00')];

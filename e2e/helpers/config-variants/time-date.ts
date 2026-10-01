@@ -357,7 +357,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     config: { fitToBox: true },
     size: { w: 900, h: 900 },
     expect: async (mod) => {
-      await has('September')(mod);
+      await has(new Date().toLocaleString('en-US', { month: 'long' }))(mod); // first month shown is the current one
       // ModuleWrapper's card, then the box the grid's ems are built from.
       await expect
         .poll(async () => mod.evaluate((el) => {
