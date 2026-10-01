@@ -271,6 +271,7 @@ Multi-display features (the sidebar split, the Displays page, the Display Switch
 
 Three tabs: **Rotation & appearance**, **Sleep & dimming**, and **Alerts**. Most controls are self-explanatory sliders and dropdowns; these are the ones that aren't:
 
+- **Touch alignment** (on the Rotation & appearance tab, next to the rotation), for a touchscreen plugged into this display. Taps follow the screen rotation by default; pick **Leave touch as it is** if they already land in the right place, or enter six numbers of your own if they land mirrored or a little off. See [Taps land in the wrong place](/docs/troubleshooting#taps-land-in-the-wrong-place).
 - **Sleep & dimming** is grouped into three sections, inactivity dimming ("Dim after a few quiet minutes"), the daily schedules ("Dim in the evening" and "Turn off overnight"), and the dimmed appearance, with a 24-hour preview bar showing when the display will be bright, dimmed, or off. Turn the inactivity toggle off to keep full brightness all day while a schedule handles the night.
 - **Dim and sleep schedules** support overnight spans, `23:00–06:00` works and wraps past midnight as you'd expect.
 - **After a wake-up, stay on for** (shown when a schedule is on), how long the display stays awake when someone touches it or wakes it from the remote during a scheduled dim or sleep window, before the schedule takes over again. Defaults to 5 minutes; set it to the minimum for the old behavior of going right back to sleep.
@@ -382,9 +383,9 @@ Three tabs on one page:
 - **Rules**: make a display react to live conditions instead of just the clock, for example jumping to a camera screen when a doorbell sensor fires. See the [Display Rules guide](/docs/profiles#display-rules).
 - **Shared state**: the values your installed plugins are publishing. **Watching** lists what this display is actively using; **Available** is a searchable catalogue of everything your plugins could share, grouped by plugin, whether or not anything uses it yet.
 
-### Docs
+### Help & docs
 
-A persistent link in the sidebar footer (not a settings page) to the full documentation, opened in a new tab.
+The sidebar footer (not a settings page) has three links that open in a new tab: **Help & docs** for this documentation, **GitHub** for the source and issue tracker, and **Discord** for the community.
 
 ## Profiles
 
