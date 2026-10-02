@@ -65,8 +65,15 @@ export default function ColorPicker({
     setDraft(updated);
   };
   const setSwatch = (hex: string) => {
-    // Picking a colour keeps however see-through the card already was.
-    const updated = withCssColorAlpha(hex, alpha) ?? hex;
+    // Most colour pickers in the app edit RGB while preserving the current
+    // transparency, but shade is stored as a plain background colour and its
+    // strength slider owns the opacity separately. When the incoming value is
+    // already fully transparent (for example a stale bad config entry),
+    // preserving alpha here would keep writing transparent colours forever and
+    // make the shade appear broken. A swatch pick therefore always commits an
+    // opaque colour; controls that want editable alpha use the dedicated
+    // `showAlpha` slider path instead.
+    const updated = showAlpha ? (withCssColorAlpha(hex, alpha) ?? hex) : hex;
     onChange(updated);
     setDraft(updated);
   };
