@@ -31,7 +31,7 @@ import PluginConfigRenderer from './PluginConfigRenderer';
 import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
 import PluginSecretsSection from './PluginSecretsSection';
 import PluginAuthSection from './PluginAuthSection';
-import { MousePointerClick, ChevronLeft, HelpCircle, Monitor, PanelRight, PanelRightClose, Sliders } from 'lucide-react';
+import { ChevronLeft, HelpCircle, Monitor, PanelRight, PanelRightClose, Sliders } from 'lucide-react';
 import AccordionSection from './AccordionSection';
 import FontFamilyPicker from '@/components/ui/FontFamilyPicker';
 import LabeledField from '@/components/ui/LabeledField';
@@ -570,28 +570,23 @@ export default function PropertyPanel({
   }
 
   if (!selectedModule || !selectedScreenId || !currentScreen) {
-    // With no screen there is nothing for the screen settings or the
-    // background picker to edit, and both render null — leaving the divider
-    // alone in the panel as three unexplained dots.
+    // Keep background controls first and above the fold. The onboarding card
+    // and screen settings used to push Shade below the initial viewport, so
+    // moving Shade above Sources *inside* BackgroundPicker changed nothing
+    // visible to someone opening the editor.
     const hasScreen = !!currentScreen && !!selectedScreenId;
     return (
       <div className="w-72 flex-shrink-0 bg-hs-panel border-l border-hs-border-strong p-4 overflow-y-auto">
         <PanelCollapseButton onCollapse={onCollapse} t={t} />
         <EditingDisplayRow />
-        <FirstRunChecklist />
-        {hasScreen && (
-          <div className="flex flex-col items-center gap-2 py-6 text-hs-text-faint mb-5">
-            <MousePointerClick size={28} strokeWidth={1.5} className="opacity-30" />
-            <p className="text-sm">{t('propertyPanel.emptyState')}</p>
-          </div>
-        )}
         {hasScreen && (
           <div>
-            <ScreenSettingsSection />
-            <SectionDivider />
             <BackgroundPicker />
+            <SectionDivider />
+            <ScreenSettingsSection />
           </div>
         )}
+        <FirstRunChecklist />
       </div>
     );
   }
