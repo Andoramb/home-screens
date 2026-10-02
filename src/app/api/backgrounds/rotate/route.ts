@@ -16,6 +16,7 @@ import {
   type RotationCacheEntry,
 } from '@/lib/background-rotation-cache';
 import type { BackgroundRotation, BackgroundRotationSourceId, ScreenConfiguration } from '@/types/config';
+import { isRotationActive } from '@/lib/screen-background';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,10 +112,14 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   }
 
   const rotation = screen.backgroundRotation;
-  const eligible = rotation?.enabled ? configuredSources(rotation) : [];
-  if (!rotation?.enabled || rotation.sources.length === 0 || eligible.length === 0) {
+  const eligible = isRotationActive(rotation) && rotation ? configuredSources(rotation) : [];
+  if (!rotation || !isRotationActive(rotation) || rotation.sources.length === 0 || eligible.length === 0) {
     return NextResponse.json({ path: screen.backgroundImage || null });
   }
+
+  // `?force=true` (the editor's Refresh button) bypasses the freshness check
+  // below entirely and always picks a new random source + photo.
+  const force = request.nextUrl.searchParams.get('force') === 'true';
 
   const cache = await cacheStore.read();
   const entry = cache[screenId];
@@ -122,7 +127,12 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   const now = Date.now();
   const currentSourcesKey = sourcesKey(rotation.sources);
   const immichFilters = rotation.sources.includes('immich')
-    ? JSON.stringify({ a: rotation.immichAlbumId, p: rotation.immichPersonId, f: rotation.immichFavoritesOnly })
+    ? JSON.stringify({
+      a: rotation.immichAlbumIds ?? [],
+      p: rotation.immichPersonIds ?? [],
+      px: rotation.immichPersonIdsExclude ?? [],
+      f: rotation.immichFavoritesOnly,
+    })
     : undefined;
   const icloudAlbum = rotation.sources.includes('icloud') ? (rotation.icloudAlbumUrl || '') : undefined;
   const unsplashCollectionsKey = rotation.sources.includes('unsplash') && rotation.unsplashCollections?.length
@@ -137,6 +147,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   // next natural refresh, and one that lost a source could keep serving a
   // photo from it forever if that photo happens to still be cached.
   if (
+    !force &&
     entry &&
     entry.sources === currentSourcesKey &&
     entry.query === rotation.query &&

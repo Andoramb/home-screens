@@ -40,15 +40,21 @@ describe('buildRotationKey', () => {
   // Previously the key only contained source/query/intervalMinutes, so
   // changing an Immich filter would not invalidate the key and the polling
   // effect would not re-run. Each Immich-specific field must affect the key.
-  it('changes when immichAlbumId changes', () => {
-    const a = buildRotationKey([screen('s1', { immichAlbumId: 'album-1' })]);
-    const b = buildRotationKey([screen('s1', { immichAlbumId: 'album-2' })]);
+  it('changes when immichAlbumIds changes', () => {
+    const a = buildRotationKey([screen('s1', { immichAlbumIds: ['album-1'] })]);
+    const b = buildRotationKey([screen('s1', { immichAlbumIds: ['album-2'] })]);
     expect(a).not.toBe(b);
   });
 
-  it('changes when immichPersonId changes', () => {
-    const a = buildRotationKey([screen('s1', { immichPersonId: 'person-a' })]);
-    const b = buildRotationKey([screen('s1', { immichPersonId: 'person-b' })]);
+  it('changes when immichPersonIds changes', () => {
+    const a = buildRotationKey([screen('s1', { immichPersonIds: ['person-a'] })]);
+    const b = buildRotationKey([screen('s1', { immichPersonIds: ['person-b'] })]);
+    expect(a).not.toBe(b);
+  });
+
+  it('changes when immichPersonIdsExclude changes', () => {
+    const a = buildRotationKey([screen('s1', { immichPersonIdsExclude: ['person-a'] })]);
+    const b = buildRotationKey([screen('s1', { immichPersonIdsExclude: ['person-b'] })]);
     expect(a).not.toBe(b);
   });
 
@@ -77,8 +83,8 @@ describe('buildRotationKey', () => {
   });
 
   it('treats undefined Immich fields consistently (does not collapse to same key as set values)', () => {
-    const blank = buildRotationKey([screen('s1', { immichAlbumId: undefined })]);
-    const setVal = buildRotationKey([screen('s1', { immichAlbumId: 'real' })]);
+    const blank = buildRotationKey([screen('s1', { immichAlbumIds: undefined })]);
+    const setVal = buildRotationKey([screen('s1', { immichAlbumIds: ['real'] })]);
     expect(blank).not.toBe(setVal);
   });
 
@@ -96,8 +102,8 @@ describe('buildRotationKey', () => {
   // Regression: previous delimiter-joined format would collide on field
   // values containing `:` or `|`. JSON-encoding makes the key injective.
   it('does not collide when fields contain delimiter characters', () => {
-    const a = buildRotationKey([screen('s1', { query: 'a:b', immichAlbumId: 'c' })]);
-    const b = buildRotationKey([screen('s1', { query: 'a', immichAlbumId: 'b:c' })]);
+    const a = buildRotationKey([screen('s1', { query: 'a:b', immichAlbumIds: ['c'] })]);
+    const b = buildRotationKey([screen('s1', { query: 'a', immichAlbumIds: ['b:c'] })]);
     expect(a).not.toBe(b);
   });
 });

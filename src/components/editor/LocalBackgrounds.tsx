@@ -16,6 +16,7 @@ import {
 } from '@/lib/starter-backgrounds';
 import { logger } from '@/lib/logger';
 import { tileThumbnailUrl } from '@/lib/media-paths';
+import { isRotationActive } from '@/lib/screen-background';
 
 const log = logger('backgrounds');
 
