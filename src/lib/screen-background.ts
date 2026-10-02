@@ -9,6 +9,19 @@ import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
 export type RotationAnswer = string | null | undefined;
 
 /**
+ * Whether rotation is effectively on for a screen: at least one source is
+ * checked. `sources.length > 0` is authoritative — the legacy `enabled` flag
+ * is no longer read here. Migration v14→v15 already folds every saved
+ * screen's rotation source(s) into `sources`, so a config with rotation
+ * configured always has a populated `sources` array by the time this runs;
+ * `enabled` surviving on the type is only for configs an older editor build
+ * still writes it onto.
+ */
+export function isRotationActive(rotation: Screen['backgroundRotation'] | undefined): boolean {
+  return (rotation?.sources?.length ?? 0) > 0;
+}
+
+/**
  * The picture a screen paints behind its modules, on the wall and in the
  * editor alike. With rotation on, the screen's own picture is only what the
  * rotation falls back to, so nothing paints until the first answer is in:
@@ -19,7 +32,7 @@ export function resolveScreenBackground(
   screen: Pick<Screen, 'backgroundImage' | 'backgroundRotation'>,
   rotation: RotationAnswer,
 ): string | undefined {
-  if (!screen.backgroundRotation?.enabled) return screen.backgroundImage || undefined;
+  if (!isRotationActive(screen.backgroundRotation)) return screen.backgroundImage || undefined;
   if (rotation === undefined) return undefined;
   return rotation || screen.backgroundImage || undefined;
 }

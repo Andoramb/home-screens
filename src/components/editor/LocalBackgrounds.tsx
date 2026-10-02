@@ -16,6 +16,7 @@ import {
 } from '@/lib/starter-backgrounds';
 import { logger } from '@/lib/logger';
 import { tileThumbnailUrl } from '@/lib/media-paths';
+import { isRotationActive } from '@/lib/screen-background';
 
 const log = logger('backgrounds');
 
@@ -102,8 +103,8 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
       } else if (data.path) {
         setLocalBackgrounds((prev) => prev.includes(data.path) ? prev : [...prev, data.path]);
         const updates: Record<string, unknown> = { backgroundImage: data.path };
-        if (currentScreen?.backgroundRotation?.enabled) {
-          updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
+        if (isRotationActive(currentScreen?.backgroundRotation)) {
+          updates.backgroundRotation = { ...currentScreen?.backgroundRotation, enabled: false, sources: [] };
         }
         updateScreen(selectedScreenId, updates);
       }
@@ -120,8 +121,8 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   // over the choice within the hour, which reads as "it didn't save".
   const pick = (backgroundImage: string) => {
     const updates: Record<string, unknown> = { backgroundImage };
-    if (currentScreen?.backgroundRotation?.enabled) {
-      updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
+    if (isRotationActive(currentScreen?.backgroundRotation)) {
+      updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false, sources: [] };
     }
     updateScreen(selectedScreenId, updates);
   };

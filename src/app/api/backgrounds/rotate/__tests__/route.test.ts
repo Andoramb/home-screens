@@ -191,7 +191,7 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
         query: undefined,
         fetchedAt: Date.now(),
         intervalMinutes: 60,
-        immichFilters: JSON.stringify({ a: undefined, p: undefined, f: undefined }),
+        immichFilters: JSON.stringify({ a: [], p: [], px: [], f: undefined }),
       },
     });
 
@@ -238,6 +238,101 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
 
     expect(json).toEqual({ path: '/bg.jpg' });
     expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+
+  it('requests multiple albums and multiple include-people in one search', async () => {
+    mockFindScreen.mockReturnValue(screen({
+      backgroundRotation: {
+        enabled: true,
+        sources: ['immich'],
+        intervalMinutes: 60,
+        immichAlbumIds: ['album-1', 'album-2'],
+        immichPersonIds: ['person-1', 'person-2'],
+      } as never,
+    }));
+    mockImmichFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'asset1' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200, headers: { 'content-type': 'image/jpeg' } }));
+
+    await GET(rotateReq());
+
+    const body = JSON.parse(String(mockImmichFetch.mock.calls[0][1]?.body));
+    expect(body.albumIds).toEqual(['album-1', 'album-2']);
+    expect(body.personIds).toEqual(['person-1', 'person-2']);
+  });
+
+  it('excludes a candidate tagged with a person on the exclude list, picking the next one in the batch', async () => {
+    mockFindScreen.mockReturnValue(screen({
+      backgroundRotation: {
+        enabled: true,
+        sources: ['immich'],
+        intervalMinutes: 60,
+        immichPersonIdsExclude: ['nope'],
+      } as never,
+    }));
+    mockImmichFetch
+      // Random batch of candidates.
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'excluded' }, { id: 'ok' }]), { status: 200 }))
+      // Asset-detail check for the first candidate: tagged with the excluded person.
+      .mockResolvedValueOnce(new Response(JSON.stringify({ people: [{ id: 'nope' }] }), { status: 200 }))
+      // Asset-detail check for the second candidate: clean.
+      .mockResolvedValueOnce(new Response(JSON.stringify({ people: [] }), { status: 200 }))
+      // Thumbnail download for the surviving candidate.
+      .mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200, headers: { 'content-type': 'image/jpeg' } }));
+
+    const res = await GET(rotateReq());
+    const json = await res.json();
+
+    expect(json).toEqual({ path: '/api/backgrounds/serve?file=rotation-immich-ok.jpg', fresh: true });
+  });
+
+  it('falls back when every candidate in the batch is excluded', async () => {
+    mockFindScreen.mockReturnValue(screen({
+      backgroundImage: '/bg.jpg',
+      backgroundRotation: {
+        enabled: true,
+        sources: ['immich'],
+        intervalMinutes: 60,
+        immichPersonIdsExclude: ['nope'],
+      } as never,
+    }));
+    mockImmichFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'a' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ people: [{ id: 'nope' }] }), { status: 200 }));
+
+    const res = await GET(rotateReq());
+    const json = await res.json();
+
+    expect(json).toEqual({ path: '/bg.jpg' });
+    expect(fsMock.writeFile).not.toHaveBeenCalled();
+  });
+});
+
+describe('GET /api/backgrounds/rotate — force refresh', () => {
+  it('bypasses a fresh cache entry when force=true, and always picks a new photo', async () => {
+    mockFindScreen.mockReturnValue(screen({
+      backgroundRotation: { enabled: true, sources: ['immich'], intervalMinutes: 60 } as never,
+    }));
+    seedCache({
+      s1: {
+        path: '/api/backgrounds/serve?file=rotation-immich-old.jpg',
+        sources: JSON.stringify(['immich']),
+        pickedSource: 'immich',
+        query: undefined,
+        fetchedAt: Date.now(),
+        intervalMinutes: 60,
+        immichFilters: JSON.stringify({ a: [], p: [], px: [], f: undefined }),
+      },
+    });
+    mockImmichFetch
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ id: 'fresh' }]), { status: 200 }))
+      .mockResolvedValueOnce(new Response(new Uint8Array([1]), { status: 200, headers: { 'content-type': 'image/jpeg' } }));
+
+    const res = await GET(rotateReq('?screenId=s1&force=true'));
+    const json = await res.json();
+
+    expect(json).toEqual({ path: '/api/backgrounds/serve?file=rotation-immich-fresh.jpg', fresh: true });
+    expect(mockImmichFetch).toHaveBeenCalled();
   });
 });
 

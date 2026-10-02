@@ -24,7 +24,8 @@ import { useCanvasZoom } from '@/hooks/useCanvasZoom';
 import { useCanvasBaseScale, CANVAS_TOOLBAR_RESERVE_PX } from '@/hooks/useCanvasBaseScale';
 import { useCanvasDragState } from '@/hooks/useCanvasDragState';
 import { useActiveBackground } from '@/hooks/useActiveBackground';
-import { resolveScreenBackground } from '@/lib/screen-background';
+import { resolveScreenBackground, isRotationActive } from '@/lib/screen-background';
+import CrossfadeBackground from '@/components/display/CrossfadeBackground';
 import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
 import { useTranslate, type TranslateFn } from '@/i18n';
 import type { ModuleInstance, BackgroundShade } from '@/types/config';
@@ -301,7 +302,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
   // rotating background that the display is using.
   const rotatingBackground = useActiveBackground(
     currentScreen?.id,
-    currentScreen?.backgroundRotation?.enabled ?? false,
+    isRotationActive(currentScreen?.backgroundRotation),
   );
 
   // Reset zoom when switching screens
@@ -599,12 +600,7 @@ function CanvasBackground({ screenBackground, canvas, shade }: {
   return (
     <>
       {bg && broken !== bg && (
-        <img
-          src={bg}
-          alt=""
-          onError={() => setBroken(bg)}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+        <CrossfadeBackground src={bg} onError={() => setBroken(bg)} />
       )}
       <BackgroundShadeOverlay shade={shade} />
     </>

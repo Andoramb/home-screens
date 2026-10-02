@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { Screen } from '@/types/config';
 import { displayFetch } from '@/lib/display-fetch';
+import { isRotationActive } from '@/lib/screen-background';
 
 /** How often the client polls the server-side rotation cache (ms) */
 const BG_POLL_MS = 60_000;
@@ -20,7 +21,7 @@ const BG_POLL_MS = 60_000;
 export function buildRotationKey(screens: Screen[]): string {
   return JSON.stringify(
     screens
-      .filter((s) => s.backgroundRotation?.enabled)
+      .filter((s) => isRotationActive(s.backgroundRotation))
       .map((s) => {
         const r = s.backgroundRotation!;
         return {
@@ -30,8 +31,9 @@ export function buildRotationKey(screens: Screen[]): string {
           unsplashCollections: r.unsplashCollections ?? null,
           unsplashMode: r.unsplashMode ?? null,
           intervalMinutes: r.intervalMinutes,
-          immichAlbumId: r.immichAlbumId ?? null,
-          immichPersonId: r.immichPersonId ?? null,
+          immichAlbumIds: r.immichAlbumIds ?? null,
+          immichPersonIds: r.immichPersonIds ?? null,
+          immichPersonIdsExclude: r.immichPersonIdsExclude ?? null,
           immichFavoritesOnly: r.immichFavoritesOnly ?? false,
           icloudAlbumUrl: r.icloudAlbumUrl ?? null,
           localFolder: r.localFolder ?? null,
@@ -54,7 +56,7 @@ export function useBackgroundRotation(screens: Screen[]) {
   // A screen with rotation off shows its own picture. Recording that as its
   // answer keeps the picture up when rotation is switched on, until the first
   // photo arrives, instead of blanking it for the lookup.
-  const staticIds = screens.filter((s) => !s.backgroundRotation?.enabled).map((s) => s.id).join('\n');
+  const staticIds = screens.filter((s) => !isRotationActive(s.backgroundRotation)).map((s) => s.id).join('\n');
   useEffect(() => {
     if (!staticIds) return;
     setBackgrounds((prev) => {
@@ -68,7 +70,7 @@ export function useBackgroundRotation(screens: Screen[]) {
     // Skip polling when nothing is configured to rotate.
     if (rotationKey === '[]') return;
 
-    const screensWithRotation = screens.filter((s) => s.backgroundRotation?.enabled);
+    const screensWithRotation = screens.filter((s) => isRotationActive(s.backgroundRotation));
 
     async function pollBackgrounds() {
       for (const screen of screensWithRotation) {

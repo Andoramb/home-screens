@@ -23,6 +23,7 @@ import type {
 } from '@/types/config';
 import { SHARED_STATE_KEY_RE } from '@/lib/shared-state-types';
 import { DISPLAY_NODE_SETTINGS_KEYS } from '@/lib/display-override-fields';
+import { isRotationActive } from '@/lib/screen-background';
 
 interface FilteredDisplayConfig {
   screens: Screen[];
@@ -118,7 +119,7 @@ export function findMainDisplay(displays: DisplayNode[] | undefined): DisplayNod
 export function isScreenEmpty(screen: Pick<Screen, 'modules' | 'backgroundImage' | 'backgroundRotation'>): boolean {
   return screen.modules.length === 0
     && !screen.backgroundImage
-    && !(screen.backgroundRotation?.enabled);
+    && !isRotationActive(screen.backgroundRotation);
 }
 
 /**

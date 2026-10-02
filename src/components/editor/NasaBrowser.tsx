@@ -6,6 +6,7 @@ import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import ImageSearchBrowser, { type BrowsePhoto, type CategoryDef, type SearchResult } from './ImageSearchBrowser';
+import { isRotationActive } from '@/lib/screen-background';
 
 interface NasaPhoto {
   id: string;
@@ -124,8 +125,8 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
       const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
       const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
       const updates: Record<string, unknown> = { backgroundImage: data.path };
-      if (currentScreen?.backgroundRotation?.enabled) {
-        updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
+      if (isRotationActive(currentScreen?.backgroundRotation)) {
+        updates.backgroundRotation = { ...currentScreen?.backgroundRotation, enabled: false, sources: [] };
       }
       updateScreen(selectedScreenId, updates);
     }

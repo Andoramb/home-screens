@@ -10,7 +10,13 @@ describe('resolveScreenBackground', () => {
   it('paints the own picture when rotation is off, whatever rotation last answered', () => {
     expect(resolveScreenBackground({ backgroundImage: OWN }, undefined)).toBe(OWN);
     expect(resolveScreenBackground({ backgroundImage: OWN }, PHOTO)).toBe(OWN);
-    expect(resolveScreenBackground({ backgroundImage: OWN, backgroundRotation: { ...ROTATION, enabled: false } }, PHOTO)).toBe(OWN);
+    // "Off" is now zero sources, not the legacy `enabled` flag — rotation
+    // with sources still configured is active even if `enabled` is stale.
+    expect(resolveScreenBackground({ backgroundImage: OWN, backgroundRotation: { ...ROTATION, sources: [] } }, PHOTO)).toBe(OWN);
+  });
+
+  it('is active from sources alone, even with the legacy enabled flag false', () => {
+    expect(resolveScreenBackground({ backgroundImage: OWN, backgroundRotation: { ...ROTATION, enabled: false } }, PHOTO)).toBe(PHOTO);
   });
 
   it('paints nothing, not the own picture, while rotation has not answered yet', () => {
