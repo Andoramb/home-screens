@@ -2487,8 +2487,10 @@
       "favoritesOnly": "Favorites only",
       "noAlbums": "No albums found.",
       "noPeople": "No people found.",
-      "personPlusLabel": "Person must include",
-      "personMinusLabel": "Person must exclude"
+      "personPlusLabel": "Person +",
+      "personMinusLabel": "Person -",
+      "personPlusHint": "Matches media containing any selected person.",
+      "personMinusHint": "Rejects media containing any selected person."
     },
     "icloud": {
       "albumLabel": "Album link",

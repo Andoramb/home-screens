@@ -2476,8 +2476,10 @@
       "favoritesOnly": "Alleen favorieten",
       "noAlbums": "Geen albums gevonden.",
       "noPeople": "Geen personen gevonden.",
-      "personPlusLabel": "Moet persoon bevatten",
-      "personMinusLabel": "Moet persoon uitsluiten"
+      "personPlusLabel": "Persoon +",
+      "personMinusLabel": "Persoon -",
+      "personPlusHint": "Matcht media met een van de geselecteerde personen.",
+      "personMinusHint": "Weigert media met een van de geselecteerde personen."
     },
     "icloud": {
       "albumLabel": "Albumlink",

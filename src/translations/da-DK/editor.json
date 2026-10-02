@@ -2476,8 +2476,10 @@
       "favoritesOnly": "Kun favoritter",
       "noAlbums": "Ingen albummer fundet.",
       "noPeople": "Ingen personer fundet.",
-      "personPlusLabel": "Skal inkludere person",
-      "personMinusLabel": "Skal udelukke person"
+      "personPlusLabel": "Person +",
+      "personMinusLabel": "Person -",
+      "personPlusHint": "Matcher medier med en vilkårlig valgt person.",
+      "personMinusHint": "Afviser medier med en vilkårlig valgt person."
     },
     "icloud": {
       "albumLabel": "Albumlink",

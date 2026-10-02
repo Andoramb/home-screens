@@ -103,6 +103,7 @@ function ImmichRotationFields({ rotation, onChange }: {
           onToggle={(id, checked) => toggleIn('immichPersonIds', personIds, id, checked)}
           emptyLabel={t('backgroundPicker.immich.noPeople')}
         />
+        <span className="block text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personPlusHint')}</span>
       </AccordionSection>
       <AccordionSection title={t('backgroundPicker.immich.personMinusLabel')} defaultOpen={false} badge={personIdsExclude.length || undefined}>
         <CheckboxOptionList
@@ -111,6 +112,7 @@ function ImmichRotationFields({ rotation, onChange }: {
           onToggle={(id, checked) => toggleIn('immichPersonIdsExclude', personIdsExclude, id, checked)}
           emptyLabel={t('backgroundPicker.immich.noPeople')}
         />
+        <span className="block text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personMinusHint')}</span>
       </AccordionSection>
       <label className="flex items-center gap-2 cursor-pointer">
         <input
