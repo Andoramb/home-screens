@@ -2436,6 +2436,8 @@
     "title": "Arrière-plan",
     "statusGroup": "État",
     "autoRotate": "Rotation auto",
+    "sourcesGroup": "Sources",
+    "refreshNow": "Actualiser maintenant",
     "sourceLabel": "Source",
     "searchQueryLabel": "Requête de recherche",
     "searchQueryPlaceholder": "paysage nature",
@@ -2471,7 +2473,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Personne",
       "anyone": "N'importe qui",
-      "favoritesOnly": "Favoris uniquement"
+      "favoritesOnly": "Favoris uniquement",
+      "noAlbums": "Aucun album trouvé.",
+      "noPeople": "Aucune personne trouvée.",
+      "personPlusLabel": "Doit inclure",
+      "personMinusLabel": "Doit exclure"
     },
     "icloud": {
       "albumLabel": "Lien de l'album",

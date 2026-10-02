@@ -2436,6 +2436,8 @@
     "title": "Plano de fundo",
     "statusGroup": "Status",
     "autoRotate": "Rotação automática",
+    "sourcesGroup": "Fontes",
+    "refreshNow": "Atualizar agora",
     "sourceLabel": "Fonte",
     "searchQueryLabel": "Termo de pesquisa",
     "searchQueryPlaceholder": "paisagem natureza",
@@ -2471,7 +2473,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Pessoa",
       "anyone": "Qualquer pessoa",
-      "favoritesOnly": "Só favoritas"
+      "favoritesOnly": "Só favoritas",
+      "noAlbums": "Nenhum álbum encontrado.",
+      "noPeople": "Nenhuma pessoa encontrada.",
+      "personPlusLabel": "Deve incluir pessoa",
+      "personMinusLabel": "Deve excluir pessoa"
     },
     "icloud": {
       "albumLabel": "Link do álbum",

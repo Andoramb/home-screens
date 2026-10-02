@@ -2436,6 +2436,8 @@
     "title": "Achtergrond",
     "statusGroup": "Status",
     "autoRotate": "Automatisch wisselen",
+    "sourcesGroup": "Bronnen",
+    "refreshNow": "Nu vernieuwen",
     "sourceLabel": "Bron",
     "searchQueryLabel": "Zoekopdracht",
     "searchQueryPlaceholder": "natuurlandschap",
@@ -2471,7 +2473,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Persoon",
       "anyone": "Iedereen",
-      "favoritesOnly": "Alleen favorieten"
+      "favoritesOnly": "Alleen favorieten",
+      "noAlbums": "Geen albums gevonden.",
+      "noPeople": "Geen personen gevonden.",
+      "personPlusLabel": "Moet persoon bevatten",
+      "personMinusLabel": "Moet persoon uitsluiten"
     },
     "icloud": {
       "albumLabel": "Albumlink",

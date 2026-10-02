@@ -2436,6 +2436,8 @@
     "title": "Fondo",
     "statusGroup": "Estado",
     "autoRotate": "Rotar automáticamente",
+    "sourcesGroup": "Fuentes",
+    "refreshNow": "Actualizar ahora",
     "sourceLabel": "Fuente",
     "searchQueryLabel": "Búsqueda",
     "searchQueryPlaceholder": "paisaje natural",
@@ -2471,7 +2473,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Persona",
       "anyone": "Cualquiera",
-      "favoritesOnly": "Solo favoritos"
+      "favoritesOnly": "Solo favoritos",
+      "noAlbums": "No se encontraron álbumes.",
+      "noPeople": "No se encontraron personas.",
+      "personPlusLabel": "Debe incluir a",
+      "personMinusLabel": "Debe excluir a"
     },
     "icloud": {
       "albumLabel": "Enlace del álbum",

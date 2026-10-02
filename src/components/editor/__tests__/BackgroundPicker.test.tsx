@@ -61,6 +61,33 @@ afterEach(() => {
   useEditorStore.setState({ config: null, selectedDisplayId: null, selectedScreenId: null });
 });
 
+describe('BackgroundPicker — sources group always visible (item 1/2)', () => {
+  it('shows the Sources group and every source checkbox even with zero sources checked', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    const { container, getByText } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    expect(getByText(enUSEditor.backgroundPicker.sourcesGroup)).not.toBeNull();
+    const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
+    // unsplash, nasa-apod, immich, icloud, local — none checked yet.
+    expect(checkboxes.length).toBeGreaterThanOrEqual(5);
+    expect(checkboxes.every((cb) => !cb.checked)).toBe(true);
+  });
+
+  it('the refresh button is disabled with zero sources and enabled once one is checked', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    const refreshBtn = container.querySelector('[data-testid="background-rotation-refresh"]') as HTMLButtonElement;
+    expect(refreshBtn.disabled).toBe(true);
+
+    const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
+    const localCheckbox = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes(enUSEditor.backgroundPicker.sources.local));
+    fireEvent.click(localCheckbox!);
+
+    expect(refreshBtn.disabled).toBe(false);
+  });
+});
+
 describe('BackgroundPicker — multi-source rotation checklist', () => {
   it('checking a second source shows its settings block without touching the first', () => {
     seedStore({ enabled: true, sources: ['icloud'], query: '', intervalMinutes: 60, icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#existing' });

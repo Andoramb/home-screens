@@ -2436,6 +2436,8 @@
     "title": "Baggrund",
     "statusGroup": "Status",
     "autoRotate": "Skift automatisk",
+    "sourcesGroup": "Kilder",
+    "refreshNow": "Opdater nu",
     "sourceLabel": "Kilde",
     "searchQueryLabel": "Søgeord",
     "searchQueryPlaceholder": "natur landskab",
@@ -2471,7 +2473,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Person",
       "anyone": "Alle",
-      "favoritesOnly": "Kun favoritter"
+      "favoritesOnly": "Kun favoritter",
+      "noAlbums": "Ingen albummer fundet.",
+      "noPeople": "Ingen personer fundet.",
+      "personPlusLabel": "Skal inkludere person",
+      "personMinusLabel": "Skal udelukke person"
     },
     "icloud": {
       "albumLabel": "Albumlink",

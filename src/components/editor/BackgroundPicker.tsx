@@ -12,15 +12,45 @@ import UnsplashBrowser from './UnsplashBrowser';
 import NasaBrowser from './NasaBrowser';
 import ImmichBrowser from './ImmichBrowser';
 import ImageBrowserModal from './ImageBrowserModal';
-import { Lock, Plus, X } from 'lucide-react';
+import { Lock, Plus, X, RefreshCw } from 'lucide-react';
 import AccordionSection from './AccordionSection';
 import PropertyGroup from './PropertyGroup';
 import Toggle from '@/components/ui/Toggle';
 import { useSecretStatus } from '@/hooks/useSecretStatus';
 import { useTranslate } from '@/i18n';
+import { eventBus } from '@/lib/event-bus';
 
 interface ImmichAlbumOption { id: string; name: string; assetCount: number }
 interface ImmichPersonOption { id: string; name: string }
+
+/** A scrollable list of checkboxes, one per option — shared shape for the
+ *  Immich album/person(+)/person(-) pickers, all of which take multiple
+ *  selections now (see BackgroundRotation.immichAlbumIds/immichPersonIds*). */
+function CheckboxOptionList({ options, selected, onToggle, emptyLabel }: {
+  options: { id: string; label: string }[];
+  selected: string[];
+  onToggle: (id: string, checked: boolean) => void;
+  emptyLabel: string;
+}) {
+  if (options.length === 0) {
+    return <p className="text-[10px] text-hs-text-faint">{emptyLabel}</p>;
+  }
+  return (
+    <div className="max-h-28 overflow-y-auto space-y-1 rounded bg-hs-card border border-hs-border-strong px-2 py-1.5">
+      {options.map((opt) => (
+        <label key={opt.id} className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selected.includes(opt.id)}
+            onChange={(e) => onToggle(opt.id, e.target.checked)}
+            className="rounded border-hs-border-strong"
+          />
+          <span className="text-[10px] text-hs-text-body truncate">{opt.label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
 
 function ImmichRotationFields({ rotation, onChange }: {
   rotation: BackgroundRotation;
@@ -41,37 +71,52 @@ function ImmichRotationFields({ rotation, onChange }: {
 
   useEffect(() => { fetchOptions(); }, [fetchOptions]);
 
-  const selectClass = 'mt-0.5 block w-full rounded bg-hs-card border border-hs-border-strong text-xs text-hs-text-body px-2 py-1 focus:outline-none focus:border-hs-accent';
+  const albumIds = rotation.immichAlbumIds ?? [];
+  const personIds = rotation.immichPersonIds ?? [];
+  const personIdsExclude = rotation.immichPersonIdsExclude ?? [];
+
+  const toggleIn = (field: 'immichAlbumIds' | 'immichPersonIds' | 'immichPersonIdsExclude', current: string[], id: string, checked: boolean) => {
+    const next = checked ? [...current, id] : current.filter((x) => x !== id);
+    onChange({ [field]: next.length > 0 ? next : undefined });
+  };
+
+  const personOptions = people.map((p) => ({ id: p.id, label: p.name }));
 
   return (
     <>
       <label className="block">
         <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.albumLabel')}</span>
-        <select
-          value={rotation.immichAlbumId || ''}
-          onChange={(e) => onChange({ immichAlbumId: e.target.value || undefined, immichPersonId: undefined })}
-          className={selectClass}
-        >
-          <option value="">{t('backgroundPicker.immich.anyAlbum')}</option>
-          {albums.map((a) => (
-            <option key={a.id} value={a.id}>
-              {t('backgroundPicker.immich.albumOption', { name: a.name, count: a.assetCount })}
-            </option>
-          ))}
-        </select>
+        <div className="mt-0.5">
+          <CheckboxOptionList
+            options={albums.map((a) => ({ id: a.id, label: t('backgroundPicker.immich.albumOption', { name: a.name, count: a.assetCount }) }))}
+            selected={albumIds}
+            onToggle={(id, checked) => toggleIn('immichAlbumIds', albumIds, id, checked)}
+            emptyLabel={t('backgroundPicker.immich.noAlbums')}
+          />
+        </div>
+        <span className="block mt-1 text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.anyAlbum')}</span>
       </label>
       <label className="block">
-        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personLabel')}</span>
-        <select
-          value={rotation.immichPersonId || ''}
-          onChange={(e) => onChange({ immichPersonId: e.target.value || undefined, immichAlbumId: undefined })}
-          className={selectClass}
-        >
-          <option value="">{t('backgroundPicker.immich.anyone')}</option>
-          {people.map((p) => (
-            <option key={p.id} value={p.id}>{p.name}</option>
-          ))}
-        </select>
+        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personPlusLabel')}</span>
+        <div className="mt-0.5">
+          <CheckboxOptionList
+            options={personOptions}
+            selected={personIds}
+            onToggle={(id, checked) => toggleIn('immichPersonIds', personIds, id, checked)}
+            emptyLabel={t('backgroundPicker.immich.noPeople')}
+          />
+        </div>
+      </label>
+      <label className="block">
+        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personMinusLabel')}</span>
+        <div className="mt-0.5">
+          <CheckboxOptionList
+            options={personOptions}
+            selected={personIdsExclude}
+            onToggle={(id, checked) => toggleIn('immichPersonIdsExclude', personIdsExclude, id, checked)}
+            emptyLabel={t('backgroundPicker.immich.noPeople')}
+          />
+        </div>
       </label>
       <label className="flex items-center gap-2 cursor-pointer">
         <input
@@ -374,12 +419,27 @@ export default function BackgroundPicker() {
     return () => { cancelled = true; };
   }, [backgroundPath]);
 
-  if (!currentScreen || !selectedScreenId) return null;
+  // Force-refresh (item 5): fetches a new photo immediately, bypassing the
+  // interval, and publishes it on the event bus so the editor preview
+  // (useActiveBackground, wherever this screen's canvas is mounted) picks it
+  // up at once instead of waiting for its next poll tick.
+  const [refreshing, setRefreshing] = useState(false);
+  const refreshNow = useCallback(async () => {
+    if (!selectedScreenId || rotationSources.length === 0 || refreshing) return;
+    setRefreshing(true);
+    try {
+      const res = await editorFetch(`/api/backgrounds/rotate?screenId=${encodeURIComponent(selectedScreenId)}&force=true`);
+      if (res.ok) {
+        const data = await res.json();
+        eventBus.publish('background.forceRefresh', { screenId: selectedScreenId, path: data.path ?? null });
+      }
+    } finally {
+      setRefreshing(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rotationSources/refreshing read fresh each render; selectedScreenId is the only thing this should re-create on
+  }, [selectedScreenId]);
 
-  const rotationEnabled = currentScreen?.backgroundRotation?.enabled ?? false;
-  // iCloud Shared Albums and the local library need no API key, so rotation
-  // is always offerable.
-  const anySourceAvailable = true;
+  if (!currentScreen || !selectedScreenId) return null;
 
   // Every rotation source, with whether it needs a key it doesn't have (shown
   // locked, same treatment as the static-tab locks below) and its own
@@ -392,23 +452,18 @@ export default function BackgroundPicker() {
     { id: 'local', label: t('backgroundPicker.sources.local'), locked: false },
   ];
 
-  const setRotationEnabled = (enabled: boolean) => {
-    if (!selectedScreenId) return;
-    const current = currentScreen?.backgroundRotation;
-    const defaultSource: BackgroundRotationSourceId = hasUnsplashKey ? 'unsplash' : hasNasaKey ? 'nasa-apod' : hasImmichKey ? 'immich' : 'icloud';
-    updateScreenRotation(selectedScreenId, {
-      enabled,
-      sources: current?.sources?.length ? current.sources : [defaultSource],
-      query: current?.query || 'nature landscape',
-      intervalMinutes: current?.intervalMinutes || 60,
-    });
-  };
-
+  // Checking the first source (or unchecking the last) is what turns rotation
+  // on/off now — there is no separate enabled toggle. Query/interval defaults
+  // are seeded the same way the old enable action used to.
   const toggleRotationSource = (id: BackgroundRotationSourceId, checked: boolean) => {
-    if (!selectedScreenId || !currentScreen?.backgroundRotation) return;
-    const current = currentScreen.backgroundRotation.sources ?? [];
+    if (!selectedScreenId) return;
+    const current = currentScreen.backgroundRotation?.sources ?? [];
     const sources = checked ? [...current, id] : current.filter((s) => s !== id);
-    updateScreenRotation(selectedScreenId, { sources });
+    updateScreenRotation(selectedScreenId, {
+      sources,
+      query: currentScreen.backgroundRotation?.query || 'nature landscape',
+      intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
+    });
   };
 
   const rotationFieldClass = 'mt-0.5 block w-full rounded bg-hs-card border border-hs-border-strong text-xs text-hs-text-body px-2 py-1 focus:outline-none focus:border-hs-accent';
@@ -431,17 +486,23 @@ export default function BackgroundPicker() {
 
   return (
     <AccordionSection title={t('backgroundPicker.title')}>
-      {anySourceAvailable && (
-        <>
-          <PropertyGroup title={t('backgroundPicker.statusGroup')} accent={1}>
-            <Toggle
-              label={t('backgroundPicker.autoRotate')}
-              checked={rotationEnabled}
-              onChange={setRotationEnabled}
-            />
-          </PropertyGroup>
-          {rotationEnabled && (
-            <PropertyGroup title={t('fields.rotation')} accent={2}>
+      <PropertyGroup
+        title={t('backgroundPicker.sourcesGroup')}
+        accent={2}
+        titleExtra={
+                <button
+                  type="button"
+                  onClick={refreshNow}
+                  disabled={rotationSources.length === 0 || refreshing}
+                  aria-label={t('backgroundPicker.refreshNow')}
+                  title={t('backgroundPicker.refreshNow')}
+                  data-testid="background-rotation-refresh"
+                  className="mb-[7px] shrink-0 rounded p-1 text-hs-text-faint hover:text-hs-text-secondary hover:bg-hs-hover disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                >
+                  <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
+                </button>
+              }
+            >
               <div className="space-y-2">
                 {/* One row per source, checked = currently drawn from. Rotation
                     picks uniformly at random among every checked source each
@@ -591,7 +652,7 @@ export default function BackgroundPicker() {
                 <label className="block">
                   <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.rotateEveryLabel')}</span>
                   <select
-                    value={currentScreen.backgroundRotation!.intervalMinutes}
+                    value={currentScreen.backgroundRotation?.intervalMinutes ?? 60}
                     onChange={(e) => {
                       if (!selectedScreenId) return;
                       updateScreenRotation(selectedScreenId, { intervalMinutes: Number(e.target.value) });
@@ -604,10 +665,7 @@ export default function BackgroundPicker() {
                   </select>
                 </label>
               </div>
-            </PropertyGroup>
-          )}
-        </>
-      )}
+      </PropertyGroup>
 
       <PropertyGroup title={t('backgroundPicker.shadeGroup')} accent={1}>
         <Toggle

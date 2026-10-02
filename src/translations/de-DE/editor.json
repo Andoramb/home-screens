@@ -2436,6 +2436,8 @@
     "title": "Hintergrund",
     "statusGroup": "Status",
     "autoRotate": "Automatisch wechseln",
+    "sourcesGroup": "Quellen",
+    "refreshNow": "Jetzt aktualisieren",
     "sourceLabel": "Quelle",
     "searchQueryLabel": "Suchbegriff",
     "searchQueryPlaceholder": "Naturlandschaft",
@@ -2471,7 +2473,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Person",
       "anyone": "Beliebige Person",
-      "favoritesOnly": "Nur Favoriten"
+      "favoritesOnly": "Nur Favoriten",
+      "noAlbums": "Keine Alben gefunden.",
+      "noPeople": "Keine Personen gefunden.",
+      "personPlusLabel": "Person muss enthalten sein",
+      "personMinusLabel": "Person muss ausgeschlossen sein"
     },
     "icloud": {
       "albumLabel": "Album-Link",
