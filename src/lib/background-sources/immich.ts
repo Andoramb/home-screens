@@ -21,14 +21,30 @@ async function assetHasExcludedPerson(assetId: string, excludeIds: string[]): Pr
   return taggedIds.some((id) => excludeIds.includes(id));
 }
 
+/** Picks one entry at random from a multi-select list. Immich's
+ *  /api/search/random ANDs every id in `albumIds`/`personIds` together (an
+ *  asset must be in ALL listed albums, tagged with ALL listed people) —
+ *  verified against a live instance: two disjoint albums returned zero
+ *  results, two people returned only photos containing both. The picker's
+ *  "Album"/"Person +" lists are meant as OR ("any of these"), matching how
+ *  Unsplash's collections list already behaves, so each fetch narrows to one
+ *  randomly-picked id from the list instead of sending the whole array —
+ *  over repeated rotations this shuffles across every selected option. */
+function pickOne<T>(list: T[] | undefined): T | undefined {
+  if (!list?.length) return undefined;
+  return list[Math.floor(Math.random() * list.length)];
+}
+
 async function fetchAndSaveImmichPhoto(rotation: BackgroundRotation): Promise<string | null> {
   const excludeIds = rotation.immichPersonIdsExclude ?? [];
   const body: Record<string, unknown> = {
     type: 'IMAGE',
     size: excludeIds.length > 0 ? EXCLUDE_BATCH_SIZE : 1,
   };
-  if (rotation.immichAlbumIds?.length) body.albumIds = rotation.immichAlbumIds;
-  if (rotation.immichPersonIds?.length) body.personIds = rotation.immichPersonIds;
+  const albumId = pickOne(rotation.immichAlbumIds);
+  const personId = pickOne(rotation.immichPersonIds);
+  if (albumId) body.albumIds = [albumId];
+  if (personId) body.personIds = [personId];
   if (rotation.immichFavoritesOnly) body.isFavorite = true;
 
   const res = await immichFetch('/api/search/random', {
