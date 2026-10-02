@@ -1,29 +1,22 @@
-/**
- * Migration 015 — background rotation sources became a set.
- *
- * A screen used to pick exactly one rotation source (`backgroundRotation.source`).
- * Rotation now draws uniformly at random from any number of simultaneously
- * enabled sources (`backgroundRotation.sources`). A screen still on the old
- * singular field gets it folded into a one-entry array; every other field on
- * `backgroundRotation` (query, unsplashCollections, intervalMinutes, the
- * Immich/iCloud filters) is preserved untouched.
- */
+/** Normalize singular rotation source and Immich filters to arrays. */
 
 import type { ScreenConfiguration, Screen, BackgroundRotationSourceId } from '@/types/config';
 import { mapConfigScreens } from './module-walk';
 
 function convertRotation(screen: Screen): Screen {
   const rotation = screen.backgroundRotation as
-    | (Screen['backgroundRotation'] & { source?: BackgroundRotationSourceId })
+    | (Screen['backgroundRotation'] & { source?: BackgroundRotationSourceId; immichAlbumId?: string; immichPersonId?: string })
     | undefined;
-  if (!rotation || !rotation.enabled || !('source' in rotation)) return screen;
+  if (!rotation) return screen;
 
-  const { source, ...rest } = rotation;
+  const { source, immichAlbumId, immichPersonId, ...rest } = rotation;
   return {
     ...screen,
     backgroundRotation: {
       ...rest,
-      sources: source ? [source] : [],
+      sources: rotation.enabled === false ? [] : rotation.sources ?? (source ? [source] : []),
+      ...(immichAlbumId && !rotation.immichAlbumIds?.length ? { immichAlbumIds: [immichAlbumId] } : {}),
+      ...(immichPersonId && !rotation.immichPersonIds?.length ? { immichPersonIds: [immichPersonId] } : {}),
     },
   };
 }

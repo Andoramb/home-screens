@@ -34,12 +34,23 @@ describe('CrossfadeBackground', () => {
     expect(imgs.map((img) => img.src.split('/').pop())).toEqual(['b.jpg']);
   });
 
-  it('calls onError with the failing layer src', () => {
-    const onError = vi.fn();
-    const { container } = render(<CrossfadeBackground src="/missing.jpg" onError={onError} />);
-    const img = container.querySelector('img')!;
-    fireEvent.error(img);
-    expect(onError).toHaveBeenCalledWith(expect.stringContaining('/missing.jpg'));
+  it('drops failed initial media instead of leaving a broken image', () => {
+    const { container } = render(<CrossfadeBackground src="/missing.jpg" />);
+    fireEvent.error(container.querySelector('img')!);
+    expect(container.querySelector('img')).toBeNull();
+  });
+
+  it.each(['/broken.jpg', '/broken.mp4'])('retains the last loaded image when %s fails', (failedSrc) => {
+    const { container, rerender } = render(<CrossfadeBackground src="/ok.jpg" />);
+    fireEvent.load(container.querySelector('img')!);
+    rerender(<CrossfadeBackground src={failedSrc} />);
+
+    const candidate = container.querySelector(failedSrc.endsWith('.mp4') ? 'video' : 'img[src="/broken.jpg"]');
+    fireEvent.error(candidate!);
+
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/ok.jpg');
+    expect(container.querySelector('video')).toBeNull();
   });
 
   it('renders a video element for a video-extension src', () => {

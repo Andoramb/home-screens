@@ -1,40 +1,24 @@
 import { createJsonStore } from '@/lib/json-store';
 
-/**
- * The background-rotation cache (`data/background-cache.json`): one entry per
- * screen naming the rotation file it currently shows. Shared by the rotate
- * route that writes it and the library routes that must not list or delete a
- * rotation file a screen is still showing.
- */
 
 export interface RotationCacheEntry {
   path: string;
   /** Every source the screen's rotation was configured to draw from at fetch time, stable-sorted-JSON. */
   sources: string;
-  /** The one source actually picked (at random) for this fetch; kept so a poll inside the interval doesn't re-pick. */
-  pickedSource: string;
   query: string;
   fetchedAt: number;
   intervalMinutes: number;
   immichFilters?: string;
   icloudAlbum?: string;
+  localFolder?: string;
+  canvas?: string;
   unsplashCollections?: string;
   unsplashMode?: string;
 }
 
 export type BackgroundCache = Record<string, RotationCacheEntry>;
 
-/**
- * Rotation bookkeeping, not durable data: nothing backs it up or restores it,
- * and losing it costs one extra upstream fetch. `transient` gives it the
- * store's per-file queue and atomic rename without taking the global data
- * lock or paying two fsyncs on a path that runs on every screen rotation.
- *
- * It has to be a store rather than a read/modify/write pair because the fetch
- * between the two takes seconds: a plain write-back persisted a snapshot taken
- * before the network call and clobbered any entry another screen's rotation
- * had committed in the meantime.
- */
+/** Atomic writes prevent concurrent rotations from clobbering each other. */
 export const rotationCacheStore = createJsonStore<BackgroundCache>({
   path: 'data/background-cache.json',
   defaultValue: {},

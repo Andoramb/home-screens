@@ -570,10 +570,6 @@ export default function PropertyPanel({
   }
 
   if (!selectedModule || !selectedScreenId || !currentScreen) {
-    // Keep background controls first and above the fold. The onboarding card
-    // and screen settings used to push Shade below the initial viewport, so
-    // moving Shade above Sources *inside* BackgroundPicker changed nothing
-    // visible to someone opening the editor.
     const hasScreen = !!currentScreen && !!selectedScreenId;
     return (
       <div className="w-72 flex-shrink-0 bg-hs-panel border-l border-hs-border-strong p-4 overflow-y-auto">

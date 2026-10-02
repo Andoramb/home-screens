@@ -8106,12 +8106,12 @@
       "fields": [
         {
           "name": "enabled",
-          "optional": false,
+          "optional": true,
           "type": {
             "kind": "boolean",
             "text": "boolean"
           },
-          "description": "Turn rotation on"
+          "description": "Legacy toggle, retained for config round-tripping. Rotation uses `sources`."
         },
         {
           "name": "sources",
@@ -8120,7 +8120,7 @@
             "kind": "array",
             "text": "BackgroundRotationSourceId[]"
           },
-          "description": "Every source currently drawn from. Rotation picks uniformly at random among these each interval. Empty/undefined falls back to whatever the editor's default-source resolution seeds on first enable (see `setRotationEnabled` in BackgroundPicker.tsx)."
+          "description": "Selected sources; an empty list disables rotation."
         },
         {
           "name": "query",
@@ -8138,7 +8138,20 @@
             "kind": "array",
             "text": "string[]"
           },
-          "description": "Unsplash collection IDs to rotate photos from (e.g. \"I6rVqHIQXO0\" from unsplash.com/collections/I6rVqHIQXO0/october). Takes priority over `query` when non-empty."
+          "description": "Unsplash collection IDs; retained when switching to query mode."
+        },
+        {
+          "name": "unsplashMode",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "\"query\" | \"collections\"",
+            "values": [
+              "query",
+              "collections"
+            ]
+          },
+          "description": "Active Unsplash mode. Legacy configs infer this from non-empty collections."
         },
         {
           "name": "intervalMinutes",
@@ -8150,22 +8163,31 @@
           "description": "Minutes between images"
         },
         {
-          "name": "immichAlbumId",
+          "name": "immichAlbumIds",
           "optional": true,
           "type": {
-            "kind": "string",
-            "text": "string"
+            "kind": "array",
+            "text": "string[]"
           },
-          "description": "Immich album to use"
+          "description": "Immich albums to draw from; any asset in any of these qualifies. Empty/undefined = any album."
         },
         {
-          "name": "immichPersonId",
+          "name": "immichPersonIds",
           "optional": true,
           "type": {
-            "kind": "string",
-            "text": "string"
+            "kind": "array",
+            "text": "string[]"
           },
-          "description": "Immich person (face) to use"
+          "description": "Immich people who must appear in the photo (at least one). Empty/undefined = anyone."
+        },
+        {
+          "name": "immichPersonIdsExclude",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Immich people to exclude from candidate photos."
         },
         {
           "name": "immichFavoritesOnly",

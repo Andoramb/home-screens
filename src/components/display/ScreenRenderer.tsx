@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useState } from 'react';
+import { useMemo, useEffect } from 'react';
 import type { Screen, ModuleInstance } from '@/types/config';
 import { getModuleComponent } from '@/lib/module-components';
 import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
@@ -41,10 +41,9 @@ import { eventBus } from '@/lib/event-bus';
 import { getLocation } from '@/lib/location';
 import { getModuleDefinition } from '@/lib/module-registry';
 import { resolveModuleStyle } from '@/lib/module-style';
-import BackgroundShadeOverlay from '@/components/BackgroundShadeOverlay';
+import BackgroundMediaLayer from '@/components/BackgroundMediaLayer';
 import { screenBackgroundSrc, type RotationAnswer } from '@/lib/screen-background';
 import { displaySizedUrl } from '@/lib/media-paths';
-import CrossfadeBackground from './CrossfadeBackground';
 
 interface ScreenRendererProps {
   screen: Screen;
@@ -125,11 +124,6 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
   // Fetch API-served images through displayFetch so the Bearer token is used
   // (plain <img> tags don't carry Authorization headers)
   const backgroundImage = useAuthImage(rawBackground || undefined) || '';
-  // A background file that is gone from the hub must not leave Chromium's
-  // broken-image glyph in the corner of the wall: it hides itself and the
-  // solid background shows. Keyed by source so a new path gets its try.
-  const [failedBackground, setFailedBackground] = useState<string | null>(null);
-  const showBackgroundImage = !!backgroundImage && failedBackground !== backgroundImage;
 
   // `renderDisplayId` is the authoritative render-as id: the URL alone is
   // unreliable, because the legacy /display route renders a multi-display main
@@ -159,15 +153,7 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
         isolation: 'isolate',
       }}
     >
-      {/* Isolate the media and shade beneath *all* widgets, including widgets
-          whose saved zIndex is 0 or negative. The media's crossfade and shade
-          keep their own local stacking order inside this layer. */}
-      <div data-testid="background-media-layer" style={{ position: 'absolute', inset: 0, zIndex: -1, isolation: 'isolate', pointerEvents: 'none' }}>
-        {showBackgroundImage && (
-          <CrossfadeBackground src={backgroundImage} onError={() => setFailedBackground(backgroundImage)} />
-        )}
-        <BackgroundShadeOverlay shade={screen.shade} />
-      </div>
+      <BackgroundMediaLayer src={backgroundImage} shade={screen.shade} />
 
       {visibleModules.map((mod) => {
         const Component = getModuleComponent(mod.type);

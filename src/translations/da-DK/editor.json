@@ -2476,8 +2476,8 @@
       "favoritesOnly": "Kun favoritter",
       "noAlbums": "Ingen albummer fundet.",
       "noPeople": "Ingen personer fundet.",
-      "personPlusLabel": "Person +",
-      "personMinusLabel": "Person -",
+      "personPlusLabel": "Medtag personer",
+      "personMinusLabel": "Udeluk personer",
       "personPlusHint": "Matcher medier med en vilkårlig valgt person.",
       "personMinusHint": "Afviser medier med en vilkårlig valgt person."
     },

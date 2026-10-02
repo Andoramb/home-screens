@@ -26,13 +26,7 @@ const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
  *  display still showing the previous background doesn't lose it mid-swap. */
 const PRUNE_KEEP_RECENT = 8;
 
-/**
- * Rotation files accumulate forever otherwise: an iCloud album alone can
- * leave thousands of one-time backgrounds on a Pi SD card over a few weeks.
- * Deletes rotation-cache files that no screen's cache entry references,
- * keeping the newest few as a grace buffer. Best-effort: any error just
- * leaves files for the next rotation to prune.
- */
+/** Prune unreferenced rotation files, retaining a small grace buffer. */
 async function pruneRotationFiles(cache: BackgroundCache): Promise<void> {
   const referenced = referencedRotationFiles(cache);
 
@@ -59,15 +53,7 @@ async function pruneRotationFiles(cache: BackgroundCache): Promise<void> {
   }
 }
 
-/** The canvas a screen is painted on: its own display's size, or the shared
- *  one. Deliberately does NOT run these through `orientDimensions` — that
- *  helper always normalizes to landscape unless `transform` is explicitly
- *  `90`/`270` (it's built for reorienting a physical panel's long/short
- *  sides, not for reporting a declared width/height as-is), which would
- *  silently flip a portrait default like DEFAULT_DISPLAY_WIDTH/HEIGHT into a
- *  landscape canvas. Declared dimensions are used verbatim instead. Passed
- *  through to whichever source provider gets picked; only the unsplash
- *  provider uses it (for orientation + an exact crop), the rest ignore it. */
+/** Preserve declared dimensions; orientation normalization would flip portrait canvases. */
 function canvasOf(config: ScreenConfiguration, screenId: string): { w: number; h: number } {
   const display = findDisplayForScreen(config, screenId);
   return {
@@ -86,25 +72,12 @@ function configuredSources(rotation: BackgroundRotation): BackgroundRotationSour
   return rotation.sources.filter((source) => isSourceConfigured(source, rotation));
 }
 
-/**
- * GET /api/backgrounds/rotate?screenId=X
- *
- * Returns the current rotating background for a screen, fetching a new one
- * from a randomly-picked configured source only when the configured
- * interval has elapsed.
- *
- * Response: { path: string, fresh: boolean } or { path: null }
- */
 export const GET = withDisplayAuth(async (request: NextRequest) => {
   const screenId = request.nextUrl.searchParams.get('screenId');
   if (!screenId) {
     return NextResponse.json({ error: 'screenId required' }, { status: 400 });
   }
 
-  // Read config to get this screen's rotation settings. Look across every
-  // display's owned `screens` AND the legacy global pool — in multi-display
-  // mode the screen we care about almost certainly lives under a
-  // `display.screens` array, not `config.screens`.
   const config = await readConfig();
   const screen = findScreenById(config, screenId);
   if (!screen) {
@@ -112,13 +85,11 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
   }
 
   const rotation = screen.backgroundRotation;
-  const eligible = isRotationActive(rotation) && rotation ? configuredSources(rotation) : [];
-  if (!rotation || !isRotationActive(rotation) || rotation.sources.length === 0 || eligible.length === 0) {
+  const eligible = rotation && isRotationActive(rotation) ? configuredSources(rotation) : [];
+  if (!rotation || eligible.length === 0) {
     return NextResponse.json({ path: screen.backgroundImage || null });
   }
 
-  // `?force=true` (the editor's Refresh button) bypasses the freshness check
-  // below entirely and always picks a new random source + photo.
   const force = request.nextUrl.searchParams.get('force') === 'true';
 
   const cache = await cacheStore.read();
@@ -135,17 +106,14 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     })
     : undefined;
   const icloudAlbum = rotation.sources.includes('icloud') ? (rotation.icloudAlbumUrl || '') : undefined;
+  const localFolder = rotation.sources.includes('local') ? (rotation.localFolder || '') : undefined;
+  const canvas = rotation.sources.includes('unsplash') ? JSON.stringify(canvasOf(config, screenId)) : undefined;
   const unsplashCollectionsKey = rotation.sources.includes('unsplash') && rotation.unsplashCollections?.length
     ? JSON.stringify(rotation.unsplashCollections)
     : undefined;
   const unsplashModeKey = rotation.sources.includes('unsplash') ? (rotation.unsplashMode || '') : undefined;
 
-  // Check if cached entry is still fresh. `sources` must match the whole
-  // configured set (not just the picked one) so adding or removing a source
-  // invalidates the cache even before the interval elapses — otherwise a
-  // screen that just gained a new source wouldn't draw from it until the
-  // next natural refresh, and one that lost a source could keep serving a
-  // photo from it forever if that photo happens to still be cached.
+  // A source/config change invalidates the cached result before its interval ends.
   if (
     !force &&
     entry &&
@@ -154,6 +122,8 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     entry.intervalMinutes === (rotation.intervalMinutes || 60) &&
     entry.immichFilters === immichFilters &&
     entry.icloudAlbum === icloudAlbum &&
+    entry.localFolder === localFolder &&
+    entry.canvas === canvas &&
     entry.unsplashCollections === unsplashCollectionsKey &&
     entry.unsplashMode === unsplashModeKey &&
     now - entry.fetchedAt < intervalMs
@@ -161,8 +131,6 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     return NextResponse.json({ path: entry.path, fresh: false });
   }
 
-  // Need to fetch a new background: pick one source uniformly at random from
-  // whichever of `rotation.sources` are actually configured.
   const pickedSource = eligible[Math.floor(Math.random() * eligible.length)];
 
   try {
@@ -172,21 +140,17 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
       const newEntry: RotationCacheEntry = {
         path: newPath,
         sources: currentSourcesKey,
-        pickedSource,
         query: rotation.query,
         fetchedAt: now,
         intervalMinutes: rotation.intervalMinutes || 60,
         immichFilters,
         icloudAlbum,
+        localFolder,
+        canvas,
         unsplashCollections: unsplashCollectionsKey,
         unsplashMode: unsplashModeKey,
       };
-      // Merge into whatever is on disk now, not into the snapshot read before
-      // the fetch above, so a rotation that finished for another screen while
-      // this one was waiting on the network keeps its entry.
       const merged = await cacheStore.updateAtomic((current) => ({ ...current, [screenId]: newEntry }));
-      // Prune against the merged view; pruning against the stale snapshot
-      // would delete files the other screen just claimed.
       await pruneRotationFiles(merged);
       return NextResponse.json({ path: newPath, fresh: true });
     }
@@ -194,5 +158,5 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     // Fall through to return cached/fallback
   }
 
-  return NextResponse.json({ path: entry?.path || screen.backgroundImage || null });
+  return NextResponse.json({ path: entry?.path || screen.backgroundImage || null, fresh: false });
 }, 'Failed to rotate background');

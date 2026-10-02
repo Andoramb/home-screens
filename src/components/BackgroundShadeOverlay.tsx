@@ -40,8 +40,6 @@ export default function BackgroundShadeOverlay({ shade }: { shade: BackgroundSha
   const style: CSSProperties = {
     position: 'absolute',
     inset: 0,
-    // Above the crossfade media (z-index 0/1) within the background layer.
-    // The parent layer isolates this index from the widgets' saved zIndexes.
     zIndex: 2,
     background: buildShadeBackground(shade),
     pointerEvents: 'none',

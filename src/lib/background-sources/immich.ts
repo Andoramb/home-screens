@@ -3,9 +3,7 @@ import { saveRotationFile, extFromContentType } from './save';
 import type { BackgroundRotation } from '@/types/config';
 import type { BackgroundSourceProvider } from './types';
 
-/** Random-search batch size when an exclude-person filter is configured: Immich's
- *  /api/search/random has no native exclude filter, so a larger batch is fetched
- *  and each candidate's tagged faces are checked client-side until one survives. */
+/** Immich has no native exclude-person filter; inspect a batch instead. */
 const EXCLUDE_BATCH_SIZE = 10;
 
 interface ImmichAssetDetail {
@@ -15,21 +13,14 @@ interface ImmichAssetDetail {
 /** True if any face tagged on the asset is in the exclude list. */
 async function assetHasExcludedPerson(assetId: string, excludeIds: string[]): Promise<boolean> {
   const res = await immichFetch(`/api/assets/${assetId}`);
-  if (!res.ok) return false;
+  if (!res.ok) return true;
   const detail = await res.json() as ImmichAssetDetail;
+  if (!Array.isArray(detail.people)) return true;
   const taggedIds = (detail.people ?? []).map((p) => p.id);
   return taggedIds.some((id) => excludeIds.includes(id));
 }
 
-/** Picks one entry at random from a multi-select list. Immich's
- *  /api/search/random ANDs every id in `albumIds`/`personIds` together (an
- *  asset must be in ALL listed albums, tagged with ALL listed people) —
- *  verified against a live instance: two disjoint albums returned zero
- *  results, two people returned only photos containing both. The picker's
- *  "Album"/"Person +" lists are meant as OR ("any of these"), matching how
- *  Unsplash's collections list already behaves, so each fetch narrows to one
- *  randomly-picked id from the list instead of sending the whole array —
- *  over repeated rotations this shuffles across every selected option. */
+/** Immich ANDs IDs; pick one to implement the UI's OR selection. */
 function pickOne<T>(list: T[] | undefined): T | undefined {
   if (!list?.length) return undefined;
   return list[Math.floor(Math.random() * list.length)];
@@ -57,10 +48,6 @@ async function fetchAndSaveImmichPhoto(rotation: BackgroundRotation): Promise<st
   const assets = await res.json();
   if (!Array.isArray(assets) || assets.length === 0) return null;
 
-  // No exclude filter: take the first candidate, same as before. With one,
-  // walk the batch and reject any candidate tagged with an excluded person —
-  // returning null (not throwing) lets the caller fall through to the
-  // cached/fallback background if every candidate in the batch is excluded.
   let assetId: string | null = null;
   if (excludeIds.length === 0) {
     assetId = assets[0].id as string;

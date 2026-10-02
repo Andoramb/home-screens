@@ -25,7 +25,7 @@ import { useCanvasBaseScale, CANVAS_TOOLBAR_RESERVE_PX } from '@/hooks/useCanvas
 import { useCanvasDragState } from '@/hooks/useCanvasDragState';
 import { useActiveBackground } from '@/hooks/useActiveBackground';
 import { resolveScreenBackground, isRotationActive } from '@/lib/screen-background';
-import CrossfadeBackground from '@/components/display/CrossfadeBackground';
+import BackgroundMediaLayer from '@/components/BackgroundMediaLayer';
 import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
 import { useTranslate, type TranslateFn } from '@/i18n';
 import type { ModuleInstance, BackgroundShade } from '@/types/config';
@@ -43,7 +43,6 @@ import { hasAnyCalendarSource } from '@/lib/calendar-sources';
 import CanvasToolbar from './CanvasToolbar';
 import StartFromTemplateButton from './StartFromTemplateButton';
 import { PageBackgroundProvider, usePageBackground } from '@/contexts/PageBackgroundContext';
-import BackgroundShadeOverlay from '@/components/BackgroundShadeOverlay';
 
 /**
  * What an empty screen shows inside the display frame. The first editor visit
@@ -594,19 +593,5 @@ function CanvasBackground({ screenBackground, canvas, shade }: {
   // The same canvas-sized copy the wall asks for, not the camera original:
   // the hub makes it once for both.
   const bg = displaySizedUrl(overrideBackground || screenBackground, canvas);
-  // A missing file falls back to the solid color, the same as on the wall;
-  // the screen settings panel is where the missing path is reported.
-  const [broken, setBroken] = useState<string | null>(null);
-  return (
-    <>
-      {/* Mirror the wall's isolated background stack: no widget can fall
-          underneath the shade, regardless of its saved zIndex. */}
-      <div data-testid="background-media-layer" style={{ position: 'absolute', inset: 0, zIndex: -1, isolation: 'isolate', pointerEvents: 'none' }}>
-        {bg && broken !== bg && (
-          <CrossfadeBackground src={bg} onError={() => setBroken(bg)} />
-        )}
-        <BackgroundShadeOverlay shade={shade} />
-      </div>
-    </>
-  );
+  return <BackgroundMediaLayer src={bg} shade={shade} />;
 }

@@ -1,11 +1,3 @@
-/**
- * Route-level tests for `/api/unsplash/collections/[id]` (the editor's
- * collections-mode validation proxy).
- *
- * Mocks `getUnsplashAccessKey` (the credential gate) and, via a partial
- * `api-utils` mock, `fetchWithTimeout` (the upstream call). Mirrors
- * `src/app/api/unsplash/__tests__/route.test.ts`'s mocking conventions.
- */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 

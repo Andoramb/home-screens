@@ -2476,8 +2476,8 @@
       "favoritesOnly": "Nur Favoriten",
       "noAlbums": "Keine Alben gefunden.",
       "noPeople": "Keine Personen gefunden.",
-      "personPlusLabel": "Person +",
-      "personMinusLabel": "Person -",
+      "personPlusLabel": "Personen einschließen",
+      "personMinusLabel": "Personen ausschließen",
       "personPlusHint": "Trifft Medien mit einer beliebigen ausgewählten Person.",
       "personMinusHint": "Schließt Medien mit einer beliebigen ausgewählten Person aus."
     },

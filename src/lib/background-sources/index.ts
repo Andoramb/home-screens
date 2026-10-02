@@ -12,6 +12,7 @@ import { icloudSourceProvider } from './icloud';
 import { localSourceProvider } from './local';
 import type { BackgroundSourceProvider } from './types';
 import type { BackgroundRotation, BackgroundRotationSourceId } from '@/types/config';
+import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
 
 export const backgroundSourceProviders: Record<BackgroundRotationSourceId, BackgroundSourceProvider> = {
   unsplash: unsplashSourceProvider,
@@ -23,10 +24,7 @@ export const backgroundSourceProviders: Record<BackgroundRotationSourceId, Backg
 
 export function isSourceConfigured(source: BackgroundRotationSourceId, rotation: BackgroundRotation): boolean {
   if (source === 'unsplash') {
-    const usingCollections = rotation.unsplashMode
-      ? rotation.unsplashMode === 'collections'
-      : !!rotation.unsplashCollections?.length;
-    return usingCollections ? !!rotation.unsplashCollections?.length : !!rotation.query;
+    return isUnsplashCollectionsMode(rotation) ? !!rotation.unsplashCollections?.length : !!rotation.query;
   }
-  return true;
+  return source in backgroundSourceProviders;
 }
