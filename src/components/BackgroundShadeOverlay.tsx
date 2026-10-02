@@ -40,6 +40,10 @@ export default function BackgroundShadeOverlay({ shade }: { shade: BackgroundSha
   const style: CSSProperties = {
     position: 'absolute',
     inset: 0,
+    // CrossfadeBackground assigns z-index: 1 to its active image/video.
+    // Without a higher explicit layer this overlay paints *behind* it,
+    // regardless of the overlay appearing later in DOM order.
+    zIndex: 2,
     background: buildShadeBackground(shade),
     pointerEvents: 'none',
   };
