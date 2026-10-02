@@ -482,6 +482,45 @@ export default function BackgroundPicker() {
 
   return (
     <AccordionSection title={t('backgroundPicker.title')}>
+      <PropertyGroup title={t('backgroundPicker.shadeGroup')} accent={1}>
+        <Toggle
+          label={t('backgroundPicker.shadeEnable')}
+          checked={shadeEnabled}
+          onChange={setShadeEnabled}
+        />
+        {shadeEnabled && shade && (
+          <div className="space-y-2 mt-2">
+            <label className="block">
+              <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.shadeStyleLabel')}</span>
+              <select
+                value={shade.style}
+                onChange={(e) => updateShade({ style: e.target.value as BackgroundShade['style'] })}
+                className={rotationFieldClass}
+              >
+                <option value="even">{t('backgroundPicker.shadeStyles.even')}</option>
+                <option value="topBottom">{t('backgroundPicker.shadeStyles.topBottom')}</option>
+                <option value="edges">{t('backgroundPicker.shadeStyles.edges')}</option>
+                <option value="both">{t('backgroundPicker.shadeStyles.both')}</option>
+              </select>
+            </label>
+            <Slider
+              label={t('backgroundPicker.shadeStrengthLabel')}
+              value={shade.strength}
+              min={0}
+              max={100}
+              step={5}
+              displayValue={`${shade.strength}%`}
+              onChange={(value) => updateShade({ strength: value })}
+            />
+            <ColorPicker
+              label={t('backgroundPicker.shadeColorLabel')}
+              value={shade.color}
+              onChange={(value) => updateShade({ color: value })}
+            />
+          </div>
+        )}
+      </PropertyGroup>
+
       <PropertyGroup
         title={t('backgroundPicker.sourcesGroup')}
         accent={2}
@@ -661,45 +700,6 @@ export default function BackgroundPicker() {
                   </select>
                 </label>
               </div>
-      </PropertyGroup>
-
-      <PropertyGroup title={t('backgroundPicker.shadeGroup')} accent={1}>
-        <Toggle
-          label={t('backgroundPicker.shadeEnable')}
-          checked={shadeEnabled}
-          onChange={setShadeEnabled}
-        />
-        {shadeEnabled && shade && (
-          <div className="space-y-2 mt-2">
-            <label className="block">
-              <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.shadeStyleLabel')}</span>
-              <select
-                value={shade.style}
-                onChange={(e) => updateShade({ style: e.target.value as BackgroundShade['style'] })}
-                className={rotationFieldClass}
-              >
-                <option value="even">{t('backgroundPicker.shadeStyles.even')}</option>
-                <option value="topBottom">{t('backgroundPicker.shadeStyles.topBottom')}</option>
-                <option value="edges">{t('backgroundPicker.shadeStyles.edges')}</option>
-                <option value="both">{t('backgroundPicker.shadeStyles.both')}</option>
-              </select>
-            </label>
-            <Slider
-              label={t('backgroundPicker.shadeStrengthLabel')}
-              value={shade.strength}
-              min={0}
-              max={100}
-              step={5}
-              displayValue={`${shade.strength}%`}
-              onChange={(value) => updateShade({ strength: value })}
-            />
-            <ColorPicker
-              label={t('backgroundPicker.shadeColorLabel')}
-              value={shade.color}
-              onChange={(value) => updateShade({ color: value })}
-            />
-          </div>
-        )}
       </PropertyGroup>
 
       {missingPath && (
