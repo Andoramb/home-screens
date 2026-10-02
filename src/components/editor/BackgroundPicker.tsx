@@ -84,40 +84,34 @@ function ImmichRotationFields({ rotation, onChange }: {
 
   return (
     <>
-      <label className="block">
-        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.albumLabel')}</span>
-        <div className="mt-0.5">
-          <CheckboxOptionList
-            options={albums.map((a) => ({ id: a.id, label: t('backgroundPicker.immich.albumOption', { name: a.name, count: a.assetCount }) }))}
-            selected={albumIds}
-            onToggle={(id, checked) => toggleIn('immichAlbumIds', albumIds, id, checked)}
-            emptyLabel={t('backgroundPicker.immich.noAlbums')}
-          />
-        </div>
-        <span className="block mt-1 text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.anyAlbum')}</span>
-      </label>
-      <label className="block">
-        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personPlusLabel')}</span>
-        <div className="mt-0.5">
-          <CheckboxOptionList
-            options={personOptions}
-            selected={personIds}
-            onToggle={(id, checked) => toggleIn('immichPersonIds', personIds, id, checked)}
-            emptyLabel={t('backgroundPicker.immich.noPeople')}
-          />
-        </div>
-      </label>
-      <label className="block">
-        <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.personMinusLabel')}</span>
-        <div className="mt-0.5">
-          <CheckboxOptionList
-            options={personOptions}
-            selected={personIdsExclude}
-            onToggle={(id, checked) => toggleIn('immichPersonIdsExclude', personIdsExclude, id, checked)}
-            emptyLabel={t('backgroundPicker.immich.noPeople')}
-          />
-        </div>
-      </label>
+      {/* Collapsed by default — a scrollable checkbox list open for all three
+          pickers at once bloats the panel. The selected-count badge keeps the
+          current filter visible without opening the list. */}
+      <AccordionSection title={t('backgroundPicker.immich.albumLabel')} defaultOpen={false} badge={albumIds.length || undefined}>
+        <CheckboxOptionList
+          options={albums.map((a) => ({ id: a.id, label: t('backgroundPicker.immich.albumOption', { name: a.name, count: a.assetCount }) }))}
+          selected={albumIds}
+          onToggle={(id, checked) => toggleIn('immichAlbumIds', albumIds, id, checked)}
+          emptyLabel={t('backgroundPicker.immich.noAlbums')}
+        />
+        <span className="block text-[10px] text-hs-text-faint">{t('backgroundPicker.immich.anyAlbum')}</span>
+      </AccordionSection>
+      <AccordionSection title={t('backgroundPicker.immich.personPlusLabel')} defaultOpen={false} badge={personIds.length || undefined}>
+        <CheckboxOptionList
+          options={personOptions}
+          selected={personIds}
+          onToggle={(id, checked) => toggleIn('immichPersonIds', personIds, id, checked)}
+          emptyLabel={t('backgroundPicker.immich.noPeople')}
+        />
+      </AccordionSection>
+      <AccordionSection title={t('backgroundPicker.immich.personMinusLabel')} defaultOpen={false} badge={personIdsExclude.length || undefined}>
+        <CheckboxOptionList
+          options={personOptions}
+          selected={personIdsExclude}
+          onToggle={(id, checked) => toggleIn('immichPersonIdsExclude', personIdsExclude, id, checked)}
+          emptyLabel={t('backgroundPicker.immich.noPeople')}
+        />
+      </AccordionSection>
       <label className="flex items-center gap-2 cursor-pointer">
         <input
           type="checkbox"

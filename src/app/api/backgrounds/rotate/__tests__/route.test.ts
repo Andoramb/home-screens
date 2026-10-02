@@ -240,7 +240,13 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
     expect(fsMock.writeFile).not.toHaveBeenCalled();
   });
 
-  it('requests multiple albums and multiple include-people in one search', async () => {
+  it('narrows to one randomly-picked album and one person from a multi-select list, not all of them', async () => {
+    // Immich's /api/search/random ANDs every id in albumIds/personIds together
+    // (asset must be in every listed album, tagged with every listed person),
+    // but the picker's lists mean "any of these" — so the provider sends a
+    // single randomly-chosen id per list, not the whole array. Math.random
+    // pinned to 0 picks the first entry in each list deterministically.
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
     mockFindScreen.mockReturnValue(screen({
       backgroundRotation: {
         enabled: true,
@@ -257,8 +263,9 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
     await GET(rotateReq());
 
     const body = JSON.parse(String(mockImmichFetch.mock.calls[0][1]?.body));
-    expect(body.albumIds).toEqual(['album-1', 'album-2']);
-    expect(body.personIds).toEqual(['person-1', 'person-2']);
+    expect(body.albumIds).toEqual(['album-1']);
+    expect(body.personIds).toEqual(['person-1']);
+    randomSpy.mockRestore();
   });
 
   it('excludes a candidate tagged with a person on the exclude list, picking the next one in the batch', async () => {
