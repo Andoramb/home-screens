@@ -2472,6 +2472,8 @@
     "title": "Background",
     "statusGroup": "Status",
     "autoRotate": "Auto-rotate",
+    "sourcesGroup": "Sources",
+    "refreshNow": "Refresh now",
     "shadeGroup": "Shade",
     "shadeEnable": "Shade background",
     "shadeStyleLabel": "Style",
@@ -2518,7 +2520,11 @@
       "albumOption": "{name} ({count})",
       "personLabel": "Person",
       "anyone": "Anyone",
-      "favoritesOnly": "Favorites only"
+      "favoritesOnly": "Favorites only",
+      "noAlbums": "No albums found.",
+      "noPeople": "No people found.",
+      "personPlusLabel": "Person must include",
+      "personMinusLabel": "Person must exclude"
     },
     "icloud": {
       "albumLabel": "Album link",
