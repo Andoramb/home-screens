@@ -22,15 +22,10 @@ export function useActiveBackground(screenId: string | undefined, rotationEnable
   const record = (id: string, answer: string | null) =>
     setAnswers((prev) => (prev[id] === answer ? prev : { ...prev, [id]: answer }));
 
-  // The editor's Refresh button (BackgroundPicker) force-fetches a new photo
-  // directly against the rotate endpoint and publishes the result here, so
-  // this hook's answer updates immediately instead of waiting up to 30s for
-  // its next poll tick.
   useEffect(() => {
     return eventBus.subscribe('background.forceRefresh', (data) => {
       if (data.screenId === screenId) record(data.screenId, data.path);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `record` is stable per render via setAnswers identity; only screenId should re-subscribe
   }, [screenId]);
 
   usePolledFetch(

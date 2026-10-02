@@ -8,15 +8,7 @@ import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
  */
 export type RotationAnswer = string | null | undefined;
 
-/**
- * Whether rotation is effectively on for a screen: at least one source is
- * checked. `sources.length > 0` is authoritative — the legacy `enabled` flag
- * is no longer read here. Migration v14→v15 already folds every saved
- * screen's rotation source(s) into `sources`, so a config with rotation
- * configured always has a populated `sources` array by the time this runs;
- * `enabled` surviving on the type is only for configs an older editor build
- * still writes it onto.
- */
+/** A selected source activates rotation; the legacy `enabled` flag does not. */
 export function isRotationActive(rotation: Screen['backgroundRotation'] | undefined): boolean {
   return (rotation?.sources?.length ?? 0) > 0;
 }

@@ -9,13 +9,6 @@ export const dynamic = 'force-dynamic';
 
 type RouteContext = { params: Promise<{ id: string }> };
 
-/**
- * GET /api/unsplash/collections/[id]
- *
- * Validates an Unsplash collection ID for the editor's collections-mode
- * rotation picker: resolves its title, photo count, and cover thumbnail so
- * the user can confirm they pasted the right ID/URL before saving it.
- */
 export const GET = withAuth<RouteContext>(async (_request, ctx) => {
   const accessKey = await getUnsplashAccessKey();
   if (!accessKey) {

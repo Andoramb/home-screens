@@ -1021,6 +1021,7 @@ describe('migration v17: backgroundRotation.source (singular) folded into source
       query: '',
       intervalMinutes: 45,
       immichAlbumId: 'album-1',
+      immichPersonId: 'person-1',
       immichFavoritesOnly: true,
     } as never;
     const before = structuredClone(config);
@@ -1032,7 +1033,8 @@ describe('migration v17: backgroundRotation.source (singular) folded into source
       enabled: true,
       query: '',
       intervalMinutes: 45,
-      immichAlbumId: 'album-1',
+      immichAlbumIds: ['album-1'],
+      immichPersonIds: ['person-1'],
       immichFavoritesOnly: true,
       sources: ['immich'],
     });
@@ -1040,7 +1042,7 @@ describe('migration v17: backgroundRotation.source (singular) folded into source
     expect(config).toEqual(before);
   });
 
-  it('leaves a screen with no rotation, or rotation not enabled, unchanged beyond the version bump', () => {
+  it('keeps disabled legacy rotations disabled with a normalized empty source list', () => {
     const config = makeConfig(16);
     config.screens.push({
       id: 'disabled',
@@ -1054,8 +1056,27 @@ describe('migration v17: backgroundRotation.source (singular) folded into source
 
     expect(migrated.version).toBe(17);
     expect(migrated.screens[0].backgroundRotation).toBeUndefined();
-    // Not enabled → left exactly as-is, including the old singular field.
-    expect(migrated.screens[1].backgroundRotation).toEqual({ enabled: false, source: 'unsplash', query: 'x', intervalMinutes: 60 });
+    expect(migrated.screens[1].backgroundRotation).toEqual({ enabled: false, sources: [], query: 'x', intervalMinutes: 60 });
+  });
+
+  it('migrates display-owned Immich filters and allows a disabled rotation to be enabled later', () => {
+    const config = makeConfig(16);
+    config.displays = [{
+      id: 'kitchen', name: 'Kitchen', screens: [{
+        id: 'owned', name: 'Owned', backgroundImage: '', modules: [],
+        backgroundRotation: {
+          enabled: false, source: 'immich', query: '', intervalMinutes: 60,
+          immichPersonId: 'person-2',
+        } as never,
+      }],
+    }] as ScreenConfiguration['displays'];
+
+    const { config: migrated } = migrateUp(config, 17);
+    expect(migrated.displays?.[0].screens[0].backgroundRotation).toEqual({
+      enabled: false, sources: [], query: '', intervalMinutes: 60,
+      immichPersonIds: ['person-2'],
+    });
+    expect(config.displays?.[0].screens[0].backgroundRotation).toHaveProperty('source', 'immich');
   });
 
   it('leaves an already-migrated sources array untouched', () => {

@@ -344,35 +344,15 @@ export interface ModuleInstance {
 export type BackgroundRotationSourceId = 'unsplash' | 'nasa-apod' | 'immich' | 'icloud' | 'local';
 
 export interface BackgroundRotation {
-  /**
-   * Legacy "turn rotation on" toggle.
-   *
-   * No longer written by the editor, and no longer read anywhere either —
-   * whether rotation is active is derived from `sources.length > 0` (see
-   * `isRotationActive` in `lib/screen-background.ts`). Kept optional on the
-   * type, rather than removed, purely so an existing saved config with this
-   * field still present round-trips through read/write without dropping it.
-   */
+  /** Legacy toggle, retained for config round-tripping. Rotation uses `sources`. */
   enabled?: boolean;
-  /**
-   * Every source currently drawn from. Rotation picks uniformly at random
-   * among these each interval. Empty/undefined falls back to whatever the
-   * editor's default-source resolution seeds on first enable (see
-   * `setRotationEnabled` in BackgroundPicker.tsx).
-   */
+  /** Selected sources; an empty list disables rotation. */
   sources: BackgroundRotationSourceId[];
   /** Unsplash search words; other sources ignore it */
   query: string;
-  /** Unsplash collection IDs to rotate photos from (e.g. "I6rVqHIQXO0" from unsplash.com/collections/I6rVqHIQXO0/october). Kept around even while `unsplashMode` is `'query'` so switching back doesn't lose it. */
+  /** Unsplash collection IDs; retained when switching to query mode. */
   unsplashCollections?: string[];
-  /**
-   * Which of `query`/`unsplashCollections` the Unsplash source actually draws
-   * from. Explicit rather than inferred from which field is non-empty, so the
-   * editor's query/collections toggle can switch the active one without
-   * discarding whatever was typed into the other. Undefined (older configs
-   * saved before this field existed) falls back to inferring from
-   * `unsplashCollections` being non-empty.
-   */
+  /** Active Unsplash mode. Legacy configs infer this from non-empty collections. */
   unsplashMode?: 'query' | 'collections';
   /** Minutes between images */
   intervalMinutes: number;
@@ -380,12 +360,7 @@ export interface BackgroundRotation {
   immichAlbumIds?: string[];
   /** Immich people who must appear in the photo (at least one). Empty/undefined = anyone. */
   immichPersonIds?: string[];
-  /**
-   * Immich people who must NOT appear in the photo. Immich's random-asset
-   * search has no native exclude-person filter, so this is enforced
-   * client-side in `background-sources/immich.ts`: a larger batch is
-   * fetched and each candidate's tagged faces are checked against this list.
-   */
+  /** Immich people to exclude from candidate photos. */
   immichPersonIdsExclude?: string[];
   /** Only use Immich favorites */
   immichFavoritesOnly?: boolean;
