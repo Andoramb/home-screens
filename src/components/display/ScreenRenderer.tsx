@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useEffect, useRef, useState } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import type { Screen, ModuleInstance } from '@/types/config';
 import { getModuleComponent } from '@/lib/module-components';
 import ModuleErrorBoundary from '@/components/ModuleErrorBoundary';
@@ -44,6 +44,7 @@ import { resolveModuleStyle } from '@/lib/module-style';
 import BackgroundShadeOverlay from '@/components/BackgroundShadeOverlay';
 import { screenBackgroundSrc, type RotationAnswer } from '@/lib/screen-background';
 import { displaySizedUrl } from '@/lib/media-paths';
+import CrossfadeBackground from './CrossfadeBackground';
 
 interface ScreenRendererProps {
   screen: Screen;
@@ -125,23 +126,10 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
   // (plain <img> tags don't carry Authorization headers)
   const backgroundImage = useAuthImage(rawBackground || undefined) || '';
   // A background file that is gone from the hub must not leave Chromium's
-  // broken-image glyph in the corner of the wall: the img hides itself and
-  // the solid background shows. Keyed by source so a new path gets its try.
+  // broken-image glyph in the corner of the wall: it hides itself and the
+  // solid background shows. Keyed by source so a new path gets its try.
   const [failedBackground, setFailedBackground] = useState<string | null>(null);
   const showBackgroundImage = !!backgroundImage && failedBackground !== backgroundImage;
-  // The display route is server-rendered, so the img is in the HTML before
-  // React hydrates and a 404 can fire its error before onError is attached.
-  // After mount, an img that is complete with no pixels is probed again with
-  // a listener in place; a real failure re-fires from the browser cache.
-  const backgroundImgRef = useRef<HTMLImageElement>(null);
-  useEffect(() => {
-    const img = backgroundImgRef.current;
-    if (!img || !img.complete || img.naturalWidth > 0) return;
-    const probe = new Image();
-    probe.onerror = () => setFailedBackground(backgroundImage);
-    probe.src = backgroundImage;
-    return () => { probe.onerror = null; };
-  }, [backgroundImage]);
 
   // `renderDisplayId` is the authoritative render-as id: the URL alone is
   // unreliable, because the legacy /display route renders a multi-display main
@@ -172,20 +160,7 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
       }}
     >
       {showBackgroundImage && (
-        <img
-          ref={backgroundImgRef}
-          src={backgroundImage}
-          alt=""
-          onError={() => setFailedBackground(backgroundImage)}
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transition: 'opacity 1s ease-in-out',
-          }}
-        />
+        <CrossfadeBackground src={backgroundImage} onError={() => setFailedBackground(backgroundImage)} />
       )}
 
       <BackgroundShadeOverlay shade={screen.shade} />
