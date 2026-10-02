@@ -36,7 +36,6 @@ export const isModuleRenderable = (
   evaluateVisibility(mod.visibility, states, now);
 import PluginPlaceholder from '@/components/modules/PluginPlaceholder';
 import { PageBackgroundProvider, usePageBackground } from '@/contexts/PageBackgroundContext';
-import { useAuthImage } from './useAuthImage';
 import { eventBus } from '@/lib/event-bus';
 import { getLocation } from '@/lib/location';
 import { getModuleDefinition } from '@/lib/module-registry';
@@ -121,9 +120,6 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
   const rawBackground = overrideBackground
     ? displaySizedUrl(overrideBackground, canvas)
     : screenBackgroundSrc(screen, rotatingBackground, canvas);
-  // Fetch API-served images through displayFetch so the Bearer token is used
-  // (plain <img> tags don't carry Authorization headers)
-  const backgroundImage = useAuthImage(rawBackground || undefined) || '';
 
   // `renderDisplayId` is the authoritative render-as id: the URL alone is
   // unreliable, because the legacy /display route renders a multi-display main
@@ -153,7 +149,7 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
         isolation: 'isolate',
       }}
     >
-      <BackgroundMediaLayer src={backgroundImage} shade={screen.shade} />
+      <BackgroundMediaLayer src={rawBackground} shade={screen.shade} authenticate />
 
       {visibleModules.map((mod) => {
         const Component = getModuleComponent(mod.type);
