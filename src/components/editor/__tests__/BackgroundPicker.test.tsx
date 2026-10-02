@@ -193,3 +193,23 @@ describe('BackgroundPicker — Unsplash query/collections toggle', () => {
     expect(queryInput()?.value).toBe('space');
   });
 });
+
+describe('BackgroundPicker — shade color semantics', () => {
+  it('color swatch writes an opaque shade color so visibility is controlled by strength, not embedded alpha', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    useEditorStore.getState().updateScreenShade('screen-1', {
+      enabled: true,
+      style: 'topBottom',
+      strength: 60,
+      color: 'rgba(26, 26, 26, 0)',
+    } as never);
+
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    const colorInputs = Array.from(container.querySelectorAll('input[type="color"]')) as HTMLInputElement[];
+    const shadeColor = colorInputs[colorInputs.length - 1];
+    fireEvent.change(shadeColor, { target: { value: '#112233' } });
+
+    expect(useEditorStore.getState().config?.screens[0].shade?.color).toBe('#112233');
+  });
+});
