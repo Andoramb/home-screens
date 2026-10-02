@@ -14,6 +14,10 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
+function finishLoadFrame() {
+  act(() => { vi.advanceTimersByTime(35); });
+}
+
 describe('CrossfadeBackground', () => {
   it('renders a single image layer for the initial src', () => {
     const { container } = render(<CrossfadeBackground src="/a.jpg" />);
@@ -33,6 +37,7 @@ describe('CrossfadeBackground', () => {
 
     // The new layer finishes loading and starts its fade.
     act(() => { fireEvent.load(imgs[1]); });
+    finishLoadFrame();
 
     // After the fade completes, only the new layer remains.
     act(() => { vi.advanceTimersByTime(CROSSFADE_MS); });
@@ -70,6 +75,7 @@ describe('CrossfadeBackground', () => {
       expect(images[1].getAttribute('src')).toBe('blob:background-2');
       expect(images[1].style.opacity).toBe('0');
       fireEvent.load(images[1]);
+      finishLoadFrame();
       expect(images[1].style.opacity).toBe('1');
       act(() => { vi.advanceTimersByTime(CROSSFADE_MS - 1); });
       expect(container.querySelectorAll('img')).toHaveLength(2);

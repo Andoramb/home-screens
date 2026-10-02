@@ -42,8 +42,11 @@ export default function CrossfadeBackground({ src, alt = '', authenticate = fals
     return () => clearTimeout(id);
   }, [layers, loadedKeys]);
 
-  const markLoaded = useCallback((key: number) =>
-    setLoadedKeys((prev) => (prev.has(key) ? prev : new Set(prev).add(key))), []);
+  const markLoaded = useCallback((key: number) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      setLoadedKeys((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
+    }));
+  }, []);
   const markFailed = useCallback((key: number) =>
     setLayers((prev) => prev.filter((layer) => layer.key !== key)), []);
 
