@@ -62,6 +62,16 @@ afterEach(() => {
 });
 
 describe('BackgroundPicker — sources group always visible (item 1/2)', () => {
+  it('shows Shade before Sources because it applies to every background, not one source', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    const text = container.textContent ?? '';
+    expect(text.indexOf(enUSEditor.backgroundPicker.shadeGroup)).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf(enUSEditor.backgroundPicker.sourcesGroup)).toBeGreaterThanOrEqual(0);
+    expect(text.indexOf(enUSEditor.backgroundPicker.shadeGroup)).toBeLessThan(text.indexOf(enUSEditor.backgroundPicker.sourcesGroup));
+  });
+
   it('shows the Sources group and every source checkbox even with zero sources checked', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
     const { container, getByText } = render(<BackgroundPicker />, { wrapper: Wrapper });
