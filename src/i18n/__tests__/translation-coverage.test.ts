@@ -43,6 +43,7 @@ const SHARED_UNTRANSLATABLE: ReadonlySet<string> = new Set([
   'editor|backgroundPicker.immich.albumOption',
   'editor|backgroundPicker.immich.personLabel',
   'editor|backgroundPicker.statusGroup',
+  'editor|backgroundPicker.sourcesGroup',
   'editor|backgroundPicker.tabs.nasa',
   // "Beta" is the same software term in every shipped language; the update
   // choice's other labels are translated words.
