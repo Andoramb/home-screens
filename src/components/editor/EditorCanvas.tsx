@@ -599,10 +599,14 @@ function CanvasBackground({ screenBackground, canvas, shade }: {
   const [broken, setBroken] = useState<string | null>(null);
   return (
     <>
-      {bg && broken !== bg && (
-        <CrossfadeBackground src={bg} onError={() => setBroken(bg)} />
-      )}
-      <BackgroundShadeOverlay shade={shade} />
+      {/* Mirror the wall's isolated background stack: no widget can fall
+          underneath the shade, regardless of its saved zIndex. */}
+      <div data-testid="background-media-layer" style={{ position: 'absolute', inset: 0, zIndex: -1, isolation: 'isolate', pointerEvents: 'none' }}>
+        {bg && broken !== bg && (
+          <CrossfadeBackground src={bg} onError={() => setBroken(bg)} />
+        )}
+        <BackgroundShadeOverlay shade={shade} />
+      </div>
     </>
   );
 }

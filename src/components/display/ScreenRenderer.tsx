@@ -159,11 +159,15 @@ function ScreenRendererInner({ screen, settings, rotatingBackground, sharedData,
         isolation: 'isolate',
       }}
     >
-      {showBackgroundImage && (
-        <CrossfadeBackground src={backgroundImage} onError={() => setFailedBackground(backgroundImage)} />
-      )}
-
-      <BackgroundShadeOverlay shade={screen.shade} />
+      {/* Isolate the media and shade beneath *all* widgets, including widgets
+          whose saved zIndex is 0 or negative. The media's crossfade and shade
+          keep their own local stacking order inside this layer. */}
+      <div data-testid="background-media-layer" style={{ position: 'absolute', inset: 0, zIndex: -1, isolation: 'isolate', pointerEvents: 'none' }}>
+        {showBackgroundImage && (
+          <CrossfadeBackground src={backgroundImage} onError={() => setFailedBackground(backgroundImage)} />
+        )}
+        <BackgroundShadeOverlay shade={screen.shade} />
+      </div>
 
       {visibleModules.map((mod) => {
         const Component = getModuleComponent(mod.type);
