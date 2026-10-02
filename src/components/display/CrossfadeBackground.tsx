@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useAuthImageState } from './useAuthImage';
 
 export const CROSSFADE_MS = 500;
 
@@ -14,10 +15,11 @@ interface Layer {
 export interface CrossfadeBackgroundProps {
   src?: string;
   alt?: string;
+  authenticate?: boolean;
 }
 
 /** Retains the previous media until its replacement loads and fades in. */
-export default function CrossfadeBackground({ src, alt = '' }: CrossfadeBackgroundProps) {
+export default function CrossfadeBackground({ src, alt = '', authenticate = false }: CrossfadeBackgroundProps) {
   const [layers, setLayers] = useState<Layer[]>(() => (src ? [{ key: 0, src }] : []));
   const [loadedKeys, setLoadedKeys] = useState<ReadonlySet<number>>(new Set());
   const nextKey = useRef(1);
@@ -40,49 +42,58 @@ export default function CrossfadeBackground({ src, alt = '' }: CrossfadeBackgrou
     return () => clearTimeout(id);
   }, [layers, loadedKeys]);
 
-  const markLoaded = (key: number) =>
-    setLoadedKeys((prev) => (prev.has(key) ? prev : new Set(prev).add(key)));
-  const markFailed = (key: number) =>
-    setLayers((prev) => prev.filter((layer) => layer.key !== key));
+  const markLoaded = useCallback((key: number) =>
+    setLoadedKeys((prev) => (prev.has(key) ? prev : new Set(prev).add(key))), []);
+  const markFailed = useCallback((key: number) =>
+    setLayers((prev) => prev.filter((layer) => layer.key !== key)), []);
 
   return (
     <>
-      {layers.map((layer, i) => {
-        const isTop = i === layers.length - 1;
-        const loaded = loadedKeys.has(layer.key);
-        const style: CSSProperties = {
-          position: 'absolute',
-          inset: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          opacity: isTop ? (loaded ? 1 : 0) : 1,
-          transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
-          zIndex: isTop ? 1 : 0,
-        };
-        return VIDEO_EXT_RE.test(layer.src) ? (
-          <video
-            key={layer.key}
-            src={layer.src}
-            autoPlay
-            muted
-            loop
-            playsInline
-            onLoadedData={() => markLoaded(layer.key)}
-            onError={() => markFailed(layer.key)}
-            style={style}
-          />
-        ) : (
-          <img
-            key={layer.key}
-            src={layer.src}
-            alt={alt}
-            onLoad={() => markLoaded(layer.key)}
-            onError={() => markFailed(layer.key)}
-            style={style}
-          />
-        );
-      })}
+      {layers.map((layer, i) => (
+        <MediaLayer
+          key={layer.key}
+          layer={layer}
+          isTop={i === layers.length - 1}
+          loaded={loadedKeys.has(layer.key)}
+          alt={alt}
+          authenticate={authenticate}
+          onLoaded={markLoaded}
+          onFailed={markFailed}
+        />
+      ))}
     </>
+  );
+}
+
+function MediaLayer({ layer, isTop, loaded, alt, authenticate, onLoaded, onFailed }: {
+  layer: Layer;
+  isTop: boolean;
+  loaded: boolean;
+  alt: string;
+  authenticate: boolean;
+  onLoaded: (key: number) => void;
+  onFailed: (key: number) => void;
+}) {
+  const isVideo = VIDEO_EXT_RE.test(layer.src);
+  const auth = useAuthImageState(authenticate && !isVideo ? layer.src : undefined, { holdPrevious: false });
+  const src = authenticate && !isVideo ? auth.url : layer.src;
+  useEffect(() => {
+    if (authenticate && !isVideo && auth.status === 'failed') onFailed(layer.key);
+  }, [authenticate, isVideo, auth.status, layer.key, onFailed]);
+  const style: CSSProperties = {
+    position: 'absolute',
+    inset: 0,
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    opacity: isTop ? (loaded ? 1 : 0) : 1,
+    transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+    zIndex: isTop ? 1 : 0,
+  };
+  if (!src) return null;
+  return isVideo ? (
+    <video src={src} autoPlay muted loop playsInline onLoadedData={() => onLoaded(layer.key)} onError={() => onFailed(layer.key)} style={style} />
+  ) : (
+    <img src={src} alt={alt} onLoad={() => onLoaded(layer.key)} onError={() => onFailed(layer.key)} style={style} />
   );
 }
