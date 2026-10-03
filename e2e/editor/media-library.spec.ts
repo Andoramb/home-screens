@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext } from '@playwright/test';
-import { putConfig } from '../helpers/api';
+import { getConfig, putConfig } from '../helpers/api';
+import { autosaved } from '../helpers/editor';
 import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
 import { mp4WithVideo } from '../helpers/video-samples';
@@ -374,35 +375,26 @@ test.describe('background picker', () => {
     await expect(page.getByTestId('editor-canvas')).toBeVisible();
     // Empty state = screen selected, no module: the picker lives there.
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
-    await expect(page.getByTestId('background-tab-local')).toBeVisible();
+    await page.getByRole('button', { name: 'Choose background image' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
 
-    // Upload stays: push one picture through the picker's own input.
-    const upload = page.getByRole('button', { name: 'Upload Background' });
-    await expect(upload).toBeVisible();
-    await page.locator('[data-file-input]').setInputFiles({
+    // Upload still works in the new library picker. The picker does not
+    // auto-select on upload: select the new thumbnail, then confirm.
+    await dialog.locator('input[type="file"]').setInputFiles({
       name: 'e2e-picker.png',
       mimeType: 'image/png',
       buffer: PNG_1X1,
     });
-
-    // The "Your own pictures" grid (the picker's upload also picks the
-    // background, so the canvas preview carries the same img, hence the scope).
-    const grid = page.getByText('Your own pictures', { exact: true }).locator('xpath=following-sibling::div[1]');
-    const row = grid.locator('img[src*="/api/backgrounds/serve?file=e2e-picker.png"]').locator('xpath=../..');
-    await expect(row).toBeVisible();
-    // The row is just its pick tile (img -> pick button -> row): before the
-    // removal each row carried a second, hover-revealed delete button.
-    await expect(row.locator('button')).toHaveCount(1);
-
-    // Every library row is just its pick tile, and no control anywhere on
-    // the picker answers to the removed "Delete" title.
-    const rows = grid.locator(':scope > div');
-    const rowCount = await rows.count();
-    expect(rowCount).toBeGreaterThan(0);
-    for (let i = 0; i < rowCount; i++) {
-      await expect(rows.nth(i).locator('button')).toHaveCount(1);
-    }
-    await expect(page.locator('button[title="Delete"]')).toHaveCount(0);
+    const tile = dialog.locator('button:has(img[src*="e2e-picker.png"])');
+    await expect(tile).toBeVisible();
+    await expect(tile.locator('button')).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Delete', exact: true })).toHaveCount(0);
+    await autosaved(page, async () => {
+      await tile.click();
+      await dialog.getByRole('button', { name: 'Select Image' }).click();
+    });
+    expect((await getConfig(request)).screens[0].backgroundImage).toContain('e2e-picker.png');
 
     await putConfig(request, baseConfig());
     await request.delete('/api/backgrounds', { data: { file: 'e2e-picker.png' } });

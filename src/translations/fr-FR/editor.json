@@ -2434,11 +2434,8 @@
       "useSolid": "Garder la couleur unie"
     },
     "title": "Arrière-plan",
-    "statusGroup": "État",
-    "autoRotate": "Rotation auto",
     "sourcesGroup": "Sources",
     "refreshNow": "Actualiser maintenant",
-    "sourceLabel": "Source",
     "searchQueryLabel": "Requête de recherche",
     "searchQueryPlaceholder": "paysage nature",
     "rotateEveryLabel": "Tourner toutes les",
@@ -2457,10 +2454,6 @@
       "photoCountOne": "{count} photo",
       "photoCountOther": "{count} photos",
       "noPhotosInFolder": "Aucune photo dans ce dossier pour le moment."
-    },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Arrière-plans"
     },
     "intervals": {
       "minutes": "{count} minutes",
@@ -2495,8 +2488,6 @@
       "collectionNotFound": "Collection introuvable. Vérifiez l'ID ou le lien.",
       "collectionValid": "{title} ({count} photos)"
     },
-    "needsKey": "Nécessite une clé gratuite",
-    "starterHeading": "Les arrière-plans fournis avec Home Screens",
     "groups": {
       "theme": "Assorti à un thème plein écran",
       "color": "Couleurs",
@@ -2527,9 +2518,8 @@
       "pattern-diagonal": "Diagonale",
       "pattern-paper": "Papier"
     },
-    "yourPicturesHeading": "Vos propres images",
     "sourceKeyMissing": "Cette source a besoin d'une clé API qui n'est pas encore configurée, l'écran garde donc sa dernière image. Ajoutez la clé dans les Paramètres, ou choisissez une autre source.",
-    "pickerHint": "Choisissez une seule image fixe ci-dessous, ou activez la rotation automatique ci-dessus pour que Home Screens fasse défiler automatiquement une source.",
+    "pickMedia": "Choisir une image de fond",
     "shadeGroup": "Assombrissement",
     "shadeEnable": "Assombrir l’arrière-plan",
     "shadeStyleLabel": "Style",
@@ -2546,7 +2536,9 @@
     "title": "Bibliothèque d'images",
     "tabs": {
       "local": "Local",
-      "unsplash": "Unsplash"
+      "unsplash": "Unsplash",
+      "nasa": "NASA",
+      "immich": "Immich"
     },
     "allPhotos": "Toutes les photos",
     "newFolderPlaceholder": "Nom du dossier",
@@ -4838,70 +4830,6 @@
   "imageBrowsers": {
     "errors": {
       "saveImage": "Échec de l'enregistrement de l'image"
-    },
-    "immich": {
-      "allPhotos": "Toutes les photos",
-      "noPhotos": "Aucune photo trouvée",
-      "attribution": "Photos de ta bibliothèque Immich",
-      "notConfiguredPrefix": "Ajoute l'URL de ton serveur Immich et ta clé API dans",
-      "settingsWord": "Paramètres",
-      "notConfiguredSuffix": "pour parcourir ta bibliothèque de photos.",
-      "apiKeyHint": "Crée une clé API dans Immich → Paramètres du compte → Clés API",
-      "errors": {
-        "loadPhotos": "Échec du chargement des photos",
-        "fetchImage": "Impossible de charger cette image"
-      }
-    },
-    "unsplash": {
-      "attribution": "Photos par Unsplash",
-      "searchPlaceholder": "Rechercher n'importe quoi…",
-      "notConfiguredPrefix": "Ajoute une clé API Unsplash gratuite dans",
-      "settingsWord": "Paramètres",
-      "notConfiguredSuffix": "pour parcourir des milliers d'arrière-plans HD.",
-      "apiKeyHint": "Obtiens-en une sur unsplash.com/developers",
-      "errors": {
-        "search": "Échec de la recherche sur Unsplash"
-      },
-      "categories": {
-        "nature": "Nature",
-        "mountains": "Montagnes",
-        "ocean": "Océan",
-        "forest": "Forêt",
-        "sky": "Ciel",
-        "space": "Espace",
-        "city": "Ville",
-        "abstract": "Abstrait",
-        "flowers": "Fleurs",
-        "seasons": "Saisons"
-      }
-    },
-    "nasa": {
-      "attribution": "Images fournies par NASA",
-      "searchPlaceholder": "Rechercher des images NASA…",
-      "watermarkNote": "Remarque : certaines images NASA contiennent des horodatages ou filigranes intégrés impossibles à retirer.",
-      "notConfiguredPrefix": "Ajoute une clé API NASA gratuite dans",
-      "settingsWord": "Paramètres",
-      "notConfiguredSuffix": "pour parcourir l'Image astronomique du jour.",
-      "apiKeyHint": "Obtiens-en une sur api.nasa.gov",
-      "modes": {
-        "apod": "Image du jour",
-        "library": "Bibliothèque d'images"
-      },
-      "errors": {
-        "fetch": "Impossible de charger les images de la NASA"
-      },
-      "categories": {
-        "nebula": "Nébuleuse",
-        "galaxy": "Galaxie",
-        "earth": "Terre",
-        "mars": "Mars",
-        "moon": "Lune",
-        "saturn": "Saturne",
-        "jupiter": "Jupiter",
-        "sun": "Soleil",
-        "aurora": "Aurore",
-        "iss": "ISS"
-      }
     },
     "search": {
       "placeholder": "Rechercher n'importe quoi…",

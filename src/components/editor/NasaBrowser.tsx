@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useRef } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
-import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import ImageSearchBrowser, { type BrowsePhoto, type CategoryDef, type SearchResult } from './ImageSearchBrowser';
-import { isRotationActive } from '@/lib/screen-background';
 
 interface NasaPhoto {
   id: string;
@@ -19,10 +17,7 @@ interface NasaPhoto {
   nasaId?: string;
 }
 
-/** Map from BrowsePhoto.id to the full NasaPhoto for use in the save handler */
-let photoCache: Map<string, NasaPhoto> = new Map();
-
-function toBrowsePhotos(nasaPhotos: NasaPhoto[]): BrowsePhoto[] {
+function toBrowsePhotos(nasaPhotos: NasaPhoto[], photoCache: Map<string, NasaPhoto>): BrowsePhoto[] {
   const newCache = new Map<string, NasaPhoto>();
   const result = nasaPhotos.map((p) => {
     newCache.set(p.id, p);
@@ -34,20 +29,21 @@ function toBrowsePhotos(nasaPhotos: NasaPhoto[]): BrowsePhoto[] {
       overlaySecondary: p.date ? p.date.slice(0, 10) : undefined,
     };
   });
-  photoCache = newCache;
+  photoCache.clear();
+  newCache.forEach((value, key) => photoCache.set(key, value));
   return result;
 }
 
 interface Props {
-  selectedScreenId: string;
+  onSelectImage: (path: string) => void;
   hasNasaKey: boolean;
 }
 
-export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
+export default function NasaBrowser({ onSelectImage, hasNasaKey }: Props) {
   const t = useTranslate('editor');
+  const photoCache = useRef(new Map<string, NasaPhoto>());
   const [mode, setMode] = useState<'library' | 'apod'>(hasNasaKey ? 'apod' : 'library');
   const [apodRefreshKey, setApodRefreshKey] = useState(0);
-  const { config, selectedDisplayId, updateScreen } = useEditorStore();
 
   const CATEGORIES: CategoryDef[] = useMemo(() => [
     { label: t('imageBrowsers.nasa.categories.nebula'), query: 'nebula' },
@@ -70,7 +66,7 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
       throw new Error(data.error || t('imageBrowsers.nasa.errors.fetch'));
     }
     const nasaPhotos: NasaPhoto[] = data.photos ?? [];
-    return { photos: toBrowsePhotos(nasaPhotos), totalPages: data.totalPages ?? 1 };
+    return { photos: toBrowsePhotos(nasaPhotos, photoCache.current), totalPages: data.totalPages ?? 1 };
   }, [t]);
 
   const handleApodSearch = useCallback(async (): Promise<SearchResult> => {
@@ -84,12 +80,11 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
       throw new Error(data.error || t('imageBrowsers.nasa.errors.fetch'));
     }
     const nasaPhotos: NasaPhoto[] = data.photos ?? [];
-    return { photos: toBrowsePhotos(nasaPhotos), totalPages: 1 };
+    return { photos: toBrowsePhotos(nasaPhotos, photoCache.current), totalPages: 1 };
   }, [hasNasaKey, t]);
 
   const handleUsePhoto = useCallback(async (photo: BrowsePhoto) => {
-    if (!selectedScreenId) return;
-    const original = photoCache.get(photo.id);
+    const original = photoCache.current.get(photo.id);
     if (!original) return;
 
     let imageUrl: string;
@@ -121,16 +116,8 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
     if (!res.ok) {
       throw new Error(data.error || t('imageBrowsers.errors.saveImage'));
     }
-    if (data.path) {
-      const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
-      const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
-      const updates: Record<string, unknown> = { backgroundImage: data.path };
-      if (isRotationActive(currentScreen?.backgroundRotation)) {
-        updates.backgroundRotation = { ...currentScreen?.backgroundRotation, enabled: false, sources: [] };
-      }
-      updateScreen(selectedScreenId, updates);
-    }
-  }, [selectedScreenId, config, selectedDisplayId, updateScreen, t]);
+    if (data.path) onSelectImage(data.path);
+  }, [onSelectImage, t]);
 
   const modeToggle = (
     <div className="flex gap-1 bg-hs-card rounded-md p-0.5">

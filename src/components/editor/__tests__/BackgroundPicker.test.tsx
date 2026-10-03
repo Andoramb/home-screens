@@ -1,13 +1,30 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup, fireEvent, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { ScreenConfiguration } from '@/types/config';
 import { I18nProvider } from '@/i18n/provider';
 import { useEditorStore } from '@/stores/editor-store';
 import enUSEditor from '@/translations/en-US/editor.json';
 import BackgroundPicker from '../BackgroundPicker';
+import { starterBackgroundsIn } from '@/lib/starter-backgrounds';
+
+// Keep this focused on the editor-to-modal handoff. The modal's library hook
+// is exercised separately; here it just supplies the props and bundled tiles.
+vi.mock('@/hooks/useImageLibrary', () => ({
+  useImageLibrary: () => ({
+    directories: [], selectedDir: '', setSelectedDir: () => {}, loadingDirs: false,
+    items: [], selectedImage: null, setSelectedImage: () => {}, loadingImages: false,
+    uploading: false, uploadProgress: '', error: null, setError: () => {},
+    newFolderName: '', setNewFolderName: () => {}, showNewFolder: false, setShowNewFolder: () => {},
+    deletingImage: null, handleUpload: () => {}, handleDeleteImage: () => {},
+    handleCreateFolder: () => {}, handleDeleteFolder: () => {}, refresh: () => {},
+    fileInputRef: { current: null }, newFolderInputRef: { current: null },
+  }),
+}));
+
+vi.mock('@/hooks/useEscapeKey', () => ({ useEscapeKey: () => {} }));
 
 // The checklist needs every source's key status; stub it so `icloud` and
 // `local` (no key required) sit alongside a `false` for the keyed ones —
@@ -191,6 +208,66 @@ describe('BackgroundPicker — Unsplash query/collections toggle', () => {
     expect(rotation?.unsplashCollections).toEqual(['abc123']);
     expect(rotation?.query).toBe('space');
     expect(queryInput()?.value).toBe('space');
+  });
+});
+
+describe('BackgroundPicker — single media picker', () => {
+  it('removes the duplicate legacy tab strip and puts bundled wallpapers in the local media picker', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(container.textContent).not.toContain('Pick one fixed image below');
+    expect(container.querySelector('[data-testid^="background-tab-"]')).toBeNull();
+    expect(container.querySelector('[data-testid="starter-group-theme"]')).toBeNull();
+
+    fireEvent.click(screen.getByText(enUSEditor.backgroundPicker.pickMedia));
+    expect(screen.getByRole('dialog')).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'NASA' })).not.toBeNull();
+    expect((screen.getByRole('button', { name: 'Immich' }) as HTMLButtonElement).disabled).toBe(true);
+    for (const group of ['theme', 'color', 'pattern']) {
+      expect(screen.getByTestId(`starter-group-${group}`)).not.toBeNull();
+    }
+    expect(screen.getByTestId('starter-background-collection')).not.toBeNull();
+  });
+
+  it('picking a bundled wallpaper saves the path and disables active rotation', () => {
+    seedStore({ enabled: true, sources: ['local'], query: '', intervalMinutes: 60 });
+    render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(screen.getByText(enUSEditor.backgroundPicker.pickMedia));
+    const path = starterBackgroundsIn('color')[0].path;
+    fireEvent.click(screen.getByTestId(`starter-background-${starterBackgroundsIn('color')[0].id}`));
+    expect(useEditorStore.getState().config?.screens[0].backgroundImage).toBe(path);
+    expect(currentRotation()?.sources).toEqual([]);
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('picking the solid background also disables active rotation', () => {
+    seedStore({ enabled: true, sources: ['local'], query: '', intervalMinutes: 60 });
+    render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(screen.getByText(enUSEditor.backgroundPicker.pickMedia));
+    fireEvent.click(screen.getByTestId('starter-background-none'));
+    expect(useEditorStore.getState().config?.screens[0].backgroundImage).toBe('');
+    expect(currentRotation()?.sources).toEqual([]);
+  });
+
+  it('does not apply an old modal choice to a newly selected display', () => {
+    seedStore({ enabled: true, sources: ['local'], query: '', intervalMinutes: 60 });
+    useEditorStore.setState((state) => ({
+      config: { ...state.config!, displays: [{
+        id: 'other-display', name: 'Other display', screens: [{
+          id: 'screen-1', name: 'Other screen', backgroundImage: '', modules: [],
+        }],
+      }] },
+    }));
+    render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(screen.getByText(enUSEditor.backgroundPicker.pickMedia));
+    // Switching displays can leave the same selected screen id temporarily in
+    // place; a stale picker must not modify that display's screen.
+    useEditorStore.setState({ selectedDisplayId: 'other-display' });
+    fireEvent.click(screen.getByTestId('starter-background-ocean'));
+    const state = useEditorStore.getState();
+    expect(state.config?.screens[0].backgroundImage).toBe('');
+    expect(state.config?.displays?.[0].screens[0].backgroundImage).toBe('');
+    expect(state.config?.screens[0].backgroundRotation?.sources).toEqual(['local']);
   });
 });
 

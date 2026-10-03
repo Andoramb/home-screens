@@ -2434,11 +2434,8 @@
       "useSolid": "Effen kleur gebruiken"
     },
     "title": "Achtergrond",
-    "statusGroup": "Status",
-    "autoRotate": "Automatisch wisselen",
     "sourcesGroup": "Bronnen",
     "refreshNow": "Nu vernieuwen",
-    "sourceLabel": "Bron",
     "searchQueryLabel": "Zoekopdracht",
     "searchQueryPlaceholder": "natuurlandschap",
     "rotateEveryLabel": "Wisselen elke",
@@ -2457,10 +2454,6 @@
       "photoCountOne": "{count} foto",
       "photoCountOther": "{count} foto's",
       "noPhotosInFolder": "Nog geen foto's in deze map."
-    },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Achtergronden"
     },
     "intervals": {
       "minutes": "{count} minuten",
@@ -2495,8 +2488,6 @@
       "collectionNotFound": "Collectie niet gevonden. Controleer de ID of link.",
       "collectionValid": "{title} ({count} foto's)"
     },
-    "needsKey": "Heeft een gratis sleutel nodig",
-    "starterHeading": "Achtergronden die bij Home Screens zitten",
     "groups": {
       "theme": "Passend bij een volledig-scherm thema",
       "color": "Kleuren",
@@ -2527,9 +2518,8 @@
       "pattern-diagonal": "Diagonaal",
       "pattern-paper": "Papier"
     },
-    "yourPicturesHeading": "Je eigen foto's",
     "sourceKeyMissing": "Deze bron heeft een sleutel nodig die nog niet is ingesteld, dus het scherm houdt de laatste foto. Voeg de sleutel toe bij Instellingen, of kies een andere bron.",
-    "pickerHint": "Kies hieronder één vaste afbeelding, of zet Auto-rotatie hierboven aan zodat Home Screens automatisch door een bron roteert.",
+    "pickMedia": "Achtergrondafbeelding kiezen",
     "shadeGroup": "Verduistering",
     "shadeEnable": "Achtergrond donkerder maken",
     "shadeStyleLabel": "Stijl",
@@ -2546,7 +2536,9 @@
     "title": "Afbeeldingsbibliotheek",
     "tabs": {
       "local": "Lokaal",
-      "unsplash": "Unsplash"
+      "unsplash": "Unsplash",
+      "nasa": "NASA",
+      "immich": "Immich"
     },
     "allPhotos": "Alle foto's",
     "newFolderPlaceholder": "Mapnaam",
@@ -4838,70 +4830,6 @@
   "imageBrowsers": {
     "errors": {
       "saveImage": "Afbeelding opslaan mislukt"
-    },
-    "immich": {
-      "allPhotos": "Alle foto's",
-      "noPhotos": "Geen foto's gevonden",
-      "attribution": "Foto's uit je Immich-bibliotheek",
-      "notConfiguredPrefix": "Voeg je Immich-server-URL en API-sleutel toe bij",
-      "settingsWord": "Instellingen",
-      "notConfiguredSuffix": "om door je fotobibliotheek te bladeren.",
-      "apiKeyHint": "Maak een API-sleutel aan in Immich → Account Settings → API Keys",
-      "errors": {
-        "loadPhotos": "Foto's laden mislukt",
-        "fetchImage": "Deze afbeelding kan niet worden geladen"
-      }
-    },
-    "unsplash": {
-      "attribution": "Foto's via Unsplash",
-      "searchPlaceholder": "Zoek wat dan ook...",
-      "notConfiguredPrefix": "Voeg een gratis Unsplash API-sleutel toe bij",
-      "settingsWord": "Instellingen",
-      "notConfiguredSuffix": "om door duizenden HD-achtergronden te bladeren.",
-      "apiKeyHint": "Haal er een op via unsplash.com/developers",
-      "errors": {
-        "search": "Zoeken in Unsplash mislukt"
-      },
-      "categories": {
-        "nature": "Natuur",
-        "mountains": "Bergen",
-        "ocean": "Oceaan",
-        "forest": "Bos",
-        "sky": "Lucht",
-        "space": "Ruimte",
-        "city": "Stad",
-        "abstract": "Abstract",
-        "flowers": "Bloemen",
-        "seasons": "Seizoenen"
-      }
-    },
-    "nasa": {
-      "attribution": "Afbeeldingen met dank aan NASA",
-      "searchPlaceholder": "Zoek NASA-afbeeldingen...",
-      "watermarkNote": "Let op: sommige NASA-afbeeldingen bevatten ingebedde tijdstempels of watermerken die niet kunnen worden verwijderd.",
-      "notConfiguredPrefix": "Voeg een gratis NASA API-sleutel toe bij",
-      "settingsWord": "Instellingen",
-      "notConfiguredSuffix": "om door Astronomy Picture of the Day te bladeren.",
-      "apiKeyHint": "Haal er een op via api.nasa.gov",
-      "modes": {
-        "apod": "Foto van de dag",
-        "library": "Afbeeldingenbibliotheek"
-      },
-      "errors": {
-        "fetch": "NASA-afbeeldingen kunnen niet worden geladen"
-      },
-      "categories": {
-        "nebula": "Nevel",
-        "galaxy": "Sterrenstelsel",
-        "earth": "Aarde",
-        "mars": "Mars",
-        "moon": "Maan",
-        "saturn": "Saturnus",
-        "jupiter": "Jupiter",
-        "sun": "Zon",
-        "aurora": "Poollicht",
-        "iss": "ISS"
-      }
     },
     "search": {
       "placeholder": "Zoek wat dan ook...",

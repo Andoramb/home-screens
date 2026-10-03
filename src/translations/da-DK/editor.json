@@ -2434,11 +2434,8 @@
       "useSolid": "Brug den ensfarvede baggrund"
     },
     "title": "Baggrund",
-    "statusGroup": "Status",
-    "autoRotate": "Skift automatisk",
     "sourcesGroup": "Kilder",
     "refreshNow": "Opdater nu",
-    "sourceLabel": "Kilde",
     "searchQueryLabel": "Søgeord",
     "searchQueryPlaceholder": "natur landskab",
     "rotateEveryLabel": "Skift hver",
@@ -2457,10 +2454,6 @@
       "photoCountOne": "{count} foto",
       "photoCountOther": "{count} fotos",
       "noPhotosInFolder": "Ingen fotos i denne mappe endnu."
-    },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Baggrunde"
     },
     "intervals": {
       "minutes": "{count} minutter",
@@ -2495,8 +2488,6 @@
       "collectionNotFound": "Samling ikke fundet. Tjek ID'et eller linket.",
       "collectionValid": "{title} ({count} billeder)"
     },
-    "needsKey": "Kræver en gratis nøgle",
-    "starterHeading": "Baggrunde, der følger med Home Screens",
     "groups": {
       "theme": "Passer til et fuldskærmstema",
       "color": "Farver",
@@ -2527,9 +2518,8 @@
       "pattern-diagonal": "Diagonal",
       "pattern-paper": "Papir"
     },
-    "yourPicturesHeading": "Dine egne billeder",
     "sourceKeyMissing": "Denne kilde kræver en API-nøgle, som ikke er sat op, så skærmen beholder sit sidste billede. Tilføj nøglen under Indstillinger, eller vælg en anden kilde.",
-    "pickerHint": "Vælg et enkelt fast billede nedenfor, eller slå Auto-rotation til ovenfor for at lade Home Screens rotere automatisk gennem en kilde.",
+    "pickMedia": "Vælg baggrundsbillede",
     "shadeGroup": "Dæmpning",
     "shadeEnable": "Dæmp baggrunden",
     "shadeStyleLabel": "Stil",
@@ -2546,7 +2536,9 @@
     "title": "Billedarkiv",
     "tabs": {
       "local": "Lokalt",
-      "unsplash": "Unsplash"
+      "unsplash": "Unsplash",
+      "nasa": "NASA",
+      "immich": "Immich"
     },
     "allPhotos": "Alle billeder",
     "newFolderPlaceholder": "Mappenavn",
@@ -4838,70 +4830,6 @@
   "imageBrowsers": {
     "errors": {
       "saveImage": "Kunne ikke gemme billedet"
-    },
-    "immich": {
-      "allPhotos": "Alle billeder",
-      "noPhotos": "Ingen billeder fundet",
-      "attribution": "Billeder fra dit Immich-arkiv",
-      "notConfiguredPrefix": "Tilføj din Immich-server-URL og API-nøgle under",
-      "settingsWord": "Indstillinger",
-      "notConfiguredSuffix": "for at gennemse dit billedarkiv.",
-      "apiKeyHint": "Opret en API-nøgle i Immich → Account Settings → API Keys",
-      "errors": {
-        "loadPhotos": "Kunne ikke indlæse billeder",
-        "fetchImage": "Billedet kunne ikke hentes"
-      }
-    },
-    "unsplash": {
-      "attribution": "Billeder fra Unsplash",
-      "searchPlaceholder": "Søg efter hvad som helst…",
-      "notConfiguredPrefix": "Tilføj en gratis Unsplash-API-nøgle under",
-      "settingsWord": "Indstillinger",
-      "notConfiguredSuffix": "for at gennemse tusindvis af HD-baggrunde.",
-      "apiKeyHint": "Hent en på unsplash.com/developers",
-      "errors": {
-        "search": "Søgningen på Unsplash mislykkedes"
-      },
-      "categories": {
-        "nature": "Natur",
-        "mountains": "Bjerge",
-        "ocean": "Hav",
-        "forest": "Skov",
-        "sky": "Himmel",
-        "space": "Rummet",
-        "city": "By",
-        "abstract": "Abstrakt",
-        "flowers": "Blomster",
-        "seasons": "Årstider"
-      }
-    },
-    "nasa": {
-      "attribution": "Billeder venligst udlånt af NASA",
-      "searchPlaceholder": "Søg i NASA's billeder…",
-      "watermarkNote": "Bemærk: Nogle NASA-billeder har indlejrede tidsstempler eller vandmærker, som ikke kan fjernes.",
-      "notConfiguredPrefix": "Tilføj en gratis NASA-API-nøgle under",
-      "settingsWord": "Indstillinger",
-      "notConfiguredSuffix": "for at gennemse dagens astronomibillede.",
-      "apiKeyHint": "Hent en på api.nasa.gov",
-      "modes": {
-        "apod": "Dagens billede",
-        "library": "Billedarkiv"
-      },
-      "errors": {
-        "fetch": "NASA-billederne kunne ikke hentes"
-      },
-      "categories": {
-        "nebula": "Stjernetåge",
-        "galaxy": "Galakse",
-        "earth": "Jorden",
-        "mars": "Mars",
-        "moon": "Månen",
-        "saturn": "Saturn",
-        "jupiter": "Jupiter",
-        "sun": "Solen",
-        "aurora": "Nordlys",
-        "iss": "ISS"
-      }
     },
     "search": {
       "placeholder": "Søg efter hvad som helst…",

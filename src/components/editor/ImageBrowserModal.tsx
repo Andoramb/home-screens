@@ -13,6 +13,10 @@ import { tileThumbnailUrl } from '@/lib/media-paths';
 import ImageSearchBrowser, { type BrowsePhoto, type SearchResult } from './ImageSearchBrowser';
 import ICloudImportPanel from './ICloudImportPanel';
 import { useTranslate } from '@/i18n';
+import { useEditorStore, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
+import StarterBackgroundCollection from './StarterBackgroundCollection';
+import NasaBrowser from './NasaBrowser';
+import ImmichBrowser from './ImmichBrowser';
 
 interface UnsplashPhoto {
   id: string;
@@ -45,6 +49,12 @@ interface ImageBrowserModalProps {
    */
   mode: 'pick-image' | 'pick-video' | 'manage-directory';
   initialDirectory?: string;
+  /** Offer bundled theme/color/pattern wallpapers alongside the local library. */
+  showStarterBackgrounds?: boolean;
+  showRemoteBackgrounds?: boolean;
+  selectedBackgroundPath?: string;
+  /** Keep the background picker focused on choosing, not deleting library files. */
+  allowDelete?: boolean;
   onSelectImage?: (serveUrl: string) => void;
   onSelectVideo?: (filePath: string) => void;
   onSelectDirectory?: (directoryPath: string) => void;
@@ -61,6 +71,10 @@ const ACCEPT_BY_MODE = {
 export default function ImageBrowserModal({
   mode,
   initialDirectory = '',
+  showStarterBackgrounds = false,
+  showRemoteBackgrounds = false,
+  selectedBackgroundPath = '',
+  allowDelete = true,
   onSelectImage,
   onSelectVideo,
   onSelectDirectory,
@@ -68,11 +82,16 @@ export default function ImageBrowserModal({
 }: ImageBrowserModalProps) {
   const t = useTranslate('editor');
   const tCore = useTranslate('core');
+  const { config, selectedDisplayId } = useEditorStore();
+  const dims = config && showStarterBackgrounds ? getActiveDimensions(config, selectedDisplayId) : null;
+  const themeInUse = config && showStarterBackgrounds ? getActiveFullscreenTheme(config, selectedDisplayId) ?? 'linen' : 'linen';
   const lib = useImageLibrary({ initialDirectory });
-  const [tab, setTab] = useState<'local' | 'unsplash'>('local');
+  const [tab, setTab] = useState<'local' | 'unsplash' | 'nasa' | 'immich'>('local');
   // Unsplash key gates the second tab, which only exists in pick-image mode.
   const { status: secretStatus } = useSecretStatus(mode === 'pick-image');
   const hasUnsplashKey = !!secretStatus.unsplash_access_key;
+  const hasNasaKey = !!secretStatus.nasa_api_key;
+  const hasImmichKey = !!secretStatus.immich_api_key && !!secretStatus.immich_url;
 
   // Translated category list. Categories are stable per-locale; rebuild only
   // when `t` changes (i.e. on locale switch).
@@ -176,7 +195,7 @@ export default function ImageBrowserModal({
   const isConfirmDisabled =
     mode === 'manage-directory' ? false : !lib.selectedImage;
 
-  const showTabs = mode === 'pick-image' && hasUnsplashKey;
+  const showTabs = mode === 'pick-image' && (hasUnsplashKey || showRemoteBackgrounds);
 
   return (
     <div className="fixed inset-0 z-modal flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={mode === 'pick-video' ? t('imageBrowserModal.titleVideos') : t('imageBrowserModal.title')}>
@@ -203,14 +222,23 @@ export default function ImageBrowserModal({
                 >
                   {t('imageBrowserModal.tabs.local')}
                 </button>
-                <button
+                {hasUnsplashKey && <button
                   onClick={() => setTab('unsplash')}
                   className={`text-xs px-2.5 py-1 rounded ${
                     tab === 'unsplash' ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'
                   }`}
                 >
                   {t('imageBrowserModal.tabs.unsplash')}
-                </button>
+                </button>}                {showRemoteBackgrounds && (['nasa', 'immich'] as const).map((source) => (
+                  <button
+                    key={source}
+                    onClick={() => setTab(source)}
+                    disabled={source === 'immich' && !hasImmichKey}
+                    className={`text-xs px-2.5 py-1 rounded disabled:opacity-40 ${tab === source ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'}`}
+                  >
+                    {t(`imageBrowserModal.tabs.${source}`)}
+                  </button>
+                ))}
               </div>
             )}
           </div>
@@ -248,6 +276,16 @@ export default function ImageBrowserModal({
                 same library, and "get my stuff in here" applies equally. */}
             <div className="flex-1 flex flex-col min-w-0">
               <ICloudImportPanel selectedDir={lib.selectedDir} onImported={lib.refresh} />
+              {showStarterBackgrounds && mode === 'pick-image' && (
+                <div className="max-h-[45%] shrink-0 overflow-y-auto">
+                  <StarterBackgroundCollection
+                    selectedPath={selectedBackgroundPath}
+                    onPick={(path) => { onSelectImage?.(path); onClose(); }}
+                    themeInUse={themeInUse}
+                    landscape={!!dims && dims.width > dims.height}
+                  />
+                </div>
+              )}
               <MediaGrid
                 items={visibleItems}
                 mode={mode}
@@ -259,7 +297,7 @@ export default function ImageBrowserModal({
                 }}
                 loadingImages={lib.loadingImages}
                 deletingImage={lib.deletingImage}
-                onDeleteItem={lib.handleDeleteImage}
+                onDeleteItem={allowDelete ? lib.handleDeleteImage : undefined}
                 // The directories endpoint names the root "All Photos"; override
                 // with the mode label rather than echo its image-centric name.
                 currentDirName={lib.selectedDir === '' ? rootLabel : currentDirInfo?.name || rootLabel}
@@ -273,6 +311,10 @@ export default function ImageBrowserModal({
               />
             </div>
           </div>
+        ) : tab === 'nasa' ? (
+          <div className="flex-1 overflow-y-auto p-4"><NasaBrowser hasNasaKey={hasNasaKey} onSelectImage={(path) => { onSelectImage?.(path); onClose(); }} /></div>
+        ) : tab === 'immich' ? (
+          <div className="flex-1 overflow-y-auto p-4"><ImmichBrowser hasImmichKey={hasImmichKey} onSelectImage={(path) => { onSelectImage?.(path); onClose(); }} /></div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4">
             <ImageSearchBrowser
@@ -442,7 +484,7 @@ function MediaGrid({
   onSelectItem: (url: string) => void;
   loadingImages: boolean;
   deletingImage: string | null;
-  onDeleteItem: (url: string) => void;
+  onDeleteItem?: (url: string) => void;
   currentDirName: string;
   selectedDir: string;
   uploading: boolean;
@@ -490,7 +532,7 @@ function MediaGrid({
           onChange={onUpload}
           className="hidden"
         />
-        {selectedDir && items.length === 0 && !loadingImages && (
+        {onDeleteItem && selectedDir && items.length === 0 && !loadingImages && (
           <Button
             size="sm"
             variant="danger"
@@ -563,19 +605,20 @@ function MediaGrid({
                     />
                   )}
                 </button>
-                {/* Delete button */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteItem(item.url);
-                  }}
-                  disabled={deletingImage === item.url}
-                  className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-hs-text-secondary hover:bg-hs-danger hover:text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                  title={tCore('actions.delete')}
-                  aria-label={tCore('actions.delete')}
-                >
-                  {deletingImage === item.url ? '...' : '×'}
-                </button>
+                {onDeleteItem && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteItem(item.url);
+                    }}
+                    disabled={deletingImage === item.url}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-hs-text-secondary hover:bg-hs-danger hover:text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                    title={tCore('actions.delete')}
+                    aria-label={tCore('actions.delete')}
+                  >
+                    {deletingImage === item.url ? '...' : '×'}
+                  </button>
+                )}
               </div>
             ))}
           </div>

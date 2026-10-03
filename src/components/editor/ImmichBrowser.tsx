@@ -3,25 +3,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorData } from '@/hooks/useEditorData';
-import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import type { ImmichAlbumSummary } from '@/lib/immich';
-import { isRotationActive } from '@/lib/screen-background';
 
 interface Props {
-  selectedScreenId: string;
+  onSelectImage: (path: string) => void;
   hasImmichKey: boolean;
 }
 
-export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props) {
+export default function ImmichBrowser({ onSelectImage, hasImmichKey }: Props) {
   const t = useTranslate('editor');
   const tCore = useTranslate('core');
-  const { updateScreen } = useEditorStore();
-  const currentScreen = useEditorStore((s) => {
-    if (!s.config) return undefined;
-    return getActiveScreens(s.config, s.selectedDisplayId).find((sc) => sc.id === selectedScreenId);
-  });
   const { data: albumsData } = useEditorData<ImmichAlbumSummary[]>(hasImmichKey ? '/api/immich/albums' : null);
   const albums = albumsData ?? [];
   const [selectedAlbum, setSelectedAlbum] = useState('');
@@ -54,7 +47,6 @@ export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props)
   }, [hasImmichKey, fetchPhotos]);
 
   const handleUsePhoto = async (serveUrl: string) => {
-    if (!selectedScreenId) return;
     setSaving(serveUrl);
     setError(null);
     try {
@@ -69,13 +61,8 @@ export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props)
       formData.append('file', new File([blob], `immich-${assetId}${ext}`, { type: blob.type }));
       const uploadRes = await editorFetch('/api/backgrounds', { method: 'POST', body: formData });
       const data = await uploadRes.json();
-      if (data.path) {
-        const updates: Record<string, unknown> = { backgroundImage: data.path };
-        if (isRotationActive(currentScreen?.backgroundRotation)) {
-          updates.backgroundRotation = { ...currentScreen?.backgroundRotation, enabled: false, sources: [] };
-        }
-        updateScreen(selectedScreenId, updates);
-      }
+      if (!uploadRes.ok || !data.path) throw new Error(t('imageBrowsers.errors.saveImage'));
+      onSelectImage(data.path);
     } catch {
       setError(t('imageBrowsers.errors.saveImage'));
     }

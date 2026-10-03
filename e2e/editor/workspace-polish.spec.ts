@@ -245,7 +245,7 @@ test.describe('schedule editor', () => {
 });
 
 test.describe('background picker', () => {
-  test('opens on backgrounds that need no key, and locks the ones that do', async ({ page, request }) => {
+  test('offers bundled backgrounds inside the local media picker without legacy tabs', async ({ page, request }) => {
     // Secrets survive the per-test config reset, so clear the image keys this
     // worker may have seeded earlier.
     await clearSecrets(request, ['unsplash_access_key', 'nasa_api_key', 'immich_api_key', 'immich_url']);
@@ -255,11 +255,10 @@ test.describe('background picker', () => {
     // Empty state = screen selected, no module: the picker lives there.
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
 
-    await expect(page.getByTestId('background-tab-local')).toBeVisible();
+    await expect(page.locator('[data-testid^="background-tab-"]')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Choose background image' }).click();
     await expect(page.getByTestId('starter-background-midnight')).toBeVisible();
-    // No API key seeded, so both keyed tabs advertise that before being clicked.
-    await expect(page.getByTestId('background-tab-unsplash')).toHaveAttribute('title', 'Needs a free key');
-    await expect(page.getByTestId('background-tab-nasa')).toHaveAttribute('title', 'Needs a free key');
+    await expect(page.getByTestId('starter-group-theme')).toBeVisible();
   });
 
   test('a rotating screen paints its photo without showing its own picture first', async ({ page, request }) => {
@@ -291,6 +290,7 @@ test.describe('background picker', () => {
     await page.goto('/editor');
     await expect(page.getByTestId('editor-canvas')).toBeVisible();
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
+    await page.getByRole('button', { name: 'Choose background image' }).click();
 
     await autosaved(page, async () => {
       await page.getByTestId('starter-background-dusk').click();
@@ -306,6 +306,7 @@ test.describe('background picker', () => {
     await expect(page.getByTestId('editor-canvas')).toBeVisible();
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
 
+    await page.getByRole('button', { name: 'Choose background image' }).click();
     const themeGroup = page.getByTestId('starter-group-theme');
     await expect(themeGroup).toContainText('12');
     const themeWalls = page.locator('[data-testid^="starter-background-theme-"]');
@@ -319,6 +320,7 @@ test.describe('background picker', () => {
       await page.getByTestId('starter-background-theme-horizon').click();
     });
     expect((await getConfig(request)).screens[0].backgroundImage).toBe('/starter-backgrounds/theme-horizon.svg');
+    await page.getByRole('button', { name: 'Choose background image' }).click();
     await expect(page.getByTestId('starter-background-theme-horizon')).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -328,6 +330,7 @@ test.describe('background picker', () => {
     await expect(page.getByTestId('editor-canvas')).toBeVisible();
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
 
+    await page.getByRole('button', { name: 'Choose background image' }).click();
     await expect(page.getByTestId('starter-background-ocean')).toBeVisible();
     await expect(page.getByTestId('starter-background-pattern-dots')).toBeVisible();
 
@@ -335,6 +338,7 @@ test.describe('background picker', () => {
     await expect(page.getByTestId('starter-background-pattern-dots')).toBeHidden();
     await page.reload();
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
+    await page.getByRole('button', { name: 'Choose background image' }).click();
     await expect(page.getByTestId('starter-group-pattern')).toBeVisible();
     await expect(page.getByTestId('starter-background-pattern-dots')).toBeHidden();
     await expect(page.getByTestId('starter-background-ocean')).toBeVisible();

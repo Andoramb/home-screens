@@ -108,8 +108,7 @@ export default function ImageSearchBrowser({
     setIsSaving(null);
   };
 
-  // Spaces its own rows rather than leaning on the parent's space-y: a wrapper
-  // div between the two (BackgroundPicker's min-height floor) stacked every row flush.
+  // Space rows inside the browser itself instead of relying on parent layout.
   return (
     <div className="space-y-3">
       {headerSlot}

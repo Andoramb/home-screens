@@ -4,10 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import type { BackgroundRotationSourceId } from '@/types/config';
-import LocalBackgrounds from './LocalBackgrounds';
-import UnsplashBrowser from './UnsplashBrowser';
-import NasaBrowser from './NasaBrowser';
-import ImmichBrowser from './ImmichBrowser';
+import ImageBrowserModal from './ImageBrowserModal';
 import { Lock, RefreshCw } from 'lucide-react';
 import AccordionSection from './AccordionSection';
 import PropertyGroup from './PropertyGroup';
@@ -17,10 +14,12 @@ import { eventBus } from '@/lib/event-bus';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
 import BackgroundShadeFields from './BackgroundShadeFields';
+import { isRotationActive } from '@/lib/screen-background';
 
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
-  const [tab, setTab] = useState<'unsplash' | 'nasa' | 'immich' | 'local'>('local');
+  const [showMediaPicker, setShowMediaPicker] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<{ screenId: string; displayId: string | null } | null>(null);
   const { config, selectedDisplayId, selectedScreenId, updateScreen, updateScreenRotation } = useEditorStore();
   const { status: secretStatus } = useSecretStatus();
   const hasUnsplashKey = !!secretStatus.unsplash_access_key;
@@ -84,6 +83,45 @@ export default function BackgroundPicker() {
     { id: 'icloud', label: t('backgroundPicker.sources.icloud'), locked: false },
     { id: 'local', label: t('backgroundPicker.sources.local'), locked: false },
   ];
+
+  const openMediaPicker = () => {
+    setPickerTarget({ screenId: selectedScreenId, displayId: selectedDisplayId });
+    setShowMediaPicker(true);
+  };
+
+  const closeMediaPicker = () => {
+    setShowMediaPicker(false);
+    setPickerTarget(null);
+  };
+
+  const applyBackground = (screenId: string, backgroundImage: string) => {
+    // Use the live screen, not the render that opened the modal: its rotation
+    // settings may have changed while the picker was open.
+    const state = useEditorStore.getState();
+    if (!state.config || state.selectedScreenId !== screenId ||
+      state.selectedDisplayId !== selectedDisplayId) return;
+    const screen = getActiveScreens(state.config, state.selectedDisplayId)
+      .find((item) => item.id === screenId);
+    if (!screen) return;
+    const updates: Record<string, unknown> = { backgroundImage };
+    if (isRotationActive(screen.backgroundRotation)) {
+      updates.backgroundRotation = { ...screen.backgroundRotation, enabled: false, sources: [] };
+    }
+    updateScreen(screenId, updates);
+  };
+
+  const pickBackground = (backgroundImage: string) => {
+    // An async search/upload may finish after a display or screen switch.
+    // Only apply the choice to the exact selection that opened this picker.
+    const state = useEditorStore.getState();
+    if (!pickerTarget || !state.config || state.selectedScreenId !== pickerTarget.screenId ||
+      state.selectedDisplayId !== pickerTarget.displayId) {
+      closeMediaPicker();
+      return;
+    }
+    applyBackground(pickerTarget.screenId, backgroundImage);
+    closeMediaPicker();
+  };
 
   const toggleRotationSource = (id: BackgroundRotationSourceId, checked: boolean) => {
     if (!selectedScreenId) return;
@@ -280,14 +318,14 @@ export default function BackgroundPicker() {
           <div className="flex gap-2 pt-0.5">
             <button
               type="button"
-              onClick={() => setTab('local')}
+              onClick={openMediaPicker}
               className="text-[11px] font-medium px-2.5 py-1 rounded-md text-hs-text-body bg-hs-card border border-hs-border-strong hover:bg-hs-hover transition-colors"
             >
               {t('backgroundPicker.missing.pickAnother')}
             </button>
             <button
               type="button"
-              onClick={() => updateScreen(selectedScreenId, { backgroundImage: '' })}
+              onClick={() => applyBackground(selectedScreenId, '')}
               className="text-[11px] font-medium px-2.5 py-1 rounded-md text-hs-text-body bg-hs-card border border-hs-border-strong hover:bg-hs-hover transition-colors"
             >
               {t('backgroundPicker.missing.useSolid')}
@@ -295,49 +333,24 @@ export default function BackgroundPicker() {
           </div>
         </div>
       )}
-      <p className="text-[10px] text-hs-text-faint leading-relaxed">{t('backgroundPicker.pickerHint')}</p>
-      <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
-        {([
-          { id: 'local' as const, label: t('backgroundPicker.tabs.local'), locked: false },
-          { id: 'unsplash' as const, label: 'Unsplash', locked: !hasUnsplashKey },
-          { id: 'nasa' as const, label: t('backgroundPicker.tabs.nasa'), locked: !hasNasaKey },
-          { id: 'immich' as const, label: 'Immich', locked: !hasImmichKey },
-        ]).map((entry) => (
-          <button
-            key={entry.id}
-            onClick={() => setTab(entry.id)}
-            data-testid={`background-tab-${entry.id}`}
-            title={entry.locked ? t('backgroundPicker.needsKey') : undefined}
-            className={`flex items-center justify-center gap-1 truncate rounded px-2 py-1.5 text-xs ${
-              tab === entry.id
-                ? 'bg-hs-hover text-hs-text-primary'
-                : entry.locked
-                  ? 'text-hs-text-faint hover:text-hs-text-muted'
-                  : 'text-hs-text-muted hover:text-hs-text-secondary'
-            }`}
-          >
-            {entry.locked && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
-            {entry.label}
-          </button>
-        ))}
-      </div>
-      <div className="min-h-96">
-        {tab === 'unsplash' && (
-          <UnsplashBrowser selectedScreenId={selectedScreenId} hasUnsplashKey={hasUnsplashKey} />
-        )}
-
-        {tab === 'nasa' && (
-          <NasaBrowser selectedScreenId={selectedScreenId} hasNasaKey={hasNasaKey} />
-        )}
-
-        {tab === 'immich' && (
-          <ImmichBrowser selectedScreenId={selectedScreenId} hasImmichKey={hasImmichKey} />
-        )}
-
-        {tab === 'local' && (
-          <LocalBackgrounds selectedScreenId={selectedScreenId} />
-        )}
-      </div>
+      <button
+        type="button"
+        onClick={openMediaPicker}
+        className="w-full rounded-md border border-hs-border-strong bg-hs-card px-2.5 py-2 text-left text-xs text-hs-text-body hover:bg-hs-hover"
+      >
+        {t('backgroundPicker.pickMedia')}
+      </button>
+      {showMediaPicker && (
+        <ImageBrowserModal
+          mode="pick-image"
+          showStarterBackgrounds
+          showRemoteBackgrounds
+          selectedBackgroundPath={backgroundPath}
+          allowDelete={false}
+          onSelectImage={pickBackground}
+          onClose={closeMediaPicker}
+        />
+      )}
     </AccordionSection>
   );
 }

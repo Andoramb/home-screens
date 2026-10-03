@@ -2434,8 +2434,6 @@
       "useSolid": "Use the solid color"
     },
     "title": "Background",
-    "statusGroup": "Status",
-    "autoRotate": "Auto-rotate",
     "sourcesGroup": "Sources",
     "refreshNow": "Refresh now",
     "shadeGroup": "Shade",
@@ -2449,7 +2447,6 @@
       "edges": "Edges",
       "both": "Both"
     },
-    "sourceLabel": "Source",
     "searchQueryLabel": "Search query",
     "searchQueryPlaceholder": "nature landscape",
     "rotateEveryLabel": "Rotate every",
@@ -2468,10 +2465,6 @@
       "photoCountOne": "{count} photo",
       "photoCountOther": "{count} photos",
       "noPhotosInFolder": "No photos in this folder yet."
-    },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Backgrounds"
     },
     "intervals": {
       "minutes": "{count} minutes",
@@ -2506,8 +2499,6 @@
       "collectionNotFound": "Collection not found. Check the ID or link.",
       "collectionValid": "{title} ({count} photos)"
     },
-    "needsKey": "Needs a free key",
-    "starterHeading": "Backgrounds that come with Home Screens",
     "groups": {
       "theme": "Match a full-screen theme",
       "color": "Colors",
@@ -2538,15 +2529,16 @@
       "pattern-diagonal": "Diagonal",
       "pattern-paper": "Paper"
     },
-    "yourPicturesHeading": "Your own pictures",
     "sourceKeyMissing": "This source needs an API key that is not set up, so the screen keeps its last picture. Add the key in Settings, or pick another source.",
-    "pickerHint": "Pick one fixed image below, or turn on Auto-rotate above to let Home Screens rotate through a source automatically."
+    "pickMedia": "Choose background image"
   },
   "imageBrowserModal": {
     "title": "Image Library",
     "tabs": {
       "local": "Local",
-      "unsplash": "Unsplash"
+      "unsplash": "Unsplash",
+      "nasa": "NASA",
+      "immich": "Immich"
     },
     "allPhotos": "All Photos",
     "newFolderPlaceholder": "Folder name",
@@ -4838,70 +4830,6 @@
   "imageBrowsers": {
     "errors": {
       "saveImage": "Failed to save image"
-    },
-    "immich": {
-      "allPhotos": "All photos",
-      "noPhotos": "No photos found",
-      "attribution": "Photos from your Immich library",
-      "notConfiguredPrefix": "Add your Immich Server URL and API Key in",
-      "settingsWord": "Settings",
-      "notConfiguredSuffix": "to browse your photo library.",
-      "apiKeyHint": "Create an API key in Immich → Account Settings → API Keys",
-      "errors": {
-        "loadPhotos": "Failed to load photos",
-        "fetchImage": "Couldn't load this image"
-      }
-    },
-    "unsplash": {
-      "attribution": "Photos by Unsplash",
-      "searchPlaceholder": "Search anything...",
-      "notConfiguredPrefix": "Add a free Unsplash API key in",
-      "settingsWord": "Settings",
-      "notConfiguredSuffix": "to browse thousands of HD backgrounds.",
-      "apiKeyHint": "Get one at unsplash.com/developers",
-      "errors": {
-        "search": "Failed to search Unsplash"
-      },
-      "categories": {
-        "nature": "Nature",
-        "mountains": "Mountains",
-        "ocean": "Ocean",
-        "forest": "Forest",
-        "sky": "Sky",
-        "space": "Space",
-        "city": "City",
-        "abstract": "Abstract",
-        "flowers": "Flowers",
-        "seasons": "Seasons"
-      }
-    },
-    "nasa": {
-      "attribution": "Images courtesy of NASA",
-      "searchPlaceholder": "Search NASA images...",
-      "watermarkNote": "Note: Some NASA images include embedded timestamps or watermarks that cannot be removed.",
-      "notConfiguredPrefix": "Add a free NASA API key in",
-      "settingsWord": "Settings",
-      "notConfiguredSuffix": "to browse Astronomy Picture of the Day.",
-      "apiKeyHint": "Get one at api.nasa.gov",
-      "modes": {
-        "apod": "Picture of the Day",
-        "library": "Image Library"
-      },
-      "errors": {
-        "fetch": "Couldn't load NASA images"
-      },
-      "categories": {
-        "nebula": "Nebula",
-        "galaxy": "Galaxy",
-        "earth": "Earth",
-        "mars": "Mars",
-        "moon": "Moon",
-        "saturn": "Saturn",
-        "jupiter": "Jupiter",
-        "sun": "Sun",
-        "aurora": "Aurora",
-        "iss": "ISS"
-      }
     },
     "search": {
       "placeholder": "Search anything...",

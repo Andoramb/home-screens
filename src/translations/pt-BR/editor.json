@@ -2434,11 +2434,8 @@
       "useSolid": "Usar a cor sólida"
     },
     "title": "Plano de fundo",
-    "statusGroup": "Status",
-    "autoRotate": "Rotação automática",
     "sourcesGroup": "Fontes",
     "refreshNow": "Atualizar agora",
-    "sourceLabel": "Fonte",
     "searchQueryLabel": "Termo de pesquisa",
     "searchQueryPlaceholder": "paisagem natureza",
     "rotateEveryLabel": "Trocar a cada",
@@ -2457,10 +2454,6 @@
       "photoCountOne": "{count} foto",
       "photoCountOther": "{count} fotos",
       "noPhotosInFolder": "Ainda não há fotos nesta pasta."
-    },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Planos de fundo"
     },
     "intervals": {
       "minutes": "{count} minutos",
@@ -2495,8 +2488,6 @@
       "collectionNotFound": "Coleção não encontrada. Verifique o ID ou o link.",
       "collectionValid": "{title} ({count} fotos)"
     },
-    "needsKey": "Precisa de uma chave gratuita",
-    "starterHeading": "Planos de fundo que já vêm com o Home Screens",
     "groups": {
       "theme": "Combina com um tema de tela cheia",
       "color": "Cores",
@@ -2527,9 +2518,8 @@
       "pattern-diagonal": "Diagonal",
       "pattern-paper": "Papel"
     },
-    "yourPicturesHeading": "Suas próprias fotos",
     "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
-    "pickerHint": "Escolha uma única imagem fixa abaixo, ou ative a Auto-rotação acima para que o Home Screens gire automaticamente por uma fonte.",
+    "pickMedia": "Escolher imagem de fundo",
     "shadeGroup": "Escurecimento",
     "shadeEnable": "Escurecer o plano de fundo",
     "shadeStyleLabel": "Estilo",
@@ -2546,7 +2536,9 @@
     "title": "Biblioteca de imagens",
     "tabs": {
       "local": "Local",
-      "unsplash": "Unsplash"
+      "unsplash": "Unsplash",
+      "nasa": "NASA",
+      "immich": "Immich"
     },
     "allPhotos": "Todas as fotos",
     "newFolderPlaceholder": "Nome da pasta",
@@ -4838,70 +4830,6 @@
   "imageBrowsers": {
     "errors": {
       "saveImage": "Falha ao salvar a imagem"
-    },
-    "immich": {
-      "allPhotos": "Todas as fotos",
-      "noPhotos": "Nenhuma foto encontrada",
-      "attribution": "Fotos da sua biblioteca do Immich",
-      "notConfiguredPrefix": "Adicione a URL do servidor Immich e a chave de API em",
-      "settingsWord": "Configurações",
-      "notConfiguredSuffix": "para navegar pela sua biblioteca de fotos.",
-      "apiKeyHint": "Crie uma chave de API em Immich → Configurações da conta → Chaves de API",
-      "errors": {
-        "loadPhotos": "Falha ao carregar as fotos",
-        "fetchImage": "Não foi possível carregar esta imagem"
-      }
-    },
-    "unsplash": {
-      "attribution": "Fotos do Unsplash",
-      "searchPlaceholder": "Pesquisar qualquer coisa...",
-      "notConfiguredPrefix": "Adicione uma chave de API gratuita do Unsplash em",
-      "settingsWord": "Configurações",
-      "notConfiguredSuffix": "para navegar por milhares de fundos em HD.",
-      "apiKeyHint": "Obtenha uma em unsplash.com/developers",
-      "errors": {
-        "search": "Falha ao pesquisar no Unsplash"
-      },
-      "categories": {
-        "nature": "Natureza",
-        "mountains": "Montanhas",
-        "ocean": "Oceano",
-        "forest": "Floresta",
-        "sky": "Céu",
-        "space": "Espaço",
-        "city": "Cidade",
-        "abstract": "Abstrato",
-        "flowers": "Flores",
-        "seasons": "Estações"
-      }
-    },
-    "nasa": {
-      "attribution": "Imagens cortesia da NASA",
-      "searchPlaceholder": "Pesquisar imagens da NASA...",
-      "watermarkNote": "Observação: algumas imagens da NASA têm datas ou marcas d'água incorporadas que não podem ser removidas.",
-      "notConfiguredPrefix": "Adicione uma chave de API gratuita da NASA em",
-      "settingsWord": "Configurações",
-      "notConfiguredSuffix": "para navegar pela Foto Astronômica do Dia.",
-      "apiKeyHint": "Obtenha uma em api.nasa.gov",
-      "modes": {
-        "apod": "Foto do dia",
-        "library": "Biblioteca de imagens"
-      },
-      "errors": {
-        "fetch": "Não foi possível carregar as imagens da NASA"
-      },
-      "categories": {
-        "nebula": "Nebulosa",
-        "galaxy": "Galáxia",
-        "earth": "Terra",
-        "mars": "Marte",
-        "moon": "Lua",
-        "saturn": "Saturno",
-        "jupiter": "Júpiter",
-        "sun": "Sol",
-        "aurora": "Aurora",
-        "iss": "ISS"
-      }
     },
     "search": {
       "placeholder": "Pesquisar qualquer coisa...",

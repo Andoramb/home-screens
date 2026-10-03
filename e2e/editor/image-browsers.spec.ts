@@ -15,9 +15,9 @@ import { stubModuleData } from '../helpers/stubs';
  * reached (asserted via `externalHits`).
  *
  * Entry points were read from the sources rather than guessed:
- *  - UnsplashBrowser / NasaBrowser / ImmichBrowser render inside BackgroundPicker,
- *    which is the PropertyPanel empty-state "Background" accordion (no module
- *    selected). Each writes the chosen image to `screen.backgroundImage`.
+ *  - BackgroundPicker opens the shared ImageBrowserModal for fixed images;
+ *    it writes the chosen path to `screen.backgroundImage`. Rotation uses
+ *    its own source checklist, not another static-image tab strip.
  *  - ImageBrowserModal opens from the image module's Library tab and writes the
  *    chosen path to the module's `config.src`.
  */
@@ -48,20 +48,15 @@ async function openBackgroundPicker(page: Page, request: APIRequestContext) {
   }));
   await page.goto('/editor');
   await expect(page.getByTestId('editor-canvas')).toBeVisible();
-  await expect(page.getByText('Select a module to edit')).toBeVisible();
-  // The Background source tabs live in the (default-open) Background accordion.
-  await expect(page.getByRole('button', { name: 'NASA', exact: true })).toBeVisible();
+  await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
+  await expect(page.getByRole('button', { name: 'Choose background image' })).toBeVisible();
 }
 
-test.describe('Background source browsers (PropertyPanel Background picker)', () => {
-  test.beforeEach(async ({ request }) => {
+test.describe('Background media picker', () => {
+  test('Unsplash in the shared media picker saves a fixed image', async ({ page, request }) => {
     await seedImageSecrets(request);
-  });
-
-  test('Unsplash: searching renders results and picking persists backgroundImage', async ({ page, request }) => {
     const handle = await stubModuleData(page, { blockExternal: true });
     const SAVED = '/api/backgrounds/serve?file=unsplash-u1.jpg';
-    // GET = search results; POST = download-to-local, returns the served path.
     await page.route('**/api/unsplash*', async (route) => {
       if (route.request().method() === 'POST') {
         return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ path: SAVED }) });
@@ -70,107 +65,35 @@ test.describe('Background source browsers (PropertyPanel Background picker)', ()
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify({
-          photos: [{
-            id: 'u1', description: 'Sunset Peak', thumb: TINY_PNG, small: TINY_PNG,
-            regular: TINY_PNG, full: TINY_PNG, raw: TINY_PNG,
-            authorName: 'Ansel', authorUrl: '', downloadUrl: '',
-          }],
+          photos: [{ id: 'u1', description: 'Sunset Peak', thumb: TINY_PNG,
+            regular: TINY_PNG, authorName: 'Ansel', downloadUrl: '' }],
           totalPages: 1,
         }),
       });
     });
 
     await openBackgroundPicker(page, request);
-    // The picker opens on the backgrounds that ship with Home Screens; the
-    // Unsplash browser auto-runs its first category search once opened.
-    await page.getByTestId('background-tab-unsplash').click();
-
-    const photo = page.getByRole('img', { name: 'Sunset Peak' });
+    await page.getByRole('button', { name: 'Choose background image' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Unsplash', exact: true }).click();
+    const photo = dialog.getByRole('img', { name: 'Sunset Peak' });
     await expect(photo).toBeVisible();
     await autosaved(page, async () => { await photo.click(); });
-
-    await expect
-      .poll(async () => (await getConfig(request)).screens[0].backgroundImage)
-      .toBe(SAVED);
+    await expect.poll(async () => (await getConfig(request)).screens[0].backgroundImage).toBe(SAVED);
     expect(handle.externalHits).toEqual([]);
   });
 
-  test('Unsplash: a failed search shows the kid-friendly error message', async ({ page, request }) => {
+  test('Unsplash search failures show an error in the shared picker', async ({ page, request }) => {
+    await seedImageSecrets(request);
     await stubModuleData(page, { blockExternal: true });
     await page.route('**/api/unsplash*', (route) =>
       route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'boom' }) }),
     );
-
     await openBackgroundPicker(page, request);
-    await page.getByTestId('background-tab-unsplash').click();
-
-    // ImageSearchBrowser swallows the thrown error into a plain message.
-    await expect(page.getByText('Failed to load images')).toBeVisible();
-  });
-
-  test('NASA: Picture-of-the-Day results render and picking persists backgroundImage', async ({ page, request }) => {
-    const handle = await stubModuleData(page, { blockExternal: true });
-    const SAVED = '/api/backgrounds/serve?file=nasa-n1.jpg';
-    await page.route('**/api/nasa*', async (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ path: SAVED }) });
-      }
-      // `hdurl` present so the save path skips the /api/nasa/asset lookup.
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          photos: [{ id: 'n1', title: 'Orion Nebula', description: '', date: '2024-01-01', thumb: TINY_PNG, hdurl: TINY_PNG }],
-          totalPages: 1,
-        }),
-      });
-    });
-
-    await openBackgroundPicker(page, request);
-    await page.getByRole('button', { name: 'NASA', exact: true }).click();
-
-    const photo = page.getByRole('img', { name: 'Orion Nebula' });
-    await expect(photo).toBeVisible();
-    await autosaved(page, async () => { await photo.click(); });
-
-    await expect
-      .poll(async () => (await getConfig(request)).screens[0].backgroundImage)
-      .toBe(SAVED);
-    expect(handle.externalHits).toEqual([]);
-  });
-
-  test('Immich: album photos render and picking uploads + persists backgroundImage', async ({ page, request }) => {
-    const handle = await stubModuleData(page, { blockExternal: true });
-    const SAVED = '/api/backgrounds/serve?file=immich-asset-9.jpg';
-    await page.route('**/api/immich/albums*', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{ id: 'al1', name: 'Family', assetCount: 2 }]) }),
-    );
-    await page.route('**/api/immich/photos*', (route) =>
-      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(['/api/immich/serve?assetId=asset-9&size=preview']) }),
-    );
-    // Serves both the thumbnail <img> and the binary the save handler re-fetches.
-    await page.route('**/api/immich/serve*', (route) =>
-      route.fulfill({ status: 200, contentType: 'image/jpeg', body: TINY_PNG_BYTES }),
-    );
-    // The Immich picker uploads the fetched binary to /api/backgrounds (POST).
-    await page.route('**/api/backgrounds', (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ path: SAVED }) });
-      }
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) });
-    });
-
-    await openBackgroundPicker(page, request);
-    await page.getByRole('button', { name: 'Immich', exact: true }).click();
-
-    const photo = page.locator('button:has(img[src*="asset-9"])');
-    await expect(photo).toBeVisible();
-    await autosaved(page, async () => { await photo.click(); });
-
-    await expect
-      .poll(async () => (await getConfig(request)).screens[0].backgroundImage)
-      .toBe(SAVED);
-    expect(handle.externalHits).toEqual([]);
+    await page.getByRole('button', { name: 'Choose background image' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByRole('button', { name: 'Unsplash', exact: true }).click();
+    await expect(dialog.getByText('Failed to load images')).toBeVisible();
   });
 });
 
