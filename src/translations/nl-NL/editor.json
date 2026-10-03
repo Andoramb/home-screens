@@ -2536,9 +2536,7 @@
     "title": "Afbeeldingsbibliotheek",
     "tabs": {
       "local": "Lokaal",
-      "unsplash": "Unsplash",
-      "nasa": "NASA",
-      "immich": "Immich"
+      "unsplash": "Unsplash"
     },
     "allPhotos": "Alle foto's",
     "newFolderPlaceholder": "Mapnaam",

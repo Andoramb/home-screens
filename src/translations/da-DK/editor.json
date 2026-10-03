@@ -2536,9 +2536,7 @@
     "title": "Billedarkiv",
     "tabs": {
       "local": "Lokalt",
-      "unsplash": "Unsplash",
-      "nasa": "NASA",
-      "immich": "Immich"
+      "unsplash": "Unsplash"
     },
     "allPhotos": "Alle billeder",
     "newFolderPlaceholder": "Mappenavn",

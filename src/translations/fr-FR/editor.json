@@ -2536,9 +2536,7 @@
     "title": "Bibliothèque d'images",
     "tabs": {
       "local": "Local",
-      "unsplash": "Unsplash",
-      "nasa": "NASA",
-      "immich": "Immich"
+      "unsplash": "Unsplash"
     },
     "allPhotos": "Toutes les photos",
     "newFolderPlaceholder": "Nom du dossier",

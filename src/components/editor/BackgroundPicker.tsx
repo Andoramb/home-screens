@@ -344,7 +344,6 @@ export default function BackgroundPicker() {
         <ImageBrowserModal
           mode="pick-image"
           showStarterBackgrounds
-          showRemoteBackgrounds
           selectedBackgroundPath={backgroundPath}
           allowDelete={false}
           onSelectImage={pickBackground}

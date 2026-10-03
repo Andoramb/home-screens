@@ -256,9 +256,20 @@ test.describe('background picker', () => {
     await page.getByTestId('editor-canvas').click({ position: { x: 5, y: 5 } });
 
     await expect(page.locator('[data-testid^="background-tab-"]')).toHaveCount(0);
+    await expect(page.getByText('Pick one fixed image below')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Choose background image' })).toHaveCount(1);
     await page.getByRole('button', { name: 'Choose background image' }).click();
-    await expect(page.getByTestId('starter-background-midnight')).toBeVisible();
-    await expect(page.getByTestId('starter-group-theme')).toBeVisible();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('button', { name: 'NASA', exact: true })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'Immich', exact: true })).toHaveCount(0);
+    const bundled = dialog.getByTestId('local-library-bundled');
+    await expect(bundled.getByTestId('starter-background-midnight')).toBeVisible();
+    await expect(bundled.getByTestId('starter-group-theme')).toBeVisible();
+    await expect(bundled.getByTestId('starter-group-color')).toBeVisible();
+    await expect(bundled.getByTestId('starter-group-pattern')).toBeVisible();
+    expect(await dialog.getByTestId('local-library-media-grid').evaluate((grid, section) =>
+      !!(grid.compareDocumentPosition(section as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+    await bundled.elementHandle())).toBe(true);
   });
 
   test('a rotating screen paints its photo without showing its own picture first', async ({ page, request }) => {

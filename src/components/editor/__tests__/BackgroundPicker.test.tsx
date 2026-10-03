@@ -212,21 +212,27 @@ describe('BackgroundPicker — Unsplash query/collections toggle', () => {
 });
 
 describe('BackgroundPicker — single media picker', () => {
-  it('removes the duplicate legacy tab strip and puts bundled wallpapers in the local media picker', () => {
+  it('has one fixed-image entry and puts bundled wallpapers below the local library grid, without remote fixed-image tabs', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(container.textContent).not.toContain('Pick one fixed image below');
     expect(container.querySelector('[data-testid^="background-tab-"]')).toBeNull();
+    expect(screen.getAllByRole('button', { name: enUSEditor.backgroundPicker.pickMedia })).toHaveLength(1);
     expect(container.querySelector('[data-testid="starter-group-theme"]')).toBeNull();
 
     fireEvent.click(screen.getByText(enUSEditor.backgroundPicker.pickMedia));
-    expect(screen.getByRole('dialog')).not.toBeNull();
-    expect(screen.getByRole('button', { name: 'NASA' })).not.toBeNull();
-    expect((screen.getByRole('button', { name: 'Immich' }) as HTMLButtonElement).disabled).toBe(true);
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).not.toBeNull();
+    expect(dialog.querySelectorAll('[data-testid="starter-background-collection"]')).toHaveLength(1);
+    expect(dialog.querySelector('[data-testid="local-library-bundled"]')).not.toBeNull();
+    const localPanel = dialog.querySelector('[data-testid="local-library-bundled"]')!;
+    const mediaGrid = dialog.querySelector('[data-testid="local-library-media-grid"]')!;
+    expect(mediaGrid.compareDocumentPosition(localPanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'NASA' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Immich' })).toBeNull();
     for (const group of ['theme', 'color', 'pattern']) {
-      expect(screen.getByTestId(`starter-group-${group}`)).not.toBeNull();
+      expect(localPanel.querySelector(`[data-testid="starter-group-${group}"]`)).not.toBeNull();
     }
-    expect(screen.getByTestId('starter-background-collection')).not.toBeNull();
   });
 
   it('picking a bundled wallpaper saves the path and disables active rotation', () => {

@@ -15,8 +15,6 @@ import ICloudImportPanel from './ICloudImportPanel';
 import { useTranslate } from '@/i18n';
 import { useEditorStore, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
 import StarterBackgroundCollection from './StarterBackgroundCollection';
-import NasaBrowser from './NasaBrowser';
-import ImmichBrowser from './ImmichBrowser';
 
 interface UnsplashPhoto {
   id: string;
@@ -51,7 +49,6 @@ interface ImageBrowserModalProps {
   initialDirectory?: string;
   /** Offer bundled theme/color/pattern wallpapers alongside the local library. */
   showStarterBackgrounds?: boolean;
-  showRemoteBackgrounds?: boolean;
   selectedBackgroundPath?: string;
   /** Keep the background picker focused on choosing, not deleting library files. */
   allowDelete?: boolean;
@@ -72,7 +69,6 @@ export default function ImageBrowserModal({
   mode,
   initialDirectory = '',
   showStarterBackgrounds = false,
-  showRemoteBackgrounds = false,
   selectedBackgroundPath = '',
   allowDelete = true,
   onSelectImage,
@@ -86,12 +82,10 @@ export default function ImageBrowserModal({
   const dims = config && showStarterBackgrounds ? getActiveDimensions(config, selectedDisplayId) : null;
   const themeInUse = config && showStarterBackgrounds ? getActiveFullscreenTheme(config, selectedDisplayId) ?? 'linen' : 'linen';
   const lib = useImageLibrary({ initialDirectory });
-  const [tab, setTab] = useState<'local' | 'unsplash' | 'nasa' | 'immich'>('local');
+  const [tab, setTab] = useState<'local' | 'unsplash'>('local');
   // Unsplash key gates the second tab, which only exists in pick-image mode.
   const { status: secretStatus } = useSecretStatus(mode === 'pick-image');
   const hasUnsplashKey = !!secretStatus.unsplash_access_key;
-  const hasNasaKey = !!secretStatus.nasa_api_key;
-  const hasImmichKey = !!secretStatus.immich_api_key && !!secretStatus.immich_url;
 
   // Translated category list. Categories are stable per-locale; rebuild only
   // when `t` changes (i.e. on locale switch).
@@ -195,7 +189,7 @@ export default function ImageBrowserModal({
   const isConfirmDisabled =
     mode === 'manage-directory' ? false : !lib.selectedImage;
 
-  const showTabs = mode === 'pick-image' && (hasUnsplashKey || showRemoteBackgrounds);
+  const showTabs = mode === 'pick-image' && hasUnsplashKey;
 
   return (
     <div className="fixed inset-0 z-modal flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label={mode === 'pick-video' ? t('imageBrowserModal.titleVideos') : t('imageBrowserModal.title')}>
@@ -229,16 +223,7 @@ export default function ImageBrowserModal({
                   }`}
                 >
                   {t('imageBrowserModal.tabs.unsplash')}
-                </button>}                {showRemoteBackgrounds && (['nasa', 'immich'] as const).map((source) => (
-                  <button
-                    key={source}
-                    onClick={() => setTab(source)}
-                    disabled={source === 'immich' && !hasImmichKey}
-                    className={`text-xs px-2.5 py-1 rounded disabled:opacity-40 ${tab === source ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'}`}
-                  >
-                    {t(`imageBrowserModal.tabs.${source}`)}
-                  </button>
-                ))}
+                </button>}
               </div>
             )}
           </div>
@@ -276,16 +261,6 @@ export default function ImageBrowserModal({
                 same library, and "get my stuff in here" applies equally. */}
             <div className="flex-1 flex flex-col min-w-0">
               <ICloudImportPanel selectedDir={lib.selectedDir} onImported={lib.refresh} />
-              {showStarterBackgrounds && mode === 'pick-image' && (
-                <div className="max-h-[45%] shrink-0 overflow-y-auto">
-                  <StarterBackgroundCollection
-                    selectedPath={selectedBackgroundPath}
-                    onPick={(path) => { onSelectImage?.(path); onClose(); }}
-                    themeInUse={themeInUse}
-                    landscape={!!dims && dims.width > dims.height}
-                  />
-                </div>
-              )}
               <MediaGrid
                 items={visibleItems}
                 mode={mode}
@@ -309,12 +284,18 @@ export default function ImageBrowserModal({
                 fileInputRef={lib.fileInputRef}
                 error={lib.error}
               />
+              {showStarterBackgrounds && mode === 'pick-image' && (
+                <div className="max-h-[45%] shrink-0 overflow-y-auto" data-testid="local-library-bundled">
+                  <StarterBackgroundCollection
+                    selectedPath={selectedBackgroundPath}
+                    onPick={(path) => { onSelectImage?.(path); onClose(); }}
+                    themeInUse={themeInUse}
+                    landscape={!!dims && dims.width > dims.height}
+                  />
+                </div>
+              )}
             </div>
           </div>
-        ) : tab === 'nasa' ? (
-          <div className="flex-1 overflow-y-auto p-4"><NasaBrowser hasNasaKey={hasNasaKey} onSelectImage={(path) => { onSelectImage?.(path); onClose(); }} /></div>
-        ) : tab === 'immich' ? (
-          <div className="flex-1 overflow-y-auto p-4"><ImmichBrowser hasImmichKey={hasImmichKey} onSelectImage={(path) => { onSelectImage?.(path); onClose(); }} /></div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4">
             <ImageSearchBrowser
@@ -513,7 +494,7 @@ function MediaGrid({
     ? t('configSections.video.noVideosYet')
     : t('imageBrowserModal.emptyPhotos');
   return (
-    <div className="flex-1 flex flex-col min-w-0 min-h-0">
+    <div className="flex-1 flex flex-col min-w-0 min-h-0" data-testid="local-library-media-grid">
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-hs-border">
         <span className="text-xs text-hs-text-muted flex-1">

@@ -2536,9 +2536,7 @@
     "title": "Bildersammlung",
     "tabs": {
       "local": "Lokal",
-      "unsplash": "Unsplash",
-      "nasa": "NASA",
-      "immich": "Immich"
+      "unsplash": "Unsplash"
     },
     "allPhotos": "Alle Fotos",
     "newFolderPlaceholder": "Ordnername",
