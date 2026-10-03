@@ -4304,6 +4304,7 @@
       "favoriteTeamsHidden": "league is off",
       "favoriteTeamsLimit": "That is the most teams this module can follow ({count}). Remove one to add another.",
       "favoriteTeamsRemove": "Remove {team}",
+      "favoriteTeamsDrag": "Drag to move {team}",
       "favoritesOnly": "Only show my teams' games",
       "tickerSpeed": "Ticker Speed (sec/game)"
     },
@@ -4316,6 +4317,7 @@
       "groupingLeague": "Full League",
       "league": "League",
       "grouping": "Grouping",
+      "favoriteTeamsHelp": "These teams stand out in the table.",
       "playoffCutoffLine": "Playoff Cutoff Line",
       "teamsToShow": "Teams to Show (0 = all)",
       "rotationSeconds": "Rotation (seconds)"

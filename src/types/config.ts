@@ -3159,8 +3159,8 @@ export interface SportsConfig {
   /** Display mode: `scoreboard`, `cards`, `list`, `ticker`, or `team` (one card per favorite team) */
   view: SportsView;
   /**
-   * Leagues to show: `nfl`, `ncaaf`, `nba`, `wnba`, `mlb`, `nhl`, `mls`, `epl`, `laliga`,
-   * `bundesliga`, `seriea`, `ligue1`, `liga_mx`
+   * Leagues to show: `nfl`, `ncaaf`, `nba`, `ncaam`, `wnba`, `ncaaw`, `mlb`, `nhl`, `mls`,
+   * `epl`, `laliga`, `bundesliga`, `seriea`, `ligue1`, `liga_mx`
    */
   leagues: string[];
   /**
@@ -3393,6 +3393,12 @@ export interface StandingsConfig {
   league: string;
   /** How to group teams: `division`, `conference`, or `league` */
   grouping: StandingsGrouping;
+  /**
+   * Teams whose rows stand out, as `<league>:<abbreviation>` (for example `nfl:MIN`)
+   *
+   * @default []
+   */
+  favoriteTeams?: string[];
   /** Limit number of teams per group (0 = show all) */
   teamsToShow: number;
   /** Draw a visual line below the last playoff spot */

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Game } from '../espn';
-import { favoriteRank, favoriteSide, isFavoriteGame, orderGames, parseTeamKey, teamKey } from '../sports-order';
+import { favoriteRank, favoriteSide, isFavoriteGame, isFavoriteTeam, orderGames, parseTeamKey, teamKey } from '../sports-order';
 
 function game(id: string, league: string, away: string, home: string): Game {
   return {
@@ -74,5 +74,14 @@ describe('favoriteSide / isFavoriteGame', () => {
     expect(favoriteSide(GAMES[2], ['nfl:MIN', 'nfl:MIA'])).toBe('away');
     expect(favoriteSide(GAMES[2], ['nfl:GB'])).toBeNull();
     expect(isFavoriteGame(GAMES[2], ['nfl:min'])).toBe(true);
+  });
+});
+
+describe('isFavoriteTeam', () => {
+  it('matches league and abbreviation in any case, and nothing with an empty list', () => {
+    expect(isFavoriteTeam('NFL', 'min', ['nfl:MIN'])).toBe(true);
+    expect(isFavoriteTeam('ncaaf', 'MINN', ['nfl:MIN'])).toBe(false);
+    expect(isFavoriteTeam('nfl', 'MIN', [])).toBe(false);
+    expect(isFavoriteTeam('nfl', 'MIN')).toBe(false);
   });
 });

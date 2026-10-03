@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { LEAGUE_MAP, SPORTS_LEAGUES, SCOREBOARD_PARAMS, leagueLabel, leagueWallCode, parseESPNEvent, parseESPNTeam, scoreboardUrl } from '../espn';
+import { COLLEGE_LEAGUES, LEAGUE_MAP, SPORTS_LEAGUES, SCOREBOARD_PARAMS, leagueLabel, leagueWallCode, parseCuratedRank, parseESPNEvent, parseESPNTeam, scoreboardUrl } from '../espn';
 
 describe('LEAGUE_MAP', () => {
   it('contains all expected leagues', () => {
     const expectedLeagues = [
-      'nfl', 'ncaaf', 'nba', 'wnba', 'mlb', 'nhl', 'mls',
+      'nfl', 'ncaaf', 'nba', 'ncaam', 'wnba', 'ncaaw', 'mlb', 'nhl', 'mls',
       'epl', 'laliga', 'bundesliga', 'seriea', 'ligue1', 'liga_mx',
     ];
     for (const league of expectedLeagues) {
@@ -82,8 +82,11 @@ describe('SPORTS_LEAGUES', () => {
     expect(SPORTS_LEAGUES.map((l) => l.id).sort()).toEqual(Object.keys(LEAGUE_MAP).sort());
   });
 
-  it('every extra scoreboard param names a known league', () => {
+  it('every extra scoreboard param names a known league, and every college league has one', () => {
     for (const id of Object.keys(SCOREBOARD_PARAMS)) expect(LEAGUE_MAP[id]).toBeTruthy();
+    for (const id of COLLEGE_LEAGUES) expect(SCOREBOARD_PARAMS[id]).toMatch(/^groups=\d+&limit=\d+$/);
+    expect(scoreboardUrl('ncaam')).toContain('mens-college-basketball/scoreboard?groups=50&limit=400');
+    expect(scoreboardUrl('ncaaw')).toContain('womens-college-basketball/scoreboard?groups=50&limit=400');
   });
 
   it('wall codes stay short enough for a list row and labels are human', () => {
@@ -103,6 +106,15 @@ describe('scoreboardUrl', () => {
   });
 });
 
+describe('parseCuratedRank', () => {
+  it('keeps a top-25 rank and drops ESPN\'s 99 for unranked, or anything missing', () => {
+    expect(parseCuratedRank({ curatedRank: { current: 5 } })).toBe(5);
+    expect(parseCuratedRank({ curatedRank: { current: 99 } })).toBeUndefined();
+    expect(parseCuratedRank({})).toBeUndefined();
+    expect(parseCuratedRank(undefined)).toBeUndefined();
+  });
+});
+
 describe('parseESPNEvent', () => {
   it('reads the scoreboard shape', () => {
     const g = parseESPNEvent({
@@ -112,12 +124,13 @@ describe('parseESPNEvent', () => {
         venue: { fullName: 'U.S. Bank Stadium' },
         broadcasts: [{ market: 'national', names: ['FOX'] }],
         competitors: [
-          { homeAway: 'home', score: '24', team: { displayName: 'Minnesota Vikings', abbreviation: 'MIN', color: '4f2683' }, records: [{ summary: '3-0' }] },
-          { homeAway: 'away', score: '17', team: { displayName: 'Miami Dolphins', abbreviation: 'MIA' } },
+          { homeAway: 'home', score: '24', team: { displayName: 'Minnesota Vikings', abbreviation: 'MIN', color: '4f2683' }, records: [{ summary: '3-0' }], curatedRank: { current: 99 } },
+          { homeAway: 'away', score: '17', team: { displayName: 'Miami Dolphins', abbreviation: 'MIA' }, curatedRank: { current: 7 } },
         ],
       }],
     }, 'nfl');
-    expect(g).toMatchObject({ league: 'NFL', homeTeamAbbr: 'MIN', awayTeamAbbr: 'MIA', homeScore: 24, awayScore: 17, homeRecord: '3-0', state: 'in', broadcast: 'FOX', venue: 'U.S. Bank Stadium' });
+    expect(g).toMatchObject({ league: 'NFL', homeTeamAbbr: 'MIN', awayTeamAbbr: 'MIA', homeScore: 24, awayScore: 17, homeRecord: '3-0', state: 'in', broadcast: 'FOX', venue: 'U.S. Bank Stadium', awayRank: 7 });
+    expect(g.homeRank).toBeUndefined();
   });
 
   it('reads the team schedule shape: status on the competition, object scores, media broadcasts', () => {

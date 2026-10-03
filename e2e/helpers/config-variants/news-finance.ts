@@ -634,6 +634,13 @@ export const NEWS_FINANCE_VARIANTS: ConfigVariant[] = [
     expect: has('LIGA MX'),
   },
   {
+    // A college game carries AP ranks; the ranked side prints its number before the abbreviation.
+    type: 'sports', name: 'ap-rank', kind: 'networked', stubKey: 'sports',
+    stubBody: { games: [{ ...SPORTS_GAME, league: 'NCAAF', awayTeamAbbr: 'ALA', homeTeamAbbr: 'MSST', awayRank: 7 }] },
+    config: { view: 'list' },
+    expect: async (mod) => { await has('#7')(mod); await count('[data-testid="ap-rank"]', 1)(mod); },
+  },
+  {
     // Team view before kickoff: the kickoff label and the last result line.
     type: 'sports', name: 'team-upcoming', kind: 'networked', stubKey: 'sports-team',
     config: { view: 'team', favoriteTeams: ['nfl:MIN'] },
@@ -649,9 +656,21 @@ export const NEWS_FINANCE_VARIANTS: ConfigVariant[] = [
   // -- standings --
   {
     // College football groups by conference; the second conference rotates in.
+    // The Gophers carry an AP rank in the fixture, printed after the name.
     type: 'standings', name: 'ncaaf-conferences', kind: 'networked', stubKey: 'standings', stubBody: STANDINGS_NCAAF,
     config: { view: 'table', league: 'ncaaf', grouping: 'conference', rotationIntervalMs: 400 },
-    expect: async (mod) => { await has('Gophers')(mod); await has('Southeastern Conference')(mod); },
+    expect: async (mod) => { await has('Gophers')(mod); await has('#12')(mod); await has('Southeastern Conference')(mod); },
+  },
+  {
+    // One favorite among eight: exactly its row carries the highlight.
+    type: 'standings', name: 'favorite-row', kind: 'networked', stubKey: 'standings', stubBody: STANDINGS_8,
+    config: { view: 'table', league: 'nfl', grouping: 'division', favoriteTeams: ['nfl:T2'] },
+    expect: async (mod) => { await has('Team2')(mod); await count('[data-favorite="true"]', 1)(mod); },
+  },
+  {
+    type: 'standings', name: 'favorite-row-compact', kind: 'networked', stubKey: 'standings', stubBody: STANDINGS_8,
+    config: { view: 'compact', league: 'nfl', grouping: 'division', favoriteTeams: ['nfl:T3', 'nfl:T5'] },
+    expect: count('[data-favorite="true"]', 2),
   },
   {
     // 8 teams capped to 3 → ranks 1-3 render, rank 4 is dropped.

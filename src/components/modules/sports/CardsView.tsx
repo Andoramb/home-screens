@@ -1,7 +1,7 @@
 import type { Game } from '@/lib/espn';
 import { leagueWallCode } from '@/lib/espn';
 import { favoriteSide } from '@/lib/sports-order';
-import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, FAVORITE_GUTTER, type KickoffFn } from './shared';
+import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, FAVORITE_GUTTER, type KickoffFn } from './shared';
 
 function GameCard({ game, kickoff, favorites }: { game: Game; kickoff: KickoffFn; favorites: string[] }) {
   const awayWins = isWinner(game, 'away');
@@ -31,6 +31,7 @@ function GameCard({ game, kickoff, favorites }: { game: Game; kickoff: KickoffFn
 
       <div className="flex items-center gap-2">
         <TeamLogo src={game.awayTeamLogo} alt={game.awayTeamAbbr} size={20} />
+        <RankTag rank={game.awayRank} />
         <span
           className={`flex-1 font-semibold truncate ${awayWins ? 'text-current' : 'text-current/70'}`}
           style={{ fontSize: '0.85em' }}
@@ -47,6 +48,7 @@ function GameCard({ game, kickoff, favorites }: { game: Game; kickoff: KickoffFn
 
       <div className="flex items-center gap-2">
         <TeamLogo src={game.homeTeamLogo} alt={game.homeTeamAbbr} size={20} />
+        <RankTag rank={game.homeRank} />
         <span
           className={`flex-1 font-semibold truncate ${homeWins ? 'text-current' : 'text-current/70'}`}
           style={{ fontSize: '0.85em' }}

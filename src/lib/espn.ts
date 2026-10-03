@@ -3,6 +3,8 @@ export const LEAGUE_MAP: Record<string, string> = {
   nfl: 'football/nfl',
   ncaaf: 'football/college-football',
   nba: 'basketball/nba',
+  ncaam: 'basketball/mens-college-basketball',
+  ncaaw: 'basketball/womens-college-basketball',
   wnba: 'basketball/wnba',
   mlb: 'baseball/mlb',
   nhl: 'hockey/nhl',
@@ -22,7 +24,17 @@ export const LEAGUE_MAP: Record<string, string> = {
  */
 export const SCOREBOARD_PARAMS: Record<string, string> = {
   ncaaf: 'groups=80&limit=200',
+  ncaam: 'groups=50&limit=400',
+  ncaaw: 'groups=50&limit=400',
 };
+
+/**
+ * Leagues whose roster comes from the standings endpoint rather than the
+ * team list: ESPN's team list for college sports spans every division and
+ * ignores the group filter, while standings list exactly the top division.
+ * These are also the leagues whose teams carry an AP poll rank.
+ */
+export const COLLEGE_LEAGUES = new Set(['ncaaf', 'ncaam', 'ncaaw']);
 
 /** The scoreboard URL for a league, with the per-league extras ESPN needs; null for an unknown league. */
 export function scoreboardUrl(league: string): string | null {
@@ -49,7 +61,9 @@ export const SPORTS_LEAGUES: SportsLeague[] = [
   { id: 'nfl', label: 'NFL', wallCode: 'NFL', group: 'american' },
   { id: 'ncaaf', label: 'College Football', wallCode: 'NCAAF', group: 'american' },
   { id: 'nba', label: 'NBA', wallCode: 'NBA', group: 'american' },
+  { id: 'ncaam', label: "Men's College Basketball", wallCode: 'NCAAM', group: 'american' },
   { id: 'wnba', label: 'WNBA', wallCode: 'WNBA', group: 'american' },
+  { id: 'ncaaw', label: "Women's College Basketball", wallCode: 'NCAAW', group: 'american' },
   { id: 'mlb', label: 'MLB', wallCode: 'MLB', group: 'american' },
   { id: 'nhl', label: 'NHL', wallCode: 'NHL', group: 'american' },
   { id: 'mls', label: 'MLS', wallCode: 'MLS', group: 'american' },
@@ -126,6 +140,15 @@ export interface Game {
   broadcast: string;
   /** Stadium or arena name when ESPN names one. */
   venue?: string;
+  /** AP poll rank (1 to 25) for college teams; absent for pro leagues and unranked teams. */
+  homeRank?: number;
+  awayRank?: number;
+}
+
+/** ESPN's `curatedRank.current` is 99 for an unranked team; only a top-25 rank is worth printing. */
+export function parseCuratedRank(competitor: Record<string, unknown> | undefined): number | undefined {
+  const rank = Number((competitor?.curatedRank as Record<string, unknown> | undefined)?.current);
+  return Number.isFinite(rank) && rank >= 1 && rank <= 25 ? rank : undefined;
 }
 
 /** One row of GET /api/sports/teams, the editor's team picker. */
@@ -160,6 +183,8 @@ export interface TeamCard {
   record: string;
   /** ESPN's standing line such as `1st in NFC North`. */
   standing: string;
+  /** AP poll rank for a ranked college team. */
+  rank?: number;
   featured: Game | null;
   featuredKind: 'live' | 'next' | 'last' | null;
   last: Game | null;
@@ -209,6 +234,8 @@ export function parseESPNEvent(event: Record<string, unknown>, league: string): 
 
   const ht = parseESPNTeam(homeTeam);
   const at = parseESPNTeam(awayTeam);
+  const homeRank = parseCuratedRank(home);
+  const awayRank = parseCuratedRank(away);
 
   return {
     id: String(event.id ?? ''),
@@ -231,5 +258,7 @@ export function parseESPNEvent(event: Record<string, unknown>, league: string): 
     startTime: (event.date as string) ?? '',
     broadcast: broadcastNames?.join(', ') ?? '',
     ...(venue ? { venue } : {}),
+    ...(homeRank ? { homeRank } : {}),
+    ...(awayRank ? { awayRank } : {}),
   };
 }

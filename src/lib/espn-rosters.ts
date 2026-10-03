@@ -5,7 +5,7 @@
  * (`soccer/eng.1/teams/ars` is a 400; `teams/359` is Arsenal).
  */
 import { createTTLCache, fetchWithTimeout } from './api-utils';
-import { LEAGUE_MAP } from './espn';
+import { COLLEGE_LEAGUES, LEAGUE_MAP } from './espn';
 import type { TeamOption } from './espn';
 
 const ESPN = 'https://site.api.espn.com/apis';
@@ -43,12 +43,13 @@ async function fetchTeamList(league: string, path: string): Promise<TeamOption[]
 }
 
 /**
- * The FBS roster for college football. ESPN's teams endpoint ignores the
- * FBS group filter and answers 700-plus teams across every division; the
- * standings endpoint lists exactly the FBS conferences. Colors are merged
- * from the teams endpoint, which the standings payload lacks.
+ * The top-division roster for a college sport. ESPN's teams endpoint ignores
+ * the group filter and, for football, answers 700-plus teams across every
+ * division; the standings endpoint lists exactly the top division's
+ * conferences. Colors are merged from the teams endpoint, which the
+ * standings payload lacks.
  */
-async function fetchFbsTeams(league: string, path: string): Promise<TeamOption[]> {
+async function fetchCollegeTeams(league: string, path: string): Promise<TeamOption[]> {
   const [standingsRes, all] = await Promise.all([
     fetchWithTimeout(`${ESPN}/v2/sports/${path}/standings`),
     fetchTeamList(league, path).catch(() => [] as TeamOption[]),
@@ -75,7 +76,7 @@ export async function rosterFor(league: string): Promise<TeamOption[]> {
   if (cached) return cached;
   const path = LEAGUE_MAP[league];
   if (!path) throw new Error(`Unknown league: ${league}`);
-  const teams = league === 'ncaaf' ? await fetchFbsTeams(league, path) : await fetchTeamList(league, path);
+  const teams = COLLEGE_LEAGUES.has(league) ? await fetchCollegeTeams(league, path) : await fetchTeamList(league, path);
   teams.sort((a, b) => a.name.localeCompare(b.name));
   rosterCache.set(league, teams);
   return teams;

@@ -4304,6 +4304,7 @@
       "favoriteTeamsHidden": "ligaen er slået fra",
       "favoriteTeamsLimit": "Modulet kan ikke følge flere hold ({count}). Fjern et for at tilføje et andet.",
       "favoriteTeamsRemove": "Fjern {team}",
+      "favoriteTeamsDrag": "Flyt {team}",
       "favoritesOnly": "Vis kun mine holds kampe",
       "tickerSpeed": "Båndhastighed (sek./kamp)"
     },
@@ -4316,6 +4317,7 @@
       "groupingLeague": "Hele ligaen",
       "league": "Liga",
       "grouping": "Gruppering",
+      "favoriteTeamsHelp": "Disse hold fremhæves i tabellen.",
       "playoffCutoffLine": "Slutspilsgrænse",
       "teamsToShow": "Hold der vises (0 = alle)",
       "rotationSeconds": "Skift (sekunder)"

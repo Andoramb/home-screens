@@ -8,6 +8,7 @@ import ViewSelect from '@/components/editor/ViewSelect';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { INPUT_CLASS } from '@/components/editor/PropertyPanel';
 import { SPORTS_LEAGUES } from '@/lib/espn';
+import { FavoriteTeamsPicker } from './FavoriteTeamsPicker';
 import type { ModuleInstance, StandingsView, StandingsGrouping } from '@/types/config';
 
 export function StandingsConfigSection({ mod, screenId }: { mod: ModuleInstance; screenId: string }) {
@@ -16,6 +17,7 @@ export function StandingsConfigSection({ mod, screenId }: { mod: ModuleInstance;
     view?: StandingsView;
     league?: string;
     grouping?: StandingsGrouping;
+    favoriteTeams?: string[];
     teamsToShow?: number;
     showPlayoffLine?: boolean;
     rotationIntervalMs?: number;
@@ -65,6 +67,12 @@ export function StandingsConfigSection({ mod, screenId }: { mod: ModuleInstance;
           ))}
         </select>
       </div>
+      <FavoriteTeamsPicker
+        leagues={[c.league ?? 'nba']}
+        value={c.favoriteTeams ?? []}
+        onChange={(next) => set({ favoriteTeams: next })}
+        help={t('configSections.standings.favoriteTeamsHelp')}
+      />
       <Toggle
         label={t('configSections.standings.playoffCutoffLine')}
         checked={c.showPlayoffLine !== false}

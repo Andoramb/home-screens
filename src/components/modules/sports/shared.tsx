@@ -16,6 +16,16 @@ export function FavoriteBar({ color, inset = '12%' }: { color: string | null; in
   );
 }
 
+/** AP poll rank in front of a college team's abbreviation, the way a broadcast prints it. */
+export function RankTag({ rank, className = 'text-current/45' }: { rank?: number; className?: string }) {
+  if (!rank) return null;
+  return (
+    <span className={`font-semibold tabular-nums shrink-0 ${className}`} style={{ fontSize: '0.7em' }} data-testid="ap-rank">
+      #{rank}
+    </span>
+  );
+}
+
 /** Left padding that makes room for FavoriteBar: the strip plus a small gap. */
 export const FAVORITE_GUTTER = '9px';
 

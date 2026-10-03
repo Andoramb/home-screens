@@ -3944,7 +3944,7 @@
             "kind": "array",
             "text": "string[]"
           },
-          "description": "Leagues to show: `nfl`, `ncaaf`, `nba`, `wnba`, `mlb`, `nhl`, `mls`, `epl`, `laliga`, `bundesliga`, `seriea`, `ligue1`, `liga_mx`",
+          "description": "Leagues to show: `nfl`, `ncaaf`, `nba`, `ncaam`, `wnba`, `ncaaw`, `mlb`, `nhl`, `mls`, `epl`, `laliga`, `bundesliga`, `seriea`, `ligue1`, `liga_mx`",
           "default": [
             "nba",
             "nfl"
@@ -4052,6 +4052,17 @@
           },
           "description": "How to group teams: `division`, `conference`, or `league`",
           "default": "conference"
+        },
+        {
+          "name": "favoriteTeams",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Teams whose rows stand out, as `<league>:<abbreviation>` (for example `nfl:MIN`)",
+          "defaultText": "[]",
+          "default": []
         },
         {
           "name": "teamsToShow",

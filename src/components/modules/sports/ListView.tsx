@@ -1,7 +1,7 @@
 import type { Game } from '@/lib/espn';
 import { leagueWallCode } from '@/lib/espn';
 import { favoriteSide } from '@/lib/sports-order';
-import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, FAVORITE_GUTTER, type KickoffFn } from './shared';
+import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, FAVORITE_GUTTER, type KickoffFn } from './shared';
 
 export function ListView({ games, kickoff, favorites = [] }: { games: Game[]; kickoff: KickoffFn; favorites?: string[] }) {
   const gutter = favorites.length > 0;
@@ -32,6 +32,7 @@ export function ListView({ games, kickoff, favorites = [] }: { games: Game[]; ki
 
             <div className="flex items-center gap-1 min-w-0" style={{ width: '35%' }}>
               <TeamLogo src={game.awayTeamLogo} alt={game.awayTeamAbbr} size={16} />
+              <RankTag rank={game.awayRank} />
               <span
                 className={`font-semibold truncate ${awayWins ? 'text-current' : 'text-current/70'}`}
                 style={{ fontSize: '0.8em' }}
@@ -52,6 +53,7 @@ export function ListView({ games, kickoff, favorites = [] }: { games: Game[]; ki
 
             <div className="flex items-center gap-1 min-w-0" style={{ width: '35%' }}>
               <TeamLogo src={game.homeTeamLogo} alt={game.homeTeamAbbr} size={16} />
+              <RankTag rank={game.homeRank} />
               <span
                 className={`font-semibold truncate ${homeWins ? 'text-current' : 'text-current/70'}`}
                 style={{ fontSize: '0.8em' }}

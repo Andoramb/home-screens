@@ -20,7 +20,7 @@ function makeTeam(overrides: Partial<{ displayName: string; shortDisplayName: st
   };
 }
 
-function makeEntry(team: ReturnType<typeof makeTeam>, stats: ReturnType<typeof makeStat>[]) {
+function makeEntry(team: ReturnType<typeof makeTeam> & { rank?: number }, stats: ReturnType<typeof makeStat>[]) {
   return { team, stats };
 }
 
@@ -28,6 +28,21 @@ function makeEntry(team: ReturnType<typeof makeTeam>, stats: ReturnType<typeof m
 // parseStandings — flat structure (no conferences)
 // ---------------------------------------------------------------------------
 describe('parseStandings', () => {
+  it('keeps a college team\'s AP rank (team.rank) and ignores an out-of-range one', () => {
+    const data = {
+      children: [{
+        name: 'Big Ten Conference',
+        standings: { entries: [
+          makeEntry({ ...makeTeam({ displayName: 'Ohio State', abbreviation: 'OSU' }), rank: 5 }, [makeStat('wins', 4), makeStat('losses', 0)]),
+          makeEntry({ ...makeTeam({ displayName: 'Minnesota', abbreviation: 'MINN' }), rank: 99 }, [makeStat('wins', 3), makeStat('losses', 1)]),
+        ] },
+      }],
+    };
+    const [group] = parseStandings(data, 'ncaaf');
+    expect(group.entries.find((e) => e.teamAbbr === 'OSU')?.apRank).toBe(5);
+    expect(group.entries.find((e) => e.teamAbbr === 'MINN')?.apRank).toBeUndefined();
+  });
+
   it('parses a flat standings list (no children)', () => {
     const data = {
       name: 'Premier League',

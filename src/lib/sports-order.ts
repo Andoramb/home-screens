@@ -37,6 +37,13 @@ export function favoriteRank(game: Game, favorites: readonly string[]): number {
   return -1;
 }
 
+/** Whether one team (by league and abbreviation) is in the favorites list. */
+export function isFavoriteTeam(league: string, abbr: string, favorites: readonly string[] = []): boolean {
+  if (favorites.length === 0) return false;
+  const key = teamKey(league, abbr);
+  return favorites.some((f) => { const p = parseTeamKey(f); return !!p && teamKey(p.league, p.abbr) === key; });
+}
+
 export function isFavoriteGame(game: Game, favorites: readonly string[]): boolean {
   return favoriteRank(game, favorites) >= 0;
 }

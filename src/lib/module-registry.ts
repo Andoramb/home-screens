@@ -915,6 +915,7 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
       view: 'table',
       league: 'nba',
       grouping: 'conference',
+      favoriteTeams: [],
       teamsToShow: 0,
       showPlayoffLine: true,
       rotationIntervalMs: 10000,

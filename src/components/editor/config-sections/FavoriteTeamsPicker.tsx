@@ -1,7 +1,11 @@
 'use client';
 
 import { useMemo } from 'react';
-import { X } from 'lucide-react';
+import { GripVertical, X } from 'lucide-react';
+import { DndContext, closestCenter, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { useSortableSensors } from '@/hooks/useDndSensors';
 import Combobox from '@/components/ui/Combobox';
 import { useTranslate } from '@/i18n';
 import { useEditorData } from '@/hooks/useEditorData';
@@ -9,6 +13,58 @@ import { SPORTS_LEAGUES, leagueLabel, leagueWallCode, type TeamOption } from '@/
 import { MAX_FAVORITE_TEAMS, parseTeamKey, teamKey } from '@/lib/sports-order';
 import { TeamLogo } from '@/components/modules/shared/TeamLogo';
 import type { ComboboxOption } from '@/lib/combobox-filter';
+
+interface TeamRowProps {
+  teamKeyId: string;
+  name: string;
+  logo: string;
+  code: string;
+  off: boolean;
+  onRemove: () => void;
+  removeLabel: string;
+  dragLabel: string;
+  hiddenLabel: string;
+}
+
+/** One picked team. The grip is the drag handle; the whole row moves with it. */
+function SortableTeamRow({ teamKeyId, name, logo, code, off, onRemove, removeLabel, dragLabel, hiddenLabel }: TeamRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: teamKeyId });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+    opacity: isDragging ? 0.6 : undefined,
+  };
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-1.5 rounded-md border border-hs-border bg-hs-card pl-1 pr-2 py-1.5 ${off ? 'opacity-60' : ''}`}
+    >
+      <button
+        type="button"
+        className="cursor-grab touch-none text-hs-text-faint hover:text-hs-text-muted shrink-0"
+        aria-label={dragLabel}
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical size={14} />
+      </button>
+      <TeamLogo src={logo} alt="" size={16} />
+      <span className="text-xs text-hs-text-body truncate flex-1">{name}</span>
+      <span className="text-[11px] text-hs-text-muted shrink-0">{code}</span>
+      {off && <span className="text-[10px] italic text-hs-text-muted shrink-0">{hiddenLabel}</span>}
+      <button
+        type="button"
+        aria-label={removeLabel}
+        onClick={onRemove}
+        className="text-hs-text-muted hover:text-hs-text-body shrink-0"
+      >
+        <X size={14} />
+      </button>
+    </li>
+  );
+}
 
 interface FavoriteTeamsPickerProps {
   /** Leagues the module shows; only their teams are offered. */
@@ -28,6 +84,15 @@ interface FavoriteTeamsPickerProps {
  */
 export function FavoriteTeamsPicker({ leagues, value, onChange, help }: FavoriteTeamsPickerProps) {
   const t = useTranslate('editor');
+  const sensors = useSortableSensors();
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const from = value.indexOf(String(active.id));
+    const to = value.indexOf(String(over.id));
+    if (from < 0 || to < 0) return;
+    onChange(arrayMove(value, from, to));
+  };
   const enabled = useMemo(() => new Set(leagues.map((l) => l.toLowerCase())), [leagues]);
 
   // Fetch the enabled leagues plus any league a picked team belongs to, so
@@ -77,38 +142,31 @@ export function FavoriteTeamsPicker({ leagues, value, onChange, help }: Favorite
       )}
       <p className="text-[11px] text-hs-text-faint">{help}</p>
       {value.length > 0 && (
-        <ul className="space-y-1" aria-label={t('configSections.sports.favoriteTeams')}>
-          {value.map((key) => {
-            const parsed = parseTeamKey(key);
-            const team = byKey.get(key);
-            const name = team?.name ?? parsed?.abbr ?? key;
-            const off = !!parsed && !enabled.has(parsed.league);
-            return (
-              <li
-                key={key}
-                className={`flex items-center gap-2 rounded-md border border-hs-border bg-hs-card px-2 py-1.5 ${off ? 'opacity-60' : ''}`}
-              >
-                <TeamLogo src={team?.logo ?? ''} alt="" size={16} />
-                <span className="text-xs text-hs-text-body truncate flex-1">{name}</span>
-                {/* The short code, not the label: the panel is narrow and the team name matters more. */}
-                <span className="text-[11px] text-hs-text-muted shrink-0">{leagueWallCode(parsed?.league ?? '')}</span>
-                {off && (
-                  <span className="text-[10px] italic text-hs-text-muted shrink-0">
-                    {t('configSections.sports.favoriteTeamsHidden')}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  aria-label={t('configSections.sports.favoriteTeamsRemove', { team: name })}
-                  onClick={() => onChange(value.filter((k) => k !== key))}
-                  className="text-hs-text-muted hover:text-hs-text-body shrink-0"
-                >
-                  <X size={14} />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={value} strategy={verticalListSortingStrategy}>
+            <ul className="space-y-1" aria-label={t('configSections.sports.favoriteTeams')}>
+              {value.map((key) => {
+                const parsed = parseTeamKey(key);
+                const team = byKey.get(key);
+                const name = team?.name ?? parsed?.abbr ?? key;
+                return (
+                  <SortableTeamRow
+                    key={key}
+                    teamKeyId={key}
+                    name={name}
+                    logo={team?.logo ?? ''}
+                    code={leagueWallCode(parsed?.league ?? '')}
+                    off={!!parsed && !enabled.has(parsed.league)}
+                    onRemove={() => onChange(value.filter((k) => k !== key))}
+                    removeLabel={t('configSections.sports.favoriteTeamsRemove', { team: name })}
+                    dragLabel={t('configSections.sports.favoriteTeamsDrag', { team: name })}
+                    hiddenLabel={t('configSections.sports.favoriteTeamsHidden')}
+                  />
+                );
+              })}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );

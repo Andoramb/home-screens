@@ -14,6 +14,7 @@ const MIN_TEAM = {
     logos: [{ href: 'https://a/min.png' }],
     record: { items: [{ summary: '3-0' }] },
     standingSummary: '1st in NFC North',
+    rank: 5,
   },
 };
 
@@ -79,7 +80,7 @@ describe('GET /api/sports/team', () => {
     const card = json.cards[0];
     expect(card).toMatchObject({
       key: 'nfl:MIN', league: 'NFL', abbr: 'MIN', name: 'Minnesota Vikings', record: '3-0', standing: '1st in NFC North',
-      color: '4f2683', logo: 'https://a/min.png', featuredKind: 'next',
+      color: '4f2683', logo: 'https://a/min.png', featuredKind: 'next', rank: 5,
     });
     expect(card.featured).toMatchObject({ id: '2', awayTeamAbbr: 'MIA', homeTeamAbbr: 'MIN', venue: 'U.S. Bank Stadium', broadcast: 'FOX', homeTeamLogo: 'https://a/MIN.png' });
     expect(card.last).toMatchObject({ id: '1', awayScore: 23, homeScore: 16 });

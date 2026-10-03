@@ -4304,6 +4304,7 @@
       "favoriteTeamsHidden": "ligue désactivée",
       "favoriteTeamsLimit": "Ce module ne peut pas suivre plus d'équipes ({count}). Retires-en une pour en ajouter une autre.",
       "favoriteTeamsRemove": "Retirer {team}",
+      "favoriteTeamsDrag": "Déplacer {team}",
       "favoritesOnly": "Afficher seulement les matchs de mes équipes",
       "tickerSpeed": "Vitesse du téléscripteur (s/match)"
     },
@@ -4316,6 +4317,7 @@
       "groupingLeague": "Ligue complète",
       "league": "Ligue",
       "grouping": "Regroupement",
+      "favoriteTeamsHelp": "Ces équipes ressortent dans le classement.",
       "playoffCutoffLine": "Ligne de qualification aux playoffs",
       "teamsToShow": "Équipes à afficher (0 = toutes)",
       "rotationSeconds": "Rotation (secondes)"

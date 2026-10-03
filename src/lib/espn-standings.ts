@@ -22,6 +22,8 @@ export interface StandingsEntry {
   streak?: string;
   clincher?: string;
   playoffSeed?: number;
+  /** AP poll rank for a ranked college team (ESPN's `team.rank`). */
+  apRank?: number;
   gamesPlayed?: number;
   last10?: string;
   pointsFor?: number;
@@ -226,6 +228,8 @@ function parseEntry(
     clincher: clincher && clincher !== '' ? clincher : undefined,
     playoffSeed: playoffSeed,
   };
+  const apRank = Number(team?.rank);
+  if (Number.isFinite(apRank) && apRank >= 1 && apRank <= 25) result.apRank = apRank;
 
   // Apply sport-specific stats via table-driven mapping
   const mappingKey = SOCCER_LEAGUES.has(leagueKey) ? 'soccer' : leagueKey;

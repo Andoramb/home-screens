@@ -1693,6 +1693,42 @@ test('sports: at eight teams the search box gives way to a limit note', async ({
   await expect(page.getByRole('combobox', { name: 'My teams' })).toBeVisible();
 });
 
+test('sports: dragging a team to the top makes it the first favorite', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'], favoriteTeams: ['nfl:MIN', 'nfl:GB'] }));
+
+  const list = page.getByRole('list', { name: 'My teams' });
+  const handle = list.getByRole('button', { name: 'Drag to move Green Bay Packers' });
+  const first = list.getByRole('listitem').first();
+  // The list sits below the fold of the property panel; page.mouse does not scroll.
+  await handle.scrollIntoViewIfNeeded();
+  const handleBox = (await handle.boundingBox())!;
+  const firstBox = (await first.boundingBox())!;
+
+  // PointerSensor activates after 5px of travel; move past the first row's
+  // midpoint so closestCenter picks it and the vertical strategy swaps.
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2 - 12, { steps: 5 });
+  await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + 2, { steps: 10 });
+  await page.mouse.up();
+
+  await expect.poll(async () => (await moduleConfig(request, 'sports')).favoriteTeams).toEqual(['nfl:GB', 'nfl:MIN']);
+});
+
+test('standings: picking a team highlights it and persists', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('standings', { league: 'nba', favoriteTeams: [] }));
+
+  await page.getByRole('combobox', { name: 'My teams' }).fill('timber');
+  await autosaved(page, async () => {
+    await page.getByRole('option', { name: /Minnesota Timberwolves/ }).click();
+  });
+
+  expect((await moduleConfig(request, 'standings')).favoriteTeams).toEqual(['nba:MIN']);
+  await expect(page.getByText('These teams stand out in the table.')).toBeVisible();
+});
+
 test('sports: the Team view hides the Only my teams toggle', async ({ page, request }) => {
   await stubRosters(page);
   await selectModule(page, request, buildModuleInstance('sports', { view: 'team', leagues: ['nfl'], favoriteTeams: ['nfl:MIN'] }));

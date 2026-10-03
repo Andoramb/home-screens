@@ -88,6 +88,8 @@ async function fetchTeamCard(league: string, abbr: string): Promise<TeamCard> {
     record: (recordItems?.[0]?.summary as string) ?? '',
     standing: (team.standingSummary as string) ?? '',
   };
+  const rank = Number(team.rank);
+  if (Number.isFinite(rank) && rank >= 1 && rank <= 25) card.rank = rank;
 
   if (scheduleResult.status === 'rejected') {
     log.warn(`schedule lookup failed for ${key}: ${String(scheduleResult.reason)}`);

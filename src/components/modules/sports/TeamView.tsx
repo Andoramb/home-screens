@@ -4,7 +4,7 @@ import { useRotatingIndex } from '@/hooks/useRotatingIndex';
 import { useTranslate } from '@/i18n';
 import type { Game, TeamCard } from '@/lib/espn';
 import { leagueWallCode } from '@/lib/espn';
-import { TeamLogo, GameStatus, type KickoffFn } from './shared';
+import { TeamLogo, GameStatus, RankTag, type KickoffFn } from './shared';
 import { PaginationDots } from '../shared/PaginationDots';
 
 /** Which side of a game the card's team is on; away when the abbreviations do not settle it. */
@@ -12,13 +12,14 @@ function ourSide(game: Game, abbr: string): 'home' | 'away' {
   return game.homeTeamAbbr.toUpperCase() === abbr.toUpperCase() ? 'home' : 'away';
 }
 
-function TeamRow({ logo, abbr, record, score, bright }: {
-  logo: string; abbr: string; record: string; score: number | null; bright: boolean;
+function TeamRow({ logo, abbr, record, score, bright, rank }: {
+  logo: string; abbr: string; record: string; score: number | null; bright: boolean; rank?: number;
 }) {
   return (
     <div className="flex items-center gap-2.5">
       <TeamLogo src={logo} alt={abbr} size={30} />
-      <span className={`font-bold ${bright ? 'text-current' : 'text-current/55'}`} style={{ fontSize: '1em', width: '3.4em' }}>
+      <span className={`font-bold flex items-baseline gap-1 ${bright ? 'text-current' : 'text-current/55'}`} style={{ fontSize: '1em', width: '4.2em' }}>
+        <RankTag rank={rank} />
         {abbr}
       </span>
       <span className="text-current/35 flex-1 truncate" style={{ fontSize: '0.65em' }}>{record}</span>
@@ -39,7 +40,7 @@ export function TeamView({ cards, kickoff }: { cards: TeamCard[]; kickoff: Kicko
 
   const game = card.featured;
   const us = game ? ourSide(game, card.abbr) : null;
-  const meta = [card.record, card.standing].filter(Boolean).join(' · ');
+  const meta = [card.rank ? `#${card.rank}` : '', card.record, card.standing].filter(Boolean).join(' · ');
   const showScores = !!game && game.state !== 'pre';
 
   const last = card.last;
@@ -75,11 +76,11 @@ export function TeamView({ cards, kickoff }: { cards: TeamCard[]; kickoff: Kicko
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-1.5">
               <TeamRow
                 logo={game.awayTeamLogo} abbr={game.awayTeamAbbr} record={game.awayRecord}
-                score={showScores ? game.awayScore : null} bright={us === 'away'}
+                score={showScores ? game.awayScore : null} bright={us === 'away'} rank={game.awayRank}
               />
               <TeamRow
                 logo={game.homeTeamLogo} abbr={game.homeTeamAbbr} record={game.homeRecord}
-                score={showScores ? game.homeScore : null} bright={us === 'home'}
+                score={showScores ? game.homeScore : null} bright={us === 'home'} rank={game.homeRank}
               />
             </div>
             <div className="border-l border-white/10 pl-3.5 flex flex-col justify-center gap-1 shrink-0" style={{ minWidth: '7em' }}>

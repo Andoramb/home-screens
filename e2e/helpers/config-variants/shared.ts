@@ -115,7 +115,7 @@ export const STANDINGS_8 = {
 export const STANDINGS_NCAAF = {
   groups: [
     { name: 'Big Ten Conference', league: 'NCAAF', entries: [
-      { rank: 1, team: 'Minnesota Golden Gophers', teamAbbr: 'MINN', teamShort: 'Gophers', teamLogo: '', teamColor: '7a0019', wins: 4, losses: 0, winPct: 1 },
+      { rank: 1, team: 'Minnesota Golden Gophers', teamAbbr: 'MINN', teamShort: 'Gophers', teamLogo: '', teamColor: '7a0019', wins: 4, losses: 0, winPct: 1, apRank: 12 },
       { rank: 2, team: 'Michigan Wolverines', teamAbbr: 'MICH', teamShort: 'Wolverines', teamLogo: '', teamColor: '00274c', wins: 3, losses: 1, winPct: 0.75 },
     ] },
     { name: 'Southeastern Conference', league: 'NCAAF', entries: [
