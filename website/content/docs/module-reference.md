@@ -242,15 +242,29 @@ Cryptocurrency prices from CoinGecko.
 {% /module %}
 
 {% module type="sports" %}
-Live scores from ESPN.
-{% /module %}
-
-{% module type="standings" %}
-League standings from the ESPN standings API with team logos and colors. Supports automatic rotation through division/conference groups.
+Live and recent scores from ESPN for the leagues you turn on. College teams in the AP top 25 show their rank in front of the abbreviation.
 
 {% fields /%}
 
-**Supported leagues ({% $stats.standingsLeagueCount %}):** NFL, NBA, MLB, NHL, WNBA, MLS, Premier League (EPL), La Liga, Bundesliga, Serie A, Ligue 1, Liga MX.
+**Supported leagues ({% $stats.standingsLeagueCount %}):** NFL, College Football, NBA, Men's College Basketball, WNBA, Women's College Basketball, MLB, NHL, MLS, Premier League (EPL), La Liga, Bundesliga, Serie A, Ligue 1, Liga MX.
+
+**Favorite teams:** each entry in `favoriteTeams` is the league id and ESPN's team abbreviation joined by a colon, for example `nfl:MIN` or `ncaaf:MINN`. The editor's **My teams** search fills this in from the league's roster, so you never type an abbreviation by hand. Games with a favorite come first, in the order the teams are listed, and carry a thin bar in the team's color; `favoritesOnly` hides every other game. The list holds at most eight teams.
+
+**View details:**
+
+- **scoreboard**: One game at a time with logos, records and the score or kickoff, rotating every 10 seconds.
+- **cards**: A two-column grid of compact game cards.
+- **list**: One line per game, league code first, for many games at once.
+- **ticker**: A scrolling marquee of scores; `tickerSpeed` sets seconds per game.
+- **team**: One card per favorite team showing its record, standing line, the live or next game with broadcast and venue, and the last result. Several favorites take turns every 10 seconds.
+{% /module %}
+
+{% module type="standings" %}
+League standings from the ESPN standings API with team logos and colors. Supports automatic rotation through division/conference groups. A team listed in `favoriteTeams` (same `league:abbreviation` form as Sports Scores, picked with the **My teams** search) gets its row tinted in the team's color, and college teams in the AP top 25 show their rank after the name.
+
+{% fields /%}
+
+**Supported leagues ({% $stats.standingsLeagueCount %}):** NFL, College Football, NBA, Men's College Basketball, WNBA, Women's College Basketball, MLB, NHL, MLS, Premier League (EPL), La Liga, Bundesliga, Serie A, Ligue 1, Liga MX. College leagues group by conference; the division grouping falls back to conferences for them.
 
 **View details:**
 
