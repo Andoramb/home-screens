@@ -2533,6 +2533,7 @@
     "pickMedia": "Choose background image"
   },
   "imageBrowserModal": {
+    "builtInBackgrounds": "Built-in backgrounds",
     "title": "Image Library",
     "tabs": {
       "local": "Local",

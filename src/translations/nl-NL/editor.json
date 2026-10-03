@@ -2533,6 +2533,7 @@
     }
   },
   "imageBrowserModal": {
+    "builtInBackgrounds": "Ingebouwde achtergronden",
     "title": "Afbeeldingsbibliotheek",
     "tabs": {
       "local": "Lokaal",

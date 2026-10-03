@@ -262,14 +262,22 @@ test.describe('background picker', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('button', { name: 'NASA', exact: true })).toHaveCount(0);
     await expect(dialog.getByRole('button', { name: 'Immich', exact: true })).toHaveCount(0);
-    const bundled = dialog.getByTestId('local-library-bundled');
+    const folder = dialog.getByTestId('built-in-backgrounds-folder');
+    await expect(folder).toHaveText('Built-in backgrounds');
+    await expect(folder).toHaveAttribute('aria-current', 'page');
+    const bundled = dialog.getByTestId('built-in-backgrounds-view');
     await expect(bundled.getByTestId('starter-background-midnight')).toBeVisible();
-    await expect(bundled.getByTestId('starter-group-theme')).toBeVisible();
-    await expect(bundled.getByTestId('starter-group-color')).toBeVisible();
-    await expect(bundled.getByTestId('starter-group-pattern')).toBeVisible();
-    expect(await dialog.getByTestId('local-library-media-grid').evaluate((grid, section) =>
-      !!(grid.compareDocumentPosition(section as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
-    await bundled.elementHandle())).toBe(true);
+    for (const group of ['theme', 'color', 'pattern']) {
+      await expect(bundled.getByTestId(`starter-group-${group}`)).toBeVisible();
+    }
+    await expect(dialog.getByTestId('starter-background-collection')).toHaveCount(1);
+    await expect(dialog.getByTestId('local-library-media-grid')).toHaveCount(0);
+    await dialog.getByRole('button', { name: /^All Photos/ }).click();
+    await expect(dialog.getByTestId('local-library-media-grid')).toBeVisible();
+    await expect(dialog.getByTestId('starter-background-collection')).toHaveCount(0);
+    await folder.click();
+    await expect(dialog.getByTestId('starter-background-collection')).toHaveCount(1);
+    await expect(dialog.getByTestId('local-library-media-grid')).toHaveCount(0);
   });
 
   test('a rotating screen paints its photo without showing its own picture first', async ({ page, request }) => {

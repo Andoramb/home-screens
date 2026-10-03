@@ -212,7 +212,7 @@ describe('BackgroundPicker — Unsplash query/collections toggle', () => {
 });
 
 describe('BackgroundPicker — single media picker', () => {
-  it('has one fixed-image entry and puts bundled wallpapers below the local library grid, without remote fixed-image tabs', () => {
+  it('has one fixed-image entry and opens the virtual built-in folder in place of the local library grid, without remote fixed-image tabs', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(container.textContent).not.toContain('Pick one fixed image below');
@@ -223,11 +223,18 @@ describe('BackgroundPicker — single media picker', () => {
     fireEvent.click(screen.getByText(enUSEditor.backgroundPicker.pickMedia));
     const dialog = screen.getByRole('dialog');
     expect(dialog).not.toBeNull();
+    const folder = screen.getByTestId('built-in-backgrounds-folder');
+    expect(folder.textContent).toBe(enUSEditor.imageBrowserModal.builtInBackgrounds);
+    expect(folder.getAttribute('aria-current')).toBe('page');
     expect(dialog.querySelectorAll('[data-testid="starter-background-collection"]')).toHaveLength(1);
-    expect(dialog.querySelector('[data-testid="local-library-bundled"]')).not.toBeNull();
-    const localPanel = dialog.querySelector('[data-testid="local-library-bundled"]')!;
-    const mediaGrid = dialog.querySelector('[data-testid="local-library-media-grid"]')!;
-    expect(mediaGrid.compareDocumentPosition(localPanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(dialog.querySelector('[data-testid="local-library-media-grid"]')).toBeNull();
+    const localPanel = dialog.querySelector('[data-testid="built-in-backgrounds-view"]')!;
+    fireEvent.click(screen.getByRole('button', { name: /^All Photos/ }));
+    expect(dialog.querySelector('[data-testid="starter-background-collection"]')).toBeNull();
+    expect(dialog.querySelector('[data-testid="local-library-media-grid"]')).not.toBeNull();
+    fireEvent.click(folder);
+    expect(dialog.querySelectorAll('[data-testid="starter-background-collection"]')).toHaveLength(1);
+    expect(dialog.querySelector('[data-testid="local-library-media-grid"]')).toBeNull();
     expect(screen.queryByRole('button', { name: 'NASA' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Immich' })).toBeNull();
     for (const group of ['theme', 'color', 'pattern']) {

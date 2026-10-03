@@ -83,6 +83,9 @@ export default function ImageBrowserModal({
   const themeInUse = config && showStarterBackgrounds ? getActiveFullscreenTheme(config, selectedDisplayId) ?? 'linen' : 'linen';
   const lib = useImageLibrary({ initialDirectory });
   const [tab, setTab] = useState<'local' | 'unsplash'>('local');
+  // Bundled images are a virtual location, never entries in the uploaded library.
+  const hasBuiltIns = showStarterBackgrounds && mode === 'pick-image';
+  const [builtInsSelected, setBuiltInsSelected] = useState(hasBuiltIns);
   // Unsplash key gates the second tab, which only exists in pick-image mode.
   const { status: secretStatus } = useSecretStatus(mode === 'pick-image');
   const hasUnsplashKey = !!secretStatus.unsplash_access_key;
@@ -187,7 +190,7 @@ export default function ImageBrowserModal({
     );
 
   const isConfirmDisabled =
-    mode === 'manage-directory' ? false : !lib.selectedImage;
+    mode === 'manage-directory' ? false : builtInsSelected || !lib.selectedImage;
 
   const showTabs = mode === 'pick-image' && hasUnsplashKey;
 
@@ -243,7 +246,10 @@ export default function ImageBrowserModal({
               directories={lib.directories}
               rootDirs={rootDirs}
               selectedDir={lib.selectedDir}
-              onSelectDir={lib.setSelectedDir}
+              onSelectDir={(path) => { setBuiltInsSelected(false); lib.setSelectedDir(path); }}
+              showBuiltIns={hasBuiltIns}
+              builtInsSelected={builtInsSelected}
+              onSelectBuiltIns={() => setBuiltInsSelected(true)}
               getSubDirs={getSubDirs}
               loadingDirs={lib.loadingDirs}
               mode={mode}
@@ -256,45 +262,42 @@ export default function ImageBrowserModal({
               newFolderInputRef={lib.newFolderInputRef}
             />
 
-            {/* Main area — Media Grid. The iCloud import strip is available in
-                every mode: the pick-video and pick-image libraries are the
-                same library, and "get my stuff in here" applies equally. */}
-            <div className="flex-1 flex flex-col min-w-0">
-              <ICloudImportPanel selectedDir={lib.selectedDir} onImported={lib.refresh} />
-              <MediaGrid
-                items={visibleItems}
-                mode={mode}
-                selectedUrl={lib.selectedImage}
-                onSelectItem={(url) => {
-                  if (mode !== 'manage-directory') {
-                    lib.setSelectedImage(lib.selectedImage === url ? null : url);
-                  }
-                }}
-                loadingImages={lib.loadingImages}
-                deletingImage={lib.deletingImage}
-                onDeleteItem={allowDelete ? lib.handleDeleteImage : undefined}
-                // The directories endpoint names the root "All Photos"; override
-                // with the mode label rather than echo its image-centric name.
-                currentDirName={lib.selectedDir === '' ? rootLabel : currentDirInfo?.name || rootLabel}
-                selectedDir={lib.selectedDir}
-                uploading={lib.uploading}
-                uploadProgress={lib.uploadProgress}
-                onUpload={lib.handleUpload}
-                onDeleteFolder={lib.handleDeleteFolder}
-                fileInputRef={lib.fileInputRef}
-                error={lib.error}
-              />
-              {showStarterBackgrounds && mode === 'pick-image' && (
-                <div className="max-h-[45%] shrink-0 overflow-y-auto" data-testid="local-library-bundled">
-                  <StarterBackgroundCollection
-                    selectedPath={selectedBackgroundPath}
-                    onPick={(path) => { onSelectImage?.(path); onClose(); }}
-                    themeInUse={themeInUse}
-                    landscape={!!dims && dims.width > dims.height}
-                  />
-                </div>
-              )}
-            </div>
+            {/* The virtual collection replaces the library grid, not its folder state. */}
+            {builtInsSelected ? (
+              <div className="flex-1 min-w-0 min-h-0 overflow-y-auto" data-testid="built-in-backgrounds-view">
+                <StarterBackgroundCollection
+                  selectedPath={selectedBackgroundPath}
+                  onPick={(path) => { onSelectImage?.(path); onClose(); }}
+                  themeInUse={themeInUse}
+                  landscape={!!dims && dims.width > dims.height}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 flex flex-col min-w-0">
+                <ICloudImportPanel selectedDir={lib.selectedDir} onImported={lib.refresh} />
+                <MediaGrid
+                  items={visibleItems}
+                  mode={mode}
+                  selectedUrl={lib.selectedImage}
+                  onSelectItem={(url) => {
+                    if (mode !== 'manage-directory') {
+                      lib.setSelectedImage(lib.selectedImage === url ? null : url);
+                    }
+                  }}
+                  loadingImages={lib.loadingImages}
+                  deletingImage={lib.deletingImage}
+                  onDeleteItem={allowDelete ? lib.handleDeleteImage : undefined}
+                  currentDirName={lib.selectedDir === '' ? rootLabel : currentDirInfo?.name || rootLabel}
+                  selectedDir={lib.selectedDir}
+                  uploading={lib.uploading}
+                  uploadProgress={lib.uploadProgress}
+                  onUpload={lib.handleUpload}
+                  onDeleteFolder={lib.handleDeleteFolder}
+                  fileInputRef={lib.fileInputRef}
+                  error={lib.error}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto p-4">
@@ -338,6 +341,9 @@ function DirectorySidebar({
   rootDirs,
   selectedDir,
   onSelectDir,
+  showBuiltIns,
+  builtInsSelected,
+  onSelectBuiltIns,
   getSubDirs,
   loadingDirs,
   mode,
@@ -353,6 +359,9 @@ function DirectorySidebar({
   rootDirs: DirectoryInfo[];
   selectedDir: string;
   onSelectDir: (path: string) => void;
+  showBuiltIns: boolean;
+  builtInsSelected: boolean;
+  onSelectBuiltIns: () => void;
   getSubDirs: (parentPath: string) => DirectoryInfo[];
   loadingDirs: boolean;
   mode: 'pick-image' | 'pick-video' | 'manage-directory';
@@ -380,16 +389,26 @@ function DirectorySidebar({
             <DirectoryButton
               name={rootLabel}
               imageCount={showCounts ? directories.find((d) => d.path === '')?.imageCount ?? 0 : null}
-              selected={selectedDir === ''}
+              selected={!builtInsSelected && selectedDir === ''}
               onClick={() => onSelectDir('')}
               depth={0}
             />
+            {showBuiltIns && (
+              <DirectoryButton
+                name={t('imageBrowserModal.builtInBackgrounds')}
+                imageCount={null}
+                selected={builtInsSelected}
+                onClick={onSelectBuiltIns}
+                depth={1}
+                testId="built-in-backgrounds-folder"
+              />
+            )}
             {/* Top-level directories */}
             {rootDirs.map((d) => (
               <DirectoryTreeNode
                 key={d.path}
                 dir={d}
-                selectedDir={selectedDir}
+                selectedDir={builtInsSelected ? null : selectedDir}
                 onSelect={onSelectDir}
                 getSubDirs={getSubDirs}
                 depth={1}
@@ -623,6 +642,7 @@ function DirectoryButton({
   selected,
   onClick,
   depth,
+  testId,
 }: {
   name: string;
   /** null hides the count (video mode — the endpoint only counts images). */
@@ -630,9 +650,12 @@ function DirectoryButton({
   selected: boolean;
   onClick: () => void;
   depth: number;
+  testId?: string;
 }) {
   return (
     <button
+      data-testid={testId}
+      aria-current={selected ? "page" : undefined}
       onClick={onClick}
       className={`w-full text-left text-xs px-2 py-1 rounded transition-colors truncate ${
         selected
@@ -659,7 +682,7 @@ function DirectoryTreeNode({
   showCounts,
 }: {
   dir: DirectoryInfo;
-  selectedDir: string;
+  selectedDir: string | null;
   onSelect: (path: string) => void;
   getSubDirs: (parentPath: string) => DirectoryInfo[];
   depth: number;

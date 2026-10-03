@@ -2533,6 +2533,7 @@
     }
   },
   "imageBrowserModal": {
+    "builtInBackgrounds": "Planos de fundo integrados",
     "title": "Biblioteca de imagens",
     "tabs": {
       "local": "Local",

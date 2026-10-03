@@ -85,7 +85,7 @@ export default function StarterBackgroundCollection({ selectedPath, onPick, them
   };
 
   return (
-    <div data-testid="starter-background-collection" className="border-t border-hs-border px-3 py-2">
+    <div data-testid="starter-background-collection" className="px-4 py-3">
       <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count={themeWalls.length}>
         <div className="grid grid-cols-2 gap-1.5">
           {orderedThemeWalls.map((bg) => {
