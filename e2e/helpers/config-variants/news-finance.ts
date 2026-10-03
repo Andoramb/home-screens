@@ -1,6 +1,6 @@
 import { expect, type Locator } from '@playwright/test';
 import type { ConfigVariant } from './types';
-import { has, lacks, matches, count, child, redBackground, redStyle, STANDINGS_8, TINY_GIF } from './shared';
+import { has, lacks, matches, count, child, redBackground, redStyle, STANDINGS_8, STANDINGS_NCAAF, TINY_GIF } from './shared';
 
 /** Phase-1 batch rows — see .claude/plans/2026-07-09-e2e-100-percent-coverage.md. */
 
@@ -23,6 +23,36 @@ const tickerDuration = (seconds: string) => async (mod: Locator): Promise<void> 
 
 const BBC = 'https://feeds.bbci.co.uk/news/rss.xml';
 const DAY_MS = 86_400_000;
+const SPORTS_GAME = {
+  id: '401', league: 'NFL', homeTeam: 'Buffalo Bills', awayTeam: 'Miami Dolphins',
+  homeTeamAbbr: 'BUF', awayTeamAbbr: 'MIA', homeTeamLogo: '', awayTeamLogo: '',
+  homeTeamColor: '00338d', awayTeamColor: '008e97', homeScore: 27, awayScore: 17,
+  homeRecord: '10-3', awayRecord: '8-5', status: 'Final', detail: 'Final', state: 'post',
+  startTime: '2098-01-05T18:00:00Z', broadcast: 'CBS',
+};
+
+/** Two NFL games in ESPN order: BUF's first, MIN's second. */
+const SPORTS_TWO = {
+  games: [
+    SPORTS_GAME,
+    { ...SPORTS_GAME, id: '402', homeTeam: 'Green Bay Packers', awayTeam: 'Minnesota Vikings',
+      homeTeamAbbr: 'GB', awayTeamAbbr: 'MIN', homeTeamColor: '203731', awayTeamColor: '4f2683',
+      homeScore: 17, awayScore: 24, homeRecord: '2-2', awayRecord: '3-0' },
+  ],
+};
+
+/** One card with its game in progress. */
+const SPORTS_TEAM_LIVE = {
+  cards: [{
+    key: 'nfl:MIN', league: 'NFL', abbr: 'MIN', name: 'Minnesota Vikings', shortName: 'Vikings',
+    logo: '', color: '4f2683', record: '3-0', standing: '1st in NFC North', featuredKind: 'live',
+    featured: { ...SPORTS_GAME, id: '403', homeTeam: 'Minnesota Vikings', awayTeam: 'Miami Dolphins',
+      homeTeamAbbr: 'MIN', awayTeamAbbr: 'MIA', homeTeamColor: '4f2683', homeScore: 24, awayScore: 17,
+      status: 'Q3 4:12', detail: '4:12 - 3rd', state: 'in', broadcast: 'FOX', venue: 'U.S. Bank Stadium' },
+    last: null,
+  }],
+};
+
 /** Far-future timestamps keep "newest first" deterministic without ever counting as "just in". */
 const FUTURE = 4_055_000_000_000;
 
@@ -579,8 +609,50 @@ export const NEWS_FINANCE_VARIANTS: ConfigVariant[] = [
     config: { view: 'ticker', tickerSpeed: 20 },
     expect: tickerDuration('20s'),
   },
+  {
+    // ESPN lists BUF first; the favorite's game (MIN) moves above it and is
+    // the only row with the marker strip.
+    type: 'sports', name: 'favorite-first', kind: 'networked', stubKey: 'sports', stubBody: SPORTS_TWO,
+    config: { view: 'list', favoriteTeams: ['nfl:MIN'] },
+    expect: async (mod) => {
+      await has('MIN')(mod);
+      const text = await mod.innerText();
+      expect(text.indexOf('MIN')).toBeLessThan(text.indexOf('BUF'));
+      await count('[data-testid="favorite-bar"]', 1)(mod);
+    },
+  },
+  {
+    type: 'sports', name: 'favorites-only', kind: 'networked', stubKey: 'sports', stubBody: SPORTS_TWO,
+    config: { view: 'list', favoriteTeams: ['nfl:MIN'], favoritesOnly: true },
+    expect: lacks('MIN', 'BUF'),
+  },
+  {
+    // The wire carries the upper-cased config key; the wall prints the league's code.
+    type: 'sports', name: 'league-code', kind: 'networked', stubKey: 'sports',
+    stubBody: { games: [{ ...SPORTS_TWO.games[0], league: 'LIGA_MX' }] },
+    config: { view: 'list' },
+    expect: has('LIGA MX'),
+  },
+  {
+    // Team view before kickoff: the kickoff label and the last result line.
+    type: 'sports', name: 'team-upcoming', kind: 'networked', stubKey: 'sports-team',
+    config: { view: 'team', favoriteTeams: ['nfl:MIN'] },
+    expect: async (mod) => { await has('1st in NFC North')(mod); await has('Last:')(mod); await has('W 23-16')(mod); },
+  },
+  {
+    // Team view mid-game: both scores and the clock.
+    type: 'sports', name: 'team-live', kind: 'networked', stubKey: 'sports-team', stubBody: SPORTS_TEAM_LIVE,
+    config: { view: 'team', favoriteTeams: ['nfl:MIN'] },
+    expect: async (mod) => { await has('24')(mod); await has('17')(mod); await has('Q3 4:12')(mod); },
+  },
 
   // -- standings --
+  {
+    // College football groups by conference; the second conference rotates in.
+    type: 'standings', name: 'ncaaf-conferences', kind: 'networked', stubKey: 'standings', stubBody: STANDINGS_NCAAF,
+    config: { view: 'table', league: 'ncaaf', grouping: 'conference', rotationIntervalMs: 400 },
+    expect: async (mod) => { await has('Gophers')(mod); await has('Southeastern Conference')(mod); },
+  },
   {
     // 8 teams capped to 3 → ranks 1-3 render, rank 4 is dropped.
     type: 'standings', name: 'teams-to-show', kind: 'networked', stubKey: 'standings', stubBody: STANDINGS_8,

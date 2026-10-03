@@ -33,6 +33,11 @@ const STUBS: Record<string, { glob: string; file: string }> = {
   stocks:       { glob: '**/api/stocks*',       file: 'stocks' },
   crypto:       { glob: '**/api/crypto*',       file: 'crypto' },
   sports:       { glob: '**/api/sports*',       file: 'sports' },
+  // The sports module's team view and the editor's team picker. A single `*`
+  // never crosses a slash, so the scoreboard glob above leaves these alone;
+  // `teams` is registered after `team` so its narrower URL wins.
+  'sports-team':  { glob: '**/api/sports/team*',  file: 'sports-team' },
+  'sports-teams': { glob: '**/api/sports/teams*', file: 'sports-teams' },
   standings:    { glob: '**/api/standings*',    file: 'standings' },
   traffic:      { glob: '**/api/traffic*',      file: 'traffic' },
   todoist:      { glob: '**/api/todoist*',      file: 'todoist' },

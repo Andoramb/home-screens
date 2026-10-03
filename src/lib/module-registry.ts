@@ -900,6 +900,8 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
     defaultConfig: {
       view: 'scoreboard',
       leagues: ['nba', 'nfl'],
+      favoriteTeams: [],
+      favoritesOnly: false,
       refreshIntervalMs: FETCH_KEY_REGISTRY['sports']?.ttlMs ?? 60_000,
     },
     defaultSize: { w: 480, h: 340 },

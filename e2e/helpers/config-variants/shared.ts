@@ -111,6 +111,20 @@ export const STANDINGS_8 = {
 };
 
 /** Two due-dated Todoist tasks; the first carries a label. */
+/** Two FBS conferences, two teams each, for the college standings rows. */
+export const STANDINGS_NCAAF = {
+  groups: [
+    { name: 'Big Ten Conference', league: 'NCAAF', entries: [
+      { rank: 1, team: 'Minnesota Golden Gophers', teamAbbr: 'MINN', teamShort: 'Gophers', teamLogo: '', teamColor: '7a0019', wins: 4, losses: 0, winPct: 1 },
+      { rank: 2, team: 'Michigan Wolverines', teamAbbr: 'MICH', teamShort: 'Wolverines', teamLogo: '', teamColor: '00274c', wins: 3, losses: 1, winPct: 0.75 },
+    ] },
+    { name: 'Southeastern Conference', league: 'NCAAF', entries: [
+      { rank: 1, team: 'Georgia Bulldogs', teamAbbr: 'UGA', teamShort: 'Bulldogs', teamLogo: '', teamColor: 'ba0c2f', wins: 4, losses: 0, winPct: 1 },
+      { rank: 2, team: 'Alabama Crimson Tide', teamAbbr: 'ALA', teamShort: 'Crimson Tide', teamLogo: '', teamColor: '9e1b32', wins: 3, losses: 1, winPct: 0.75 },
+    ] },
+  ],
+};
+
 export const TODOIST_2 = {
   tasks: [
     { id: '1', content: 'FIRST TASK', description: '', priority: 1, due: { date: '2099-01-15', datetime: null, isRecurring: false }, labels: ['errands'], labelColors: {}, projectId: 'p1', projectName: 'Inbox', projectColor: '#808080', sectionId: '', sectionName: '', parentId: null, order: 1, commentCount: 0 },

@@ -848,7 +848,15 @@
     "loading": "Chargement des scores…",
     "noGames": "Aucun match trouvé",
     "today": "Aujourd'hui",
-    "tomorrow": "Demain"
+    "tomorrow": "Demain",
+    "pickTeam": "Choisis ton équipe dans les réglages du module",
+    "unavailable": "Les scores font une petite pause",
+    "last": "Dernier :",
+    "win": "V",
+    "loss": "D",
+    "tie": "N",
+    "vs": "contre",
+    "at": "chez"
   },
   "stock-ticker": {
     "chartCaptions": {

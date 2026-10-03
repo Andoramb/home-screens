@@ -848,7 +848,15 @@
     "loading": "Loading scores…",
     "noGames": "No games found",
     "today": "Today",
-    "tomorrow": "Tomorrow"
+    "tomorrow": "Tomorrow",
+    "pickTeam": "Pick your team in the module settings",
+    "unavailable": "Scores are taking a break",
+    "last": "Last:",
+    "win": "W",
+    "loss": "L",
+    "tie": "T",
+    "vs": "vs",
+    "at": "at"
   },
   "stock-ticker": {
     "chartCaptions": {

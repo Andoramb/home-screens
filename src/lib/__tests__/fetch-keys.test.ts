@@ -6,6 +6,7 @@ import {
   newsEditorUrl,
   airQualityUrl,
   sportsUrl,
+  sportsTeamUrl,
   standingsUrl,
   trafficUrl,
   todoistUrl,
@@ -180,6 +181,19 @@ describe('sportsUrl', () => {
 
   it('uses provided leagues', () => {
     expect(sportsUrl({ leagues: ['mlb', 'nhl'] })).toBe('/api/sports?leagues=mlb%2Cnhl');
+  });
+});
+
+describe('sportsTeamUrl', () => {
+  it('is null with no favorites, so the team view fetches nothing', () => {
+    expect(sportsTeamUrl({})).toBeNull();
+    expect(sportsTeamUrl({ favoriteTeams: [] })).toBeNull();
+  });
+
+  it('keeps the favorites in priority order and stops at the route cap', () => {
+    expect(sportsTeamUrl({ favoriteTeams: ['ncaaf:MINN', 'nfl:MIN'] })).toBe('/api/sports/team?teams=ncaaf%3AMINN%2Cnfl%3AMIN');
+    const nine = Array.from({ length: 9 }, (_, i) => `nfl:T${i}`);
+    expect(sportsTeamUrl({ favoriteTeams: nine })).toBe(`/api/sports/team?teams=${encodeURIComponent(nine.slice(0, 8).join(','))}`);
   });
 });
 

@@ -1,6 +1,7 @@
 /** Shared ESPN league mappings used by sports and standings API routes */
 export const LEAGUE_MAP: Record<string, string> = {
   nfl: 'football/nfl',
+  ncaaf: 'football/college-football',
   nba: 'basketball/nba',
   wnba: 'basketball/wnba',
   mlb: 'baseball/mlb',
@@ -13,6 +14,64 @@ export const LEAGUE_MAP: Record<string, string> = {
   ligue1: 'soccer/fra.1',
   liga_mx: 'soccer/mex.1',
 };
+
+/**
+ * Extra scoreboard query per league. ESPN's college football scoreboard
+ * answers only ranked matchups unless asked for the FBS group (80) with a
+ * limit above the default; a Saturday has 60 to 70 games.
+ */
+export const SCOREBOARD_PARAMS: Record<string, string> = {
+  ncaaf: 'groups=80&limit=200',
+};
+
+/** The scoreboard URL for a league, with the per-league extras ESPN needs; null for an unknown league. */
+export function scoreboardUrl(league: string): string | null {
+  const id = league.toLowerCase();
+  const path = LEAGUE_MAP[id];
+  if (!path) return null;
+  const params = SCOREBOARD_PARAMS[id];
+  return `https://site.api.espn.com/apis/site/v2/sports/${path}/scoreboard${params ? `?${params}` : ''}`;
+}
+
+export interface SportsLeague {
+  /** Config key and `LEAGUE_MAP` key. */
+  id: string;
+  /** Editor label. Proper nouns, left untranslated like the standings picker always has. */
+  label: string;
+  /** Short caption the wall prints next to a game. */
+  wallCode: string;
+  /** Editor grouping: the American leagues first, then soccer. */
+  group: 'american' | 'soccer';
+}
+
+/** Every league the routes answer, in editor display order. */
+export const SPORTS_LEAGUES: SportsLeague[] = [
+  { id: 'nfl', label: 'NFL', wallCode: 'NFL', group: 'american' },
+  { id: 'ncaaf', label: 'College Football', wallCode: 'NCAAF', group: 'american' },
+  { id: 'nba', label: 'NBA', wallCode: 'NBA', group: 'american' },
+  { id: 'wnba', label: 'WNBA', wallCode: 'WNBA', group: 'american' },
+  { id: 'mlb', label: 'MLB', wallCode: 'MLB', group: 'american' },
+  { id: 'nhl', label: 'NHL', wallCode: 'NHL', group: 'american' },
+  { id: 'mls', label: 'MLS', wallCode: 'MLS', group: 'american' },
+  { id: 'epl', label: 'Premier League', wallCode: 'EPL', group: 'soccer' },
+  { id: 'laliga', label: 'La Liga', wallCode: 'LA LIGA', group: 'soccer' },
+  { id: 'bundesliga', label: 'Bundesliga', wallCode: 'BUNDESLIGA', group: 'soccer' },
+  { id: 'seriea', label: 'Serie A', wallCode: 'SERIE A', group: 'soccer' },
+  { id: 'ligue1', label: 'Ligue 1', wallCode: 'LIGUE 1', group: 'soccer' },
+  { id: 'liga_mx', label: 'Liga MX', wallCode: 'LIGA MX', group: 'soccer' },
+];
+
+/** Wall caption for a league id in either case; unknown ids print upper-cased. */
+export function leagueWallCode(league: string): string {
+  const id = league.toLowerCase();
+  return SPORTS_LEAGUES.find((l) => l.id === id)?.wallCode ?? league.toUpperCase();
+}
+
+/** Editor label for a league id; unknown ids print upper-cased. */
+export function leagueLabel(league: string): string {
+  const id = league.toLowerCase();
+  return SPORTS_LEAGUES.find((l) => l.id === id)?.label ?? league.toUpperCase();
+}
 
 /** Common ESPN team fields extracted from the raw API response */
 interface ESPNTeamInfo {
@@ -27,11 +86,13 @@ interface ESPNTeamInfo {
 export function parseESPNTeam(
   team: Record<string, unknown> | undefined,
 ): ESPNTeamInfo {
+  // The scoreboard sends `logo`; the team schedule sends `logos[].href`.
+  const logos = team?.logos as Record<string, unknown>[] | undefined;
   return {
     name: (team?.displayName as string) ?? 'TBD',
     shortName: (team?.shortDisplayName as string) ?? (team?.name as string) ?? '',
     abbr: (team?.abbreviation as string) ?? '',
-    logo: (team?.logo as string) ?? '',
+    logo: (team?.logo as string) ?? (logos?.[0]?.href as string) ?? '',
     color: (team?.color as string) ?? '666666',
   };
 }
@@ -63,4 +124,112 @@ export interface Game {
   /** ISO kickoff instant from ESPN (`event.date`); the display formats it in its own timezone. */
   startTime: string;
   broadcast: string;
+  /** Stadium or arena name when ESPN names one. */
+  venue?: string;
+}
+
+/** One row of GET /api/sports/teams, the editor's team picker. */
+export interface TeamOption {
+  /** Lower-case league id, so a row can be keyed with `teamKey`. */
+  league: string;
+  /** ESPN's numeric team id; soccer endpoints answer only to this, never to the abbreviation. */
+  id: string;
+  abbr: string;
+  name: string;
+  shortName: string;
+  logo: string;
+  color: string;
+}
+
+/**
+ * One favorite team in GET /api/sports/team's payload, built from ESPN's
+ * team and schedule endpoints. `featured` is the live game, else the next
+ * one, else the last one (`featuredKind` says which); `last` is the latest
+ * finished game whenever `featured` is not already it.
+ */
+export interface TeamCard {
+  /** `<league>:<ABBR>`, the config key that asked for this card. */
+  key: string;
+  league: string;
+  abbr: string;
+  name: string;
+  shortName: string;
+  logo: string;
+  color: string;
+  /** Overall record such as `3-0`, empty when ESPN has none yet. */
+  record: string;
+  /** ESPN's standing line such as `1st in NFC North`. */
+  standing: string;
+  featured: Game | null;
+  featuredKind: 'live' | 'next' | 'last' | null;
+  last: Game | null;
+  /** True when ESPN could not be reached for this team; the header still renders. */
+  error?: boolean;
+}
+
+/** Score fields differ between ESPN's scoreboard (string) and schedule (`{ value }`) payloads. */
+function readScore(raw: unknown): number {
+  if (raw && typeof raw === 'object') {
+    const value = (raw as Record<string, unknown>).value ?? (raw as Record<string, unknown>).displayValue;
+    return Number(value ?? 0) || 0;
+  }
+  return Number(raw ?? 0) || 0;
+}
+
+/**
+ * Build a `Game` from one ESPN event. Accepts the scoreboard shape (status on
+ * the event, broadcast `names`) and the team schedule shape (status on the
+ * competition, broadcast `media.shortName`, scores as objects).
+ */
+export function parseESPNEvent(event: Record<string, unknown>, league: string): Game {
+  const competition = (event.competitions as Record<string, unknown>[] | undefined)?.[0];
+  const competitors = (competition?.competitors as Record<string, unknown>[]) ?? [];
+
+  const home = competitors.find((c) => c.homeAway === 'home');
+  const away = competitors.find((c) => c.homeAway === 'away');
+
+  const homeTeam = home?.team as Record<string, unknown> | undefined;
+  const awayTeam = away?.team as Record<string, unknown> | undefined;
+
+  const homeRecords = home?.records as Record<string, unknown>[] | undefined;
+  const awayRecords = away?.records as Record<string, unknown>[] | undefined;
+  const homeRecordAlt = home?.record as Record<string, unknown>[] | undefined;
+  const awayRecordAlt = away?.record as Record<string, unknown>[] | undefined;
+
+  const broadcasts = competition?.broadcasts as Record<string, unknown>[] | undefined;
+  const nationalBroadcast = broadcasts?.find((b) => b.market === 'national') ?? broadcasts?.[0];
+  const broadcastNames = (nationalBroadcast?.names as string[] | undefined)
+    ?? ((nationalBroadcast?.media as Record<string, unknown> | undefined)?.shortName
+      ? [(nationalBroadcast?.media as Record<string, unknown>).shortName as string]
+      : undefined);
+
+  const status = (event.status ?? competition?.status) as Record<string, unknown> | undefined;
+  const statusType = status?.type as Record<string, unknown> | undefined;
+  const venue = (competition?.venue as Record<string, unknown> | undefined)?.fullName as string | undefined;
+
+  const ht = parseESPNTeam(homeTeam);
+  const at = parseESPNTeam(awayTeam);
+
+  return {
+    id: String(event.id ?? ''),
+    league: league.toUpperCase(),
+    homeTeam: ht.name,
+    awayTeam: at.name,
+    homeTeamAbbr: ht.abbr,
+    awayTeamAbbr: at.abbr,
+    homeTeamLogo: ht.logo,
+    awayTeamLogo: at.logo,
+    homeTeamColor: ht.color,
+    awayTeamColor: at.color,
+    homeScore: readScore(home?.score),
+    awayScore: readScore(away?.score),
+    homeRecord: (homeRecords?.[0]?.summary as string) ?? (homeRecordAlt?.[0]?.displayValue as string) ?? '',
+    awayRecord: (awayRecords?.[0]?.summary as string) ?? (awayRecordAlt?.[0]?.displayValue as string) ?? '',
+    status: (statusType?.description as string) ?? 'Scheduled',
+    detail: (statusType?.detail as string) ?? '',
+    state: ((statusType?.state as string) ?? 'pre') as 'pre' | 'in' | 'post',
+    startTime: (event.date as string) ?? '',
+    broadcast: broadcastNames?.join(', ') ?? '',
+    ...(venue ? { venue } : {}),
+  };
 }

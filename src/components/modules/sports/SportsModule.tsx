@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { SportsConfig, ModuleStyle, TimeFormat } from '@/types/config';
 import ModuleWrapper from '../ModuleWrapper';
-import { moduleGate } from '../ModuleStates';
+import { moduleGate, ModuleEmptyState } from '../ModuleStates';
 import { useFetchData } from '@/hooks/useFetchData';
 import { useTZClock } from '@/hooks/useTZClock';
-import { sportsUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
+import { sportsUrl, sportsTeamUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { useTranslate, useFormattingLocale } from '@/i18n';
 import { formatKickoff } from './kickoff';
 import type { KickoffFn } from './shared';
@@ -14,7 +14,9 @@ import { ScoreboardView } from './ScoreboardView';
 import { CardsView } from './CardsView';
 import { ListView } from './ListView';
 import { TickerView } from './TickerView';
-import type { Game } from '@/lib/espn';
+import { TeamView } from './TeamView';
+import type { Game, TeamCard } from '@/lib/espn';
+import { orderGames } from '@/lib/sports-order';
 import { householdTimeFormat } from '@/lib/clock-time';
 
 interface SportsModuleProps {
@@ -26,6 +28,7 @@ interface SportsModuleProps {
 }
 
 const DEFAULT_REFRESH_MS = FETCH_KEY_REGISTRY['sports']?.ttlMs ?? 60_000;
+const NO_GAMES: Game[] = [];
 
 export default function SportsModule({ config, style, timezone, timeFormat }: SportsModuleProps) {
   const t = useTranslate('modules');
@@ -40,12 +43,40 @@ export default function SportsModule({ config, style, timezone, timeFormat }: Sp
     (game) => formatKickoff(game.startTime, { now, timezone, locale, timeFormat: resolvedTimeFormat, today, tomorrow }),
     [now, timezone, locale, resolvedTimeFormat, today, tomorrow],
   );
-  const [data, error] = useFetchData<{ games: Game[] }>(
-    sportsUrl(config),
-    config.refreshIntervalMs ?? DEFAULT_REFRESH_MS,
-  );
-  const games = data?.games ?? [];
   const view = config.view ?? 'scoreboard';
+  const favorites = useMemo(() => config.favoriteTeams ?? [], [config.favoriteTeams]);
+  const refreshMs = config.refreshIntervalMs ?? DEFAULT_REFRESH_MS;
+
+  // The team view reads its own route; the other views read the scoreboard.
+  // An empty URL means "do not fetch", so only the active source is polled.
+  const [data, error] = useFetchData<{ games: Game[] }>(view === 'team' ? '' : sportsUrl(config), refreshMs);
+  const [teamData, teamError] = useFetchData<{ cards: TeamCard[] }>(
+    view === 'team' ? (sportsTeamUrl(config) ?? '') : '',
+    refreshMs,
+  );
+
+  const games = useMemo(
+    () => orderGames(data?.games ?? NO_GAMES, favorites, config.favoritesOnly ?? false),
+    [data, favorites, config.favoritesOnly],
+  );
+
+  if (view === 'team') {
+    if (favorites.length === 0) {
+      return <ModuleEmptyState style={style} message={t('sports.pickTeam')} />;
+    }
+    const cards = teamData?.cards ?? [];
+    const gate = moduleGate({
+      style, data: teamData, error: teamError,
+      loadingMessage: t('sports.loading'),
+      empty: cards.length === 0 && t('sports.noGames'),
+    });
+    if (gate) return gate;
+    return (
+      <ModuleWrapper style={style}>
+        <TeamView cards={cards} kickoff={kickoff} />
+      </ModuleWrapper>
+    );
+  }
 
   const gate = moduleGate({
     style, data, error,
@@ -56,9 +87,9 @@ export default function SportsModule({ config, style, timezone, timeFormat }: Sp
 
   return (
     <ModuleWrapper style={style}>
-      {view === 'scoreboard' && <ScoreboardView games={games} kickoff={kickoff} />}
-      {view === 'cards' && <CardsView games={games} kickoff={kickoff} />}
-      {view === 'list' && <ListView games={games} kickoff={kickoff} />}
+      {view === 'scoreboard' && <ScoreboardView games={games} kickoff={kickoff} favorites={favorites} />}
+      {view === 'cards' && <CardsView games={games} kickoff={kickoff} favorites={favorites} />}
+      {view === 'list' && <ListView games={games} kickoff={kickoff} favorites={favorites} />}
       {view === 'ticker' && <TickerView games={games} speed={config.tickerSpeed ?? 4} />}
     </ModuleWrapper>
   );

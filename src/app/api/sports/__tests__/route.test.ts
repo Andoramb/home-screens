@@ -97,6 +97,7 @@ describe('sports API route', () => {
       ['nhl', 'hockey/nhl'],
       ['mls', 'soccer/usa.1'],
       ['epl', 'soccer/eng.1'],
+      ['ncaaf', 'football/college-football'],
     ];
 
     it.each(leagueToPath)(
@@ -122,6 +123,15 @@ describe('sports API route', () => {
         expect(fetchCall).toContain(expectedPath);
       },
     );
+  });
+
+  it('asks for every FBS game for college football and nothing extra for the NFL', async () => {
+    mockFetchSuccess({ 'college-football': makeEspnResponse([]), 'football/nfl': makeEspnResponse([]) });
+    const { GET } = await importRoute();
+    await GET(new NextRequest('http://localhost/api/sports?leagues=ncaaf,nfl'));
+    const urls = (fetch as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0] as string);
+    expect(urls.find((u) => u.includes('college-football'))).toContain('scoreboard?groups=80&limit=200');
+    expect(urls.find((u) => u.includes('football/nfl'))).toMatch(/scoreboard$/);
   });
 
   // ----------------------------------------------------------------

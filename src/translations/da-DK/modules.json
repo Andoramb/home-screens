@@ -848,7 +848,15 @@
     "loading": "Indlæser resultater…",
     "noGames": "Ingen kampe fundet",
     "today": "I dag",
-    "tomorrow": "I morgen"
+    "tomorrow": "I morgen",
+    "pickTeam": "Vælg dit hold i modulets indstillinger",
+    "unavailable": "Resultaterne holder en lille pause",
+    "last": "Seneste:",
+    "win": "S",
+    "loss": "N",
+    "tie": "U",
+    "vs": "mod",
+    "at": "ude mod"
   },
   "stock-ticker": {
     "chartCaptions": {

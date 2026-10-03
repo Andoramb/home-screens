@@ -1,5 +1,24 @@
 export { TeamLogo } from '../shared/TeamLogo';
 
+/**
+ * The favorite marker: a thin strip in the favorite team's own color along
+ * the left edge of a row, card or frame. Parents reserve the gutter on every
+ * row once any favorite exists (see FAVORITE_GUTTER) so text never shifts.
+ */
+export function FavoriteBar({ color, inset = '12%' }: { color: string | null; inset?: string }) {
+  if (!color) return null;
+  return (
+    <span
+      data-testid="favorite-bar"
+      className="absolute left-0 w-[3px] rounded-full"
+      style={{ top: inset, bottom: inset, backgroundColor: `#${color}` }}
+    />
+  );
+}
+
+/** Left padding that makes room for FavoriteBar: the strip plus a small gap. */
+export const FAVORITE_GUTTER = '9px';
+
 /** Formats a scheduled game's kickoff for the display (null = no usable instant). */
 export type KickoffFn = (game: { startTime: string }) => string | null;
 

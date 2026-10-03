@@ -7,22 +7,8 @@ import RefreshIntervalSlider from './RefreshIntervalSlider';
 import ViewSelect from '@/components/editor/ViewSelect';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { INPUT_CLASS } from '@/components/editor/PropertyPanel';
+import { SPORTS_LEAGUES } from '@/lib/espn';
 import type { ModuleInstance, StandingsView, StandingsGrouping } from '@/types/config';
-
-const STANDINGS_LEAGUES: { value: string; label: string }[] = [
-  { value: 'nfl', label: 'NFL' },
-  { value: 'nba', label: 'NBA' },
-  { value: 'mlb', label: 'MLB' },
-  { value: 'nhl', label: 'NHL' },
-  { value: 'wnba', label: 'WNBA' },
-  { value: 'mls', label: 'MLS' },
-  { value: 'epl', label: 'Premier League' },
-  { value: 'laliga', label: 'La Liga' },
-  { value: 'bundesliga', label: 'Bundesliga' },
-  { value: 'seriea', label: 'Serie A' },
-  { value: 'ligue1', label: 'Ligue 1' },
-  { value: 'liga_mx', label: 'Liga MX' },
-];
 
 export function StandingsConfigSection({ mod, screenId }: { mod: ModuleInstance; screenId: string }) {
   const t = useTranslate('editor');
@@ -62,8 +48,8 @@ export function StandingsConfigSection({ mod, screenId }: { mod: ModuleInstance;
           onChange={(e) => set({ league: e.target.value })}
           className={INPUT_CLASS}
         >
-          {STANDINGS_LEAGUES.map((l) => (
-            <option key={l.value} value={l.value}>{l.label}</option>
+          {SPORTS_LEAGUES.map((l) => (
+            <option key={l.id} value={l.id}>{l.label}</option>
           ))}
         </select>
       </div>

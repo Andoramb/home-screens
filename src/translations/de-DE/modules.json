@@ -848,7 +848,15 @@
     "loading": "Spielstände werden geladen…",
     "noGames": "Keine Spiele gefunden",
     "today": "Heute",
-    "tomorrow": "Morgen"
+    "tomorrow": "Morgen",
+    "pickTeam": "Wähle dein Team in den Moduleinstellungen",
+    "unavailable": "Die Ergebnisse machen gerade Pause",
+    "last": "Zuletzt:",
+    "win": "S",
+    "loss": "N",
+    "tie": "U",
+    "vs": "gegen",
+    "at": "bei"
   },
   "stock-ticker": {
     "chartCaptions": {

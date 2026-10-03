@@ -848,7 +848,15 @@
     "loading": "Carregando placares…",
     "noGames": "Nenhum jogo encontrado",
     "today": "Hoje",
-    "tomorrow": "Amanhã"
+    "tomorrow": "Amanhã",
+    "pickTeam": "Escolha seu time nas configurações do módulo",
+    "unavailable": "Os placares estão dando uma pausa",
+    "last": "Último:",
+    "win": "V",
+    "loss": "D",
+    "tie": "E",
+    "vs": "contra",
+    "at": "fora com"
   },
   "stock-ticker": {
     "chartCaptions": {

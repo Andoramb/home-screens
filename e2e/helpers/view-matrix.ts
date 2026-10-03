@@ -41,7 +41,10 @@ export const VIEW_MATRIX: ViewSpec[] = [
     'polygon', 'star', 'arrow', 'glow', 'gradient', 'grid', 'frame'] },
   { type: 'weather', key: 'view', kind: 'networked', stubKey: 'weather', views: [
     'current', 'hourly', 'daily', 'combined', 'compact', 'table', 'precipitation', 'alerts'] },
-  { type: 'sports', key: 'view', kind: 'networked', stubKey: 'sports', views: ['scoreboard', 'cards', 'list', 'ticker'] },
+  // The team view reads the sports-team stub (registered for every row); the
+  // favorite makes the other four views draw their marker too.
+  { type: 'sports', key: 'view', kind: 'networked', stubKey: 'sports', views: ['scoreboard', 'cards', 'list', 'ticker', 'team'],
+    config: { favoriteTeams: ['nfl:MIN'] } },
   { type: 'standings', key: 'view', kind: 'networked', stubKey: 'standings', views: ['table', 'compact', 'conference'] },
   { type: 'news', key: 'view', kind: 'networked', stubKey: 'news', views: ['headline', 'list', 'ticker', 'compact', 'cards'] },
   { type: 'fullscreen-news', key: 'view', kind: 'networked', stubKey: 'news', views: ['story', 'front-page'] },

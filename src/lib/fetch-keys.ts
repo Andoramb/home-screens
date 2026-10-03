@@ -5,6 +5,7 @@
  */
 
 import { RECENT_CHORE_DAYS } from '@/components/modules/chore-chart/types';
+import { MAX_FAVORITE_TEAMS } from './sports-order';
 
 // Typed config interfaces lack index signatures, making Record<string, unknown>
 // incompatible — `any` is an intentional variance escape for structural compatibility.
@@ -77,6 +78,12 @@ export function airQualityUrl(): string {
 export function sportsUrl(config: AnyConfig): string {
   const leagues = (config.leagues as string[] | undefined) ?? ['nfl', 'nba'];
   return `/api/sports?leagues=${encodeURIComponent(leagues.join(','))}`;
+}
+
+/** The Team view's cards, one per favorite; null when no team is picked so nothing is fetched. */
+export function sportsTeamUrl(config: AnyConfig): string | null {
+  const teams = ((config.favoriteTeams as string[] | undefined) ?? []).slice(0, MAX_FAVORITE_TEAMS);
+  return teams.length ? `/api/sports/team?teams=${encodeURIComponent(teams.join(','))}` : null;
 }
 
 export function standingsUrl(config: AnyConfig): string {
@@ -245,6 +252,7 @@ export const FETCH_KEY_REGISTRY: Record<string, {
   'fullscreen-news': { buildUrl: newsUrl, ttlMs: 300_000 },        // same feeds API as news
   'air-quality':  { buildUrl: airQualityUrl, ttlMs: 300_000 },    // server: 5min
   sports:         { buildUrl: sportsUrl, ttlMs: 60_000 },          // no server cache
+  'sports-team':  { buildUrl: sportsTeamUrl, ttlMs: 60_000 },      // the sports module's team view
   standings:      { buildUrl: standingsUrl, ttlMs: 300_000 },      // no server cache
   traffic:        { buildUrl: trafficUrl, ttlMs: 300_000 },        // no server cache
   todoist:        { buildUrl: todoistUrl, ttlMs: 60_000 },         // server: 1min

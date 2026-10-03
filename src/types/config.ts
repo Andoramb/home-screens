@@ -3153,16 +3153,29 @@ export interface TrafficConfig {
 }
 
 // Sports scores module config
-export type SportsView = 'scoreboard' | 'cards' | 'list' | 'ticker';
+export type SportsView = 'scoreboard' | 'cards' | 'list' | 'ticker' | 'team';
 
 export interface SportsConfig {
-  /** Display mode: `scoreboard`, `cards`, `list`, or `ticker` */
+  /** Display mode: `scoreboard`, `cards`, `list`, `ticker`, or `team` (one card per favorite team) */
   view: SportsView;
   /**
-   * Leagues to show: `nfl`, `nba`, `mlb`, `nhl`, `wnba`, `mls`, `epl`, `laliga`, `bundesliga`,
-   * `seriea`, `ligue1`, `liga_mx`
+   * Leagues to show: `nfl`, `ncaaf`, `nba`, `wnba`, `mlb`, `nhl`, `mls`, `epl`, `laliga`,
+   * `bundesliga`, `seriea`, `ligue1`, `liga_mx`
    */
   leagues: string[];
+  /**
+   * Teams whose games come first, as `<league>:<abbreviation>` (for example `nfl:MIN`,
+   * `ncaaf:MINN`). The first team gets the top spot. The `team` view shows one card per entry.
+   *
+   * @default []
+   */
+  favoriteTeams?: string[];
+  /**
+   * Show only games with a favorite team
+   *
+   * @default false
+   */
+  favoritesOnly?: boolean;
   /** Refresh interval (1 min) */
   refreshIntervalMs: number;
   /**

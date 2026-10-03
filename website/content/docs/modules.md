@@ -96,7 +96,7 @@ All of these use the location under **Settings > Location & language**; see [Wea
 - **News Headlines** ([reference](/docs/module-reference#news-headlines)): stories from any site, blog, YouTube channel or subreddit, several feeds at once. Views: **Headline**, **List**, **Ticker**, **Compact** and **Cards**. The [News](/docs/news) page covers feeds and family-friendly filters. Needs nothing.
 - **Stock Ticker** ([reference](/docs/module-reference#stock-ticker)): prices for the symbols you list. Views: **Cards**, **Ticker**, **Table**, **Compact** and **Single**. Needs nothing.
 - **Crypto Price** ([reference](/docs/module-reference#crypto-price)): the same for coins. Views: **Cards**, **Ticker**, **Table** and **Compact**. Needs nothing.
-- **Sports Scores** ([reference](/docs/module-reference#sports-scores)): live and recent scores for your teams. Views: **Scoreboard**, **Cards**, **List** and **Ticker**. Needs nothing.
+- **Sports Scores** ([reference](/docs/module-reference#sports-scores)): live and recent scores from {% $stats.standingsLeagueCount %} leagues, college football included. Pick your teams and their games come first, or show only theirs. Views: **Scoreboard**, **Cards**, **List**, **Ticker** and **Team** (one team's record, next game and last result). Needs nothing.
 - **Sports Standings** ([reference](/docs/module-reference#sports-standings)): league tables for {% $stats.standingsLeagueCount %} leagues. Views: **Table**, **Compact** and **Conference**. Needs nothing.
 
 ### Knowledge & Fun

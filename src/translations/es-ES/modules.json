@@ -848,7 +848,15 @@
     "loading": "Cargando resultados…",
     "noGames": "No se encontraron partidos",
     "today": "Hoy",
-    "tomorrow": "Mañana"
+    "tomorrow": "Mañana",
+    "pickTeam": "Elige tu equipo en los ajustes del módulo",
+    "unavailable": "Los marcadores están descansando",
+    "last": "Último:",
+    "win": "G",
+    "loss": "P",
+    "tie": "E",
+    "vs": "contra",
+    "at": "en casa de"
   },
   "stock-ticker": {
     "chartCaptions": {

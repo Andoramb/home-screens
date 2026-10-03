@@ -848,7 +848,15 @@
     "loading": "Uitslagen laden…",
     "noGames": "Geen wedstrijden gevonden",
     "today": "Vandaag",
-    "tomorrow": "Morgen"
+    "tomorrow": "Morgen",
+    "pickTeam": "Kies je team in de module-instellingen",
+    "unavailable": "De uitslagen nemen even pauze",
+    "last": "Laatst:",
+    "win": "W",
+    "loss": "V",
+    "tie": "G",
+    "vs": "tegen",
+    "at": "bij"
   },
   "stock-ticker": {
     "chartCaptions": {
