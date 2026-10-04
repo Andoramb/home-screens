@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import type { Screen } from '@/types/config';
+import type { BackgroundRotation, Screen } from '@/types/config';
 
 vi.mock('@/lib/auth', () => ({
   requireSession: vi.fn(),
@@ -61,6 +61,7 @@ import { fetchSharedStreamsAlbum } from '@/lib/icloud-album';
 import { getUnsplashAccessKey } from '@/lib/unsplash';
 import { fetchWithTimeout } from '@/lib/api-utils';
 import { GET } from '@/app/api/backgrounds/rotate/route';
+import { starterBackgroundsIn } from '@/lib/starter-backgrounds';
 
 const mockFindScreen = vi.mocked(findScreenById);
 const mockFindDisplay = vi.mocked(findDisplayForScreen);
@@ -98,6 +99,46 @@ beforeEach(() => {
 });
 
 describe('GET /api/backgrounds/rotate — multi-source selection', () => {
+  it('rotates from only the selected starter walls and caches until the selection changes', async () => {
+    const colors = starterBackgroundsIn('color');
+    const initial: BackgroundRotation = { sources: ['color'], query: '', intervalMinutes: 60,
+      starterBackgroundIds: { color: [colors[0].id] } };
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: initial }));
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: colors[0].path, fresh: true });
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: colors[0].path, fresh: false });
+
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...initial,
+      starterBackgroundIds: { color: [colors[1].id] },
+    } }));
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: colors[1].path, fresh: true });
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: colors[1].path, fresh: false });
+  });
+
+  it('chooses starter and legacy sources with equal source-level odds, independently of wall count', async () => {
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
+      sources: ['color', 'local'], query: '', intervalMinutes: 60,
+      starterBackgroundIds: { color: [starterBackgroundsIn('color')[0].id] },
+    } }));
+    fsMock.readdir.mockResolvedValue([{ name: 'photo.jpg', isFile: () => true }]);
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0.75);
+    try {
+      expect(await (await GET(rotateReq())).json()).toEqual({
+        path: '/api/backgrounds/serve?file=photo.jpg', fresh: true,
+      });
+    } finally { random.mockRestore(); }
+  });
+
+  it('skips invalid starter subsets and still rotates from a valid legacy source', async () => {
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
+      sources: ['pattern', 'local', 'bogus'], query: '', intervalMinutes: 60,
+      starterBackgroundIds: { pattern: ['invalid'] },
+    } as never }));
+    fsMock.readdir.mockResolvedValue([{ name: 'photo.jpg', isFile: () => true }]);
+    expect(await (await GET(rotateReq())).json()).toEqual({
+      path: '/api/backgrounds/serve?file=photo.jpg', fresh: true,
+    });
+  });
+
   it('skips a source missing its required config in favor of a configured one', async () => {
     // Unsplash is listed but has neither query nor collections, so it can
     // never be the one picked, however Math.random() happens to land —

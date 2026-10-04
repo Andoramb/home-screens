@@ -2532,6 +2532,9 @@
       "color": "Couleurs",
       "pattern": "Motifs"
     },
+    "useFixed": "Utiliser {name} comme arrière-plan fixe",
+    "includeInRotation": "Inclure {name} dans la rotation",
+    "inRotation": "Dans la rotation",
     "inUse": "utilisé",
     "starters": {
       "midnight": "Minuit",

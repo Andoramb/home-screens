@@ -78,8 +78,8 @@ describe('BackgroundPicker — sources group always visible (item 1/2)', () => {
 
     expect(getByText(enUSEditor.backgroundPicker.sourcesGroup)).not.toBeNull();
     const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
-    // unsplash, nasa-apod, immich, icloud, local — none checked yet.
-    expect(checkboxes.length).toBeGreaterThanOrEqual(5);
+    // Three bundled groups plus five existing providers.
+    expect(checkboxes).toHaveLength(8);
     expect(checkboxes.every((cb) => !cb.checked)).toBe(true);
   });
 
@@ -222,35 +222,55 @@ describe('BackgroundPicker — unified Sources', () => {
     const headings = Array.from(container.querySelectorAll('h4')).map((h) => h.textContent);
     expect(headings).toEqual([enUSEditor.backgroundPicker.shadeGroup, enUSEditor.backgroundPicker.sourcesGroup]);
     const sources = container.querySelectorAll('h4')[1].parentElement!.parentElement!;
-    expect(within(sources).getByTestId('starter-group-theme')).not.toBeNull();
-    expect(within(sources).getByTestId('starter-group-color')).not.toBeNull();
-    expect(within(sources).getByTestId('starter-group-pattern')).not.toBeNull();
-    expect(within(sources).getByTestId('starter-background-theme-linen').getAttribute('data-in-use')).toBe('true');
+    expect(within(sources).getByTestId('starter-source-theme')).not.toBeNull();
+    expect(within(sources).getByTestId('starter-source-color')).not.toBeNull();
+    expect(within(sources).getByTestId('starter-source-pattern')).not.toBeNull();
+    expect(within(sources).getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme })).not.toBeNull();
     expect(container.querySelector('[data-testid^="background-tab-"]')).toBeNull();
     expect(container.textContent).not.toContain('Your own pictures');
     expect(container.textContent).not.toContain('Upload Background');
-    expect(sources.querySelectorAll('input[type="checkbox"]')).toHaveLength(5);
+    expect(sources.querySelectorAll('input[type="checkbox"]')).toHaveLength(8);
+  });
+
+  it('bundled group selection and tile inclusion are separate from static tile actions', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 30 }, '/starter-backgrounds/ocean.svg');
+    const { getByRole, getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const theme = getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme });
+    fireEvent.click(theme);
+    expect(currentRotation()?.sources).toEqual(['theme']);
+    expect(getByTestId('starter-group-theme').textContent).toContain('12/12');
+    const include = getByRole('checkbox', { name: 'Include Linen in rotation' });
+    fireEvent.click(include);
+    expect(currentRotation()?.starterBackgroundIds?.theme).toHaveLength(11);
+    expect(getByTestId('starter-group-theme').textContent).toContain('11/12');
+    expect(getByTestId('starter-background-theme-linen').getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(getByTestId('starter-background-theme-linen'));
+    expect(currentRotation()?.sources).toEqual([]);
+    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
   });
 
   it('choosing a wall then None disables rotation and retains other rotation settings', () => {
     seedStore({ enabled: true, sources: ['icloud', 'local'], query: '', intervalMinutes: 30, localFolder: 'holiday' }, '/starter-backgrounds/ocean.svg');
-    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const { getByTestId, getByText } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByText(enUSEditor.backgroundPicker.groups.theme).closest('label')!.querySelector('input')!);
     const theme = getByTestId('starter-background-theme-linen');
     fireEvent.click(theme);
     let screen = useEditorStore.getState().config!.screens[0];
     expect(screen.backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
     expect(screen.backgroundRotation).toMatchObject({ enabled: false, sources: [], localFolder: 'holiday', intervalMinutes: 30 });
-    expect(theme.getAttribute('aria-pressed')).toBe('true');
+    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
+    fireEvent.click(getByText(enUSEditor.backgroundPicker.groups.color).closest('label')!.querySelector('input')!);
     fireEvent.click(getByTestId('starter-background-none'));
     screen = useEditorStore.getState().config!.screens[0];
     expect(screen.backgroundImage).toBe('');
     expect(screen.backgroundRotation?.sources).toEqual([]);
-    expect(getByTestId('starter-background-none').getAttribute('aria-pressed')).toBe('true');
+    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('');
   });
 
   it('None disables rotation even when no fixed image was set', () => {
     seedStore({ enabled: true, sources: ['icloud'], query: '', intervalMinutes: 60 });
-    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const { getByTestId, getByText } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByText(enUSEditor.backgroundPicker.groups.color).closest('label')!.querySelector('input')!);
     expect(getByTestId('starter-background-none').getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(getByTestId('starter-background-none'));
     expect(useEditorStore.getState().config!.screens[0].backgroundRotation?.sources).toEqual([]);

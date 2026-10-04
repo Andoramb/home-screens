@@ -2532,6 +2532,9 @@
       "color": "Farver",
       "pattern": "Mønstre"
     },
+    "useFixed": "Brug {name} som fast baggrund",
+    "includeInRotation": "Medtag {name} i rotation",
+    "inRotation": "I rotation",
     "inUse": "i brug",
     "starters": {
       "midnight": "Midnat",

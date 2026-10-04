@@ -117,7 +117,7 @@ export default function BackgroundPicker() {
             >
               <div className="space-y-2">
                 <LocalBackgrounds selectedScreenId={selectedScreenId} />
-                <div className="space-y-1.5">
+                <div className="space-y-2">
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
                     return (
