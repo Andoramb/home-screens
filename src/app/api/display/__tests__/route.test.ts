@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
+import sharp from 'sharp';
 
 // Mock dependencies before importing the route
 vi.mock('@/lib/display-commands', () => {
@@ -600,7 +601,6 @@ describe('POST /api/display/show-photo', () => {
   });
 
   it('sends a picture\'s size as people see it, so the wall asks for a copy that fits', async () => {
-    const sharp = (await import('sharp')).default;
     // Stored sideways (orientation 6): shown as 30 wide and 60 high.
     await sharp({ create: { width: 60, height: 30, channels: 3, background: '#39c' } })
       .withMetadata({ orientation: 6 })

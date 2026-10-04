@@ -23,6 +23,19 @@ export default defineConfig({
       '.next/**',
       '.claude/**',
     ],
+    // The shell-script tests run real bash against stub commands written fresh
+    // into a temp folder per test. Each new executable is scanned by macOS on
+    // its first run, so a test that takes 1-3s alone ran past the 5s default
+    // while release.sh ran lint, types and the production build beside it.
+    // They get the time their own spawn timeouts already allow; unit tests
+    // keep the default, so a slow one still shows up.
+    projects: [
+      { extends: true, test: { name: 'unit', exclude: ['scripts/**'] } },
+      {
+        extends: true,
+        test: { name: 'scripts', include: ['scripts/**/*.test.ts'], testTimeout: 30_000, hookTimeout: 30_000 },
+      },
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
