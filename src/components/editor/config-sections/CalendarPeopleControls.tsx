@@ -8,20 +8,23 @@ import { useFamilyData } from '@/hooks/useFamilyData';
 import { useTranslate } from '@/i18n';
 import { settingsPath } from '@/lib/settings-route';
 import { hasPeopleFilter, resolvePeopleFilterMembers } from '@/lib/family-groups';
+import { livePersonSources } from '@/lib/calendar-source-refs';
 import type { CalendarLegendMode, CalendarPeopleFilter as PeopleFilterValue } from '@/types/config';
 import type { FamilyGroup, FamilyMember } from '@/types/family';
 
-const EMPTY_SOURCES: Record<string, string[]> = {};
-
 /**
  * The roster as the calendar sections see it: every family member, every
- * group, and who owns at least one calendar (Settings > Calendar > People).
- * Both calendar modules read the same three facts, so they come from here.
+ * group, and who owns at least one calendar that still exists (Settings >
+ * Calendar > People). Both calendar modules read the same three facts, so
+ * they come from here.
  */
 export function useCalendarRoster() {
   const { members, groups, loading } = useFamilyData();
-  const personSources = useEditorStore((s) => s.config?.settings?.calendar?.personSources ?? EMPTY_SOURCES);
-  const owners = useMemo(() => members.filter((member) => (personSources[member.id] ?? []).length > 0), [members, personSources]);
+  const calendar = useEditorStore((s) => s.config?.settings?.calendar);
+  const owners = useMemo(() => {
+    const personSources = livePersonSources(calendar) ?? {};
+    return members.filter((member) => (personSources[member.id] ?? []).length > 0);
+  }, [members, calendar]);
   return { members, groups, owners, loading };
 }
 

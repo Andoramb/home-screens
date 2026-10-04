@@ -82,6 +82,13 @@
         "keepMine": "Meine behalten"
       },
       "savedToDisplay": "Auf {name} gespeichert"
+    },
+    "loadError": {
+      "title": "Home Screens konnte deine gespeicherte Einrichtung nicht öffnen",
+      "body": "Eine der gespeicherten Dateien ist beschädigt oder lässt sich gerade nicht lesen. Es wurde nichts gelöscht. Versuche es noch einmal oder spiele unten eine Sicherung zurück.",
+      "retry": "Noch einmal versuchen",
+      "retrying": "Neuer Versuch…",
+      "detailLabel": "Das hat Home Screens gemeldet"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Umbenennen",
       "duplicate": "Duplizieren",
       "delete": "Löschen"
-    }
+    },
+    "newScreenName": "Bildschirm {number}",
+    "copyName": "{name} Kopie"
   },
   "screenSearch": {
     "buttonAriaLabel": "Bildschirm oder Modul finden",
@@ -511,7 +520,8 @@
         "detectedViaIp": "{name} über deine Internetverbindung gefunden.",
         "detectedCoords": "{lat}, {lon} gefunden.",
         "detectFailed": "Fehler: Standort konnte nicht erkannt werden",
-        "zoneSet": "Die Zeitzone steht jetzt passend dazu auf {zone}."
+        "zoneSet": "Die Zeitzone steht jetzt passend dazu auf {zone}.",
+        "notFound": "Kein Ort mit diesem Namen gefunden. Versuch es mit einem Ort in der Nähe."
       },
       "queryLabel": "Dein Ort oder deine Postleitzahl",
       "clockCheck": {
@@ -738,7 +748,8 @@
         "plaintextConfirm": "Wiederherstellen",
         "wrongPassword": "Dieses Passwort hat nicht funktioniert. Versuch es erneut oder stelle ohne deine Schlüssel wieder her.",
         "damagedKeys": "Die Schlüssel in dieser Datei sind beschädigt und nicht lesbar. Alles andere kannst du trotzdem wiederherstellen.",
-        "reloadFailed": "Dein Backup wurde wiederhergestellt, aber der Editor konnte nicht neu laden. Lade die Seite neu, um es zu sehen."
+        "reloadFailed": "Dein Backup wurde wiederhergestellt, aber der Editor konnte nicht neu laden. Lade die Seite neu, um es zu sehen.",
+        "finished": "Wiederherstellung abgeschlossen. Alles aus dieser Sicherung ist wieder da."
       },
       "description": "Alles sichern, wiederherstellen oder mit einer Vorlage neu anfangen.",
       "restoreConfirm": {
@@ -1674,6 +1685,7 @@
         "enableLabel": "Benachrichtigen, wenn ein Update verfügbar ist"
       },
       "upToDate": "Du bist auf der neuesten Version",
+      "checkFailed": "Die Suche nach Updates hat gerade nicht geklappt",
       "changelog": {
         "heading": "Änderungsprotokoll",
         "viewButton": "Änderungsprotokoll anzeigen",
@@ -1989,7 +2001,9 @@
         "passwordsDoNotMatch": "Passwörter stimmen nicht überein",
         "setFailed": "Passwort konnte nicht festgelegt werden",
         "changeFailed": "Passwort konnte nicht geändert werden",
-        "disableFailed": "Anmeldung konnte nicht deaktiviert werden"
+        "disableFailed": "Anmeldung konnte nicht deaktiviert werden",
+        "passwordTooShort": "Das Passwort braucht mindestens {count} Zeichen.",
+        "invalidAddress": "„{entry}“ ist keine Netzwerkadresse. Versuch es mit einer wie 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Passwort festgelegt! Die Anmeldung ist jetzt aktiviert.",
@@ -2123,7 +2137,12 @@
         "enableAriaLabel": "{id} aktivieren",
         "disableAriaLabel": "{id} deaktivieren",
         "uninstallTitle": "Deinstallieren",
-        "uninstallAriaLabel": "{id} deinstallieren"
+        "uninstallAriaLabel": "{id} deinstallieren",
+        "uninstallConfirm": {
+          "title": "{name} deinstallieren?",
+          "message": "Es verschwindet von jedem Screen, der es zeigt. Auch die gespeicherten Einstellungen und die Anmeldung werden gelöscht.",
+          "confirmLabel": "Deinstallieren"
+        }
       },
       "updates": {
         "allUpToDate": "Alle Plugins sind auf dem neuesten Stand",
@@ -2354,7 +2373,8 @@
       "formErrorWidth": "Die Breite muss zwischen {min} und {max} liegen. Prüfe, ob eine Ziffer fehlt: die meisten Bildschirme sind 1080 oder 1920 breit.",
       "formErrorHeight": "Die Höhe muss zwischen {min} und {max} liegen. Prüfe, ob eine Ziffer fehlt: die meisten Bildschirme sind 1080 oder 1920 hoch.",
       "softwareUpdateWaiting": "Update steht an",
-      "softwareNeedsSetup": "Einrichtung nötig"
+      "softwareNeedsSetup": "Einrichtung nötig",
+      "mainDisplayName": "Hauptdisplay"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3271,7 +3291,9 @@
     "importButton": "Diese Bildschirme hinzufügen",
     "savedAt": "Gespeichert am {date}",
     "screenPillSingular": "{name} · {count} Modul",
-    "screenPillPlural": "{name} · {count} Module"
+    "screenPillPlural": "{name} · {count} Module",
+    "importedName": "{name} (importiert)",
+    "importedNameNumbered": "{name} (importiert {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3484,7 +3506,7 @@
       "datePresetShortWeekday": "Mo., 5. Jan.",
       "datePresetMonthDayYear": "5. Januar 2026",
       "datePresetShortMonthDayYear": "5. Jan. 2026",
-      "datePresetSlashMDY": "05.01.2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05.01.2026",
       "datePresetIso": "2026-01-05",
       "datePresetWeekday": "Montag",
@@ -3580,7 +3602,7 @@
       "datePresetShortWeekday": "Mo., 5. Jan.",
       "datePresetMonthDayYear": "5. Januar 2026",
       "datePresetShortMonthDayYear": "5. Jan. 2026",
-      "datePresetSlashMDY": "05.01.2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05.01.2026",
       "datePresetIso": "2026-01-05",
       "invalidFormat": "Ungültiges Format",
@@ -3791,6 +3813,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Standard (Midnight)",
+      "themeDefault": "Standard (aus Einstellungen)",
       "photoSource": "Fotoquelle",
       "sourceLocal": "Lokale Fotos",
       "sourceImmich": "Immich",
@@ -4293,7 +4316,21 @@
       "viewCards": "Karten",
       "viewList": "Liste",
       "viewTicker": "Ticker",
+      "viewTeam": "Mannschaft",
       "leagues": "Ligen",
+      "leaguesAmerican": "Amerikanisch",
+      "leaguesSoccer": "Fußball",
+      "favoriteTeams": "Meine Teams",
+      "favoriteTeamsSearch": "Team suchen",
+      "favoriteTeamsLoading": "Teams werden geladen",
+      "favoriteTeamsError": "Teams konnten nicht geladen werden",
+      "favoriteTeamsHelp": "Spiele dieser Teams kommen zuerst. Das erste Team bekommt den obersten Platz.",
+      "favoriteTeamsHelpTeam": "Das erste Team wird zuerst gezeigt; bei mehreren wechseln sie sich ab.",
+      "favoriteTeamsHidden": "Liga ist aus",
+      "favoriteTeamsLimit": "Mehr Teams kann dieses Modul nicht verfolgen ({count}). Entferne eins, um ein anderes hinzuzufügen.",
+      "favoriteTeamsRemove": "{team} entfernen",
+      "favoriteTeamsDrag": "{team} verschieben",
+      "favoritesOnly": "Nur Spiele meiner Teams zeigen",
       "tickerSpeed": "Tickergeschwindigkeit (Sek./Spiel)"
     },
     "standings": {
@@ -4305,6 +4342,7 @@
       "groupingLeague": "Gesamte Liga",
       "league": "Liga",
       "grouping": "Gruppierung",
+      "favoriteTeamsHelp": "Diese Teams werden in der Tabelle hervorgehoben.",
       "playoffCutoffLine": "Playoff-Trennlinie",
       "teamsToShow": "Anzuzeigende Teams (0 = alle)",
       "rotationSeconds": "Wechsel (Sekunden)"
@@ -4958,7 +4996,58 @@
   },
   "templatePicker": {
     "title": "Vorlagen",
-    "loadFailed": "„{name}“ konnte nicht geladen werden"
+    "loadFailed": "„{name}“ konnte nicht geladen werden",
+    "categories": {
+      "All": "Alle",
+      "Dashboard": "Übersicht",
+      "Weather": "Wetter",
+      "Productivity": "Produktivität",
+      "Media": "Medien",
+      "Sports": "Sport",
+      "Finance": "Finanzen"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Familien-Übersicht",
+        "description": "Uhr, Kalender, Wetter, die Aufgaben von heute, Countdown und Begrüßung: alles für die Familie an einem Ort."
+      },
+      "weather-station": {
+        "name": "Wetterstation",
+        "description": "Mehrere Wetteransichten, Regenkarte, Sonnenauf- und -untergang, Luftqualität und Mondphase."
+      },
+      "minimal-clock": {
+        "name": "Schlichte Uhr",
+        "description": "Eine einzige große Uhr: aufgeräumt und ohne Ablenkung."
+      },
+      "info-board": {
+        "name": "Infotafel",
+        "description": "Nachrichten, Börsenticker, Wort des Tages, Geschichte und Zitate."
+      },
+      "photo-frame": {
+        "name": "Bilderrahmen",
+        "description": "Foto-Diashow im Vollbild: So wird dein Display zum digitalen Bilderrahmen."
+      },
+      "sports-hub": {
+        "name": "Sportzentrale",
+        "description": "Live-Ergebnisse und Tabellen."
+      },
+      "productivity": {
+        "name": "Produktivität",
+        "description": "Todoist-Aufgaben, Kalender, Countdown und Jahresfortschritt."
+      },
+      "morning-dashboard": {
+        "name": "Morgen-Übersicht",
+        "description": "Wetter, Kalender, Verkehr und eine Begrüßung für den Start in den Tag."
+      },
+      "kitchen-display": {
+        "name": "Küchen-Display",
+        "description": "Essensplan, Uhr, Kalender, Müllabfuhr und Notizzettel für die Küche."
+      },
+      "news-finance": {
+        "name": "Nachrichten & Finanzen",
+        "description": "Schlagzeilen, Aktienkurse und Krypto-Kurse."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Module",

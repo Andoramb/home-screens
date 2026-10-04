@@ -1,3 +1,4 @@
+import { FAMILY_FILE_PATH } from './constants';
 import { createHash, randomUUID } from 'node:crypto';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -14,7 +15,7 @@ import { pruneGroupMembers, sameGroupName } from './family-groups';
 export { FamilyError } from './family-errors';
 
 export { validateFamilyData } from './family-merge';
-export const FAMILY_FILE_PATH = 'data/family.json';
+export { FAMILY_FILE_PATH };
 const json = (value: unknown) => JSON.stringify(value, null, 2);
 const isRecord = (value: unknown): value is Record<string, unknown> => !!value && typeof value === 'object' && !Array.isArray(value);
 
@@ -83,7 +84,7 @@ export async function settleFamilyMigration(): Promise<void> {
     const run = (async () => {
       const sources = await sourceSignature(root);
       const failure = migrationFailures.get(root);
-      if (failure?.sources === sources && Date.now() < failure.retryAt) throw new FamilyError(`Family migration is waiting to retry: ${failure.message} Try again in a minute, or restore a backup.`, 503);
+      if (failure?.sources === sources && Date.now() < failure.retryAt) throw new FamilyError(`Home Screens could not read one of its saved files: ${failure.message} Try again in a minute, or restore a backup.`, 503);
       if (settledSources.get(root) === sources) return;
       try {
         await runMigration();

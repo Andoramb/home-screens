@@ -25,8 +25,10 @@ const { displayFetchMock } = vi.hoisted(() => ({
 
 vi.mock('@/lib/display-fetch', () => ({ displayFetch: displayFetchMock }));
 
+const NO_PROFILE = { profileId: null, scheduled: false };
+
 function renderReporter() {
-  return renderHook(() => useStatusReporter(0, 'screen-1', 'Screen 1', 3, null, 'active', 100, 'kitchen'));
+  return renderHook(() => useStatusReporter(0, 'screen-1', 'Screen 1', 3, NO_PROFILE, 'active', 100, 'kitchen'));
 }
 
 function statusBodies(): Array<Record<string, unknown>> {
@@ -175,7 +177,7 @@ describe('useStatusReporter remote-confirmation fields', () => {
   it('carries brightness, the showing timer session and the alert count', () => {
     setShowingTimerSession('sess-9');
     useAlertStore.getState().showAlert({ type: 'info', title: 'Hi', message: '' });
-    renderHook(() => useStatusReporter(0, 'screen-1', 'Screen 1', 3, null, 'dimmed', 40, 'kitchen'));
+    renderHook(() => useStatusReporter(0, 'screen-1', 'Screen 1', 3, NO_PROFILE, 'dimmed', 40, 'kitchen'));
 
     const bodies = statusBodies();
     expect(bodies).toHaveLength(1);
@@ -186,7 +188,7 @@ describe('useStatusReporter remote-confirmation fields', () => {
 
   it('re-reports immediately when brightness changes', () => {
     const { rerender } = renderHook(
-      ({ brightness }) => useStatusReporter(0, 'screen-1', 'Screen 1', 3, null, 'dimmed', brightness, 'kitchen'),
+      ({ brightness }) => useStatusReporter(0, 'screen-1', 'Screen 1', 3, NO_PROFILE, 'dimmed', brightness, 'kitchen'),
       { initialProps: { brightness: 100 } },
     );
     displayFetchMock.mockClear();
@@ -196,8 +198,22 @@ describe('useStatusReporter remote-confirmation fields', () => {
     expect(bodies[0].brightness).toBe(40);
   });
 
+  /* The phone ticks the profile chip from this report. It used to carry only
+   * the manual pick, so a scheduled profile running on the wall went unseen. */
+  it('reports the profile in effect and whether a schedule chose it, at once', () => {
+    const { rerender } = renderHook(
+      ({ profile }) => useStatusReporter(0, 'screen-1', 'Screen 1', 3, profile, 'active', 100, 'kitchen'),
+      { initialProps: { profile: { profileId: 'evening' as string | null, scheduled: false } } },
+    );
+    expect(statusBodies().map((b) => [b.activeProfile, b.profileScheduled])).toEqual([['evening', false]]);
+    displayFetchMock.mockClear();
+
+    rerender({ profile: { profileId: 'school', scheduled: true } });
+    expect(statusBodies().map((b) => [b.activeProfile, b.profileScheduled])).toEqual([['school', true]]);
+  });
+
   it('re-reports immediately when a timer takes the screen or an alert appears', () => {
-    renderHook(() => useStatusReporter(0, 'screen-1', 'Screen 1', 3, null, 'active', 100, 'kitchen'));
+    renderHook(() => useStatusReporter(0, 'screen-1', 'Screen 1', 3, NO_PROFILE, 'active', 100, 'kitchen'));
     displayFetchMock.mockClear();
 
     act(() => setShowingTimerSession('sess-1'));

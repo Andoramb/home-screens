@@ -38,7 +38,7 @@ A free, open-source smart display for your kitchen, hallway, or family command c
 - **Orientation**: whether the picture is portrait or landscape. Also under Settings > Screen.
 - **Module**: one thing on a screen. A clock, a weather forecast, a chore chart, a photo slideshow.
 - **Plugin**: an extra module you install from the Plugins button in the editor. Home Assistant, Garmin and Strava are plugins.
-- **Family remote**: the phone page for grown-ups, at `/remote`. Chores, meals, timers, photos, and control of the wall.
+- **Family remote**: the phone page for grown-ups, at `/remote`. Chores, meals, lists, timers, photos, and control of the wall.
 - **Kid view**: the phone page for children, at `/chores`. Check off today's chores and spend tickets, nothing else.
 - **Hub**: the Pi that runs Home Screens. It only comes up when you have more than one display; the others show what the hub serves.
 
@@ -52,6 +52,6 @@ A free, open-source smart display for your kitchen, hallway, or family command c
 ## Getting help
 
 - [Troubleshooting](/docs/troubleshooting) and the [FAQ](/docs/faq) cover the common questions
-- [Discord](https://discord.gg/KafmFuSNU) for a quick answer from other users
+- [Discord](https://discord.gg/9VyEasG5w) for a quick answer from other users
 - [GitHub Issues](https://github.com/home-screens/home-screens/issues) to report a bug or ask for a feature
 - [Releases](https://github.com/home-screens/home-screens/releases) to see what is new

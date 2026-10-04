@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, Plus, Trash2 } from 'lucide-react';
 import { useTranslate } from '@/i18n';
 import { uuid } from '@/lib/uuid';
-import { DEFAULT_TIMER_SOUND, MAX_STEP_SEC, MIN_STEP_SEC } from '@/lib/timer-logic';
+import { DEFAULT_TIMER_SOUND, MAX_STEP_SEC, MAX_STEPS, MIN_STEP_SEC } from '@/lib/timer-logic';
 import type { Routine, RoutineStep, TimerView } from '@/types/timers';
 import FormOverlay from './FormOverlay';
 import { useFormDirty } from '@/hooks/useFormDirty';
@@ -99,6 +99,17 @@ export default function RoutineFormOverlay({
       (s) => s.label.trim().length > 0 && stepSecondsFrom(s.minutesText, s.secondsText) !== null,
     );
 
+  // Why Save is off, in the order someone filling the form in would meet it.
+  // A greyed-out button with no word about it reads as a broken button.
+  const whyNoSave = valid
+    ? null
+    : name.trim().length === 0
+      ? t('timers.whyNoSave.name')
+      : steps.some((s) => s.label.trim().length === 0)
+        ? t('timers.whyNoSave.stepName')
+        : t('timers.whyNoSave.stepLength', { seconds: MIN_STEP_SEC });
+  const atStepLimit = steps.length >= MAX_STEPS;
+
   const handleSave = async () => {
     if (!valid || saving) return;
     setSaving(true);
@@ -124,6 +135,12 @@ export default function RoutineFormOverlay({
       dirty={dirty}
       onBack={onClose}
       footer={
+        <>
+        {whyNoSave && (
+          <p role="status" data-testid="routine-why-no-save" className="pt-2 text-center text-[12.5px] text-hs-text-muted">
+            {whyNoSave}
+          </p>
+        )}
         <div className="flex gap-2">
           {onDelete && (
             <button
@@ -149,6 +166,7 @@ export default function RoutineFormOverlay({
             {t('timers.save')}
           </button>
         </div>
+        </>
       }
     >
       <div className="px-5 pb-6 flex flex-col gap-5">
@@ -247,6 +265,16 @@ export default function RoutineFormOverlay({
                     placeholder={t('timers.stepNamePlaceholder')}
                     className="flex-1 min-w-0 min-h-[44px] px-3 rounded-xl bg-hs-hover text-hs-text-primary text-[14px] placeholder:text-hs-text-faint outline-none focus:ring-2 focus:ring-hs-accent"
                   />
+                  {/* Up here beside the name, where every phone has room for
+                      it: in the time row it was pushed out of the card. */}
+                  <button
+                    onClick={() => setSteps((prev) => prev.filter((s) => s.id !== step.id))}
+                    disabled={steps.length === 1}
+                    aria-label={t('timers.removeStep')}
+                    className="w-9 h-9 shrink-0 self-center rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center disabled:opacity-30"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
 
                 {pickingIconFor === step.id && (
@@ -323,14 +351,6 @@ export default function RoutineFormOverlay({
                     >
                       <ArrowDown className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => setSteps((prev) => prev.filter((s) => s.id !== step.id))}
-                      disabled={steps.length === 1}
-                      aria-label={t('timers.removeStep')}
-                      className="w-9 h-9 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center disabled:opacity-30"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
 
@@ -349,15 +369,21 @@ export default function RoutineFormOverlay({
           <button
             onClick={() =>
               setSteps((prev) =>
-                prev.length >= 20
+                prev.length >= MAX_STEPS
                   ? prev
                   : [...prev, { ...newStep(), minutesText: '5', secondsText: '0' }],
               )
             }
-            className="mt-3 w-full min-h-[44px] rounded-xl border border-dashed border-hs-border-strong text-hs-text-faint text-[13px] font-semibold flex items-center justify-center gap-1.5 active:scale-[0.98]"
+            disabled={atStepLimit}
+            className="mt-3 w-full min-h-[44px] rounded-xl border border-dashed border-hs-border-strong text-hs-text-faint text-[13px] font-semibold flex items-center justify-center gap-1.5 active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100"
           >
             <Plus className="w-4 h-4" /> {t('timers.addStep')}
           </button>
+          {atStepLimit && (
+            <p role="status" className="mt-2 text-center text-[12.5px] text-hs-text-muted">
+              {t('timers.stepLimit', { count: MAX_STEPS })}
+            </p>
+          )}
         </div>
       </div>
     </FormOverlay>

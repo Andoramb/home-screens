@@ -7,7 +7,7 @@
  */
 
 import type { Dictionary, TranslateFn } from './types';
-import { isRegisteredLocale } from './manifest';
+import { FALLBACK_LOCALE, isRegisteredLocale } from './manifest';
 import { pluralCategory, type PluralCategory } from './plural';
 
 /**
@@ -76,6 +76,16 @@ export function resolveLocaleChain(locale: string, fallback = 'en-US'): string[]
 
   push(fallback);
   return chain;
+}
+
+/**
+ * The shipped locale a tag is actually shown in: itself, else its registered
+ * language sibling (`de-AT` reads German), else the fallback (`ja-JP` reads
+ * English). Dates and numbers follow it too, so a wall never mixes one
+ * language's month with another's weekday.
+ */
+export function resolveShippedLocale(locale: string): string {
+  return resolveLocaleChain(locale, FALLBACK_LOCALE).find(isRegisteredLocale) ?? FALLBACK_LOCALE;
 }
 
 /**

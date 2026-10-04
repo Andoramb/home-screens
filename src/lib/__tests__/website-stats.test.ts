@@ -46,6 +46,7 @@ function countWeatherProviderFiles(): number {
     'icons.ts',
     'eccc-stations.ts',
     'today-record.ts',
+    'precipitation.ts',
   ]);
   return fs
     .readdirSync(weatherDir)
@@ -53,17 +54,15 @@ function countWeatherProviderFiles(): number {
 }
 
 function countStandingsLeagues(): number {
-  // Source of truth for the user-facing league list is the editor config section.
-  const file = path.join(
-    REPO_ROOT,
-    'src/components/editor/config-sections/StandingsConfigSection.tsx',
-  );
+  // The editor's standings and sports pickers both read SPORTS_LEAGUES from
+  // src/lib/espn.ts, so that list is the user-facing league count.
+  const file = path.join(REPO_ROOT, 'src/lib/espn.ts');
   const content = fs.readFileSync(file, 'utf8');
-  const match = content.match(/STANDINGS_LEAGUES[^=]*=\s*\[([\s\S]*?)\];/);
+  const match = content.match(/export const SPORTS_LEAGUES[^=]*=\s*\[([\s\S]*?)\n\];/);
   if (!match) {
-    throw new Error('Could not find STANDINGS_LEAGUES array');
+    throw new Error('Could not find SPORTS_LEAGUES array');
   }
-  return (match[1].match(/{ value: '[a-z_0-9]+', label:/g) ?? []).length;
+  return (match[1].match(/\{ id: '/g) ?? []).length;
 }
 
 const WEBSITE_DOCS = path.join(REPO_ROOT, 'website/content/docs');

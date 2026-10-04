@@ -58,6 +58,11 @@ export class ChoreSession {
     this.revision = initial?.revision ?? null;
   }
 
+  /** The revision of the list this surface last received or saved. */
+  get currentRevision(): string | null {
+    return this.revision;
+  }
+
   /** A list the hub handed over (a load, a reload, or a conflict's copy). */
   adopt(snapshot: ChoreSnapshot): void {
     this.revision = snapshot.revision;

@@ -775,6 +775,33 @@ describe('POST /api/backgrounds reserved names', () => {
   });
 });
 
+describe('POST /api/backgrounds same name', () => {
+  it('keeps the file already there and stores the new one under the next free name', async () => {
+    const { POST } = await getHandlers();
+    const first = await POST(makePostRequest([{ name: 'red.jpg', type: 'image/jpeg', content: Buffer.from('one') }], 'family'));
+    expect(first.status).toBe(201);
+    const second = await POST(makePostRequest([{ name: 'red.jpg', type: 'image/jpeg', content: Buffer.from('two') }], 'family'));
+    expect(second.status).toBe(201);
+    expect((await second.json()).path).toBe('/api/backgrounds/serve?file=family%2Fred-2.jpg');
+    const third = await POST(makePostRequest([{ name: 'red.jpg', type: 'image/jpeg', content: Buffer.from('three') }], 'family'));
+    expect((await third.json()).path).toContain('red-3.jpg');
+
+    const folder = path.join(bgsDir, 'family');
+    expect(await fs.readFile(path.join(folder, 'red.jpg'), 'utf8')).toBe('one');
+    expect(await fs.readFile(path.join(folder, 'red-2.jpg'), 'utf8')).toBe('two');
+  });
+
+  it('keeps two same-named files in one batch apart', async () => {
+    const { POST } = await getHandlers();
+    const res = await POST(makePostRequest([
+      { name: 'a.png', type: 'image/png', content: Buffer.from('1') },
+      { name: 'a.png', type: 'image/png', content: Buffer.from('2') },
+    ], 'batch'));
+    expect(res.status).toBe(201);
+    expect((await fs.readdir(path.join(bgsDir, 'batch'))).sort()).toEqual(['a-2.png', 'a.png']);
+  });
+});
+
 describe('POST /api/backgrounds replace', () => {
   function makeReplaceRequest(target: string, file: { name: string; type: string; content: Buffer }): NextRequest {
     const formData = new FormData();

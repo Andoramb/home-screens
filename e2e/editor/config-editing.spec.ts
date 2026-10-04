@@ -1612,10 +1612,129 @@ test('sports: disabling a default league persists', async ({ page, request }) =>
   await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nba', 'nfl'] }));
 
   await autosaved(page, async () => {
-    await page.getByRole('switch', { name: 'NBA' }).click();
+    await page.getByRole('switch', { name: 'NBA', exact: true }).click();
   });
 
   expect((await moduleConfig(request, 'sports')).leagues).toEqual(['nfl']);
+});
+
+test('sports: a league that was hidden before (WNBA) can be enabled', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'] }));
+
+  await autosaved(page, async () => {
+    await page.getByRole('switch', { name: 'WNBA' }).click();
+  });
+
+  expect((await moduleConfig(request, 'sports')).leagues).toEqual(['nfl', 'wnba']);
+});
+
+/** The team picker asks the hub for rosters; answer from the fixture so no request reaches ESPN. */
+async function stubRosters(page: Page): Promise<void> {
+  await page.route('**/api/sports/teams*', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({ teams: [
+      { league: 'nfl', abbr: 'GB', name: 'Green Bay Packers', shortName: 'Packers', logo: '', color: '203731' },
+      { league: 'nfl', abbr: 'MIN', name: 'Minnesota Vikings', shortName: 'Vikings', logo: '', color: '4f2683' },
+      { league: 'nba', abbr: 'MIN', name: 'Minnesota Timberwolves', shortName: 'Timberwolves', logo: '', color: '266092' },
+    ] }),
+  }));
+}
+
+test('sports: picking a team from the search adds it to My teams', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'], favoriteTeams: [] }));
+
+  const search = page.getByRole('combobox', { name: 'My teams' });
+  await search.fill('vik');
+  await autosaved(page, async () => {
+    await page.getByRole('option', { name: /Minnesota Vikings/ }).click();
+  });
+
+  expect((await moduleConfig(request, 'sports')).favoriteTeams).toEqual(['nfl:MIN']);
+  await expect(page.getByRole('button', { name: 'Remove Minnesota Vikings' })).toBeVisible();
+  // The only-my-teams toggle appears once a team is picked.
+  await expect(page.getByRole('switch', { name: "Only show my teams' games" })).toBeVisible();
+});
+
+test('sports: removing a team and turning on Only my teams persist', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'], favoriteTeams: ['nfl:MIN', 'nfl:GB'] }));
+
+  await autosaved(page, async () => {
+    await page.getByRole('switch', { name: "Only show my teams' games" }).click();
+  });
+  expect((await moduleConfig(request, 'sports')).favoritesOnly).toBe(true);
+
+  await autosaved(page, async () => {
+    await page.getByRole('button', { name: 'Remove Green Bay Packers' }).click();
+  });
+  expect((await moduleConfig(request, 'sports')).favoriteTeams).toEqual(['nfl:MIN']);
+});
+
+test('sports: a picked team whose league is off stays listed and says so', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'], favoriteTeams: ['nba:MIN'] }));
+
+  await expect(page.getByText('Minnesota Timberwolves')).toBeVisible();
+  await expect(page.getByText('league is off')).toBeVisible();
+});
+
+test('sports: at eight teams the search box gives way to a limit note', async ({ page, request }) => {
+  await stubRosters(page);
+  const eight = ['nfl:MIN', 'nfl:GB', 'nfl:CHI', 'nfl:DET', 'nfl:DAL', 'nfl:PHI', 'nfl:NYG', 'nfl:WSH'];
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'], favoriteTeams: eight }));
+
+  await expect(page.getByText('That is the most teams this module can follow (8).')).toBeVisible();
+  await expect(page.getByRole('combobox', { name: 'My teams' })).toHaveCount(0);
+
+  await autosaved(page, async () => {
+    await page.getByRole('button', { name: 'Remove WSH' }).click();
+  });
+  await expect(page.getByRole('combobox', { name: 'My teams' })).toBeVisible();
+});
+
+test('sports: dragging a team to the top makes it the first favorite', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('sports', { leagues: ['nfl'], favoriteTeams: ['nfl:MIN', 'nfl:GB'] }));
+
+  const list = page.getByRole('list', { name: 'My teams' });
+  const handle = list.getByRole('button', { name: 'Drag to move Green Bay Packers' });
+  const first = list.getByRole('listitem').first();
+  // The list sits below the fold of the property panel; page.mouse does not scroll.
+  await handle.scrollIntoViewIfNeeded();
+  const handleBox = (await handle.boundingBox())!;
+  const firstBox = (await first.boundingBox())!;
+
+  // PointerSensor activates after 5px of travel; move past the first row's
+  // midpoint so closestCenter picks it and the vertical strategy swaps.
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2 - 12, { steps: 5 });
+  await page.mouse.move(firstBox.x + firstBox.width / 2, firstBox.y + 2, { steps: 10 });
+  await page.mouse.up();
+
+  await expect.poll(async () => (await moduleConfig(request, 'sports')).favoriteTeams).toEqual(['nfl:GB', 'nfl:MIN']);
+});
+
+test('standings: picking a team highlights it and persists', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('standings', { league: 'nba', favoriteTeams: [] }));
+
+  await page.getByRole('combobox', { name: 'My teams' }).fill('timber');
+  await autosaved(page, async () => {
+    await page.getByRole('option', { name: /Minnesota Timberwolves/ }).click();
+  });
+
+  expect((await moduleConfig(request, 'standings')).favoriteTeams).toEqual(['nba:MIN']);
+  await expect(page.getByText('These teams stand out in the table.')).toBeVisible();
+});
+
+test('sports: the Team view hides the Only my teams toggle', async ({ page, request }) => {
+  await stubRosters(page);
+  await selectModule(page, request, buildModuleInstance('sports', { view: 'team', leagues: ['nfl'], favoriteTeams: ['nfl:MIN'] }));
+
+  await expect(page.getByText('The first team shows first; more than one takes turns.')).toBeVisible();
+  await expect(page.getByRole('switch', { name: "Only show my teams' games" })).toHaveCount(0);
 });
 
 test('sports: switching the View persists', async ({ page, request }) => {

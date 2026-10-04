@@ -16,6 +16,7 @@ import { dispatchModuleCommand } from '@/hooks/useModuleCommand';
 import { publishRevisions, type DisplayRevisions } from '@/lib/display-heartbeat';
 import type { ShownPhoto } from '@/stores/photo-show-store';
 import type { AlertType } from '@/types/config';
+import type { ResolvedProfile } from '@/lib/schedule';
 
 export interface CommandHandlers {
   wake: () => void;
@@ -89,6 +90,31 @@ function currentBrowserStats(): BrowserStats | undefined {
 }
 
 const HEARTBEAT_MS = 3_000;
+
+const KEY_RELOAD_AT = 'hs-display-key-reload-at';
+const KEY_RELOAD_EVERY_MS = 60_000;
+
+/**
+ * Whether a wall the hub just refused should reload to pick up a new key.
+ *
+ * The key is handed to the page when it is rendered, so a wall that was open
+ * when a grown-up made a new key (or first set a password) holds one the hub
+ * no longer accepts, and every beat after that is refused: no commands, no
+ * layout changes, no way to tell it to reload. Loading the page again gets
+ * the current key. At most once a minute, remembered across the reload, so
+ * a wall the hub keeps refusing for another reason does not spin.
+ */
+function reloadForNewKey(): boolean {
+  try {
+    const last = Number(sessionStorage.getItem(KEY_RELOAD_AT)) || 0;
+    if (Date.now() - last < KEY_RELOAD_EVERY_MS) return false;
+    sessionStorage.setItem(KEY_RELOAD_AT, String(Date.now()));
+    return true;
+  } catch {
+    // No storage to remember the reload in: reloading could loop, so do not.
+    return false;
+  }
+}
 
 /**
  * Whether an editor is currently watching this display's shared-state
@@ -191,11 +217,15 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
             break;
           case 'alert': {
             const p = cmd.payload;
-            if (p && (p.title || p.message)) {
+            // Only text is drawn: whatever else a hub queued is left out
+            // rather than handed to the overlay.
+            const title = typeof p?.title === 'string' ? p.title : '';
+            const message = typeof p?.message === 'string' ? p.message : '';
+            if (p && (title || message)) {
               handlersRef.current.showAlert({
                 type: (p.type as AlertType) ?? 'info',
-                title: (p.title as string) ?? '',
-                message: (p.message as string) ?? '',
+                title,
+                message,
                 duration: typeof p.duration === 'number' ? p.duration : undefined,
                 icon: typeof p.icon === 'string' ? p.icon : undefined,
                 dismissible: typeof p.dismissible === 'boolean' ? p.dismissible : undefined,
@@ -215,7 +245,13 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
               && (p.kind === 'image' || p.kind === 'video')
               && typeof p.durationMs === 'number' && p.durationMs > 0
             ) {
-              handlersRef.current.showPhoto({ url: p.url, kind: p.kind, durationMs: p.durationMs });
+              const sized = typeof p.width === 'number' && p.width > 0 && typeof p.height === 'number' && p.height > 0;
+              handlersRef.current.showPhoto({
+                url: p.url,
+                kind: p.kind,
+                durationMs: p.durationMs,
+                ...(sized ? { width: p.width as number, height: p.height as number } : {}),
+              });
             }
             break;
           }
@@ -264,6 +300,10 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
           drain ? withDisplayParam('/api/display/commands', displayId) : '/api/display/revisions',
         );
         if (!mounted) return;
+        if (res.status === 401 && drain && reloadForNewKey()) {
+          handlersRef.current.reload();
+          return;
+        }
         if (!res.ok) {
           await publishBuildIdAlone();
           return;
@@ -302,6 +342,9 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
   }, [displayId, drain]);
 }
 
+/** The profile a display reports: the one in effect, and whether a schedule chose it. */
+type ReportedProfile = Pick<ResolvedProfile, 'profileId' | 'scheduled'>;
+
 /**
  * Reports display status to /api/display/status periodically (every 30s)
  * and immediately on significant state changes.
@@ -314,7 +357,7 @@ export function useStatusReporter(
   currentScreenId: string,
   currentScreenName: string,
   screenCount: number,
-  activeProfile: string | undefined | null,
+  activeProfile: ReportedProfile,
   displayState: string,
   brightness: number,
   displayId?: string,
@@ -356,13 +399,14 @@ export function useStatusReporter(
   // value it sent until this display confirms it, so a brightness command
   // must be answered on the spot rather than on the next 30s beat.
   const prevKeyRef = useRef('');
+  const { profileId, scheduled: profileScheduled } = activeProfile;
   useEffect(() => {
     if (!enabled) return;
-    const key = `${currentScreenIndex}:${currentScreenId}:${screenCount}:${displayState}:${activeProfile}:${displayId ?? ''}:${brightness}`;
+    const key = `${currentScreenIndex}:${currentScreenId}:${screenCount}:${displayState}:${profileId}:${profileScheduled}:${displayId ?? ''}:${brightness}`;
     if (key === prevKeyRef.current) return;
     prevKeyRef.current = key;
     reportStatus(valuesRef.current);
-  }, [currentScreenIndex, currentScreenId, screenCount, displayState, activeProfile, displayId, enabled, brightness]);
+  }, [currentScreenIndex, currentScreenId, screenCount, displayState, profileId, profileScheduled, displayId, enabled, brightness]);
 
   // Same immediacy for the two facts the remote confirms against that live
   // outside React props: the alert count (Send Alert / Clear alerts) and the
@@ -436,7 +480,7 @@ function reportStatus(s: {
   currentScreenId: string;
   currentScreenName: string;
   screenCount: number;
-  activeProfile: string | undefined | null;
+  activeProfile: ReportedProfile;
   displayState: string;
   displayId?: string;
   brightness: number;
@@ -495,7 +539,8 @@ function reportStatus(s: {
         name: s.currentScreenName,
       },
       screenCount: s.screenCount,
-      activeProfile: s.activeProfile ?? null,
+      activeProfile: s.activeProfile.profileId,
+      profileScheduled: s.activeProfile.scheduled,
       displayState: s.displayState,
       brightness: s.brightness,
       timerSessionId: getShowingTimerSession(),

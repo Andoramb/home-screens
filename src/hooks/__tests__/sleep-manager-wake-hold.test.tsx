@@ -246,12 +246,11 @@ describe('useSleepManager rule-wake hold', () => {
     expect(result.current.displayState).toBe('asleep');
   });
 
-  it('a hold armed while dimmed does not swallow the scheduled morning wake', async () => {
+  it('a hold armed while dimmed carries the chosen level through the morning wake', async () => {
     // 05:58, two minutes before the overnight window ends. A remote partial
-    // brightness arms a hold that outlives the window edge; the leave-window
-    // wake must still fire (it runs before the held-wake suppression),
-    // otherwise the display would sit dimmed at 40% indefinitely — nothing
-    // else ever brightens it.
+    // brightness arms a hold that outlives the window edge. The chosen level
+    // is the display's awake level, so the scheduled morning wake comes back
+    // to it, and nothing re-sleeps it once the window and the hold are over.
     vi.setSystemTime(new Date(2025, 0, 15, 5, 58, 0));
     const overnight: SleepSettings = {
       ...ALWAYS_ASLEEP,
@@ -269,8 +268,13 @@ describe('useSleepManager rule-wake hold', () => {
 
     // Cross 06:00 while the hold is still standing (armed ~05:58, 5 min).
     await act(async () => { await vi.advanceTimersByTimeAsync(3 * 60_000); });
-    expect(result.current.displayState).toBe('active');
-    expect(result.current.dimOpacity).toBe(0);
+    expect(result.current.brightnessOverride).toBe(40);
+    expect(result.current.dimOpacity).toBeCloseTo(0.6);
+
+    // Past the hold: still the chosen level, not asleep and not full.
+    await act(async () => { await vi.advanceTimersByTimeAsync(10 * 60_000); });
+    expect(result.current.brightnessOverride).toBe(40);
+    expect(result.current.dimOpacity).toBeCloseTo(0.6);
   });
 
   it('the schedule window for the hold is evaluated in the display timezone', async () => {

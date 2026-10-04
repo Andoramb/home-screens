@@ -58,7 +58,8 @@
     "sleepDisplay": "Dormir display",
     "sendAlert": "Enviar aviso",
     "waitingFor": "Esperando a {name}…",
-    "waitingForAll": "Esperando a las pantallas…"
+    "waitingForAll": "Esperando a las pantallas…",
+    "waitingForUnnamed": "Esperando a la pantalla…"
   },
   "brightnessCard": {
     "label": "Brillo",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Perfiles",
-    "noProfile": "Todas las páginas"
+    "noProfile": "Todas las páginas",
+    "scheduledNote": "Ahora mismo está activo el perfil programado {profile}. Lo que elijas aquí empezará cuando termine."
   },
   "displayPicker": {
     "targeting": "Enviar a",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Termina primero la que te has pedido, o marca esta si ya la has hecho.",
       "youDidItOn": "La hiciste el {day}",
+      "youDidItOnDate": "La hiciste el {day}",
       "didItOn": "{name} la hizo el {day}",
+      "didItOnDate": "{name} la hizo el {day}",
       "limitLineMany": "Termina primero una de las que te has pedido, o marca esta si ya la has hecho.",
       "yours": "Tuya",
       "didItToday": "{name} la ha hecho hoy",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "¿Volver a abrirla?",
       "description": "«{chore}» vuelve a estar disponible. Los tickets que ya se ganaron con ella no se pierden."
-    }
+    },
+    "loadError": "No se pudieron cargar tus tareas. Comprueba que el hub está encendido y vuelve a intentarlo.",
+    "retry": "Intentar de nuevo"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Ir a hoy",
@@ -276,6 +282,11 @@
         "title": "¿Eliminar «{name}»?",
         "description": "También se quitará de cualquier hueco planeado.",
         "confirmLabel": "Eliminar comida"
+      },
+      "suggestWeek": {
+        "title": "¿Cambiar las comidas de esta semana?",
+        "description": "Sugerir elige comidas nuevas para toda la semana. Las comidas ya planeadas para esta semana se cambiarán por otras.",
+        "confirmLabel": "Cambiar comidas"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Reconfortante",
         "kid-friendly": "Para niños"
       }
-    }
+    },
+    "loadError": "No se pudieron cargar tus comidas. Comprueba que el hub está encendido y vuelve a intentarlo.",
+    "retry": "Intentar de nuevo",
+    "saveFailed": "No se pudo guardar. Inténtalo de nuevo."
   },
   "mealForm": {
     "titleNew": "Añadir comida",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Borrar avisos en {name}",
     "clearOnAll": "Borrar avisos en todas las pantallas",
     "clearingButton": "Borrando…",
-    "showingNow": "({count} en pantalla)"
+    "showingNow": "({count} en pantalla)",
+    "clearOnUnnamed": "Borrar avisos en la pantalla"
   },
   "rewardsView": {
     "changedElsewhere": "Otra persona ha cambiado las recompensas. Tu último cambio no se guardó. Inténtalo de nuevo.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Canjear por {cost} tickets",
       "emptyKid": "Aún no hay premios. Una persona mayor puede añadirlos desde su teléfono.",
       "balanceLabelNamed": "tickets de {name}",
-      "switchHint": "¿No eres {name}? Elige tu nombre en la pestaña Hoy."
+      "switchHint": "¿No eres {name}? Elige tu nombre en la pestaña Hoy.",
+      "refused": "No se pudo canjear. Ya no hay suficientes tickets para eso.",
+      "failed": "No se pudo canjear. Inténtalo de nuevo."
     },
     "manage": {
       "heading": "Premios",
@@ -843,7 +860,10 @@
     "newRoutine": "Nueva rutina",
     "editRoutine": "Editar rutina",
     "emptyHint": "Una rutina es un temporizador paso a paso, como la rutina de la mañana: vestirse, lavarse los dientes, hacer la cama. Crea una y ponla en la pantalla.",
-    "routineMeta": "{steps} pasos · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} paso · {minutes} min",
+      "other": "{steps} pasos · {minutes} min"
+    },
     "stepCount": "Paso {current} de {total}",
     "pause": "Pausa",
     "resume": "Seguir",
@@ -893,7 +913,15 @@
     "showingOn": "En marcha en {names}",
     "showingOnDisplay": "En marcha en la pantalla",
     "waitingForDisplay": "Esperando a que una pantalla lo muestre…",
-    "notShowing": "Ninguna pantalla lo muestra todavía. Comprueba que hay una pantalla encendida."
+    "notShowing": "Ninguna pantalla lo muestra todavía. Comprueba que hay una pantalla encendida.",
+    "changedElsewhere": "Otra persona ha cambiado las rutinas. Tu último cambio no se guardó. Inténtalo de nuevo.",
+    "whyNoSave": {
+      "name": "Ponle un nombre a la rutina para guardarla.",
+      "stepName": "Ponle un nombre a cada paso para guardar.",
+      "stepLength": "Cada paso tiene que durar al menos {seconds} segundos."
+    },
+    "quickTooShort": "Un temporizador tiene que durar al menos {seconds} segundos.",
+    "stepLimit": "Una rutina puede tener hasta {count} pasos."
   },
   "lists": {
     "title": "Listas",
@@ -995,8 +1023,13 @@
     "noConfirm": "{name} no ha respondido. Puede estar apagada o sin conexión.",
     "profileSwitched": "{name} ha cambiado a {profile}",
     "profileCleared": "{name} muestra todas las páginas",
+    "profileAfterSchedule": "{name} cambiará a {profile} cuando termine {scheduled}",
+    "profileClearedAfterSchedule": "{name} mostrará todas las páginas cuando termine {scheduled}",
+    "profileKeptAfterSchedule": "{name} seguirá mostrando {profile} cuando termine su programación",
     "profileFailed": "No se pudo cambiar el perfil en {name}",
-    "hubBack": "Home Screens ha vuelto"
+    "hubBack": "Home Screens ha vuelto",
+    "alertSentUnnamed": "Aviso enviado a la pantalla",
+    "alertsClearedUnnamed": "Avisos borrados en la pantalla"
   },
   "tabNotSetUp": {
     "chores": {

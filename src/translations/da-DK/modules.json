@@ -95,7 +95,8 @@
     "unitHours": "t",
     "unitMinutes": "min",
     "unitSeconds": "sek",
-    "todayBang": "I dag!"
+    "todayBang": "I dag!",
+    "moreCount": "+{count} mere"
   },
   "date": {
     "weekShort": "Uge",
@@ -693,6 +694,7 @@
         "other": "Den bonuspligt er ikke ledig lige nu"
       },
       "didItOn": "{name} klarede den i {day}s",
+      "didItOnDate": "{name} klarede den d. {day}",
       "bandHintEach": "Ekstra billetter. Alle kan gøre dem én gang."
     },
     "settings": {
@@ -848,7 +850,16 @@
     "loading": "Indlæser resultater…",
     "noGames": "Ingen kampe fundet",
     "today": "I dag",
-    "tomorrow": "I morgen"
+    "tomorrow": "I morgen",
+    "pickTeam": "Vælg dit hold i modulets indstillinger",
+    "teamLeagueOff": "Slå dit holds liga til i modulets indstillinger",
+    "unavailable": "Resultaterne holder en lille pause",
+    "last": "Seneste:",
+    "win": "S",
+    "loss": "N",
+    "tie": "U",
+    "vs": "mod",
+    "at": "ude mod"
   },
   "stock-ticker": {
     "chartCaptions": {
@@ -900,7 +911,10 @@
     "loading": "Indlæser trafik…",
     "unitMin": "min",
     "mockNotice": "Eksempeltal, indtil der tilføjes en trafiknøgle",
-    "needsKey": "Trafik kræver en Google Maps- eller TomTom-nøgle"
+    "needsKey": "Trafik kræver en Google Maps- eller TomTom-nøgle",
+    "routeIncomplete": "Venter på start- og slutadresse",
+    "routeNotFound": "Ruten blev ikke fundet. Tjek adresserne.",
+    "routeUnavailable": "Køretiden kan ikke hentes lige nu"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "eller vælg en mappe i editoren",
@@ -1084,7 +1098,8 @@
   "qr-code": {
     "name": "QR-kode",
     "empty": "Tilføj et link eller dit wi-fi i editoren, så vises det her",
-    "scanToConnect": "Scan for at forbinde"
+    "scanToConnect": "Scan for at forbinde",
+    "tooLong": "Det er for meget tekst til én QR-kode. Gør den kortere i editoren, så vises den her"
   },
   "display-control": {
     "prev": "Forrige",

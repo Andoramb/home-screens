@@ -11,7 +11,7 @@ import { readTodoData, validateTodoData, settleTodoMigration } from '@/lib/todo-
 import { readSavedTimetables, validateTimetableData } from '@/lib/timetable-data';
 import { writeBackupState } from '@/lib/backup-state';
 import { withAuth, parseJsonBody, getClientIP } from '@/lib/api-utils';
-import { validateConfigForWrite } from '@/lib/config-validation';
+import { newerSchemaProblem, validateConfigForWrite } from '@/lib/config-validation';
 import { planCredentialRestore } from '@/lib/backup-credentials';
 import { withFamilyData } from '@/lib/family-api';
 import { readFamilyData, familyValidationError } from '@/lib/family-data';
@@ -176,7 +176,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     delete body._passphrase;
 
     if (body.config !== undefined) {
-      const err = validateConfigForWrite(body.config);
+      const err = validateConfigForWrite(body.config) ?? newerSchemaProblem(body.config);
       if (err) return NextResponse.json({ error: err }, { status: 400 });
     }
     // Same gate for the lists: the file is written whole, and a malformed one
@@ -262,7 +262,7 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   // Legacy format: raw ScreenConfiguration object
   if (body.screens && Array.isArray(body.screens) && body.settings) {
-    const err = validateConfigForWrite(body);
+    const err = validateConfigForWrite(body) ?? newerSchemaProblem(body);
     if (err) return NextResponse.json({ error: err }, { status: 400 });
     await withDataTransaction(async () => {
       const planned = await planFamilyRestore({ config: body as unknown as ScreenConfiguration });
@@ -290,8 +290,10 @@ function validateContentSections(body: FamilyRestoreContent): string | null {
     || Object.values(body.rewards.balances).some((value) => typeof value !== 'number' || !Number.isFinite(value))
     || body.rewards.rewards.some((reward) => !record(reward) || typeof reward.id !== 'string' || typeof reward.name !== 'string' || !stringArray(reward.memberIds) || typeof reward.cost !== 'number' || !Number.isFinite(reward.cost))
     || body.rewards.redemptions.some((redemption) => !record(redemption) || typeof redemption.redeemedAt !== 'string'))) return 'Rewards need valid choices, balances and history.';
+  // Grocery ticks are not checked: the meal store keeps only a map of week to
+  // ticked names and reads anything else as nothing ticked, which is how the
+  // single list in a backup from an older build restores.
   if (body.meals !== undefined && (!record(body.meals) || !Array.isArray(body.meals.savedMeals) || !Array.isArray(body.meals.plan)
-    || (body.meals.groceryChecked !== undefined && !stringArray(body.meals.groceryChecked))
     || body.meals.savedMeals.some((meal) => !record(meal) || typeof meal.id !== 'string' || typeof meal.name !== 'string')
     || body.meals.plan.some((meal) => !record(meal) || (typeof meal.date !== 'string' && typeof meal.day !== 'number')))) return 'Meals need valid saved meals and a plan.';
   if (body.routines !== undefined) {

@@ -108,8 +108,24 @@ export function useMealsPlanActions({
 
   const suggestRandom = useCallback(async () => {
     const weekDateStrs = weekDates.map((d) => d.date);
-    await applyToPlan((p) => shufflePlanWeek(p, savedMeals, settings.enabledSlots, weekDateStrs));
-  }, [savedMeals, weekDates, settings.enabledSlots, applyToPlan]);
+    const suggest = () => applyToPlan((p) => shufflePlanWeek(p, savedMeals, settings.enabledSlots, weekDateStrs));
+    // An empty week has nothing to lose. One with meals in it is asked about
+    // first, as Clear is: Suggest replaces the whole week, hand-picked meals
+    // included, and there is no undo on the phone.
+    if (weekPlan.length === 0 || savedMeals.length === 0) {
+      await suggest();
+      return;
+    }
+    setConfirmAction({
+      title: t('mealsTab.confirm.suggestWeek.title'),
+      description: t('mealsTab.confirm.suggestWeek.description'),
+      confirmLabel: t('mealsTab.confirm.suggestWeek.confirmLabel'),
+      onConfirm: async () => {
+        await suggest();
+        setConfirmAction(null);
+      },
+    });
+  }, [savedMeals, weekDates, weekPlan, settings.enabledSlots, applyToPlan, setConfirmAction, t]);
 
   const copyLastWeek = useCallback(async () => {
     const prevStart = new Date(viewingWeekStart);

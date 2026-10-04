@@ -42,7 +42,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
     }
     const err = validateCidr(entry);
     if (err) {
-      return NextResponse.json({ error: `Invalid entry "${entry}": ${err}` }, { status: 400 });
+      return NextResponse.json({ error: `Invalid entry "${entry}": ${err}`, code: 'invalid_address', entry }, { status: 400 });
     }
   }
 

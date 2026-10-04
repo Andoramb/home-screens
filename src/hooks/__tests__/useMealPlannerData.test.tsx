@@ -379,4 +379,157 @@ describe('useMealPlannerData', () => {
     expect(result.current.mealData.plan).toEqual([{ id: 'plan-1', mealId: 'meal-1' }, { id: 'phone-added' }, { id: 'modal-added' }]);
     expect(result.current.saveError).toBeNull();
   });
+
+  /* ─── grocery ticks ─────────────────────
+   * The dialog kept its own ticks, in memory, for every week at once: a tick
+   * made on one week showed on every week it was moved to, and none of the
+   * phone's ticks showed at all. It now reads and writes the stored ticks,
+   * one list per week.
+   */
+  it('shows the stored ticks and saves a tick on the week it was made on', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ ...SERVER_PAYLOAD, groceryChecked: { '2026-09-27': ['tortillas'] } }))
+      .mockResolvedValueOnce(ok({ week: '2026-10-04', groceryChecked: ['lettuce'], changed: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['tortillas'] }));
+
+    await act(async () => {
+      await result.current.toggleGroceryItem('2026-10-04', 'Lettuce');
+    });
+
+    const [url, opts] = fetchMock.mock.calls[1];
+    expect(url).toBe('/api/meals/grocery');
+    expect(JSON.parse((opts as RequestInit).body as string)).toEqual({ item: 'Lettuce', direction: 'check', week: '2026-10-04' });
+    expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['tortillas'], '2026-10-04': ['lettuce'] });
+    expect(result.current.saveError).toBeNull();
+  });
+
+  it('unticks an item ticked on that week, not on another', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok({ ...SERVER_PAYLOAD, groceryChecked: { '2026-09-27': ['tortillas'] } }))
+      .mockResolvedValueOnce(ok({ week: '2026-09-27', groceryChecked: [], changed: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['tortillas'] }));
+
+    await act(async () => {
+      await result.current.toggleGroceryItem('2026-09-27', 'Tortillas');
+    });
+
+    expect(JSON.parse((fetchMock.mock.calls[1][1] as RequestInit).body as string).direction).toBe('uncheck');
+    expect(result.current.mealData.groceryChecked).toEqual({});
+  });
+
+  it('does not let the reload on opening the dialog put the old ticks back', async () => {
+    let answerReload!: (value: unknown) => void;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockImplementationOnce(() => new Promise((resolve) => { answerReload = resolve; }))
+      .mockResolvedValueOnce(ok({ week: '2026-09-27', groceryChecked: ['milk'], changed: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result, rerender } = renderHook(
+      ({ showModal }) => useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal }),
+      { initialProps: { showModal: false } },
+    );
+    await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
+
+    rerender({ showModal: true }); // the reload is now out
+    await act(async () => {
+      await result.current.toggleGroceryItem('2026-09-27', 'Milk');
+    });
+    await act(async () => {
+      answerReload(ok(SERVER_PAYLOAD));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+
+    expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['milk'] });
+  });
+
+  it('shows the last tick\'s answer when two ticks overlap', async () => {
+    let answerFirst!: (value: unknown) => void;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockImplementationOnce(() => new Promise((resolve) => { answerFirst = resolve; }))
+      .mockResolvedValueOnce(ok({ week: '2026-09-27', groceryChecked: ['milk', 'eggs'], changed: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
+
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    act(() => {
+      first = result.current.toggleGroceryItem('2026-09-27', 'Milk');
+    });
+    act(() => {
+      second = result.current.toggleGroceryItem('2026-09-27', 'Eggs');
+    });
+    expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['milk', 'eggs'] });
+    // The second tick waits for the first's answer.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    await act(async () => {
+      answerFirst(ok({ week: '2026-09-27', groceryChecked: ['milk'], changed: true }));
+      await first;
+      await second;
+    });
+
+    expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['milk', 'eggs'] });
+  });
+
+  it('keeps a tick through an edit that changed nothing', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce(ok({ week: '2026-09-27', groceryChecked: ['milk'], changed: true }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.toggleGroceryItem('2026-09-27', 'Milk');
+    });
+    await act(async () => {
+      await result.current.handleModalUpdate((c) => ({ plan: c.plan }));
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.current.mealData.groceryChecked).toEqual({ '2026-09-27': ['milk'] });
+  });
+
+  it('puts a refused tick back and says so', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(ok(SERVER_PAYLOAD))
+      .mockResolvedValueOnce({ ok: false, status: 500, json: async () => ({}) });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { result } = renderHook(() =>
+      useMealPlannerData({ mod: makeModule(), set: vi.fn(), showModal: false }),
+    );
+    await waitFor(() => expect(result.current.mealData.savedMeals).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.toggleGroceryItem('2026-10-04', 'Lettuce');
+    });
+
+    expect(result.current.mealData.groceryChecked).toEqual({});
+    expect(result.current.saveError).not.toBeNull();
+  });
 });

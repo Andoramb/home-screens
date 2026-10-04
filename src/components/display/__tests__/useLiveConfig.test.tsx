@@ -80,15 +80,14 @@ describe('useLiveConfig scoped cache invalidation', () => {
     clearSpy.mockRestore();
   });
 
-  it('clears on first load, skips presentational-only changes, clears on data changes', async () => {
+  it('skips presentational-only changes, clears on data changes, from the very first edit', async () => {
     const { unmount } = renderHook(() =>
       useLiveConfig(initial.screens, initial.settings, 'UTC'),
     );
-    // First beat: fingerprint ref is empty, so the mount clear still
-    // happens — a remounted rotator must not trust the module-global cache
-    // blindly.
+    // The wall starts from the config its page rendered, so an unchanged
+    // config announced by a beat clears nothing.
     await serve(initial);
-    expect(clearSpy).toHaveBeenCalledTimes(1);
+    expect(clearSpy).toHaveBeenCalledTimes(0);
 
     // Position + style + visibility change only: bytes differ, data doesn't.
     await serve(
@@ -100,17 +99,17 @@ describe('useLiveConfig scoped cache invalidation', () => {
         }),
       ]),
     );
-    expect(clearSpy).toHaveBeenCalledTimes(1);
+    expect(clearSpy).toHaveBeenCalledTimes(0);
 
     // Module config change: fetched data can differ, cache must clear.
     await serve(makeConfig([weatherModule({ config: { view: 'forecast' } })]));
-    expect(clearSpy).toHaveBeenCalledTimes(2);
+    expect(clearSpy).toHaveBeenCalledTimes(1);
 
     // Settings change (e.g. timezone): also data-affecting.
     const settingsChanged = makeConfig([weatherModule({ config: { view: 'forecast' } })]);
     (settingsChanged.settings as { timezone?: string }).timezone = 'America/Chicago';
     await serve(settingsChanged);
-    expect(clearSpy).toHaveBeenCalledTimes(3);
+    expect(clearSpy).toHaveBeenCalledTimes(2);
 
     unmount();
   });

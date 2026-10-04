@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState, useLayoutEffect } from 'react';
 
-/** Never scale below this, however small the box gets. */
+/** Never scale below this, however small the box gets, unless the caller sets its own floor. */
 const MIN_FONT_PX = 6;
 /** Leave a sliver of slack so sub-pixel rounding can't reintroduce an overflow. */
 const SAFETY = 0.995;
@@ -39,8 +39,12 @@ const MAX_STEPS = 8;
  *
  * Never scales up past `desired`: when the content already fits, `fontSize` is
  * `desired` unchanged, so views that never overflow render exactly as before.
+ *
+ * Never scales below `minFontSize` either. Content that still does not fit
+ * there settles at exactly that size, which a caller can check for and then
+ * show less rather than shrink further.
  */
-export function useFitFontSize(desired: number, resetKey: string): {
+export function useFitFontSize(desired: number, resetKey: string, minFontSize = MIN_FONT_PX): {
   boxRef: React.RefObject<HTMLDivElement | null>;
   contentRef: React.RefObject<HTMLDivElement | null>;
   fontSize: number;
@@ -113,8 +117,15 @@ export function useFitFontSize(desired: number, resetKey: string): {
       const nextLo = fits ? Math.max(lo, scale) : lo;
       const nextHi = fits ? hi : Math.min(hi, scale);
 
-      // Nothing bigger than `desired` is on the table, so a fit at scale 1 is done.
-      if (fits && nextHi === Infinity) return;
+      // Nothing bigger than `desired` is on the table, so a fit at scale 1 is
+      // done. A new key is recorded even then: left unrecorded, the bracket of
+      // the key before it stays in state, and the moment that key comes back
+      // (a size stepped down and straight back up) its settled bracket is
+      // resumed for content that has since changed, and pins it overflowing.
+      if (fits && nextHi === Infinity) {
+        if (!matches) setFit({ key, box: boxKey, scale: 1, lo: 0, hi: Infinity, steps: 0 });
+        return;
+      }
       // Bracket tight enough, or out of rounds: settle on a size known to fit.
       if (steps >= MAX_STEPS || nextHi - nextLo <= TOLERANCE) {
         if (!fits && nextLo > 0 && nextLo < scale) {
@@ -131,7 +142,7 @@ export function useFitFontSize(desired: number, resetKey: string): {
         : nextLo > 0
           ? (nextLo + scale) / 2
           : Math.max(
-            MIN_FONT_PX / desired,
+            Math.min(1, minFontSize / desired),
             scale * Math.min(boxH / contentH, boxW && contentW ? boxW / contentW : 1) * SAFETY,
           );
 

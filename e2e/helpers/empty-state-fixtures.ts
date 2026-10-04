@@ -39,6 +39,19 @@ const showsCopy = (copy: string) => async (mod: Locator): Promise<void> => {
 
 export const EMPTY_STATE_FIXTURES: EmptyStateFixture[] = [
   {
+    // The team view with nobody picked yet points at the settings.
+    type: 'sports', name: 'team-no-pick', kind: 'networked', stubKey: 'sports',
+    config: { view: 'team', favoriteTeams: [] },
+    expect: showsCopy('Pick your team in the module settings'),
+  },
+  {
+    // Every picked team plays in a league that is switched off, so none is
+    // fetched and the card says what to turn on instead of loading forever.
+    type: 'sports', name: 'team-league-off', kind: 'networked', stubKey: 'sports',
+    config: { view: 'team', leagues: ['nba'], favoriteTeams: ['nfl:MIN'] },
+    expect: showsCopy("Turn on your team's league in the module settings"),
+  },
+  {
     type: 'countdown', name: 'no-events', kind: 'network-free',
     config: { events: [], view: 'all' },
     expect: showsCopy('Add a date in the editor and the countdown starts here'),

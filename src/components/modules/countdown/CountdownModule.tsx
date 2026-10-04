@@ -64,8 +64,8 @@ export default function CountdownModule({ config, style, timezone }: CountdownMo
 
   return (
     <ModuleWrapper style={style}>
-      <div ref={containerRef} className="flex flex-col h-full overflow-hidden" style={{ fontSize: `${scaledFontSize}px`, gap: `${1.2 * scale}em` }}>
-        <ViewComponent events={events} config={config} scale={scale} basePx={basePx} />
+      <div ref={containerRef} className="flex flex-col h-full overflow-hidden" style={{ fontSize: `${scaledFontSize}px` }}>
+        <ViewComponent events={events} config={config} scale={scale} basePx={basePx} textPx={scaledFontSize} />
       </div>
     </ModuleWrapper>
   );

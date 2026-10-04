@@ -1,5 +1,6 @@
 'use client';
 
+import { useConfirmStore } from '@/stores/confirm-store';
 import { useState, useEffect, useCallback } from 'react';
 import { X, Trash2, ToggleLeft, ToggleRight, AlertTriangle, CheckCircle, Code2, ExternalLink, FileText, Loader2, PackageSearch, Download, Settings2 } from 'lucide-react';
 import ModalFrame, { EscHint } from '@/components/ui/ModalFrame';
@@ -15,6 +16,7 @@ import { latestVersion, hasUpdate, resolveChannel, isBetaHiddenEntry, isBetaOnly
 import { compareSemver } from '@/lib/semver';
 import { usePluginStore } from '@/stores/plugin-store';
 import { useEditorStore } from '@/stores/editor-store';
+import { removePluginModules } from '@/lib/plugin-modules';
 import Button from '@/components/ui/Button';
 import type { RegistryPlugin, InstalledPlugin, PluginRegistry, PluginPermission, PluginSecretDeclaration } from '@/types/plugins';
 import type { DevPlugin } from '@/lib/plugin-loader';
@@ -97,7 +99,12 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
 
   const installedVersions = new Map(installed.map((p) => [p.id, p.version]));
 
-  const runAction = async (pluginId: string, method: string, body: Record<string, unknown>) => {
+  const runAction = async (
+    pluginId: string,
+    method: string,
+    body: Record<string, unknown>,
+    onDone?: (data: Record<string, unknown>) => void,
+  ) => {
     setActionInProgress(pluginId);
     setActionError(null);
     try {
@@ -113,6 +120,7 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
           : (data.error ?? t('settings.pluginStorePanel.errors.requestFailed', { status: res.status }));
         throw new Error(msg);
       }
+      onDone?.(await res.json().catch(() => ({})));
       await fetchData();
       usePluginStore.getState().loadPlugins('editor');
     } catch (err) {
@@ -131,8 +139,34 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
     setConfirmPlugin(null);
   };
 
-  const handleUninstall = (pluginId: string) =>
-    runAction(pluginId, 'DELETE', { pluginId });
+  // Asked first, like deleting a module or a screen: uninstalling takes the
+  // plugin off every screen and deletes its saved settings and sign-in.
+  const handleUninstall = async (pluginId: string) => {
+    const name = registry.find((r) => r.id === pluginId)?.name ?? pluginId;
+    const confirmed = await useConfirmStore.getState().confirm({
+      title: t('settings.pluginStorePanel.installed.uninstallConfirm.title', { name }),
+      message: t('settings.pluginStorePanel.installed.uninstallConfirm.message'),
+      confirmLabel: t('settings.pluginStorePanel.installed.uninstallConfirm.confirmLabel'),
+      variant: 'danger',
+    });
+    if (!confirmed) return;
+    // Edits still on their way to the hub land first, so the removal is made
+    // on top of them and the editor can simply reload afterwards.
+    const editor = useEditorStore.getState();
+    if (editor.isDirty || editor.isSaving) await editor.saveConfig().catch(() => {});
+    // The hub took the plugin's modules off every screen; the editor's copy
+    // follows, or its next save is refused as a conflict and "Keep mine"
+    // puts them back.
+    await runAction(pluginId, 'DELETE', { pluginId }, (data) => {
+      const { moduleType, configRevision, previousConfigRevision } = data;
+      if (typeof moduleType !== 'string' || typeof configRevision !== 'string') return;
+      void useEditorStore.getState().adoptHubRewrite({
+        rewrite: (config) => removePluginModules(config, moduleType),
+        previousRevision: typeof previousConfigRevision === 'string' ? previousConfigRevision : null,
+        revision: configRevision,
+      });
+    });
+  };
 
   const handleToggle = (pluginId: string, enabled: boolean) =>
     runAction(pluginId, 'PATCH', { pluginId, enabled });
@@ -547,7 +581,7 @@ function InstalledTab({
           <div className="flex items-center gap-3 p-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-hs-text-primary">{plugin.id}</span>
+                <span className="text-sm font-medium text-hs-text-primary" title={plugin.id}>{matchingRegistryEntry?.name ?? plugin.id}</span>
                 <span className="text-xs text-hs-text-muted">v{plugin.version}</span>
                 {plugin.source === 'external' && (
                   <span className="px-1.5 py-0.5 text-[10px] font-medium bg-amber-800/60 text-hs-warning rounded">

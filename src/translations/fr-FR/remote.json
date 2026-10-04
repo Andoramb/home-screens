@@ -58,7 +58,8 @@
     "sleepDisplay": "Mettre en veille",
     "sendAlert": "Envoyer une alerte",
     "waitingFor": "En attente de {name}…",
-    "waitingForAll": "En attente des écrans…"
+    "waitingForAll": "En attente des écrans…",
+    "waitingForUnnamed": "En attente de l'écran…"
   },
   "brightnessCard": {
     "label": "Luminosité",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profils",
-    "noProfile": "Toutes les pages"
+    "noProfile": "Toutes les pages",
+    "scheduledNote": "Le profil programmé {profile} est en cours. Ce que tu choisis ici prendra le relais quand il se terminera."
   },
   "displayPicker": {
     "targeting": "Envoyer à",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Finis d'abord celle que tu as prise, ou coche celle-ci si elle est faite.",
       "youDidItOn": "Tu l'as faite {day}",
+      "youDidItOnDate": "Tu l'as faite le {day}",
       "didItOn": "{name} l'a faite {day}",
+      "didItOnDate": "{name} l'a faite le {day}",
       "limitLineMany": "Finis d'abord une de celles que tu as prises, ou coche celle-ci si elle est faite.",
       "yours": "À toi",
       "didItToday": "{name} l'a faite aujourd'hui",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "La remettre en jeu ?",
       "description": "« {chore} » redevient libre. Les tickets déjà gagnés avec cette tâche ne sont pas perdus."
-    }
+    },
+    "loadError": "Impossible de charger tes tâches. Vérifie que le hub est allumé et réessaie.",
+    "retry": "Réessayer"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Aller à aujourd'hui",
@@ -276,6 +282,11 @@
         "title": "Supprimer « {name} » ?",
         "description": "Cela le retirera aussi de tous les créneaux prévus.",
         "confirmLabel": "Supprimer le repas"
+      },
+      "suggestWeek": {
+        "title": "Remplacer les repas de cette semaine ?",
+        "description": "Suggérer choisit de nouveaux repas pour toute la semaine. Les repas déjà prévus pour cette semaine seront remplacés.",
+        "confirmLabel": "Remplacer les repas"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Réconfortant",
         "kid-friendly": "Pour enfants"
       }
-    }
+    },
+    "loadError": "Impossible de charger tes repas. Vérifie que le hub est allumé et réessaie.",
+    "retry": "Réessayer",
+    "saveFailed": "Ça n'a pas été enregistré. Réessaie."
   },
   "mealForm": {
     "titleNew": "Ajouter un repas",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Effacer les alertes sur {name}",
     "clearOnAll": "Effacer les alertes sur tous les écrans",
     "clearingButton": "Effacement…",
-    "showingNow": "({count} affichées)"
+    "showingNow": "({count} affichées)",
+    "clearOnUnnamed": "Effacer les alertes sur l'écran"
   },
   "rewardsView": {
     "changedElsewhere": "Quelqu'un d'autre a modifié les récompenses. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Échanger pour {cost} tickets",
       "emptyKid": "Aucune récompense pour l'instant. Un grand peut en ajouter depuis son téléphone.",
       "balanceLabelNamed": "tickets de {name}",
-      "switchHint": "Ce n'est pas {name} ? Choisis ton nom dans l'onglet Aujourd'hui."
+      "switchHint": "Ce n'est pas {name} ? Choisis ton nom dans l'onglet Aujourd'hui.",
+      "refused": "Ça n'a pas marché. Il n'y a plus assez de tickets pour ça.",
+      "failed": "Ça n'a pas marché. Réessaie."
     },
     "manage": {
       "heading": "Récompenses",
@@ -843,7 +860,10 @@
     "newRoutine": "Nouvelle routine",
     "editRoutine": "Modifier la routine",
     "emptyHint": "Une routine est un minuteur étape par étape, comme une routine du matin : s'habiller, se brosser les dents, faire son lit. Créez-en une et lancez-la sur l'écran.",
-    "routineMeta": "{steps} étapes · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} étape · {minutes} min",
+      "other": "{steps} étapes · {minutes} min"
+    },
     "stepCount": "Étape {current} sur {total}",
     "pause": "Pause",
     "resume": "Reprendre",
@@ -893,7 +913,15 @@
     "showingOn": "Affiché sur {names}",
     "showingOnDisplay": "Affiché sur l'écran",
     "waitingForDisplay": "En attente qu'un écran le prenne…",
-    "notShowing": "Aucun écran ne l'affiche encore. Vérifie qu'un écran est allumé."
+    "notShowing": "Aucun écran ne l'affiche encore. Vérifie qu'un écran est allumé.",
+    "changedElsewhere": "Quelqu'un d'autre a modifié les routines. Ta dernière modification n'a pas été enregistrée. Réessaie, s'il te plaît.",
+    "whyNoSave": {
+      "name": "Donne un nom à la routine pour l'enregistrer.",
+      "stepName": "Donne un nom à chaque étape pour enregistrer.",
+      "stepLength": "Chaque étape doit durer au moins {seconds} secondes."
+    },
+    "quickTooShort": "Un minuteur doit durer au moins {seconds} secondes.",
+    "stepLimit": "Une routine peut avoir jusqu'à {count} étapes."
   },
   "lists": {
     "title": "Listes",
@@ -993,10 +1021,15 @@
     "alertsCleared": "Alertes effacées sur {name}",
     "alertsClearedAll": "Alertes effacées sur tous les écrans",
     "noConfirm": "{name} n'a pas répondu. Il est peut-être éteint ou hors ligne.",
-    "profileSwitched": "{name} est passé à {profile}",
+    "profileSwitched": "{name} affiche maintenant le profil {profile}",
     "profileCleared": "{name} affiche toutes les pages",
+    "profileAfterSchedule": "{name} passera à {profile} à la fin du profil {scheduled}",
+    "profileClearedAfterSchedule": "{name} affichera toutes les pages à la fin du profil {scheduled}",
+    "profileKeptAfterSchedule": "{name} restera sur le profil {profile} à la fin de sa programmation",
     "profileFailed": "Impossible de changer le profil sur {name}",
-    "hubBack": "Home Screens est de retour"
+    "hubBack": "Home Screens est de retour",
+    "alertSentUnnamed": "Alerte envoyée à l'écran",
+    "alertsClearedUnnamed": "Alertes effacées sur l'écran"
   },
   "tabNotSetUp": {
     "chores": {

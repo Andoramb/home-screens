@@ -21,7 +21,18 @@ import { parseCssColorToRgb, withCssColorAlpha } from '@/lib/hex-color';
  * it, per module or per display, and this only applies when neither is set.
  */
 export function photoThemeTokens(theme: string | undefined, fullscreenTheme: string | undefined): FullscreenThemeTokens {
-  return getThemeTokens(theme ?? fullscreenTheme ?? 'midnight');
+  return getThemeTokens(theme ?? inheritedPhotoTheme(fullscreenTheme).theme);
+}
+
+/**
+ * The theme a fullscreen photo module without one of its own paints with, and
+ * whether Settings chose it. The editor's Default tile is labelled from this,
+ * so it names Midnight only when Midnight is what the wall will draw.
+ */
+export function inheritedPhotoTheme(fullscreenTheme: string | undefined): { theme: string; fromSettings: boolean } {
+  return fullscreenTheme !== undefined
+    ? { theme: fullscreenTheme, fromSettings: true }
+    : { theme: 'midnight', fromSettings: false };
 }
 
 /** The clock overlay settings these rules read. */

@@ -59,6 +59,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     selectedModuleId: null,
     isDirty: false,
     isSaving: false,
+    loadError: null,
     saveError: null,
     saveErrorKind: null,
     configRevision: null,

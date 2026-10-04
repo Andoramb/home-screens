@@ -11,6 +11,7 @@ import { I18nProvider } from '@/i18n/provider';
 import type { ChoreChartConfig, ChoreDefinition } from '@/types/config';
 import type { FamilyMember } from '@/types/family';
 import { isoDateInTZ } from '@/lib/timezone';
+import { editorFetch } from '@/lib/editor-fetch';
 import { HouseholdClockProvider } from '../../household-clock';
 
 /**
@@ -80,17 +81,17 @@ afterEach(() => { vi.useRealTimers(); cleanup(); });
 describe('how much chore history each surface asks for', () => {
   it('the kids\' page asks for the recent days only', async () => {
     await openTab(false);
-    expect(choreReads()).toEqual(['/api/chores?days=31']);
+    expect(choreReads()).toEqual(['/api/chores?days=31&chores=1']);
   });
 
   it('the family remote asks for all of it, for the history strip', async () => {
     await openTab(true);
-    expect(choreReads()).toEqual(['/api/chores']);
+    expect(choreReads()).toEqual(['/api/chores?chores=1']);
   });
 });
 
 describe('one rewards poll for the ticket count and the Rewards view', () => {
-  it('opening the Rewards view reads nothing new while the ticket count is already polling', async () => {
+  it('opening the Rewards view reads the rewards again, so a redeem is judged on current balances', async () => {
     await openTab(false);
     expect(rewardReads()).toBe(1);
 
@@ -98,7 +99,7 @@ describe('one rewards poll for the ticket count and the Rewards view', () => {
     await act(async () => {});
 
     expect(screen.getByText('Movie night')).toBeTruthy();
-    expect(rewardReads()).toBe(1);
+    expect(rewardReads()).toBe(2);
   });
 
   it('polls the rewards once per round with both on screen', async () => {
@@ -122,5 +123,38 @@ describe('one rewards poll for the ticket count and the Rewards view', () => {
 
     expect(rewardReads()).toBe(1);
     expect(screen.getByText('Movie night')).toBeTruthy();
+  });
+});
+
+describe('a chore list another phone changed', () => {
+  const renamed = { ...chore, name: 'Empty the dishwasher' };
+
+  function serveChores(list: ChoreDefinition[], revision: string) {
+    vi.mocked(editorFetch).mockImplementation((async (url: string) => {
+      reads.push(url);
+      if (url.startsWith('/api/rewards')) {
+        return { ok: true, status: 200, json: async () => ({ balances: {}, rewards: [], redemptions: [], revision: 'r1' }) } as unknown as Response;
+      }
+      return { ok: true, status: 200, json: async () => ({ completions: [], chores: list, choresRevision: revision, settings: DEFAULT_CHORE_SETTINGS }) } as unknown as Response;
+    }) as typeof editorFetch);
+  }
+
+  it('shows the new list on the next poll', async () => {
+    serveChores([chore], 'r1');
+    await openTab(true);
+    expect(screen.getByText('Load the dishwasher')).toBeTruthy();
+
+    serveChores([renamed], 'r2');
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+
+    expect(screen.getByText('Empty the dishwasher')).toBeTruthy();
+    expect(screen.queryByText('Load the dishwasher')).toBeNull();
+  });
+
+  it('leaves the list alone when the revision is the one this phone already holds', async () => {
+    serveChores([renamed], 'r1');
+    await openTab(true);
+    await act(async () => { await vi.advanceTimersByTimeAsync(15_000); });
+    expect(screen.getByText('Load the dishwasher')).toBeTruthy();
   });
 });

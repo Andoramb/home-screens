@@ -183,6 +183,24 @@ describe('uncategorised ingredients', () => {
     expect([...result.keys()]).toEqual(['pantry']);
   });
 
+  it('reads "other" as no aisle given: the phone saved it on every row nobody touched', () => {
+    const meals = [
+      meal('a', [{ name: 'Milk', amount: '1 l', category: 'other' }, { name: 'Chicken', category: 'other' }]),
+      meal('b', [{ name: 'Milk', amount: '2 cups' }]),
+    ];
+    const both: PlannedMeal[] = [...plan, { date: '2026-04-05', slot: 'dinner', mealId: 'b' }];
+    const result = generateGroceryList(both, meals, []);
+    expect([...result.keys()].sort()).toEqual(['dairy', 'meat']);
+    // One Milk, in one aisle, with both amounts.
+    expect(result.get('dairy')!.items).toEqual([{ name: 'Milk', amount: '1 l, 2 cups', checked: false }]);
+  });
+
+  it('leaves out a row that was saved with no name', () => {
+    const meals = [meal('a', [{ name: '', amount: '', category: 'other' }, { name: '   ' }, { name: 'Tomatoes' }])];
+    const result = generateGroceryList(plan, meals, []);
+    expect([...result.values()].flatMap((group) => group.items.map((item) => item.name))).toEqual(['Tomatoes']);
+  });
+
   it('still falls back to other for a name it cannot place', () => {
     const meals = [meal('a', [{ name: 'Birthday candles', amount: '1 box' }])];
     expect([...generateGroceryList(plan, meals, []).keys()]).toEqual(['other']);

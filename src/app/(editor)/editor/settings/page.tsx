@@ -4,6 +4,7 @@ import { Suspense, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslate } from '@/i18n';
 import { useEditorStore } from '@/stores/editor-store';
+import ConfigLoadError from '@/components/editor/ConfigLoadError';
 import SettingsSidebar from '@/components/editor/settings/SettingsSidebar';
 import SettingsHeader from '@/components/editor/settings/SettingsHeader';
 import DefaultsPageContent from '@/components/editor/settings/DefaultsPageContent';
@@ -81,6 +82,7 @@ function SettingsPageContent() {
   // updateDisplay / updateDisplaySettings). Without this subscription
   // the indicator would only flash for edits that flowed through
   // `state` below, and per-display overrides would save silently.
+  const loadError = useEditorStore((s) => s.loadError);
   const storeIsSaving = useEditorStore((s) => s.isSaving);
   const storeSaveError = useEditorStore((s) => s.saveError);
   const settings = config?.settings;
@@ -154,6 +156,8 @@ function SettingsPageContent() {
       />
     );
   }
+
+  if (!settings && loadError) return <ConfigLoadError />;
 
   if (!settings) {
     return (

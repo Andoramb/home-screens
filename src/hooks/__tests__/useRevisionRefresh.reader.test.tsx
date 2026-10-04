@@ -31,7 +31,7 @@ vi.mock('@/lib/display-fetch', () => ({
 }));
 
 import { useFetchData } from '../useFetchData';
-import { useLibraryRefresh } from '../useLibraryRefresh';
+import { useLibraryRefresh } from '../useRevisionRefresh';
 
 const LIST = '/api/backgrounds?directory=Favorites';
 

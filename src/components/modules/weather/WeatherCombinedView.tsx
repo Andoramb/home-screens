@@ -1,7 +1,7 @@
 'use client';
 
 import { CloudRain, Droplets, Wind, Gauge, Eye, Thermometer } from 'lucide-react';
-import { windUnitLabel } from '@/lib/weather/units';
+import { pressureForUnits, windUnitLabel } from '@/lib/weather/units';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import { TEXT_OPACITY } from '@/lib/constants';
 import { useFormattingLocale, useTranslate } from '@/i18n';
@@ -26,6 +26,7 @@ export default function WeatherCombinedView({ config, hourly, forecast, units, t
   const days = forecast.slice(0, config.daysToShow);
   const windUnit = windUnitLabel(units);
   const current = hourly[0];
+  const pressure = current?.pressure != null ? pressureForUnits(current.pressure, units) : null;
 
   // Three fixed bands, so this view never reports a natural height — its rows
   // just spill past the bottom of the last band. It overflowed at both ends of
@@ -63,7 +64,7 @@ export default function WeatherCombinedView({ config, hourly, forecast, units, t
               <WeatherStat icon={CloudRain} value={current.precipProbability} unit="%" visible={config.showPrecipitation !== false} fontSize="0.75em" />
               <WeatherStat icon={Droplets} value={current.humidity} unit="%" visible={config.showHumidity} fontSize="0.75em" />
               <WeatherStat icon={Wind} value={current.windSpeed} visible={config.showWind} fontSize="0.75em" />
-              <WeatherStat icon={Gauge} value={current.pressure} unit=" hPa" visible={config.showPressure} fontSize="0.75em" />
+              <WeatherStat icon={Gauge} value={pressure?.value} unit={pressure ? ` ${pressure.unit}` : undefined} visible={config.showPressure} fontSize="0.75em" />
               <WeatherStat icon={Eye} value={current.visibility} unit={units === 'metric' ? ' km' : ' mi'} visible={config.showVisibility} fontSize="0.75em" />
               <WeatherStat icon={Thermometer} value={current.dewPoint} unit="°" visible={config.showDewPoint} fontSize="0.75em" />
             </div>

@@ -2,6 +2,8 @@
 
 import { useRotatingIndex } from '@/hooks/useRotatingIndex';
 import type { StandingsGroup } from '@/lib/espn-standings';
+import { leagueWallCode } from '@/lib/espn';
+import { isFavoriteTeam } from '@/lib/sports-order';
 import { formatRecord, getPlayoffTeamCount, StandingsTeamRow } from './shared';
 import { PaginationDots } from '../shared/PaginationDots';
 
@@ -11,6 +13,8 @@ interface ConferenceViewProps {
   showPlayoffLine: boolean;
   rotationIntervalMs: number;
   grouping: 'division' | 'conference' | 'league';
+  /** `<league>:<ABBR>` keys whose rows stand out. */
+  favorites?: string[];
 }
 
 function ConferenceColumn({
@@ -18,11 +22,13 @@ function ConferenceColumn({
   teamsToShow,
   showPlayoffLine,
   grouping,
+  favorites,
 }: {
   group: StandingsGroup;
   teamsToShow: number;
   showPlayoffLine: boolean;
   grouping: 'division' | 'conference' | 'league';
+  favorites: string[];
 }) {
   const entries = teamsToShow > 0 ? group.entries.slice(0, teamsToShow) : group.entries;
   const playoffCount = getPlayoffTeamCount(group.league, grouping);
@@ -40,6 +46,7 @@ function ConferenceColumn({
           key={entry.teamAbbr}
           entry={entry}
           showPlayoffCutoff={showPlayoffLine && entry.rank === playoffCount}
+          highlight={isFavoriteTeam(group.league, entry.teamAbbr, favorites)}
           showGradientBar={false}
           borderWidth={2}
           logoSize={14}
@@ -61,7 +68,7 @@ function ConferenceColumn({
   );
 }
 
-export function ConferenceView({ groups, teamsToShow, showPlayoffLine, rotationIntervalMs, grouping }: ConferenceViewProps) {
+export function ConferenceView({ groups, teamsToShow, showPlayoffLine, rotationIntervalMs, grouping, favorites = [] }: ConferenceViewProps) {
   // Pair up groups (2 at a time for side-by-side)
   const pairs: StandingsGroup[][] = [];
   for (let i = 0; i < groups.length; i += 2) {
@@ -80,7 +87,7 @@ export function ConferenceView({ groups, teamsToShow, showPlayoffLine, rotationI
           className="font-semibold tracking-widest uppercase text-current/40"
           style={{ fontSize: '0.65em' }}
         >
-          {pair[0].league}
+          {leagueWallCode(pair[0].league)}
         </span>
         <PaginationDots total={pairs.length} current={index} />
       </div>
@@ -93,6 +100,7 @@ export function ConferenceView({ groups, teamsToShow, showPlayoffLine, rotationI
             teamsToShow={teamsToShow}
             showPlayoffLine={showPlayoffLine}
             grouping={grouping}
+            favorites={favorites}
           />
         ))}
       </div>

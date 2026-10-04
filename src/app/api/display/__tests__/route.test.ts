@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server';
 import { promises as fs } from 'fs';
 import os from 'os';
 import path from 'path';
+import sharp from 'sharp';
 
 // Mock dependencies before importing the route
 vi.mock('@/lib/display-commands', () => {
@@ -41,6 +42,15 @@ vi.mock('@/lib/config', () => ({
     const mutated = await mutator(current);
     await writeConfig(mutated as never);
     return mutated;
+  }),
+}));
+
+// The cached read is the same document here, and a module-level cache would
+// leak between cases.
+vi.mock('@/lib/config-cache', () => ({
+  readConfigCached: vi.fn(async () => {
+    const { readConfig } = await import('@/lib/config');
+    return readConfig();
   }),
 }));
 
@@ -98,6 +108,8 @@ function makeRequest(body?: Record<string, unknown>): NextRequest {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // A single-display install unless a test seeds a display registry.
+  vi.mocked(readConfig).mockResolvedValue({ screens: [], settings: {} } as never);
 });
 
 // ------- GET tests -------
@@ -586,6 +598,18 @@ describe('POST /api/display/show-photo', () => {
     });
     // Only a video's bare <video> needs a media token.
     expect(mintMediaToken).not.toHaveBeenCalled();
+  });
+
+  it('sends a picture\'s size as people see it, so the wall asks for a copy that fits', async () => {
+    // Stored sideways (orientation 6): shown as 30 wide and 60 high.
+    await sharp({ create: { width: 60, height: 30, channels: 3, background: '#39c' } })
+      .withMetadata({ orientation: 6 })
+      .jpeg()
+      .toFile(path.join(library, 'nature', 'sideways.jpg'));
+
+    await show({ file: 'nature/sideways.jpg' });
+
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'show-photo', expect.objectContaining({ width: 30, height: 60 }));
   });
 
   it('clamps the duration to between 5 seconds and 10 minutes, in whole seconds', async () => {
@@ -1155,6 +1179,20 @@ describe('POST /api/display/alert', () => {
     expect(res.status).toBe(200);
   });
 
+  it('rejects a title or message that is not text, and queues nothing', async () => {
+    for (const body of [
+      { title: 'Dinner', message: { text: 'is ready' } },
+      { title: { text: 'Dinner' } },
+      { title: ['Dinner'], message: 'is ready' },
+      { message: 42 },
+    ]) {
+      vi.mocked(enqueueCommand).mockClear();
+      const res = await POST(makeRequest(body), makeParams('alert'));
+      expect(res.status, JSON.stringify(body)).toBe(400);
+      expect(enqueueCommand).not.toHaveBeenCalled();
+    }
+  });
+
   it('rejects alert with neither title nor message', async () => {
     const res = await POST(makeRequest({ type: 'info' }), makeParams('alert'));
     expect(res.status).toBe(400);
@@ -1217,7 +1255,7 @@ describe('POST /api/display/status', () => {
 
   // The remote seeds its slider, the timer card and the clear-alerts row from
   // these; a malformed value must be dropped (unknown), never stored as-is.
-  it('stores brightness, timerSessionId and activeAlerts when well-formed', async () => {
+  it('stores brightness, timerSessionId, activeAlerts and profileScheduled when well-formed', async () => {
     const res = await POST(
       makeRequest({
         currentScreen: { index: 0, id: 's1', name: 'Main' },
@@ -1228,6 +1266,7 @@ describe('POST /api/display/status', () => {
         brightness: 40,
         timerSessionId: 'sess-1',
         activeAlerts: 2,
+        profileScheduled: true,
       }),
       makeParams('status'),
     );
@@ -1236,6 +1275,7 @@ describe('POST /api/display/status', () => {
     expect(stored.brightness).toBe(40);
     expect(stored.timerSessionId).toBe('sess-1');
     expect(stored.activeAlerts).toBe(2);
+    expect(stored.profileScheduled).toBe(true);
   });
 
   it('keeps a null timerSessionId (nothing showing) and clamps brightness', async () => {
@@ -1259,7 +1299,7 @@ describe('POST /api/display/status', () => {
     expect(stored.activeAlerts).toBe(0);
   });
 
-  it('drops malformed brightness, timerSessionId and activeAlerts instead of storing them', async () => {
+  it('drops malformed brightness, timerSessionId, activeAlerts and profileScheduled instead of storing them', async () => {
     const res = await POST(
       makeRequest({
         currentScreen: { index: 0, id: 's1', name: 'Main' },
@@ -1270,6 +1310,7 @@ describe('POST /api/display/status', () => {
         brightness: 'bright',
         timerSessionId: { id: 'x' },
         activeAlerts: -3,
+        profileScheduled: 'yes',
       }),
       makeParams('status'),
     );
@@ -1278,6 +1319,7 @@ describe('POST /api/display/status', () => {
     expect('brightness' in stored).toBe(false);
     expect('timerSessionId' in stored).toBe(false);
     expect('activeAlerts' in stored).toBe(false);
+    expect('profileScheduled' in stored).toBe(false);
   });
 
   it('rejects non-object currentScreen', async () => {
@@ -1347,6 +1389,102 @@ describe('POST /api/display/status', () => {
     expect(setDisplayStatus).toHaveBeenCalled();
     const [statusArg] = vi.mocked(setDisplayStatus).mock.calls[0];
     expect((statusArg as { hwStats?: unknown }).hwStats).toBeUndefined();
+  });
+});
+
+/* With a display registry every wall, /display included, drains only its own
+ * queue. A command that named no display used to land in the legacy queue
+ * nobody drains: the call answered ok and no wall reacted. */
+describe('commands with no display named', () => {
+  function seedDisplays(ids: string[]) {
+    vi.mocked(readConfig).mockResolvedValue({
+      screens: [],
+      settings: {},
+      displays: ids.map((id) => ({ id, name: id, screens: [] })),
+    } as never);
+  }
+
+  it('GET /wake goes to the main display once the hub has a registry', async () => {
+    seedDisplays(['kitchen', 'main']);
+    const res = await GET(makeRequest(), makeParams('wake'));
+    expect(res.status).toBe(200);
+    expect(enqueueCommand).toHaveBeenCalledWith('main', 'wake');
+  });
+
+  it('goes to the first display when none is called main', async () => {
+    seedDisplays(['kitchen', 'hallway']);
+    await POST(makeRequest(), makeParams('next-screen'));
+    expect(enqueueCommand).toHaveBeenCalledWith('kitchen', 'next-screen');
+  });
+
+  it('every command action resolves the same way', async () => {
+    seedDisplays(['main', 'kitchen']);
+    const calls: Array<[string, Record<string, unknown>]> = [
+      ['brightness', { value: 40 }],
+      ['goto-screen', { screen: 'Calendar' }],
+      ['module-command', { module: 'news', action: 'next' }],
+      ['sleep-override', { minutes: 60 }],
+      ['alert', { title: 'Dinner', message: 'Come down' }],
+    ];
+    for (const [action, body] of calls) {
+      const res = await POST(makeRequest(body), makeParams(action));
+      expect(res.status).toBe(200);
+    }
+    const targets = vi.mocked(enqueueCommand).mock.calls.map(([target, type]) => [target, type]);
+    expect(targets).toEqual([
+      ['main', 'brightness'],
+      ['main', 'goto-screen'],
+      ['main', 'module-command'],
+      ['main', 'sleep-override'],
+      ['main', 'alert'],
+    ]);
+  });
+
+  it('keeps a named display and the all broadcast as they are', async () => {
+    seedDisplays(['main', 'kitchen']);
+    await GET(new NextRequest('http://localhost/api/display/wake?display=kitchen'), makeParams('wake'));
+    await GET(new NextRequest('http://localhost/api/display/wake?display=all'), makeParams('wake'));
+    await POST(makeRequest({ title: 'x', displayId: 'kitchen' }), makeParams('alert'));
+    expect(vi.mocked(enqueueCommand).mock.calls.map(([target]) => target)).toEqual(['kitchen', 'all', 'kitchen']);
+  });
+
+  it('keeps the legacy queue on a single-display install', async () => {
+    await GET(makeRequest(), makeParams('wake'));
+    expect(enqueueCommand).toHaveBeenCalledWith(undefined, 'wake');
+  });
+
+  /* The same reasoning for reads: the legacy slot answered null while the
+   * main display was heartbeating. */
+  it('reads the main display status and shared values', async () => {
+    seedDisplays(['main', 'kitchen']);
+    await GET(makeRequest(), makeParams('status'));
+    expect(getDisplayStatus).toHaveBeenCalledWith('main');
+    await GET(makeRequest(), makeParams('shared-state'));
+    expect(markSharedStateInterest).toHaveBeenCalledWith('main');
+    expect(getSharedStateReport).toHaveBeenCalledWith('main');
+    expect(getProviderHealthReport).toHaveBeenCalledWith('main');
+  });
+
+  it('reads the legacy slot on a single-display install', async () => {
+    await GET(makeRequest(), makeParams('status'));
+    expect(getDisplayStatus).toHaveBeenCalledWith(undefined);
+  });
+
+  /* A wall's own drain and heartbeat name the wall they come from. Pointing an
+   * untargeted one at the main display would let a stray tab empty its queue
+   * or overwrite its status. */
+  it('leaves a drain and a heartbeat with no display as they are', async () => {
+    seedDisplays(['main', 'kitchen']);
+    await GET(makeRequest(), makeParams('commands'));
+    expect(drainCommands).toHaveBeenCalledWith(undefined);
+    await POST(makeRequest({
+      currentScreen: { index: 0, id: 's1', name: 'Main' },
+      screenCount: 1,
+      activeProfile: null,
+      displayState: 'active',
+      timestamp: Date.now(),
+    }), makeParams('status'));
+    expect(vi.mocked(setDisplayStatus).mock.calls[0][1]).toBeUndefined();
   });
 });
 

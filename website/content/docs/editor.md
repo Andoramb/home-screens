@@ -121,14 +121,14 @@ Every module can be styled except the full-screen ones and Display Control, whic
 
 **Shape**
 
-- **Border Radius**: round the corners (0–50)
-- **Padding**: add inner spacing (0–64)
+- **Corner rounding**: round the corners (0–50)
+- **Space inside**: add room between the module's edge and its content (0–64)
 - **Border Width**: draw an outline around the module (0–4)
 
 **Effects**
 
-- **Opacity**: fade the module (0–1, in steps of 0.05)
-- **Backdrop Blur**: apply a frosted glass effect behind the module (0–40)
+- **Solid**: how see-through the module is, from 0 (invisible) to 1 (fully solid), in steps of 0.05
+- **Frosted glass**: blur whatever is behind the module (0–40)
 - **Shadow Size**: drop a soft shadow behind the module (0–48)
 
 **Color**
@@ -137,15 +137,15 @@ Every module can be styled except the full-screen ones and Display Control, whic
 - **Border Color**: the color of the outline set by Border Width
 - **Text Color**: set the text color
 
-The sticky note has no Background or Text Color here: its paper colour is the note's own **Note colour** setting, and its ink is always dark so it reads on any paper.
+The sticky note has no Background or Text Color here: its paper colour is the note's own **Note Color** setting, and its ink is always dark so it reads on any paper.
 
 **Text**
 
-- **Card Title**: show a centered title at the top of the module. The title sits on the module card, above its content, and is cut off with an ellipsis when it is too long to fit. Leave it empty for no title. Some modules (like the to-do list) also show a title of their own from their settings; setting both means you will see both
-- **Title Size**: set the title's font size (8–72). It appears once a title is set and starts at the module's font size, so leaving the slider alone keeps them matched; use Reset to default to match the font size again. Clearing the title clears this too
 - **Text size**: a percent of the size the module shows on its own, from 10% to 450%. The clock, date, countdown, greeting, weather, news, quote, dad joke, word of the day, this day in history, affirmations, sticky note, to-do list and multi-month calendar fit their text to their box, so 100% is that fitted size and the slider makes it smaller or larger from there. Every other module's 100% is its base size. A module that was given a pixel size in an older version shows that size as a percent of what it shows on its own, so nothing changes until you move the slider
-- **Font Weight**: make all of the module's text lighter or bolder (100–900). Leave it on Default to keep the module's built-in look, and use Reset to default to go back. The title always stays at its normal weight
+- **Text thickness**: make all of the module's text lighter or bolder (100–900). Leave it on Default to keep the module's built-in look, and use Reset to default to go back. The title always stays at its normal weight
 - **Font Family**: choose from available fonts
+
+A module's title is set under **Module settings > Title**, not here: **The module's own title** (for modules that have one), **My own words**, or **No title**. With **My own words** you type the **Title words** and can set a **Title size** (8–72); the title is centered on the module card above its content and cut off with an ellipsis when it is too long to fit.
 
 ## Managing Screens
 
@@ -241,7 +241,7 @@ Each screen can have its own background image. Select a screen tab, deselect any
 Open the **Settings Panel** to configure system-wide options. Pages are grouped under four headers:
 
 - **Screen**: Screen (rotation, appearance, sleep, and alerts) and Location & language
-- **Content**: Weather, Calendar, Meals, On your phone, and API keys
+- **Content**: Weather, Calendar, Family, Meals, On your phone, API keys, Pictures & videos, and Your icons
 - **Automation**: Profiles, Rules, and Shared state (three tabs on one page)
 - **Maintenance**: Security, Network, System & updates, Backups & data, and Status
 
@@ -264,6 +264,7 @@ Multi-display features (the sidebar split, the Displays page, the Display Switch
 
 Three tabs: **Rotation & appearance**, **Sleep & dimming**, and **Alerts**. Most controls are self-explanatory sliders and dropdowns; these are the ones that aren't:
 
+- **Touch alignment** (on the Rotation & appearance tab, next to the rotation), for a touchscreen plugged into this display. Taps follow the screen rotation by default; pick **Leave touch as it is** if they already land in the right place, or enter six numbers of your own if they land mirrored or a little off. See [Taps land in the wrong place](/docs/troubleshooting#taps-land-in-the-wrong-place).
 - **Sleep & dimming** is grouped into three sections, inactivity dimming ("Dim after a few quiet minutes"), the daily schedules ("Dim in the evening" and "Turn off overnight"), and the dimmed appearance, with a 24-hour preview bar showing when the display will be bright, dimmed, or off. Turn the inactivity toggle off to keep full brightness all day while a schedule handles the night.
 - **Dim and sleep schedules** support overnight spans, `23:00–06:00` works and wraps past midnight as you'd expect.
 - **After a wake-up, stay on for** (shown when a schedule is on), how long the display stays awake when someone touches it or wakes it from the remote during a scheduled dim or sleep window, before the schedule takes over again. Defaults to 5 minutes; set it to the minimum for the old behavior of going right back to sleep.
@@ -279,7 +280,7 @@ Out of the box, sleep and dimming draw a black layer over the page rather than p
 ### Location & language
 
 - **Your town or zip code**: type it and click **Look up**, or click **Use my internet location** to guess from your connection. Every module that needs a location (weather, sunrise, moon, air quality, rain map, local news) uses this one. **Edit coordinates manually** takes exact numbers.
-- **Timezone** follows the town you pick; change it only if the clocks look wrong. **Clock check** shows the browser's time and the Pi's side by side so you can tell.
+- **Time zone**: looking up a town fills it in if none is picked yet; after that it only changes when you change it. Every clock, schedule and "today" on the wall, the phone and the editor follows it. Until one is picked, this page shows **Pick your time zone** and your screens use the hub's own clock. **Clock check** shows the time on your screens, on this computer and on the hub side by side. If the hub's own clock is on a different zone, **Set the hub to** matches it; that is optional and only makes its log files easier to read.
 - **Language** sets the words on the editor, every display and the family remote. **More options** holds a separate formatting locale for dates and numbers, for English text with European date order.
 - **Time format** picks 12-hour or 24-hour for every time the display shows: calendar events, weather, sports, sunrise and sunset, moon rise and set, the full-screen photo clock and Todoist due times. Until you pick one, it follows the usual clock for the household's language. It is also the default the meal planner follows. New clocks follow it too; a clock can pick its own 12-hour or 24-hour under its **Hour format** setting, and clocks added before that setting existed keep the choice they had.
 
@@ -300,6 +301,14 @@ Two areas. **What to show** has **Days Ahead**, the furthest any calendar module
 
 The walkthroughs for all three ways in, and how to choose, are on the [Calendars](/docs/calendars) page.
 
+### Family
+
+The people in your home, each with a name, a colour and an optional icon, and **Groups** of them. Chores, rewards, calendars, lists and school timetables all use this one list. **Bonus chores** sets how many a person can grab at once and when a grab ends. See [Family](/docs/family).
+
+### Meals
+
+The household's meal-planner settings: **Meal Slots**, **Week Starts On**, **Time Format** and **Default Serving Times**. They are the same settings the family remote shows, and every meal planner module follows them. See [Meals](/docs/meals).
+
 ### On your phone
 
 The two phone addresses (the kids' chores page and the family remote) with QR codes, a **Print** button, and the switch that puts a password on the family remote. See [On your phone](/docs/remote-control).
@@ -308,7 +317,15 @@ The two phone addresses (the kids' chores page and the family remote) with QR co
 
 Keys and logins that unlock extra content, one card per service, each showing whether it is set up. They are stored on the Pi and never sent anywhere else. Weather keys are the exception and live on their provider's card under **Settings > Weather**.
 
-Which service needs which key is listed under [API keys](/docs/calendars#api-keys). One gotcha worth repeating: for **TomTom**, the Geocoding, Reverse Geocoding, and Routing APIs must be enabled **on the key itself**, not just on your account, or the traffic module fails with an unhelpful error.
+Which service needs which key is listed under [API keys](/docs/calendars#api-keys). One gotcha worth repeating: for **TomTom**, the Geocoding, Reverse Geocoding, and Routing APIs must be enabled **on the key itself**, not just on your account, or the traffic module shows "The TomTom key isn't working".
+
+### Pictures & videos
+
+Everything uploaded to this hub, in one place: upload, sort into folders, move and delete. A file a screen depends on can't be deleted, and a slideshow always keeps its last picture. See [Managing your library](/docs/backgrounds#managing-your-library).
+
+### Your icons
+
+Pictures your family added to use as icons for meals, chores, rewards, people, routines and screens. Add them here, or with **Add your own** in any icon picker in the editor or on the phone: PNG, JPG, WebP or GIF (moving pictures work too), up to 5 MB each and 300 in all. Before a picture is kept you see it on a light and a dark background, and a very wide or tall one can be cut down with **Crop to a square**. The page shows how much space the icons use and where each one is used. Renaming one is safe; removing one puts everything that used it back to a standard icon. Backups carry them when **Include your icons** is on.
 
 ### Security
 
@@ -327,7 +344,7 @@ Two things to know: addresses with colons (IPv6) never match, so add the IPv4 ra
 
 ### Backups & data
 
-- **Save a copy**: **Save a backup** downloads everything, chores and meals included. Tick **Include my keys and connected accounts** to add them, and **Protect them with a password** to lock them inside the file ([details](/docs/configuration#backing-up-your-keys)). **Restore from a file** puts a backup back; a locked backup asks for its password and offers **Restore without my keys**.
+- **Save a copy**: **Save a backup** downloads everything, chores and meals included. Tick **Include my keys and connected accounts** to add them, and **Protect them with a password** to lock them inside the file ([details](/docs/configuration#backing-up-your-keys)). **Include your icons** adds the pictures your family added as icons; each computer and phone remembers the choice. **Restore from a file** puts a backup back; a locked backup asks for its password and offers **Restore without my keys**.
 - **Share Layout**: **Export Layout** writes only screens and modules, with no personal data, and is the safe one to hand to someone else. **Import Layout** brings one in as new screens.
 - **Templates**: **Browse Templates** starts a screen from a ready-made layout while keeping your settings.
 - **Automatic snapshots** are taken before every update, each with **Download** and **Restore**.
@@ -335,7 +352,7 @@ Two things to know: addresses with colons (IPv6) never match, so add the IPv4 ra
 
 ### Status
 
-A live page: the display's state, current screen and last check-in; **Storage** and **Memory**; **CPU & Thermal** (Pi model, load, throttling and temperature, from the hub itself or a display's reporter); **Home Screens data**; **Configuration** counts with a **Module breakdown**; **Integrations**; and **Saved data**, the display's cache, behind **Show details**. **CPU & Thermal** is the first place to look if the display feels sluggish; it says whether the Pi is throttled by heat or a weak power supply.
+A live page: the display's state, current screen and last check-in; **Storage** and **Memory**; **CPU & Thermal** (Pi model, load, throttling and temperature, from the hub itself or a display's reporter); **Home Screens Data**; **Configuration** counts with a **Module breakdown**; **Integrations**; and **Saved data**, the display's cache, behind **Show details**. **CPU & Thermal** is the first place to look if the display feels sluggish; it says whether the Pi is throttled by heat or a weak power supply.
 
 **Diagnostics bundle** exports a redacted archive for bug reports. **Anonymous Telemetry** holds the **Send anonymous usage data** switch and **What we collect**, the list of exactly what is sent.
 
@@ -359,9 +376,9 @@ Three tabs on one page:
 - **Rules**: make a display react to live conditions instead of just the clock, for example jumping to a camera screen when a doorbell sensor fires. See the [Display Rules guide](/docs/profiles#display-rules).
 - **Shared state**: the values your installed plugins are publishing. **Watching** lists what this display is actively using; **Available** is a searchable catalogue of everything your plugins could share, grouped by plugin, whether or not anything uses it yet.
 
-### Docs
+### Help & docs
 
-A persistent link in the sidebar footer (not a settings page) to the full documentation, opened in a new tab.
+The sidebar footer (not a settings page) has three links that open in a new tab: **Help & docs** for this documentation, **GitHub** for the source and issue tracker, and **Discord** for the community.
 
 ## Profiles
 
@@ -379,7 +396,7 @@ Turn on **Auto-activate on schedule** for a profile and set the days of the week
 
 ### Manual Activation
 
-**Showing right now** at the top of the Profiles tab picks a profile by hand, and the family remote has the same pills. A profile picked by hand overrides any scheduled one.
+**Showing right now** at the top of the Profiles tab picks a profile by hand, and the family remote has the same pills. A profile picked by hand is used while no scheduled profile is due. When a profile's schedule says it is that profile's time, the scheduled one takes over, and the one you picked comes back when the schedule ends.
 
 ## Module Scheduling
 

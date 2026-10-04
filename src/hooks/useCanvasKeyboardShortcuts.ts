@@ -19,9 +19,10 @@ const ARROW_DELTAS: Record<string, readonly [number, number]> = {
 /**
  * Canvas keyboard shortcuts for the selected module: arrow nudge (1px, Shift
  * for one grid step), Delete/Backspace through the usual confirm, Escape to
- * deselect, Cmd/Ctrl+D to duplicate. Inert while typing in a field or while
- * any dialog or context menu is open, so a modal's or menu's own Escape/Delete
- * never leaks through to the canvas.
+ * deselect, Cmd/Ctrl+D to duplicate. Inert while typing in a field, while
+ * any dialog or context menu is open, and for a key another control already
+ * handled, so a modal's or menu's own Escape/Delete never leaks through to
+ * the canvas.
  */
 export function useCanvasKeyboardShortcuts() {
   const t = useTranslate('editor');
@@ -29,6 +30,10 @@ export function useCanvasKeyboardShortcuts() {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // A control that already acted on the key (a segmented control stepping
+      // to its next option on an arrow) has claimed it: the module must not
+      // also move under it.
+      if (e.defaultPrevented) return;
       if (isTypingTarget(e.target) || isDialogOpen() || isMenuOpen()) return;
 
       const store = useEditorStore.getState();

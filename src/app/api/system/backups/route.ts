@@ -6,7 +6,7 @@ import path from 'path';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { withDataTransaction } from '@/lib/data-transaction';
 import { saveImportedConfig } from '@/lib/family-import';
-import { validateConfigForWrite } from '@/lib/config-validation';
+import { newerSchemaProblem, validateConfigForWrite } from '@/lib/config-validation';
 import type { ScreenConfiguration } from '@/types/config';
 
 export const dynamic = 'force-dynamic';
@@ -85,7 +85,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     let config: unknown;
     try { config = JSON.parse(content.toString('utf8')); }
     catch { return NextResponse.json({ error: 'Backup file is not valid JSON' }, { status: 400 }); }
-    const validationError = validateConfigForWrite(config);
+    const validationError = validateConfigForWrite(config) ?? newerSchemaProblem(config);
     if (validationError) return NextResponse.json({ error: validationError }, { status: 400 });
 
     // The snapshot may predate family identities and shared lists. Plan and

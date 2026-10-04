@@ -40,7 +40,7 @@ The template lands on your screen and the wall shows it a few seconds later. Fro
 
 Weather, sunrise, moon phase and air quality all need to know where you are. Click **Settings**, open **Location & language**, type your town or zip code in **Your town or zip code**, and click **Look up**.
 
-{% screenshot name="settings-location" caption="Location & language. The timezone follows the town you pick." /%}
+{% screenshot name="settings-location" caption="Location & language. Looking up your town also fills in its time zone." /%}
 
 Go back to the editor with **Editor** in the top left. The weather module fills in on its own. A new install uses Open-Meteo, which is free and needs no account, so there is nothing else to set up. If you would rather use another weather service, see [Weather](/docs/weather).
 

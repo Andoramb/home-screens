@@ -531,9 +531,11 @@ test.describe('calendar module event tap', () => {
     },
   ];
 
-  function calendarModuleScreen(config: Record<string, unknown>) {
+  function calendarModuleScreen(config: Record<string, unknown>, size?: { w: number; h: number }) {
+    const instance = buildModuleInstance('calendar', config);
+    if (size) instance.size = size;
     return baseConfig({
-      screens: [makeScreen('s1', 'S1', [buildModuleInstance('calendar', config)])],
+      screens: [makeScreen('s1', 'S1', [instance])],
       settings: matrixSettings(),
     });
   }
@@ -601,7 +603,11 @@ test.describe('calendar module event tap', () => {
   for (const viewMode of CAL_VIEWS) {
     test(`'${viewMode}' view: tapping timed and all-day events opens their details`, async ({ page, request }) => {
       await stubModuleData(page, { overrides: { calendar: CAL_TAP_EVENTS } });
-      const display = await renderOnDisplay(page, request, calendarModuleScreen({ eventTapDetails: true, viewMode }));
+      // Both events fall on today. A grid cell lists only what its week row
+      // has room for, and a default-size six-week grid has room for one pill
+      // a day, so the grids get a card tall enough to list both.
+      const grid = viewMode === 'multi-week' || viewMode === 'month' || viewMode === 'rolling';
+      const display = await renderOnDisplay(page, request, calendarModuleScreen({ eventTapDetails: true, viewMode }, grid ? { w: 900, h: 900 } : undefined));
 
       for (const title of ['CALTAP TIMED', 'CALTAP ALLDAY']) {
         await display.module('calendar').getByText(title).first().click();

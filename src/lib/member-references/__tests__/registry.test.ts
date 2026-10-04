@@ -49,7 +49,8 @@ const CASES: Record<string, { doc: Doc; afterRemoval: Doc; restore: { missing: n
       redemptions: [{ memberId: 'gone' }],
     },
     afterRemoval: {
-      rewards: [{ id: 'r', memberIds: ['kept'], enabled: true }, { id: 'o', memberIds: [], enabled: true }],
+      // The reward that was only theirs is switched off, not opened to everyone.
+      rewards: [{ id: 'r', memberIds: ['kept'], enabled: true }, { id: 'o', memberIds: [], enabled: false }],
       balances: { kept: 4 },
       redemptions: [{ memberId: 'gone' }],
     },

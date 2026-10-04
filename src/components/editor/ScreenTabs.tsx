@@ -121,7 +121,7 @@ export default function ScreenTabs() {
   return (
     <>
       <div className="flex min-w-0 flex-1 items-center gap-2">
-        <div className="relative min-w-0 flex-1">
+        <div className="relative min-w-0 flex-1 overflow-hidden">
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={screens.map((s) => s.id)} strategy={horizontalListSortingStrategy}>
               <div
@@ -230,7 +230,7 @@ export default function ScreenTabs() {
           <button
             className="w-full px-3 py-1.5 text-left text-sm text-hs-text-body hover:bg-hs-card"
             onClick={() => {
-              addScreen();
+              addScreen(t('screenTabs.newScreenName', { number: screens.length + 1 }));
               setAddMenuPos(null);
             }}
           >
@@ -278,7 +278,10 @@ export default function ScreenTabs() {
           <button
             className="w-full px-3 py-1.5 text-left text-sm text-hs-text-body hover:bg-hs-card"
             onClick={() => {
-              duplicateScreen(contextMenu.screenId);
+              duplicateScreen(
+                contextMenu.screenId,
+                t('screenTabs.copyName', { name: screens.find((s) => s.id === contextMenu.screenId)?.name ?? '' }),
+              );
               setContextMenu(null);
             }}
           >

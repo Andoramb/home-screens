@@ -38,7 +38,7 @@ export default function DateModule({ config, style, timezone }: DateModuleProps)
   // Date only changes once per day, but update every minute for midnight rollover
   const now = useTZClock(timezone, 60_000);
   const scaleFactor = SCALE_FACTORS[view] ?? 0.08;
-  const { containerRef, scaledFontSize } = useScaledFontSize(style, scaleFactor);
+  const { containerRef, scaledFontSize, autoFontSize, boxWidth } = useScaledFontSize(style, scaleFactor);
 
   const ViewComponent = VIEW_COMPONENTS[view] ?? DateFullView;
 
@@ -48,6 +48,8 @@ export default function DateModule({ config, style, timezone }: DateModuleProps)
         config={config}
         now={now}
         scaledFontSize={scaledFontSize}
+        autoFontSize={autoFontSize}
+        boxWidth={boxWidth}
         containerRef={containerRef}
       />
     </ModuleWrapper>

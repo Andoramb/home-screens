@@ -12,7 +12,7 @@ Weather works the moment you set your location. A new install uses Open-Meteo, w
 
 ## Set your location
 
-Open **Settings > Location & language**, type your town or zip code in **Your town or zip code**, and click **Look up**. **Use my internet location** guesses from your connection instead. The timezone follows the town you pick.
+Open **Settings > Location & language**, type your town or zip code in **Your town or zip code**, and click **Look up**. **Use my internet location** guesses from your connection instead. The first town you look up also sets the **Time zone** when none is picked yet; after that the time zone stays as it is, so if you move, change **Time zone** on the same page.
 
 One location serves every module that needs one: **Weather**, **Full-Screen Weather**, **Moon Phase**, **Sunrise / Sunset**, **Air Quality**, **Rain Map** and the **Local news** feed. Until it is set, those modules say **Location not set** and link to this page in the editor.
 

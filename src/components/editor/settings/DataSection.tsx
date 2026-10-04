@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { Check } from 'lucide-react';
 import { useEditorStore } from '@/stores/editor-store';
 import { useEditorHouseholdTimezone } from '@/components/editor/useEditorHouseholdClock';
 import { useConfirmStore } from '@/stores/confirm-store';
@@ -60,6 +61,18 @@ interface RestoreStatus {
   kind: RestoreStatusKind;
 }
 
+/** The hub refused a restore; `reason` is its own explanation, when it gave one. */
+class RestoreRefused extends Error {
+  constructor(message: string, readonly reason: string | null) {
+    super(message);
+  }
+}
+
+/** "Could not restore that backup.", followed by why when the hub said. */
+function restoreFailureText(err: unknown, summary: string): string {
+  return err instanceof RestoreRefused && err.reason ? `${summary}\n\n${err.reason}` : summary;
+}
+
 export default function DataSection({ onSettingsImported }: DataSectionProps) {
   const t = useTranslate('editor');
   const tCore = useTranslate('core');
@@ -110,6 +123,9 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
   const [backupBusy, setBackupBusy] = useState(false);
   /** Filename of the backup that just downloaded, for the confirmation line. */
   const [backupSaved, setBackupSaved] = useState<string | null>(null);
+  // Said under the buttons once a restore has landed: a page that looks the
+  // same as before leaves the person wondering whether anything happened.
+  const [restoreFinished, setRestoreFinished] = useState(false);
 
   // Credential opt-in. Deliberately NOT persisted to config: it resets on
   // every mount, so an accidental tick never becomes the standing default for
@@ -355,6 +371,7 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
     // conflict with the restore itself.
     importConfig(JSON.stringify(await configRes.json()), configRes.headers.get(CONFIG_REVISION_HEADER));
     onSettingsImported();
+    setRestoreFinished(true);
   }, [importConfig, onSettingsImported, t, tCore]);
 
   /**
@@ -368,6 +385,7 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
     password?: string,
   ): Promise<CredentialErrorCode | null> => {
     let result: RestoreResponse;
+    setRestoreFinished(false);
     setBackupBusy(true);
     try {
       const body = password ? { ...bundle, _passphrase: password } : bundle;
@@ -377,11 +395,11 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        if (res.status === 400) {
-          const data = await res.json().catch(() => ({}));
-          if (isCredentialErrorCode(data?.code)) return data.code;
-        }
-        throw new Error(`HTTP ${res.status}`);
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 400 && isCredentialErrorCode(data?.code)) return data.code;
+        // The hub says which file and which entry it could not accept, and
+        // what to do about it: that goes to the person, not just "failed".
+        throw new RestoreRefused(`HTTP ${res.status}`, typeof data?.error === 'string' ? data.error : null);
       }
       result = await res.json();
       void refreshCustomIcons();
@@ -460,7 +478,7 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
       }
     } catch (err) {
       if (isSessionExpired(err)) return;
-      useConfirmStore.getState().alert(t('settings.dataPage.alerts.restoreBackupFailed'));
+      useConfirmStore.getState().alert(restoreFailureText(err, t('settings.dataPage.alerts.restoreBackupFailed')));
     }
   }, [postBackupAndReload, t, tCore]);
 
@@ -480,7 +498,7 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
     } catch (err) {
       setPendingRestore(null);
       if (isSessionExpired(err)) return;
-      useConfirmStore.getState().alert(t('settings.dataPage.alerts.restoreBackupFailed'));
+      useConfirmStore.getState().alert(restoreFailureText(err, t('settings.dataPage.alerts.restoreBackupFailed')));
     }
   }, [pendingRestore, postBackupAndReload, t]);
 
@@ -494,7 +512,7 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
       await postBackupAndReload(withoutCredentials);
     } catch (err) {
       if (isSessionExpired(err)) return;
-      useConfirmStore.getState().alert(t('settings.dataPage.alerts.restoreBackupFailed'));
+      useConfirmStore.getState().alert(restoreFailureText(err, t('settings.dataPage.alerts.restoreBackupFailed')));
     }
   }, [pendingRestore, postBackupAndReload, t]);
 
@@ -608,6 +626,12 @@ export default function DataSection({ onSettingsImported }: DataSectionProps) {
           {backupSaved && (
             <p className="mt-2 text-xs text-hs-success" aria-live="polite">
               {t('settings.dataPage.fullBackup.savedTo', { filename: backupSaved })}
+            </p>
+          )}
+          {restoreFinished && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-hs-success" aria-live="polite" data-testid="restore-finished">
+              <Check className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t('settings.dataPage.restore.finished')}
             </p>
           )}
         </section>

@@ -33,6 +33,10 @@ test('the profile switcher activates a profile and persists it to config', async
 
 test('the switcher offers All screens, never toggles off silently, and says what it did', async ({ page, request }) => {
   await putConfig(request, profileConfig('p1'));
+  // The display's own heartbeat beats the page-load profile, and the hub keeps
+  // the last one in memory across tests in this worker. Another spec's
+  // heartbeat (activeProfile null by default) would press All screens here.
+  await postHeartbeat(request, { activeProfile: 'p1' });
   await page.goto('/remote');
 
   // Scoped to the switcher: the confirmation toast is a button too, and its
@@ -61,6 +65,7 @@ test('a heartbeat reporting no profile beats the page-load profile', async ({ pa
   // running with no profile. That null is a real answer, not missing data:
   // the switcher must show All screens and let Morning be picked again.
   await putConfig(request, profileConfig('p1'));
+  await postHeartbeat(request, { activeProfile: 'p1' });
   await page.goto('/remote');
   const chips = page.getByTestId('profile-switcher');
   await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
@@ -71,6 +76,24 @@ test('a heartbeat reporting no profile beats the page-load profile', async ({ pa
 
   await chips.getByRole('button', { name: 'Morning' }).click();
   await expect(page.getByTestId('remote-toast')).toHaveText('The display switched to Morning');
+  await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('a scheduled profile is shown as running, and a pick waits for it', async ({ page, request }) => {
+  // Evening is the saved pick, but the wall reports Morning on its schedule.
+  // The phone used to tick Evening, and a tap claimed a switch that the
+  // schedule overrode.
+  await putConfig(request, profileConfig('p2'));
+  await postHeartbeat(request, { activeProfile: 'p1', profileScheduled: true });
+  await page.goto('/remote');
+  const chips = page.getByTestId('profile-switcher');
+  await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('profile-scheduled-note'))
+    .toHaveText('Morning is on a schedule right now. What you pick here starts when it ends.');
+
+  await chips.getByRole('button', { name: 'All screens' }).click();
+  await expect(page.getByTestId('remote-toast')).toHaveText('The display will show all screens when Morning ends');
+  await expect.poll(async () => (await getConfig(request)).settings.activeProfile).toBeUndefined();
   await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
 });
 

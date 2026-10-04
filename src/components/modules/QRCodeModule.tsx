@@ -8,6 +8,9 @@ import ModuleWrapper from './ModuleWrapper';
 import { ModuleEmptyState } from './ModuleStates';
 import { buildWifiString } from '@/lib/wifi-qr';
 
+/** What the largest QR code holds at the error correction this module draws with (version 40, level L). */
+const QR_MAX_BYTES = 2953;
+
 interface QRCodeModuleProps {
   config: QRCodeConfig;
   style: ModuleStyle;
@@ -27,6 +30,11 @@ export default function QRCodeModule({ config, style }: QRCodeModuleProps) {
 
   if (!hasData) {
     return <ModuleEmptyState style={style} type="qr-code" message={t('qr-code.empty')} />;
+  }
+  // Drawing more than a QR code can hold throws, and on the wall's first
+  // render that failed the whole page rather than this one module.
+  if (new TextEncoder().encode(qrData ?? '').length > QR_MAX_BYTES) {
+    return <ModuleEmptyState style={style} type="qr-code" message={t('qr-code.tooLong')} />;
   }
 
   return (

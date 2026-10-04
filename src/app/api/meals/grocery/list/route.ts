@@ -4,6 +4,7 @@ import { readMealData } from '@/lib/meal-data';
 import { getWeekRange, filterPlanToWeek, fromISODate } from '@/lib/meal-constants';
 import { householdToday } from '@/lib/household-day';
 import { generateGroceryList } from '@/lib/grocery-utils';
+import { groceryChecksForWeek } from '@/lib/grocery-checks';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,13 +18,14 @@ export const dynamic = 'force-dynamic';
  * exactly what the Grocery tab shows. "Current week" follows the shared
  * weekStartDay meal setting, same as every meal surface, and starts from the
  * household's today (Settings time zone), not the hub's clock: a Pi on UTC
- * would otherwise answer with next week's list from Saturday evening.
+ * would otherwise answer with next week's list from Saturday evening. The
+ * checked state is that week's ticks only.
  */
 export const GET = withDisplayAuth(async () => {
   const data = await readMealData();
   const { start, end } = getWeekRange(fromISODate(await householdToday()), data.settings.weekStartDay);
   const weekPlan = filterPlanToWeek(data.plan, start, end);
-  const list = generateGroceryList(weekPlan, data.savedMeals, data.groceryChecked);
+  const list = generateGroceryList(weekPlan, data.savedMeals, groceryChecksForWeek(data.groceryChecked, start));
 
   const categories = Array.from(list.entries()).map(([category, { items }]) => ({
     category,

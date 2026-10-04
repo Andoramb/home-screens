@@ -82,6 +82,13 @@
         "keepMine": "Garder les miennes"
       },
       "savedToDisplay": "Enregistré sur {name}"
+    },
+    "loadError": {
+      "title": "Home Screens n'a pas pu ouvrir ta configuration enregistrée",
+      "body": "L'un des fichiers enregistrés est abîmé ou ne peut pas être lu pour le moment. Rien n'a été supprimé. Réessaie, ou remets une sauvegarde ci-dessous.",
+      "retry": "Réessayer",
+      "retrying": "Nouvel essai…",
+      "detailLabel": "Ce que Home Screens a indiqué"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Renommer",
       "duplicate": "Dupliquer",
       "delete": "Supprimer"
-    }
+    },
+    "newScreenName": "Écran {number}",
+    "copyName": "{name} (copie)"
   },
   "screenSearch": {
     "buttonAriaLabel": "Trouver un écran ou un module",
@@ -511,7 +520,8 @@
         "detectedViaIp": "Lieu trouvé grâce à votre connexion internet : {name}.",
         "detectedCoords": "Lieu trouvé : {lat}, {lon}.",
         "detectFailed": "Erreur : impossible de détecter le lieu",
-        "zoneSet": "Fuseau horaire réglé sur {zone} pour correspondre."
+        "zoneSet": "Fuseau horaire réglé sur {zone} pour correspondre.",
+        "notFound": "Aucun lieu trouvé sous ce nom. Essaie avec une ville proche."
       },
       "queryLabel": "Votre ville ou code postal",
       "clockCheck": {
@@ -738,7 +748,8 @@
         "plaintextConfirm": "Restaurer",
         "wrongPassword": "Ce mot de passe n'a pas fonctionné. Réessayez, ou restaurez sans vos clés.",
         "damagedKeys": "Les clés de ce fichier sont endommagées et illisibles. Vous pouvez tout de même restaurer le reste.",
-        "reloadFailed": "Votre sauvegarde a été restaurée, mais l'éditeur n'a pas pu se recharger. Actualisez la page pour la voir."
+        "reloadFailed": "Votre sauvegarde a été restaurée, mais l'éditeur n'a pas pu se recharger. Actualisez la page pour la voir.",
+        "finished": "Restauration terminée. Tout ce que contenait cette sauvegarde est de retour."
       },
       "description": "Sauvegardez tout, restaurez une sauvegarde ou repartez d'un modèle.",
       "restoreConfirm": {
@@ -1674,6 +1685,7 @@
         "enableLabel": "Me notifier quand une mise à jour est disponible"
       },
       "upToDate": "Tu es sur la dernière version",
+      "checkFailed": "Impossible de vérifier les mises à jour pour le moment",
       "changelog": {
         "heading": "Journal des modifications",
         "viewButton": "Voir le journal",
@@ -1989,7 +2001,9 @@
         "passwordsDoNotMatch": "Les mots de passe ne correspondent pas",
         "setFailed": "Échec de la définition du mot de passe",
         "changeFailed": "Échec du changement de mot de passe",
-        "disableFailed": "Échec de la désactivation de l'authentification"
+        "disableFailed": "Échec de la désactivation de l'authentification",
+        "passwordTooShort": "Le mot de passe doit avoir au moins {count} caractères.",
+        "invalidAddress": "« {entry} » n'est pas une adresse réseau. Essaie avec une adresse comme 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Mot de passe défini ! L'authentification est maintenant activée.",
@@ -2123,7 +2137,12 @@
         "enableAriaLabel": "Activer {id}",
         "disableAriaLabel": "Désactiver {id}",
         "uninstallTitle": "Désinstaller",
-        "uninstallAriaLabel": "Désinstaller {id}"
+        "uninstallAriaLabel": "Désinstaller {id}",
+        "uninstallConfirm": {
+          "title": "Désinstaller {name} ?",
+          "message": "Il disparaît de tous les écrans qui l'affichent. Ses réglages enregistrés et sa connexion sont supprimés aussi.",
+          "confirmLabel": "Désinstaller"
+        }
       },
       "updates": {
         "allUpToDate": "Tous les plugins sont à jour",
@@ -2354,7 +2373,8 @@
       "formErrorWidth": "La largeur doit être comprise entre {min} et {max}. Vérifie qu'il ne manque pas un chiffre : la plupart des écrans font 1080 ou 1920 de large.",
       "formErrorHeight": "La hauteur doit être comprise entre {min} et {max}. Vérifie qu'il ne manque pas un chiffre : la plupart des écrans font 1080 ou 1920 de haut.",
       "softwareUpdateWaiting": "Mise à jour en attente",
-      "softwareNeedsSetup": "Configuration requise"
+      "softwareNeedsSetup": "Configuration requise",
+      "mainDisplayName": "Affichage principal"
     },
     "header": {
       "backToEditor": "Éditeur",
@@ -3271,7 +3291,9 @@
     "importButton": "Ajouter ces écrans",
     "savedAt": "Enregistrée le {date}",
     "screenPillSingular": "{name} · {count} module",
-    "screenPillPlural": "{name} · {count} modules"
+    "screenPillPlural": "{name} · {count} modules",
+    "importedName": "{name} (importé)",
+    "importedNameNumbered": "{name} (importé {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3484,7 +3506,7 @@
       "datePresetShortWeekday": "lun. 5 janv.",
       "datePresetMonthDayYear": "5 janvier 2026",
       "datePresetShortMonthDayYear": "5 janv. 2026",
-      "datePresetSlashMDY": "05/01/2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05/01/2026",
       "datePresetIso": "2026-01-05",
       "datePresetWeekday": "lundi",
@@ -3580,7 +3602,7 @@
       "datePresetShortWeekday": "lun. 5 janv.",
       "datePresetMonthDayYear": "5 janvier 2026",
       "datePresetShortMonthDayYear": "5 janv. 2026",
-      "datePresetSlashMDY": "05/01/2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05/01/2026",
       "datePresetIso": "2026-01-05",
       "invalidFormat": "Format invalide",
@@ -3791,6 +3813,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Par défaut (Minuit)",
+      "themeDefault": "Par défaut (depuis les paramètres)",
       "photoSource": "Source des photos",
       "sourceLocal": "Photos locales",
       "sourceImmich": "Immich",
@@ -4293,7 +4316,21 @@
       "viewCards": "Cartes",
       "viewList": "Liste",
       "viewTicker": "Téléscripteur",
+      "viewTeam": "Équipe",
       "leagues": "Ligues",
+      "leaguesAmerican": "Américaines",
+      "leaguesSoccer": "Football",
+      "favoriteTeams": "Mes équipes",
+      "favoriteTeamsSearch": "Rechercher une équipe",
+      "favoriteTeamsLoading": "Chargement des équipes",
+      "favoriteTeamsError": "Impossible de charger les équipes",
+      "favoriteTeamsHelp": "Les matchs de ces équipes passent en premier. La première équipe prend la première place.",
+      "favoriteTeamsHelpTeam": "La première équipe s'affiche d'abord ; s'il y en a plusieurs, elles se relaient.",
+      "favoriteTeamsHidden": "ligue désactivée",
+      "favoriteTeamsLimit": "Ce module ne peut pas suivre plus d'équipes ({count}). Retires-en une pour en ajouter une autre.",
+      "favoriteTeamsRemove": "Retirer {team}",
+      "favoriteTeamsDrag": "Déplacer {team}",
+      "favoritesOnly": "Afficher seulement les matchs de mes équipes",
       "tickerSpeed": "Vitesse du téléscripteur (s/match)"
     },
     "standings": {
@@ -4305,6 +4342,7 @@
       "groupingLeague": "Ligue complète",
       "league": "Ligue",
       "grouping": "Regroupement",
+      "favoriteTeamsHelp": "Ces équipes ressortent dans le classement.",
       "playoffCutoffLine": "Ligne de qualification aux playoffs",
       "teamsToShow": "Équipes à afficher (0 = toutes)",
       "rotationSeconds": "Rotation (secondes)"
@@ -4958,7 +4996,58 @@
   },
   "templatePicker": {
     "title": "Modèles",
-    "loadFailed": "Échec du chargement de « {name} »"
+    "loadFailed": "Échec du chargement de « {name} »",
+    "categories": {
+      "All": "Tous",
+      "Dashboard": "Tableau de bord",
+      "Weather": "Météo",
+      "Productivity": "Productivité",
+      "Media": "Médias",
+      "Sports": "Sport",
+      "Finance": "Finances"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Tableau de bord familial",
+        "description": "Horloge, calendrier, météo, tâches du jour, compte à rebours et message d'accueil : tout pour la famille au même endroit."
+      },
+      "weather-station": {
+        "name": "Station météo",
+        "description": "Plusieurs vues météo, carte des pluies, lever et coucher du soleil, qualité de l'air et phase de la lune."
+      },
+      "minimal-clock": {
+        "name": "Horloge épurée",
+        "description": "Une seule grande horloge : sobre et sans distraction."
+      },
+      "info-board": {
+        "name": "Tableau d'infos",
+        "description": "Actualités, cours de la bourse, mot du jour, histoire et citations."
+      },
+      "photo-frame": {
+        "name": "Cadre photo",
+        "description": "Diaporama de photos en plein écran : transforme ton écran en cadre photo numérique."
+      },
+      "sports-hub": {
+        "name": "Coin sport",
+        "description": "Scores en direct et classements."
+      },
+      "productivity": {
+        "name": "Productivité",
+        "description": "Tâches Todoist, calendrier, compte à rebours et avancement de l'année."
+      },
+      "morning-dashboard": {
+        "name": "Tableau de bord du matin",
+        "description": "Météo, calendrier, trafic et un message d'accueil pour bien commencer la journée."
+      },
+      "kitchen-display": {
+        "name": "Écran de cuisine",
+        "description": "Planning des repas, horloge, calendrier, jour des poubelles et pense-bêtes pour la cuisine."
+      },
+      "news-finance": {
+        "name": "Actualités et finance",
+        "description": "Gros titres, cours des actions et suivi des cryptomonnaies."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Modules",

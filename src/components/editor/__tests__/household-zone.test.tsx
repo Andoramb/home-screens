@@ -8,7 +8,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, renderHook } from '@testing-library/react';
+import { act, cleanup, renderHook } from '@testing-library/react';
 import { useEditorStore } from '@/stores/editor-store';
 import { HUB_TIMEZONE_HEADER } from '@/lib/timezone';
 import type { ScreenConfiguration } from '@/types/config';
@@ -36,6 +36,9 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  // Unmounted first: a hook still mounted would re-render on the store reset
+  // below, and that render can run after the browser environment is gone.
+  cleanup();
   vi.useRealTimers();
   mocks.fetch.mockReset();
   useEditorStore.setState({ config: null, hubTimezone: null });

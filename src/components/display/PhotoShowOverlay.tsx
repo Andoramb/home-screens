@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { usePhotoShowStore } from '@/stores/photo-show-store';
 import { useAuthImageState } from './useAuthImage';
 import { DISPLAY_LAYERS } from '@/lib/display-layers';
-import { displaySizedUrl } from '@/lib/media-paths';
+import { displaySizedUrl, fitInside } from '@/lib/media-paths';
 
 /**
  * A photo sent from a phone with "Show on the wall": the whole picture on
@@ -17,7 +17,11 @@ export default function PhotoShowOverlay({ viewport }: { viewport?: { w: number;
   const photo = usePhotoShowStore((s) => s.photo);
   const hide = usePhotoShowStore((s) => s.hide);
   const dpr = typeof window === 'undefined' ? 1 : window.devicePixelRatio || 1;
-  const box = viewport && viewport.w > 0 ? { w: viewport.w * dpr, h: viewport.h * dpr } : undefined;
+  const screenBox = viewport && viewport.w > 0 ? { w: viewport.w * dpr, h: viewport.h * dpr } : undefined;
+  // A sized copy covers the box it is asked for, so asking with the whole
+  // screen fetches far more picture than a contained photo shows. Ask with the
+  // size the photo is drawn at.
+  const box = screenBox && photo?.width && photo.height ? fitInside(photo.width, photo.height, screenBox) : screenBox;
   const imageSrc = photo?.kind === 'image' ? displaySizedUrl(photo.url, box) : undefined;
   // Never the previous photo's picture while the new one loads.
   const { url, status } = useAuthImageState(imageSrc, { holdPrevious: false });
@@ -62,7 +66,7 @@ export default function PhotoShowOverlay({ viewport }: { viewport?: { w: number;
           onPlaying={() => setShown(true)}
           onEnded={hide}
           onError={hide}
-          style={{ maxWidth: '100%', maxHeight: '100%', display: 'block' }}
+          style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
         />
       ) : (
         url && (

@@ -106,7 +106,9 @@ export default function IpAllowlistPanel({ initial }: IpAllowlistPanelProps) {
       }
       if (!res.ok) {
         setIpStatus({
-          message: data.error || t('common.saveFailed'),
+          message: data.code === 'invalid_address' && typeof data.entry === 'string'
+            ? t('settings.securityPage.errors.invalidAddress', { entry: data.entry })
+            : data.error || t('common.saveFailed'),
           kind: 'error',
         });
         return;

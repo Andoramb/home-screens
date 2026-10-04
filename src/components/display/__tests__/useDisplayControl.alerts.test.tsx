@@ -50,7 +50,7 @@ function renderControl() {
       screenId: 's1',
       screenName: 'Screen 1',
       screenCount: 1,
-      activeProfile: null,
+      activeProfile: { profileId: null, scheduled: false },
       nextScreen: vi.fn(),
       prevScreen: vi.fn(),
       gotoScreen: vi.fn(),

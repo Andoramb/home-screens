@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { readConfig } from '@/lib/config';
 import { cachedProxyRoute, errorResponse, SetupError } from '@/lib/api-utils';
 import { compareEventStarts, householdDayStart } from '@/lib/calendar-utils';
@@ -8,6 +8,7 @@ import { budgetEvents, mergeSourceStatus, recordSourceStatus, withSavedEvents, t
 import type { CalendarEvent, CalendarSourceStatus, ICalSource, ICloudSource } from '@/types/config';
 import { logger } from '@/lib/logger';
 import { googleCalendarTokenStore } from '@/lib/google-token-stores';
+import { CALENDAR_REVISION_HEADER, calendarRevision } from '@/lib/calendar-revision';
 
 const log = logger('calendar');
 
@@ -40,9 +41,11 @@ interface CalendarParams {
   timezone: string | undefined;
   icalKey: string;
   icloudKey: string;
+  /** `calendarRevision()` when the request came in: a sign-in or disconnect starts a new cache entry. */
+  revision: string;
 }
 
-const { GET, cache } = cachedProxyRoute<CalendarPayload, CalendarParams>({
+const { GET: cachedGET, cache } = cachedProxyRoute<CalendarPayload, CalendarParams>({
   auth: 'display',
   // Just under the walls' poll, so each wall still gets fresh events every
   // poll while walls and the editor asking within the same few minutes share
@@ -109,10 +112,14 @@ const { GET, cache } = cachedProxyRoute<CalendarPayload, CalendarParams>({
     const icalKey = icalSources.map(s => `${s.id}:${s.color}:${s.url}`).join(',');
     const icloudKey = icloudSources.map(s => `${s.id}:${s.color}:${s.kind}:${s.url}`).join(',');
 
-    return { calendarIds, icalSources, icloudSources, holidayCountry, hideDeclined, timeMin, timeMax, timezone, icalKey, icloudKey };
+    // Without it in the key, the "needs to sign in again" answer from just
+    // before a sign-in kept being handed out for the rest of its TTL.
+    const revision = calendarRevision();
+
+    return { calendarIds, icalSources, icloudSources, holidayCountry, hideDeclined, timeMin, timeMax, timezone, icalKey, icloudKey, revision };
   },
-  cacheKey: ({ calendarIds, icalKey, icloudKey, holidayCountry, hideDeclined, timeMin, timeMax, timezone }) =>
-    `g:${[...calendarIds].sort().join(',')};i:${icalKey};ic:${icloudKey};h:${holidayCountry ?? ''};hd:${hideDeclined};${timeMin}:${timeMax};tz:${timezone ?? ''}`,
+  cacheKey: ({ calendarIds, icalKey, icloudKey, holidayCountry, hideDeclined, timeMin, timeMax, timezone, revision }) =>
+    `g:${[...calendarIds].sort().join(',')};i:${icalKey};ic:${icloudKey};h:${holidayCountry ?? ''};hd:${hideDeclined};${timeMin}:${timeMax};tz:${timezone ?? ''};r:${revision}`,
   execute: async ({ calendarIds, icalSources, icloudSources, holidayCountry, hideDeclined, timeMin, timeMax, timezone }) => {
     if (calendarIds.length === 0 && icalSources.length === 0 && icloudSources.length === 0 && !holidayCountry) {
       return NextResponse.json(
@@ -238,5 +245,18 @@ const { GET, cache } = cachedProxyRoute<CalendarPayload, CalendarParams>({
   errorMessage: 'Failed to fetch calendar events',
 });
 
+/**
+ * Every answer says which calendar revision it was read at, so a wall whose
+ * heartbeat names a newer one re-reads (`useCalendarRefresh`). Taken before
+ * the answer is worked out, so it never claims to be newer than the sign-in
+ * it was fetched with; a sign-in landing in between costs one extra re-read.
+ */
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const revision = calendarRevision();
+  const res = await cachedGET(request);
+  res.headers.set(CALENDAR_REVISION_HEADER, revision);
+  return res;
+}
+
 /** @internal exported for test cleanup */
-export { GET, cache };
+export { cache };

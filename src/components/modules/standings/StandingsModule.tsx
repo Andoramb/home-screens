@@ -40,6 +40,7 @@ export default function StandingsModule({ config, style }: StandingsModuleProps)
   const teamsToShow = config.teamsToShow ?? 0;
   const showPlayoffLine = config.showPlayoffLine ?? true;
   const rotationIntervalMs = config.rotationIntervalMs ?? 10000;
+  const favorites = config.favoriteTeams ?? [];
 
   return (
     <ModuleWrapper style={style}>
@@ -50,6 +51,7 @@ export default function StandingsModule({ config, style }: StandingsModuleProps)
           showPlayoffLine={showPlayoffLine}
           rotationIntervalMs={rotationIntervalMs}
           grouping={grouping}
+          favorites={favorites}
         />
       )}
       {view === 'compact' && (
@@ -59,6 +61,7 @@ export default function StandingsModule({ config, style }: StandingsModuleProps)
           showPlayoffLine={showPlayoffLine}
           rotationIntervalMs={rotationIntervalMs}
           grouping={grouping}
+          favorites={favorites}
         />
       )}
       {view === 'conference' && (
@@ -68,6 +71,7 @@ export default function StandingsModule({ config, style }: StandingsModuleProps)
           showPlayoffLine={showPlayoffLine}
           rotationIntervalMs={rotationIntervalMs}
           grouping={grouping}
+          favorites={favorites}
         />
       )}
     </ModuleWrapper>

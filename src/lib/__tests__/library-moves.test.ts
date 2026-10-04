@@ -69,6 +69,8 @@ describe('moveLibraryFiles', () => {
       { id: 's4', name: 'Other', backgroundImage: 'c.jpg' },
     ] };
 
+    const before = `rev-${JSON.stringify(configState.config).length}`;
+
     const result = await moveLibraryFiles(['a.jpg', 'nature/b.jpg'], 'trips');
 
     expect(result.moved).toEqual([
@@ -76,7 +78,10 @@ describe('moveLibraryFiles', () => {
       { from: 'nature/b.jpg', to: 'trips/b.jpg' },
     ]);
     expect(result.rewritten).toBe(3);
-    expect(result.revision).toMatch(/^rev-/);
+    // Both revisions, so an editor copy of exactly the old one can follow.
+    expect(result.previousRevision).toBe(before);
+    expect(result.revision).toBe(`rev-${JSON.stringify(configState.config).length}`);
+    expect(result.revision).not.toBe(before);
     expect(await exists('trips/a.jpg')).toBe(true);
     expect(await exists('trips/b.jpg')).toBe(true);
     expect(await exists('a.jpg')).toBe(false);
@@ -200,10 +205,14 @@ describe('renameLibraryFolder', () => {
       ] },
     ] };
 
+    const before = `rev-${JSON.stringify(configState.config).length}`;
+
     const result = await renameLibraryFolder('trips', 'Summer 2026');
 
     expect(result).toMatchObject({ from: 'trips', to: 'Summer-2026', rewritten: 4 });
-    expect(result.revision).toMatch(/^rev-/);
+    expect(result.previousRevision).toBe(before);
+    expect(result.revision).toBe(`rev-${JSON.stringify(configState.config).length}`);
+    expect(result.revision).not.toBe(before);
     expect(await exists('Summer-2026/kids/b.jpg')).toBe(true);
     expect(await exists('trips')).toBe(false);
     const screens = configState.config.screens as Array<{ backgroundImage?: string; modules?: { config: Record<string, string> }[] }>;

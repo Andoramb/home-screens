@@ -393,7 +393,7 @@ describe('GET /api/geocode', () => {
     const json = await response.json();
 
     expect(response.status).toBe(404);
-    expect(json).toEqual({ error: 'Location not found' });
+    expect(json).toEqual({ error: 'Location not found', code: 'location_not_found' });
   });
 
   it('returns 404 when upstream returns non-ok (falls through to 404)', async () => {
@@ -404,7 +404,7 @@ describe('GET /api/geocode', () => {
 
     // The route does NOT return 502 for non-ok; it falls through to the 404 at the end
     expect(response.status).toBe(404);
-    expect(json).toEqual({ error: 'Location not found' });
+    expect(json).toEqual({ error: 'Location not found', code: 'location_not_found' });
   });
 
   it('returns 500 when network request fails', async () => {

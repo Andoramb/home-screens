@@ -2,7 +2,9 @@
 
 import { useRotatingIndex } from '@/hooks/useRotatingIndex';
 import type { Game } from '@/lib/espn';
-import { TeamLogo, isWinner, formatScore, GameStatus, type KickoffFn } from './shared';
+import { leagueWallCode } from '@/lib/espn';
+import { favoriteSide } from '@/lib/sports-order';
+import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, type KickoffFn } from './shared';
 import { PaginationDots } from '../shared/PaginationDots';
 
 function TeamRow({
@@ -12,6 +14,7 @@ function TeamRow({
   score,
   winner,
   color,
+  rank,
 }: {
   logo: string;
   abbr: string;
@@ -19,6 +22,7 @@ function TeamRow({
   score: string;
   winner: boolean;
   color: string;
+  rank?: number;
 }) {
   return (
     <div className="flex items-center gap-3 w-full">
@@ -27,9 +31,10 @@ function TeamRow({
       </div>
       <div className="flex-1 min-w-0">
         <div
-          className={`font-bold truncate ${winner ? 'text-current' : 'text-current/70'}`}
+          className={`font-bold truncate flex items-baseline gap-1 ${winner ? 'text-current' : 'text-current/70'}`}
           style={{ fontSize: '1.05em' }}
         >
+          <RankTag rank={rank} />
           {abbr}
         </div>
         {record && (
@@ -48,20 +53,23 @@ function TeamRow({
   );
 }
 
-export function ScoreboardView({ games, kickoff }: { games: Game[]; kickoff: KickoffFn }) {
+export function ScoreboardView({ games, kickoff, favorites = [] }: { games: Game[]; kickoff: KickoffFn; favorites?: string[] }) {
   const index = useRotatingIndex(games.length, 10000);
   const game = games[index];
 
   if (!game) return null;
+  const side = favoriteSide(game, favorites);
+  const barColor = side === 'away' ? game.awayTeamColor : side === 'home' ? game.homeTeamColor : null;
 
   return (
-    <div className="flex flex-col justify-center h-full gap-3 px-4">
+    <div className="relative flex flex-col justify-center h-full gap-3 px-4">
+      <FavoriteBar color={barColor} inset="8%" />
       <div className="flex items-center justify-between">
         <span
           className="font-semibold tracking-widest uppercase text-current/40"
           style={{ fontSize: '0.65em' }}
         >
-          {game.league}
+          {leagueWallCode(game.league)}
         </span>
         {game.broadcast && (
           <span className="text-current/30" style={{ fontSize: '0.6em' }}>
@@ -77,6 +85,7 @@ export function ScoreboardView({ games, kickoff }: { games: Game[]; kickoff: Kic
         score={formatScore(game, game.awayScore)}
         winner={isWinner(game, 'away')}
         color={game.awayTeamColor}
+        rank={game.awayRank}
       />
 
       <div className="h-px bg-white/10" />
@@ -88,6 +97,7 @@ export function ScoreboardView({ games, kickoff }: { games: Game[]; kickoff: Kic
         score={formatScore(game, game.homeScore)}
         winner={isWinner(game, 'home')}
         color={game.homeTeamColor}
+        rank={game.homeRank}
       />
 
       <div className="flex items-center justify-between">

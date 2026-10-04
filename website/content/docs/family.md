@@ -14,7 +14,7 @@ Add your household once. Each person's name, colour and optional icon or emoji f
 
 In the editor, open **Settings > Family** under Content. On a phone, open `/remote`, tap **Settings**, then **Family**. The Members section in a chore chart uses the same list.
 
-Choose **Add person**, enter a name, choose a colour and an optional icon, then **Save**. You can also type an emoji instead of choosing an icon. On a phone, the form opens full screen with large colour swatches; leaving an edited form asks before discarding your changes. Use the pencil to edit someone or the arrows to reorder the list. Changes are shared with the other displays and phones.
+Choose **Add person**, enter a name, choose a colour and an optional icon, then **Save**. You can also type an emoji instead of choosing an icon, or pick **Add your own** to use a picture of your own (see [Your icons](/docs/editor#your-icons)). On a phone, the form opens full screen with large colour swatches; leaving an edited form asks before discarding your changes. Use the pencil to edit someone or the arrows to reorder the list. Changes are shared with the other displays and phones.
 
 You can add up to 64 people. Larger lists brought forward from an older version are kept in full and split into pages. You can still edit, reorder or remove those people.
 

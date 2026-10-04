@@ -1,5 +1,6 @@
 'use client';
 
+import { getModuleDefinition } from '@/lib/module-registry';
 import { useRef, useCallback } from 'react';
 import { GRID_SIZE, snapToGrid } from '@/lib/constants';
 import { useEditorStore } from '@/stores/editor-store';
@@ -106,10 +107,13 @@ export default function SelectionOverlay({
         zIndex: 9000,
       }}
     >
-      <div
-        onMouseDown={handleResizeStart}
-        className="absolute bottom-0 right-0 w-3 h-3 bg-hs-accent cursor-se-resize rounded-tl pointer-events-auto"
-      />
+      {/* A full-screen module is the size of the screen; there is nothing to drag. */}
+      {!getModuleDefinition(mod.type)?.fillsCanvas && (
+        <div
+          onMouseDown={handleResizeStart}
+          className="absolute bottom-0 right-0 w-3 h-3 bg-hs-accent cursor-se-resize rounded-tl pointer-events-auto"
+        />
+      )}
       {/* Why this module is or isn't on the wall, in words rather than a 10px
           glyph. Only the selected module carries it, so a busy screen doesn't
           turn into a wall of labels. */}

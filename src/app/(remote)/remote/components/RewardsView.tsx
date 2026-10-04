@@ -65,7 +65,7 @@ export default function RewardsView({
   const [editingReward, setEditingReward] = useState<RewardDefinition | 'new' | null>(null);
   const [redeemTarget, setRedeemTarget] = useState<{ reward: RewardDefinition; memberId: string } | null>(null);
   const [adjusting, setAdjusting] = useState<Set<string>>(new Set());
-  const [saveError, setSaveError] = useState<'failed' | 'conflict' | null>(null);
+  const [saveError, setSaveError] = useState<'failed' | 'conflict' | 'redeemRefused' | 'redeemFailed' | null>(null);
 
   // ── Derived ──
   const selectedMember = members.find((m) => m.id === selectedMemberId);
@@ -101,12 +101,17 @@ export default function RewardsView({
       });
       if (res.ok) {
         const result = await res.json();
+        setSaveError(null);
         setData((prev) => prev ? { ...prev, balances: result.balances, redemptions: result.redemptions } : prev);
       } else {
-        // Balance may have changed — refresh so the user sees the real state
+        // Said out loud: a sheet that just closes reads as "you got it".
+        // A 400 is the hub finding too few tickets (another phone spent
+        // them); the refresh then shows what is really left.
+        setSaveError(res.status === 400 ? 'redeemRefused' : 'redeemFailed');
         await refreshData();
       }
-    } catch {
+    } catch (err) {
+      if (!isSessionExpired(err)) setSaveError('redeemFailed');
       await refreshData();
     }
     setRedeemTarget(null);
@@ -243,7 +248,7 @@ export default function RewardsView({
             fontSize: 12,
           }}
         >
-          {saveError === 'conflict' ? t('rewardsView.changedElsewhere') : t('rewardsView.saveFailed')}
+          {t(REWARD_ERROR_KEYS[saveError])}
         </div>
       )}
 
@@ -359,6 +364,13 @@ export default function RewardsView({
     </div>
   );
 }
+
+const REWARD_ERROR_KEYS = {
+  failed: 'rewardsView.saveFailed',
+  conflict: 'rewardsView.changedElsewhere',
+  redeemRefused: 'rewardsView.redeem.refused',
+  redeemFailed: 'rewardsView.redeem.failed',
+} as const;
 
 // ── Redeem Section ───────────────────────────────────────────────────
 

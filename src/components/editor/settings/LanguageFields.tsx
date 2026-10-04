@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { useEditorStore } from '@/stores/editor-store';
-import { useTranslate, revalidateLoaderCache } from '@/i18n';
+import { useTranslate, revalidateLoaderCache, resolveShippedLocale } from '@/i18n';
 import { LOCALES, DEFAULT_LOCALE } from '@/i18n/manifest';
 import { reloadPluginTranslations, clearActiveLocaleCache } from '@/lib/plugin-loader';
 
@@ -28,7 +28,8 @@ export default function LanguageFields() {
   const router = useRouter();
   const { config, updateSettings, saveConfig } = useEditorStore();
   const settings = config?.settings;
-  const currentLocale = settings?.locale ?? DEFAULT_LOCALE;
+  // The language the editor is actually in: a locale that is not shipped (from an imported layout) shows as the one it falls back to, not the list's first entry.
+  const currentLocale = resolveShippedLocale(settings?.locale ?? DEFAULT_LOCALE);
   const currentFormattingLocale = settings?.formattingLocale ?? '';
 
   // Sorted list of locales with the native label, so the dropdown reads

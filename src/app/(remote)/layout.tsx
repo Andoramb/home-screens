@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import '@/app/globals.css';
 import { readConfig } from '@/lib/config';
-import { I18nProvider, preloadDateLocale } from '@/i18n';
+import { I18nProvider, preloadDateLocale, resolveShippedLocale } from '@/i18n';
 import { buildLocaleBlob } from '@/i18n/server-blob';
 import { DEFAULT_LOCALE } from '@/i18n/manifest';
 import { isoDateInTZ, resolveHouseholdTimezone } from '@/lib/timezone';
@@ -32,7 +32,7 @@ export default async function RemoteLayout({ children }: { children: React.React
   // formattingLocale falls back to locale (cascade also lives in
   // <I18nProvider>; we resolve it here so the server-side preload
   // covers both tags before first paint).
-  const formattingLocale = config?.settings?.formattingLocale ?? locale;
+  const formattingLocale = config?.settings?.formattingLocale ?? resolveShippedLocale(locale);
   // The phone's own zone is not the household's. With none set, the household
   // runs on the hub's clock, so the phone is handed the hub's zone by name.
   const timezone = resolveHouseholdTimezone(config?.settings?.timezone, hubTimezone());

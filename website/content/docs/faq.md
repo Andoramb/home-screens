@@ -28,13 +28,13 @@ Home Screens ships with **anonymous telemetry on by default**. It sends one mess
 - How many displays, screens, modules, and profiles you have
 - Which module types are in use (e.g. clock, weather), as counts
 - Which weather provider and screen transition effect you picked
-- Whether sleep, alerts, and a password are switched on --- the on/off setting only, never the password itself
+- Whether sleep, alerts, and a password are switched on (the on/off setting only, never the password itself)
 - Whether a calendar is connected (Google or an iCal feed), but never anything in it
 - Installed plugins (marketplace names and versions; plugins from outside the marketplace are counted but never named)
 
 The report itself carries no location and no network address, and it never contains your calendar events, notes, photos, file names, display names, or API keys. Sending it does reveal where the request came from to the server that receives it, the same as any website you visit.
 
-Disable it at any time in **Settings > Status > Anonymous Telemetry** --- the same list is shown there, so you can always check it against this page. Everything else --- your config, meals, chores, photos, calendars --- stays on your Pi.
+Disable it at any time in **Settings > Status > Anonymous Telemetry**, which shows the same list, so you can always check it against this page. Everything else (your config, meals, chores, photos, calendars) stays on your Pi.
 
 ### How do I give my kids access to check off chores?
 
@@ -54,11 +54,13 @@ That's it. See [What to buy](/docs/what-to-buy) for the shopping list and [Insta
 
 Yes. Home Screens runs on any machine with **Node.js 22+**. You can run it on a laptop, desktop, NUC, or any Linux/macOS/Windows server. The Raspberry Pi is just the most common deployment target for a dedicated wall display.
 
+There is also a community Docker image for a home server, with any browser on your network as the display. Updating, restarting, WiFi and network settings, turning the screen off, screen rotation and hardware stats don't work inside Docker. The setup steps and the full list of limits are in the [README](https://github.com/home-screens/home-screens#running-in-docker-community-limited).
+
 ### What display orientation is supported?
 
-The default is **portrait at 1080x1920**, which works well for wall-mounted displays. During installation, you can choose from portrait, landscape, inverted, or counter-clockwise portrait.
+The default is **portrait at 1080x1920**, which works well for wall-mounted displays. You pick portrait, landscape, inverted, or counter-clockwise portrait during installation, and can change it any time under **Settings > Screen**; the picture turns straight away, with no reboot.
 
-The editor's **Settings > Screen** page sets the size of the canvas your modules are laid out on. Match it to your physical screen so everything lines up. It does not change the signal the Pi sends to the monitor --- that is picked during installation and stored in `data/kiosk.conf`, so setting 3840x2160 in the editor on a 1080p screen gives you a squashed layout, not a 4K picture.
+The same page sets the resolution. On the Pi that runs Home Screens it is both the size of the canvas your modules are laid out on and the picture the Pi sends to the screen, so pick the one that matches your screen. A size the screen cannot show leaves everything squashed or cut off rather than sharper. With more than one display, each display's resolution and rotation are on its own page under **Per display**, and a display-only Pi keeps the rotation and resolution it was installed with.
 
 ---
 
@@ -80,7 +82,7 @@ Going back downloads that version from GitHub and installs it the same way an up
 
 ### How do I backup my configuration?
 
-Go to **Settings > Backups & data** and, under **Save a copy**, click **Save a backup**. This downloads a file containing your screens, modules, settings, location, calendars, and your chore and meal data. You can also back up from the [family remote](/docs/remote-control) by tapping the gear and choosing **Backup All Data**.
+Go to **Settings > Backups & data** and, under **Save a copy**, click **Save a backup**. This downloads a file containing your screens, modules, settings, location, calendars, family list, chores and rewards, meals, lists, timers and school timetables. **Include your icons** adds the pictures your family added as icons; each computer and phone remembers your choice. You can also back up from the [family remote](/docs/remote-control) by tapping the gear and choosing **Backup All Data**.
 
 Your API keys and connected accounts are left out unless you ask for them. Tick **Include my keys and connected accounts** to add them, and **Protect them with a password** to lock them inside the file. You will need an editor password set first (Settings > Security). See [Backing up your keys](/docs/configuration#backing-up-your-keys) for what that covers and what happens if you forget the password.
 
@@ -173,12 +175,12 @@ Yes, two ways. [Plugins](/docs/plugin-development) add modules without touching 
 
 The most common cause is a missing location or a missing key. Check the following:
 
-1. For weather, open the editor and go to **Settings > Weather**. Each provider has its own card there, with its key field inside. Then check **Settings > Location & language** --- without a location there is nothing to forecast. Stocks and news need no key at all.
+1. For weather, open the editor and go to **Settings > Weather**. Each provider has its own card there, with its key field inside. Then check **Settings > Location & language**: without a location there is nothing to forecast. Stocks and news need no key at all.
 2. For services that do use a key (Immich, Todoist, traffic, Google Maps), go to **Settings > API keys** and check the key is entered and correct
 3. For calendars, check **Settings > Calendar**. If you're using an iCal feed, confirm the URL loads in a browser (most providers allow anonymous fetch). If you're using Google or an iCloud account, confirm the sign-in has been completed. See [Calendars](/docs/calendars) for all the options.
 4. Check the browser console or server logs for error messages
 
-Some modules also have a refresh interval --- data won't update more frequently than the configured interval.
+Some modules also have a refresh interval, and their data won't update more often than that.
 
 ### Which weather provider should I choose?
 
@@ -192,7 +194,7 @@ Whichever provider you pick, set your location first at **Settings > Location & 
 
 Home Screens supports four photo sources for the **Photo Slideshow** and **Full-Screen Photo Viewer** modules:
 
-- **Local**: photos uploaded to `public/backgrounds/` or a subdirectory, managed through the editor or API
+- **Your library**: photos and videos you upload from the editor or the phone, or import from Google Photos or an iCloud link; manage them under **Settings > Pictures & videos**
 - **[Immich](https://immich.app)**: a self-hosted Google Photos alternative; browse and display photos from your Immich library with album, person (face recognition), and favorites filtering
 - **iCloud shared album**: paste a public shared album link from Apple Photos; no account or API key needed
 - **OneDrive**: photos straight from a folder and its subfolders in your personal OneDrive, after a one-time Microsoft sign-in (see [OneDrive photos](/docs/modules#one-drive-photos))
@@ -213,11 +215,11 @@ The cursor hides on its own after a few seconds without movement. **Hide cursor 
 
 Several built-in features help prevent burn-in:
 
-- **Screen rotation** --- cycle through multiple screens at a set interval so no single layout stays on screen indefinitely
-- **Sleep schedule** --- configure hours when the display is fully blanked (e.g., overnight) at **Settings > Screen > Sleep & dimming**
-- **Dim schedule** --- reduce brightness during certain hours without fully blanking the screen
-- **Screensaver** --- while the display is dimmed, before it fully sleeps, a minimal clock can drift slowly around the screen so nothing sits in one place. Once the display is fully asleep the screen is blank, which protects it even better
-- **Background rotation** --- automatically cycle background images from Unsplash, NASA, Immich, or an iCloud shared album to vary what's on screen
+- **Screen rotation**: cycle through multiple screens at a set interval so no single layout stays on screen indefinitely
+- **Sleep schedule**: configure hours when the display is fully blanked (e.g., overnight) at **Settings > Screen > Sleep & dimming**
+- **Dim schedule**: reduce brightness during certain hours without fully blanking the screen
+- **Screensaver**: while the display is dimmed, before it fully sleeps, a minimal clock can drift slowly around the screen so nothing sits in one place. Once the display is fully asleep the screen is blank, which protects it even better
+- **Background rotation**: automatically cycle background images from Unsplash, NASA, Immich, or an iCloud shared album to vary what's on screen
 
 ### Can I control the display remotely?
 

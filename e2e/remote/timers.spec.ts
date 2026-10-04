@@ -46,7 +46,8 @@ async function getRoutines(request: APIRequestContext): Promise<Routine[]> {
 }
 
 async function seedRoutines(request: APIRequestContext, routines: Routine[]): Promise<void> {
-  const res = await request.put('/api/timers/routines', { data: { routines } });
+  const { revision } = await (await request.get('/api/timers/routines')).json();
+  const res = await request.put('/api/timers/routines', { data: { routines, revision } });
   expect(res.ok()).toBe(true);
 }
 

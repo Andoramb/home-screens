@@ -1,18 +1,48 @@
 export { TeamLogo } from '../shared/TeamLogo';
 
+/**
+ * The favorite marker: a thin strip in the favorite team's own color along
+ * the left edge of a row, card or frame. Parents reserve the gutter on every
+ * row once any favorite exists (see FAVORITE_GUTTER) so text never shifts.
+ */
+export function FavoriteBar({ color, inset = '12%' }: { color: string | null; inset?: string }) {
+  if (!color) return null;
+  return (
+    <span
+      data-testid="favorite-bar"
+      className="absolute left-0 w-[3px] rounded-full"
+      style={{ top: inset, bottom: inset, backgroundColor: `#${color}` }}
+    />
+  );
+}
+
+/** AP poll rank in front of a college team's abbreviation, the way a broadcast prints it. */
+export function RankTag({ rank, className = 'text-current/45' }: { rank?: number; className?: string }) {
+  if (!rank) return null;
+  return (
+    <span className={`font-semibold tabular-nums shrink-0 ${className}`} style={{ fontSize: '0.7em' }} data-testid="ap-rank">
+      #{rank}
+    </span>
+  );
+}
+
+/** Left padding that makes room for FavoriteBar: the strip plus a small gap. */
+export const FAVORITE_GUTTER = '9px';
+
 /** Formats a scheduled game's kickoff for the display (null = no usable instant). */
 export type KickoffFn = (game: { startTime: string }) => string | null;
 
 export function isWinner(
-  game: { state: string; homeScore: number; awayScore: number },
+  game: { state: string; homeScore: number | null; awayScore: number | null },
   side: 'home' | 'away',
 ): boolean {
-  if (game.state !== 'post') return false;
+  if (game.state !== 'post' || game.homeScore === null || game.awayScore === null) return false;
   return side === 'home' ? game.homeScore > game.awayScore : game.awayScore > game.homeScore;
 }
 
-export function formatScore(game: { state: string }, score: number): string {
-  return game.state === 'pre' ? '–' : String(score);
+/** A dash before kickoff, and for a score ESPN left out, rather than a made-up 0. */
+export function formatScore(game: { state: string }, score: number | null): string {
+  return game.state === 'pre' || score === null ? '–' : String(score);
 }
 
 /**

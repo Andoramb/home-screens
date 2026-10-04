@@ -98,6 +98,26 @@ export function getActiveDimensions(
 }
 
 /**
+ * The canvas `displayId` would have with `patch` written onto its node: what
+ * a resize or rotation on the display's own settings page leaves the editor
+ * laying modules out against, by the same ownership rules as
+ * `getActiveDimensions`.
+ */
+export function getPatchedDisplayDimensions(
+  config: ScreenConfiguration,
+  displayId: string,
+  patch: Pick<DisplayNode, 'displayWidth' | 'displayHeight' | 'displayTransform'>,
+): { width: number; height: number } {
+  return getActiveDimensions(
+    {
+      ...config,
+      displays: config.displays?.map((d) => (d.id === displayId ? { ...d, ...patch } : d)),
+    },
+    displayId,
+  );
+}
+
+/**
  * The full-screen theme the selected display paints with where a module sets
  * none: the display's own override, else the shared default. Undefined when
  * neither is set, so each module keeps its own last resort (Midnight for
@@ -283,10 +303,10 @@ export function updateScreenModulesInConfig(
  * on. The legacy shared profile pool is deep-cloned — in multi-display mode
  * profiles are per-display.
  */
-export function buildBootstrapMain(config: ScreenConfiguration): DisplayNode {
+export function buildBootstrapMain(config: ScreenConfiguration, name = 'Main Display'): DisplayNode {
   return {
     id: MAIN_DISPLAY_ID,
-    name: 'Main Display',
+    name,
     screens: structuredClone(config.screens),
     profiles: structuredClone(config.profiles ?? []),
     // structuredClone preserves screen ids, so the copied rules keep targeting

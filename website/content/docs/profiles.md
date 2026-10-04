@@ -77,7 +77,7 @@ Drag profiles by the grip handle to reorder them. **Order matters** -- when mult
 
 ### Setting the active profile
 
-Use the **Active Profile** dropdown at the top of the Profiles section to manually select which profile is active. Choose "None (show all screens)" to disable manual profile selection.
+Use the **Showing right now** dropdown at the top of the Profiles tab to pick which profile is showing. Choose **Every screen** to show them all. A scheduled profile takes over when its time comes, whatever is picked here.
 
 ---
 
@@ -301,7 +301,7 @@ When **Enable display sleep** is on and **Dim after a few quiet minutes** is tog
 
 Turn **Dim after a few quiet minutes** off and the display never reacts to inactivity -- it stays at full brightness until a schedule below dims it or turns it off. That's the setup for "full brightness all day, off overnight."
 
-Any mouse, touch, or keyboard input immediately wakes the display to full brightness.
+Any mouse, touch, or keyboard input immediately brings a dimmed or sleeping display back to full brightness, or to the brightness someone set from the phone, a script, or a Display Control slider. That brightness stays until someone picks another (picking full clears it): tapping the wall to tick a chore never turns it back up, and dimming never makes it brighter.
 
 ### Screensaver
 
@@ -313,7 +313,7 @@ During the dimmed state, a screensaver can be shown:
 
 ### Scheduled dimming
 
-Toggle **Dim in the evening** to force the display to dim during a fixed window (e.g. 23:00 to 06:00). The display brightens automatically when the window ends. Supports overnight spans.
+Toggle **Dim in the evening** to force the display to dim during a fixed window (e.g. 23:00 to 06:00). The display brightens automatically when the window ends, back to full or to the brightness someone set. Supports overnight spans.
 
 ### Scheduled sleep
 
@@ -329,7 +329,7 @@ Sleep normally means a black layer over the page; the screen itself stays lit. T
 Sleep schedule (highest)  -->  forces display off; a wake pauses it for the wake-up hold
 Dim schedule              -->  forces dimmed while its window is active
 Idle-based dim/sleep      -->  inactivity timer; runs only while its toggle is on
-User activity (wake)      -->  any input restores full brightness
+User activity (wake)      -->  any input ends a dim or sleep, back to full or to a brightness someone set
 ```
 
 ---

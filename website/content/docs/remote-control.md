@@ -50,7 +50,7 @@ Six tabs along the bottom: **Control**, **Timers**, **Chores**, **Lists**, **Mea
 - **Arrows** move to the previous or next screen.
 - **Sleep Display** blacks the wall out (and cuts the screen's power, if that display has **Switch the screen's power off too** turned on); the same button wakes it again.
 - **Send Alert** puts a message on the wall: an info, warning or urgent banner, with a title and how long it stays. **Persistent** keeps it up until someone dismisses it.
-- **Brightness** dims the wall from full down to off.
+- **Brightness** dims the wall from full down to off. The wall keeps that level until someone picks another: after dimming, sleeping or an alert it comes back to it, and tapping the wall never turns it up.
 - **Slideshow** appears while the screen on show has a photo slideshow: go back a photo, pause on one, or skip ahead. A screen that rotates away and back starts playing again.
 - With more than one display, a **Send to** row at the top picks which display these controls talk to, or **All** of them at once. Screen navigation works one display at a time.
 
@@ -66,11 +66,20 @@ A **routine** is a saved list of timed steps, each with its own emoji and length
 - **Lists** holds the family's to-do lists: add, tick, reorder, give things a due day or a person, and make new lists. See [Lists](/docs/lists).
 - **Meals** holds the meal library, the weekly plan and the grocery list. See [Meals](/docs/meals).
 - **Photos** appears when a photo slideshow is on a screen, and opens on the folder the wall shows. Folders a wall shows come first and say which wall. Add photos and videos from the phone (big photos are made smaller before they are sent), from an iCloud link, or from Google Photos once the hub is signed in to Google from a computer. Tap a photo to see it full size, delete it, move it to another folder, or put it on the wall for a minute; **Select** picks several at once. Folders can be made, renamed and deleted here too. It is the same library **Settings > Pictures & videos** manages. A slideshow always keeps its last picture, and a photo a screen uses on its own (a background) stays put.
-  Videos recorded on an iPhone in the default High Efficiency format do not play on a Raspberry Pi, so the phone turns them away; choose **Most Compatible** under **Settings > Camera > Formats** on the iPhone to record videos the wall can play.
+  Videos recorded on an iPhone in the default High Efficiency format do not play on a Raspberry Pi, so the phone turns them away; on the iPhone, open the Settings app, then **Camera** and **Formats**, and choose **Most Compatible** to record videos the wall can play.
 
 ### The gear
 
-The gear in the top corner opens a sheet with the Pi's name, uptime, memory and storage; **Backup All Data** and **Restore Backup**; a light, dark or system theme for the remote (separate from the editor's); and **Restart Home Screens** and **Reboot Device**, each of which asks for a second tap within three seconds. After an update that needs the Pi restarted to finish, **Restart to finish the update** sits above those two, and its **Restart now** asks the same question as **Reboot Device**. Everything on this sheet needs you signed in once a password is set.
+The gear in the top corner opens a sheet with:
+
+- the Pi's name, uptime, memory and storage
+- **Family**, the same family list as Settings > Family in the editor
+- **Your icons**, the pictures your family added as icons, to add, rename or remove
+- **Backup All Data** (with an **Include your icons** switch) and **Restore Backup**
+- a light, dark or system theme for the remote, separate from the editor's
+- **Restart Home Screens** and **Reboot Device**, each of which asks for a second tap within three seconds
+
+After an update that needs the Pi restarted to finish, **Restart to finish the update** sits above those two, and its **Restart now** asks the same question as **Reboot Device**. Everything on this sheet needs you signed in once a password is set.
 
 Two banners can appear above the Control tab: a reminder when you have not backed up in a while (the interval is under Settings > Backups & data in the editor), and a note when a new version is out (switched on under Settings > System & updates).
 
@@ -109,11 +118,11 @@ For a bookmark or a home-automation button that wakes the wall, add the display 
 http://home-screens.local:3000/api/display/wake?token=TOKEN
 ```
 
-The token works on `/api/display/` addresses only. The full list of one-word commands is under [Display Control](/docs/api#display-control) in the API reference, and the [Voice Control](/docs/voice-control) guide drives all of them from Home Assistant.
+With more than one display, that wakes the main one; add `&display=kitchen` (the display's ID, shown under **Settings > Per display > All displays**) to wake another, or `&display=all` for every one. The token works on `/api/display/` addresses only. The full list of one-word commands is under [Display Control](/docs/api#display-control) in the API reference, and the [Voice Control](/docs/voice-control) guide drives all of them from Home Assistant.
 
 ### Profiles from the phone
 
-If you have [profiles](/docs/profiles), they appear as pills under the brightness slider. Tap one to switch the wall to that profile's screens; tap it again to go back to showing everything. With more than one display, the pills follow the display picked under **Send to**.
+If you have [profiles](/docs/profiles), they appear as pills under the brightness slider. Tap one to switch the wall to that profile's screens, or tap **All screens** to go back to showing everything. When a scheduled profile is on, its pill is the one ticked and the phone says it is on a schedule; a pill you tap then takes over when the schedule ends. With more than one display, the pills follow the display picked under **Send to**.
 
 ## Next steps
 

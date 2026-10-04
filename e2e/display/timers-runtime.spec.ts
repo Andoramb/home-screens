@@ -80,7 +80,8 @@ const HOLD_ROUTINE = {
 };
 
 async function startHoldRoutine(request: APIRequestContext): Promise<void> {
-  const put = await request.put('/api/timers/routines', { data: HOLD_ROUTINE });
+  const { revision } = await (await request.get('/api/timers/routines')).json();
+  const put = await request.put('/api/timers/routines', { data: { ...HOLD_ROUTINE, revision } });
   expect(put.ok()).toBe(true);
   const res = await request.post('/api/timers/session', {
     data: { action: 'start', kind: 'routine', routineId: 'hold-r', targets: 'all', view: 'ring', sound: false },

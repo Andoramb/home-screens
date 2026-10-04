@@ -10,7 +10,7 @@ vi.mock('@/lib/auth', () => ({
   isAuthEnabled: vi.fn().mockResolvedValue(false),
 }));
 
-import { PUT as putRoutines } from '@/app/api/timers/routines/route';
+import { GET as getRoutines, PUT as putRoutines } from '@/app/api/timers/routines/route';
 import { GET as getSession, POST as postSession } from '@/app/api/timers/session/route';
 import type { Routine } from '@/types/timers';
 
@@ -52,7 +52,8 @@ function req(body?: unknown): NextRequest {
 }
 
 async function saveRoutines(routines: Routine[]) {
-  const res = await putRoutines(req({ routines }));
+  const { revision } = await (await getRoutines(req())).json();
+  const res = await putRoutines(req({ routines, revision }));
   expect(res.status).toBe(200);
 }
 

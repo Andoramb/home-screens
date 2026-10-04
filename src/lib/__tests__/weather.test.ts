@@ -1642,7 +1642,7 @@ describe('PirateWeatherProvider — edge cases', () => {
     const minutely = await provider.getMinutely!(40.7, -74.0, 'imperial');
 
     expect(minutely[0].intensity).toBe(0);
-    expect(minutely[0].probability).toBe(0);
+    expect(minutely[0].probability).toBeUndefined();
     expect(minutely[0].type).toBeUndefined();
   });
 

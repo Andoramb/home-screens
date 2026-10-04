@@ -372,5 +372,11 @@
     "title": "Ingen tidszone endnu.",
     "body": "Dine skærme bruger hubbens ur ({zone}), så tiderne kan være forkerte.",
     "action": "Vælg tidszone"
+  },
+  "routeError": {
+    "title": "Siden kan ikke indlæses lige nu",
+    "body": "Home Screens har problemer med at læse sine gemte data. Den prøver selv igen om lidt.",
+    "help": "Hvis det ikke går væk, kan en voksen åbne Home Screens på en computer og lægge en sikkerhedskopi tilbage under Indstillinger.",
+    "retry": "Prøv igen"
   }
 }

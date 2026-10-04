@@ -481,7 +481,7 @@ export default function DisplaysIndexPage() {
   const handleAdd = async (display: DisplayNode) => {
     setAdding(false);
     setAdoptingId(null);
-    await mutateAndSave(() => addDisplay(display));
+    await mutateAndSave(() => addDisplay(display, t('settings.displaysIndex.mainDisplayName')));
   };
 
   /**
@@ -535,7 +535,7 @@ export default function DisplaysIndexPage() {
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2 whitespace-nowrap">
           <button
             onClick={refresh}
             disabled={refreshing}

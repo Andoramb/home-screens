@@ -16,7 +16,7 @@ export function createDisplaySlice(
   mutateConfig: MutateConfig,
 ): DisplayActions {
   return {
-    addDisplay: (display) => {
+    addDisplay: (display, mainName) => {
       // Multi-display bootstrap has two paths, both handled below via
       // `buildBootstrapMain` / `buildNewDisplay`:
       //   1. First display added is non-main → auto-seed a sibling `main` from
@@ -48,7 +48,7 @@ export function createDisplaySlice(
         const nextDisplays = [...existingDisplays];
 
         if (seedSiblingMain) {
-          nextDisplays.push(buildBootstrapMain(config));
+          nextDisplays.push(buildBootstrapMain(config, mainName));
         }
 
         nextDisplays.push(buildNewDisplay(display, config, mainInheritsGlobals));

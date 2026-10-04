@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
-import { listLibraryFolder, safeLibraryPath, writeLibraryFile } from '@/lib/library-files';
+import { libraryMediaKind, listLibraryFolder, safeLibraryPath, writeLibraryFile } from '@/lib/library-files';
 import {
   IMAGE_FILE_RE,
   IMAGE_MIME_TYPES,
@@ -98,25 +98,26 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     }
   }
   const entries = await fs.readdir(dir, { withFileTypes: true });
-  // Top-level `rotation-` downloads belong to the background rotation, not to
-  // a slideshow or a picture picker (Settings and the phone leave them out too).
+  // Only what the library lists (`libraryMediaKind`): top-level `rotation-`
+  // downloads belong to the background rotation, not to a slideshow or a
+  // picture picker, and the folder counts leave them out the same way.
   const files = entries
-    .filter((e) => e.isFile() && !isRotationFile(directory ? `${directory}/${e.name}` : e.name))
-    .map((e) => e.name);
+    .filter((e) => e.isFile())
+    .map((e) => ({ name: e.name, kind: libraryMediaKind(directory ? `${directory}/${e.name}` : e.name) }));
 
   // No media param → legacy string[] of image URLs, exactly as before videos existed.
   if (!media) {
     const paths = files
-      .filter((name) => IMAGE_FILE_RE.test(name))
-      .map((name) => serveUrl(name, directory || undefined));
+      .filter((f) => f.kind === 'image')
+      .map((f) => serveUrl(f.name, directory || undefined));
     return NextResponse.json(paths, { headers: listHeaders });
   }
 
   const items: MediaListItem[] = [];
-  for (const name of files) {
-    if (IMAGE_FILE_RE.test(name) && media !== 'videos') {
+  for (const { name, kind } of files) {
+    if (kind === 'image' && media !== 'videos') {
       items.push({ url: serveUrl(name, directory || undefined), type: 'image' });
-    } else if (VIDEO_FILE_RE.test(name) && media !== 'photos') {
+    } else if (kind === 'video' && media !== 'photos') {
       // Bind the token to the same `file` value the serve route reads back.
       const filePath = directory ? `${directory}/${name}` : name;
       const token = await mintMediaToken(filePath);
@@ -273,7 +274,10 @@ export const POST = withAuth(async (request: NextRequest) => {
   const uploadedPaths: string[] = [];
 
   for (const file of files) {
-    const safeName = sanitizeName(file.name);
+    // A name already in the folder keeps its file: screens and slideshows point
+    // at it, and a different picture with the same name (two cameras both make
+    // IMG_0001.jpg) must not replace it. The new one gets the next free name.
+    const safeName = await freeName(dir, sanitizeName(file.name));
     const filePath = path.join(dir, safeName);
     // Stream to disk in chunks. formData() above already holds the one
     // unavoidable in-memory copy; buffering again via arrayBuffer() would
@@ -290,6 +294,20 @@ export const POST = withAuth(async (request: NextRequest) => {
 
   return NextResponse.json({ paths: uploadedPaths }, { status: 201 });
 }, 'Failed to upload background');
+
+/** `name`, or `name-2`, `name-3`... before the extension, whichever is not taken in `dir`. */
+async function freeName(dir: string, name: string): Promise<string> {
+  const ext = path.extname(name);
+  const stem = name.slice(0, name.length - ext.length);
+  for (let n = 1; ; n++) {
+    const candidate = n === 1 ? name : `${stem}-${n}${ext}`;
+    try {
+      await fs.access(path.join(dir, candidate));
+    } catch {
+      return candidate;
+    }
+  }
+}
 
 /**
  * The library-relative path a DELETE body names, in the exact spelling the

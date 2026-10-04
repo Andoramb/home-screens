@@ -58,7 +58,8 @@
     "sleepDisplay": "Slumr skærm",
     "sendAlert": "Send advarsel",
     "waitingFor": "Venter på {name}…",
-    "waitingForAll": "Venter på skærmene…"
+    "waitingForAll": "Venter på skærmene…",
+    "waitingForUnnamed": "Venter på skærmen…"
   },
   "brightnessCard": {
     "label": "Lysstyrke",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profiler",
-    "noProfile": "Alle sider"
+    "noProfile": "Alle sider",
+    "scheduledNote": "{profile} kører efter planen lige nu. Det, du vælger her, starter, når den er slut."
   },
   "displayPicker": {
     "targeting": "Send til",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Gør den, du har snuppet, færdig først, eller sæt flueben her, hvis den er klaret.",
       "youDidItOn": "Du klarede den i {day}s",
+      "youDidItOnDate": "Du klarede den d. {day}",
       "didItOn": "{name} klarede den i {day}s",
+      "didItOnDate": "{name} klarede den d. {day}",
       "limitLineMany": "Gør en af dem, du har snuppet, færdig først, eller sæt flueben her, hvis den er klaret.",
       "yours": "Din",
       "didItToday": "{name} klarede den i dag",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "Sæt den tilbage?",
       "description": "»{chore}« bliver ledig igen. Ingen mister de billetter, de allerede har fået for den."
-    }
+    },
+    "loadError": "Dine pligter kunne ikke hentes. Tjek, at hubben er tændt, og prøv igen.",
+    "retry": "Prøv igen"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Spring til i dag",
@@ -276,6 +282,11 @@
         "title": "Slet \"{name}\"?",
         "description": "Dette vil også fjerne måltidet fra alle planlagte tidspunkter.",
         "confirmLabel": "Slet måltid"
+      },
+      "suggestWeek": {
+        "title": "Erstat denne uges måltider?",
+        "description": "Foreslå vælger nye måltider til hele ugen. De måltider, der allerede er planlagt i denne uge, bliver erstattet.",
+        "confirmLabel": "Erstat måltider"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Trøstemad",
         "kid-friendly": "Børnevenlig"
       }
-    }
+    },
+    "loadError": "Dine måltider kunne ikke hentes. Tjek, at hubben er tændt, og prøv igen.",
+    "retry": "Prøv igen",
+    "saveFailed": "Kunne ikke gemme. Prøv igen."
   },
   "mealForm": {
     "titleNew": "Tilføj måltid",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Ryd beskeder på {name}",
     "clearOnAll": "Ryd beskeder på alle skærme",
     "clearingButton": "Rydder…",
-    "showingNow": "({count} vises nu)"
+    "showingNow": "({count} vises nu)",
+    "clearOnUnnamed": "Ryd beskeder på skærmen"
   },
   "rewardsView": {
     "changedElsewhere": "En anden har ændret belønningerne. Din seneste ændring blev ikke gemt. Prøv igen.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Indløs for {cost} billetter",
       "emptyKid": "Ingen belønninger endnu. En voksen kan tilføje nogle fra sin telefon.",
       "balanceLabelNamed": "billetter til {name}",
-      "switchHint": "Er du ikke {name}? Vælg dit navn under I dag."
+      "switchHint": "Er du ikke {name}? Vælg dit navn under I dag.",
+      "refused": "Det gik ikke igennem. Der er ikke længere billetter nok til det.",
+      "failed": "Det gik ikke igennem. Prøv igen."
     },
     "manage": {
       "heading": "Belønninger",
@@ -843,7 +860,10 @@
     "newRoutine": "Ny rutine",
     "editRoutine": "Rediger rutine",
     "emptyHint": "En rutine er en timer med trin, som en morgenrutine: tag tøj på, børst tænder, red din seng. Lav en og start den på skærmen.",
-    "routineMeta": "{steps} trin · {minutes} min.",
+    "routineMeta": {
+      "one": "{steps} trin · {minutes} min.",
+      "other": "{steps} trin · {minutes} min."
+    },
     "stepCount": "Trin {current} af {total}",
     "pause": "Pause",
     "resume": "Fortsæt",
@@ -893,7 +913,15 @@
     "showingOn": "Vises på {names}",
     "showingOnDisplay": "Vises på skærmen",
     "waitingForDisplay": "Venter på, at en skærm tager den…",
-    "notShowing": "Ingen skærm viser den endnu. Tjek, at en skærm er tændt."
+    "notShowing": "Ingen skærm viser den endnu. Tjek, at en skærm er tændt.",
+    "changedElsewhere": "En anden har ændret rutinerne. Din seneste ændring blev ikke gemt. Prøv igen.",
+    "whyNoSave": {
+      "name": "Giv rutinen et navn for at gemme.",
+      "stepName": "Giv hvert trin et navn for at gemme.",
+      "stepLength": "Hvert trin skal vare mindst {seconds} sekunder."
+    },
+    "quickTooShort": "En timer skal vare mindst {seconds} sekunder.",
+    "stepLimit": "En rutine kan have op til {count} trin."
   },
   "lists": {
     "title": "Lister",
@@ -995,8 +1023,13 @@
     "noConfirm": "{name} svarede ikke. Den er måske slukket eller offline.",
     "profileSwitched": "{name} skiftede til {profile}",
     "profileCleared": "{name} viser alle sider",
+    "profileAfterSchedule": "{name} skifter til {profile}, når {scheduled} er slut",
+    "profileClearedAfterSchedule": "{name} viser alle sider, når {scheduled} er slut",
+    "profileKeptAfterSchedule": "{name} bliver ved med at vise {profile}, når planen er slut",
     "profileFailed": "Kunne ikke skifte profil på {name}",
-    "hubBack": "Home Screens er tilbage"
+    "hubBack": "Home Screens er tilbage",
+    "alertSentUnnamed": "Besked sendt til skærmen",
+    "alertsClearedUnnamed": "Beskeder ryddet på skærmen"
   },
   "tabNotSetUp": {
     "chores": {

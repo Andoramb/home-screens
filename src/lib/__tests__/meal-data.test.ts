@@ -25,7 +25,7 @@ describe('readMealData', () => {
     const data = await readMealData();
     expect(data.savedMeals).toEqual([]);
     expect(data.plan).toEqual([]);
-    expect(data.groceryChecked).toEqual([]);
+    expect(data.groceryChecked).toEqual({});
     expect(data.settings.enabledSlots).toEqual(['breakfast', 'lunch', 'dinner']);
     expect(data.settings.weekStartDay).toBe('sunday');
   });
@@ -36,7 +36,7 @@ describe('readMealData', () => {
     const saved = {
       savedMeals: [{ id: 'm1', name: 'Pasta', ingredients: [], tags: [], prepTime: 30 }],
       plan: [{ date: '2026-04-04', slot: 'dinner', mealId: 'm1' }],
-      groceryChecked: ['tomatoes'],
+      groceryChecked: { '2026-03-29': ['tomatoes'] },
     };
     await fs.writeFile(path.join(mealsDir, 'meals.json'), JSON.stringify(saved));
 
@@ -45,7 +45,24 @@ describe('readMealData', () => {
     expect(data.savedMeals[0].name).toBe('Pasta');
     expect(data.plan).toHaveLength(1);
     expect(data.plan[0].date).toBe('2026-04-04');
-    expect(data.groceryChecked).toEqual(['tomatoes']);
+    expect(data.groceryChecked).toEqual({ '2026-03-29': ['tomatoes'] });
+  });
+
+  it('reads the single all-weeks tick list older builds kept as nothing ticked', async () => {
+    // That list ticked an item on every week's grocery list at once, and it
+    // cannot be split back into the weeks the ticks were made on.
+    const mealsDir = path.join(tmpDir, 'data');
+    await fs.mkdir(mealsDir, { recursive: true });
+    await fs.writeFile(path.join(mealsDir, 'meals.json'), JSON.stringify({
+      savedMeals: [],
+      plan: [{ date: '2026-04-04', slot: 'dinner', mealId: 'm1' }],
+      groceryChecked: ['tortillas', 'lettuce'],
+      settings: { weekStartDay: 'sunday' },
+    }));
+
+    const data = await readMealData();
+    expect(data.groceryChecked).toEqual({});
+    expect(data.plan).toHaveLength(1);
   });
 
   it('normalizes missing fields to empty arrays (backward compat)', async () => {
@@ -58,7 +75,7 @@ describe('readMealData', () => {
     const data = await readMealData();
     expect(data.savedMeals).toHaveLength(1);
     expect(data.plan).toEqual([]);
-    expect(data.groceryChecked).toEqual([]);
+    expect(data.groceryChecked).toEqual({});
   });
 
   it('handles non-array fields gracefully', async () => {
@@ -73,7 +90,7 @@ describe('readMealData', () => {
     const data = await readMealData();
     expect(data.savedMeals).toEqual([]);
     expect(data.plan).toEqual([]);
-    expect(data.groceryChecked).toEqual([]);
+    expect(data.groceryChecked).toEqual({});
   });
 
   it('throws on non-ENOENT errors (e.g., invalid JSON)', async () => {
@@ -129,7 +146,7 @@ describe('writeMealData', () => {
     const data: MealData = {
       savedMeals: [{ id: 'm1', name: 'Tacos', ingredients: [{ name: 'beef' }, { name: 'shells' }], tags: ['mexican'], prepTime: 20 }],
       plan: [{ date: '2026-04-01', slot: 'dinner', mealId: 'm1', time: '18:30' }],
-      groceryChecked: ['beef'],
+      groceryChecked: { '2026-03-29': ['beef'] },
       settings: { enabledSlots: ['breakfast', 'lunch', 'dinner'], weekStartDay: 'monday', defaultSlotTimes: { dinner: '18:00' }, timeFormat: '12h' },
     };
 
@@ -139,7 +156,7 @@ describe('writeMealData', () => {
     expect(result.plan[0].mealId).toBe('m1');
     expect(result.plan[0].date).toBe('2026-04-01');
     expect(result.plan[0].time).toBe('18:30');
-    expect(result.groceryChecked).toEqual(['beef']);
+    expect(result.groceryChecked).toEqual({ '2026-03-29': ['beef'] });
     expect(result.settings.weekStartDay).toBe('monday');
     expect(result.settings.defaultSlotTimes.dinner).toBe('18:00');
   });
@@ -148,7 +165,7 @@ describe('writeMealData', () => {
     await writeMealData({
       savedMeals: [],
       plan: [],
-      groceryChecked: [],
+      groceryChecked: {},
       settings: { enabledSlots: ['breakfast', 'lunch', 'dinner'], weekStartDay: 'sunday', defaultSlotTimes: {}, timeFormat: '12h' },
     });
     const stat = await fs.stat(path.join(tmpDir, 'data'));
@@ -593,7 +610,7 @@ describe('legacy timeFormat strip migration', () => {
     await updateMealData(() => ({
       savedMeals: [],
       plan: [],
-      groceryChecked: [],
+      groceryChecked: {},
       settings: {
         enabledSlots: ['breakfast', 'lunch', 'dinner'],
         weekStartDay: 'sunday',

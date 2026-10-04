@@ -12,12 +12,14 @@ interface QuickActionsProps {
   onAlertOpen: () => void;
   /** Name for the waiting label; null in All mode. */
   targetName: string | null;
+  /** The one display of a household that never named it. */
+  targetUnnamed?: boolean;
 }
 
-export default function QuickActions({ isAsleep, sleepPending, disabled, onSleepWake, onAlertOpen, targetName }: QuickActionsProps) {
+export default function QuickActions({ isAsleep, sleepPending, disabled, onSleepWake, onAlertOpen, targetName, targetUnnamed = false }: QuickActionsProps) {
   const t = useTranslate('remote');
   const sleepLabel = sleepPending
-    ? (targetName ? t('quickActions.waitingFor', { name: targetName }) : t('quickActions.waitingForAll'))
+    ? (targetUnnamed ? t('quickActions.waitingForUnnamed') : targetName ? t('quickActions.waitingFor', { name: targetName }) : t('quickActions.waitingForAll'))
     : isAsleep
       ? t('quickActions.wakeDisplay')
       : t('quickActions.sleepDisplay');

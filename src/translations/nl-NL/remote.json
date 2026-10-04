@@ -58,7 +58,8 @@
     "sleepDisplay": "Display slapen",
     "sendAlert": "Melding sturen",
     "waitingFor": "Wachten op {name}…",
-    "waitingForAll": "Wachten op de schermen…"
+    "waitingForAll": "Wachten op de schermen…",
+    "waitingForUnnamed": "Wachten op het scherm…"
   },
   "brightnessCard": {
     "label": "Helderheid",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profielen",
-    "noProfile": "Alle pagina's"
+    "noProfile": "Alle pagina's",
+    "scheduledNote": "{profile} staat nu volgens schema aan. Wat je hier kiest, begint zodra dat voorbij is."
   },
   "displayPicker": {
     "targeting": "Sturen naar",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Maak eerst je gepakte klusje af, of vink dit af als je het al gedaan hebt.",
       "youDidItOn": "Je hebt het {day} gedaan",
+      "youDidItOnDate": "Je hebt het op {day} gedaan",
       "didItOn": "{name} heeft het {day} gedaan",
+      "didItOnDate": "{name} heeft het op {day} gedaan",
       "limitLineMany": "Maak eerst een van je gepakte klusjes af, of vink dit af als je het al gedaan hebt.",
       "yours": "Van jou",
       "didItToday": "{name} heeft het vandaag gedaan",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "Weer openzetten?",
       "description": "Dan kan “{chore}” weer gedaan worden. Wie er al tickets voor kreeg, mag die houden."
-    }
+    },
+    "loadError": "Je klusjes konden niet worden geladen. Kijk of de hub aanstaat en probeer het opnieuw.",
+    "retry": "Opnieuw proberen"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Naar vandaag",
@@ -276,6 +282,11 @@
         "title": "\"{name}\" verwijderen?",
         "description": "Hiermee wordt de maaltijd ook uit alle geplande momenten verwijderd.",
         "confirmLabel": "Maaltijd verwijderen"
+      },
+      "suggestWeek": {
+        "title": "Maaltijden van deze week vervangen?",
+        "description": "Voorstellen kiest nieuwe maaltijden voor de hele week. De maaltijden die al voor deze week gepland zijn, worden vervangen.",
+        "confirmLabel": "Maaltijden vervangen"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Comfort",
         "kid-friendly": "Kindvriendelijk"
       }
-    }
+    },
+    "loadError": "Je maaltijden konden niet worden geladen. Kijk of de hub aanstaat en probeer het opnieuw.",
+    "retry": "Opnieuw proberen",
+    "saveFailed": "Opslaan mislukt. Probeer het opnieuw."
   },
   "mealForm": {
     "titleNew": "Maaltijd toevoegen",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Meldingen wissen op {name}",
     "clearOnAll": "Meldingen wissen op alle schermen",
     "clearingButton": "Wissen…",
-    "showingNow": "({count} nu in beeld)"
+    "showingNow": "({count} nu in beeld)",
+    "clearOnUnnamed": "Meldingen wissen op het scherm"
   },
   "rewardsView": {
     "changedElsewhere": "Iemand anders heeft de beloningen gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Inwisselen voor {cost} tickets",
       "emptyKid": "Nog geen beloningen. Een volwassene kan ze toevoegen via de telefoon.",
       "balanceLabelNamed": "tickets van {name}",
-      "switchHint": "Ben jij niet {name}? Kies je naam op het tabblad Vandaag."
+      "switchHint": "Ben jij niet {name}? Kies je naam op het tabblad Vandaag.",
+      "refused": "Dat is niet gelukt. Er zijn niet meer genoeg tickets voor.",
+      "failed": "Dat is niet gelukt. Probeer het opnieuw."
     },
     "manage": {
       "heading": "Beloningen",
@@ -843,7 +860,10 @@
     "newRoutine": "Nieuwe routine",
     "editRoutine": "Routine bewerken",
     "emptyHint": "Een routine is een timer met stappen, zoals een ochtendroutine: aankleden, tanden poetsen, bed opmaken. Maak er een en start hem op het scherm.",
-    "routineMeta": "{steps} stappen · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} stap · {minutes} min",
+      "other": "{steps} stappen · {minutes} min"
+    },
     "stepCount": "Stap {current} van {total}",
     "pause": "Pauze",
     "resume": "Verder",
@@ -893,7 +913,15 @@
     "showingOn": "Te zien op {names}",
     "showingOnDisplay": "Te zien op het scherm",
     "waitingForDisplay": "Wachten tot een scherm hem oppakt…",
-    "notShowing": "Nog geen scherm laat hem zien. Controleer of er een scherm aanstaat."
+    "notShowing": "Nog geen scherm laat hem zien. Controleer of er een scherm aanstaat.",
+    "changedElsewhere": "Iemand anders heeft de routines gewijzigd. Je laatste wijziging is niet opgeslagen. Probeer het opnieuw.",
+    "whyNoSave": {
+      "name": "Geef de routine een naam om op te slaan.",
+      "stepName": "Geef elke stap een naam om op te slaan.",
+      "stepLength": "Elke stap moet minstens {seconds} seconden duren."
+    },
+    "quickTooShort": "Een timer moet minstens {seconds} seconden duren.",
+    "stepLimit": "Een routine kan maximaal {count} stappen hebben."
   },
   "lists": {
     "title": "Lijsten",
@@ -995,8 +1023,13 @@
     "noConfirm": "{name} reageerde niet. Misschien staat het uit of is het offline.",
     "profileSwitched": "{name} staat nu op {profile}",
     "profileCleared": "{name} toont alle pagina's",
+    "profileAfterSchedule": "{name} wisselt naar {profile} zodra {scheduled} voorbij is",
+    "profileClearedAfterSchedule": "{name} toont alle pagina's zodra {scheduled} voorbij is",
+    "profileKeptAfterSchedule": "{name} blijft {profile} tonen zodra het schema voorbij is",
     "profileFailed": "Het profiel op {name} kon niet worden gewisseld",
-    "hubBack": "Home Screens is er weer"
+    "hubBack": "Home Screens is er weer",
+    "alertSentUnnamed": "Melding verstuurd naar het scherm",
+    "alertsClearedUnnamed": "Meldingen gewist op het scherm"
   },
   "tabNotSetUp": {
     "chores": {

@@ -24,6 +24,8 @@ export default function MealsTab() {
     settings,
     globalTimeFormat,
     loading,
+    loadError,
+    retryLoad,
     saving,
     saveError,
     setSaveError,
@@ -71,6 +73,35 @@ export default function MealsTab() {
     return (
       <div style={{ padding: '48px 0', textAlign: 'center' }}>
         <div style={{ fontSize: 14, color: 'var(--hs-text-faint)' }}>{t('mealsTab.loading')}</div>
+      </div>
+    );
+  }
+
+  // Never an empty week: that reads as "nothing planned", and a meal saved
+  // from here would be built on nothing.
+  if (loadError) {
+    return (
+      <div style={{ padding: '48px 16px', textAlign: 'center' }} data-testid="meals-load-error">
+        <p role="alert" style={{ fontSize: 14, color: 'var(--hs-text-faint)', margin: 0 }}>{t('mealsTab.loadError')}</p>
+        <button
+          type="button"
+          onClick={() => void retryLoad()}
+          className="press-btn"
+          style={{
+            marginTop: 16,
+            minHeight: 44,
+            padding: '0 18px',
+            borderRadius: 12,
+            border: 'none',
+            background: 'var(--hs-hover)',
+            color: 'var(--hs-text-primary)',
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
+        >
+          {t('mealsTab.retry')}
+        </button>
       </div>
     );
   }

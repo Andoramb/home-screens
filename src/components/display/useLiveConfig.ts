@@ -6,7 +6,7 @@ import type { InstalledPlugin } from '@/types/plugins';
 import { displayCache } from '@/lib/display-cache';
 import { displayFetch } from '@/lib/display-fetch';
 import { filterConfigForDisplay, LEGACY_DISPLAY_ID } from '@/lib/display-filter';
-import { dataFingerprint } from '@/lib/config-data-fingerprint';
+import { dataFingerprintOfParts } from '@/lib/config-data-fingerprint';
 import { stableStringify } from '@/lib/stable-stringify';
 import { usePluginStore } from '@/stores/plugin-store';
 import { subscribeRevisions, type DisplayRevisions } from '@/lib/display-heartbeat';
@@ -80,7 +80,17 @@ export function useLiveConfig(
   const [displays, setDisplays] = useState<DisplayDescriptor[]>(initialDisplays ?? []);
   const configJsonRef = useRef<string>('');
   const hubTimezoneRef = useRef(hubTimezone);
+  // Starts as the identity of what the page rendered, so the first edit a wall
+  // sees clears its cached data only when that edit can change what is fetched.
   const dataFingerprintRef = useRef<string>('');
+  if (dataFingerprintRef.current === '') {
+    dataFingerprintRef.current = dataFingerprintOfParts(
+      initialScreens,
+      withHouseholdTimezone(initialSettings, hubTimezone),
+      initialProfiles,
+      initialRules,
+    );
+  }
   const buildIdRef = useRef<string>('');
   const pluginHashRef = useRef<string>('');
   const settingsFpsRef = useRef<SettingsFingerprints | null>(null);
@@ -120,6 +130,22 @@ export function useLiveConfig(
       return false;
     }
 
+    // Scoped invalidation: only clear the client cache when the change can
+    // affect fetched data. Moves, resizes, restyles, schedule and visibility
+    // edits keep every module's cached data warm, and editing one condition
+    // must not refetch the whole display.
+    function clearCacheIfDataChanged(
+      nextScreens: Screen[],
+      nextSettings: unknown,
+      nextProfiles: unknown,
+      nextRules: unknown,
+    ) {
+      const fingerprint = dataFingerprintOfParts(nextScreens, nextSettings, nextProfiles, nextRules);
+      if (fingerprint === dataFingerprintRef.current) return;
+      dataFingerprintRef.current = fingerprint;
+      displayCache.clear();
+    }
+
     /**
      * Fetch and apply the config.
      * Returns true when a self-heal navigation is under way (display deleted).
@@ -150,23 +176,13 @@ export function useLiveConfig(
           // inherits the same named zone.
           const zoneSaved = !!cfg.settings?.timezone;
           if (cfg.settings) cfg.settings = withHouseholdTimezone(cfg.settings, hubZone);
-          // Scoped invalidation: only clear the client cache when the change
-          // can affect fetched data. Moves, resizes, restyles, schedule and
-          // visibility edits keep every module's cached data warm — editing
-          // one condition must not refetch the whole display.
-          //
-          // The dedupe ref advances only after the throwable parse +
-          // fingerprint succeed: advancing first would let a thrown error
-          // (swallowed by the outer catch) mark a config as "seen" without
-          // ever applying it, freezing the display on the previous config
-          // until the next byte-distinct change.
-          const fingerprint = cfg.screens && cfg.settings ? dataFingerprint(cfg) : null;
+          // The dedupe ref advances only after the throwable parse succeeds:
+          // advancing first would let a thrown error (swallowed by the outer
+          // catch) mark a config as "seen" without ever applying it, freezing
+          // the display on the previous config until the next byte-distinct
+          // change.
           configJsonRef.current = seen;
           hubTimezoneRef.current = hubZone;
-          if (fingerprint !== null && fingerprint !== dataFingerprintRef.current) {
-            dataFingerprintRef.current = fingerprint;
-            displayCache.clear();
-          }
           if (cfg.screens && cfg.settings) {
             // Update the displays registry for any module that needs it (e.g. display-control)
             setDisplays(
@@ -177,6 +193,7 @@ export function useLiveConfig(
               // server's per-display page uses, so the two cannot drift.
               const filtered = filterConfigForDisplay(cfg, displayId);
               if (filtered) {
+                clearCacheIfDataChanged(filtered.screens, withHouseholdTimezone(filtered.settings, hubZone), filtered.profiles, filtered.rules);
                 setScreens(filtered.screens);
                 setSettings(withHouseholdTimezone(filtered.settings, hubZone));
                 setTimezoneSaved(zoneSaved);
@@ -196,6 +213,7 @@ export function useLiveConfig(
                 return true;
               }
             } else {
+              clearCacheIfDataChanged(cfg.screens, withHouseholdTimezone(cfg.settings, hubZone), cfg.profiles, cfg.rules);
               setScreens(cfg.screens);
               setSettings(withHouseholdTimezone(cfg.settings, hubZone));
               setTimezoneSaved(zoneSaved);

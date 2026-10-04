@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { createJsonStore } from './json-store';
 import { commitDataTransaction, getDataRoot, readTransactionFile, withDataTransaction, type TransactionChange } from './data-transaction';
 import { ICON_REFERENCE_STORES, replaceIconReferences } from './custom-icon-removal';
+import { configRevision, readConfig } from './config';
 import {
   ANIMATED_FALLBACK_EDGES,
   CUSTOM_ICON_HASH_RE,
@@ -386,13 +387,25 @@ export async function cropCustomIconToSquare(id: string): Promise<CustomIcon> {
   });
 }
 
+/** What a removal did to the screen config, for an editor holding a copy. */
+export interface CustomIconConfigRewrite {
+  /** Revision of the config the rewrite was applied to. */
+  previousRevision: string;
+  /** Revision it left. */
+  revision: string;
+}
+
 /**
  * Remove one icon, and put everything that used it back to its kind's
  * standard picture (see `custom-icon-removal.ts`) in the same transaction, so
- * a crash lands the removal and the rewrites together or neither.
+ * a crash lands the removal and the rewrites together or neither. `config`
+ * is set when a screen used it: the config's revision before and after,
+ * both read inside the transaction so no other write lands between.
  */
-export async function deleteCustomIcon(id: string): Promise<{ configChanged: boolean }> {
+export async function deleteCustomIcon(id: string): Promise<{ config: CustomIconConfigRewrite | null }> {
   return withDataTransaction(async () => {
+    // Read the way the editor's GET reads it, so the two revisions compare.
+    const previousRevision = configRevision(await readConfig());
     const { change: indexChange } = await store.planUpdate((current) => {
       if (!current.icons.some((icon) => icon.id === id)) throw customIconError('not-found');
       return { icons: current.icons.filter((icon) => icon.id !== id) };
@@ -416,7 +429,8 @@ export async function deleteCustomIcon(id: string): Promise<{ configChanged: boo
     await commitDataTransaction({ kind: 'custom-icon-remove', changes });
     await sweepCustomIconFiles();
     // The editor holds its own copy of the config and must adopt this one.
-    return { configChanged: changes.some((change) => change.path === 'data/config.json') };
+    if (!changes.some((change) => change.path === 'data/config.json')) return { config: null };
+    return { config: { previousRevision, revision: configRevision(await readConfig()) } };
   });
 }
 

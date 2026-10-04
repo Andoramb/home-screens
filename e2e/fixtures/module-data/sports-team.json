@@ -1,0 +1,59 @@
+{
+  "cards": [
+    {
+      "key": "nfl:MIN",
+      "league": "NFL",
+      "abbr": "MIN",
+      "name": "Minnesota Vikings",
+      "shortName": "Vikings",
+      "logo": "",
+      "color": "4f2683",
+      "record": "3-0",
+      "standing": "1st in NFC North",
+      "featuredKind": "next",
+      "featured": {
+        "id": "402",
+        "league": "NFL",
+        "homeTeam": "Minnesota Vikings",
+        "awayTeam": "Miami Dolphins",
+        "homeTeamAbbr": "MIN",
+        "awayTeamAbbr": "MIA",
+        "homeTeamLogo": "",
+        "awayTeamLogo": "",
+        "homeTeamColor": "4f2683",
+        "awayTeamColor": "008e97",
+        "homeScore": 0,
+        "awayScore": 0,
+        "homeRecord": "3-0",
+        "awayRecord": "2-1",
+        "status": "Scheduled",
+        "detail": "",
+        "state": "pre",
+        "startTime": "2098-01-05T21:05:00Z",
+        "broadcast": "FOX",
+        "venue": "U.S. Bank Stadium"
+      },
+      "last": {
+        "id": "401",
+        "league": "NFL",
+        "homeTeam": "Tampa Bay Buccaneers",
+        "awayTeam": "Minnesota Vikings",
+        "homeTeamAbbr": "TB",
+        "awayTeamAbbr": "MIN",
+        "homeTeamLogo": "",
+        "awayTeamLogo": "",
+        "homeTeamColor": "d50a0a",
+        "awayTeamColor": "4f2683",
+        "homeScore": 16,
+        "awayScore": 23,
+        "homeRecord": "2-2",
+        "awayRecord": "3-0",
+        "status": "Final",
+        "detail": "Final",
+        "state": "post",
+        "startTime": "2097-12-29T18:00:00Z",
+        "broadcast": "CBS"
+      }
+    }
+  ]
+}

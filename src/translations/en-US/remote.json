@@ -58,7 +58,8 @@
     "sleepDisplay": "Sleep Display",
     "sendAlert": "Send Alert",
     "waitingFor": "Waiting for {name}…",
-    "waitingForAll": "Waiting for the displays…"
+    "waitingForAll": "Waiting for the displays…",
+    "waitingForUnnamed": "Waiting for the display…"
   },
   "brightnessCard": {
     "label": "Brightness",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profiles",
-    "noProfile": "All screens"
+    "noProfile": "All screens",
+    "scheduledNote": "{profile} is on a schedule right now. What you pick here starts when it ends."
   },
   "displayPicker": {
     "targeting": "Send to",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Finish your grab first, or tick this if it's done.",
       "youDidItOn": "You did it {day}",
+      "youDidItOnDate": "You did it on {day}",
       "didItOn": "{name} did it {day}",
+      "didItOnDate": "{name} did it on {day}",
       "limitLineMany": "Finish one of your grabs first, or tick this if it's done.",
       "yours": "Yours",
       "didItToday": "{name} did it today",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "Put it back?",
       "description": "{chore} opens up again. Tickets already earned for it stay earned."
-    }
+    },
+    "loadError": "Couldn't load your chores. Check the hub is on and try again.",
+    "retry": "Try again"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Jump to today",
@@ -276,6 +282,11 @@
         "title": "Delete \"{name}\"?",
         "description": "This will also remove it from any planned slots.",
         "confirmLabel": "Delete Meal"
+      },
+      "suggestWeek": {
+        "title": "Replace this week's meals?",
+        "description": "Suggest picks new meals for the whole week. The meals already planned for this week will be replaced.",
+        "confirmLabel": "Replace meals"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Comfort",
         "kid-friendly": "Kid-Friendly"
       }
-    }
+    },
+    "loadError": "Couldn't load your meals. Check the hub is on and try again.",
+    "retry": "Try again",
+    "saveFailed": "That didn't save. Try again."
   },
   "mealForm": {
     "titleNew": "Add Meal",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Clear alerts on {name}",
     "clearOnAll": "Clear alerts on every display",
     "clearingButton": "Clearing…",
-    "showingNow": "({count} showing now)"
+    "showingNow": "({count} showing now)",
+    "clearOnUnnamed": "Clear alerts on the display"
   },
   "rewardsView": {
     "changedElsewhere": "Someone else changed the rewards. Your last change wasn't saved. Please try it again.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Redeem for {cost} tickets",
       "emptyKid": "No rewards yet. A grown-up can add some from their phone.",
       "balanceLabelNamed": "tickets for {name}",
-      "switchHint": "Not {name}? Pick your name on the Today tab."
+      "switchHint": "Not {name}? Pick your name on the Today tab.",
+      "refused": "That didn't go through. There aren't enough tickets for it any more.",
+      "failed": "That didn't go through. Try again."
     },
     "manage": {
       "heading": "Rewards",
@@ -843,7 +860,10 @@
     "newRoutine": "New routine",
     "editRoutine": "Edit routine",
     "emptyHint": "A routine is a step-by-step timer, like a morning routine: get dressed, brush teeth, make your bed. Make one and start it on the display.",
-    "routineMeta": "{steps} steps · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} step · {minutes} min",
+      "other": "{steps} steps · {minutes} min"
+    },
     "stepCount": "Step {current} of {total}",
     "pause": "Pause",
     "resume": "Resume",
@@ -893,7 +913,15 @@
     "showingOn": "Showing on {names}",
     "showingOnDisplay": "Showing on the display",
     "waitingForDisplay": "Waiting for a display to pick it up…",
-    "notShowing": "No display is showing this yet. Check that a display is on."
+    "notShowing": "No display is showing this yet. Check that a display is on.",
+    "changedElsewhere": "Someone else changed the routines. Your last change wasn't saved. Please try it again.",
+    "whyNoSave": {
+      "name": "Give the routine a name to save.",
+      "stepName": "Give every step a name to save.",
+      "stepLength": "Every step needs to last at least {seconds} seconds."
+    },
+    "quickTooShort": "A timer needs to last at least {seconds} seconds.",
+    "stepLimit": "A routine can have up to {count} steps."
   },
   "lists": {
     "title": "Lists",
@@ -995,8 +1023,13 @@
     "noConfirm": "{name} didn't respond. It may be off or offline.",
     "profileSwitched": "{name} switched to {profile}",
     "profileCleared": "{name} is showing all screens",
+    "profileAfterSchedule": "{name} will switch to {profile} when {scheduled} ends",
+    "profileClearedAfterSchedule": "{name} will show all screens when {scheduled} ends",
+    "profileKeptAfterSchedule": "{name} will keep showing {profile} after its schedule ends",
     "profileFailed": "Couldn't switch the profile on {name}",
-    "hubBack": "Home Screens is back"
+    "hubBack": "Home Screens is back",
+    "alertSentUnnamed": "Alert sent to the display",
+    "alertsClearedUnnamed": "Alerts cleared on the display"
   },
   "tabNotSetUp": {
     "chores": {

@@ -48,19 +48,23 @@ fi
 
 # Run lint, tests, typecheck, and the production build in parallel — abort if any fail
 echo "Running pre-release checks..."
-FAIL=false
-npm run lint    2>&1 | sed 's/^/  [lint] /'      &  PID_LINT=$!
-npm test        2>&1 | sed 's/^/  [test] /'      &  PID_TEST=$!
-npx tsc --noEmit 2>&1 | sed 's/^/  [types] /'    &  PID_TYPES=$!
-npm run build   2>&1 | sed 's/^/  [build] /'     &  PID_BUILD=$!
+# Each check runs in its own subshell that exits with the check's status, not
+# sed's: macOS bash 3.2 forgets a background pipeline's pipefail status once the
+# job is reaped, and `wait` on the bare pipeline then reports sed's 0.
+FAILED=""
+( npm run lint     2>&1 | sed 's/^/  [lint] /';  exit "${PIPESTATUS[0]}" ) &  PID_LINT=$!
+( npm test         2>&1 | sed 's/^/  [test] /';  exit "${PIPESTATUS[0]}" ) &  PID_TEST=$!
+( npx tsc --noEmit 2>&1 | sed 's/^/  [types] /'; exit "${PIPESTATUS[0]}" ) &  PID_TYPES=$!
+( npm run build    2>&1 | sed 's/^/  [build] /'; exit "${PIPESTATUS[0]}" ) &  PID_BUILD=$!
 
-wait $PID_LINT  || FAIL=true
-wait $PID_TEST  || FAIL=true
-wait $PID_TYPES || FAIL=true
-wait $PID_BUILD || FAIL=true
+wait $PID_LINT  || FAILED="$FAILED lint"
+wait $PID_TEST  || FAILED="$FAILED test"
+wait $PID_TYPES || FAILED="$FAILED types"
+wait $PID_BUILD || FAILED="$FAILED build"
 
-if $FAIL; then
-  echo "Pre-release checks failed. Fix the errors above before releasing."
+if [[ -n "$FAILED" ]]; then
+  echo "Pre-release checks failed:$FAILED"
+  echo "Look for the lines prefixed with$(printf ' [%s]' $FAILED) above, or rerun that check on its own."
   exit 1
 fi
 

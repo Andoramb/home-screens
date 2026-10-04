@@ -20,7 +20,8 @@ vi.mock('@/lib/config', async (importOriginal) => {
 });
 
 import { getPluginManifest } from '@/lib/plugin-utils';
-import { updateConfigAtomic } from '@/lib/config';
+import { updateConfigAtomic, configRevision } from '@/lib/config';
+import { CONFIG_REVISION_HEADER } from '@/lib/config-revision';
 import { POST } from '@/app/api/plugins/migrate-config/route';
 
 const mockManifest = vi.mocked(getPluginManifest);
@@ -132,10 +133,20 @@ describe('POST /api/plugins/migrate-config', () => {
   it('migrates modules owned by a display', async () => {
     const res = await POST(req({ pluginId: 'test-plugin', oldVersion: '1.0.0' }), undefined);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, changed: true });
+    expect(await res.json()).toMatchObject({ ok: true, changed: true });
 
     const migrated = await mockUpdate.mock.results[0].value;
     expect(migrated.displays[0].screens[0].modules[0].config).toEqual({ newKey: 'v' });
+  });
+
+  it('answers with the revision it migrated from and the one it left', async () => {
+    // An editor holding unsaved edits may move onto the new revision only
+    // when its own is the one the migration started from.
+    const res = await POST(req({ pluginId: 'test-plugin', oldVersion: '1.0.0' }), undefined);
+    const migrated = await mockUpdate.mock.results[0].value;
+    expect((await res.json()).previousRevision).toBe(configRevision(displayOwnedConfig()));
+    expect(res.headers.get(CONFIG_REVISION_HEADER)).toBe(configRevision(migrated));
+    expect(configRevision(migrated)).not.toBe(configRevision(displayOwnedConfig()));
   });
 
   it('returns a NEW object when something changed so the write is not skipped', async () => {
@@ -166,7 +177,7 @@ describe('POST /api/plugins/migrate-config', () => {
     });
 
     const res = await POST(req({ pluginId: 'test-plugin', oldVersion: '1.0.0' }), undefined);
-    expect(await res.json()).toEqual({ ok: true, changed: false });
+    expect(await res.json()).toMatchObject({ ok: true, changed: false });
 
     const returned = await mockUpdate.mock.results[0].value;
     expect(returned).toBe(handedIn);

@@ -76,3 +76,8 @@ export function buildCalendarUrl(
   ].filter(Boolean).join('&');
   return `/api/calendar${params ? `?${params}` : ''}`;
 }
+
+/** Whether a data URL is a calendar read `buildCalendarUrl` made (not the status or calendar-list routes). */
+export function isCalendarReadUrl(url: string): boolean {
+  return url.split('?')[0] === '/api/calendar';
+}

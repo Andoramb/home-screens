@@ -1,5 +1,6 @@
 import { readConfig } from '@/lib/config';
 import { readChoreSnapshot } from '@/lib/chore-data';
+import { familyResponse, readFamilyData } from '@/lib/family-data';
 import { resolveChoreModuleConfig } from '@/lib/chore-module-config';
 import ChoresTab from '../remote/components/ChoresTab';
 import ChoresEmptyState from './ChoresEmptyState';
@@ -16,6 +17,9 @@ export default async function ChoresPage() {
   // empty data) so users can manage members/chores from mobile
   const choreData = await readChoreSnapshot();
   const choreConfig = resolveChoreModuleConfig(config);
+  // Nor can it fetch the family: with a password set, that read needs a
+  // session the kids' page does not have.
+  const family = familyResponse(await readFamilyData());
   // The kid view is open on the LAN with no credentials, so it cannot fetch
   // the icon library itself; its pictures come with the page, like the chores.
   const customIcons = await withUrls(await readCustomIcons());
@@ -38,7 +42,7 @@ export default async function ChoresPage() {
     >
       <div className="mx-auto max-w-3xl">
         <CustomIconSeed icons={customIcons} />
-        <ChoresTab config={choreConfig} choreData={choreData} />
+        <ChoresTab config={choreConfig} choreData={choreData} family={family} />
       </div>
     </div>
   );

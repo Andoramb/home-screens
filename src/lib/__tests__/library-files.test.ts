@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { safeLibraryPath, writeLibraryFile, libraryRoot } from '@/lib/library-files';
+import { safeLibraryPath, writeLibraryFile, libraryRoot, libraryMediaKind, listLibraryFolder } from '@/lib/library-files';
 
 // The vitest sandbox chdirs each test file into an isolated cwd, so these
 // real fs writes never touch the repo's library. Scoped to one named folder;
@@ -27,6 +27,29 @@ describe('safeLibraryPath', () => {
   it('rejects traversal out of the library', () => {
     expect(safeLibraryPath('../../etc/passwd')).toBeNull();
     expect(safeLibraryPath('family/../../secrets.json')).toBeNull();
+  });
+});
+
+describe('libraryMediaKind', () => {
+  it('lists pictures and videos by their name', () => {
+    expect(libraryMediaKind('beach.jpg')).toBe('image');
+    expect(libraryMediaKind('family/clip.mp4')).toBe('video');
+    expect(libraryMediaKind('notes.txt')).toBeNull();
+  });
+
+  it('leaves out the background rotation\'s top-level downloads, but not a family picture so named', () => {
+    expect(libraryMediaKind('rotation-unsplash-abc123.jpg')).toBeNull();
+    expect(libraryMediaKind('family/rotation-day.jpg')).toBe('image');
+  });
+});
+
+describe('listLibraryFolder', () => {
+  it('lists the folder the same way the counts do', async () => {
+    await fs.writeFile(path.join(DIR, 'kids.jpg'), 'x');
+    await fs.writeFile(path.join(DIR, 'rotation-day.jpg'), 'x');
+    await fs.writeFile(path.join(DIR, 'notes.txt'), 'x');
+    expect((await listLibraryFolder('library-files-test')).sort())
+      .toEqual(['library-files-test/kids.jpg', 'library-files-test/rotation-day.jpg']);
   });
 });
 

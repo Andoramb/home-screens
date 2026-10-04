@@ -4,7 +4,7 @@ Generate user-friendly release notes for Home Screens version $ARGUMENTS.
 
 1. **Determine tag ranges:**
    - Find the last **stable** tag (skip `-rc`, `-beta`, `-alpha`). This is the **full-range base**, covering everything in the potential release so far: `git tag --sort=-v:refname | grep -v -e '-rc' -e '-beta' -e '-alpha' | head -1`
-   - If `$ARGUMENTS` is a **pre-release** (contains `-rc`), also find the most recent tag before HEAD of any kind (including other RCs). This is the **delta-range base**.
+   - If `$ARGUMENTS` is a **pre-release** (contains `-rc` or `-beta`), also find the most recent tag before HEAD of any kind (including other RCs). This is the **delta-range base**.
      - If the delta-range base turns out to be the same as the full-range base (this is the first RC of the cycle), there's no meaningful delta. Treat this as a single-range case, same as a stable release.
    - If `$ARGUMENTS` is a **stable release**, or the RC has no distinct delta-range base, there is only one range, from the full-range base to HEAD.
    - Run `git log <full-range-base>..HEAD` to get the full commit list. If there are no previous tags, get all commits on the branch.
@@ -21,20 +21,29 @@ Generate user-friendly release notes for Home Screens version $ARGUMENTS.
    - Lead with what changed from the USER's perspective, not the developer's
    - Remove technical jargon (file names, function names, CSS properties, React internals)
    - Use present tense ("Add", "Fix", "Improve")
-   - Keep each bullet to 1-2 concise sentences
+   - Keep each bullet to 1-2 concise sentences. A headline feature gets the headline plus one clause on what it does, never a tour of every tab, toggle and sub-feature
    - Combine commits that are clearly part of the same feature into one bullet
    - When a distinct delta-range base exists, mark a bullet as "new in this RC" if any of its contributing commits fall within the delta-range commit list
 
-4. **Group bullets into sections** (only include sections that have entries):
-   - If a distinct delta-range base exists, start with `## New in this RC`, holding just the bullets marked new-since-last-RC, same style as the other sections
+4. **Collapse classes of fixes.** When several fixes belong to one class, write one bullet that names the class and lists the members in a clause each, instead of one bullet per fix:
+   - Group by the thing that broke, not by commit: "Photo fixes: videos shown from the phone fill the wall, sideways photos report their upright size, and folder delete reports the right thing."
+   - Typical classes: wall freshness, photo library, chores and rewards, calendar, weather, dates and times, editor canvas, plugins, iCloud, locale labels
+   - Wording and layout polish is one bullet: "A batch of wording and layout tidy-ups across the editor, the phone and the wall." Do not itemize the tidy-ups
+   - Several unrelated one-liners go under one "Small fixes:" bullet
+   - A fix keeps its own bullet only when it is serious on its own (data loss, security, a crash, a whole surface not working)
+
+5. **House style.** Plain, friendly language a non-developer reads without effort. No em-dashes anywhere, use a comma, colon or a new sentence. No "admin", "permission", "enum", "backfill", node or Chromium jargon.
+
+6. **Group bullets into sections** (only include sections that have entries):
+   - If a distinct delta-range base exists, start with `## New in this RC` (or `## New in this beta` for a `-beta` tag), holding just the bullets marked new-since-last-RC, same style as the other sections
    - Then the full release scope, covering every bullet from the full-range base (including ones already listed under "New in this RC"):
      - `## New`: new modules, pages, major capabilities
      - `## Improved`: enhancements to existing features, UI/UX polish, performance
      - `## Fixed`: bugs that were broken and are now resolved
 
-5. **Write the file** to `RELEASE_NOTES/v$ARGUMENTS.md`. The content should contain ONLY the grouped bullet sections: no title heading, no version number, no preamble. The GitHub Release title already shows the version.
+7. **Write the file** to `RELEASE_NOTES/v$ARGUMENTS.md`. The content should contain ONLY the grouped bullet sections: no title heading, no version number, no preamble. The GitHub Release title already shows the version.
 
-6. **Output** a one-line confirmation of what was written, noting whether a "New in this RC" section was included.
+8. **Output** a one-line confirmation of what was written, noting whether a "New in this RC" section was included.
 
 ## Example Output (stable release, or first RC of a cycle)
 

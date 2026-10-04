@@ -1,10 +1,10 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { isSameDay, isSameMonth, addDays, getWeek, differenceInCalendarDays } from 'date-fns';
 import {
   parseEventWallTime, eventsForDay, weekStartsOnFor, weekNumberOptions, clampWeeksToShow, clampRollingWeeks, clampGridMaxEventsPerCell,
-  clampGridDayLabelScale,
+  clampGridDayLabelScale, gridCellEvents,
   formatEventTimeCompact, allDaySpanSegment, formatMonthRangeLabel, isAllDayEvent, isWeekendDay,
 } from '@/lib/calendar-utils';
 import { viewDayWindow } from '@/lib/calendar-legend';
@@ -13,6 +13,7 @@ import { dayDecorFor, mergeCellDecor } from '@/lib/calendar-rules';
 import { DayBadges } from '../shared/DayBadges';
 import { DayArtLayer } from '../shared/DayArtLayer';
 import { TEXT_OPACITY, ink } from '@/lib/constants';
+import { useElementBox } from '@/hooks/useElementBox';
 import { useTranslate, useFormattingLocale, formatDateSync } from '@/i18n';
 import type { TranslateFn } from '@/i18n';
 import type { CalendarConfig, CalendarEvent, CalendarGridTheme, ModuleStyle } from '@/types/config';
@@ -24,6 +25,66 @@ import { EventCard } from './EventCard';
  *  same value must reach every grid of a view (header row included) or the
  *  weekday labels drift off the columns below. */
 const GRID_GAP = 'gap-0.5';
+/** The same gutter in px, for the row maths. */
+const GRID_GAP_PX = 2;
+
+/**
+ * Cell geometry for the per-cell event cap, as the two skeletons draw it: px
+ * for Tailwind spacing, em for line boxes at the 1.5 line height the card
+ * inherits. A cell is padded 2px all round, and only the top counts against
+ * its events: the last pill may run into the bottom 2px, which the cell's
+ * clip still shows. Pills sit 1px apart and carry 2px of padding above and
+ * below their line.
+ */
+const CELL_TOP_PAD_PX = 2;
+const PILL_GAP_PX = 1;
+const PILL_PAD_PX = 4;
+/** A pill's line: its 0.7em title. */
+const PILL_LINE_EM = 1.05;
+/** A modern all-day pill is a plain block, so its line is the cell's own 1.5em. */
+const BLOCK_PILL_LINE_EM = 1.5;
+
+/** A busy-day dot: about 0.4em so it reads on a wall, never below 5px. */
+const DOT_SIZE = 'max(5px, 0.4em)';
+const DOT_GAP = 'max(2px, 0.2em)';
+
+/**
+ * A dot per event, in the event's own colour (the colour its pill would
+ * carry), for a cell too short for even one pill beside "+N more". One row of
+ * them: dots past the cell's width wrap onto a second line the cell never
+ * shows, so only whole dots are drawn. Not tap targets; the pills are.
+ */
+function DayDots({ events, accentColor }: { events: CalendarEvent[]; accentColor: string }) {
+  return (
+    <div data-day-dots="" aria-hidden="true" className="flex flex-wrap overflow-hidden shrink-0" style={{ height: DOT_SIZE, columnGap: DOT_GAP, rowGap: DOT_GAP, padding: '0 0.15em' }}>
+      {events.map((ev) => (
+        <span key={ev.id} className="rounded-full shrink-0" style={{ width: DOT_SIZE, height: DOT_SIZE, backgroundColor: ev.calendarColor ?? accentColor, opacity: ev.opacity }} />
+      ))}
+    </div>
+  );
+}
+
+/** The height a week row gives each of its cells, and the grid's font size,
+ *  both measured. The rows split the box evenly, and the type follows the
+ *  card's text size, which a config value alone does not say. Zero until
+ *  measured. */
+function useWeekRowHeight(weekCount: number): [(el: HTMLDivElement | null) => void, { rowHeight: number; fontSize: number }] {
+  const nodeRef = useRef<HTMLDivElement | null>(null);
+  const [attachBox, box] = useElementBox();
+  const ref = useCallback((el: HTMLDivElement | null) => {
+    nodeRef.current = el;
+    attachBox(el);
+  }, [attachBox]);
+  const metrics = useMemo(() => {
+    const el = nodeRef.current;
+    if (box.height <= 0 || !el || weekCount <= 0) return { rowHeight: 0, fontSize: 0 };
+    return {
+      rowHeight: (box.height - (weekCount - 1) * GRID_GAP_PX) / weekCount,
+      fontSize: parseFloat(getComputedStyle(el).fontSize) || 0,
+    };
+  }, [box.height, weekCount]);
+  return [ref, metrics];
+}
 
 /** An `em` size at the configured day-label scale. Rounded because
  *  `0.6 * 1.1` is 0.66000000000000003 in binary floating point and that whole
@@ -245,6 +306,15 @@ function GridBannerView({ events, config, style, today, now, accentColor, t, loc
 
   const { weeks } = grid;
   const eventsByDay = useGridEventsByDay(weeks, events, eventStyle.timezone);
+  // What a cell has room to list: its row, less its top padding and the
+  // day-number strip (1.35em of its 0.65em digits, then a 2px margin). Every
+  // compact pill is one 0.7em line.
+  const [weeksRef, { rowHeight, fontSize }] = useWeekRowHeight(weeks.length);
+  const room = rowHeight > 0 ? rowHeight - CELL_TOP_PAD_PX - (1.35 * 0.65 * dayLabelScale * fontSize + 2) : 0;
+  const pillHeight = PILL_LINE_EM * fontSize + PILL_PAD_PX;
+  const listIn = (dayEvents: CalendarEvent[]) => gridCellEvents({
+    heights: dayEvents.map(() => pillHeight), room, moreHeight: 0.825 * fontSize, gap: PILL_GAP_PX, max: maxPerCell,
+  });
 
   return (
     <div className={`flex flex-col h-full ${GRID_GAP}`}>
@@ -252,15 +322,19 @@ function GridBannerView({ events, config, style, today, now, accentColor, t, loc
       {grid.kind === 'month' && <GridTitle>{grid.title}</GridTitle>}
       <DayOfWeekHeaderRow dates={weeks[0]} config={config} locale={locale} />
 
-      <div className={`flex flex-col ${GRID_GAP} flex-1`}>
+      {/* min-h-0 on the weeks and on each row: a row is otherwise as tall as
+          its busiest cell, and one busy week pushed the last weeks of the
+          month out of the card with nothing to say they were there. */}
+      <div ref={weeksRef} className={`flex flex-col ${GRID_GAP} flex-1 min-h-0`}>
         {weeks.map((week, wi) => (
-          <div key={wi} className={`grid ${GRID_GAP} flex-1`} style={{ gridTemplateColumns: gridTemplate }}>
+          <div key={wi} className={`grid ${GRID_GAP} flex-1 min-h-0`} style={{ gridTemplateColumns: gridTemplate, gridTemplateRows: 'minmax(0, 1fr)' }}>
             {showWeekNumbers && <WeekNumberCell date={week[0]} config={config} />}
             {week.map((date) => {
               const isToday = isSameDay(date, today);
               const isMuted = grid.isMuted(date, isToday);
               const marksMonthStart = grid.marksMonthStart(date);
               const dayEvents = eventsByDay.get(date.getTime()) ?? [];
+              const listed = listIn(dayEvents);
               const hasBirthday = dayEvents.some((ev) => ev.kind === 'birthday');
               const decor = dayDecorFor(config, date, dayEvents, { today, now, timezone: eventStyle.timezone, isDark: true });
               const cellFill = isToday
@@ -305,7 +379,9 @@ function GridBannerView({ events, config, style, today, now, accentColor, t, loc
                     {hasBirthday && <span aria-hidden="true">🎂</span>}
                     <DayBadges badges={decor.badges} />
                   </span>
-                  <DayCellEvents events={dayEvents} eventStyle={eventStyle} maxPerCell={maxPerCell} textColor={style.textColor} accentColor={accentColor} t={t} locale={locale} />
+                  {listed.kind === 'dots'
+                    ? <DayDots events={dayEvents} accentColor={accentColor} />
+                    : <DayCellEvents events={dayEvents} eventStyle={eventStyle} maxPerCell={listed.shown} textColor={style.textColor} accentColor={accentColor} t={t} locale={locale} />}
                 </div>
               );
             })}
@@ -428,14 +504,26 @@ function GridModernView({ events, config, style, today, now, accentColor, t, loc
 
   const { weeks } = grid;
   const eventsByDay = useGridEventsByDay(weeks, events, eventStyle.timezone);
+  // What a cell has room to list: its row, less its top padding and the day row
+  // (1.4em at the day-label scale, then 0.1em). An all-day pill is a plain
+  // block one cell line tall; a timed one is its 0.7em title.
+  const [weeksRef, { rowHeight, fontSize }] = useWeekRowHeight(weeks.length);
+  const room = rowHeight > 0 ? rowHeight - CELL_TOP_PAD_PX - (1.4 * dayLabelScale + 0.1) * fontSize : 0;
+  const timedPill = PILL_LINE_EM * fontSize + PILL_PAD_PX;
+  const allDayPill = BLOCK_PILL_LINE_EM * fontSize + PILL_PAD_PX;
+  const listIn = (dayEvents: CalendarEvent[]) => gridCellEvents({
+    heights: dayEvents.map((ev) => (isAllDayEvent(ev) ? allDayPill : timedPill)),
+    room, moreHeight: 0.9 * fontSize, gap: PILL_GAP_PX, max: maxPerCell,
+  });
 
   return (
     <div data-grid-theme={theme} className={`flex flex-col h-full ${GRID_GAP}`}>
       <GridTitle>{grid.title}</GridTitle>
       <DayOfWeekHeaderRow dates={weeks[0]} config={config} locale={locale} today={today} accentColor={accentColor} />
-      <div className={`flex flex-col ${GRID_GAP} flex-1`}>
+      {/* min-h-0 on the weeks and each row, as in the banner grid. */}
+      <div ref={weeksRef} className={`flex flex-col ${GRID_GAP} flex-1 min-h-0`}>
         {weeks.map((week, wi) => (
-          <div key={wi} className={`grid ${GRID_GAP} flex-1`} style={{ gridTemplateColumns: gridTemplate }}>
+          <div key={wi} className={`grid ${GRID_GAP} flex-1 min-h-0`} style={{ gridTemplateColumns: gridTemplate, gridTemplateRows: 'minmax(0, 1fr)' }}>
             {showWeekNumbers && <WeekNumberCell date={week[0]} config={config} />}
             {week.map((date) => {
               const isToday = isSameDay(date, today);
@@ -443,8 +531,9 @@ function GridModernView({ events, config, style, today, now, accentColor, t, loc
               const marksMonthStart = grid.marksMonthStart(date);
               const isWeekend = isWeekendDay(date);
               const dayEvents = eventsByDay.get(date.getTime()) ?? [];
-              const shown = dayEvents.slice(0, maxPerCell);
-              const overflow = dayEvents.length - shown.length;
+              const listed = listIn(dayEvents);
+              const shown = listed.kind === 'pills' ? dayEvents.slice(0, listed.shown) : [];
+              const overflow = listed.kind === 'pills' ? dayEvents.length - shown.length : 0;
               const hasBirthday = dayEvents.some((ev) => ev.kind === 'birthday');
               const cellShadow = [isToday ? todayRing : null, marksMonthStart ? monthRule : null]
                 .filter(Boolean).join(', ');
@@ -502,6 +591,7 @@ function GridModernView({ events, config, style, today, now, accentColor, t, loc
                         {t('calendar.moreCount', { count: overflow })}
                       </span>
                     )}
+                    {listed.kind === 'dots' && <DayDots events={dayEvents} accentColor={accentColor} />}
                   </div>
                 </div>
               );

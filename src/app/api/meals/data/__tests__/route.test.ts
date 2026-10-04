@@ -26,7 +26,7 @@ vi.mock('@/lib/meal-data', () => {
   const DEFAULT_FALLBACK = {
     savedMeals: [],
     plan: [],
-    groceryChecked: [],
+    groceryChecked: {},
     settings: {
       enabledSlots: ['breakfast', 'lunch', 'dinner'],
       weekStartDay: 'sunday',
@@ -66,11 +66,12 @@ const defaultSettings = {
   defaultSlotTimes: {},
   timeFormat: '12h',
 };
-const emptyData = { savedMeals: [], plan: [], groceryChecked: [], settings: defaultSettings };
+const emptyData = { savedMeals: [], plan: [], groceryChecked: {}, settings: defaultSettings };
 const populatedData = {
   savedMeals: [{ id: 'm1', name: 'Tacos', emoji: '🌮' }],
   plan: [{ date: '2026-04-04', slot: 'dinner', mealId: 'm1' }],
-  groceryChecked: ['tortillas'],
+  // Monday-start weeks: Saturday Apr 4 is in the week of Monday Mar 30.
+  groceryChecked: { '2026-03-30': ['tortillas'] },
   settings: { ...defaultSettings, weekStartDay: 'monday', defaultSlotTimes: { dinner: '18:30' } },
 };
 
@@ -241,12 +242,20 @@ describe('PUT /api/meals/data', () => {
     expect(json.error).toContain('plan');
   });
 
-  it('returns 400 when groceryChecked is present but not an array', async () => {
+  it('returns 400 when groceryChecked is present but not a map of weeks', async () => {
     const res = await PUT(await makePutRequest({ groceryChecked: 'not-array' }));
 
     expect(res.status).toBe(400);
     const json = await res.json();
     expect(json.error).toContain('groceryChecked');
+  });
+
+  it('returns 400 for the single all-weeks tick list', async () => {
+    // One list for every week ticked an item on every week's grocery list.
+    const res = await PUT(await makePutRequest({ groceryChecked: ['tortillas'] }));
+
+    expect(res.status).toBe(400);
+    expect(writeMealData).not.toHaveBeenCalled();
   });
 
   it('returns 400 when no writable fields are present', async () => {
@@ -350,23 +359,55 @@ describe('PUT /api/meals/data', () => {
     it('preserves existing groceryChecked when not provided', async () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
-      const res = await PUT(await makePutRequest({ savedMeals: [{ id: 'm2' }], plan: [] }));
+      const res = await PUT(await makePutRequest({ savedMeals: [{ id: 'm2' }], plan: populatedData.plan }));
       const json = await res.json();
 
       expect(res.status).toBe(200);
       expect(json.groceryChecked).toEqual(populatedData.groceryChecked);
     });
 
+    it('drops the stored ticks of a week the plan no longer has', async () => {
+      // Clearing a week and planning it again must start its list over, not
+      // bring back what was bought the first time.
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+
+      const cleared = await PUT(await makePutRequest({ savedMeals: populatedData.savedMeals, plan: [] }));
+      expect((await cleared.json()).groceryChecked).toEqual({});
+    });
+
     it('uses provided groceryChecked when given', async () => {
-      const newChecked = ['flour', 'sugar'];
+      const newChecked = { '2026-04-05': ['flour', 'sugar'] };
       const res = await PUT(await makePutRequest({
         savedMeals: [{ id: 'm2' }],
-        plan: [],
+        plan: [{ date: '2026-04-07', slot: 'dinner', mealId: 'm2' }],
         groceryChecked: newChecked,
       }));
       const json = await res.json();
 
       expect(json.groceryChecked).toEqual(newChecked);
+    });
+
+    it('drops sent ticks for weeks with nothing planned', async () => {
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+
+      const res = await PUT(await makePutRequest({
+        groceryChecked: { '2026-03-30': ['flour'], '2026-01-05': ['sugar'] },
+      }));
+      const json = await res.json();
+
+      expect(json.groceryChecked).toEqual({ '2026-03-30': ['flour'] });
+    });
+
+    it('moves the stored ticks when the week start day changes', async () => {
+      // Monday Mar 30 - Sunday Apr 5 becomes Sunday Mar 29 - Saturday Apr 4,
+      // the week sharing six of its days: the list in progress stays ticked.
+      vi.mocked(readMealData).mockResolvedValue(populatedData as never);
+
+      const res = await PUT(await makePutRequest({ settings: { ...populatedData.settings, weekStartDay: 'sunday' } }));
+      const json = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(json.groceryChecked).toEqual({ '2026-03-29': ['tortillas'] });
     });
 
     it('falls back gracefully when readMealData fails during field preservation', async () => {
@@ -376,7 +417,7 @@ describe('PUT /api/meals/data', () => {
       const json = await res.json();
 
       expect(res.status).toBe(200);
-      expect(json.groceryChecked).toEqual([]);
+      expect(json.groceryChecked).toEqual({});
     });
   });
 
@@ -493,12 +534,12 @@ describe('PUT /api/meals/data', () => {
       vi.mocked(readMealData).mockResolvedValue(populatedData as never);
 
       const res = await PUT(await makePutRequest({
-        groceryChecked: ['flour', 'sugar'],
+        groceryChecked: { '2026-03-30': ['flour', 'sugar'] },
       }));
       const json = await res.json();
 
       expect(res.status).toBe(200);
-      expect(json.groceryChecked).toEqual(['flour', 'sugar']);
+      expect(json.groceryChecked).toEqual({ '2026-03-30': ['flour', 'sugar'] });
       // All other fields preserved
       expect(json.savedMeals).toEqual(populatedData.savedMeals);
       expect(json.plan).toEqual(populatedData.plan);

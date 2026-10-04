@@ -82,6 +82,13 @@
         "keepMine": "De mijne houden"
       },
       "savedToDisplay": "Opgeslagen op {name}"
+    },
+    "loadError": {
+      "title": "Home Screens kon je opgeslagen instellingen niet openen",
+      "body": "Een van de opgeslagen bestanden is beschadigd of kan nu niet worden gelezen. Er is niets verwijderd. Probeer het opnieuw of zet hieronder een back-up terug.",
+      "retry": "Opnieuw proberen",
+      "retrying": "Opnieuw proberen…",
+      "detailLabel": "Wat Home Screens meldde"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Hernoemen",
       "duplicate": "Dupliceren",
       "delete": "Verwijderen"
-    }
+    },
+    "newScreenName": "Scherm {number}",
+    "copyName": "{name} kopie"
   },
   "screenSearch": {
     "buttonAriaLabel": "Een scherm of module zoeken",
@@ -511,7 +520,8 @@
         "detectedViaIp": "{name} gevonden via je internetverbinding.",
         "detectedCoords": "{lat}, {lon} gevonden.",
         "detectFailed": "Fout: locatie kon niet worden gedetecteerd",
-        "zoneSet": "Tijdzone op {zone} gezet, zodat die klopt."
+        "zoneSet": "Tijdzone op {zone} gezet, zodat die klopt.",
+        "notFound": "Geen plaats met die naam gevonden. Probeer een plaats in de buurt."
       },
       "queryLabel": "Je plaats of postcode",
       "clockCheck": {
@@ -738,7 +748,8 @@
         "plaintextConfirm": "Terugzetten",
         "wrongPassword": "Dat wachtwoord werkte niet. Probeer het opnieuw of zet terug zonder je sleutels.",
         "damagedKeys": "De sleutels in dit bestand zijn beschadigd en onleesbaar. Al het andere kun je nog wel terugzetten.",
-        "reloadFailed": "Je back-up is teruggezet, maar de editor kon niet herladen. Ververs de pagina om het te zien."
+        "reloadFailed": "Je back-up is teruggezet, maar de editor kon niet herladen. Ververs de pagina om het te zien.",
+        "finished": "Terugzetten voltooid. Alles uit die back-up is weer terug."
       },
       "description": "Bewaar een kopie van alles, zet die terug of begin met een sjabloon.",
       "restoreConfirm": {
@@ -1674,6 +1685,7 @@
         "enableLabel": "Mij melden wanneer er een update beschikbaar is"
       },
       "upToDate": "Je gebruikt de nieuwste versie",
+      "checkFailed": "Controleren op updates lukt nu even niet",
       "changelog": {
         "heading": "Changelog",
         "viewButton": "Changelog bekijken",
@@ -1989,7 +2001,9 @@
         "passwordsDoNotMatch": "Wachtwoorden komen niet overeen",
         "setFailed": "Wachtwoord instellen mislukt",
         "changeFailed": "Wachtwoord wijzigen mislukt",
-        "disableFailed": "Authenticatie uitschakelen mislukt"
+        "disableFailed": "Authenticatie uitschakelen mislukt",
+        "passwordTooShort": "Het wachtwoord moet minstens {count} tekens hebben.",
+        "invalidAddress": "\"{entry}\" is geen netwerkadres. Probeer er een zoals 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Wachtwoord ingesteld! Authenticatie is nu ingeschakeld.",
@@ -2123,7 +2137,12 @@
         "enableAriaLabel": "{id} inschakelen",
         "disableAriaLabel": "{id} uitschakelen",
         "uninstallTitle": "Verwijderen",
-        "uninstallAriaLabel": "{id} verwijderen"
+        "uninstallAriaLabel": "{id} verwijderen",
+        "uninstallConfirm": {
+          "title": "{name} verwijderen?",
+          "message": "Het verdwijnt van elk scherm waarop het staat. De opgeslagen instellingen en de aanmelding worden ook verwijderd.",
+          "confirmLabel": "Verwijderen"
+        }
       },
       "updates": {
         "allUpToDate": "Alle plugins zijn bijgewerkt",
@@ -2354,7 +2373,8 @@
       "formErrorWidth": "Breedte moet tussen {min} en {max} liggen. Kijk of er een cijfer ontbreekt: de meeste schermen zijn 1080 of 1920 breed.",
       "formErrorHeight": "Hoogte moet tussen {min} en {max} liggen. Kijk of er een cijfer ontbreekt: de meeste schermen zijn 1080 of 1920 hoog.",
       "softwareUpdateWaiting": "Update staat klaar",
-      "softwareNeedsSetup": "Instellen nodig"
+      "softwareNeedsSetup": "Instellen nodig",
+      "mainDisplayName": "Hoofddisplay"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3271,7 +3291,9 @@
     "importButton": "Deze schermen toevoegen",
     "savedAt": "Opgeslagen {date}",
     "screenPillSingular": "{name} met {count} module",
-    "screenPillPlural": "{name} met {count} modules"
+    "screenPillPlural": "{name} met {count} modules",
+    "importedName": "{name} (geïmporteerd)",
+    "importedNameNumbered": "{name} (geïmporteerd {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3791,6 +3813,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Standaard (Midnight)",
+      "themeDefault": "Standaard (uit Instellingen)",
       "photoSource": "Fotobron",
       "sourceLocal": "Lokale foto's",
       "sourceImmich": "Immich",
@@ -4293,7 +4316,21 @@
       "viewCards": "Kaarten",
       "viewList": "Lijst",
       "viewTicker": "Ticker",
+      "viewTeam": "Ploeg",
       "leagues": "Competities",
+      "leaguesAmerican": "Amerikaans",
+      "leaguesSoccer": "Voetbal",
+      "favoriteTeams": "Mijn teams",
+      "favoriteTeamsSearch": "Zoek een team",
+      "favoriteTeamsLoading": "Teams laden",
+      "favoriteTeamsError": "Teams konden niet worden geladen",
+      "favoriteTeamsHelp": "Wedstrijden van deze teams komen eerst. Het eerste team krijgt de bovenste plek.",
+      "favoriteTeamsHelpTeam": "Het eerste team wordt eerst getoond; bij meerdere wisselen ze elkaar af.",
+      "favoriteTeamsHidden": "competitie staat uit",
+      "favoriteTeamsLimit": "Meer teams kan deze module niet volgen ({count}). Verwijder er een om een ander toe te voegen.",
+      "favoriteTeamsRemove": "{team} verwijderen",
+      "favoriteTeamsDrag": "{team} verplaatsen",
+      "favoritesOnly": "Alleen wedstrijden van mijn teams tonen",
       "tickerSpeed": "Tickersnelheid (sec/wedstrijd)"
     },
     "standings": {
@@ -4305,6 +4342,7 @@
       "groupingLeague": "Volledige competitie",
       "league": "Competitie",
       "grouping": "Groepering",
+      "favoriteTeamsHelp": "Deze teams springen eruit in de stand.",
       "playoffCutoffLine": "Playoff-grenslijn",
       "teamsToShow": "Aantal teams tonen (0 = alle)",
       "rotationSeconds": "Rotatie (seconden)"
@@ -4958,7 +4996,58 @@
   },
   "templatePicker": {
     "title": "Sjablonen",
-    "loadFailed": "Laden van \"{name}\" mislukt"
+    "loadFailed": "Laden van \"{name}\" mislukt",
+    "categories": {
+      "All": "Alle",
+      "Dashboard": "Overzicht",
+      "Weather": "Weer",
+      "Productivity": "Productiviteit",
+      "Media": "Media",
+      "Sports": "Sport",
+      "Finance": "Financiën"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Gezinsoverzicht",
+        "description": "Klok, agenda, weer, de klusjes van vandaag, aftelling en begroeting: alles voor het gezin op één plek."
+      },
+      "weather-station": {
+        "name": "Weerstation",
+        "description": "Meerdere weerweergaven, regenkaart, zonsopkomst en zonsondergang, luchtkwaliteit en maanfase."
+      },
+      "minimal-clock": {
+        "name": "Eenvoudige klok",
+        "description": "Eén grote klok: rustig en zonder afleiding."
+      },
+      "info-board": {
+        "name": "Infobord",
+        "description": "Nieuws, beurskoersen, woord van de dag, geschiedenis en citaten."
+      },
+      "photo-frame": {
+        "name": "Fotolijst",
+        "description": "Fotodiashow op het hele scherm: maak van je scherm een digitale fotolijst."
+      },
+      "sports-hub": {
+        "name": "Sporthoek",
+        "description": "Live uitslagen en standen."
+      },
+      "productivity": {
+        "name": "Productiviteit",
+        "description": "Todoist-taken, agenda, aftelling en voortgang van het jaar."
+      },
+      "morning-dashboard": {
+        "name": "Ochtendoverzicht",
+        "description": "Weer, agenda, verkeer en een begroeting om de dag te beginnen."
+      },
+      "kitchen-display": {
+        "name": "Keukenscherm",
+        "description": "Maaltijdplanner, klok, agenda, afvaldag en plakbriefjes voor de keuken."
+      },
+      "news-finance": {
+        "name": "Nieuws en financiën",
+        "description": "Nieuwskoppen, aandelenkoersen en cryptokoersen."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Modules",

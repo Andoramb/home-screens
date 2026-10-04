@@ -1,5 +1,6 @@
 'use client';
 
+import { ingredientsToSave } from '@/lib/meal-ingredients';
 import { useState, useRef } from 'react';
 import type { SavedMeal, MealIngredient } from '@/types/config';
 import { uuid } from '@/lib/uuid';
@@ -66,7 +67,7 @@ export function useMealForm() {
     servings: formServings ? Number(formServings) : undefined,
     difficulty: formDifficulty,
     tags: formTags.length > 0 ? formTags : undefined,
-    ingredients: formIngredients.length > 0 ? formIngredients : undefined,
+    ingredients: ingredientsToSave(formIngredients),
     recipeUrl: formRecipeUrl.trim() || undefined,
     notes: formNotes.trim() || undefined,
     rating: formRating > 0 ? formRating : undefined,

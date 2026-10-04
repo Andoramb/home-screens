@@ -67,8 +67,9 @@ const VERSION_UP_TO_DATE = {
   currentCommit: 'abc1234',
   currentChannel: 'stable',
   updateChannel: 'stable',
-  latest: null,
-  latestCommit: null,
+  // A current install resolves its own release as the newest.
+  latest: '1.2.3',
+  latestCommit: 'abc1234',
   updateAvailable: false,
   isDowngrade: false,
   requiredStepFor: null,
@@ -106,6 +107,8 @@ const VERSION_STEP_REQUIRED = {
 /** The floor the newest release needs has no release of its own. */
 const VERSION_STEP_MISSING = {
   ...VERSION_UP_TO_DATE,
+  latest: null,
+  latestCommit: null,
   requiredStepFor: '2.0.0',
   missingStep: '1.2.5',
   tags: [{ tag: 'v2.0.0', version: '2.0.0', commit: '', requires: ['1.2.5'] }],
@@ -114,10 +117,20 @@ const VERSION_STEP_MISSING = {
 /** A step back was withheld because that release cannot read the saved settings. */
 const VERSION_DOWNGRADE_BLOCKED = {
   ...VERSION_UP_TO_DATE,
+  latest: null,
+  latestCommit: null,
   current: '2.0.0',
   blockedDowngrade: '1.2.3',
   localSchema: 20,
   tags: [{ tag: 'v1.2.3', version: '1.2.3', commit: 'abc1234', schema: 13 }],
+};
+
+/** The release lookup got no answer (GitHub unreachable), so nothing resolved. */
+const VERSION_CHECK_FAILED = {
+  ...VERSION_UP_TO_DATE,
+  latest: null,
+  latestCommit: null,
+  tags: [],
 };
 
 /** An update this boot installed changed what the wall only picks up at a restart. */
@@ -636,6 +649,18 @@ test.describe('Defaults › System', () => {
     await expect(page.getByRole('button', { name: 'Restart the whole device' })).toBeVisible();
     // Nothing owes a restart, so the page does not ask for one.
     await expect(page.getByTestId('system-restart-needed')).toHaveCount(0);
+
+    assertNoRealSystemCall(stubs);
+  });
+
+  test('a lookup that got no answer says so instead of claiming the latest version', async ({ page, request }) => {
+    await putConfig(request, baseConfig());
+    const stubs = await setupSystemStubs(page, { version: VERSION_CHECK_FAILED });
+
+    await page.goto('/editor/settings?section=defaults&page=system');
+    await expect(page.getByText("You're on version 1.2.3")).toBeVisible();
+    await expect(page.getByTestId('system-check-failed')).toHaveText("Couldn't check for updates right now");
+    await expect(page.getByText("You're on the latest version")).toHaveCount(0);
 
     assertNoRealSystemCall(stubs);
   });

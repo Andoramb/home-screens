@@ -21,6 +21,7 @@ const mockFs = vi.hoisted(() => ({
   readdir: vi.fn(),
   stat: vi.fn(),
   rmdir: vi.fn(async () => undefined),
+  rm: vi.fn(async () => undefined),
 }));
 vi.mock('fs', () => ({ promises: mockFs }));
 
@@ -65,11 +66,43 @@ describe('GET /api/backgrounds/directories', () => {
     expect(body.directories[0]).toEqual({ name: 'All Photos', path: '', imageCount: 4 });
     expect(mockFs.mkdir).toHaveBeenCalled();
   });
+
+  it('leaves the background rotation\'s downloads out of the counts, as the grid does', async () => {
+    const file = (name: string) => ({ name, isFile: () => true, isDirectory: () => false });
+    mockFs.readdir.mockImplementation(async (p: string, opts?: { withFileTypes?: boolean }) => {
+      const inFamily = p.endsWith('Family');
+      if (opts?.withFileTypes) {
+        // Only top-level rotation- files are the rotation's; one in a folder is the family's.
+        return inFamily
+          ? [file('rotation-day.jpg'), file('kids.jpg')]
+          : [file('a.jpg'), file('rotation-unsplash-abc123.jpg'), file('rotation-nasa-apod-2026-10-03.jpg')];
+      }
+      return inFamily ? [] : ['Family', 'a.jpg'];
+    });
+    mockFs.stat.mockImplementation(async (p: string) => ({ isDirectory: () => p.endsWith('Family') }));
+
+    const body = await (await GET(getRequest())).json();
+
+    expect(body.directories).toEqual([
+      { name: 'All Photos', path: '', imageCount: 1 },
+      { name: 'Family', path: 'Family', imageCount: 2 },
+    ]);
+  });
 });
 
 describe('POST /api/backgrounds/directories', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Nothing by that name yet.
+    mockFs.stat.mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
+  });
+
+  it('answers 409, and creates nothing, when the folder already exists', async () => {
+    mockFs.stat.mockResolvedValue({ isDirectory: () => true });
+    const res = await POST(bodyRequest('POST', { name: 'Beach' }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toMatch(/already a folder/);
+    expect(mockFs.mkdir).not.toHaveBeenCalled();
   });
 
   it('rejects a missing name with 400', async () => {
@@ -131,6 +164,21 @@ describe('DELETE /api/backgrounds/directories', () => {
     const res = await DELETE(bodyRequest('DELETE', { path: 'Vacation' }));
     expect(res.status).toBe(409);
     expect((await res.json()).error).toMatch(/not empty/);
+    expect(mockFs.rmdir).not.toHaveBeenCalled();
+  });
+
+  it('treats a folder holding only system clutter as empty, and clears it out', async () => {
+    mockFs.readdir.mockResolvedValue(['.DS_Store', 'Thumbs.db']);
+    const res = await DELETE(bodyRequest('DELETE', { path: 'Vacation' }));
+    expect(res.status).toBe(200);
+    expect(mockFs.rm).toHaveBeenCalledTimes(2);
+    expect(mockFs.rmdir).toHaveBeenCalled();
+  });
+
+  it('still refuses when a photo sits beside the clutter', async () => {
+    mockFs.readdir.mockResolvedValue(['.DS_Store', 'photo.jpg']);
+    const res = await DELETE(bodyRequest('DELETE', { path: 'Vacation' }));
+    expect(res.status).toBe(409);
     expect(mockFs.rmdir).not.toHaveBeenCalled();
   });
 

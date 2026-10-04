@@ -58,7 +58,8 @@
     "sleepDisplay": "Dormir tela",
     "sendAlert": "Enviar aviso",
     "waitingFor": "Aguardando {name}…",
-    "waitingForAll": "Aguardando as telas…"
+    "waitingForAll": "Aguardando as telas…",
+    "waitingForUnnamed": "Aguardando a tela…"
   },
   "brightnessCard": {
     "label": "Brilho",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Perfis",
-    "noProfile": "Todas as páginas"
+    "noProfile": "Todas as páginas",
+    "scheduledNote": "O perfil {profile} está ativo agora por agendamento. O que você escolher aqui começa quando ele terminar."
   },
   "displayPicker": {
     "targeting": "Enviar para",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Termine primeiro a que você pegou, ou marque esta se já fez.",
       "youDidItOn": "Você fez {day}",
+      "youDidItOnDate": "Você fez em {day}",
       "didItOn": "{name} fez {day}",
+      "didItOnDate": "{name} fez em {day}",
       "limitLineMany": "Termine primeiro uma das que você pegou, ou marque esta se já fez.",
       "yours": "Sua",
       "didItToday": "{name} fez hoje",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "Reabrir?",
       "description": "\"{chore}\" fica livre de novo. Quem já ganhou tickets com ela não perde nada."
-    }
+    },
+    "loadError": "Não foi possível carregar suas tarefas. Veja se o hub está ligado e tente de novo.",
+    "retry": "Tentar de novo"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Ir para hoje",
@@ -276,6 +282,11 @@
         "title": "Excluir \"{name}\"?",
         "description": "Isso também vai remover a refeição de qualquer horário planejado.",
         "confirmLabel": "Excluir refeição"
+      },
+      "suggestWeek": {
+        "title": "Trocar as refeições desta semana?",
+        "description": "Sugerir escolhe refeições novas para a semana toda. As refeições já planejadas para esta semana serão trocadas.",
+        "confirmLabel": "Trocar refeições"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Reconfortante",
         "kid-friendly": "Para crianças"
       }
-    }
+    },
+    "loadError": "Não foi possível carregar suas refeições. Veja se o hub está ligado e tente de novo.",
+    "retry": "Tentar de novo",
+    "saveFailed": "Não deu para salvar. Tente de novo."
   },
   "mealForm": {
     "titleNew": "Adicionar refeição",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Limpar avisos em {name}",
     "clearOnAll": "Limpar avisos em todas as telas",
     "clearingButton": "Limpando…",
-    "showingNow": "({count} na tela agora)"
+    "showingNow": "({count} na tela agora)",
+    "clearOnUnnamed": "Limpar avisos na tela"
   },
   "rewardsView": {
     "changedElsewhere": "Outra pessoa alterou as recompensas. Sua última alteração não foi salva. Tente de novo.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Resgatar por {cost} tickets",
       "emptyKid": "Nenhuma recompensa ainda. Um adulto pode adicionar pelo celular.",
       "balanceLabelNamed": "tickets de {name}",
-      "switchHint": "Não é {name}? Escolha seu nome na aba Hoje."
+      "switchHint": "Não é {name}? Escolha seu nome na aba Hoje.",
+      "refused": "Não deu certo. Não há mais tickets suficientes para isso.",
+      "failed": "Não deu certo. Tente de novo."
     },
     "manage": {
       "heading": "Recompensas",
@@ -844,7 +861,10 @@
     "newRoutine": "Nova rotina",
     "editRoutine": "Editar rotina",
     "emptyHint": "Uma rotina é um timer passo a passo, como a rotina da manhã: se vestir, escovar os dentes, arrumar a cama. Crie uma e inicie na tela.",
-    "routineMeta": "{steps} passos · {minutes} min",
+    "routineMeta": {
+      "one": "{steps} passo · {minutes} min",
+      "other": "{steps} passos · {minutes} min"
+    },
     "stepCount": "Passo {current} de {total}",
     "pause": "Pausar",
     "resume": "Continuar",
@@ -894,7 +914,15 @@
     "showingOn": "Aparecendo em {names}",
     "showingOnDisplay": "Aparecendo na tela",
     "waitingForDisplay": "Aguardando uma tela assumir…",
-    "notShowing": "Nenhuma tela está mostrando ainda. Confira se alguma tela está ligada."
+    "notShowing": "Nenhuma tela está mostrando ainda. Confira se alguma tela está ligada.",
+    "changedElsewhere": "Outra pessoa alterou as rotinas. Sua última alteração não foi salva. Tente de novo.",
+    "whyNoSave": {
+      "name": "Dê um nome à rotina para salvar.",
+      "stepName": "Dê um nome a cada passo para salvar.",
+      "stepLength": "Cada passo precisa durar pelo menos {seconds} segundos."
+    },
+    "quickTooShort": "Um timer precisa durar pelo menos {seconds} segundos.",
+    "stepLimit": "Uma rotina pode ter até {count} passos."
   },
   "lists": {
     "title": "Listas",
@@ -996,8 +1024,13 @@
     "noConfirm": "{name} não respondeu. Pode estar desligada ou sem conexão.",
     "profileSwitched": "{name} mudou para {profile}",
     "profileCleared": "{name} está mostrando todas as páginas",
+    "profileAfterSchedule": "{name} vai mudar para {profile} quando {scheduled} terminar",
+    "profileClearedAfterSchedule": "{name} vai mostrar todas as páginas quando {scheduled} terminar",
+    "profileKeptAfterSchedule": "{name} vai continuar com {profile} quando o agendamento terminar",
     "profileFailed": "Não foi possível trocar o perfil em {name}",
-    "hubBack": "O Home Screens voltou"
+    "hubBack": "O Home Screens voltou",
+    "alertSentUnnamed": "Aviso enviado para a tela",
+    "alertsClearedUnnamed": "Avisos limpos na tela"
   },
   "tabNotSetUp": {
     "chores": {

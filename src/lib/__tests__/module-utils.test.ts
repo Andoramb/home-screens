@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   countOffCanvasModules,
+  modulesCutOffByResize,
   totalModuleCount,
   scaleModulesToFit,
   reorderModuleZ,
@@ -77,6 +78,31 @@ describe('countOffCanvasModules', () => {
 
   it('returns 0 for empty screens array', () => {
     expect(countOffCanvasModules([], 1920, 1080)).toBe(0);
+  });
+});
+
+// ── modulesCutOffByResize ────────────────────────────────────────────
+
+describe('modulesCutOffByResize', () => {
+  const landscape = { width: 1920, height: 1080 };
+  const portrait = { width: 1080, height: 1920 };
+
+  it('counts what a rotation to portrait leaves past the right edge', () => {
+    const screen = makeScreen([
+      { x: 1200, y: 0, w: 400, h: 300 }, // right = 1600 > 1080
+      { x: 0, y: 0, w: 400, h: 300 },    // fits both ways
+    ]);
+    expect(modulesCutOffByResize([screen], landscape, portrait)).toBe(1);
+  });
+
+  it('is 0 when the canvas only grows, even past modules already off it', () => {
+    const screen = makeScreen([{ x: 2000, y: 0, w: 400, h: 300 }]);
+    expect(modulesCutOffByResize([screen], landscape, { width: 2560, height: 1440 })).toBe(0);
+  });
+
+  it('is 0 when a shrink still fits every module', () => {
+    const screen = makeScreen([{ x: 0, y: 0, w: 400, h: 300 }]);
+    expect(modulesCutOffByResize([screen], landscape, portrait)).toBe(0);
   });
 });
 

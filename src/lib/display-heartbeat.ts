@@ -30,6 +30,12 @@ export interface DisplayRevisions {
    * seconds rather than on the lists' 10-minute poll.
    */
   library?: string;
+  /**
+   * What the hub's calendar sources can read (`calendar-revision.ts`). A wall
+   * re-reads its calendar when this moves, so a Google Calendar sign-in shows
+   * up in seconds rather than on the calendar's 5-minute poll.
+   */
+  calendar?: string;
 }
 
 type Listener = (revisions: DisplayRevisions) => void;

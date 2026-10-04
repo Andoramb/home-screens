@@ -5,7 +5,7 @@ import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
-import { IMAGE_FILE_RE } from '@/lib/media-formats';
+import { libraryMediaKind } from '@/lib/library-files';
 import { LibraryMoveError, renameLibraryFolder } from '@/lib/library-moves';
 
 export const dynamic = 'force-dynamic';
@@ -19,11 +19,15 @@ function safePath(relativePath: string): string | null {
   return resolved;
 }
 
-/** Count image files in a directory (non-recursive) */
-async function countImages(dirPath: string): Promise<number> {
+/**
+ * Count the pictures the library lists directly inside one folder (`folder`
+ * is its library path, '' for the top level), so the number matches the grid:
+ * the background rotation's own downloads are not counted.
+ */
+async function countImages(dirPath: string, folder: string): Promise<number> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.filter((e) => e.isFile() && IMAGE_FILE_RE.test(e.name)).length;
+    return entries.filter((e) => e.isFile() && libraryMediaKind(folder ? `${folder}/${e.name}` : e.name) === 'image').length;
   } catch {
     return 0;
   }
@@ -59,7 +63,7 @@ async function scanDirectories(
     if (!stat.isDirectory()) continue;
 
     const relPath = path.relative(relativeTo, fullPath);
-    const imageCount = await countImages(fullPath);
+    const imageCount = await countImages(fullPath, relPath);
 
     results.push({
       name: entry,
@@ -80,7 +84,7 @@ export const GET = withAuth(async () => {
   await fs.mkdir(BGS, { recursive: true });
 
   // Count images in root
-  const rootImageCount = await countImages(BGS);
+  const rootImageCount = await countImages(BGS, '');
 
   // Scan subdirectories (max depth 2)
   const subdirs = await scanDirectories(BGS, BGS, 1, 2);
@@ -133,11 +137,23 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Maximum folder depth is 2' }, { status: 400 });
   }
 
+  // A folder that is already there is not "created": say so, so the phone
+  // does not announce a new folder that is the old one.
+  const taken = await fs.stat(resolvedNew).then(() => true, () => false);
+  if (taken) {
+    return NextResponse.json({ error: "There's already a folder with that name here." }, { status: 409 });
+  }
+
   await fs.mkdir(resolvedNew, { recursive: true });
 
   const relativePath = path.relative(BGS, resolvedNew);
   return NextResponse.json({ path: relativePath }, { status: 201 });
 }, 'Failed to create directory');
+
+/** `.DS_Store`, `._IMG_1.jpg`, `Thumbs.db`, `desktop.ini`: files the operating system adds, never the family's. */
+function isSystemClutter(name: string): boolean {
+  return name.startsWith('.') || /^(thumbs\.db|desktop\.ini)$/i.test(name);
+}
 
 export const DELETE = withAuth(async (request: NextRequest) => {
   const body = await parseJsonBody<{ path?: unknown }>(request);
@@ -170,15 +186,19 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Path is not a directory' }, { status: 400 });
   }
 
-  // Refuse if directory contains files
+  // Refuse if directory contains files. The clutter a Mac or Windows PC leaves
+  // in a folder it has opened is not something anyone can see or move from
+  // here, so a folder holding only that counts as empty and takes it along.
   const entries = await fs.readdir(resolved);
-  if (entries.length > 0) {
+  const leftovers = entries.filter(isSystemClutter);
+  if (entries.length > leftovers.length) {
     return NextResponse.json(
       { error: 'Directory is not empty. Delete all photos first.' },
       { status: 409 },
     );
   }
 
+  for (const name of leftovers) await fs.rm(path.join(resolved, name), { force: true });
   await fs.rmdir(resolved);
   return NextResponse.json({ deleted: dirPath });
 }, 'Failed to delete directory');

@@ -3930,10 +3930,11 @@
               "scoreboard",
               "cards",
               "list",
-              "ticker"
+              "ticker",
+              "team"
             ]
           },
-          "description": "Display mode: `scoreboard`, `cards`, `list`, or `ticker`",
+          "description": "Display mode: `scoreboard`, `cards`, `list`, `ticker`, or `team` (one card per favorite team)",
           "default": "scoreboard"
         },
         {
@@ -3943,11 +3944,33 @@
             "kind": "array",
             "text": "string[]"
           },
-          "description": "Leagues to show: `nfl`, `nba`, `mlb`, `nhl`, `wnba`, `mls`, `epl`, `laliga`, `bundesliga`, `seriea`, `ligue1`, `liga_mx`",
+          "description": "Leagues to show: `nfl`, `ncaaf`, `nba`, `ncaam`, `wnba`, `ncaaw`, `mlb`, `nhl`, `mls`, `epl`, `laliga`, `bundesliga`, `seriea`, `ligue1`, `liga_mx`",
           "default": [
             "nba",
             "nfl"
           ]
+        },
+        {
+          "name": "favoriteTeams",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Teams whose games come first, as `<league>:<abbreviation>` (for example `nfl:MIN`, `ncaaf:MINN`). The first team gets the top spot. The `team` view shows one card per entry.",
+          "defaultText": "[]",
+          "default": []
+        },
+        {
+          "name": "favoritesOnly",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Show only games with a favorite team",
+          "defaultText": "false",
+          "default": false
         },
         {
           "name": "refreshIntervalMs",
@@ -3974,7 +3997,8 @@
         "scoreboard",
         "cards",
         "list",
-        "ticker"
+        "ticker",
+        "team"
       ]
     },
     {
@@ -4028,6 +4052,17 @@
           },
           "description": "How to group teams: `division`, `conference`, or `league`",
           "default": "conference"
+        },
+        {
+          "name": "favoriteTeams",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Teams whose rows stand out, as `<league>:<abbreviation>` (for example `nfl:MIN`)",
+          "defaultText": "[]",
+          "default": []
         },
         {
           "name": "teamsToShow",
@@ -9363,10 +9398,10 @@
           "name": "groceryChecked",
           "optional": false,
           "type": {
-            "kind": "array",
-            "text": "string[]"
+            "kind": "object",
+            "text": "GroceryChecked"
           },
-          "description": "Ingredient names checked off the grocery list. The list itself is built from the planned meals and is not stored"
+          "description": "Ingredient names checked off each week's grocery list, keyed by the date that week starts on. The list itself is built from the week's planned meals and is not stored"
         },
         {
           "name": "settings",
@@ -11140,6 +11175,24 @@
         {
           "method": "GET",
           "access": "display"
+        }
+      ]
+    },
+    {
+      "path": "/api/sports/team",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "display"
+        }
+      ]
+    },
+    {
+      "path": "/api/sports/teams",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "session"
         }
       ]
     },

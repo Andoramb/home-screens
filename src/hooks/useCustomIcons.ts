@@ -204,17 +204,20 @@ export async function renameCustomIcon(id: string, name: string): Promise<Custom
   return icon;
 }
 
-/** Remove an icon. `configRevision` is set when the removal rewrote the
- *  screen config, which an editor holding its own copy has to adopt. */
-export async function deleteCustomIcon(id: string): Promise<{ configRevision?: string }> {
+/** Remove an icon. `configRevision` (and the `previousConfigRevision` it was
+ *  rewritten from) is set when the removal rewrote the screen config, which an
+ *  editor holding its own copy has to adopt. */
+export async function deleteCustomIcon(id: string): Promise<{ configRevision?: string; previousConfigRevision?: string }> {
   const res = await editorFetch(`/api/custom-icons/${encodeURIComponent(id)}`, { method: 'DELETE' });
   if (!res.ok && res.status !== 404) throw await failure(res);
-  const body = res.ok ? ((await res.json().catch(() => ({}))) as { configRevision?: string }) : {};
+  const body = res.ok
+    ? ((await res.json().catch(() => ({}))) as { configRevision?: string; previousConfigRevision?: string })
+    : {};
   const gone = state.byId.get(id);
   const icons = state.icons.filter((i) => i.id !== id);
   const shared = gone && icons.some((i) => i.hash === gone.hash);
   publish({ icons, bytes: Math.max(0, state.bytes - (gone && !shared ? gone.bytes : 0)) });
-  return { configRevision: body.configRevision };
+  return { configRevision: body.configRevision, previousConfigRevision: body.previousConfigRevision };
 }
 
 /** Where each icon is used, for the manage pages. */

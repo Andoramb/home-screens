@@ -76,7 +76,7 @@ If a sentence isn't recognized after you've edited the sentences file, run the `
 
 ## What you can say
 
-Square brackets are optional words; where a display isn't named, the command goes to every display (except "show the … screen", which targets your one display, or the display you name).
+Square brackets are optional words; where a display isn't named, the command goes to every display (except "show the … screen", which goes to your main display).
 
 ### Display commands
 

@@ -290,7 +290,7 @@ describe('GET /api/traffic - Google provider', () => {
     expect(json.routes[0].durationInTrafficMinutes).toBe(35);
   });
 
-  it('handles Google API error', async () => {
+  it('turns a rejected key into the setup card, not a per-route error', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 403,
@@ -300,8 +300,47 @@ describe('GET /api/traffic - Google provider', () => {
     const res = await GET(makeRoutes(sampleRoutes));
     const json = await res.json();
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(400);
+    expect(json.code).toBe('setup');
+    expect(json.setup).toMatchObject({ needs: 'invalidKey', service: 'Google Maps' });
+  });
+
+  it('reads the 400 Google answers an unknown key with as a rejected key', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => '{"error":{"status":"INVALID_ARGUMENT","details":[{"reason":"API_KEY_INVALID"}]}}',
+    });
+
+    const res = await GET(makeRoutes(sampleRoutes));
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe('setup');
+  });
+
+  it('fails as a whole when Google is down for every route', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 503,
+      text: async () => 'Service Unavailable',
+    });
+
+    const res = await GET(makeRoutes(sampleRoutes));
+    const json = await res.json();
+
+    expect(res.status).toBe(502);
     expect(json.error).toBe('Failed to fetch traffic data');
+    expect(JSON.stringify(json)).not.toContain('Service Unavailable');
+  });
+
+  it('marks a route Google finds no way for as not found instead of 0 min', async () => {
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({}), text: async () => '' });
+
+    const res = await GET(makeRoutes(sampleRoutes));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.routes).toEqual([{ label: 'Work', error: 'notFound' }]);
   });
 });
 
@@ -414,7 +453,7 @@ describe('GET /api/traffic - multiple routes', () => {
 // ─── Error Handling ───
 
 describe('GET /api/traffic - errors', () => {
-  it('network error returns 500', async () => {
+  it('network error for every route fails the response', async () => {
     vi.mocked(getSecret).mockImplementation(async (key: string) => {
       if (key === 'google_maps_key') return 'google-key';
       return null;
@@ -425,7 +464,80 @@ describe('GET /api/traffic - errors', () => {
     const res = await GET(makeRoutes(sampleRoutes));
     const json = await res.json();
 
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(502);
     expect(json.error).toBe('Failed to fetch traffic data');
+  });
+});
+
+// ─── One route at a time ───
+
+describe('GET /api/traffic - each route settles on its own', () => {
+  const routes = [
+    { label: 'Work', origin: '123 Home St', destination: '456 Office Ave' },
+    { label: 'Lake', origin: '123 Home St', destination: 'zzzz' },
+  ];
+
+  beforeEach(() => {
+    vi.mocked(getSecret).mockImplementation(async (key: string) => {
+      if (key === 'tomtom_key') return 'tomtom-key';
+      return null;
+    });
+  });
+
+  function tomtom(geocodeFor: (url: string) => object) {
+    return vi.fn().mockImplementation((url: string) => {
+      if (url.includes('geocode')) return Promise.resolve(geocodeFor(url));
+      return Promise.resolve({ ok: true, json: async () => makeTomTomRoutingResponse(900, 1200), text: async () => '' });
+    });
+  }
+
+  it('keeps the good route when TomTom cannot place the other one, and never passes its text on', async () => {
+    global.fetch = tomtom((url) => url.includes('zzzz')
+      ? { ok: false, status: 400, text: async () => '{"errorText":"Empty query allowed only..."}' }
+      : { ok: true, json: async () => makeTomTomGeocodeResponse(44.7, -93.4) });
+
+    const res = await GET(makeRoutes(routes));
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(json.routes[0]).toMatchObject({ label: 'Work', durationInTrafficMinutes: 20 });
+    expect(json.routes[1]).toEqual({ label: 'Lake', error: 'notFound' });
+    expect(JSON.stringify(json)).not.toContain('errorText');
+  });
+
+  it('marks an address with no match as not found', async () => {
+    global.fetch = tomtom((url) => url.includes('zzzz')
+      ? { ok: true, json: async () => ({ results: [] }) }
+      : { ok: true, json: async () => makeTomTomGeocodeResponse(44.7, -93.4) });
+
+    const json = await (await GET(makeRoutes(routes))).json();
+
+    expect(json.routes[1]).toEqual({ label: 'Lake', error: 'notFound' });
+  });
+
+  it('marks a route the service did not answer as unavailable and asks again on the next poll', async () => {
+    global.fetch = tomtom((url) => url.includes('zzzz')
+      ? { ok: false, status: 503, text: async () => 'busy' }
+      : { ok: true, json: async () => makeTomTomGeocodeResponse(44.7, -93.4) });
+
+    const first = await (await GET(makeRoutes(routes))).json();
+    expect(first.routes[1]).toEqual({ label: 'Lake', error: 'unavailable' });
+
+    const calls = vi.mocked(global.fetch).mock.calls.length;
+    await GET(makeRoutes(routes));
+    expect(vi.mocked(global.fetch).mock.calls.length).toBeGreaterThan(calls);
+  });
+
+  it('fails the whole response when the key is rejected on any route', async () => {
+    global.fetch = tomtom((url) => url.includes('zzzz')
+      ? { ok: false, status: 403, text: async () => 'Developer Inactive' }
+      : { ok: true, json: async () => makeTomTomGeocodeResponse(44.7, -93.4) });
+
+    const res = await GET(makeRoutes(routes));
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.setup).toMatchObject({ needs: 'invalidKey', service: 'TomTom' });
+    expect(JSON.stringify(json)).not.toContain('Developer Inactive');
   });
 });

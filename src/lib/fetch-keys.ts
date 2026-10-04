@@ -5,6 +5,9 @@
  */
 
 import { RECENT_CHORE_DAYS } from '@/components/modules/chore-chart/types';
+import { DEFAULT_SPORTS_LEAGUES, MAX_FAVORITE_TEAMS, enabledFavorites } from './sports-order';
+import { isCompleteTrafficRoute } from './traffic-routes';
+import type { TrafficRoute } from '@/types/config';
 
 // Typed config interfaces lack index signatures, making Record<string, unknown>
 // incompatible — `any` is an intentional variance escape for structural compatibility.
@@ -75,8 +78,19 @@ export function airQualityUrl(): string {
 }
 
 export function sportsUrl(config: AnyConfig): string {
-  const leagues = (config.leagues as string[] | undefined) ?? ['nfl', 'nba'];
+  const leagues = (config.leagues as string[] | undefined) ?? DEFAULT_SPORTS_LEAGUES;
   return `/api/sports?leagues=${encodeURIComponent(leagues.join(','))}`;
+}
+
+/**
+ * The Team view's cards, one per favorite in an enabled league; null when no
+ * such team is picked so nothing is fetched.
+ */
+export function sportsTeamUrl(config: AnyConfig): string | null {
+  const favorites = (config.favoriteTeams as string[] | undefined) ?? [];
+  const leagues = (config.leagues as string[] | undefined) ?? DEFAULT_SPORTS_LEAGUES;
+  const teams = enabledFavorites(favorites, leagues).slice(0, MAX_FAVORITE_TEAMS);
+  return teams.length ? `/api/sports/team?teams=${encodeURIComponent(teams.join(','))}` : null;
 }
 
 export function standingsUrl(config: AnyConfig): string {
@@ -88,9 +102,10 @@ export function standingsUrl(config: AnyConfig): string {
   return `/api/standings?league=${encodeURIComponent(league)}&grouping=${encodeURIComponent(grouping)}`;
 }
 
+/** Only complete routes are asked for: one still being typed has no address to look up. */
 export function trafficUrl(config: AnyConfig): string | null {
-  const routes = config.routes as unknown[] | undefined;
-  return routes?.length
+  const routes = Array.isArray(config.routes) ? (config.routes as TrafficRoute[]).filter(isCompleteTrafficRoute) : [];
+  return routes.length
     ? `/api/traffic?routes=${encodeURIComponent(JSON.stringify(routes))}`
     : null;
 }
@@ -245,6 +260,7 @@ export const FETCH_KEY_REGISTRY: Record<string, {
   'fullscreen-news': { buildUrl: newsUrl, ttlMs: 300_000 },        // same feeds API as news
   'air-quality':  { buildUrl: airQualityUrl, ttlMs: 300_000 },    // server: 5min
   sports:         { buildUrl: sportsUrl, ttlMs: 60_000 },          // no server cache
+  'sports-team':  { buildUrl: sportsTeamUrl, ttlMs: 60_000 },      // the sports module's team view
   standings:      { buildUrl: standingsUrl, ttlMs: 300_000 },      // no server cache
   traffic:        { buildUrl: trafficUrl, ttlMs: 300_000 },        // no server cache
   todoist:        { buildUrl: todoistUrl, ttlMs: 60_000 },         // server: 1min

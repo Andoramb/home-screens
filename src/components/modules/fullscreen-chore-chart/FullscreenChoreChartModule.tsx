@@ -575,10 +575,7 @@ export default function FullscreenChoreChartModule({
     s: bonusScale,
     allowTouch,
     today,
-    formatDay: (iso: string) => {
-      const [y, m, d] = iso.split('-').map(Number);
-      return new Date(y, m - 1, d).toLocaleDateString(locale, { weekday: 'long' });
-    },
+    locale,
     onOpenGrab: (item: BonusItem) => setBonusSheet({ kind: 'pick', choreId: item.chore.id }),
     onOpenGrabbed: (item: BonusItem) => setBonusSheet({ kind: 'grabbed', choreId: item.chore.id }),
     onToggle: handleToggle,

@@ -19,8 +19,8 @@ describe('mealRevision', () => {
   /* Settings and grocery ticks are written on their own; they must not make
    * an unrelated plan edit conflict. */
   it('ignores everything but the two replaced arrays', () => {
-    const a = mealRevision({ savedMeals: [meal], plan: [entry], groceryChecked: ['x'], settings: { weekStartDay: 'monday' } } as never);
-    const b = mealRevision({ savedMeals: [meal], plan: [entry], groceryChecked: [], settings: {} } as never);
+    const a = mealRevision({ savedMeals: [meal], plan: [entry], groceryChecked: { '2026-09-13': ['x'] }, settings: { weekStartDay: 'monday' } } as never);
+    const b = mealRevision({ savedMeals: [meal], plan: [entry], groceryChecked: {}, settings: {} } as never);
     expect(a).toBe(b);
   });
 });

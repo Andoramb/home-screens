@@ -622,6 +622,30 @@ describe('editor store', () => {
       // Other settings unchanged
       expect(settings.weather.provider).toBe('weatherapi');
     });
+
+    it('lets go of a removed calendar everywhere it was named', () => {
+      // Settings > Calendar stages its form through here: a removed feed
+      // used to leave its owner with an empty row on the family views.
+      const feed = (id: string) => ({ id, type: 'ical' as const, name: id, url: `https://example.com/${id}.ics`, color: '#000000', enabled: true });
+      const store = useEditorStore;
+      const config = makeConfig({
+        screens: [{
+          id: 'screen-1', name: 'Screen 1', backgroundImage: '', modules: [
+            { id: 'cal', type: 'calendar', position: { x: 0, y: 0 }, size: { w: 400, h: 400 }, zIndex: 1, config: { sourceFilter: ['school', 'work'] }, style: { ...DEFAULT_MODULE_STYLE } },
+          ],
+        }],
+      });
+      config.settings.calendar = { ...config.settings.calendar, icalSources: [feed('school'), feed('work')], personSources: { ann: ['school'], ben: ['work'] } };
+      store.setState({ config });
+
+      store.getState().updateSettings({
+        calendar: { ...config.settings.calendar, icalSources: [feed('work')] },
+      });
+
+      const next = store.getState().config!;
+      expect(next.settings.calendar.personSources).toEqual({ ben: ['work'] });
+      expect(next.screens[0].modules[0].config.sourceFilter).toEqual(['work']);
+    });
   });
 
   describe('importConfig', () => {
@@ -1097,7 +1121,7 @@ describe('editor store', () => {
       store.setState({ config, isDirty: false });
 
       // Portrait 1080x1920 → Landscape 1920x1080
-      store.getState().scaleAllModules(1080, 1920, 1920, 1080);
+      store.getState().scaleAllModules(null, 1080, 1920, 1920, 1080);
 
       const state = store.getState();
       expect(state.isDirty).toBe(true);
@@ -1113,8 +1137,32 @@ describe('editor store', () => {
     it('does nothing when config is null', () => {
       const store = useEditorStore;
       store.setState({ config: null });
-      store.getState().scaleAllModules(1080, 1920, 1920, 1080);
+      store.getState().scaleAllModules(null, 1080, 1920, 1920, 1080);
       expect(store.getState().config).toBeNull();
+    });
+
+    it('scales the named display, not the one the editor has selected', () => {
+      // A rotation on a display's own settings page scales that display's
+      // modules whichever display the canvas is showing.
+      const tall = (id: string) => ({
+        id, type: 'clock' as const, position: { x: 0, y: 0 }, size: { w: 1040, h: 1900 }, zIndex: 1, config: {}, style: { ...DEFAULT_MODULE_STYLE },
+      });
+      const store = useEditorStore;
+      const config = makeConfig({
+        screens: [],
+        displays: [
+          { id: 'main', name: 'Main', screens: [{ id: 'm1', name: 'M1', backgroundImage: '', modules: [tall('main-mod')] }] },
+          { id: 'porch', name: 'Porch', screens: [{ id: 'p1', name: 'P1', backgroundImage: '', modules: [tall('porch-mod')] }] },
+        ],
+      });
+      store.setState({ config, selectedDisplayId: 'main' });
+
+      store.getState().scaleAllModules('porch', 1080, 1920, 1920, 1080);
+
+      const displays = store.getState().config!.displays!;
+      expect(displays[0].screens[0].modules[0].size).toEqual({ w: 1040, h: 1900 });
+      const porch = displays[1].screens[0].modules[0];
+      expect(porch.position.y + porch.size.h).toBeLessThanOrEqual(1080);
     });
   });
 
@@ -2893,19 +2941,38 @@ describe('editor store', () => {
         selectedScreenId: 'k1',
       });
 
+      store.getState().importLayoutAction(makeLayoutWithProfile(), { mode: 'replace' });
+
+      const state = store.getState();
+      const kitchen = state.config!.displays!.find((d) => d.id === 'kitchen')!;
+      // The imported profile replaced the OWNED list, and its screenIds were
+      // remapped to the freshly-minted screen UUID.
+      expect(kitchen.profiles?.map((p) => p.name)).toEqual(['Evening']);
+      const imported = kitchen.profiles![0];
+      expect(imported.screenIds).toEqual([kitchen.screens[0].id]);
+      expect(kitchen.screens[0].id).not.toBe('imported-1');
+      // Root pool and global activeProfile are untouched.
+      expect(state.config!.profiles?.map((p) => p.id)).toEqual(['root-p']);
+      expect(state.config!.settings.activeProfile).toBe('root-p');
+    });
+
+    it('add-mode import adds screens only and leaves every profile list alone', () => {
+      // A profile from the file keeps its schedule, so importing it beside
+      // the display's own screens would let it take the wall over.
+      const store = useEditorStore;
+      store.setState({
+        config: makeMultiDisplayConfig(),
+        selectedDisplayId: 'kitchen',
+        selectedScreenId: 'k1',
+      });
+
       store.getState().importLayoutAction(makeLayoutWithProfile(), { mode: 'add' });
 
       const state = store.getState();
       const kitchen = state.config!.displays!.find((d) => d.id === 'kitchen')!;
-      // Add-mode merged against the OWNED list, and the imported profile's
-      // screenIds were remapped to the freshly-minted screen UUID.
-      expect(kitchen.profiles?.map((p) => p.name)).toEqual(['Kitchen Day', 'Evening']);
-      const imported = kitchen.profiles!.find((p) => p.name === 'Evening')!;
-      const newScreen = kitchen.screens.find((s) => s.id !== 'k1')!;
-      expect(imported.screenIds).toEqual([newScreen.id]);
-      // Root pool and global activeProfile are untouched.
+      expect(kitchen.screens).toHaveLength(2);
+      expect(kitchen.profiles?.map((p) => p.id)).toEqual(['kp']);
       expect(state.config!.profiles?.map((p) => p.id)).toEqual(['root-p']);
-      expect(state.config!.settings.activeProfile).toBe('root-p');
     });
 
     it('replace-mode import clears a display activeProfile that no longer exists', () => {
@@ -3290,6 +3357,118 @@ describe('editor store', () => {
       useEditorStore.getState().undo();
       expect(useEditorStore.getState().config).toEqual(mine);
       expect(useEditorStore.getState().isDirty).toBe(true);
+    });
+  });
+
+  describe('adoptHubRewrite', () => {
+    let fetchMock: ReturnType<typeof vi.fn>;
+    const REV = 'X-Config-Revision';
+
+    function response(init: { ok: boolean; status: number; revision?: string; body?: unknown }) {
+      return {
+        ok: init.ok,
+        status: init.status,
+        headers: { get: (name: string) => (name === REV ? init.revision ?? null : null) },
+        json: async () => init.body,
+      };
+    }
+
+    const flag = { id: 'flag', type: 'plugin:flag' as const, position: { x: 0, y: 0 }, size: { w: 200, h: 200 }, zIndex: 1, config: {}, style: { ...DEFAULT_MODULE_STYLE } };
+    const clock = { ...flag, id: 'clock', type: 'clock' as const };
+    const withPlugin = () => makeConfig({ screens: [{ id: 'screen-1', name: 'Screen 1', backgroundImage: '', modules: [flag, clock] }] });
+    /** What the hub did: took the plugin's modules off every screen. */
+    const removeFlag = (config: ScreenConfiguration): ScreenConfiguration => ({
+      ...config,
+      screens: config.screens.map((s) => ({ ...s, modules: s.modules.filter((m) => m.type !== 'plugin:flag') })),
+    });
+
+    beforeEach(() => {
+      fetchMock = vi.fn();
+      vi.stubGlobal('fetch', fetchMock);
+      useEditorStore.setState({
+        config: withPlugin(),
+        configRevision: 'rev-1',
+        isDirty: true,
+        isSaving: false,
+        saveError: null,
+        saveErrorKind: null,
+        saveConflict: null,
+        selectedScreenId: 'screen-1',
+        selectedModuleId: 'flag',
+        _past: [],
+        _future: [],
+      });
+    });
+
+    it('reloads a store with nothing unsaved', async () => {
+      const loadConfig = vi.fn(async () => {});
+      useEditorStore.setState({ isDirty: false, loadConfig });
+
+      await useEditorStore.getState().adoptHubRewrite({ rewrite: removeFlag, previousRevision: 'rev-1', revision: 'rev-2' });
+
+      expect(loadConfig).toHaveBeenCalledTimes(1);
+      expect(useEditorStore.getState().config!.screens[0].modules).toHaveLength(2);
+    });
+
+    it('rewrites unsaved edits in memory and moves onto the new revision from the one the hub rewrote', async () => {
+      const generationBefore = useEditorStore.getState().configGeneration;
+
+      await useEditorStore.getState().adoptHubRewrite({ rewrite: removeFlag, previousRevision: 'rev-1', revision: 'rev-2' });
+
+      const state = useEditorStore.getState();
+      expect(state.config!.screens[0].modules.map((m) => m.id)).toEqual(['clock']);
+      expect(state.configRevision).toBe('rev-2');
+      expect(state.configGeneration).toBe(generationBefore + 1);
+      expect(state.selectedModuleId).toBeNull();
+      expect(state.isDirty).toBe(true);
+    });
+
+    it('keeps its own revision when the hub had moved on from it first', async () => {
+      await useEditorStore.getState().adoptHubRewrite({ rewrite: removeFlag, previousRevision: 'rev-x', revision: 'rev-2' });
+      expect(useEditorStore.getState().config!.screens[0].modules.map((m) => m.id)).toEqual(['clock']);
+      expect(useEditorStore.getState().configRevision).toBe('rev-1');
+
+      await useEditorStore.getState().adoptHubRewrite({ rewrite: removeFlag, previousRevision: null, revision: 'rev-3' });
+      expect(useEditorStore.getState().configRevision).toBe('rev-1');
+    });
+
+    it('a failed save, then a plugin uninstall, then a save meets a conflict instead of overwriting', async () => {
+      // Someone else saved (the hub is at rev-x) and this editor's save of its
+      // unsaved edits failed. The uninstall then rewrote rev-x into rev-y.
+      // Taking rev-y would let the next save replace rev-x's changes unseen.
+      fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+      await expect(useEditorStore.getState().saveConfig()).rejects.toThrow();
+      expect(useEditorStore.getState().saveErrorKind).toBe('network');
+
+      await useEditorStore.getState().adoptHubRewrite({ rewrite: removeFlag, previousRevision: 'rev-x', revision: 'rev-y' });
+
+      const theirs = removeFlag(makeConfig({ screens: [{ id: 'theirs', name: 'Theirs', backgroundImage: '', modules: [] }] }));
+      fetchMock.mockImplementation(async (_url: string, init: RequestInit) => {
+        const sent = (init.headers as Record<string, string>)[REV];
+        return sent === 'rev-y'
+          ? response({ ok: true, status: 200, revision: 'rev-z' })
+          : response({ ok: false, status: 409, revision: 'rev-y', body: { error: 'changed', config: theirs } });
+      });
+      await expect(useEditorStore.getState().saveConfig()).rejects.toThrow();
+
+      const [, init] = fetchMock.mock.calls.at(-1) as [string, RequestInit];
+      expect((init.headers as Record<string, string>)[REV]).toBe('rev-1');
+      const state = useEditorStore.getState();
+      expect(state.saveErrorKind).toBe('conflict');
+      expect(state.saveConflict?.revision).toBe('rev-y');
+      expect(state.isDirty).toBe(true);
+    });
+
+    it('with nobody else involved, the save after an uninstall goes through on the new revision', async () => {
+      await useEditorStore.getState().adoptHubRewrite({ rewrite: removeFlag, previousRevision: 'rev-1', revision: 'rev-y' });
+      fetchMock.mockResolvedValue(response({ ok: true, status: 200, revision: 'rev-z' }));
+
+      await useEditorStore.getState().saveConfig();
+
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect((init.headers as Record<string, string>)[REV]).toBe('rev-y');
+      expect(JSON.parse(init.body as string).screens[0].modules.map((m: { id: string }) => m.id)).toEqual(['clock']);
+      expect(useEditorStore.getState().configRevision).toBe('rev-z');
     });
   });
 });

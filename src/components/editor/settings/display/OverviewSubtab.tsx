@@ -70,7 +70,9 @@ export default function OverviewSubtab({
     : null;
   const screenCount = display.screens.length;
   // Active profile resolution: the per-display field wins over global,
-  // matching `filterConfigForDisplay`'s rule.
+  // matching `filterConfigForDisplay`'s rule. This is the saved pick, which
+  // the ProfileSubtab edits. The heartbeat's `activeProfile` is the profile
+  // in effect (a scheduled one wins over the pick), so it is no stand-in.
   const activeProfileId = display.activeProfile ?? config.settings.activeProfile;
   const profilePool = display.profiles ?? config.profiles ?? [];
   const activeProfile = profilePool.find((p) => p.id === activeProfileId);
@@ -109,7 +111,7 @@ export default function OverviewSubtab({
           )}
         </KvCard>
         <KvCard label={t('settings.perDisplayPage.overview.activeProfileLabel')}>
-          {activeProfile?.name ?? heartbeat?.status?.activeProfile ?? (
+          {activeProfile?.name ?? (
             <span className="text-hs-text-faint">
               {t('settings.perDisplayPage.overview.noActiveProfile')}
             </span>

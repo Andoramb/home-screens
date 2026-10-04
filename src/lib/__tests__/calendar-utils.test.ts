@@ -12,6 +12,7 @@ import {
   clampRollingWeeks,
   clampGridMaxEventsPerCell,
   defaultGridMaxEventsPerCell,
+  gridCellEvents,
   isGridView,
   isThemedGridView,
   isWeekendDay,
@@ -1031,6 +1032,53 @@ describe('clampGridMaxEventsPerCell', () => {
     // NaN would otherwise reach events.slice(0, NaN) and blank every cell.
     expect(clampGridMaxEventsPerCell(Number.NaN, 'month')).toBe(4);
     expect(clampGridMaxEventsPerCell('abc' as unknown as number, 'week')).toBe(5);
+  });
+});
+
+describe('gridCellEvents', () => {
+  // A 16px card: 20.8px pills 1px apart, a 13.2px "+N more" line.
+  const pill = 20.8;
+  const cell = { moreHeight: 13.2, gap: 1, max: 4 };
+  const pills = (n: number) => Array.from({ length: n }, () => pill);
+
+  it('lists every event that fits as a pill, with no "+N more"', () => {
+    expect(gridCellEvents({ ...cell, heights: pills(3), room: 3 * pill + 2 })).toEqual({ kind: 'pills', shown: 3 });
+  });
+
+  it('keeps room for "+N more" on a short row rather than letting the pills cut it off', () => {
+    // A fixed cap of four drew four pills into a 50px cell and clipped the line saying more were hidden.
+    const listed = gridCellEvents({ ...cell, heights: pills(4), room: 50 });
+    expect(listed).toEqual({ kind: 'pills', shown: 1 });
+    expect(1 * (pill + 1) + cell.moreHeight).toBeLessThanOrEqual(50);
+  });
+
+  it('shows dots, not a bare "+N more", when not even one pill fits beside the line', () => {
+    expect(gridCellEvents({ ...cell, heights: pills(2), room: 30 })).toEqual({ kind: 'dots' });
+    // A single event that fits on its own is still a pill.
+    expect(gridCellEvents({ ...cell, heights: pills(1), room: 30 })).toEqual({ kind: 'pills', shown: 1 });
+  });
+
+  it('shows dots on a row too short for a single pill', () => {
+    // The modern themes in a default-size six-week grid: about 14.6px under the day row.
+    expect(gridCellEvents({ ...cell, heights: pills(1), room: 14.6 })).toEqual({ kind: 'dots' });
+  });
+
+  it('never lists more pills than the household cap, however tall the row', () => {
+    expect(gridCellEvents({ ...cell, heights: pills(9), room: 1000 })).toEqual({ kind: 'pills', shown: 4 });
+  });
+
+  it('counts each pill at its own height', () => {
+    // Two tall all-day pills and a timed one: the third does not fit beside the label.
+    expect(gridCellEvents({ ...cell, heights: [28, 28, pill], room: 75 })).toEqual({ kind: 'pills', shown: 2 });
+  });
+
+  it('draws nothing for an empty day', () => {
+    expect(gridCellEvents({ ...cell, heights: [], room: 5 })).toEqual({ kind: 'pills', shown: 0 });
+  });
+
+  it('lists up to the cap until the row has been measured', () => {
+    expect(gridCellEvents({ ...cell, heights: pills(6), room: 0 })).toEqual({ kind: 'pills', shown: 4 });
+    expect(gridCellEvents({ ...cell, heights: pills(2), room: 0 })).toEqual({ kind: 'pills', shown: 2 });
   });
 });
 

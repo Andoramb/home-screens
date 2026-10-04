@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { MealSlotType, MealSettings } from '@/types/config';
+import { groceryWeekKey } from '@/lib/grocery-checks';
 import { useMealsData } from './useMealsData';
 import { useMealsWeekNav } from './useMealsWeekNav';
 import { useMealsPlanActions } from './useMealsPlanActions';
 import { useMealsLibrary } from './useMealsLibrary';
 import { useMealsGrocery } from './useMealsGrocery';
 import type { MealsConfirmAction } from '../components/meals-shared';
+
+const MEALS_POLL_MS = 15_000;
 
 /**
  * Everything the Meals tab renders, wired together from focused hooks:
@@ -28,6 +31,7 @@ export function useMealsTabData() {
     setSettings,
     globalTimeFormat,
     loading,
+    loadError,
     saving,
     setSaving,
     saveError,
@@ -43,16 +47,24 @@ export function useMealsTabData() {
 
   const weekNav = useMealsWeekNav(settings);
 
-  // Load once, and again whenever the phone comes back to this page. A tab
-  // left open on Sunday's plan would otherwise keep an hours-old copy, and
-  // the first tap on it would have to be re-applied against the hub's copy.
+  // Load once, again whenever the phone comes back to this page or back
+  // onto the network, and every so often while it is open. A tab left open
+  // on Sunday's plan would otherwise keep an hours-old copy, a grocery item
+  // ticked on another phone would never show, and a load that failed during
+  // a Wi-Fi blip would leave the tab empty for good.
   useEffect(() => {
     fetchData();
-    const onVisibilityChange = () => {
+    const whenVisible = () => {
       if (document.visibilityState === 'visible') fetchData();
     };
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+    document.addEventListener('visibilitychange', whenVisible);
+    window.addEventListener('online', fetchData);
+    const poll = setInterval(whenVisible, MEALS_POLL_MS);
+    return () => {
+      document.removeEventListener('visibilitychange', whenVisible);
+      window.removeEventListener('online', fetchData);
+      clearInterval(poll);
+    };
   }, [fetchData]);
 
   const planActions = useMealsPlanActions({
@@ -79,11 +91,18 @@ export function useMealsTabData() {
     setConfirmAction,
   });
 
+  // Ticks belong to the list they were made on: the viewed week's.
+  const groceryWeek = groceryWeekKey(weekNav.weekDates[0].date, settings.weekStartDay);
   const grocery = useMealsGrocery({
     weekPlan: planActions.weekPlan,
     savedMeals,
     groceryChecked,
+    week: groceryWeek,
   });
+  const toggleViewedGroceryItem = useCallback(
+    (itemName: string) => toggleGroceryItem(groceryWeek, itemName),
+    [toggleGroceryItem, groceryWeek],
+  );
 
   const saveSettings = useCallback(async (next: MealSettings): Promise<boolean> => {
     const prev = settings;
@@ -96,9 +115,13 @@ export function useMealsTabData() {
       // what's actually on disk. The useMealsData hook will have set
       // `saveError` which the toast already renders.
       setSettings(prev);
+    } else if (next.weekStartDay !== prev.weekStartDay) {
+      // The hub moved every week's grocery ticks to the new weeks; fetch them
+      // rather than show the realigned week unticked until the next poll.
+      fetchData();
     }
     return ok;
-  }, [settings, saveSettingsOnly, setSettings]);
+  }, [settings, saveSettingsOnly, setSettings, fetchData]);
 
   return {
     savedMeals,
@@ -106,6 +129,8 @@ export function useMealsTabData() {
     settings,
     globalTimeFormat,
     loading,
+    loadError,
+    retryLoad: fetchData,
     saving,
     saveError,
     setSaveError,
@@ -140,7 +165,7 @@ export function useMealsTabData() {
     toggleFavorite: library.toggleFavorite,
     groceryList: grocery.groceryList,
     groceryStats: grocery.groceryStats,
-    toggleGroceryItem,
+    toggleGroceryItem: toggleViewedGroceryItem,
     confirmAction,
     setConfirmAction,
     saveSettings,

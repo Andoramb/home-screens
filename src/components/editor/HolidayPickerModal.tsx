@@ -8,7 +8,8 @@ import { isoDateInTZ } from '@/lib/timezone';
 import { useEditorHouseholdTimezone } from '@/components/editor/useEditorHouseholdClock';
 import { useEscapeKey } from '@/hooks/useEscapeKey';
 import type { CountdownEvent } from '@/types/config';
-import { useFormattingLocale, useTranslate } from '@/i18n';
+import { useFormattingLocale, useLocale, useTranslate } from '@/i18n';
+import { localizedHolidayCountries } from '@/lib/holiday-countries';
 
 interface HolidayInfo {
   id: string;
@@ -53,6 +54,7 @@ export default function HolidayPickerModal({
   onClose,
 }: HolidayPickerModalProps) {
   const t = useTranslate('editor');
+  const locale = useLocale();
   const tCore = useTranslate('core');
   const [countries, setCountries] = useState<Country[]>([]);
   const [country, setCountry] = useState(initialCountry ?? '');
@@ -202,7 +204,7 @@ export default function HolidayPickerModal({
               className="bg-hs-card border border-hs-border-strong rounded px-2 py-1.5 text-sm text-hs-text-primary"
             >
               <option value="">{t('holidayPickerModal.countryPlaceholder')}</option>
-              {countries.map((c) => (
+              {localizedHolidayCountries(countries, locale).map((c) => (
                 <option key={c.countryCode} value={c.countryCode}>
                   {c.name}
                 </option>

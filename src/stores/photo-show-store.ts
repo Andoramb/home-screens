@@ -6,6 +6,9 @@ export interface ShownPhoto {
   url: string;
   kind: 'image' | 'video';
   durationMs: number;
+  /** A picture's size as people see it, when the hub could read it. */
+  width?: number;
+  height?: number;
 }
 
 interface PhotoShowState {

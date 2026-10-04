@@ -30,3 +30,14 @@ export function mmToPrecipUnit(mm: number, isMetric: boolean): number {
 export function windUnitLabel(units: 'metric' | 'imperial'): string {
   return units === 'metric' ? 'km/h' : 'mph';
 }
+
+/**
+ * A pressure reading as text plus its label. Every provider reports hPa;
+ * imperial households read a barometer in inches of mercury, which only
+ * means something to two decimals (29.92), so it is not rounded to a whole.
+ */
+export function pressureForUnits(hPa: number, units: 'metric' | 'imperial'): { value: string; unit: string } {
+  return units === 'metric'
+    ? { value: String(Math.round(hPa)), unit: 'hPa' }
+    : { value: (hPa * 0.02953).toFixed(2), unit: 'inHg' };
+}

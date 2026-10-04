@@ -19,7 +19,8 @@ vi.mock('@/lib/api-utils', async (importOriginal) => {
   };
 });
 
-vi.mock('@/lib/espn', () => ({
+vi.mock('@/lib/espn', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/espn')>()),
   LEAGUE_MAP: {
     nfl: 'football/nfl',
     nba: 'basketball/nba',

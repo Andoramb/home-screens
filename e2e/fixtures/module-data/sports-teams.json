@@ -1,0 +1,7 @@
+{
+  "teams": [
+    { "league": "nfl", "abbr": "GB", "name": "Green Bay Packers", "shortName": "Packers", "logo": "", "color": "203731" },
+    { "league": "nfl", "abbr": "MIN", "name": "Minnesota Vikings", "shortName": "Vikings", "logo": "", "color": "4f2683" },
+    { "league": "nba", "abbr": "MIN", "name": "Minnesota Timberwolves", "shortName": "Timberwolves", "logo": "", "color": "266092" }
+  ]
+}

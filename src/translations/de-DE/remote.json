@@ -58,7 +58,8 @@
     "sleepDisplay": "Display schlafen legen",
     "sendAlert": "Hinweis senden",
     "waitingFor": "Warte auf {name}…",
-    "waitingForAll": "Warte auf die Displays…"
+    "waitingForAll": "Warte auf die Displays…",
+    "waitingForUnnamed": "Warte auf das Display…"
   },
   "brightnessCard": {
     "label": "Helligkeit",
@@ -67,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profile",
-    "noProfile": "Alle Bildschirme"
+    "noProfile": "Alle Bildschirme",
+    "scheduledNote": "Gerade läuft „{profile}“ nach Zeitplan. Was du hier wählst, startet danach."
   },
   "displayPicker": {
     "targeting": "Senden an",
@@ -147,7 +149,9 @@
       },
       "limitLine": "Mach erst fertig, was du dir geschnappt hast. Schon gemacht? Dann hak diese ab.",
       "youDidItOn": "Du hast sie am {day} gemacht",
+      "youDidItOnDate": "Du hast sie am {day} gemacht",
       "didItOn": "{name} hat sie am {day} gemacht",
+      "didItOnDate": "{name} hat sie am {day} gemacht",
       "limitLineMany": "Mach erst eine deiner geschnappten Aufgaben fertig. Schon gemacht? Dann hak diese ab.",
       "yours": "Deine",
       "didItToday": "{name} hat sie heute gemacht",
@@ -171,7 +175,9 @@
     "putBackConfirm": {
       "title": "Wieder freigeben?",
       "description": "„{chore}“ ist dann wieder frei. Schon verdiente Tickets bleiben erhalten."
-    }
+    },
+    "loadError": "Deine Aufgaben konnten nicht geladen werden. Prüfe, ob der Hub an ist, und versuch es noch einmal.",
+    "retry": "Noch einmal versuchen"
   },
   "choreHistoryNav": {
     "jumpToTodayAriaLabel": "Zu heute springen",
@@ -276,6 +282,11 @@
         "title": "„{name}“ löschen?",
         "description": "Damit wird die Mahlzeit auch aus allen geplanten Zeitfenstern entfernt.",
         "confirmLabel": "Mahlzeit löschen"
+      },
+      "suggestWeek": {
+        "title": "Mahlzeiten dieser Woche ersetzen?",
+        "description": "Vorschlagen wählt neue Mahlzeiten für die ganze Woche aus. Die für diese Woche schon geplanten Mahlzeiten werden ersetzt.",
+        "confirmLabel": "Mahlzeiten ersetzen"
       }
     },
     "weekView": {
@@ -310,7 +321,10 @@
         "comfort": "Wohlfühl",
         "kid-friendly": "Kindgerecht"
       }
-    }
+    },
+    "loadError": "Deine Mahlzeiten konnten nicht geladen werden. Prüfe, ob der Hub an ist, und versuch es noch einmal.",
+    "retry": "Noch einmal versuchen",
+    "saveFailed": "Das hat nicht geklappt. Versuch es noch einmal."
   },
   "mealForm": {
     "titleNew": "Mahlzeit hinzufügen",
@@ -468,7 +482,8 @@
     "clearOnDisplay": "Meldungen auf {name} löschen",
     "clearOnAll": "Meldungen auf allen Displays löschen",
     "clearingButton": "Wird gelöscht…",
-    "showingNow": "({count} gerade sichtbar)"
+    "showingNow": "({count} gerade sichtbar)",
+    "clearOnUnnamed": "Meldungen auf dem Display löschen"
   },
   "rewardsView": {
     "changedElsewhere": "Jemand anderes hat die Belohnungen geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
@@ -492,7 +507,9 @@
       "confirmLabelPlural": "Einlösen für {cost} Tickets",
       "emptyKid": "Noch keine Belohnungen. Ein Erwachsener kann welche am Handy hinzufügen.",
       "balanceLabelNamed": "Tickets von {name}",
-      "switchHint": "Nicht {name}? Wähle deinen Namen im Tab „Heute“."
+      "switchHint": "Nicht {name}? Wähle deinen Namen im Tab „Heute“.",
+      "refused": "Das hat nicht geklappt. Dafür sind nicht mehr genug Tickets da.",
+      "failed": "Das hat nicht geklappt. Versuch es noch einmal."
     },
     "manage": {
       "heading": "Belohnungen",
@@ -843,7 +860,10 @@
     "newRoutine": "Neue Routine",
     "editRoutine": "Routine bearbeiten",
     "emptyHint": "Eine Routine ist ein Timer mit Schritten, z. B. eine Morgenroutine: anziehen, Zähne putzen, Bett machen. Erstelle eine und starte sie auf dem Display.",
-    "routineMeta": "{steps} Schritte · {minutes} Min.",
+    "routineMeta": {
+      "one": "{steps} Schritt · {minutes} Min.",
+      "other": "{steps} Schritte · {minutes} Min."
+    },
     "stepCount": "Schritt {current} von {total}",
     "pause": "Pause",
     "resume": "Weiter",
@@ -893,7 +913,15 @@
     "showingOn": "Läuft auf {names}",
     "showingOnDisplay": "Läuft auf dem Display",
     "waitingForDisplay": "Warte, bis ein Display ihn übernimmt…",
-    "notShowing": "Noch kein Display zeigt ihn an. Prüfe, ob ein Display eingeschaltet ist."
+    "notShowing": "Noch kein Display zeigt ihn an. Prüfe, ob ein Display eingeschaltet ist.",
+    "changedElsewhere": "Jemand anderes hat die Abläufe geändert. Deine letzte Änderung wurde nicht gespeichert. Bitte versuche es noch einmal.",
+    "whyNoSave": {
+      "name": "Gib dem Ablauf einen Namen, um zu speichern.",
+      "stepName": "Gib jedem Schritt einen Namen, um zu speichern.",
+      "stepLength": "Jeder Schritt muss mindestens {seconds} Sekunden dauern."
+    },
+    "quickTooShort": "Ein Timer muss mindestens {seconds} Sekunden dauern.",
+    "stepLimit": "Ein Ablauf kann bis zu {count} Schritte haben."
   },
   "lists": {
     "title": "Listen",
@@ -993,10 +1021,15 @@
     "alertsCleared": "Meldungen auf {name} gelöscht",
     "alertsClearedAll": "Meldungen auf allen Displays gelöscht",
     "noConfirm": "{name} hat nicht geantwortet. Vielleicht ist es aus oder offline.",
-    "profileSwitched": "{name} zeigt jetzt {profile}",
+    "profileSwitched": "{name} zeigt jetzt „{profile}“",
     "profileCleared": "{name} zeigt alle Bildschirme",
+    "profileAfterSchedule": "{name} wechselt zu „{profile}“, sobald „{scheduled}“ endet",
+    "profileClearedAfterSchedule": "{name} zeigt alle Bildschirme, sobald „{scheduled}“ endet",
+    "profileKeptAfterSchedule": "{name} bleibt bei „{profile}“, wenn der Zeitplan endet",
     "profileFailed": "Das Profil auf {name} konnte nicht gewechselt werden",
-    "hubBack": "Home Screens ist wieder da"
+    "hubBack": "Home Screens ist wieder da",
+    "alertSentUnnamed": "Meldung an das Display gesendet",
+    "alertsClearedUnnamed": "Meldungen auf dem Display gelöscht"
   },
   "tabNotSetUp": {
     "chores": {

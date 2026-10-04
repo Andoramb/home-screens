@@ -221,6 +221,9 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
   );
   const controlsDisabled = onlineTargets.length === 0;
   const targetName = allMode ? null : (targetEntries[0]?.name ?? t('displayHero.theDisplay'));
+  // A household with one display never named it. "The display" stands in as
+  // a heading, but inside a sentence it needs that sentence's own wording.
+  const targetUnnamed = !allMode && (!hasMultipleDisplays || !targetEntries[0]?.name);
 
   // "Kitchen didn't respond" — names the online targets that never confirmed.
   const noConfirmToast = useCallback(() => {
@@ -404,6 +407,7 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
                 sleepPending={sleepPending.expected !== null}
                 disabled={controlsDisabled}
                 targetName={targetName}
+                targetUnnamed={targetUnnamed}
                 onSleepWake={handleSleepWake}
                 onAlertOpen={() => setAlertOpen(true)}
               />
@@ -423,10 +427,12 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
               {showSingleDisplayControls && effectiveProfiles.length > 0 && (
                 // The page-load profile only stands in until the first
                 // heartbeat. After that the display's report wins, and its
-                // null means "no profile", not "unknown".
+                // null means "no profile", not "unknown". The report names
+                // the profile in effect, which a schedule can override.
                 <ProfileSwitcher
                   profiles={effectiveProfiles}
                   activeProfile={status ? status.activeProfile : effectiveInitialActiveProfile}
+                  scheduled={status?.profileScheduled === true}
                   displayName={targetName ?? t('displayHero.theDisplay')}
                 />
               )}
@@ -438,6 +444,7 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
                 open={alertOpen}
                 onClose={() => setAlertOpen(false)}
                 targetName={targetName}
+                targetUnnamed={targetUnnamed}
                 activeAlerts={activeAlerts}
                 onSent={nudgeAllPolls}
               />

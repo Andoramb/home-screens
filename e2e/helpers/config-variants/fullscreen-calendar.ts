@@ -160,8 +160,10 @@ const PEOPLE_ROSTER = [
   { id: 'p3', name: 'Quiet Person', color: '#2563eb' },
 ];
 const PEOPLE_GROUPS = [{ id: 'g-kids', name: 'Kids', memberIds: ['p1'] }];
+/** A configured feed for each id below: only calendars that still exist give their owner a row. */
+const icalStub = (id: string) => ({ id, type: 'ical', name: id, url: `https://example.com/${id}.ics`, color: BLUE, enabled: true });
 const PEOPLE_SETTINGS = { calendar: {
-  googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [], daysAhead: 7,
+  googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [icalStub('src-a'), icalStub('src-b')], daysAhead: 7,
   personSources: { p1: ['src-a'], p2: ['src-b'] },
 } };
 
@@ -496,12 +498,14 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
     expect: async (mod) => { await expect(mod.locator('[data-day-badge]')).toHaveText('RULE BADGE'); },
   },
   {
-    // Specific-days matching: a rule pinned to today's day-of-month badges
-    // only today's cell in the month grid.
+    // Specific-days matching: a rule pinned to today's month and day-of-month
+    // badges only today's cell in the month grid. The month constraint matters:
+    // the grid's spillover rows show the neighbouring months' days too, so a
+    // bare day-of-month rule also badges last month's 30th when today is the 30th.
     type: 'fullscreen-calendar', name: 'day-rules-specific-days', kind: 'networked', stubKey: 'calendar', stubBody: MONTH_MANY,
     config: {
       view: 'month-grid',
-      dayRules: [{ id: 'd1', match: { dayOfMonth: new Date().getDate() }, badgeText: 'MATCH DAY', badgeColor: '#f97316' }],
+      dayRules: [{ id: 'd1', match: { months: [new Date().getMonth()], dayOfMonth: new Date().getDate() }, badgeText: 'MATCH DAY', badgeColor: '#f97316' }],
     },
     expect: async (mod) => {
       await expect(mod.locator('[data-day-badge]', { hasText: 'MATCH DAY' })).toBeVisible();
@@ -1003,7 +1007,7 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
       { id: 'p2', name: 'Quiet Person', color: '#059669' },
     ],
     settings: { calendar: {
-      googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [], daysAhead: 7,
+      googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [icalStub('src-a'), icalStub('src-none')], daysAhead: 7,
       personSources: { p1: ['src-a'], p2: ['src-none'] },
     } },
     config: { view: 'family-grid' },

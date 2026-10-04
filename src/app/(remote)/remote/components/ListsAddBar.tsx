@@ -7,7 +7,8 @@ import { TODO_LIMITS } from '@/types/todos';
 
 interface ListsAddBarProps {
   listName: string;
-  onAdd: (text: string) => void;
+  /** Resolves to false when the item could not be saved. */
+  onAdd: (text: string) => Promise<boolean>;
 }
 
 /** Height of the bar itself, without the safe area. The tab pads for it. */
@@ -18,6 +19,10 @@ export const ADD_BAR_HEIGHT = 68;
  * (64px plus the safe area) and keeps focus after each add so a whole
  * grocery run can be typed without touching the field again. Options live
  * in the item sheet, not here.
+ *
+ * The field clears at once, for the next item. Text that then fails to save
+ * comes back into it (unless something newer is already being typed), so a
+ * dropped connection never costs what was typed.
  */
 export default function ListsAddBar({ listName, onAdd }: ListsAddBarProps) {
   const t = useTranslate('remote');
@@ -27,7 +32,9 @@ export default function ListsAddBar({ listName, onAdd }: ListsAddBarProps) {
   const submit = () => {
     const clean = text.trim();
     if (!clean) return;
-    onAdd(clean);
+    void onAdd(clean).then((saved) => {
+      if (!saved) setText((now) => (now.trim() ? now : clean));
+    });
     setText('');
     inputRef.current?.focus();
   };

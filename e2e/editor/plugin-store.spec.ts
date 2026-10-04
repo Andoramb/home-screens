@@ -371,6 +371,8 @@ test('uninstalling removes the plugin files, its installed entry, and its palett
     (r) => r.url().includes('/api/plugins/install') && r.request().method() === 'DELETE' && r.ok(),
   );
   await dialog.getByRole('button', { name: `Uninstall ${FIXTURE_PLUGIN_ID}` }).click();
+  // Uninstalling deletes the plugin's settings and sign-in, so it asks first.
+  await page.getByRole('button', { name: 'Uninstall', exact: true }).click();
   await del;
 
   // The reload remounts the panel on Browse; re-select Installed to see it empty.
@@ -779,8 +781,8 @@ test('a beta-channel install shows the Beta badge and graduates via the normal U
   const dialog = await openPanel(page);
   await dialog.getByRole('button', { name: 'Installed' }).click();
 
-  // The installed beta record renders a Beta badge next to its id.
-  const installedRow = dialog.locator('div').filter({ hasText: FIXTURE_PLUGIN_ID }).last();
+  // The installed beta record renders a Beta badge next to its name.
+  const installedRow = dialog.locator('div').filter({ hasText: 'E2E Fixture Plugin' }).last();
   await expect(installedRow.getByText('Beta', { exact: true })).toBeVisible();
 
   await dialog.getByRole('button', { name: /Updates/ }).click();
@@ -826,7 +828,7 @@ test('the installed tab falls back to the registry version channel for a record 
   const dialog = await openPanel(page);
   await dialog.getByRole('button', { name: 'Installed' }).click();
 
-  const installedRow = dialog.locator('div').filter({ hasText: FIXTURE_PLUGIN_ID }).last();
+  const installedRow = dialog.locator('div').filter({ hasText: 'E2E Fixture Plugin' }).last();
   await expect(installedRow.getByText('Beta', { exact: true })).toBeVisible();
 });
 

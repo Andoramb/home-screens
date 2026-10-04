@@ -2,6 +2,7 @@
 
 import { useRotatingIndex } from '@/hooks/useRotatingIndex';
 import type { StandingsGroup, StandingsEntry } from '@/lib/espn-standings';
+import { isFavoriteTeam } from '@/lib/sports-order';
 import { formatRecord, getPlayoffTeamCount, isSoccer, StandingsHeader, StandingsTeamRow } from './shared';
 
 interface TableViewProps {
@@ -10,6 +11,8 @@ interface TableViewProps {
   showPlayoffLine: boolean;
   rotationIntervalMs: number;
   grouping: 'division' | 'conference' | 'league';
+  /** `<league>:<ABBR>` keys whose rows stand out. */
+  favorites?: string[];
 }
 
 function getColumns(league: string): { key: string; label: string; width: string }[] {
@@ -96,7 +99,7 @@ function CellValue({ entry, col, league }: { entry: StandingsEntry; col: string;
   }
 }
 
-export function TableView({ groups, teamsToShow, showPlayoffLine, rotationIntervalMs, grouping }: TableViewProps) {
+export function TableView({ groups, teamsToShow, showPlayoffLine, rotationIntervalMs, grouping, favorites = [] }: TableViewProps) {
   const index = useRotatingIndex(groups.length, rotationIntervalMs);
   const group = groups[index];
 
@@ -135,6 +138,7 @@ export function TableView({ groups, teamsToShow, showPlayoffLine, rotationInterv
               key={entry.teamAbbr}
               entry={entry}
               showPlayoffCutoff={showPlayoffLine && entry.rank === playoffCount}
+              highlight={isFavoriteTeam(group.league, entry.teamAbbr, favorites)}
               barWidth={barWidth}
               nameWrapperClassName="flex-1 min-w-0 flex items-center gap-1 relative"
             >

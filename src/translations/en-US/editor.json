@@ -82,6 +82,13 @@
         "keepMine": "Keep mine"
       },
       "savedToDisplay": "Saved to {name}"
+    },
+    "loadError": {
+      "title": "Home Screens couldn't open your saved setup",
+      "body": "One of its saved files is damaged or can't be read right now. Nothing has been deleted. Try again, or put back a backup below.",
+      "retry": "Try again",
+      "retrying": "Trying again…",
+      "detailLabel": "What Home Screens said"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Rename",
       "duplicate": "Duplicate",
       "delete": "Delete"
-    }
+    },
+    "newScreenName": "Screen {number}",
+    "copyName": "{name} copy"
   },
   "screenSearch": {
     "buttonAriaLabel": "Find a screen or module",
@@ -511,7 +520,8 @@
         "detectedViaIp": "Found {name} from your internet connection.",
         "detectedCoords": "Found {lat}, {lon}.",
         "detectFailed": "Error: Could not detect location",
-        "zoneSet": "Time zone set to {zone} to match."
+        "zoneSet": "Time zone set to {zone} to match.",
+        "notFound": "No place by that name was found. Try a nearby town."
       },
       "queryLabel": "Your town or zip code",
       "clockCheck": {
@@ -738,7 +748,8 @@
         "plaintextConfirm": "Restore",
         "wrongPassword": "That password did not work. Try again, or restore without your keys.",
         "damagedKeys": "The keys in this file are damaged and cannot be read. You can still restore everything else.",
-        "reloadFailed": "Your backup was restored, but the editor could not reload. Refresh the page to see it."
+        "reloadFailed": "Your backup was restored, but the editor could not reload. Refresh the page to see it.",
+        "finished": "Restore finished. Everything from that backup is back."
       },
       "description": "Save a copy of everything, put it back, or start from a template.",
       "restoreConfirm": {
@@ -1674,6 +1685,7 @@
         "enableLabel": "Notify me when an update is available"
       },
       "upToDate": "You're on the latest version",
+      "checkFailed": "Couldn't check for updates right now",
       "changelog": {
         "heading": "Changelog",
         "viewButton": "View Changelog",
@@ -1989,7 +2001,9 @@
         "passwordsDoNotMatch": "Passwords do not match",
         "setFailed": "Failed to set password",
         "changeFailed": "Failed to change password",
-        "disableFailed": "Failed to disable authentication"
+        "disableFailed": "Failed to disable authentication",
+        "passwordTooShort": "The password needs at least {count} characters.",
+        "invalidAddress": "\"{entry}\" is not a network address. Try one like 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Password set! Authentication is now enabled.",
@@ -2123,7 +2137,12 @@
         "enableAriaLabel": "Enable {id}",
         "disableAriaLabel": "Disable {id}",
         "uninstallTitle": "Uninstall",
-        "uninstallAriaLabel": "Uninstall {id}"
+        "uninstallAriaLabel": "Uninstall {id}",
+        "uninstallConfirm": {
+          "title": "Uninstall {name}?",
+          "message": "It comes off every screen that shows it. Its saved settings and sign-in are deleted too.",
+          "confirmLabel": "Uninstall"
+        }
       },
       "updates": {
         "allUpToDate": "All plugins are up to date",
@@ -2354,7 +2373,8 @@
       "formErrorWidth": "Width must be between {min} and {max}. Check for a missing digit: most screens are 1080 or 1920 across.",
       "formErrorHeight": "Height must be between {min} and {max}. Check for a missing digit: most screens are 1080 or 1920 tall.",
       "softwareUpdateWaiting": "Update waiting",
-      "softwareNeedsSetup": "Needs setup"
+      "softwareNeedsSetup": "Needs setup",
+      "mainDisplayName": "Main Display"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3271,7 +3291,9 @@
     "importButton": "Add these screens",
     "savedAt": "Saved {date}",
     "screenPillSingular": "{name} · {count} module",
-    "screenPillPlural": "{name} · {count} modules"
+    "screenPillPlural": "{name} · {count} modules",
+    "importedName": "{name} (imported)",
+    "importedNameNumbered": "{name} (imported {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3791,6 +3813,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Default (Midnight)",
+      "themeDefault": "Default (from Settings)",
       "photoSource": "Photo Source",
       "sourceLocal": "Local Photos",
       "sourceImmich": "Immich",
@@ -4293,7 +4316,21 @@
       "viewCards": "Cards",
       "viewList": "List",
       "viewTicker": "Ticker",
+      "viewTeam": "Team",
       "leagues": "Leagues",
+      "leaguesAmerican": "American",
+      "leaguesSoccer": "Soccer",
+      "favoriteTeams": "My teams",
+      "favoriteTeamsSearch": "Search for a team",
+      "favoriteTeamsLoading": "Loading teams",
+      "favoriteTeamsError": "Could not load teams",
+      "favoriteTeamsHelp": "Games with these teams come first. The first team gets the top game.",
+      "favoriteTeamsHelpTeam": "The first team shows first; more than one takes turns.",
+      "favoriteTeamsHidden": "league is off",
+      "favoriteTeamsLimit": "That is the most teams this module can follow ({count}). Remove one to add another.",
+      "favoriteTeamsRemove": "Remove {team}",
+      "favoriteTeamsDrag": "Drag to move {team}",
+      "favoritesOnly": "Only show my teams' games",
       "tickerSpeed": "Ticker Speed (sec/game)"
     },
     "standings": {
@@ -4305,6 +4342,7 @@
       "groupingLeague": "Full League",
       "league": "League",
       "grouping": "Grouping",
+      "favoriteTeamsHelp": "These teams stand out in the table.",
       "playoffCutoffLine": "Playoff Cutoff Line",
       "teamsToShow": "Teams to Show (0 = all)",
       "rotationSeconds": "Rotation (seconds)"
@@ -4958,7 +4996,58 @@
   },
   "templatePicker": {
     "title": "Templates",
-    "loadFailed": "Failed to load \"{name}\""
+    "loadFailed": "Failed to load \"{name}\"",
+    "categories": {
+      "All": "All",
+      "Dashboard": "Dashboard",
+      "Weather": "Weather",
+      "Productivity": "Productivity",
+      "Media": "Media",
+      "Sports": "Sports",
+      "Finance": "Finance"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Family Dashboard",
+        "description": "Clock, calendar, weather, today's chores, countdown, and greeting: a complete family hub."
+      },
+      "weather-station": {
+        "name": "Weather Station",
+        "description": "Multiple weather views, rain map, sunrise/sunset, air quality, and moon phase."
+      },
+      "minimal-clock": {
+        "name": "Minimal Clock",
+        "description": "A single large clock: clean and distraction-free."
+      },
+      "info-board": {
+        "name": "Info Board",
+        "description": "News, stock ticker, word of the day, history, and quotes."
+      },
+      "photo-frame": {
+        "name": "Photo Frame",
+        "description": "Full-screen photo slideshow: turn your display into a digital picture frame."
+      },
+      "sports-hub": {
+        "name": "Sports Hub",
+        "description": "Live scores and league standings."
+      },
+      "productivity": {
+        "name": "Productivity",
+        "description": "Todoist tasks, calendar, countdown timer, and year progress."
+      },
+      "morning-dashboard": {
+        "name": "Morning Dashboard",
+        "description": "Weather, calendar, traffic, and a greeting to start your day."
+      },
+      "kitchen-display": {
+        "name": "Kitchen Display",
+        "description": "Meal planner, clock, calendar, garbage day, and sticky notes for the kitchen."
+      },
+      "news-finance": {
+        "name": "News & Finance",
+        "description": "News headlines, stock prices, and crypto tracker."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Modules",

@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import { useEditorStore } from '@/stores/editor-store';
+import { getActiveDimensions, getPatchedDisplayDimensions } from '@/lib/editor-multi-display';
 import { isSupportedDisplayDimension, orientDimensions } from '@/lib/display-filter';
 import { DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT } from '@/lib/constants';
-import type { DisplayNode, GlobalSettings } from '@/types/config';
+import { useCanvasResizeGuard } from '@/components/editor/settings/useOrientationGuard';
+import type { DisplayNode, ScreenConfiguration } from '@/types/config';
 
 /**
  * Canvas dimension editing for one display: a local working copy of the
@@ -23,8 +25,13 @@ import type { DisplayNode, GlobalSettings } from '@/types/config';
  * reload reverted every override. The parent settings page has no global
  * Save button for per-display drill-downs — each subtab is self-saving by
  * contract.
+ *
+ * A resize or rotation that would leave modules past the edge of this
+ * display's canvas goes through the same Scale to Fit / Switch Anyway prompt
+ * as the Defaults Screen page; the returned `orientation` drives the modal.
  */
-export function useCanvasDimensionDrafts(display: DisplayNode, settings: GlobalSettings) {
+export function useCanvasDimensionDrafts(display: DisplayNode, config: ScreenConfiguration) {
+  const { settings } = config;
   // Selector-scoped: an unscoped `useEditorStore()` re-renders the card on
   // every store write (including each save's isSaving flip) while the user
   // is mid-edit in the width/height inputs.
@@ -38,6 +45,26 @@ export function useCanvasDimensionDrafts(display: DisplayNode, settings: GlobalS
     String(display.displayHeight ?? settings.displayHeight ?? DEFAULT_DISPLAY_HEIGHT),
   );
 
+  const orientation = useCanvasResizeGuard(display.id);
+
+  // Every canvas edit on this page goes through here: the guard compares the
+  // canvas the wall draws today with the one the patch leaves, which a
+  // declared rotation may turn on its side.
+  const commitCanvas = (
+    patch: Pick<DisplayNode, 'displayWidth' | 'displayHeight' | 'displayTransform'>,
+    revert?: () => void,
+  ) => {
+    orientation.guardResize({
+      from: getActiveDimensions(config, display.id),
+      to: getPatchedDisplayDimensions(config, display.id, patch),
+      apply: async () => {
+        updateDisplay(display.id, patch);
+        await saveConfig();
+      },
+      revert,
+    });
+  };
+
   // On blur / Enter, commit the parsed draft back to the store if it is a
   // resolution a screen could actually have (see isSupportedDisplayDimension).
   // Invalid or empty input snaps the visible draft back to the last committed
@@ -45,44 +72,47 @@ export function useCanvasDimensionDrafts(display: DisplayNode, settings: GlobalS
   // the field leaves the input blank while the store still holds the
   // old value, which looks like a UI bug to the user. A resolution typed with
   // a digit missing snaps back the same way instead of shrinking the canvas
-  // to something nothing fits on.
-  const commitWidth = async () => {
+  // to something nothing fits on. Cancelling the off-canvas prompt snaps it
+  // back too.
+  const commitWidth = () => {
     const n = parseInt(widthDraft, 10);
     const current = display.displayWidth ?? settings.displayWidth ?? DEFAULT_DISPLAY_WIDTH;
     if (isSupportedDisplayDimension(n)) {
       if (n !== current) {
-        updateDisplay(display.id, { displayWidth: n });
-        await saveConfig();
+        commitCanvas({ displayWidth: n }, () => setWidthDraft(String(current)));
       }
     } else {
       setWidthDraft(String(current));
     }
   };
-  const commitHeight = async () => {
+  const commitHeight = () => {
     const n = parseInt(heightDraft, 10);
     const current = display.displayHeight ?? settings.displayHeight ?? DEFAULT_DISPLAY_HEIGHT;
     if (isSupportedDisplayDimension(n)) {
       if (n !== current) {
-        updateDisplay(display.id, { displayHeight: n });
-        await saveConfig();
+        commitCanvas({ displayHeight: n }, () => setHeightDraft(String(current)));
       }
     } else {
       setHeightDraft(String(current));
     }
   };
 
-  const handleTransform = async (next: 'normal' | '90' | '180' | '270') => {
+  // The inputs show the rotated size straight away. Backing out of the
+  // off-canvas prompt puts them back; the select never moved, since it
+  // reads the stored rotation.
+  const handleTransform = (next: 'normal' | '90' | '180' | '270') => {
     const w = display.displayWidth ?? settings.displayWidth ?? DEFAULT_DISPLAY_WIDTH;
     const h = display.displayHeight ?? settings.displayHeight ?? DEFAULT_DISPLAY_HEIGHT;
     const { width: finalW, height: finalH } = orientDimensions(w, h, next);
-    updateDisplay(display.id, {
-      displayTransform: next,
-      displayWidth: finalW,
-      displayHeight: finalH,
-    });
     setWidthDraft(String(finalW));
     setHeightDraft(String(finalH));
-    await saveConfig();
+    commitCanvas(
+      { displayTransform: next, displayWidth: finalW, displayHeight: finalH },
+      () => {
+        setWidthDraft(String(w));
+        setHeightDraft(String(h));
+      },
+    );
   };
 
   return {
@@ -93,5 +123,6 @@ export function useCanvasDimensionDrafts(display: DisplayNode, settings: GlobalS
     setHeightDraft,
     commitHeight,
     handleTransform,
+    orientation,
   };
 }

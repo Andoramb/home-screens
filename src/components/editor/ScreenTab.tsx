@@ -130,6 +130,9 @@ export default function ScreenTab({
           onChange={(e) => onEditChange(e.target.value)}
           onBlur={onCommitRename}
           onKeyDown={(e) => {
+            // The tab carries the drag handle's key listeners: Space would
+            // start a keyboard drag instead of typing a space.
+            e.stopPropagation();
             if (e.key === 'Enter') onCommitRename();
             if (e.key === 'Escape') onCancelEditing();
           }}

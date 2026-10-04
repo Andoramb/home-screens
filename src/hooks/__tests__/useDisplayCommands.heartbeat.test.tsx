@@ -61,6 +61,7 @@ async function flush(ms = 0) {
 
 beforeEach(() => {
   vi.useFakeTimers();
+  sessionStorage.clear();
   beatStatus = 200;
   answersRevisions = true;
   commands = [];
@@ -105,12 +106,38 @@ describe('the display heartbeat', () => {
   });
 
   it('after a refused beat, hands on the build id from the public endpoint alone', async () => {
-    beatStatus = 401;
+    beatStatus = 403;
     renderHook(() => useDisplayCommands(handlers()));
     await flush();
 
     expect(fetched).toEqual(['/api/display/commands', '/api/system/build-id']);
     expect(published).toEqual([{ buildId: 'build-2' }]);
+  });
+
+  it('reloads once when the hub no longer accepts its key, then at most once a minute', async () => {
+    beatStatus = 401;
+    const h = handlers();
+    renderHook(() => useDisplayCommands(h));
+    await flush();
+    expect(h.reload).toHaveBeenCalledTimes(1);
+    // The reload is what gets the new key, so nothing else is asked for.
+    expect(fetched).toEqual(['/api/display/commands']);
+
+    // Still refused (this test's reload is a stand-in): no reload loop.
+    await flush(3_000);
+    expect(h.reload).toHaveBeenCalledTimes(1);
+    expect(fetched.at(-1)).toBe('/api/system/build-id');
+
+    await flush(60_000);
+    expect(h.reload).toHaveBeenCalledTimes(2);
+  });
+
+  it('a preview the hub refuses does not reload', async () => {
+    beatStatus = 401;
+    const h = handlers();
+    renderHook(() => useDisplayCommands(h, 'kitchen', false));
+    await flush();
+    expect(h.reload).not.toHaveBeenCalled();
   });
 
   it('on a hub that answers without revisions, runs the commands and still hands on the build id', async () => {
@@ -122,6 +149,29 @@ describe('the display heartbeat', () => {
     expect(fetched).toEqual(['/api/display/commands', '/api/system/build-id']);
     expect(order).toEqual(['wake', 'revisions']);
     expect(published).toEqual([{ buildId: 'build-2' }]);
+  });
+});
+
+describe('the alert command', () => {
+  async function run(...payloads: Array<Record<string, unknown>>) {
+    commands = payloads.map((payload) => ({ type: 'alert', payload, timestamp: 1 }));
+    const h = handlers();
+    renderHook(() => useDisplayCommands(h, 'kitchen'));
+    await flush();
+    return vi.mocked(h.showAlert);
+  }
+
+  it('shows only text: a title or message that is anything else is left out', async () => {
+    const showAlert = await run(
+      { title: 'Dinner', message: { text: 'is ready' } },
+      { title: { text: 'Dinner' }, message: ['now'] },
+      { title: 'Storm', message: 'Close the windows' },
+    );
+
+    expect(showAlert.mock.calls.map(([alert]) => [alert.title, alert.message])).toEqual([
+      ['Dinner', ''],
+      ['Storm', 'Close the windows'],
+    ]);
   });
 });
 
@@ -149,6 +199,20 @@ describe('the show-photo command', () => {
     expect(showPhoto.mock.calls).toEqual([
       [{ url: '/api/backgrounds/serve?file=lake.jpg', kind: 'image', durationMs: 60_000 }],
       [{ url: '/api/backgrounds/serve?file=walk.mp4&mt=tok', kind: 'video', durationMs: 30_000 }],
+    ]);
+  });
+
+  it('passes a picture\'s size along, and ignores a size that is not two positive numbers', async () => {
+    const showPhoto = await run(
+      photo('sized.jpg', { width: 3000, height: 4000 }),
+      photo('half.jpg', { width: 3000 }),
+      photo('bad.jpg', { width: 0, height: 'tall' }),
+    );
+
+    expect(showPhoto.mock.calls).toEqual([
+      [{ url: '/api/backgrounds/serve?file=sized.jpg', kind: 'image', durationMs: 60_000, width: 3000, height: 4000 }],
+      [{ url: '/api/backgrounds/serve?file=half.jpg', kind: 'image', durationMs: 60_000 }],
+      [{ url: '/api/backgrounds/serve?file=bad.jpg', kind: 'image', durationMs: 60_000 }],
     ]);
   });
 

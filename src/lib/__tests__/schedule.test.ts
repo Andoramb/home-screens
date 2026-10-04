@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isModuleEnabled, isModuleVisible, resolveProfileScreens, resolveSpanDays, scheduleShape } from '../schedule';
+import { isModuleEnabled, isModuleVisible, resolveProfile, resolveProfileScreens, resolveSpanDays, scheduleShape } from '../schedule';
 import type { ModuleInstance, Screen, Profile } from '@/types/config';
 
 // Helper: create a Date for a specific day/time
@@ -466,5 +466,39 @@ describe('resolveProfileScreens', () => {
     // Saturday 10:00 — outside time window entirely
     const saturdayAt10am = makeDate(6, 10, 0);
     expect(resolveProfileScreens(allScreens, profiles, undefined, saturdayAt10am)).toEqual(allScreens);
+  });
+});
+
+/* The heartbeat reports this, so the phone can show what the wall is really
+ * showing. It used to send only the manual pick, and the phone ticked that
+ * pick while a scheduled profile ran. */
+describe('resolveProfile', () => {
+  const screenA = makeScreen('a');
+  const screenB = makeScreen('b');
+  const allScreens = [screenA, screenB];
+  const morning: Profile = { id: 'morning', name: 'Morning', screenIds: ['a'], schedule: { startTime: '06:00', endTime: '09:00' } };
+  const evening: Profile = { id: 'evening', name: 'Evening', screenIds: ['b'] };
+
+  it('names the scheduled profile, not the manual pick, while its schedule runs', () => {
+    expect(resolveProfile(allScreens, [morning, evening], 'evening', makeDate(1, 7, 0)))
+      .toEqual({ screens: [screenA], profileId: 'morning', scheduled: true });
+  });
+
+  it('names the manual pick once no schedule matches', () => {
+    expect(resolveProfile(allScreens, [morning, evening], 'evening', makeDate(1, 10, 0)))
+      .toEqual({ screens: [screenB], profileId: 'evening', scheduled: false });
+  });
+
+  it('names no profile when every screen rotates', () => {
+    expect(resolveProfile(allScreens, [morning, evening], undefined, makeDate(1, 10, 0)))
+      .toEqual({ screens: allScreens, profileId: null, scheduled: false });
+    expect(resolveProfile(allScreens, undefined, 'evening', makeDate(1, 10, 0)))
+      .toEqual({ screens: allScreens, profileId: null, scheduled: false });
+  });
+
+  it('names no profile when the pick has no screens left to show', () => {
+    const stale: Profile = { id: 'stale', name: 'Stale', screenIds: ['x'] };
+    expect(resolveProfile(allScreens, [stale], 'stale', makeDate(1, 10, 0)))
+      .toEqual({ screens: allScreens, profileId: null, scheduled: false });
   });
 });

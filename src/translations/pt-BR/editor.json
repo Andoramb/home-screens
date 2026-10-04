@@ -82,6 +82,13 @@
         "keepMine": "Manter as minhas"
       },
       "savedToDisplay": "Salvo em {name}"
+    },
+    "loadError": {
+      "title": "O Home Screens não conseguiu abrir a sua configuração salva",
+      "body": "Um dos arquivos salvos está danificado ou não pode ser lido agora. Nada foi apagado. Tente de novo ou restaure um backup abaixo.",
+      "retry": "Tentar de novo",
+      "retrying": "Tentando de novo…",
+      "detailLabel": "O que o Home Screens informou"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Renomear",
       "duplicate": "Duplicar",
       "delete": "Excluir"
-    }
+    },
+    "newScreenName": "Tela {number}",
+    "copyName": "{name} (cópia)"
   },
   "screenSearch": {
     "buttonAriaLabel": "Encontrar uma tela ou módulo",
@@ -511,7 +520,8 @@
         "detectedViaIp": "Encontrado pela sua conexão de internet: {name}.",
         "detectedCoords": "Encontrado: {lat}, {lon}.",
         "detectFailed": "Erro: não foi possível detectar a localização",
-        "zoneSet": "Fuso horário ajustado para o {zone} para combinar."
+        "zoneSet": "Fuso horário ajustado para o {zone} para combinar.",
+        "notFound": "Nenhum lugar com esse nome foi encontrado. Tente uma cidade próxima."
       },
       "queryLabel": "Sua cidade ou CEP",
       "clockCheck": {
@@ -738,7 +748,8 @@
         "plaintextConfirm": "Restaurar",
         "wrongPassword": "Essa senha não funcionou. Tente de novo ou restaure sem suas chaves.",
         "damagedKeys": "As chaves deste arquivo estão danificadas e não podem ser lidas. Você ainda pode restaurar todo o resto.",
-        "reloadFailed": "Seu backup foi restaurado, mas o editor não conseguiu recarregar. Atualize a página para ver."
+        "reloadFailed": "Seu backup foi restaurado, mas o editor não conseguiu recarregar. Atualize a página para ver.",
+        "finished": "Restauração concluída. Tudo o que estava nesse backup está de volta."
       },
       "description": "Salve uma cópia de tudo, restaure ou comece a partir de um modelo.",
       "restoreConfirm": {
@@ -1674,6 +1685,7 @@
         "enableLabel": "Avisar quando uma atualização estiver disponível"
       },
       "upToDate": "Você está na versão mais recente",
+      "checkFailed": "Não foi possível verificar atualizações agora",
       "changelog": {
         "heading": "Changelog",
         "viewButton": "Ver changelog",
@@ -1989,7 +2001,9 @@
         "passwordsDoNotMatch": "As senhas não coincidem",
         "setFailed": "Falha ao definir a senha",
         "changeFailed": "Falha ao alterar a senha",
-        "disableFailed": "Falha ao desativar a autenticação"
+        "disableFailed": "Falha ao desativar a autenticação",
+        "passwordTooShort": "A senha precisa de pelo menos {count} caracteres.",
+        "invalidAddress": "\"{entry}\" não é um endereço de rede. Tente um como 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Senha definida! A autenticação agora está ativada.",
@@ -2123,7 +2137,12 @@
         "enableAriaLabel": "Ativar {id}",
         "disableAriaLabel": "Desativar {id}",
         "uninstallTitle": "Desinstalar",
-        "uninstallAriaLabel": "Desinstalar {id}"
+        "uninstallAriaLabel": "Desinstalar {id}",
+        "uninstallConfirm": {
+          "title": "Desinstalar {name}?",
+          "message": "Ele sai de todas as telas em que aparece. As configurações salvas e o login também são apagados.",
+          "confirmLabel": "Desinstalar"
+        }
       },
       "updates": {
         "allUpToDate": "Todos os plugins estão atualizados",
@@ -2354,7 +2373,8 @@
       "formErrorWidth": "A largura precisa ficar entre {min} e {max}. Veja se faltou um dígito: a maioria das telas tem 1080 ou 1920 de largura.",
       "formErrorHeight": "A altura precisa ficar entre {min} e {max}. Veja se faltou um dígito: a maioria das telas tem 1080 ou 1920 de altura.",
       "softwareUpdateWaiting": "Atualização pendente",
-      "softwareNeedsSetup": "Precisa de ajuste"
+      "softwareNeedsSetup": "Precisa de ajuste",
+      "mainDisplayName": "Tela principal"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3271,7 +3291,9 @@
     "importButton": "Adicionar estas telas",
     "savedAt": "Salvo em {date}",
     "screenPillSingular": "{name} · {count} módulo",
-    "screenPillPlural": "{name} · {count} módulos"
+    "screenPillPlural": "{name} · {count} módulos",
+    "importedName": "{name} (importada)",
+    "importedNameNumbered": "{name} (importada {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3484,7 +3506,7 @@
       "datePresetShortWeekday": "seg, 5 de jan",
       "datePresetMonthDayYear": "5 de janeiro de 2026",
       "datePresetShortMonthDayYear": "5 de jan de 2026",
-      "datePresetSlashMDY": "05/01/2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05/01/2026",
       "datePresetIso": "2026-01-05",
       "datePresetWeekday": "segunda-feira",
@@ -3580,7 +3602,7 @@
       "datePresetShortWeekday": "seg, 5 de jan",
       "datePresetMonthDayYear": "5 de janeiro de 2026",
       "datePresetShortMonthDayYear": "5 de jan de 2026",
-      "datePresetSlashMDY": "05/01/2026",
+      "datePresetSlashMDY": "01/05/2026",
       "datePresetSlashDMY": "05/01/2026",
       "datePresetIso": "2026-01-05",
       "invalidFormat": "Formato inválido",
@@ -3791,6 +3813,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Padrão (Midnight)",
+      "themeDefault": "Padrão (das configurações)",
       "photoSource": "Fonte das fotos",
       "sourceLocal": "Fotos locais",
       "sourceImmich": "Immich",
@@ -4293,7 +4316,21 @@
       "viewCards": "Cartões",
       "viewList": "Lista",
       "viewTicker": "Ticker",
+      "viewTeam": "Time",
       "leagues": "Ligas",
+      "leaguesAmerican": "Americanas",
+      "leaguesSoccer": "Futebol",
+      "favoriteTeams": "Meus times",
+      "favoriteTeamsSearch": "Buscar um time",
+      "favoriteTeamsLoading": "Carregando times",
+      "favoriteTeamsError": "Não foi possível carregar os times",
+      "favoriteTeamsHelp": "Os jogos desses times vêm primeiro. O primeiro time fica no topo.",
+      "favoriteTeamsHelpTeam": "O primeiro time aparece primeiro; com mais de um, eles se revezam.",
+      "favoriteTeamsHidden": "liga desligada",
+      "favoriteTeamsLimit": "Este módulo não consegue acompanhar mais times ({count}). Remova um para adicionar outro.",
+      "favoriteTeamsRemove": "Remover {team}",
+      "favoriteTeamsDrag": "Mover {team}",
+      "favoritesOnly": "Mostrar só os jogos dos meus times",
       "tickerSpeed": "Velocidade do ticker (s/jogo)"
     },
     "standings": {
@@ -4305,6 +4342,7 @@
       "groupingLeague": "Liga completa",
       "league": "Liga",
       "grouping": "Agrupamento",
+      "favoriteTeamsHelp": "Esses times ficam em destaque na tabela.",
       "playoffCutoffLine": "Linha de corte dos playoffs",
       "teamsToShow": "Times a mostrar (0 = todos)",
       "rotationSeconds": "Rotação (segundos)"
@@ -4958,7 +4996,58 @@
   },
   "templatePicker": {
     "title": "Modelos",
-    "loadFailed": "Falha ao carregar \"{name}\""
+    "loadFailed": "Falha ao carregar \"{name}\"",
+    "categories": {
+      "All": "Todos",
+      "Dashboard": "Painel",
+      "Weather": "Clima",
+      "Productivity": "Produtividade",
+      "Media": "Mídia",
+      "Sports": "Esportes",
+      "Finance": "Finanças"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Painel da família",
+        "description": "Relógio, calendário, clima, tarefas de hoje, contagem regressiva e saudação: tudo para a família em um só lugar."
+      },
+      "weather-station": {
+        "name": "Estação do tempo",
+        "description": "Várias visões do clima, mapa de chuva, nascer e pôr do sol, qualidade do ar e fase da lua."
+      },
+      "minimal-clock": {
+        "name": "Relógio minimalista",
+        "description": "Um único relógio grande: limpo e sem distrações."
+      },
+      "info-board": {
+        "name": "Quadro de informações",
+        "description": "Notícias, cotações da bolsa, palavra do dia, história e citações."
+      },
+      "photo-frame": {
+        "name": "Porta-retratos",
+        "description": "Apresentação de fotos em tela cheia: transforme sua tela em um porta-retratos digital."
+      },
+      "sports-hub": {
+        "name": "Central de esportes",
+        "description": "Placares ao vivo e classificações."
+      },
+      "productivity": {
+        "name": "Produtividade",
+        "description": "Tarefas do Todoist, calendário, contagem regressiva e progresso do ano."
+      },
+      "morning-dashboard": {
+        "name": "Painel da manhã",
+        "description": "Clima, calendário, trânsito e uma saudação para começar o dia."
+      },
+      "kitchen-display": {
+        "name": "Tela da cozinha",
+        "description": "Plano de refeições, relógio, calendário, dia do lixo e lembretes para a cozinha."
+      },
+      "news-finance": {
+        "name": "Notícias e finanças",
+        "description": "Manchetes, preços de ações e acompanhamento de criptomoedas."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Módulos",

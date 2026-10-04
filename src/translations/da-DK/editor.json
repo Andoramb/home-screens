@@ -82,6 +82,13 @@
         "keepMine": "Behold mine"
       },
       "savedToDisplay": "Gemt til {name}"
+    },
+    "loadError": {
+      "title": "Home Screens kunne ikke åbne din gemte opsætning",
+      "body": "En af de gemte filer er beskadiget eller kan ikke læses lige nu. Intet er blevet slettet. Prøv igen, eller læg en sikkerhedskopi tilbage nedenfor.",
+      "retry": "Prøv igen",
+      "retrying": "Prøver igen…",
+      "detailLabel": "Det sagde Home Screens"
     }
   },
   "canvas": {
@@ -182,7 +189,9 @@
       "rename": "Omdøb",
       "duplicate": "Duplikér",
       "delete": "Slet"
-    }
+    },
+    "newScreenName": "Skærm {number}",
+    "copyName": "{name} kopi"
   },
   "screenSearch": {
     "buttonAriaLabel": "Find en skærm eller et modul",
@@ -511,7 +520,8 @@
         "detectedViaIp": "Fandt {name} via din internetforbindelse.",
         "detectedCoords": "Fandt {lat}, {lon}.",
         "detectFailed": "Fejl: Kunne ikke finde placeringen",
-        "zoneSet": "Tidszonen er sat til {zone}, så den passer."
+        "zoneSet": "Tidszonen er sat til {zone}, så den passer.",
+        "notFound": "Der blev ikke fundet noget sted med det navn. Prøv en by i nærheden."
       },
       "queryLabel": "Din by eller dit postnummer",
       "clockCheck": {
@@ -738,7 +748,8 @@
         "plaintextConfirm": "Gendan",
         "wrongPassword": "Den adgangskode virkede ikke. Prøv igen, eller gendan uden dine nøgler.",
         "damagedKeys": "Nøglerne i filen er beskadigede og kan ikke læses. Du kan stadig gendanne alt det andet.",
-        "reloadFailed": "Din sikkerhedskopi blev gendannet, men editoren kunne ikke genindlæse. Genindlæs siden for at se det."
+        "reloadFailed": "Din sikkerhedskopi blev gendannet, men editoren kunne ikke genindlæse. Genindlæs siden for at se det.",
+        "finished": "Gendannelse færdig. Alt fra den sikkerhedskopi er tilbage."
       },
       "description": "Gem en kopi af det hele, læg den tilbage, eller start fra en skabelon.",
       "restoreConfirm": {
@@ -1674,6 +1685,7 @@
         "enableLabel": "Giv mig besked, når en opdatering er tilgængelig"
       },
       "upToDate": "Du kører den nyeste version",
+      "checkFailed": "Kunne ikke søge efter opdateringer lige nu",
       "changelog": {
         "heading": "Ændringer",
         "viewButton": "Se ændringer",
@@ -1989,7 +2001,9 @@
         "passwordsDoNotMatch": "Adgangskoderne er ikke ens",
         "setFailed": "Kunne ikke gemme adgangskoden",
         "changeFailed": "Kunne ikke skifte adgangskode",
-        "disableFailed": "Kunne ikke slå login fra"
+        "disableFailed": "Kunne ikke slå login fra",
+        "passwordTooShort": "Adgangskoden skal have mindst {count} tegn.",
+        "invalidAddress": "\"{entry}\" er ikke en netværksadresse. Prøv en som 192.168.1.0/24."
       },
       "success": {
         "passwordSet": "Adgangskoden er gemt! Login er nu slået til.",
@@ -2123,7 +2137,12 @@
         "enableAriaLabel": "Slå {id} til",
         "disableAriaLabel": "Slå {id} fra",
         "uninstallTitle": "Afinstallér",
-        "uninstallAriaLabel": "Afinstallér {id}"
+        "uninstallAriaLabel": "Afinstallér {id}",
+        "uninstallConfirm": {
+          "title": "Afinstallér {name}?",
+          "message": "Den forsvinder fra alle skærme, der viser den. Dens gemte indstillinger og login slettes også.",
+          "confirmLabel": "Afinstallér"
+        }
       },
       "updates": {
         "allUpToDate": "Alle plugins er opdaterede",
@@ -2354,7 +2373,8 @@
       "formErrorWidth": "Bredden skal være mellem {min} og {max}. Se efter et manglende ciffer: de fleste skærme er 1080 eller 1920 brede.",
       "formErrorHeight": "Højden skal være mellem {min} og {max}. Se efter et manglende ciffer: de fleste skærme er 1080 eller 1920 høje.",
       "softwareUpdateWaiting": "Opdatering venter",
-      "softwareNeedsSetup": "Skal sættes op"
+      "softwareNeedsSetup": "Skal sættes op",
+      "mainDisplayName": "Hoveddisplay"
     },
     "header": {
       "backToEditor": "Editor",
@@ -3271,7 +3291,9 @@
     "importButton": "Tilføj disse skærme",
     "savedAt": "Gemt {date}",
     "screenPillSingular": "{name} · {count} modul",
-    "screenPillPlural": "{name} · {count} moduler"
+    "screenPillPlural": "{name} · {count} moduler",
+    "importedName": "{name} (importeret)",
+    "importedNameNumbered": "{name} (importeret {number})"
   },
   "layoutImport": {
     "alerts": {
@@ -3791,6 +3813,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Standard (midnat)",
+      "themeDefault": "Standard (fra Indstillinger)",
       "photoSource": "Billedkilde",
       "sourceLocal": "Lokale billeder",
       "sourceImmich": "Immich",
@@ -4293,7 +4316,21 @@
       "viewCards": "Kort",
       "viewList": "Liste",
       "viewTicker": "Bånd",
+      "viewTeam": "Hold",
       "leagues": "Ligaer",
+      "leaguesAmerican": "Amerikanske",
+      "leaguesSoccer": "Fodbold",
+      "favoriteTeams": "Mine hold",
+      "favoriteTeamsSearch": "Søg efter et hold",
+      "favoriteTeamsLoading": "Henter hold",
+      "favoriteTeamsError": "Holdene kunne ikke hentes",
+      "favoriteTeamsHelp": "Kampe med disse hold kommer først. Det første hold får den øverste plads.",
+      "favoriteTeamsHelpTeam": "Det første hold vises først; er der flere, skiftes de.",
+      "favoriteTeamsHidden": "ligaen er slået fra",
+      "favoriteTeamsLimit": "Modulet kan ikke følge flere hold ({count}). Fjern et for at tilføje et andet.",
+      "favoriteTeamsRemove": "Fjern {team}",
+      "favoriteTeamsDrag": "Flyt {team}",
+      "favoritesOnly": "Vis kun mine holds kampe",
       "tickerSpeed": "Båndhastighed (sek./kamp)"
     },
     "standings": {
@@ -4305,6 +4342,7 @@
       "groupingLeague": "Hele ligaen",
       "league": "Liga",
       "grouping": "Gruppering",
+      "favoriteTeamsHelp": "Disse hold fremhæves i tabellen.",
       "playoffCutoffLine": "Slutspilsgrænse",
       "teamsToShow": "Hold der vises (0 = alle)",
       "rotationSeconds": "Skift (sekunder)"
@@ -4958,7 +4996,58 @@
   },
   "templatePicker": {
     "title": "Skabeloner",
-    "loadFailed": "Kunne ikke indlæse \"{name}\""
+    "loadFailed": "Kunne ikke indlæse \"{name}\"",
+    "categories": {
+      "All": "Alle",
+      "Dashboard": "Overblik",
+      "Weather": "Vejr",
+      "Productivity": "Produktivitet",
+      "Media": "Medier",
+      "Sports": "Sport",
+      "Finance": "Økonomi"
+    },
+    "templates": {
+      "family-dashboard": {
+        "name": "Familieoverblik",
+        "description": "Ur, kalender, vejr, dagens pligter, nedtælling og hilsen: alt til familien samlet ét sted."
+      },
+      "weather-station": {
+        "name": "Vejrstation",
+        "description": "Flere vejrvisninger, regnkort, solopgang og solnedgang, luftkvalitet og månefase."
+      },
+      "minimal-clock": {
+        "name": "Enkelt ur",
+        "description": "Ét stort ur: enkelt og uden forstyrrelser."
+      },
+      "info-board": {
+        "name": "Infotavle",
+        "description": "Nyheder, aktiekurser, dagens ord, historie og citater."
+      },
+      "photo-frame": {
+        "name": "Fotoramme",
+        "description": "Fotodiasshow i fuld skærm: gør din skærm til en digital fotoramme."
+      },
+      "sports-hub": {
+        "name": "Sportshjørne",
+        "description": "Livescorer og stillinger."
+      },
+      "productivity": {
+        "name": "Produktivitet",
+        "description": "Todoist-opgaver, kalender, nedtælling og årets forløb."
+      },
+      "morning-dashboard": {
+        "name": "Morgenoverblik",
+        "description": "Vejr, kalender, trafik og en hilsen til at starte dagen."
+      },
+      "kitchen-display": {
+        "name": "Køkkenskærm",
+        "description": "Madplan, ur, kalender, affaldsdag og huskesedler til køkkenet."
+      },
+      "news-finance": {
+        "name": "Nyheder og økonomi",
+        "description": "Overskrifter, aktiekurser og kryptokurser."
+      }
+    }
   },
   "modulePalette": {
     "modulesHeading": "Moduler",

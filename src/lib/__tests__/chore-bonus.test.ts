@@ -5,6 +5,7 @@ import {
   bonusTicketsEarned,
   canPutBack,
   bonusDisplayOrder,
+  bonusDoneDay,
   bonusShowsOn,
   MANUAL_GRAB_DAYS,
   countsSinceReset,
@@ -402,5 +403,34 @@ describe('plan 109 rules', () => {
     const windows = bonus('windows', {}, { claim: 'each', comesBack: 'weekly' });
     const [item] = resolveBonusFor([windows], kids, SAT, marks([{ choreId: 'windows', memberId: 'cleo', date: WED }]), groups, settings(), SAT);
     expect(item.doneOn).toEqual({ cleo: WED });
+  });
+});
+
+describe('the day a "did it" line names', () => {
+  // 2026-10-03 is a Saturday.
+  const today = '2026-10-03';
+
+  it('names the weekday for a job done within the last six days', () => {
+    expect(bonusDoneDay('2026-10-02', today, 'en-US')).toEqual({ form: 'weekday', day: 'Friday' });
+    expect(bonusDoneDay('2026-09-27', today, 'en-US')).toEqual({ form: 'weekday', day: 'Sunday' });
+  });
+
+  it('names a short date for a put-back chore done weeks ago, not a weekday that reads as this week', () => {
+    // A Friday two weeks back used to read "did it Friday" on this Saturday.
+    expect(bonusDoneDay('2026-09-18', today, 'en-US')).toEqual({ form: 'date', day: 'Sep 18' });
+  });
+
+  it('switches to the date at seven days, so a weekday never names the same weekday as today', () => {
+    expect(bonusDoneDay('2026-09-26', today, 'en-US')).toEqual({ form: 'date', day: 'Sep 26' });
+  });
+
+  it('formats in the formatting locale', () => {
+    expect(bonusDoneDay('2026-10-02', today, 'de-DE')).toEqual({ form: 'weekday', day: 'Freitag' });
+    expect(bonusDoneDay('2026-09-18', today, 'de-DE').form).toBe('date');
+    expect(bonusDoneDay('2026-09-18', today, 'de-DE').day).toMatch(/^18\. Sep/);
+  });
+
+  it('never calls a day after today a weekday of this week', () => {
+    expect(bonusDoneDay('2026-10-04', today, 'en-US').form).toBe('date');
   });
 });

@@ -71,9 +71,15 @@ export const DELETE = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'pluginId is required' }, { status: 400 });
   }
 
-  await uninstallPlugin(pluginId);
+  // The editor brings its copy of the screens along with the modules that
+  // came off them (see removePluginModules and adoptHubRewrite), or its next
+  // save would be refused as a conflict and "Keep mine" would put them back.
+  const { moduleType, configRevision, previousConfigRevision } = await uninstallPlugin(pluginId);
   audit({ action: 'plugin_uninstall', pluginId });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    ...(configRevision ? { moduleType, configRevision, previousConfigRevision } : {}),
+  });
 }, 'Failed to uninstall plugin');
 
 /** Update a plugin — enable/disable or clear previousVersion after migration */

@@ -53,6 +53,7 @@ const {
   disconnect,
   hasGoogleCredentials,
 } = await import('@/lib/google-auth');
+const { calendarRevision } = await import('@/lib/calendar-revision');
 
 const mockedGetSecret = vi.mocked(getSecret);
 
@@ -227,6 +228,20 @@ describe('pollDeviceToken', () => {
     const writtenData = JSON.parse(mockWriteFile.mock.calls[0][1] as string);
     expect(writtenData.access_token).toBe('ya29.new-token');
     expect(writtenData.refresh_token).toBe('1//new-refresh');
+  });
+
+  it('moves the calendar revision once the new grant is saved, so walls stop showing the old sign-in answer', async () => {
+    setupCredentials();
+    mockWriteFile.mockResolvedValue(undefined);
+    const before = calendarRevision();
+
+    globalThis.fetch = mockFetchResponse({ error: 'authorization_pending' }, false, 428);
+    await pollDeviceToken('device-code');
+    expect(calendarRevision()).toBe(before);
+
+    globalThis.fetch = mockFetchResponse({ access_token: 'ya29.new-token', refresh_token: '1//new-refresh', expires_in: 3600 });
+    await pollDeviceToken('device-code');
+    expect(calendarRevision()).not.toBe(before);
   });
 
   it('returns success with warning when no refresh_token in response', async () => {
@@ -409,6 +424,17 @@ describe('disconnect', () => {
       expect.stringContaining('google-tokens.json'),
       JSON.stringify({}, null, 2),
     );
+  });
+
+  it('moves the calendar revision, so walls stop showing events from the old sign-in', async () => {
+    setupCredentials();
+    setupTokensFile(null);
+    mockWriteFile.mockResolvedValue(undefined);
+    const before = calendarRevision();
+
+    await disconnect();
+
+    expect(calendarRevision()).not.toBe(before);
   });
 
   it('revokes the access token via Google before clearing', async () => {

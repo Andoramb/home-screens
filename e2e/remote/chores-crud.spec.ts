@@ -918,14 +918,17 @@ test('a failed chore toggle rolls the check back and the retry succeeds', async 
 
   // Optimistic: the row reads as done while the write is in flight …
   await expect(doneBtn).toBeVisible();
-  // … and returns to its pre-tap state once the 500 lands.
+  // … and returns to its pre-tap state once the 500 lands, with a word
+  // under the row about why.
   await expect(markBtn).toBeVisible();
+  await expect(page.getByTestId('chore-notice-c-rb')).toHaveText('Failed to save. Please try again.');
   expect(await completionExists(request, 'c-rb', 'm-rb', today)).toBe(false);
 
   // The interception was the only failure — the same tap now sticks.
   await page.unroute('**/api/chores');
   await markBtn.click();
   await expect(doneBtn).toBeVisible();
+  await expect(page.getByTestId('chore-notice-c-rb')).toBeHidden();
   await expect.poll(async () => completionExists(request, 'c-rb', 'm-rb', today)).toBe(true);
 });
 

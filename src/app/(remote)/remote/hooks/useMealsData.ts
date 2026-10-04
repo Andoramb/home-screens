@@ -1,21 +1,27 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
+import { useTranslate } from '@/i18n';
 import type { SavedMeal, PlannedMeal, MealSettings, TimeFormat } from '@/types/config';
 import { DEFAULT_MEAL_SETTINGS } from '@/lib/meal-constants';
 import { MealClientError, MealSession, type MealEdit, type MealSnapshot } from '@/lib/meal-client';
+import { groceryTapDirection, setGroceryCheck, type GroceryChecked } from '@/lib/grocery-checks';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 
 export function useMealsData() {
+  const t = useTranslate('remote');
   const [savedMeals, setSavedMeals] = useState<SavedMeal[]>([]);
   const [plan, setPlan] = useState<PlannedMeal[]>([]);
-  const [groceryChecked, setGroceryChecked] = useState<string[]>([]);
+  const [groceryChecked, setGroceryChecked] = useState<GroceryChecked>({});
   const [settings, setSettings] = useState<MealSettings>({ ...DEFAULT_MEAL_SETTINGS });
   // Household GlobalSettings.timeFormat, reported alongside the meal settings
   // (always present in the GET response). Meal surfaces resolve their effective
   // format against this when the shared settings carry no override.
   const [globalTimeFormat, setGlobalTimeFormat] = useState<TimeFormat>('12h');
   const [loading, setLoading] = useState(true);
+  // The meals have never loaded and the last try failed: said in so many
+  // words, never shown as an empty week (which reads as "nothing planned").
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -33,17 +39,21 @@ export function useMealsData() {
   const fetchData = useCallback(async () => {
     try {
       const snapshot = await session.load();
-      // A load answered while a save is out is older than that save's answer.
+      setLoadError(false);
+      // A load answered while a save or a tick is out is older than its answer.
       if (!session.idle) return;
-      adoptData(snapshot);
+      setSavedMeals(snapshot.savedMeals);
+      setPlan(snapshot.plan);
+      setGroceryChecked(snapshot.groceryChecked);
       setSettings(snapshot.settings);
       setGlobalTimeFormat(snapshot.globalTimeFormat);
-    } catch {
-      /* silent */
+    } catch (err) {
+      // A refresh that fails keeps what is on screen.
+      if (!isSessionExpired(err) && !session.current) setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, [session, adoptData]);
+  }, [session]);
 
   /**
    * Save one edit, written as a function of the copy it applies to (see
@@ -96,28 +106,26 @@ export function useMealsData() {
     }
   }, []);
 
-  const toggleGroceryItem = useCallback(async (itemName: string) => {
-    const lower = itemName.toLowerCase();
-    // Optimistic update
-    setGroceryChecked((prev) => {
-      const idx = prev.indexOf(lower);
-      if (idx >= 0) return prev.filter((_, i) => i !== idx);
-      return [...prev, lower];
-    });
+  const groceryRef = useRef(groceryChecked);
+  groceryRef.current = groceryChecked;
+  /**
+   * Tick or untick one item on the list of `week` (that week's key). Sent
+   * through the session's queue like any save, so a reload or an older tick's
+   * answer can never put back what this one changed.
+   */
+  const toggleGroceryItem = useCallback(async (week: string, itemName: string) => {
+    // What this tap means, from what this phone shows (see groceryTapDirection).
+    const direction = groceryTapDirection(groceryRef.current, week, itemName);
+    setGroceryChecked((prev) => setGroceryCheck(prev, week, itemName, direction));
     try {
-      const res = await editorFetch('/api/meals/grocery', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ item: lower }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setGroceryChecked(data.groceryChecked ?? []);
-      }
-    } catch {
-      /* silent */
+      const saved = await session.tick(week, itemName, direction);
+      if (session.idle) adoptData(saved);
+    } catch (err) {
+      if (isSessionExpired(err)) return;
+      setGroceryChecked((prev) => setGroceryCheck(prev, week, itemName, direction === 'check' ? 'uncheck' : 'check'));
+      setSaveError(t('mealsTab.saveFailed'));
     }
-  }, []);
+  }, [session, adoptData, t]);
 
   return {
     savedMeals,
@@ -130,6 +138,7 @@ export function useMealsData() {
     setSettings,
     globalTimeFormat,
     loading,
+    loadError,
     saving,
     setSaving,
     saveError,

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { StandingsEntry } from '@/lib/espn-standings';
+import { leagueWallCode } from '@/lib/espn';
 import { PaginationDots } from '../shared/PaginationDots';
 import { TeamLogo } from '../shared/TeamLogo';
 
@@ -21,6 +22,8 @@ interface StandingsTeamRowProps {
   clincherClassName?: string;
   clincherStyle?: React.CSSProperties;
   teamLabel?: string;
+  /** One of the module's favorite teams: the row is tinted in the team's color and its name is bright. */
+  highlight?: boolean;
   children?: ReactNode;
 }
 
@@ -40,6 +43,7 @@ export function StandingsTeamRow({
   clincherClassName = 'text-emerald-400/70 font-medium shrink-0',
   clincherStyle = { fontSize: '0.6em' },
   teamLabel = entry.teamShort || entry.teamAbbr,
+  highlight = false,
   children,
 }: StandingsTeamRowProps) {
   const clincher = entry.clincher && (
@@ -47,17 +51,27 @@ export function StandingsTeamRow({
       {entry.clincher}
     </span>
   );
+  // AP poll rank after the name, small and muted, so it never reads as the
+  // table position printed in the first column.
+  const apRank = entry.apRank && (
+    <span className="text-current/45 tabular-nums shrink-0 ml-1" style={{ fontSize: '0.8em' }} data-testid="ap-rank">
+      #{entry.apRank}
+    </span>
+  );
+  const nameClass = highlight ? `${nameClassName} !text-current font-semibold` : nameClassName;
 
   const nameSection = nameWrapperClassName ? (
     <div className={nameWrapperClassName}>
-      <span className={nameClassName} style={nameStyle}>
+      <span className={nameClass} style={nameStyle}>
         {teamLabel}
       </span>
+      {apRank}
       {clincher}
     </div>
   ) : (
-    <span className={`flex-1 min-w-0 ${nameClassName}`} style={nameStyle}>
+    <span className={`flex-1 min-w-0 ${nameClass}`} style={nameStyle}>
       {teamLabel}
+      {apRank}
       {clincher}
     </span>
   );
@@ -67,9 +81,15 @@ export function StandingsTeamRow({
       className={`${rowClassName} ${
         showPlayoffCutoff ? 'border-b border-dashed border-white/20' : ''
       }`}
-      style={{ borderLeft: `${borderWidth}px solid #${entry.teamColor}` }}
+      style={{
+        borderLeft: `${borderWidth}px solid #${entry.teamColor}`,
+        // A favorite's row is washed in its own color, stronger at the edge
+        // where the border already is, so it stands out at wall distance.
+        ...(highlight ? { background: `linear-gradient(90deg, #${entry.teamColor}55 0%, #${entry.teamColor}18 100%)` } : {}),
+      }}
+      data-favorite={highlight ? 'true' : undefined}
     >
-      {showGradientBar && (
+      {showGradientBar && !highlight && (
         <div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -149,7 +169,7 @@ export function StandingsHeader({
           className="font-semibold tracking-widest uppercase text-current/40"
           style={{ fontSize: '0.65em' }}
         >
-          {league}
+          {leagueWallCode(league)}
         </span>
         <span className="text-current/60 font-medium" style={{ fontSize: '0.75em' }}>
           {groupName}

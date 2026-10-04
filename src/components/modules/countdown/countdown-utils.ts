@@ -162,3 +162,16 @@ export function processEvents(
       return a.time.totalMs - b.time.totalMs;
     });
 }
+
+/**
+ * How many events the All view keeps once even its smallest type cannot fit
+ * the list: the ones that end within `room` (the list's height less a line
+ * for "+N more"), given each event's bottom edge measured from the top of the
+ * list. Always at least one, and always fewer than `shown` now, so a list
+ * that still overflows keeps giving up events until it fits.
+ */
+export function countdownEventsThatFit(rowBottoms: readonly number[], room: number, shown: number): number {
+  let fit = 0;
+  while (fit < rowBottoms.length && rowBottoms[fit] <= room) fit += 1;
+  return Math.max(1, Math.min(fit, shown - 1));
+}

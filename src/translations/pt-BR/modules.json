@@ -92,6 +92,7 @@
     "noUpcoming": "Nenhum evento próximo",
     "agoSuffix": "(passou)",
     "todayBang": "Hoje!",
+    "moreCount": "+{count} mais",
     "unitDays": "dias",
     "unitHours": "h",
     "unitMinutes": "min",
@@ -693,6 +694,7 @@
         "other": "Essa tarefa bônus não está livre agora"
       },
       "didItOn": "{name} fez {day}",
+      "didItOnDate": "{name} fez em {day}",
       "bandHintEach": "Tickets extras. Todo mundo pode fazer uma vez."
     },
     "settings": {
@@ -848,7 +850,16 @@
     "loading": "Carregando placares…",
     "noGames": "Nenhum jogo encontrado",
     "today": "Hoje",
-    "tomorrow": "Amanhã"
+    "tomorrow": "Amanhã",
+    "pickTeam": "Escolha seu time nas configurações do módulo",
+    "teamLeagueOff": "Ative a liga do seu time nas configurações do módulo",
+    "unavailable": "Os placares estão dando uma pausa",
+    "last": "Último:",
+    "win": "V",
+    "loss": "D",
+    "tie": "E",
+    "vs": "contra",
+    "at": "fora com"
   },
   "stock-ticker": {
     "chartCaptions": {
@@ -900,7 +911,10 @@
     "loading": "Carregando trânsito…",
     "unitMin": "min",
     "mockNotice": "Números de exemplo até adicionar uma chave de trânsito",
-    "needsKey": "O trânsito precisa de uma chave do Google Maps ou TomTom"
+    "needsKey": "O trânsito precisa de uma chave do Google Maps ou TomTom",
+    "routeIncomplete": "Aguardando os endereços de origem e destino",
+    "routeNotFound": "Rota não encontrada. Confira os endereços.",
+    "routeUnavailable": "Não foi possível carregar o tempo de viagem agora"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "ou escolha uma pasta no editor",
@@ -1089,7 +1103,8 @@
   "qr-code": {
     "name": "QR Code",
     "empty": "Adicione um link ou seu Wi-Fi no editor e ele aparece aqui",
-    "scanToConnect": "Escaneie para conectar"
+    "scanToConnect": "Escaneie para conectar",
+    "tooLong": "É texto demais para um QR Code só. Encurte no editor e ele aparece aqui"
   },
   "display-control": {
     "prev": "Anterior",

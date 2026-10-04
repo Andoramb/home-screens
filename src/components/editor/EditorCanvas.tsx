@@ -39,6 +39,7 @@ import ModuleContextMenu, { type ModuleMenuState } from './ModuleContextMenu';
 import SelectionOverlay from './SelectionOverlay';
 import { useFamilyData } from '@/hooks/useFamilyData';
 import { calendarPeopleForFamily, toEditorSource, type PreviewSettings } from '@/lib/module-props';
+import { hasCalendarOwners } from '@/lib/calendar-source-refs';
 import { hasAnyCalendarSource } from '@/lib/calendar-sources';
 import CanvasToolbar from './CanvasToolbar';
 import StartFromTemplateButton from './StartFromTemplateButton';
@@ -251,8 +252,8 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
       units: settings.weather.units,
       fullscreenTheme,
       timeFormat: settings.timeFormat,
-      calendarPeople: calendarPeopleForFamily(familyMembers, settings.calendar?.personSources),
-      calendarPeopleState: !familyRevision && Object.values(settings.calendar?.personSources ?? {}).some((ids) => ids.length > 0)
+      calendarPeople: calendarPeopleForFamily(familyMembers, settings.calendar),
+      calendarPeopleState: !familyRevision && hasCalendarOwners(settings.calendar)
         ? familyError ? 'failed' : 'loading' : undefined,
       familyGroups,
       calendarConfigured: hasAnyCalendarSource(settings.calendar),
@@ -362,7 +363,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
             {t('canvas.emptyDisplay.body')}
           </p>
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            <Button variant="primary" size="sm" onClick={addScreen}>
+            <Button variant="primary" size="sm" onClick={() => addScreen(t('screenTabs.newScreenName', { number: 1 }))}>
               <Plus className="h-3.5 w-3.5" />
               {t('canvas.emptyDisplay.addScreen')}
             </Button>

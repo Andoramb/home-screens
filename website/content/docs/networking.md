@@ -105,7 +105,7 @@ Every network change that touches the **management interface**: the one your bro
 
 - **Scan nearby networks**: lists SSIDs with signal strength, security type, and an "already saved" flag. Scans are rate-limited to one per interface every 15 s (`GET /api/system/network/wifi/scan`).
 - **Connect**: click a network, enter the password if required, confirm the disconnect warning if you're on WiFi yourself. Supports open, WPA2, and WPA3 networks (`POST /api/system/network/wifi/connect`).
-- **Saved networks**: list, autoconnect status, last-used timestamp, and passwords (readable only when editor auth is enabled, via `GET /api/system/network/wifi/saved?showPasswords=true`).
+- **Saved Networks**: list, autoconnect status, last-used timestamp, and passwords (readable only when editor auth is enabled, via `GET /api/system/network/wifi/saved?showPasswords=true`).
 - **Forget**: `DELETE /api/system/network/wifi/saved` drops a saved profile.
 - **Disconnect**: brings a saved connection down without deleting it (`POST /api/system/network/wifi/disconnect`).
 
@@ -456,7 +456,7 @@ In addition to (or instead of) a password, Home Screens can gate every route on 
 
 **Bypass authentication for trusted IPs.** Add your LAN subnets (for example `192.168.1.0/24`) and check the first toggle. Any request coming from an allowlisted IP skips the password prompt and the session-cookie check, so family members on the couch don't have to type a password every time they open the editor, while a phone on cellular data still gets the login form. Display-auth routes (the ~14 cached proxy endpoints the kiosk polls, plus `requireDisplayAuth`-wrapped routes) also accept the bypass, so a trusted LAN can drive the display without a display token.
 
-**Restrict access to allowlisted IPs only.** The second toggle is the harder wall. When enabled, Home Screens blocks every non-allowlisted IP from every route except `/login` and `/api/auth/status`; API callers receive `403 JSON`, browsers are redirected to a dedicated "Access is restricted by IP" banner on the login page. The check runs before the password gate, so an attacker who somehow knows the password still can't get in. Enabling the toggle from a client whose own IP is not in the allowlist returns `409 Conflict` without saving, the UI then shows a lockout warning and a **Save Anyway** button for the rare case where you really want to lock yourself out immediately.
+**Restrict access to allowlisted IPs only.** The second toggle is the harder wall. When enabled, Home Screens blocks every non-allowlisted IP from every route except `/login` and `/api/auth/status`; API callers receive `403 JSON`, browsers are redirected to a dedicated "Access is restricted by IP" banner on the login page. The check runs before the password gate, so an attacker who somehow knows the password still can't get in. Enabling the toggle from a client whose own IP is not in the allowlist returns `409 Conflict` without saving, the UI then shows a lockout warning and a **Save anyway** button for the rare case where you really want to lock yourself out immediately.
 
 **CIDR entries.** Every entry is CIDR-validated: `a.b.c.d/prefix`, prefix between `0` and `32`, no leading-zero octets (so `01.168.1.0/24` is rejected, matching Node's `net.isIPv4()` behavior). Garbage entries in a hand-edited `data/auth.json` are skipped rather than matched, bad data fails safe instead of silently matching `0.0.0.0/24`.
 

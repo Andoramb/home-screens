@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { cleanup, renderHook } from '@testing-library/react';
 import { publishRevisions, __resetHeartbeatForTests } from '@/lib/display-heartbeat';
 import { displayCache } from '@/lib/display-cache';
-import { useLibraryRefresh } from '../useLibraryRefresh';
+import { useCalendarRefresh, useLibraryRefresh } from '../useRevisionRefresh';
 
 const FAVORITES = '/api/backgrounds?directory=Favorites&media=both';
 const HALLWAY = '/api/backgrounds?directory=Beach-week';
@@ -153,5 +153,52 @@ describe('displayCache.revisionsWhere', () => {
     expect(displayCache.revisionsWhere((url) => url.startsWith('/api/backgrounds'))).toEqual([
       { url: FAVORITES, revision: 'r7' },
     ]);
+  });
+});
+
+const WEEK = '/api/calendar?calendarIds=family&timeMin=2026-09-27T05%3A00%3A00.000Z';
+const MONTH = '/api/calendar?calendarIds=family&timeMin=2026-08-31T05%3A00%3A00.000Z&timeMax=2026-10-12T05%3A00%3A00.000Z';
+
+describe('useCalendarRefresh', () => {
+  /** Cache a calendar answer the way a read stores it: with the calendar revision it was read at. */
+  function calendarReadAt(url: string, revision: string | undefined) {
+    displayCache.storeBody(url, JSON.stringify({ events: [], sourceStatus: [] }), 300_000, revision);
+  }
+
+  it('re-reads every calendar answer from before a sign-in once the new revision has held for a beat', () => {
+    calendarReadAt(WEEK, 'c1');
+    calendarReadAt(MONTH, 'c1');
+    renderHook(() => useCalendarRefresh());
+    publishRevisions({ calendar: 'c2' });
+    expect(asked).toEqual([]);
+
+    publishRevisions({ calendar: 'c2' });
+    expect(asked.sort()).toEqual([WEEK, MONTH].sort());
+  });
+
+  it('leaves the calendar alone while the library moves, and the library alone while the calendar moves', () => {
+    calendarReadAt(WEEK, 'c1');
+    listReadAt(FAVORITES, 'r1');
+    renderHook(() => useCalendarRefresh());
+    renderHook(() => useLibraryRefresh());
+
+    publishRevisions({ calendar: 'c1', library: 'r2' });
+    publishRevisions({ calendar: 'c1', library: 'r2' });
+    expect(asked).toEqual([FAVORITES]);
+
+    listReadAt(FAVORITES, 'r2');
+    publishRevisions({ calendar: 'c2', library: 'r2' });
+    publishRevisions({ calendar: 'c2', library: 'r2' });
+    expect(asked).toEqual([FAVORITES, WEEK]);
+  });
+
+  it('never re-reads the status or calendar-list routes, or an answer that says no revision', () => {
+    displayCache.storeBody('/api/calendar/status', '{}', 300_000, 'c1');
+    displayCache.storeBody('/api/calendars', '[]', 300_000, 'c1');
+    calendarReadAt(WEEK, undefined);
+    renderHook(() => useCalendarRefresh());
+    publishRevisions({ calendar: 'c2' });
+    publishRevisions({ calendar: 'c2' });
+    expect(asked).toEqual([]);
   });
 });

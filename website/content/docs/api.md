@@ -61,7 +61,7 @@ When the hub has more than one display registered, every display-control endpoin
 
 Use the reserved word `all` as the display target to broadcast to every registered display plus the legacy default queue. Broadcast is allowed for command-enqueue actions (simple commands, brightness, sleep-override, alert, module-command) and rejected for read-only or mutate-config actions (status, profile, module-enabled). It is also rejected for goto-screen, even though that enqueues a command, because screen sets differ per display and a broadcast jump would be meaningless on most of them.
 
-Calls with no display target continue to drive the legacy single-display queue, so single-display installs and existing scripts keep working unchanged. See the [Multi-display guide](/docs/multi-display) for the full multi-display setup.
+A command or a status read with no display target goes to the main display (the display with ID `main`, or the first one listed if none has that ID). On a single-display install, with no displays registered, it goes to that one display, so bookmarks and scripts written before you added a second display keep reaching the first one. The display's own calls (its command poll and its status report) are the exception: a display always names itself. See the [Multi-display guide](/docs/multi-display) for the full multi-display setup.
 
 **Bookmarks need a token once you set a password.** Every endpoint in this section is protected at the display level, and a link you tap from your phone can't send an `Authorization` header. Add the display token to the link instead:
 
@@ -141,12 +141,16 @@ This endpoint is read-only, all writes go through `PUT /api/config` so undo/redo
     "config": "\"4e0f9a1c.America%2FChicago\"",
     "timer": "c02d6b19e8a4f7a0",
     "chores": "\"b1e7d05c9a3f28e64d0c7a19\"",
-    "rewards": "\"7f20c4a9e15d3b86c0f94e2a\""
+    "rewards": "\"7f20c4a9e15d3b86c0f94e2a\"",
+    "library": "mfh3k2a1.4",
+    "calendar": "mfh3k2a1.0"
   }
 }
 ```
 
-`revisions` says whether anything else on the screen changed: the running build (a new one reloads the page), the installed plugin list including plugin settings (`GET /api/plugins/installed`), the config (`config` is exactly the `ETag` that `GET /api/config?display=<id>` would answer with), the timer session (`GET /api/timers/session`), and the chore history and rewards (`chores` and `rewards` are exactly the `ETag`s that `GET /api/chores` and `GET /api/rewards` would answer with). The display fetches each of those only when its value differs from the one it last applied. A value the hub could not work out is left out, and the display keeps what it has for it.
+`revisions` says whether anything else on the screen changed: the running build (a new one reloads the page), the installed plugin list including plugin settings (`GET /api/plugins/installed`), the config (`config` is exactly the `ETag` that `GET /api/config?display=<id>` would answer with), the timer session (`GET /api/timers/session`), and the chore history and rewards (`chores` and `rewards` are exactly the `ETag`s that `GET /api/chores` and `GET /api/rewards` would answer with). The display fetches each of those only when its value differs from the one it last applied.
+
+`library` and `calendar` speed up reads that keep their own polling. `library` moves when a picture or video is uploaded, imported, replaced, moved, renamed or deleted; `calendar` moves when a Google Calendar sign-in or disconnect changes what the hub can read. Once a new value has held for a whole beat, the display re-reads its slideshow lists or its calendar at once instead of waiting for their next 10-minute or 5-minute poll, so a burst of uploads from a phone causes one re-read. Both are counters the hub keeps in memory, so a hub restart changes them once and every display re-reads. A value the hub could not work out is left out, and the display keeps what it has for it.
 
 `sharedStateWatched` tells the screen whether anyone is currently watching its shared values in the editor. While it is `true`, the screen reports changes as they happen instead of waiting for its next 30-second heartbeat, so the editor sees live values; while it is `false`, it stays on the slower schedule. A display client that ignores this flag still works, it just never speeds up.
 
@@ -156,7 +160,7 @@ The `revisions` object from the command drain on its own, `{ "revisions": { ... 
 
 ### GET /api/display/status
 
-Returns the last-known display status as reported by the display client. Accepts `?display=<id>` for the multi-display case; without a target, the legacy default queue's status is returned. Before the first heartbeat arrives this returns `404 { "error": "No status reported yet" }`.
+Returns the last-known display status as reported by the display client. Accepts `?display=<id>` for the multi-display case; without a target, it returns the main display's status (or the one display's, on a single-display install). Before the first heartbeat arrives this returns `200` with `null`, because a display that has not reported yet is a normal state on a new install, not an error.
 
 **Response:**
 ```json
@@ -164,6 +168,7 @@ Returns the last-known display status as reported by the display client. Accepts
   "currentScreen": { "index": 0, "id": "abc-123", "name": "Main" },
   "screenCount": 3,
   "activeProfile": "evening",
+  "profileScheduled": false,
   "displayState": "active",
   "timestamp": 1709913600000,
   "lastSeen": 1709913600000,
@@ -173,6 +178,8 @@ Returns the last-known display status as reported by the display client. Accepts
 }
 ```
 
+`activeProfile` is the profile whose screens the display is showing right now, or `null` when every screen rotates. While a scheduled profile's time is on, that is the scheduled profile and `profileScheduled` is `true`; the profile picked by hand (from [POST /api/display/profile](#post-api-display-profile) or the editor) takes over when the schedule ends.
+
 `hwStats` is present only when the per-Pi reporter has posted to `/api/display/hw-stats`. `browserStats` is present once the display has sent at least one heartbeat from a modern client; older clients omit it.
 
 ### GET /api/display/shared-state
@@ -181,7 +188,7 @@ Returns the most recent snapshot of a display's [shared values](/docs/plugin-dev
 
 | Parameter | Type | Description |
 |---|---|---|
-| `display` | string | Which display's snapshot to read. Omit it in single-display mode |
+| `display` | string | Which display's snapshot to read. Without it, the main display's (or the one display's, on a single-display install) |
 
 **Response:**
 ```json
@@ -248,7 +255,7 @@ Wakes the display and holds off the automatic sleep machinery, the sleep schedul
 
 ### POST /api/display/profile
 
-Switches the active profile. Persists the selection to the config file. Display access, a display token is enough, same as the other command verbs, so a Home Assistant automation can switch profiles; the write only touches the active-profile pointer, the same value the display's own rules engine flips. Accepts `?display=<id>` or `displayId` in the body; does **not** accept `all` (profile switches are per-display).
+Switches the active profile. Persists the selection to the config file. A scheduled profile still wins while its time is on, and the profile picked here takes over when it ends. Display access, a display token is enough, same as the other command verbs, so a Home Assistant automation can switch profiles; the write only touches the active-profile pointer, the same value the display's own rules engine flips. Accepts `?display=<id>` or `displayId` in the body; does **not** accept `all` (profile switches are per-display).
 
 **Body:** `{ "profile": "profile-id", "displayId": "kitchen" }` (`displayId` optional)
 
@@ -300,6 +307,7 @@ The `type` field accepts `info`, `warning`, or `urgent`; anything else quietly b
   "currentScreen": { "index": 0, "id": "abc-123", "name": "Main" },
   "screenCount": 3,
   "activeProfile": null,
+  "profileScheduled": false,
   "displayState": "active",
   "timestamp": 1709913600000,
   "browserStats": {
@@ -396,7 +404,7 @@ curl "http://<hub>:3000/api/display/power-state?display=kitchen&applied=on"
 
 Returns chore completion records, the bonus chores someone has grabbed, and when each "when I put it back" bonus chore was last put back. Automatically purges entries older than 90 days. Public on the LAN with no authentication so the kid-facing `/chores` view works even when the editor password is set.
 
-**Query:** `days` (optional, a whole number from 1 to 90) sends only that many days of history before today. Completions that still keep a "when I put it back" chore done, and grabs that still hold, come whatever their age, so today and this week look the same as with the whole history. The wall and the kids' page ask for `?days=31`, which covers a 30-day streak. Anything else is a `400`.
+**Query:** `days` (optional, a whole number from 1 to 90) sends only that many days of history before today. Completions that still keep a "when I put it back" chore done, and grabs that still hold, come whatever their age, so today and this week look the same as with the whole history. The wall and the kids' page ask for `?days=31`, which covers a 30-day streak. Anything else is a `400`. `chores=1` (optional) adds the chore list as `chores`, its `choresRevision`, and the `family`: the phone and the kids' page send it so they notice a chore or a person another phone changed.
 
 **Caching:** the answer carries an `ETag` and `Cache-Control: no-cache`, so a browser checks before reusing it. A request whose `If-None-Match` matches gets an empty `304`. The `ETag` is the same for every `days`, and changes when the chores, their settings or the completions are saved, when the household's day changes, or after an update. `GET /api/rewards` works the same way for the rewards, balances and redemptions.
 
@@ -529,7 +537,7 @@ Returns saved meals, weekly plan, grocery checked state, and shared meal-planner
   "plan": [
     { "date": "2026-04-04", "slot": "dinner", "mealId": "meal-1" }
   ],
-  "groceryChecked": ["tortillas"],
+  "groceryChecked": { "2026-03-30": ["tortillas"] },
   "settings": {
     "enabledSlots": ["breakfast", "lunch", "dinner"],
     "weekStartDay": "monday",
@@ -540,7 +548,7 @@ Returns saved meals, weekly plan, grocery checked state, and shared meal-planner
 }
 ```
 
-`settings.timeFormat` is optional, when absent, meal times follow the household `GlobalSettings.timeFormat`, which the top-level `globalTimeFormat` field mirrors so clients can resolve "follow global" without a second config fetch. The `plan` array uses ISO date strings (e.g. `"2026-04-04"`) for multi-week support. Entries older than 12 weeks are pruned on write.
+`settings.timeFormat` is optional, when absent, meal times follow the household `GlobalSettings.timeFormat`, which the top-level `globalTimeFormat` field mirrors so clients can resolve "follow global" without a second config fetch. The `plan` array uses ISO date strings (e.g. `"2026-04-04"`) for multi-week support. Entries older than 12 weeks are pruned on write. `groceryChecked` holds each week's ticked items separately, keyed by the date that week starts on (per `settings.weekStartDay`), so an item bought this week is still on next week's list.
 
 ### PUT /api/meals/data
 
@@ -553,7 +561,7 @@ The entire read-modify-write cycle runs inside the meal-data store queue, so cro
 {
   "savedMeals": [ ... ],
   "plan": [ ... ],
-  "groceryChecked": [ ... ],
+  "groceryChecked": { "2026-03-30": [ ... ] },
   "settings": { "enabledSlots": ["breakfast", "lunch", "dinner"], "weekStartDay": "monday", "defaultSlotTimes": { "dinner": "18:00" }, "timeFormat": "12h" },
   "force": false
 }
@@ -561,15 +569,15 @@ The entire read-modify-write cycle runs inside the meal-data store queue, so cro
 
 When `settings` is present it replaces the stored settings object: include `"timeFormat": "12h"` or `"24h"` for an explicit override, or omit the key to follow the household `GlobalSettings.timeFormat`.
 
-When present, `savedMeals`, `plan`, and `groceryChecked` must be arrays. An empty-overwrite guard fires when every `savedMeals` / `plan` field present in the body is `[]` and the existing data is not empty; the write is refused with `409` and you can resend with `force: true` to override. If the body sends both fields and only one of them is empty, that is a normal write and the guard stays out of the way. Settings-only and grocery-only writes skip the guard entirely.
+When present, `savedMeals` and `plan` must be arrays, and `groceryChecked` must map the date each week starts on (`YYYY-MM-DD`) to that week's ticked item names; weeks with nothing planned are dropped, and a `plan` write drops the stored ticks of any week it leaves with nothing planned, so a cleared week starts its list over. When `settings` changes the week start day, the stored ticks move to the matching new weeks. An empty-overwrite guard fires when every `savedMeals` / `plan` field present in the body is `[]` and the existing data is not empty; the write is refused with `409` and you can resend with `force: true` to override. If the body sends both fields and only one of them is empty, that is a normal write and the guard stays out of the way. Settings-only and grocery-only writes skip the guard entirely.
 
 **Response:** The full `{ savedMeals, plan, groceryChecked, settings }` object after the write.
 
 ### GET /api/meals/grocery
 
-Returns just the grocery checked state.
+Returns one week's grocery checked state. `?week=YYYY-MM-DD` picks the week holding that date; without it, the household's current week (the same one `/api/meals/grocery/list` shows).
 
-**Response:** `{ "groceryChecked": ["tortillas", "cheese"] }`
+**Response:** `{ "week": "2026-08-02", "groceryChecked": ["tortillas", "cheese"] }`: `week` is the date that week starts on.
 
 ### GET /api/meals/grocery/list
 
@@ -589,19 +597,22 @@ Returns the **resolved** grocery list for the current week, ingredients aggregat
 
 ### POST /api/meals/grocery
 
-Toggles a grocery item's checked state. If the item is already checked, it is unchecked; otherwise it is checked. Display access, a display token works, so an automation or voice assistant can check items off. The item name is matched after trimming and lowercasing, so senders can use the display-cased name from `/api/meals/grocery/list`.
+Toggles a grocery item's checked state on one week's list. If the item is already checked, it is unchecked; otherwise it is checked. Display access, a display token works, so an automation or voice assistant can check items off. The item name is matched after trimming and lowercasing, so senders can use the display-cased name from `/api/meals/grocery/list`.
 
 **Body:**
 ```json
 {
   "item": "tortillas",
-  "direction": "check"
+  "direction": "check",
+  "week": "2026-08-05"
 }
 ```
 
+`week` is optional: any date in the week whose list the tick belongs to. Omitted, it is the household's current week, which is what "check off the tortillas" means. Ticks never carry over to another week's list.
+
 `direction` is optional. Omitted, the call is the historical flip. Set to `"check"` or `"uncheck"`, the call only ever moves the item in that direction and is a no-op when it's already there, so a repeated voice "check off milk" can never silently un-check it. Any other value is rejected with `400`.
 
-**Response:** `{ "groceryChecked": [...], "changed": true }`: `changed` reports whether this call actually flipped anything.
+**Response:** `{ "week": "2026-08-02", "groceryChecked": [...], "changed": true }`: that week's ticks after the call. `changed` reports whether this call actually flipped anything.
 
 ---
 
@@ -613,15 +624,19 @@ Visual timers and routines, managed from the remote's Timers tab. Routines are f
 
 Returns the saved routine list. Display access.
 
-**Response:** `{ "routines": [ { "id": "...", "name": "...", "icon": "...", "view": "ring", "sound": true, "steps": [ { "id": "...", "label": "...", "icon": "...", "durationSec": 120, "waitForTap": true } ] } ] }`
+**Response:** `{ "routines": [ { "id": "...", "name": "...", "icon": "...", "view": "ring", "sound": true, "steps": [ { "id": "...", "label": "...", "icon": "...", "durationSec": 120, "waitForTap": true } ] } ], "revision": "..." }`
+
+`revision` names this copy of the list. A save sends it back.
 
 `view` is one of `ring`, `face`, `cascade`, or `path`. A step with `waitForTap: true` holds at 0:00 with a "Done!" tap target instead of auto-advancing.
 
 ### PUT /api/timers/routines
 
-Replaces the routine list wholesale (the list is capped at 50 and edited from a single form, so replace-the-list avoids partial-update merge rules). Validation is all-or-nothing: one bad routine rejects the whole write with `400`. An empty list is a legitimate write, it's how the last routine is deleted. Requires a valid session.
+Replaces the routine list wholesale (the list is capped at 50, so replace-the-list avoids partial-update merge rules). Validation is all-or-nothing: one bad routine rejects the whole write with `400`. An empty list is a legitimate write, it's how the last routine is deleted. Requires a valid session.
 
-**Body:** `{ "routines": [ ... ] }`: same shape as the GET response.
+**Body:** `{ "routines": [ ... ], "revision": "..." }`: the list in the same shape as the GET response, and the `revision` of the copy it was built from (from GET or the previous save). A save with no revision is a `400`.
+
+When someone else saved first, the answer is a `409` with `"reason": "revision"` and the current `routines` and `revision`. Make the change again on top of that list and send it with the new revision.
 
 ### GET /api/timers/session
 
@@ -687,13 +702,13 @@ Take and restore a full household backup, the same thing **Settings > Backups & 
 
 Full household backup bundle, exports `config`, `family`, `chores`, `choreCompletions`, `meals`, `rewards`, `routines`, `todos`, and `timetables` as a single JSON file with a `_type: "home-screens-backup"` envelope and a `_version` marker (currently `2`). POST accepts the same shape (plus a legacy config-only format) to restore everything at once. Session required.
 
-GET never returns credentials. A bundle can carry an optional `credentials` section, but only `POST /api/backup/credentials` produces one. This is what **Settings > Backups & data > Save a copy** uses, and it is distinct from the upgrade-time config-only snapshots under `/api/system/backups`.
+GET never returns credentials or icon pictures. A bundle can carry an optional `credentials` section, but only `POST /api/backup/credentials` produces one. It can also carry an optional `customIcons` section, the pictures the family added as icons: the editor and the phone fetch it from `GET /api/backup/custom-icons` (session required; `?summary=1` answers only `{ "count": ..., "bytes": ... }`) and add it when **Include your icons** is on. Restoring a bundle without it keeps the icons already on the hub, and anything pointing at an icon the hub does not have shows a standard icon. This is what **Settings > Backups & data > Save a copy** uses, and it is distinct from the upgrade-time config-only snapshots under `/api/system/backups`.
 
 To restore a bundle whose `credentials` section is encrypted, add a transient `_passphrase` field to the POST body (it is stripped before anything is written and never stored). Credential failures come back as machine codes so the editor can localize them: `400 { "error": "passphrase_required" }` when the section is locked and no password was sent, `400 { "error": "bad_passphrase" }` when it was wrong, and `400 { "error": "invalid_credentials" }` when the section is damaged. None of these write anything, dropping the `credentials` field and re-posting restores everything else.
 
-A restore body is capped at 25 MB. The config inside it is checked for shape and for a valid display registry before anything is written, and if a later part of the bundle fails partway through, the parts that already landed are put back the way they were, so a failed restore doesn't leave a mix of old and new data.
+A restore body is capped at 100 MB, room for a full icon library. The config inside it is checked for shape and for a valid display registry before anything is written, and if a later part of the bundle fails partway through, the parts that already landed are put back the way they were, so a failed restore doesn't leave a mix of old and new data.
 
-**POST response:** `{ "restored": { "config": true, "chores": true, "choreCompletions": true, "meals": false, "rewards": false } }`, one flag per section, including `family`, `true` for the ones the bundle actually contained. A modern bundle replaces the roster when `family` is present. Older bundles without it retain the current roster and fold legacy chore and calendar identities into it by ID first. When the bundle carried credentials, a `credentials: { applied: [...], skipped: [...] }` object is included too, `applied` naming the sections written, `skipped` naming anything deliberately held back (for example `auth.ipRestrictAccess`, when restoring it would lock the requesting device out). A body that is neither a backup bundle nor a bare configuration returns `400 { "error": "Unrecognized backup format" }`.
+**POST response:** `{ "restored": { "config": true, "chores": true, "choreCompletions": true, "meals": false, "rewards": false } }`, one flag per section, including `family` and `customIcons`, `true` for the ones the bundle actually contained. `missingIcons` counts the icons the restored data points at that this hub does not have, which happens only when the bundle was made without its icons. A modern bundle replaces the roster when `family` is present. Older bundles without it retain the current roster and fold legacy chore and calendar identities into it by ID first. When the bundle carried credentials, a `credentials: { applied: [...], skipped: [...] }` object is included too, `applied` naming the sections written, `skipped` naming anything deliberately held back (for example `auth.ipRestrictAccess`, when restoring it would lock the requesting device out). A body that is neither a backup bundle nor a bare configuration returns `400 { "error": "Unrecognized backup format" }`.
 
 ### POST /api/backup/credentials
 

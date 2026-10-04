@@ -4,7 +4,7 @@ import { useId } from 'react';
 import SunCalc from 'suncalc';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import type { WeatherViewProps } from './weather-view-utils';
-import { windUnitLabel } from '@/lib/weather/units';
+import { pressureForUnits, windUnitLabel } from '@/lib/weather/units';
 import { hourLabel, smoothPath, tzHour, hoursWithin, HOURLY_RAIN_SHOWN_PCT } from './weather-view-utils';
 import { tempColor } from './temp-ramp';
 import { Card, Label, TopBar, AlertBand, MiniHero } from './weather-parts';
@@ -313,12 +313,13 @@ function PressureCard({ p, place }: CardProps) {
   const mx = Math.max(...series);
   const pts = series.map((v, i) => [i * (300 / Math.max(1, series.length - 1)), 70 - ((v - mn) / (mx - mn || 1)) * 56] as [number, number]);
   const trend = series.length > 1 ? series[series.length - 1] - series[0] : 0;
+  const reading = pressureForUnits(now.pressure!, p.units);
 
   return (
     <Card u={u} testId="fsw-card" style={{ ...place, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       <Label s={s}>{p.t('fullscreen-weather.cards.pressure')}</Label>
       <Readout p={p}>
-        <Big s={s}>{Math.round(now.pressure!)}<Unit s={s}>hPa</Unit></Big>
+        <Big s={s}>{reading.value}<Unit s={s}>{reading.unit}</Unit></Big>
         <Note s={s} u={u}>{p.t(trend < -1 ? 'fullscreen-weather.cards.pressureFalling' : trend > 1 ? 'fullscreen-weather.cards.pressureRising' : 'fullscreen-weather.cards.pressureSteady')}</Note>
       </Readout>
       {pts.length > 1 && (() => {

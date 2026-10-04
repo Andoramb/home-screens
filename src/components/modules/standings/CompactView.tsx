@@ -2,6 +2,7 @@
 
 import { useRotatingIndex } from '@/hooks/useRotatingIndex';
 import type { StandingsGroup } from '@/lib/espn-standings';
+import { isFavoriteTeam } from '@/lib/sports-order';
 import { formatRecord, getPlayoffTeamCount, StandingsHeader, StandingsTeamRow } from './shared';
 
 interface CompactViewProps {
@@ -10,9 +11,11 @@ interface CompactViewProps {
   showPlayoffLine: boolean;
   rotationIntervalMs: number;
   grouping: 'division' | 'conference' | 'league';
+  /** `<league>:<ABBR>` keys whose rows stand out. */
+  favorites?: string[];
 }
 
-export function CompactView({ groups, teamsToShow, showPlayoffLine, rotationIntervalMs, grouping }: CompactViewProps) {
+export function CompactView({ groups, teamsToShow, showPlayoffLine, rotationIntervalMs, grouping, favorites = [] }: CompactViewProps) {
   const index = useRotatingIndex(groups.length, rotationIntervalMs);
   const group = groups[index];
 
@@ -35,6 +38,7 @@ export function CompactView({ groups, teamsToShow, showPlayoffLine, rotationInte
               key={entry.teamAbbr}
               entry={entry}
               showPlayoffCutoff={showPlayoffLine && entry.rank === playoffCount}
+              highlight={isFavoriteTeam(group.league, entry.teamAbbr, favorites)}
               barWidth={barWidth}
               logoSize={16}
               rowClassName="relative flex items-center gap-2 py-0.5 px-2"

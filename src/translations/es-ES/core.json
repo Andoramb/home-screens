@@ -372,5 +372,11 @@
     "title": "Aún no hay zona horaria.",
     "body": "Tus pantallas usan el reloj del hub ({zone}), así que las horas pueden estar mal.",
     "action": "Elegir zona horaria"
+  },
+  "routeError": {
+    "title": "Esta página no se puede cargar ahora",
+    "body": "Home Screens tiene problemas para leer sus datos guardados. Volverá a intentarlo por sí solo en un momento.",
+    "help": "Si no desaparece, una persona adulta puede abrir Home Screens en un ordenador y recuperar una copia de seguridad en Ajustes.",
+    "retry": "Intentar de nuevo"
   }
 }

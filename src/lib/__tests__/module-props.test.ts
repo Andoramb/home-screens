@@ -289,19 +289,33 @@ describe('calendar family roster join', () => {
     { id: 'm1', name: 'Alex renamed', color: '#aabbcc', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-02T00:00:00.000Z' },
     { id: 'm2', name: 'Quiet person', color: '#ddeeff', createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' },
   ];
+  const feed = (id: string) => ({ id, type: 'ical' as const, name: id, url: `https://example.com/${id}.ics`, color: '#000000', enabled: true });
+  const WITH_FEEDS = { ...CALENDAR_SETTINGS, icalSources: [feed('work'), feed('school')] };
 
   it('takes names, colors and order from family, with source ownership from calendar settings', () => {
     const source = toDisplaySource({
       ...displaySettings,
-      calendar: { ...CALENDAR_SETTINGS, personSources: { m1: ['work', 'school'], removed: ['old'] } },
+      calendar: { ...WITH_FEEDS, personSources: { m1: ['work', 'school'], removed: ['old'] } },
     }, LOCATION, { ...emptyShared(), familyMembers });
     expect(source.calendarPeople).toEqual([
       { id: 'm1', name: 'Alex renamed', color: '#aabbcc', sourceIds: ['work', 'school'] },
     ]);
   });
 
+  it('gives nobody a row for a calendar that was removed', () => {
+    // A removed feed used to leave its owner on the family grid and free
+    // time views with an empty row, and nothing in Settings could clear it.
+    const calendar = { ...CALENDAR_SETTINGS, icalSources: [feed('work')], personSources: { m1: ['work', 'gone'], m2: ['gone'] } };
+    expect(calendarPeopleForFamily(familyMembers, calendar)).toEqual([
+      { id: 'm1', name: 'Alex renamed', color: '#aabbcc', sourceIds: ['work'] },
+    ]);
+    const shared = { ...emptyShared(), familyMembers, familyState: 'loading' as const };
+    const onlyGone = { ...displaySettings, calendar: { ...CALENDAR_SETTINGS, personSources: { m2: ['gone'] } } };
+    expect(buildModuleProps(instance('fullscreen-calendar'), toDisplaySource(onlyGone, LOCATION, shared)).peopleState).toBeUndefined();
+  });
+
   it('keeps a calendar assigned to two people on both rows and unassigned events on Everyone', () => {
-    const people = calendarPeopleForFamily(familyMembers, { m1: ['school'], m2: ['school'] });
+    const people = calendarPeopleForFamily(familyMembers, { ...WITH_FEEDS, personSources: { m1: ['school'], m2: ['school'] } });
     const events = [{ id: 'class', sourceId: 'school' }, { id: 'dinner', sourceId: 'shared' }] as CalendarEvent[];
     const rows = buildPersonRows(events, people, { everyoneLabel: 'Everyone', everyoneColor: '#999999', includeEveryone: true });
     expect(rows.map((row) => row.name)).toEqual(['Everyone', 'Alex renamed', 'Quiet person']);
@@ -310,7 +324,7 @@ describe('calendar family roster join', () => {
 
   it('passes cold roster readiness only when calendar ownership is configured, for both renderers', () => {
     const shared = { ...emptyShared(), familyState: 'loading' as const };
-    const settings = { ...displaySettings, calendar: { ...CALENDAR_SETTINGS, personSources: { m1: ['school'] } } };
+    const settings = { ...displaySettings, calendar: { ...WITH_FEEDS, personSources: { m1: ['school'] } } };
     const displayProps = buildModuleProps(instance('fullscreen-calendar'), toDisplaySource(settings, LOCATION, shared));
     expect(displayProps.peopleState).toBe('loading');
     expect(buildModuleProps(instance('fullscreen-calendar'), toDisplaySource(displaySettings, LOCATION, shared)).peopleState).toBeUndefined();

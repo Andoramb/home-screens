@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withDisplayAuth } from '@/lib/api-utils';
 import { readConfig } from '@/lib/config';
 import { DEFAULT_LOCALE } from '@/i18n/manifest';
+import { resolveShippedLocale } from '@/i18n/fallback';
 import { hubTimezone } from '@/lib/household-day';
 
 export const dynamic = 'force-dynamic';
@@ -15,7 +16,7 @@ export const GET = withDisplayAuth(async () => {
   // are swallowed — the en-US default always works.
   const config = await readConfig().catch(() => null);
   const locale =
-    config?.settings?.formattingLocale ?? config?.settings?.locale ?? DEFAULT_LOCALE;
+    config?.settings?.formattingLocale ?? resolveShippedLocale(config?.settings?.locale ?? DEFAULT_LOCALE);
   return NextResponse.json({
     iso: now.toISOString(),
     // The hub's own zone, which is also the household's while none is saved.

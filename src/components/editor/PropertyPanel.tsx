@@ -89,53 +89,61 @@ import {
 import { INPUT_CLASS, NESTED_INPUT_CLASS } from '@/components/ui/input-classes';
 export { INPUT_CLASS, NESTED_INPUT_CLASS };
 
+/**
+ * One of the X / Y / W / H boxes. The box shows what is being typed while it
+ * has focus, and the module follows every value that is a number. Without the
+ * draft the box showed the module's value instead: clearing it read as 0,
+ * which the size rules turn into 1, so the box said "1" and typing 300 after
+ * it made 1300. An empty box changes nothing; leaving it puts the module's
+ * value back.
+ */
+function GeometryField({ label, value, onCommit }: { label: string; value: number; onCommit: (next: number) => void }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-xs text-hs-text-muted">{label}</span>
+      <input
+        type="number"
+        value={draft ?? value}
+        onFocus={(e) => setDraft(e.target.value)}
+        onChange={(e) => {
+          const text = e.target.value;
+          setDraft(text);
+          const next = Number(text);
+          if (text.trim() !== '' && Number.isFinite(next)) onCommit(next);
+        }}
+        onBlur={() => setDraft(null)}
+        className={INPUT_CLASS}
+      />
+    </label>
+  );
+}
+
 function PositionSection({ mod, screenId, t }: { mod: ModuleInstance; screenId: string; t: TranslateFn }) {
   const { moveModule, resizeModule } = useEditorStore();
   return (
     <>
       <PropertyGroup title={t('propertyPanel.sections.position')} accent={1}>
         <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: t('propertyPanel.fields.x'), value: mod.position.x, key: 'x' as const },
-            { label: t('propertyPanel.fields.y'), value: mod.position.y, key: 'y' as const },
-          ].map(({ label, value, key }) => (
-            <label key={key} className="flex flex-col gap-0.5">
-              <span className="text-xs text-hs-text-muted">{label}</span>
-              <input
-                type="number"
-                value={value}
-                onChange={(e) =>
-                  moveModule(screenId, mod.id, {
-                    ...mod.position,
-                    [key]: Number(e.target.value),
-                  })
-                }
-                className={INPUT_CLASS}
-              />
-            </label>
+          {(['x', 'y'] as const).map((key) => (
+            <GeometryField
+              key={key}
+              label={t(`propertyPanel.fields.${key}`)}
+              value={mod.position[key]}
+              onCommit={(next) => moveModule(screenId, mod.id, { ...mod.position, [key]: next })}
+            />
           ))}
         </div>
       </PropertyGroup>
       <PropertyGroup title={t('propertyPanel.sections.size')} accent={2}>
         <div className="grid grid-cols-2 gap-2">
-          {[
-            { label: t('propertyPanel.fields.w'), value: mod.size.w, key: 'w' as const },
-            { label: t('propertyPanel.fields.h'), value: mod.size.h, key: 'h' as const },
-          ].map(({ label, value, key }) => (
-            <label key={key} className="flex flex-col gap-0.5">
-              <span className="text-xs text-hs-text-muted">{label}</span>
-              <input
-                type="number"
-                value={value}
-                onChange={(e) =>
-                  resizeModule(screenId, mod.id, {
-                    ...mod.size,
-                    [key]: Number(e.target.value),
-                  })
-                }
-                className={INPUT_CLASS}
-              />
-            </label>
+          {(['w', 'h'] as const).map((key) => (
+            <GeometryField
+              key={key}
+              label={t(`propertyPanel.fields.${key}`)}
+              value={mod.size[key]}
+              onCommit={(next) => resizeModule(screenId, mod.id, { ...mod.size, [key]: next })}
+            />
           ))}
         </div>
       </PropertyGroup>
@@ -864,7 +872,7 @@ export default function PropertyPanel({
         </AccordionSection>
 
         <div className="pt-3 border-t border-hs-border-strong space-y-2">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 [&>button]:min-w-0 [&>button]:whitespace-normal">
             <Button
               disabled={atFront}
               onClick={() => reorderModule(selectedScreenId, selectedModule.id, 'front')}

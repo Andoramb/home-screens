@@ -24,6 +24,7 @@ import {
   toggleSavedMealFavorite,
   restorePlanEntries,
 } from '@/lib/meal-plan-actions';
+import { groceryChecksForWeek, groceryWeekKey, type GroceryChecked } from '@/lib/grocery-checks';
 import { useEditorStore } from '@/stores/editor-store';
 import { useEditorHouseholdToday } from '@/components/editor/useEditorHouseholdClock';
 import CRUDModalShell from '@/components/editor/CRUDModalShell';
@@ -44,6 +45,10 @@ interface MealPlannerModalProps {
   plan: PlannedMeal[];
   /** Shared meal settings — slots, week start, default times. Comes from data/meals.json. */
   settings: MealSettings;
+  /** Every week's grocery ticks, shared with the phone. */
+  groceryChecked: GroceryChecked;
+  /** Tick or untick one item on the list of `week` (that week's key). */
+  onToggleGroceryItem: (week: string, item: string) => void;
   accentColor: string;
   /**
    * Persist a change, written as a function of the copy it applies to. Return
@@ -64,6 +69,8 @@ export default function MealPlannerModal({
   savedMeals,
   plan,
   settings,
+  groceryChecked,
+  onToggleGroceryItem,
   accentColor,
   onUpdate,
   onClose,
@@ -87,8 +94,6 @@ export default function MealPlannerModal({
   const [pickerTarget, setPickerTarget] = useState<{ date: string; slot: MealSlotType } | null>(null);
   // Pending new meal: created locally, only persisted when user saves from Detail tab
   const [pendingMeal, setPendingMeal] = useState<SavedMeal | null>(null);
-  // Grocery checked state lives here so it survives tab switches
-  const [groceryChecked, setGroceryChecked] = useState<Set<string>>(() => new Set());
   const [toast, setToast] = useState<{ message: string; undo?: () => void } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -124,6 +129,9 @@ export default function MealPlannerModal({
     () => filterPlanToWeek(plan, viewedWeekDates[0], viewedWeekDates[6]),
     [plan, viewedWeekDates],
   );
+
+  // Ticks belong to the list they were made on: the viewed week's.
+  const groceryWeek = groceryWeekKey(viewedWeekDates[0], weekStartDay);
 
   const navigateWeek = useCallback((direction: -1 | 1) => {
     setViewingWeekStart((prev) => {
@@ -274,13 +282,8 @@ export default function MealPlannerModal({
   }, []);
 
   const toggleGroceryItem = useCallback((key: string) => {
-    setGroceryChecked((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }, []);
+    onToggleGroceryItem(groceryWeek, key);
+  }, [onToggleGroceryItem, groceryWeek]);
 
   const selectedMeal = selectedMealId
     ? allMeals.find((m) => m.id === selectedMealId) ?? null
@@ -345,7 +348,7 @@ export default function MealPlannerModal({
             <SidebarGrocery
               plan={weekPlan}
               meals={savedMeals}
-              checkedItems={groceryChecked}
+              checkedItems={groceryChecksForWeek(groceryChecked, groceryWeek)}
               onToggleItem={toggleGroceryItem}
             />
           )}

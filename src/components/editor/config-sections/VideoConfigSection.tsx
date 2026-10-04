@@ -148,7 +148,7 @@ export function VideoConfigSection({ mod, screenId }: { mod: ModuleInstance; scr
               {file || t('configSections.video.chooseVideoPlaceholder')}
             </div>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 [&>button]:min-w-0 [&>button]:whitespace-normal">
             <Button size="sm" onClick={() => setShowBrowser(true)} className="flex-1">
               {t('configSections.video.browseLibrary')}
             </Button>

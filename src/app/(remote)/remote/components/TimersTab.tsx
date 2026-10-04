@@ -301,6 +301,12 @@ export default function TimersTab() {
             {t('timers.start')}
           </button>
         </div>
+        {/* Something is typed and Start is off: say why, as the routine form does. */}
+        {customTotalSec === null && (customMinutes !== '' || customSeconds !== '') && (
+          <p role="status" data-testid="quick-why-no-start" className="mt-2 text-[12.5px] text-hs-text-muted">
+            {t('timers.quickTooShort', { seconds: 5 })}
+          </p>
+        )}
         <div className="mt-3 flex items-center justify-between gap-2">
           <div className="flex gap-1.5 flex-wrap">
             {(Object.keys(TIMER_VIEW_LABEL_KEYS) as TimerView[]).map((view) => (
@@ -370,7 +376,7 @@ export default function TimersTab() {
                 <div className="min-w-0 flex-1">
                   <div className="text-[15px] font-bold text-hs-text-primary truncate">{routine.name}</div>
                   <div className="text-[12px] text-hs-text-faint">
-                    {t('timers.routineMeta', { steps: routine.steps.length, minutes: totalMin })}
+                    {t('timers.routineMeta', { count: routine.steps.length, steps: routine.steps.length, minutes: totalMin })}
                     {' · '}
                     {t(TIMER_VIEW_LABEL_KEYS[routine.view])}
                   </div>
@@ -412,11 +418,11 @@ export default function TimersTab() {
           routine={editing === 'new' ? null : editing}
           onClose={() => setEditing(null)}
           onSave={async (next) => {
-            const others = routines.filter((r) => r.id !== next.id);
-            const isNew = editing === 'new';
-            const ok = await saveRoutines(isNew ? [...routines, next] : [...others, next].sort(
-              (a, b) => routines.findIndex((r) => r.id === a.id) - routines.findIndex((r) => r.id === b.id),
-            ));
+            // In place when it is still in the list, else at the end: a new
+            // routine, or one another phone deleted while it was being edited.
+            const ok = await saveRoutines((list) => (list.some((r) => r.id === next.id)
+              ? list.map((r) => (r.id === next.id ? next : r))
+              : [...list, next]));
             if (ok) setEditing(null);
             return ok;
           }}
@@ -424,7 +430,7 @@ export default function TimersTab() {
             editing === 'new'
               ? undefined
               : async () => {
-                  const ok = await saveRoutines(routines.filter((r) => r.id !== editing.id));
+                  const ok = await saveRoutines((list) => list.filter((r) => r.id !== editing.id));
                   if (ok) setEditing(null);
                   return ok;
                 }

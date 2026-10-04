@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect } from 'react';
 import type { SleepSettings } from '@/types/config';
+import type { ResolvedProfile } from '@/lib/schedule';
 import { useSleepManager } from '@/hooks/useSleepManager';
 import { useDisplayCommands, useStatusReporter } from '@/hooks/useDisplayCommands';
 import { useAlertStore, type DisplayAlert } from '@/stores/alert-store';
@@ -15,7 +16,8 @@ interface UseDisplayControlParams {
   screenId: string;
   screenName: string;
   screenCount: number;
-  activeProfile: string | undefined | null;
+  /** The profile in effect, and whether its schedule chose it. */
+  activeProfile: Pick<ResolvedProfile, 'profileId' | 'scheduled'>;
   nextScreen: () => void;
   prevScreen: () => void;
   /** Jump to a screen by id or name. The rotator's resolver already clears

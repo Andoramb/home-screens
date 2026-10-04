@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import type { SavedMeal, PlannedMeal, MealSlotType, TimeFormat } from '@/types/config';
-import { SLOT_META, SLOT_ORDER, getLocalizedDayNames, getMealSlotLabelKey, DEFAULT_MEAL_EMOJI, dateToDayIndex, plannedMealName } from '@/lib/meal-constants';
+import { SLOT_META, SLOT_ORDER, getLocalizedDayNames, getMealSlotLabelKey, DEFAULT_MEAL_EMOJI, dateToDayIndex, plannedMealName, formatShortDayMonth } from '@/lib/meal-constants';
 import { Shuffle, Copy, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 import MealTimeChip from '@/components/meals/MealTimeChip';
 import { useFormattingLocale, useTranslate } from '@/i18n';
@@ -160,8 +160,7 @@ export default function WeekGrid({
           {weekDates.map((date) => {
             const isToday = isCurrentWeek && date === todayISO;
             const dayIdx = dateToDayIndex(date);
-            const dateObj = new Date(date + 'T12:00:00');
-            const shortDate = `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+            const shortDate = formatShortDayMonth(date, locale);
 
             return orderedSlots.map((slot, slotIdx) => {
               const { meal, planned, name } = resolveMealCell(date, slot);

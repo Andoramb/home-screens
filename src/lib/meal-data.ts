@@ -5,6 +5,7 @@ import { withDataTransaction } from './data-transaction';
 import { readConfig } from './config';
 import { getAllScreens } from './display-filter';
 import { toISODate, DEFAULT_MEAL_SETTINGS, normalizeMealSettings } from './meal-constants';
+import { normalizeGroceryChecked, type GroceryChecked } from './grocery-checks';
 import { logger } from '@/lib/logger';
 
 const log = logger('meal-settings-migration');
@@ -17,12 +18,13 @@ export interface MealData {
   /** Planned meals, one entry per day and slot (see PlannedMeal) */
   plan: PlannedMeal[];
   /**
-   * Ingredient names checked off the grocery list. The list itself is built from the planned meals
-   * and is not stored
+   * Ingredient names checked off each week's grocery list, keyed by the date that week starts on.
+   * The list itself is built from the week's planned meals and is not stored
    *
-   * Ingredient names that have been checked off
+   * See `grocery-checks.ts` for the rules every surface shares. A week's ticks
+   * are dropped once the plan has no meals in that week.
    */
-  groceryChecked: string[];
+  groceryChecked: GroceryChecked;
   /**
    * Household meal settings (see MealSettings)
    *
@@ -44,7 +46,7 @@ export interface MealData {
 const EMPTY: MealData = {
   savedMeals: [],
   plan: [],
-  groceryChecked: [],
+  groceryChecked: {},
   settings: { ...DEFAULT_MEAL_SETTINGS },
 };
 
@@ -224,7 +226,8 @@ async function parseAndMigrate(
   const data: MealData = {
     savedMeals: Array.isArray(raw.savedMeals) ? raw.savedMeals as SavedMeal[] : [],
     plan: Array.isArray(raw.plan) ? raw.plan as PlannedMeal[] : [],
-    groceryChecked: Array.isArray(raw.groceryChecked) ? raw.groceryChecked as string[] : [],
+    // The single list older builds kept for every week reads as nothing ticked.
+    groceryChecked: normalizeGroceryChecked(raw.groceryChecked),
     settings: normalizeMealSettings(raw.settings),
   };
 

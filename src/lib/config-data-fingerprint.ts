@@ -38,3 +38,18 @@ export function dataFingerprint(cfg: ScreenConfiguration): string {
     displays: cfg.displays?.map((d) => ({ ...d, screens: stripScreens(d.screens) })),
   });
 }
+
+/**
+ * The same identity, from the pieces a wall holds rather than a whole config.
+ * A wall starts from the props its page was rendered with and never sees the
+ * config document they came from, so this is what lets it tell a later edit
+ * that only moves modules apart from one that changes fetched data.
+ */
+export function dataFingerprintOfParts(
+  screens: Screen[],
+  settings: unknown,
+  profiles: unknown,
+  rules: unknown,
+): string {
+  return stableStringify({ settings, profiles, rules, screens: stripScreens(screens) });
+}

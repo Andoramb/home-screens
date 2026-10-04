@@ -19,4 +19,6 @@ export interface CountdownViewProps {
   config: CountdownConfig;
   scale: number;
   basePx: number;
+  /** The card's own font size (Style > Text size), which the views' em gaps are set in. */
+  textPx: number;
 }

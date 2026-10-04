@@ -372,5 +372,11 @@
     "title": "Noch keine Zeitzone.",
     "body": "Deine Bildschirme nutzen die Uhr des Hubs ({zone}), deshalb können Uhrzeiten falsch sein.",
     "action": "Zeitzone wählen"
+  },
+  "routeError": {
+    "title": "Diese Seite lässt sich gerade nicht laden",
+    "body": "Home Screens hat gerade Probleme, seine gespeicherten Daten zu lesen. Es versucht es gleich von selbst noch einmal.",
+    "help": "Wenn das nicht verschwindet, kann ein Erwachsener Home Screens am Computer öffnen und in den Einstellungen eine Sicherung zurückspielen.",
+    "retry": "Noch einmal versuchen"
   }
 }

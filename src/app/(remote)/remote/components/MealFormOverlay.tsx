@@ -359,7 +359,7 @@ export default function MealFormOverlay({
           </div>
         ))}
         <button
-          onClick={() => setFormIngredients((prev) => [...prev, { name: '', amount: '', category: 'other' }])}
+          onClick={() => setFormIngredients((prev) => [...prev, { name: '', amount: '' }])}
           style={{
             width: '100%',
             padding: '12px',

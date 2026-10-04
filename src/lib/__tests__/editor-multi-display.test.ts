@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildBootstrapMain, buildNewDisplay, withProfiles, withActiveProfile, getActiveFullscreenTheme } from '@/lib/editor-multi-display';
+import { buildBootstrapMain, buildNewDisplay, withProfiles, withActiveProfile, getActiveFullscreenTheme, getPatchedDisplayDimensions } from '@/lib/editor-multi-display';
 import { filterConfigForDisplay } from '@/lib/display-filter';
 import { resolveHubPanel } from '@/lib/kiosk';
 import type {
@@ -249,5 +249,38 @@ describe('getActiveFullscreenTheme', () => {
     for (const display of config.displays!) {
       expect(getActiveFullscreenTheme(config, display.id)).toBe(filterConfigForDisplay(config, display.id)!.settings.fullscreenTheme);
     }
+  });
+});
+
+/* ─── getPatchedDisplayDimensions ─────────────────────────────────── */
+
+describe('getPatchedDisplayDimensions', () => {
+  const porch: DisplayNode = {
+    id: 'porch',
+    name: 'Porch',
+    screens: [],
+    displayWidth: 1920,
+    displayHeight: 1080,
+    displayTransform: 'normal',
+  };
+
+  it('stands the canvas on its side for a rotation to portrait', () => {
+    const config = makeConfig({ displays: [porch] });
+    expect(getPatchedDisplayDimensions(config, 'porch', {
+      displayTransform: '90', displayWidth: 1080, displayHeight: 1920,
+    })).toEqual({ width: 1080, height: 1920 });
+  });
+
+  it('keeps a typed size in the rotation the display already declares', () => {
+    const config = makeConfig({ displays: [{ ...porch, displayTransform: '90', displayWidth: 1080, displayHeight: 1920 }] });
+    expect(getPatchedDisplayDimensions(config, 'porch', { displayWidth: 2160 }))
+      .toEqual({ width: 1920, height: 2160 });
+  });
+
+  it('leaves the other displays alone', () => {
+    const main: DisplayNode = { id: 'main', name: 'Main', screens: [], displayWidth: 1080, displayHeight: 1920 };
+    const config = makeConfig({ displays: [main, porch] });
+    getPatchedDisplayDimensions(config, 'porch', { displayTransform: '90' });
+    expect(config.displays![1].displayTransform).toBe('normal');
   });
 });

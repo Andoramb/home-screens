@@ -2,7 +2,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Screen } from '@/types/config';
 import { pruneDanglingScreenRefs } from '@/lib/display-filter';
-import { getActiveScreens, withActiveScreens } from '@/lib/editor-multi-display';
+import { getActiveDimensions, getActiveScreens, withActiveScreens } from '@/lib/editor-multi-display';
+import { fitModuleToDisplay } from '@/lib/module-utils';
 import { COALESCE_KEYS } from '@/stores/editor-save';
 import { syncEditorUrl } from '@/stores/editor-url';
 import type { EditorGet, MutateConfig, ScreenActions } from './types';
@@ -13,13 +14,13 @@ export function createScreenSlice(
   mutateConfig: MutateConfig,
 ): ScreenActions {
   return {
-    addScreen: () => {
+    addScreen: (name) => {
       const { config, selectedDisplayId } = get();
       if (!config) return;
       const currentScreens = getActiveScreens(config, selectedDisplayId);
       const newScreen: Screen = {
         id: uuidv4(),
-        name: `Screen ${currentScreens.length + 1}`,
+        name: name ?? `Screen ${currentScreens.length + 1}`,
         backgroundImage: '',
         modules: [],
       };
@@ -62,7 +63,7 @@ export function createScreenSlice(
       }
     },
 
-    duplicateScreen: (id) => {
+    duplicateScreen: (id, copyName) => {
       const { config, selectedDisplayId } = get();
       if (!config) return;
       const src = getActiveScreens(config, selectedDisplayId).find((s) => s.id === id);
@@ -74,7 +75,7 @@ export function createScreenSlice(
       const copy: Screen = {
         ...cloned,
         id: uuidv4(),
-        name: `${src.name} copy`,
+        name: copyName ?? `${src.name} copy`,
         modules: cloned.modules.map((m) => ({ ...m, id: uuidv4() })),
       };
       mutateConfig((cfg) => {
@@ -98,11 +99,14 @@ export function createScreenSlice(
       if (!source || source.screens.length === 0) return;
       // Fresh ids throughout, exactly as duplicateScreen does: two displays
       // sharing a screen id would make profiles, rules and per-module state
-      // (todo taps, selection) collide across displays.
+      // (todo taps, selection) collide across displays. Modules are fitted to
+      // this display's shape, as an imported layout's are.
+      const from = getActiveDimensions(config, sourceDisplayId);
+      const to = getActiveDimensions(config, selectedDisplayId);
       const copies: Screen[] = structuredClone(source.screens).map((screen) => ({
         ...screen,
         id: uuidv4(),
-        modules: screen.modules.map((m) => ({ ...m, id: uuidv4() })),
+        modules: screen.modules.map((m) => ({ ...fitModuleToDisplay(m, from, to), id: uuidv4() })),
       }));
       mutateConfig((cfg) => ({
         config: withActiveScreens(

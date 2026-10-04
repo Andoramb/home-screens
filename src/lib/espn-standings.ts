@@ -2,6 +2,8 @@
 // ESPN Standings — types, data tables, parsing, and grouping helpers
 // ---------------------------------------------------------------------------
 
+import { leagueWallCode } from './espn';
+
 // ---- Types ----------------------------------------------------------------
 
 export interface StandingsEntry {
@@ -22,6 +24,8 @@ export interface StandingsEntry {
   streak?: string;
   clincher?: string;
   playoffSeed?: number;
+  /** AP poll rank for a ranked college team (ESPN's `team.rank`). */
+  apRank?: number;
   gamesPlayed?: number;
   last10?: string;
   pointsFor?: number;
@@ -35,6 +39,7 @@ export interface StandingsEntry {
 
 export interface StandingsGroup {
   name: string;
+  /** The upper-cased league id (`LIGA_MX`); the wall prints `leagueWallCode` of it. */
   league: string;
   entries: StandingsEntry[];
 }
@@ -167,6 +172,29 @@ function getStatNum(stats: Record<string, unknown>[], name: string): number | un
   return undefined;
 }
 
+/**
+ * Wins, losses and ties from the `overall` summary (`3-2` or `7-9-1`).
+ * ESPN's college football standings send `wins` and this summary but no
+ * `losses`, `ties` or `winPercent` stat.
+ */
+function overallRecord(stats: Record<string, unknown>[]): { wins: number; losses: number; ties?: number } | undefined {
+  const stat = stats.find((s) => s.name === 'overall');
+  const summary = (stat?.summary ?? stat?.displayValue) as unknown;
+  const match = typeof summary === 'string' ? /^(\d+)-(\d+)(?:-(\d+))?$/.exec(summary.trim()) : null;
+  if (!match) return undefined;
+  return {
+    wins: Number(match[1]),
+    losses: Number(match[2]),
+    ...(match[3] !== undefined ? { ties: Number(match[3]) } : {}),
+  };
+}
+
+/** Share of games won, a tie counting as half a win. */
+function winShare(wins: number, losses: number, ties: number): number {
+  const games = wins + losses + ties;
+  return games > 0 ? (wins + ties / 2) / games : 0;
+}
+
 /** Sort parsed entries by points (desc), winPct (desc), wins (desc), then re-assign ranks */
 function sortAndRank(entries: StandingsEntry[]): void {
   entries.sort((a, b) => {
@@ -208,8 +236,12 @@ function parseEntry(
 
   const leagueKey = league.toLowerCase();
 
-  const wins = getStatNum(stats, 'wins') ?? 0;
-  const losses = getStatNum(stats, 'losses') ?? 0;
+  // Without a `losses` stat the record comes from the `overall` summary;
+  // reading the absent stat as 0 made every college football team unbeaten.
+  const overall = getStatNum(stats, 'losses') === undefined ? overallRecord(stats) : undefined;
+  const wins = overall?.wins ?? getStatNum(stats, 'wins') ?? 0;
+  const losses = overall?.losses ?? getStatNum(stats, 'losses') ?? 0;
+  const ties = getStatNum(stats, 'ties') ?? overall?.ties ?? 0;
   const clincher = getStat(stats, 'clincher') as string | undefined;
   const playoffSeed = getStatNum(stats, 'playoffSeed');
 
@@ -222,10 +254,13 @@ function parseEntry(
     teamColor: (team?.color as string) ?? '666666',
     wins,
     losses,
-    winPct: getStatNum(stats, 'winPercent') ?? getStatNum(stats, 'winPct') ?? (wins + losses > 0 ? wins / (wins + losses) : 0),
+    ...(overall?.ties !== undefined ? { ties: overall.ties } : {}),
+    winPct: getStatNum(stats, 'winPercent') ?? getStatNum(stats, 'winPct') ?? winShare(wins, losses, ties),
     clincher: clincher && clincher !== '' ? clincher : undefined,
     playoffSeed: playoffSeed,
   };
+  const apRank = Number(team?.rank);
+  if (Number.isFinite(apRank) && apRank >= 1 && apRank <= 25) result.apRank = apRank;
 
   // Apply sport-specific stats via table-driven mapping
   const mappingKey = SOCCER_LEAGUES.has(leagueKey) ? 'soccer' : leagueKey;
@@ -265,7 +300,7 @@ function walkStandingsTree(data: Record<string, unknown>, league: string): TreeN
   const children = data.children as Record<string, unknown>[] | undefined;
   if (!children?.length) {
     const entries = ((data.standings as Record<string, unknown> | undefined)?.entries as Record<string, unknown>[]) ?? [];
-    return entries.length ? [{ name: (data.name as string) ?? league.toUpperCase(), confName: null, entries }] : [];
+    return entries.length ? [{ name: (data.name as string) ?? leagueWallCode(league), confName: null, entries }] : [];
   }
 
   const nodes: TreeNode[] = [];
@@ -335,7 +370,7 @@ export function groupByConference(
 export function groupByLeague(groups: StandingsGroup[], league: string): StandingsGroup[] {
   const allEntries = groups.flatMap((g) => g.entries);
   sortAndRank(allEntries);
-  return [{ name: league.toUpperCase(), league: league.toUpperCase(), entries: allEntries }];
+  return [{ name: leagueWallCode(league), league: league.toUpperCase(), entries: allEntries }];
 }
 
 /** Use static division mapping to split conference groups into divisions */

@@ -63,7 +63,17 @@ export interface DisplayStatus {
     name: string;
   };
   screenCount: number;
+  /**
+   * The profile whose screens the display is rotating: a scheduled profile
+   * while its window is open, otherwise the manual pick, null when every
+   * screen rotates. The manual pick itself lives in config.
+   */
   activeProfile: string | null;
+  /**
+   * True when a profile's schedule chose `activeProfile`, so a manual pick
+   * waits for the window to end. Absent from walls that predate it.
+   */
+  profileScheduled?: boolean;
   displayState: 'active' | 'dimmed' | 'asleep';
   timestamp: number;
   cacheStats?: CacheStats;
@@ -519,6 +529,10 @@ function pushTo(queueId: string, command: DisplayCommand): void {
  * - `displayId` undefined → enqueue to `__default__` (single-display mode)
  * - `displayId === 'all'`  → broadcast to every known display + `__default__`
  * - `displayId === <slug>` → enqueue to that display's queue (must pass `isValidDisplayId`)
+ *
+ * Once the hub has a display registry nothing drains `__default__`, so the
+ * command route names the main display for a call that names none
+ * (`enqueueForTarget` in `api/display/[action]`); this layer never reads config.
  *
  * Invalid slugs are silently dropped to keep the in-memory maps clean — the
  * route layer is responsible for surfacing 400s to the user before this is

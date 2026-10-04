@@ -94,11 +94,14 @@ function getNextCollectionText(
   tCore: TranslateFn,
 ): string {
   if (scheduleDay < 0) return '';
-  // Walk forward up to 14 days to find the next collection
-  for (let i = 1; i <= 14; i++) {
+  // Walk forward from today: on pickup day itself (which the day-before
+  // highlight has already moved past) the next collection is today, not the
+  // same weekday a week or two out.
+  for (let i = 0; i <= 14; i++) {
     const future = new Date(now);
     future.setDate(future.getDate() + i);
     if (future.getDay() === scheduleDay && isCollectionWeek(future, scheduleDay, frequency, startDate)) {
+      if (i === 0) return tCore('today');
       if (i === 1) return tCore('tomorrow');
       if (i <= 6) return dayNames[future.getDay()];
       // `garbage-day.nextDay` assumes the weekday name can be slotted into

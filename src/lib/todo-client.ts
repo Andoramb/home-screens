@@ -127,9 +127,10 @@ export function primeTodoCache(lists: TodoList[]): void {
  * Send one write and hand back the lists it answers with.
  *
  * A 4xx carries `{ error }` in plain language from the store's validation and
- * becomes that message; anything else becomes `fallbackMessage`. Transport
- * failures propagate untouched so callers can still recognise an expired
- * session. Rejects rather than returning a flag, so an optimistic caller can
+ * becomes that message; anything else becomes `fallbackMessage`, a request
+ * that never reached the hub included (the browser's own "Failed to fetch"
+ * is nothing to show a family). An expired session propagates untouched so
+ * callers can still recognise it. Rejects rather than returning a flag, so an optimistic caller can
  * leave its local change alone until it knows the write was refused.
  */
 export async function sendTodoWrite(
@@ -137,11 +138,18 @@ export async function sendTodoWrite(
   req: TodoWriteRequest,
   fallbackMessage: string,
 ): Promise<TodoWriteResult> {
-  const res = await fetcher(req.url, {
-    method: req.method,
-    headers: req.body ? { 'Content-Type': 'application/json' } : undefined,
-    body: req.body ? JSON.stringify(req.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetcher(req.url, {
+      method: req.method,
+      headers: req.body ? { 'Content-Type': 'application/json' } : undefined,
+      body: req.body ? JSON.stringify(req.body) : undefined,
+    });
+  } catch (error) {
+    // `fetch` rejects with a TypeError when the network is down.
+    if (error instanceof TypeError) throw new Error(fallbackMessage);
+    throw error;
+  }
   const json = (await res.json().catch(() => null)) as
     | (Partial<TodoWriteResult> & { error?: string })
     | null;

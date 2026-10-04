@@ -3,6 +3,7 @@ import { fetchWithTimeout } from '@/lib/api-utils';
 import { SignInHelperUnreachableError, type GoogleClientMode, type StoredGoogleTokens } from '@/lib/google-token-store';
 import { googleCalendarTokenStore } from '@/lib/google-token-stores';
 import { logger } from '@/lib/logger';
+import { bumpCalendarRevision } from '@/lib/calendar-revision';
 
 const log = logger('google-auth');
 
@@ -76,6 +77,7 @@ export async function pollDeviceToken(
       data.expiry_date = Date.now() + data.expires_in * 1000;
     }
     await store.saveGrant(data, client);
+    bumpCalendarRevision();
     if (!data.refresh_token) {
       return {
         status: 'success',
@@ -129,6 +131,7 @@ export async function isAuthenticated(): Promise<boolean> {
 
 export async function disconnect(): Promise<void> {
   await store.disconnect();
+  bumpCalendarRevision();
 }
 
 export async function hasGoogleCredentials(): Promise<boolean> {

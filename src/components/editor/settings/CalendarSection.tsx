@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
 import type { ICalSource, ICloudSource } from '@/types/config';
@@ -14,13 +14,11 @@ import ICalFeedManager from './ICalFeedManager';
 import ICloudCalendarManager from './ICloudCalendarManager';
 import CalendarPeopleManager from './CalendarPeopleManager';
 import { SettingsArea, SourceBlock, SourceHealthBadge, SourceHealthError, useCalendarSourceHealth } from './calendar-settings-bits';
-import { useTranslate } from '@/i18n';
+import { useLocale, useTranslate } from '@/i18n';
+import { localizedHolidayCountries, type HolidayCountry } from '@/lib/holiday-countries';
 import { settingsPath } from '@/lib/settings-route';
+import { configuredCalendarSourceIds, prunePersonSources } from '@/lib/calendar-source-refs';
 
-interface HolidayCountry {
-  countryCode: string;
-  name: string;
-}
 
 interface CalendarSettings {
   selectedCalendarIds: string[];
@@ -37,12 +35,32 @@ interface Props {
   onChange: (updates: Partial<CalendarSettings>) => void;
 }
 
-export default function CalendarSection({ values, onChange }: Props) {
+export default function CalendarSection({ values, onChange: stageChange }: Props) {
   const { selectedCalendarIds, icalSources, icloudSources, personSources, daysAhead, holidayCountry, hideDeclined } = values;
   const t = useTranslate('editor');
 
+  // Every way a calendar leaves the list arrives here: a feed removed, a
+  // Google calendar unpicked or signed out, an iCloud calendar unticked or
+  // its account removed, the holidays turned off. Whoever owned it lets go in
+  // the same edit, so People never keeps a tick it has no box to untick.
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChange = useCallback((updates: Partial<CalendarSettings>) => {
+    const next = { ...valuesRef.current, ...updates };
+    const configured = configuredCalendarSourceIds({
+      googleCalendarIds: next.selectedCalendarIds,
+      icalSources: next.icalSources,
+      icloudSources: next.icloudSources,
+      holidayCountry: next.holidayCountry,
+    });
+    const pruned = prunePersonSources(next.personSources, (id) => configured.has(id));
+    stageChange(pruned === next.personSources ? updates : { ...updates, personSources: pruned });
+  }, [stageChange]);
+
   const [availableCountries, setAvailableCountries] = useState<HolidayCountry[]>([]);
-  const { health, recordSourceHealth } = useCalendarSourceHealth();
+  const locale = useLocale();
+  const countryOptions = useMemo(() => localizedHolidayCountries(availableCountries, locale), [availableCountries, locale]);
+  const { health, recordSourceHealth, recheckSourceHealth } = useCalendarSourceHealth();
 
   // Track auth errors from useGoogleCalendars separately so they show in the right place
   const [authError, setAuthError] = useState<string | null>(null);
@@ -72,6 +90,8 @@ export default function CalendarSection({ values, onChange }: Props) {
       setAuthError(null);
       setGoogleConnected(true);
       await fetchCalendars(true);
+      // The badges still show the status from before the sign-in.
+      recheckSourceHealth();
     },
   });
 
@@ -398,7 +418,7 @@ export default function CalendarSection({ values, onChange }: Props) {
               className="w-full rounded-md bg-hs-card border border-hs-border-strong px-2.5 py-1.5 text-sm text-hs-text-body focus:border-hs-accent focus:outline-none"
             >
               <option value="">{t('settings.calendarPage.holidays.none')}</option>
-              {availableCountries.map((c) => (
+              {countryOptions.map((c) => (
                 <option key={c.countryCode} value={c.countryCode}>
                   {c.name}
                 </option>

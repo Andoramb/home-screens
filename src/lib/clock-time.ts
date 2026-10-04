@@ -83,6 +83,19 @@ export function formatClockTime(
   return formatClockMinutes(toMinutes(time), format);
 }
 
+/**
+ * The same, with a 12-hour time's AM or PM left off ('13:20' -> '1:20'), for a
+ * place too narrow for it where the hour cannot be mistaken, such as the
+ * period gutter of a school timetable. A 24-hour time has none to leave off.
+ */
+export function formatClockTimeBare(
+  time: string | undefined | null,
+  format: TimeFormat,
+): string {
+  const full = formatClockTime(time, format);
+  return format === '12h' ? full.replace(/\s*[AP]M$/i, '') : full;
+}
+
 const LOCALE_TIME_FORMATS = new Map<string, TimeFormat>();
 
 /**

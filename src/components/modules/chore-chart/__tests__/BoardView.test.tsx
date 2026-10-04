@@ -37,10 +37,9 @@ function heavyAssignments(id: string, count: number) {
 }
 
 describe('BoardView row wrapping', () => {
-  it('wraps columns to multiple rows against the authored font size, not the fitted one', () => {
-    // 6 members in a 500px-wide card — the module's default size. One member
-    // has a heavy day, which is what drives ChoreChartModule's fitted
-    // fontSize down to a fraction of the authored 24px ceiling.
+  it('draws the columns across that the fit chose, whatever the fitted size', () => {
+    // 6 members, one with a heavy day, drawn small. The fit chose three
+    // across (see fitBoard); the board draws that and nothing of its own.
     const members = ['a', 'b', 'c', 'd', 'e', 'f'].map(member);
     const todayAssignments = [
       ...heavyAssignments('a', 13),
@@ -54,15 +53,13 @@ describe('BoardView row wrapping', () => {
       <BoardView
         config={{ view: 'board', weekStartDay: 'monday', showPoints: true, showStreaks: true, showTimeOfDay: true, allowDisplayComplete: true, accentColor: '#8b5cf6' }}
         data={{ members, todayAssignments, completionSet: new Set(), memberStats, toggleComplete: async () => {} }}
-        width={500}
         fontSize={9}
-        authoredFontSize={24}
+        perRow={3}
       />,
     ));
 
-    // fitPerRow(500, 6 * 24, 8, 6) = 3 → balanceRows gives 2 rows of 3.
-    // Before the fix this read fitPerRow(500, 6 * 9, 8, 6) = 6 → 1 row of 6,
-    // squeezing every member's column to ~83px.
+    // Three across: balanceRows gives 2 rows of 3. The board used to work out
+    // its own wrap, which could disagree with the one the height was fit for.
     const grid = container.querySelector('[style*="grid-template-rows"]');
     expect(grid).not.toBeNull();
     expect(grid!.getAttribute('style')).toMatch(/grid-template-rows:\s*repeat\(2,/);
@@ -73,7 +70,7 @@ describe('BoardView row wrapping', () => {
     }
   });
 
-  it('keeps everything on one row when the box is wide enough for the authored size', () => {
+  it('keeps everything on one row when the fit puts them all across', () => {
     const members = ['a', 'b', 'c'].map(member);
     const todayAssignments = members.flatMap((m) => heavyAssignments(m.id, 1));
     const memberStats = new Map<string, MemberStats>(
@@ -84,9 +81,8 @@ describe('BoardView row wrapping', () => {
       <BoardView
         config={{ view: 'board', weekStartDay: 'monday', showPoints: true, showStreaks: true, showTimeOfDay: true, allowDisplayComplete: true, accentColor: '#8b5cf6' }}
         data={{ members, todayAssignments, completionSet: new Set(), memberStats, toggleComplete: async () => {} }}
-        width={900}
         fontSize={24}
-        authoredFontSize={24}
+        perRow={3}
       />,
     ));
 
@@ -111,9 +107,8 @@ describe('BoardView un-ticking', () => {
       <BoardView
         config={{ view: 'board', weekStartDay: 'monday', showPoints: true, showStreaks: true, showTimeOfDay: true, allowDisplayComplete: true, accentColor: '#8b5cf6' }}
         data={{ members, todayAssignments, completionSet: new Set(), memberStats, toggleComplete }}
-        width={900}
         fontSize={24}
-        authoredFontSize={24}
+        perRow={1}
       />,
     ));
     return { toggleComplete, card: screen.getByRole('button', { name: /Chore solo/ }) };

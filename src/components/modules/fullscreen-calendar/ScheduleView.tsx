@@ -24,6 +24,14 @@ import Glyph from '@/components/ui/Glyph';
 import { eventOwner } from '@/lib/calendar-people';
 import { TagPrefix } from '../shared/EventMarker';
 
+/**
+ * One equal column per day, for the day headers, the all-day lane and the
+ * hour grid alike. `minmax(0, 1fr)`, not `1fr`: a bare `1fr` column is never
+ * narrower than its longest word, so one long all-day title widened its own
+ * column, and the lane's days no longer lined up with the headers above them.
+ */
+const dayColumns = (count: number) => `repeat(${count}, minmax(0, 1fr))`;
+
 export function ScheduleView({ events, timezone, config, scale, today, now, timeFormat, weather, owners }: CalendarViewProps) {
   const t = useTranslate('modules');
   const locale = useFormattingLocale();
@@ -104,7 +112,7 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
       {/* Column headers */}
       <div style={{ display: 'flex', borderBottom: '1px solid var(--cal-border)', flexShrink: 0 }} role="row">
         <div style={{ width: gutterWidth, flexShrink: 0 }} />
-        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: `repeat(${daysToShow}, 1fr)` }}>
+        <div style={{ flex: 1, display: 'grid', gridTemplateColumns: dayColumns(daysToShow) }}>
           {days.map((day, dayIdx) => {
             const isToday = isSameDay(day, today);
             const isWeekend = isWeekendDay(day);
@@ -198,7 +206,7 @@ export function ScheduleView({ events, timezone, config, scale, today, now, time
           <div style={{
             flex: 1,
             display: 'grid',
-            gridTemplateColumns: `repeat(${daysToShow}, 1fr)`,
+            gridTemplateColumns: dayColumns(daysToShow),
             position: 'relative',
           }}>
             {days.map((day, dayIdx) => {
@@ -406,7 +414,7 @@ function AllDayRow({ events, timezone, days, config, scale, gutterWidth, fontSiz
       <div style={{
         flex: 1,
         display: 'grid',
-        gridTemplateColumns: `repeat(${days.length}, 1fr)`,
+        gridTemplateColumns: dayColumns(days.length),
       }}>
         {days.map((day) => {
           const dayAllDay = events.filter(ev => ev.allDay && ev.kind !== 'birthday' && isEventOnDay(ev, day, timezone));
@@ -416,6 +424,7 @@ function AllDayRow({ events, timezone, days, config, scale, gutterWidth, fontSiz
             <div
               key={day.toISOString()}
               style={{
+                minWidth: 0,
                 padding: `${scale.bu * 0.3}px ${scale.bu * 0.2}px`,
                 borderLeft: '1px solid var(--cal-border-subtle)',
                 opacity: isPast && config.dimPastEvents ? 0.4 : 1,

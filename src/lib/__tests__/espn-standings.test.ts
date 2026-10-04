@@ -20,7 +20,7 @@ function makeTeam(overrides: Partial<{ displayName: string; shortDisplayName: st
   };
 }
 
-function makeEntry(team: ReturnType<typeof makeTeam>, stats: ReturnType<typeof makeStat>[]) {
+function makeEntry(team: ReturnType<typeof makeTeam> & { rank?: number }, stats: ReturnType<typeof makeStat>[]) {
   return { team, stats };
 }
 
@@ -28,6 +28,78 @@ function makeEntry(team: ReturnType<typeof makeTeam>, stats: ReturnType<typeof m
 // parseStandings — flat structure (no conferences)
 // ---------------------------------------------------------------------------
 describe('parseStandings', () => {
+  it('keeps a college team\'s AP rank (team.rank) and ignores an out-of-range one', () => {
+    const data = {
+      children: [{
+        name: 'Big Ten Conference',
+        standings: { entries: [
+          makeEntry({ ...makeTeam({ displayName: 'Ohio State', abbreviation: 'OSU' }), rank: 5 }, [makeStat('wins', 4), makeStat('losses', 0)]),
+          makeEntry({ ...makeTeam({ displayName: 'Minnesota', abbreviation: 'MINN' }), rank: 99 }, [makeStat('wins', 3), makeStat('losses', 1)]),
+        ] },
+      }],
+    };
+    const [group] = parseStandings(data, 'ncaaf');
+    expect(group.entries.find((e) => e.teamAbbr === 'OSU')?.apRank).toBe(5);
+    expect(group.entries.find((e) => e.teamAbbr === 'MINN')?.apRank).toBeUndefined();
+  });
+
+  it('reads a college football record from the overall summary, which is all ESPN sends for losses', () => {
+    // Trimmed from ESPN's college football standings: a `wins` stat, an
+    // `overall` summary, the conference-only `leagueWinPercent`, and no
+    // `losses`, `ties` or `winPercent`. Split stats reuse the same names
+    // after the overall ones.
+    const tulsa = {
+      team: { id: '202', abbreviation: 'TLSA', displayName: 'Tulsa Golden Hurricane', shortDisplayName: 'Tulsa', name: 'Golden Hurricane' },
+      stats: [
+        { name: 'gamesBehind', abbreviation: 'GB', type: 'gamesbehind', value: 1.5, displayValue: '1.5' },
+        { name: 'leagueWinPercent', abbreviation: 'LPCT', type: 'leaguewinpercent', value: 0, displayValue: '0.000' },
+        { name: 'playoffSeed', abbreviation: 'SEED', type: 'playoffseed', value: 11, displayValue: '11' },
+        { name: 'streak', abbreviation: 'STRK', type: 'streak', value: -2, displayValue: 'L2' },
+        { name: 'wins', abbreviation: 'W', type: 'wins', value: 3, displayValue: '3' },
+        { name: 'overall', abbreviation: 'overall', type: 'total', displayValue: '3-2', summary: '3-2' },
+        { name: 'wins', abbreviation: 'W', type: 'homerecord_wins', value: 2, displayValue: '2' },
+        { name: 'Home', abbreviation: 'Home', type: 'homerecord', displayValue: '2-1', summary: '2-1' },
+        { name: 'Away', abbreviation: 'Away', type: 'awayrecord', displayValue: '1-1', summary: '1-1' },
+      ],
+    };
+    const charlotte = {
+      team: { id: '2429', abbreviation: 'CLT', displayName: 'Charlotte 49ers', shortDisplayName: 'Charlotte', name: '49ers' },
+      stats: [
+        { name: 'gamesBehind', abbreviation: 'GB', type: 'gamesbehind', value: 4.5, displayValue: '4.5' },
+        { name: 'playoffSeed', abbreviation: 'SEED', type: 'playoffseed', value: 13, displayValue: '13' },
+        { name: 'streak', abbreviation: 'STRK', type: 'streak', value: -5, displayValue: 'L5' },
+        { name: 'wins', abbreviation: 'W', type: 'wins', value: 0, displayValue: '0' },
+        { name: 'overall', abbreviation: 'overall', type: 'total', displayValue: '0-5', summary: '0-5' },
+      ],
+    };
+    const [group] = parseStandings({ children: [{ name: 'American Conference', standings: { entries: [tulsa, charlotte] } }] }, 'ncaaf');
+    const tlsa = group.entries.find((e) => e.teamAbbr === 'TLSA')!;
+    const clt = group.entries.find((e) => e.teamAbbr === 'CLT')!;
+    expect(tlsa).toMatchObject({ wins: 3, losses: 2, winPct: 0.6, gamesBack: 1.5, streak: 'L2', homeRecord: '2-1', awayRecord: '1-1' });
+    expect(tlsa.ties).toBeUndefined();
+    expect(clt).toMatchObject({ wins: 0, losses: 5, winPct: 0, gamesBack: 4.5, streak: 'L5' });
+  });
+
+  it('takes ties from a W-L-T overall summary and counts them as half a win', () => {
+    const data = { standings: { entries: [
+      { team: makeTeam({ abbreviation: 'TIE' }), stats: [{ name: 'overall', abbreviation: 'overall', displayValue: '7-9-1', summary: '7-9-1' }] },
+    ] } };
+    const [group] = parseStandings(data, 'ncaaf');
+    expect(group.entries[0]).toMatchObject({ wins: 7, losses: 9, ties: 1 });
+    expect(group.entries[0].winPct).toBeCloseTo(7.5 / 17);
+  });
+
+  it('keeps the losses and win percentage ESPN does send over the overall summary', () => {
+    const data = { standings: { entries: [
+      { team: makeTeam({ abbreviation: 'BUF' }), stats: [
+        makeStat('wins', 11), makeStat('losses', 3), makeStat('winPercent', 0.786),
+        { name: 'overall', abbreviation: 'overall', displayValue: '1-1', summary: '1-1' },
+      ] },
+    ] } };
+    const [group] = parseStandings(data, 'nfl');
+    expect(group.entries[0]).toMatchObject({ wins: 11, losses: 3, winPct: 0.786 });
+  });
+
   it('parses a flat standings list (no children)', () => {
     const data = {
       name: 'Premier League',
@@ -392,6 +464,22 @@ describe('groupByLeague', () => {
     expect(result[0].entries[0].teamAbbr).toBe('W');
     expect(result[0].entries[0].rank).toBe(1);
     expect(result[0].entries[1].rank).toBe(2);
+  });
+});
+
+describe('league codes', () => {
+  it('names a whole-league group by the league\'s wall code and keeps the id on `league`', () => {
+    const data = { children: [{ name: 'Apertura', standings: { entries: [
+      makeEntry(makeTeam({ abbreviation: 'AME' }), [makeStat('wins', 5), makeStat('losses', 1), makeStat('points', 16), makeStat('gamesPlayed', 7)]),
+    ] } }] };
+    const [group] = groupByLeague(parseStandings(data, 'liga_mx'), 'liga_mx');
+    expect(group.name).toBe('LIGA MX');
+    expect(group.league).toBe('LIGA_MX');
+  });
+
+  it('names a flat table with no ESPN name by the wall code', () => {
+    const data = { standings: { entries: [makeEntry(makeTeam({ abbreviation: 'INT' }), [makeStat('wins', 4), makeStat('losses', 1)])] } };
+    expect(parseStandings(data, 'seriea')[0].name).toBe('SERIE A');
   });
 });
 
