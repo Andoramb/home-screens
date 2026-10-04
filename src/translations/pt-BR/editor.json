@@ -2496,6 +2496,9 @@
       "color": "Cores",
       "pattern": "Padrões"
     },
+    "useFixed": "Usar {name} como plano de fundo fixo",
+    "includeInRotation": "Incluir {name} na rotação",
+    "inRotation": "Na rotação",
     "inUse": "em uso",
     "starters": {
       "midnight": "Meia-noite",

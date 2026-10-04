@@ -2496,6 +2496,9 @@
       "color": "Kleuren",
       "pattern": "Patronen"
     },
+    "useFixed": "{name} als vaste achtergrond gebruiken",
+    "includeInRotation": "{name} opnemen in de rotatie",
+    "inRotation": "In rotatie",
     "inUse": "in gebruik",
     "starters": {
       "midnight": "Middernacht",

@@ -14,6 +14,8 @@ export interface RotationCacheEntry {
   canvas?: string;
   unsplashCollections?: string;
   unsplashMode?: string;
+  /** Stable selections for enabled starter source groups. */
+  starterSelections?: string;
 }
 
 export type BackgroundCache = Record<string, RotationCacheEntry>;

@@ -20,13 +20,13 @@ The **Background** section appears in the editor's right sidebar only when no mo
 
 ## Backgrounds that come with Home Screens
 
-The **Sources** card in the Background section starts with a set of walls that need no key and no upload. They are tiny drawings rather than photos, so they look sharp on any display, portrait or landscape. They come in three groups, and each group folds away if you don't need it:
+The **Sources** card in the Background section starts with three rotation checkboxes for walls that need no key and no upload. They are tiny drawings rather than photos, so they look sharp on any display, portrait or landscape. Check a group to rotate through its walls; its settings then expand:
 
 - **Match a full-screen theme**: one wall for each of the twelve full-screen themes, painted from the same colors the theme uses. Give a regular screen this wall and it sits next to a full-screen calendar or weather screen without a visible change of color. The theme your display uses (from **Settings > Screen**, or the display's own override) is listed first and marked "in use".
 - **Colors**: eighteen gradients, from deep and moody (Midnight, Ember, Ink) to soft and light (Cloud, Sand, Sage, Blush).
 - **Patterns**: four quiet textures (Dots, Grid, Diagonal, and a light Paper) for a wall with a little texture behind your modules.
 
-Click any of them to use it. **None** under Colors clears the picture. Picking a wall or None switches off rotation so your choice stays. A matching theme wall is a static snapshot: changing the display theme later does not change the picked wall. The three groups remember their open/closed state in this browser.
+Each group initially includes all its walls. Uncheck an individual wall inside the expanded group to exclude it from rotation; the count shows included/total. At least one wall stays included in a checked group. The theme group rotates through **all** theme walls, not just the current display theme. Use the tile itself to set that wall as a **fixed background** instead: this turns off rotation, and the highlighted tile indicates the fixed choice, not rotation membership. **None** under Colors clears the picture, leaves a solid background, and turns off rotation. A fixed theme wall is a static snapshot: changing the display theme later does not change it. Groups remember their open/closed state in this browser. **Refresh now** and **Rotate every** apply to these groups and other checked sources alike.
 
 ---
 
@@ -37,7 +37,7 @@ To set a background in the editor:
 1. Select the screen you want to customize using the **Screen Tabs** at the top
 2. Click an empty part of the canvas to deselect any module
 3. Open the **Background** section in the right sidebar
-4. In **Sources**, expand **Match a full-screen theme**, **Colors**, or **Patterns**
+4. In **Sources**, check **Match a full-screen theme**, **Colors**, or **Patterns** to expand its tiles
 5. Click a tile to apply it, or click **None** under Colors to remove the background
 
 The picture fills the whole screen without being stretched; a landscape photo on a portrait wall is cropped at the sides.
@@ -92,7 +92,7 @@ Unsplash provides access to a library of high-quality, freely usable photographs
 
 ### Rotation
 
-Unsplash is one of the five checkboxes inside the Background section's **Sources** card. Save an access key before enabling it; set a search query or collection there. Direct Unsplash/NASA/Immich browsing and one-off picks are no longer part of this Background section.
+Unsplash is one of the eight checkboxes inside the Background section's **Sources** card. Save an access key before enabling it; set a search query or collection there. Direct Unsplash/NASA/Immich browsing and one-off picks are no longer part of this Background section.
 
 ## NASA Astronomy Picture of the Day
 
@@ -171,17 +171,17 @@ Photos are saved as high-quality display-sized copies (up to 4096 pixels on the 
 
 ## Background rotation
 
-Auto-rotation periodically replaces the screen background with an image from Unsplash, NASA APOD, Immich, an iCloud shared album, or a local library folder.
+Auto-rotation periodically replaces the screen background with a bundled theme, color, or pattern wall, or an image from Unsplash, NASA APOD, Immich, an iCloud shared album, or a local library folder.
 
 ### Enabling rotation
 
 1. Click an empty part of the canvas to deselect any module
 2. Open the **Background** section in the right sidebar
-3. In **Sources**, check any combination of **Unsplash**, **NASA Picture of the Day**, **Immich**, **iCloud Shared Album**, and **Local library folder**
-4. Configure each checked source (query or collections, album/person filters, shared album link, or local folder) as needed
+3. In **Sources**, check any combination of **Match a full-screen theme**, **Colors**, **Patterns**, **Unsplash**, **NASA Picture of the Day**, **Immich**, **iCloud Shared Album**, and **Local library folder**
+4. Configure each checked source (included bundled walls, query or collections, album/person filters, shared album link, or local folder) as needed
 5. Set **Rotate every** and optionally use **Refresh now**
 
-Unsplash, NASA, and Immich require credentials from **Settings > API keys**; their checkboxes are disabled until those keys are set. iCloud and Local library folder need no key. **Shade** applies to both static walls and rotating photos.
+Unsplash, NASA, and Immich require credentials from **Settings > API keys**; their checkboxes are disabled until those keys are set. The three bundled groups, iCloud, and Local library folder need no key. **Shade** applies to both static walls and rotating photos.
 
 ### Interval options
 
@@ -196,8 +196,9 @@ Unsplash, NASA, and Immich require credentials from **Settings > API keys**; the
 
 ### How it works
 
-Every minute the wall asks the Pi whether it is time for a new background. When the interval has passed, the Pi fetches one from the selected sources, saves it into the library, and the wall switches to it.
+Every minute the wall asks the Pi whether it is time for a new background. When the interval has passed, the Pi chooses one from the selected sources and the wall switches to it. Remote images are saved into the library; bundled walls are served from the installed catalog.
 
+- **Bundled wall rotation** chooses a wall from each checked group. The theme group includes every full-screen theme wall unless you exclude individual tiles; it does not follow the currently selected theme.
 - **Unsplash rotation** fetches a random portrait photo matching the configured query. Download tracking is triggered per the Unsplash API terms.
 - **NASA APOD rotation** fetches the current Astronomy Picture of the Day. Since NASA publishes one new image per day, the display checks for updates at the chosen interval but the image only changes once daily.
 - **Immich rotation** fetches a random photo from your Immich library, optionally filtered by album, person, or favorites. The server caches Immich filter parameters so changing your album or person selection immediately busts the cache and fetches a fresh photo.

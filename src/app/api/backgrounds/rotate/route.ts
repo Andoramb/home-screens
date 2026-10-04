@@ -69,7 +69,17 @@ function sourcesKey(sources: BackgroundRotationSourceId[]): string {
 
 /** Sources in `rotation.sources` that have what they need to actually produce a photo. */
 function configuredSources(rotation: BackgroundRotation): BackgroundRotationSourceId[] {
-  return rotation.sources.filter((source) => isSourceConfigured(source, rotation));
+  return [...new Set(rotation.sources)].filter((source) => isSourceConfigured(source, rotation));
+}
+
+/** Stable, catalog-filtered selections; omitted/empty means the entire category. */
+function starterSelectionKey(rotation: BackgroundRotation): string | undefined {
+  const groups = (['theme', 'color', 'pattern'] as const).filter((group) => rotation.sources.includes(group));
+  if (!groups.length) return undefined;
+  return JSON.stringify(groups.map((group) => {
+    const ids = rotation.starterBackgroundIds?.[group];
+    return [group, Array.isArray(ids) ? [...new Set(ids.filter((id): id is string => typeof id === 'string'))].sort() : []];
+  }));
 }
 
 export const GET = withDisplayAuth(async (request: NextRequest) => {
@@ -112,6 +122,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     ? JSON.stringify(rotation.unsplashCollections)
     : undefined;
   const unsplashModeKey = rotation.sources.includes('unsplash') ? (rotation.unsplashMode || '') : undefined;
+  const starterSelections = starterSelectionKey(rotation);
 
   // A source/config change invalidates the cached result before its interval ends.
   if (
@@ -126,6 +137,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     entry.canvas === canvas &&
     entry.unsplashCollections === unsplashCollectionsKey &&
     entry.unsplashMode === unsplashModeKey &&
+    entry.starterSelections === starterSelections &&
     now - entry.fetchedAt < intervalMs
   ) {
     return NextResponse.json({ path: entry.path, fresh: false });
@@ -149,6 +161,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
         canvas,
         unsplashCollections: unsplashCollectionsKey,
         unsplashMode: unsplashModeKey,
+        starterSelections,
       };
       const merged = await cacheStore.updateAtomic((current) => ({ ...current, [screenId]: newEntry }));
       await pruneRotationFiles(merged);

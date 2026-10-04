@@ -2496,6 +2496,9 @@
       "color": "Farben",
       "pattern": "Muster"
     },
+    "useFixed": "{name} als festen Hintergrund verwenden",
+    "includeInRotation": "{name} in die Rotation aufnehmen",
+    "inRotation": "In Rotation",
     "inUse": "in Benutzung",
     "starters": {
       "midnight": "Mitternacht",

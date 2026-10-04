@@ -2507,6 +2507,9 @@
       "color": "Colors",
       "pattern": "Patterns"
     },
+    "useFixed": "Use {name} as a fixed background",
+    "includeInRotation": "Include {name} in rotation",
+    "inRotation": "In rotation",
     "inUse": "in use",
     "starters": {
       "midnight": "Midnight",
