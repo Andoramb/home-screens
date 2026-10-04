@@ -835,10 +835,11 @@ describe('the language the wall is in', () => {
   });
 
   it('leaves the day a bare number in English', () => {
-    // "Today Th 10" is two characters shorter than "Heute Do 10.", which is
-    // the difference between a lit column holding the word and shedding it.
+    // Like the German wall above, the lit column at Some holds the date and
+    // not the word beside it: the header is budgeted for the widest face the
+    // Font control offers, which charges "Today Th 10" 141px of a 135px column.
     const { container } = renderModule({ detail: 'some' });
-    expect(heads(container)).toEqual(['Mo7', 'Tu8', 'We9', 'TodayTh10', 'Fr11']);
+    expect(heads(container)).toEqual(['Mo7', 'Tu8', 'We9', 'Th10', 'Fr11']);
   });
 
   it('keeps the word beside the date where the lit column is wide enough', () => {

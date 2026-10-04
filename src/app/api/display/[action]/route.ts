@@ -16,8 +16,9 @@ import {
   type DisplayCommandType,
 } from '@/lib/display-commands';
 import { updateConfigAtomic } from '@/lib/config';
+import { readConfigCached } from '@/lib/config-cache';
 import { readDisplayRevisions } from '@/lib/display-revisions';
-import { getDisplayProfiles, isValidDisplayId } from '@/lib/display-filter';
+import { findMainDisplay, getDisplayProfiles, isValidDisplayId } from '@/lib/display-filter';
 import { errorResponse, withDisplayAuth, getClientIP } from '@/lib/api-utils';
 import { validateBrowserStats } from '@/lib/hardware-stats';
 import { safeLibraryPath } from '@/lib/library-files';
@@ -68,6 +69,34 @@ function validateDisplayTarget(
   return value;
 }
 
+/**
+ * The display a call aimed AT a display means when it names none: a bookmark,
+ * an automation, a script reading the status.
+ *
+ * A single-display install keeps the legacy slot its one wall uses. Once the
+ * hub has a display registry every wall, `/display` included, drains its
+ * commands and reports its status under its own id, so the legacy slot stays
+ * empty: a command left there answered ok and reached no wall, and a status
+ * read answered null while the wall was running. With a registry the call
+ * means the main display.
+ *
+ * Never for a wall's own command drain or heartbeat, which name the wall they
+ * come from: resolving those would let a stray tab with no id drain the main
+ * display's commands or overwrite its status.
+ */
+async function resolveTarget(displayId: string | undefined): Promise<string | undefined> {
+  if (displayId !== undefined) return displayId;
+  return findMainDisplay((await readConfigCached()).displays)?.id;
+}
+
+/** Queue a command for the display it names, every display (`all`), or `resolveTarget`'s pick. */
+async function enqueueForTarget(
+  displayId: string | undefined,
+  ...command: [type: DisplayCommandType, payload?: Record<string, unknown>]
+): Promise<void> {
+  enqueueCommand(await resolveTarget(displayId), ...command);
+}
+
 /** Pull the optional `?display=<id>` query parameter (or `?display=all` for broadcast). */
 function getDisplayIdFromQuery(
   request: NextRequest,
@@ -102,6 +131,8 @@ export const GET = withDisplayAuth<RouteContext>(async (request, { params }) => 
       // plugins, timer session or build changed, so it fetches those only
       // when they do. Read before draining: once drained, commands exist
       // only in this response, so nothing may be awaited between the two.
+      // The id is the wall's own, never resolveTarget's: an untargeted
+      // drain is a single-display wall emptying the legacy queue.
       const revisions = await readDisplayRevisions();
       const commands = drainCommands(displayId);
       // `sharedStateWatched` tells the display whether an editor is
@@ -123,7 +154,7 @@ export const GET = withDisplayAuth<RouteContext>(async (request, { params }) => 
       // `null` (not a 404) until the display's first heartbeat: the phone and
       // the editor poll this, and "has not reported yet" is an expected state
       // on a new install, not an error to fill their consoles with.
-      return NextResponse.json(getDisplayStatus(displayId) ?? null);
+      return NextResponse.json(getDisplayStatus(await resolveTarget(displayId)) ?? null);
     }
     case 'shared-state': {
       // Empty response (not a 404) when nothing has reported — the editor
@@ -131,12 +162,13 @@ export const GET = withDisplayAuth<RouteContext>(async (request, { params }) => 
       // an expected state, not an error. The poll doubles as the editor's
       // interest signal: it arms the display's fast bus-change re-reporting
       // via the `sharedStateWatched` flag on the commands drain above.
-      markSharedStateInterest(displayId);
-      const report = getSharedStateReport(displayId);
+      const target = await resolveTarget(displayId);
+      markSharedStateInterest(target);
+      const report = getSharedStateReport(target);
       const base = report ?? { entries: {}, reportedAt: null };
       // `providerHealth` rides the same response — only unhealthy plugins,
       // and the field is omitted while empty (same convention as the snapshot).
-      const health = getProviderHealthReport(displayId);
+      const health = getProviderHealthReport(target);
       return NextResponse.json(
         health && Object.keys(health.health).length > 0
           ? { ...base, providerHealth: health.health }
@@ -146,7 +178,7 @@ export const GET = withDisplayAuth<RouteContext>(async (request, { params }) => 
     default:
       // Allow GET for simple commands (bookmarkable from phones)
       if (SIMPLE_COMMANDS.has(action as DisplayCommandType)) {
-        enqueueCommand(displayId, action as DisplayCommandType);
+        await enqueueForTarget(displayId, action as DisplayCommandType);
         return NextResponse.json({ ok: true, command: action });
       }
       return NextResponse.json({ error: `Unknown action: ${action}` }, { status: 404 });
@@ -183,7 +215,7 @@ export const POST = withDisplayAuth<RouteContext>(async (request, { params }) =>
 
   // Simple commands (no body needed)
   if (SIMPLE_COMMANDS.has(action as DisplayCommandType)) {
-    enqueueCommand(queryDisplayId, action as DisplayCommandType);
+    await enqueueForTarget(queryDisplayId, action as DisplayCommandType);
     return NextResponse.json({ ok: true, command: action });
   }
 
@@ -228,7 +260,7 @@ async function handleBrightness(
   }
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });
   if (displayId instanceof NextResponse) return displayId;
-  enqueueCommand(displayId, 'brightness', { value });
+  await enqueueForTarget(displayId, 'brightness', { value });
   return NextResponse.json({ ok: true, command: 'brightness', value });
 }
 
@@ -256,7 +288,7 @@ async function handleGotoScreen(
   }
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: false });
   if (displayId instanceof NextResponse) return displayId;
-  enqueueCommand(displayId, 'goto-screen', { screen });
+  await enqueueForTarget(displayId, 'goto-screen', { screen });
   return NextResponse.json({ ok: true, command: 'goto-screen', screen });
 }
 
@@ -289,7 +321,7 @@ async function handleModuleCommand(
     : typeof rawValue === 'string' && rawValue.length <= 200 ? rawValue : undefined;
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });
   if (displayId instanceof NextResponse) return displayId;
-  enqueueCommand(displayId, 'module-command', { module: moduleType, action, ...(value !== undefined ? { value } : {}) });
+  await enqueueForTarget(displayId, 'module-command', { module: moduleType, action, ...(value !== undefined ? { value } : {}) });
   return NextResponse.json({ ok: true, command: 'module-command', module: moduleType, action });
 }
 
@@ -341,7 +373,7 @@ async function handleShowPhoto(
     if (token) url += `&mt=${encodeURIComponent(token)}`;
   }
   const durationMs = seconds * 1000;
-  enqueueCommand(displayId, 'show-photo', { url, kind, durationMs, expiresAt: Date.now() + durationMs, ...(size ?? {}) });
+  await enqueueForTarget(displayId, 'show-photo', { url, kind, durationMs, expiresAt: Date.now() + durationMs, ...(size ?? {}) });
   return NextResponse.json({ ok: true, command: 'show-photo', durationMs });
 }
 
@@ -374,7 +406,7 @@ async function handleSleepOverride(
   // same posture as wake/brightness.
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });
   if (displayId instanceof NextResponse) return displayId;
-  enqueueCommand(displayId, 'sleep-override', { minutes });
+  await enqueueForTarget(displayId, 'sleep-override', { minutes });
   return NextResponse.json({ ok: true, command: 'sleep-override', minutes });
 }
 
@@ -595,7 +627,7 @@ async function handleAlert(
   const alertType = VALID_ALERT_TYPES.has(body.type as string) ? body.type : 'info';
   const displayId = pickDisplayId(body, queryDisplayId, { allowBroadcast: true });
   if (displayId instanceof NextResponse) return displayId;
-  enqueueCommand(displayId, 'alert', {
+  await enqueueForTarget(displayId, 'alert', {
     type: alertType,
     title: body.title ?? '',
     message: body.message ?? '',
@@ -675,12 +707,13 @@ function parseStatusReport(
     brightness: bodyBrightness,
     timerSessionId: bodyTimerSessionId,
     activeAlerts: bodyActiveAlerts,
+    profileScheduled: bodyProfileScheduled,
     ...statusRest
   } = body as Record<string, unknown>;
   void _droppedHwStats;
-  // The remote seeds controls from these three, so a malformed value must
-  // read as "unknown" (field absent), never as a bogus number the slider
-  // would jump to.
+  // The remote seeds controls from these, so a malformed value must read as
+  // "unknown" (field absent), never as a bogus number the slider would jump
+  // to or a schedule note the phone would show.
   const statusPayload: Record<string, unknown> = {
     ...statusRest,
     ...(typeof bodyBrightness === 'number' && Number.isFinite(bodyBrightness)
@@ -692,6 +725,7 @@ function parseStatusReport(
     ...(typeof bodyActiveAlerts === 'number' && Number.isInteger(bodyActiveAlerts) && bodyActiveAlerts >= 0
       ? { activeAlerts: bodyActiveAlerts }
       : {}),
+    ...(typeof bodyProfileScheduled === 'boolean' ? { profileScheduled: bodyProfileScheduled } : {}),
   };
   const rawDisplayId =
     typeof bodyDisplayId === 'string' ? bodyDisplayId : queryDisplayId;

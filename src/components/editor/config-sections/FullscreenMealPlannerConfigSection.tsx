@@ -46,7 +46,7 @@ export function FullscreenMealPlannerConfigSection({ mod, screenId }: { mod: Mod
   const typographySizeOptions = useTypographySizeOptions();
 
   const [showModal, setShowModal] = useState(false);
-  const { mealData, handleModalUpdate, saveError } = useMealPlannerData<Config>({
+  const { mealData, handleModalUpdate, toggleGroceryItem, saveError } = useMealPlannerData<Config>({
     mod,
     set,
     showModal,
@@ -152,6 +152,8 @@ export function FullscreenMealPlannerConfigSection({ mod, screenId }: { mod: Mod
           savedMeals={mealData.savedMeals}
           plan={mealData.plan}
           settings={mealData.settings}
+          groceryChecked={mealData.groceryChecked}
+          onToggleGroceryItem={toggleGroceryItem}
           accentColor={accentColor}
           onUpdate={handleModalUpdate}
           onClose={() => setShowModal(false)}

@@ -1,5 +1,6 @@
 import type { HourlyWeather, ForecastDay, MinutelyPrecip, WeatherAlert } from '@/lib/weather';
 import type { FullscreenWeatherConfig } from '@/types/config';
+import { FULL_BAR_INTENSITY, isPrecipitating, precipitationOutlook } from '@/lib/weather/precipitation';
 import type { SkyCondition } from './sky-layer';
 
 /**
@@ -411,20 +412,12 @@ export function alertTone(severity: WeatherAlert['severity']): { fg: string; isS
 }
 
 /**
- * Rain rate that fills the nowcast bar. Pirate Weather (the only minutely
- * source) reports `precipIntensity` in inches/hour for imperial and mm/hour
- * for metric (`units=ca`), and 0.4 in/h is roughly 10 mm/h: a hard downpour.
- * A single threshold in one unit made every metric drizzle read as a storm.
- */
-const FULL_BAR_INTENSITY = { imperial: 0.4, metric: 10 } as const;
-
-/**
  * Plain-language summary of the next hour of precipitation.
  * Returns null when there is nothing worth saying, which also hides the strip.
  *
- * Bar height is intensity alone. Pirate Weather's intensity is already the
- * expected rate for that minute, so the probability field carries no extra
- * signal for the chart and only the intensity is normalised.
+ * Which minutes are wet is the shared rule (`isPrecipitating`), the same one
+ * the Weather module's Precipitation view reads. A minute it calls dry draws
+ * no bar; a wet one's height is its intensity, normalised to the unit.
  */
 export function nowcastVerdict(
   minutely: MinutelyPrecip[],
@@ -433,23 +426,13 @@ export function nowcastVerdict(
 ): { text: string; series: number[] } | null {
   if (!minutely || minutely.length === 0) return null;
 
+  const hour = minutely.slice(0, 60);
   const full = FULL_BAR_INTENSITY[units];
-  const series = minutely.slice(0, 60).map((m) => Math.max(0, Math.min(1, (m.intensity ?? 0) / full)));
-  if (series.every((v) => v <= 0.02)) {
-    return { text: t('fullscreen-weather.nowcast.dry'), series };
-  }
+  const series = hour.map((m) => (isPrecipitating(m, units) ? Math.min(1, m.intensity / full) : 0));
 
-  const WET = 0.05;
-  const startsAt = series.findIndex((v) => v > WET);
-  const wetNow = series[0] > WET;
-
-  if (wetNow) {
-    const stopsAt = series.findIndex((v, i) => i > 0 && v <= WET);
-    if (stopsAt === -1) return { text: t('fullscreen-weather.nowcast.continues'), series };
-    return { text: t('fullscreen-weather.nowcast.stopsIn', { minutes: stopsAt }), series };
-  }
-  if (startsAt > 0) {
-    return { text: t('fullscreen-weather.nowcast.startsIn', { minutes: startsAt }), series };
-  }
+  const outlook = precipitationOutlook(hour, units);
+  if (outlook.kind === 'continuing') return { text: t('fullscreen-weather.nowcast.continues'), series };
+  if (outlook.kind === 'stopping') return { text: t('fullscreen-weather.nowcast.stopsIn', { minutes: outlook.minutes }), series };
+  if (outlook.kind === 'starting') return { text: t('fullscreen-weather.nowcast.startsIn', { minutes: outlook.minutes }), series };
   return { text: t('fullscreen-weather.nowcast.dry'), series };
 }

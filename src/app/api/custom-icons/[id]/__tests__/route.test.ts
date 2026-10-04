@@ -85,16 +85,19 @@ describe('/api/custom-icons/[id]', () => {
     expect(await again.json()).toMatchObject({ code: 'not-found' });
   });
 
-  it('hands back the new config revision when the removal rewrote the config', async () => {
+  it('hands back the revision the removal rewrote and the one it left', async () => {
     const icon = await seed();
     const { readConfig, configRevision } = await import('@/lib/config');
     const data = path.join(process.cwd(), 'data');
     const config = JSON.parse(await fs.readFile(path.join(data, 'config.json'), 'utf8').catch(() => '{"settings":{},"screens":[]}'));
     config.screens = [{ id: 's', name: 'S', modules: [{ id: 't', type: 'text', config: { icon: `custom:${icon.id}`, content: 'Hi' } }] }];
     await fs.writeFile(path.join(data, 'config.json'), JSON.stringify(config));
+    const before = configRevision(await readConfig());
     const res = await DELETE(new NextRequest(`http://localhost/api/custom-icons/${icon.id}`, { method: 'DELETE' }), ctx(icon.id));
     const body = await res.json();
+    expect(body.previousConfigRevision).toBe(before);
     expect(body.configRevision).toBe(configRevision(await readConfig()));
+    expect(body.configRevision).not.toBe(before);
     expect((await readConfig()).screens[0].modules[0].config).not.toHaveProperty('icon');
   });
 });

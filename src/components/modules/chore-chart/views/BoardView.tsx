@@ -5,7 +5,7 @@ import type { FamilyMember } from '@/types/family';
 import type { ChoreChartConfig} from '@/types/config';
 import type { ResolvedAssignment, MemberStats } from '../types';
 import { sortChores } from '../types';
-import { balanceRows, choreIconSize, choreTapSize, fitPerRow, partitionMembers } from '../layout';
+import { BOARD_COLUMN_GAP_PX, BOARD_NAME_LINES, balanceRows, boardColumns, boardIconSize, choreIconSize, choreTapSize } from '../layout';
 import { TEXT_OPACITY, DIVIDER, ink } from '@/lib/constants';
 import { useTranslate } from '@/i18n';
 import ChoreIcon from '../ChoreIcon';
@@ -23,32 +23,26 @@ interface BoardViewProps {
     memberStats: Map<string, MemberStats>;
     toggleComplete: (choreId: string, memberId: string) => Promise<unknown>;
   };
-  /** Measured box width in px (0 until measured). */
-  width: number;
-  /** Module font size in px; the column floor is expressed in it. */
+  /** The fitted font size in px. */
   fontSize: number;
   /**
-   * The module's authored font size (the ceiling `fontSize` was fitted down
-   * from). The row-wrap decision below has to use this, not the fitted size:
-   * a heavy day can shrink `fontSize` to a fraction of it, and if the "is a
-   * column too narrow" threshold shrinks along with it, it stops firing and
-   * every member gets squeezed into one row regardless of width.
+   * Columns across each row, as the module's fit chose them (`fitBoard`). The
+   * box height was budgeted for exactly this arrangement, so the board never
+   * works out a wrap of its own.
    */
-  authoredFontSize: number;
+  perRow: number;
 }
-
-/** A column narrower than this (in em) wraps chore names one word per line. */
-const MIN_COLUMN_EM = 6;
-const COLUMN_GAP = 8;
 
 interface MemberColumnProps {
   member: FamilyMember;
   stats: MemberStats | undefined;
   showPoints: boolean;
+  /** The fitted font size, which the member's icon follows. */
+  fontSize: number;
   children: React.ReactNode;
 }
 
-function MemberColumn({ member, stats, showPoints, children }: MemberColumnProps) {
+function MemberColumn({ member, stats, showPoints, fontSize, children }: MemberColumnProps) {
   return (
     <div className="min-w-0 min-h-0 flex flex-col">
       {/* Header */}
@@ -57,7 +51,7 @@ function MemberColumn({ member, stats, showPoints, children }: MemberColumnProps
         style={{ backgroundColor: `${member.color}18` }}
       >
         <div style={{ fontSize: '1.3em' }} className="flex justify-center">
-          {member.emoji ? <ChoreIcon value={member.emoji} size={28} color={member.color} fallback={<span style={{ color: member.color }}>{member.name[0]}</span>} /> : <span style={{ color: member.color }}>{member.name[0]}</span>}
+          {member.emoji ? <ChoreIcon value={member.emoji} size={boardIconSize(fontSize)} color={member.color} fallback={<span style={{ color: member.color }}>{member.name[0]}</span>} /> : <span style={{ color: member.color }}>{member.name[0]}</span>}
         </div>
         <div
           className="truncate px-1"
@@ -77,7 +71,7 @@ function MemberColumn({ member, stats, showPoints, children }: MemberColumnProps
   );
 }
 
-export function BoardView({ config, data, width, fontSize, authoredFontSize }: BoardViewProps) {
+export function BoardView({ config, data, fontSize, perRow }: BoardViewProps) {
   const { todayAssignments, members, memberStats, toggleComplete } = data;
   const allowTouch = config.allowDisplayComplete;
   const [pressedKey, press] = usePressedKey();
@@ -88,15 +82,8 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
 
   // Members with no chores at all this week are not on the board. A member
   // with chores on other days keeps a column that says so.
-  const { idle } = partitionMembers(members, memberStats);
-  const idleIds = new Set(idle.map((m) => m.id));
-  const shown = members.filter((m) => !idleIds.has(m.id));
-  // The column-width floor is expressed against the authored size, not the
-  // fitted one: ChoreChartModule already budgeted the box height assuming
-  // this same row count (see BOARD_COLUMN_EM there), so using a different
-  // font size here would wrap fewer rows than the height was fit for.
-  const perRow = fitPerRow(width, MIN_COLUMN_EM * authoredFontSize, COLUMN_GAP, shown.length);
-  const rows = balanceRows(shown, perRow);
+  const columns = boardColumns(members, memberStats, todayAssignments);
+  const rows = balanceRows(columns, perRow);
 
   return (
     <div className="flex flex-col h-full" style={{ fontSize: 'inherit' }}>
@@ -110,24 +97,22 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
       {/* Columns, in as many rows as the width calls for */}
       <div
         className="flex-1 min-h-0 grid"
-        style={{ gridTemplateRows: `repeat(${Math.max(1, rows.length)}, minmax(0, 1fr))`, gap: COLUMN_GAP }}
+        style={{ gridTemplateRows: `repeat(${Math.max(1, rows.length)}, minmax(0, 1fr))`, gap: BOARD_COLUMN_GAP_PX }}
       >
         {rows.map((row, ri) => (
           <div
             key={ri}
             className="min-h-0 grid"
-            style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: COLUMN_GAP }}
+            style={{ gridTemplateColumns: `repeat(${row.length}, minmax(0, 1fr))`, gap: BOARD_COLUMN_GAP_PX }}
           >
-            {row.map((member) => {
-              // A chore marked "not today" is owed by nobody; the board lists what is owed.
-              const myAssignments = todayAssignments.filter((a) => a.memberId === member.id && !a.isSkipped);
+            {row.map(({ member, chores: myAssignments }) => {
               const sorted = sortChores(myAssignments, config.showTimeOfDay);
               const stats = memberStats.get(member.id);
               const pct = stats?.percentage ?? 0;
 
               if (myAssignments.length === 0) {
                 return (
-                  <MemberColumn key={member.id} member={member} stats={stats} showPoints={config.showPoints}>
+                  <MemberColumn key={member.id} member={member} stats={stats} showPoints={config.showPoints} fontSize={fontSize}>
                     <div className="flex-1 flex items-center justify-center" style={{ fontSize: '0.65em', opacity: TEXT_OPACITY.tertiary }}>
                       {t('chore-chart.dayOff')} &#127796;
                     </div>
@@ -136,7 +121,7 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
               }
 
               return (
-                <MemberColumn key={member.id} member={member} stats={stats} showPoints={config.showPoints}>
+                <MemberColumn key={member.id} member={member} stats={stats} showPoints={config.showPoints} fontSize={fontSize}>
                   {/* Chore cards */}
                   <div className="flex-1 min-h-0 overflow-y-auto space-y-1" style={{ scrollbarWidth: 'none' }}>
                     {sorted.map((assignment) => {
@@ -183,13 +168,16 @@ export function BoardView({ config, data, width, fontSize, authoredFontSize }: B
                           )}
                           {chore.emoji && <span className="shrink-0 flex items-center" style={{ height: '1.25em' }}><ChoreIcon value={chore.emoji} size={choreIconSize(fontSize)} color="currentColor" /></span>}
                           {/* Three lines at most: a long chore name ellipsises instead of
-                              stacking one word per line in a narrow column. A word wider
-                              than the column breaks onto the next line (with a hyphen where
-                              the browser knows the language); it used to run under the edge
-                              of the card and lose its last letter ("dishwashe"). */}
+                              stacking one word per line in a narrow column. Words wrap
+                              whole: the fit keeps every column wide enough for each word
+                              of its names (`boardMinColumnWidth`), so no hyphenation, which
+                              broke words that would have fitted on the next line.
+                              `overflowWrap: anywhere` is the last resort for a word no
+                              column can hold, which used to run under the card's edge and
+                              lose its last letter ("dishwashe"). */}
                           <span
                             className="min-w-0"
-                            style={{ display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere', hyphens: 'auto' }}
+                            style={{ display: '-webkit-box', WebkitLineClamp: BOARD_NAME_LINES, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}
                           >
                             {hinting ? <HoldHint color={member.color} /> : chore.name}
                           </span>

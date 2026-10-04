@@ -46,6 +46,11 @@ function event(id: string, date: string, state: 'pre' | 'in' | 'post', away: [st
   };
 }
 
+/** The same event as the team schedule sends it mid-game now and then: no `score` on either side. */
+function withoutScores(e: ReturnType<typeof event>) {
+  return { ...e, competitions: e.competitions.map((c) => ({ ...c, competitors: c.competitors.map((comp) => ({ ...comp, score: undefined })) })) };
+}
+
 const MIN_SCHEDULE = {
   events: [
     event('1', '2026-09-27T17:00Z', 'post', ['MIN', 23], ['TB', 16]),
@@ -86,6 +91,45 @@ describe('GET /api/sports/team', () => {
     expect(card.last).toMatchObject({ id: '1', awayScore: 23, homeScore: 16 });
     expect(fetchedUrls().some((u) => u.endsWith('/football/nfl/teams/16'))).toBe(true);
     expect(fetchedUrls().some((u) => u.endsWith('/football/nfl/teams/16/schedule'))).toBe(true);
+    // Every score was in the schedule, so the scoreboard is never asked.
+    expect(fetchedUrls().some((u) => u.includes('/scoreboard'))).toBe(false);
+  });
+
+  it('takes a live game\'s score from the league scoreboard when the schedule leaves it out, reading it once per league', async () => {
+    const live = withoutScores(event('5', '2026-10-04T17:00Z', 'in', ['GB', 0], ['MIN', 0]));
+    const scoreboard = { events: [{
+      id: '5', date: '2026-10-04T17:00Z',
+      status: { type: { description: 'In Progress', detail: '2:31 - 4th', state: 'in' } },
+      competitions: [{ competitors: [
+        { homeAway: 'home', score: '20', team: { abbreviation: 'MIN' }, records: [{ summary: '4-0' }] },
+        { homeAway: 'away', score: '14', team: { abbreviation: 'GB' }, records: [{ summary: '2-2' }] },
+      ] }],
+    }] };
+    mockFetch({
+      'football/nfl/teams?limit=1000': NFL_ROSTER,
+      'teams/16/schedule': { events: [MIN_SCHEDULE.events[0], live] },
+      'teams/16': MIN_TEAM,
+      'teams/9/schedule': { events: [live] },
+      'teams/9': { team: { abbreviation: 'GB', displayName: 'Green Bay Packers' } },
+      'football/nfl/scoreboard': scoreboard,
+    });
+    const { GET } = await import('../route');
+    const json = await (await GET(new NextRequest('http://localhost/api/sports/team?teams=nfl:MIN,nfl:GB'))).json();
+    for (const card of json.cards) {
+      expect(card.featuredKind).toBe('live');
+      expect(card.featured).toMatchObject({ id: '5', homeScore: 20, awayScore: 14, homeRecord: '4-0', awayRecord: '2-2' });
+    }
+    expect(json.cards[0].last).toMatchObject({ id: '1', awayScore: 23, homeScore: 16 });
+    expect(fetchedUrls().filter((u) => u.includes('/scoreboard'))).toHaveLength(1);
+  });
+
+  it('leaves the score missing, not 0, when the scoreboard cannot be read either', async () => {
+    const live = withoutScores(event('5', '2026-10-04T17:00Z', 'in', ['GB', 0], ['MIN', 0]));
+    mockFetch({ 'football/nfl/teams?limit=1000': NFL_ROSTER, 'teams/16/schedule': { events: [live] }, 'teams/16': MIN_TEAM });
+    const { GET } = await import('../route');
+    const json = await (await GET(new NextRequest('http://localhost/api/sports/team?teams=nfl:MIN'))).json();
+    expect(json.cards[0].error).toBeUndefined();
+    expect(json.cards[0].featured).toMatchObject({ id: '5', homeScore: null, awayScore: null });
   });
 
   it('falls back to the abbreviation when the roster cannot be read', async () => {

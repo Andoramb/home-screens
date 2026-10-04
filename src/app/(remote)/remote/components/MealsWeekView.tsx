@@ -11,6 +11,7 @@ import {
   resolveMealTimeFormat,
   getLocalizedDayNames,
   getMealSlotLabelKey,
+  formatShortDayMonth,
 } from '@/lib/meal-constants';
 import { useFormattingLocale, useTranslate } from '@/i18n';
 import type { MealsViewProps } from './meals-shared';
@@ -47,7 +48,7 @@ export default function MealsWeekView({
 
   return (
     <div style={{ paddingBottom: 80 }}>
-      {weekDates.map(({ date, dayIndex, shortDate }) => {
+      {weekDates.map(({ date, dayIndex }) => {
         const isToday = date === todayISO;
         const isPast = date < todayISO;
         const dayLabel = dayNamesFull[dayIndex];
@@ -58,7 +59,7 @@ export default function MealsWeekView({
               <span style={{ fontSize: 15, fontWeight: 600, color: isToday ? 'var(--hs-text-primary)' : 'var(--hs-text-muted)' }}>
                 {dayLabel}
               </span>
-              <span style={{ fontSize: 12, color: 'var(--hs-text-faint)' }}>{shortDate}</span>
+              <span style={{ fontSize: 12, color: 'var(--hs-text-faint)' }}>{formatShortDayMonth(date, formattingLocale)}</span>
               {isToday && (
                 <span
                   style={{

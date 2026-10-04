@@ -12,6 +12,9 @@ import type { Game } from './espn';
  */
 export const MAX_FAVORITE_TEAMS = 8;
 
+/** Leagues a sports module shows when its config names none: the registry's NFL and NBA. */
+export const DEFAULT_SPORTS_LEAGUES: readonly string[] = ['nfl', 'nba'];
+
 /** Build the config key for a team: `nfl:MIN`, `ncaaf:MINN`. */
 export function teamKey(league: string, abbr: string): string {
   return `${league.toLowerCase()}:${abbr.toUpperCase()}`;
@@ -22,6 +25,21 @@ export function parseTeamKey(key: string): { league: string; abbr: string } | nu
   const i = key.indexOf(':');
   if (i <= 0 || i === key.length - 1) return null;
   return { league: key.slice(0, i).toLowerCase(), abbr: key.slice(i + 1).toUpperCase() };
+}
+
+/**
+ * Whether a favorite's league is one the module shows. A favorite whose
+ * league is switched off stays in the config, where the picker marks it,
+ * but the wall neither fetches nor shows it.
+ */
+export function isFavoriteLeagueEnabled(key: string, leagues: readonly string[]): boolean {
+  const parsed = parseTeamKey(key);
+  return !!parsed && leagues.some((l) => l.toLowerCase() === parsed.league);
+}
+
+/** The favorites the wall shows: those in an enabled league, in priority order. */
+export function enabledFavorites(favorites: readonly string[], leagues: readonly string[]): string[] {
+  return favorites.filter((key) => isFavoriteLeagueEnabled(key, leagues));
 }
 
 /** Position of the earliest favorite in this game, or -1 when none plays. */

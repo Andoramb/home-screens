@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Game } from '../espn';
-import { favoriteRank, favoriteSide, isFavoriteGame, isFavoriteTeam, orderGames, parseTeamKey, teamKey } from '../sports-order';
+import { enabledFavorites, favoriteRank, favoriteSide, isFavoriteGame, isFavoriteLeagueEnabled, isFavoriteTeam, orderGames, parseTeamKey, teamKey } from '../sports-order';
 
 function game(id: string, league: string, away: string, home: string): Game {
   return {
@@ -83,5 +83,20 @@ describe('isFavoriteTeam', () => {
     expect(isFavoriteTeam('ncaaf', 'MINN', ['nfl:MIN'])).toBe(false);
     expect(isFavoriteTeam('nfl', 'MIN', [])).toBe(false);
     expect(isFavoriteTeam('nfl', 'MIN')).toBe(false);
+  });
+});
+
+describe('isFavoriteLeagueEnabled / enabledFavorites', () => {
+  it('a favorite counts only while its league is on, in either case', () => {
+    expect(isFavoriteLeagueEnabled('nfl:MIN', ['nba', 'nfl'])).toBe(true);
+    expect(isFavoriteLeagueEnabled('NFL:MIN', ['nfl'])).toBe(true);
+    expect(isFavoriteLeagueEnabled('liga_mx:AME', ['LIGA_MX'])).toBe(true);
+    expect(isFavoriteLeagueEnabled('epl:ARS', ['nfl'])).toBe(false);
+    expect(isFavoriteLeagueEnabled('not-a-key', ['nfl'])).toBe(false);
+  });
+
+  it('keeps the enabled favorites in priority order', () => {
+    expect(enabledFavorites(['ncaaf:MINN', 'nfl:MIN', 'epl:ARS', 'nfl:GB'], ['nfl', 'ncaaf'])).toEqual(['ncaaf:MINN', 'nfl:MIN', 'nfl:GB']);
+    expect(enabledFavorites(['epl:ARS'], ['nfl'])).toEqual([]);
   });
 });

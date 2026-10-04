@@ -92,6 +92,7 @@
     "noUpcoming": "No upcoming events",
     "agoSuffix": "(ago)",
     "todayBang": "Today!",
+    "moreCount": "+{count} more",
     "unitDays": "days",
     "unitHours": "hrs",
     "unitMinutes": "min",
@@ -693,6 +694,7 @@
         "other": "That bonus chore isn't open right now"
       },
       "didItOn": "{name} did it {day}",
+      "didItOnDate": "{name} did it on {day}",
       "bandHintEach": "Extra tickets. Everyone can do these once."
     },
     "settings": {
@@ -850,6 +852,7 @@
     "today": "Today",
     "tomorrow": "Tomorrow",
     "pickTeam": "Pick your team in the module settings",
+    "teamLeagueOff": "Turn on your team's league in the module settings",
     "unavailable": "Scores are taking a break",
     "last": "Last:",
     "win": "W",
@@ -908,7 +911,10 @@
     "loading": "Loading traffic…",
     "unitMin": "min",
     "mockNotice": "Sample numbers until a traffic key is added",
-    "needsKey": "Traffic needs a Google Maps or TomTom key"
+    "needsKey": "Traffic needs a Google Maps or TomTom key",
+    "routeIncomplete": "Waiting for a start and end address",
+    "routeNotFound": "Can't find this route. Check the addresses.",
+    "routeUnavailable": "Can't get the drive time right now"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "or pick a folder in the editor",

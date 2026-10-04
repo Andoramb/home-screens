@@ -44,6 +44,44 @@ export function defaultGridMaxEventsPerCell(viewMode: string | undefined): numbe
   return viewMode === 'week' ? 5 : 4;
 }
 
+/** What a month or multi-week cell draws: the first `shown` events as pills
+ *  ("+N more" for the rest), or a dot per event. */
+export type GridCellEvents = { kind: 'pills'; shown: number } | { kind: 'dots' };
+
+/**
+ * What a month or multi-week cell lists, from the room its week row actually
+ * has. Every event as a pill when they all fit (and the household's cap
+ * allows); otherwise as many pills as fit with the "+N more" line under them:
+ * a fixed cap of four on a short row let the pills run past the bottom of the
+ * cell and cut off the very line saying some were hidden. When not even one
+ * pill fits beside that line, a dot per event, so a short row still shows
+ * which days are busy instead of a grid of "+2 more". Before the row is
+ * measured (`room` 0) it lists up to the cap, as it always did.
+ */
+export function gridCellEvents({ heights, room, moreHeight, gap, max }: {
+  /** Each event's pill height, px, in the order the cell lists them. */
+  heights: readonly number[];
+  /** Height the cell has for its events, px. */
+  room: number;
+  /** The "+N more" line, px. */
+  moreHeight: number;
+  /** Space between pills, px. */
+  gap: number;
+  /** The household's per-cell cap (`clampGridMaxEventsPerCell`). */
+  max: number;
+}): GridCellEvents {
+  const n = heights.length;
+  if (room <= 0) return { kind: 'pills', shown: Math.min(max, n) };
+  if (n <= max && heights.reduce((sum, h) => sum + h, 0) + Math.max(0, n - 1) * gap <= room) return { kind: 'pills', shown: n };
+  let used = moreHeight;
+  let shown = 0;
+  while (shown < Math.min(max, n) && used + heights[shown] + gap <= room) {
+    used += heights[shown] + gap;
+    shown += 1;
+  }
+  return shown > 0 ? { kind: 'pills', shown } : { kind: 'dots' };
+}
+
 /** Clamp a grid's gridDayLabelScale to its 0.8-2 range. Unset or not a number
  * (same hand-edited-config caveat as clampWeeksToShow) reads as 1, leaving the
  * day names and day numbers at their baked-in em sizes. The ceiling is 2

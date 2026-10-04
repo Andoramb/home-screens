@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import type { StandingsEntry } from '@/lib/espn-standings';
+import { leagueWallCode } from '@/lib/espn';
 import { PaginationDots } from '../shared/PaginationDots';
 import { TeamLogo } from '../shared/TeamLogo';
 
@@ -168,7 +169,7 @@ export function StandingsHeader({
           className="font-semibold tracking-widest uppercase text-current/40"
           style={{ fontSize: '0.65em' }}
         >
-          {league}
+          {leagueWallCode(league)}
         </span>
         <span className="text-current/60 font-medium" style={{ fontSize: '0.75em' }}>
           {groupName}

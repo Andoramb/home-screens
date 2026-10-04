@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profielen",
-    "noProfile": "Alle pagina's"
+    "noProfile": "Alle pagina's",
+    "scheduledNote": "{profile} staat nu volgens schema aan. Wat je hier kiest, begint zodra dat voorbij is."
   },
   "displayPicker": {
     "targeting": "Sturen naar",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Maak eerst je gepakte klusje af, of vink dit af als je het al gedaan hebt.",
       "youDidItOn": "Je hebt het {day} gedaan",
+      "youDidItOnDate": "Je hebt het op {day} gedaan",
       "didItOn": "{name} heeft het {day} gedaan",
+      "didItOnDate": "{name} heeft het op {day} gedaan",
       "limitLineMany": "Maak eerst een van je gepakte klusjes af, of vink dit af als je het al gedaan hebt.",
       "yours": "Van jou",
       "didItToday": "{name} heeft het vandaag gedaan",
@@ -1020,6 +1023,9 @@
     "noConfirm": "{name} reageerde niet. Misschien staat het uit of is het offline.",
     "profileSwitched": "{name} staat nu op {profile}",
     "profileCleared": "{name} toont alle pagina's",
+    "profileAfterSchedule": "{name} wisselt naar {profile} zodra {scheduled} voorbij is",
+    "profileClearedAfterSchedule": "{name} toont alle pagina's zodra {scheduled} voorbij is",
+    "profileKeptAfterSchedule": "{name} blijft {profile} tonen zodra het schema voorbij is",
     "profileFailed": "Het profiel op {name} kon niet worden gewisseld",
     "hubBack": "Home Screens is er weer",
     "alertSentUnnamed": "Melding verstuurd naar het scherm",

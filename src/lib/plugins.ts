@@ -13,6 +13,8 @@ import { SHARED_STATE_KEY_RE, MAX_SHARED_STATE_KEY_LENGTH } from '@/lib/shared-s
 import { pluginStatePrefix } from '@/lib/plugin-state-keys';
 import { isVersionCompatible, resolveChannel } from '@/lib/plugin-versions';
 import { getPackageVersion } from '@/lib/version';
+import { updateConfigAtomic, configRevision as configRevisionOf } from '@/lib/config';
+import { removePluginModules } from '@/lib/plugin-modules';
 
 const execFileAsync = promisify(execFile);
 
@@ -323,7 +325,35 @@ export async function installExternalPlugin(
   }
 }
 
-export async function uninstallPlugin(pluginId: string): Promise<void> {
+export interface UninstallResult {
+  /** The plugin's raw module type, when the hub knew it. */
+  moduleType: string | null;
+  /** The new config revision when modules came off screens, else null. */
+  configRevision: string | null;
+  /** The revision of the config they were taken off, read in the same write. */
+  previousConfigRevision: string | null;
+}
+
+export async function uninstallPlugin(pluginId: string): Promise<UninstallResult> {
+  // Its modules come off every screen first, so a config write that fails
+  // leaves the plugin installed and the screens as they were, never a wall of
+  // "Plugin not available" boxes.
+  const moduleType = (await getInstalledPlugins()).plugins.find((p) => p.id === pluginId)?.moduleType
+    ?? (await getPluginManifest(pluginId))?.moduleType
+    ?? null;
+  let configRevision: string | null = null;
+  let previousConfigRevision: string | null = null;
+  if (moduleType) {
+    let changed = false;
+    const next = await updateConfigAtomic((config) => {
+      const stripped = removePluginModules(config, moduleType);
+      changed = stripped !== config;
+      if (changed) previousConfigRevision = configRevisionOf(config);
+      return stripped;
+    });
+    if (changed) configRevision = configRevisionOf(next);
+  }
+
   // Secrets and auth tokens live outside the plugin directory (upgrades wipe
   // that dir wholesale), but we still clear them explicitly so an uninstall
   // doesn't leave per-plugin credentials behind.
@@ -339,6 +369,8 @@ export async function uninstallPlugin(pluginId: string): Promise<void> {
     ...installed,
     plugins: installed.plugins.filter((p) => p.id !== pluginId),
   }));
+
+  return { moduleType, configRevision, previousConfigRevision };
 }
 
 export async function clearPreviousVersion(pluginId: string): Promise<void> {

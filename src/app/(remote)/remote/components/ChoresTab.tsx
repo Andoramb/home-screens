@@ -1256,7 +1256,6 @@ export default function ChoresTab({ config, choreData, isAdmin = false, family }
                         members={members}
                         date={viewingDate}
                         today={realToday}
-                        formatDay={formatDay}
                         canEdit={canEdit}
                         canGrab={!isViewingPast}
                         atLimit={selectedAtLimit}

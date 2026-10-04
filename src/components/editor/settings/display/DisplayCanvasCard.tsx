@@ -3,6 +3,7 @@
 import { MAX_DISPLAY_DIMENSION, MIN_DISPLAY_DIMENSION, findMainDisplay } from '@/lib/display-filter';
 import { useEditorStore } from '@/stores/editor-store';
 import TouchAlignmentControl from '@/components/editor/settings/shared/TouchAlignmentControl';
+import OrientationChangeModal from '@/components/editor/settings/OrientationChangeModal';
 import { useTranslate } from '@/i18n';
 import { useCanvasDimensionDrafts } from './useCanvasDimensionDrafts';
 import type { DisplayNode, ScreenConfiguration } from '@/types/config';
@@ -29,7 +30,8 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
     setHeightDraft,
     commitHeight,
     handleTransform,
-  } = useCanvasDimensionDrafts(display, config.settings);
+    orientation,
+  } = useCanvasDimensionDrafts(display, config);
   const updateDisplay = useEditorStore((s) => s.updateDisplay);
   const saveConfig = useEditorStore((s) => s.saveConfig);
   // Touch is lined up on the machine the screen is plugged into, and the hub
@@ -116,6 +118,18 @@ export default function DisplayCanvasCard({ config, display }: DisplayCanvasCard
           </div>
         )}
       </div>
+
+      {orientation.prompt && (
+        <OrientationChangeModal
+          offCanvasCount={orientation.prompt.offCanvasCount}
+          totalModuleCount={orientation.prompt.totalCount}
+          newWidth={orientation.prompt.newWidth}
+          newHeight={orientation.prompt.newHeight}
+          onCancel={orientation.dismiss}
+          onSwitchAnyway={orientation.switchAnyway}
+          onScaleToFit={orientation.scaleToFit}
+        />
+      )}
     </div>
   );
 }

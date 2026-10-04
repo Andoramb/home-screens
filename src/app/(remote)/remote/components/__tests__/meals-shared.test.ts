@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getWeekDates, currentActiveSlot } from '../meals-shared';
+import { toISODate } from '@/lib/meal-constants';
 
 describe('getWeekDates', () => {
   it('returns exactly 7 entries', () => {
@@ -55,19 +56,10 @@ describe('getWeekDates', () => {
     }
   });
 
-  it('formats shortDate as M/D', () => {
-    const dates = getWeekDates(new Date());
-    for (const d of dates) {
-      expect(d.shortDate).toMatch(/^\d{1,2}\/\d{1,2}$/);
-    }
-  });
-
   it('includes today within the returned week', () => {
     const today = new Date();
-    const dates = getWeekDates(new Date());
-    const todayStr = `${today.getMonth() + 1}/${today.getDate()}`;
-    const found = dates.some((d) => d.shortDate === todayStr);
-    expect(found).toBe(true);
+    const dates = getWeekDates(today);
+    expect(dates.some((d) => d.date === toISODate(today))).toBe(true);
   });
 
   it('accepts a custom reference date', () => {

@@ -228,14 +228,13 @@ export function createModuleSlice(
       }));
     },
 
-    scaleAllModules: (oldWidth, oldHeight, newWidth, newHeight) => {
-      const { selectedDisplayId } = get();
+    scaleAllModules: (displayId, oldWidth, oldHeight, newWidth, newHeight) => {
       mutateConfig((config) => ({
         config: withActiveScreens(
           config,
-          selectedDisplayId,
+          displayId,
           scaleModulesToFit(
-            getActiveScreens(config, selectedDisplayId),
+            getActiveScreens(config, displayId),
             oldWidth,
             oldHeight,
             newWidth,

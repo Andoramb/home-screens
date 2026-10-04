@@ -50,7 +50,7 @@ Six tabs along the bottom: **Control**, **Timers**, **Chores**, **Lists**, **Mea
 - **Arrows** move to the previous or next screen.
 - **Sleep Display** blacks the wall out (and cuts the screen's power, if that display has **Switch the screen's power off too** turned on); the same button wakes it again.
 - **Send Alert** puts a message on the wall: an info, warning or urgent banner, with a title and how long it stays. **Persistent** keeps it up until someone dismisses it.
-- **Brightness** dims the wall from full down to off.
+- **Brightness** dims the wall from full down to off. The wall keeps that level until someone picks another: after dimming, sleeping or an alert it comes back to it, and tapping the wall never turns it up.
 - **Slideshow** appears while the screen on show has a photo slideshow: go back a photo, pause on one, or skip ahead. A screen that rotates away and back starts playing again.
 - With more than one display, a **Send to** row at the top picks which display these controls talk to, or **All** of them at once. Screen navigation works one display at a time.
 
@@ -118,11 +118,11 @@ For a bookmark or a home-automation button that wakes the wall, add the display 
 http://home-screens.local:3000/api/display/wake?token=TOKEN
 ```
 
-The token works on `/api/display/` addresses only. The full list of one-word commands is under [Display Control](/docs/api#display-control) in the API reference, and the [Voice Control](/docs/voice-control) guide drives all of them from Home Assistant.
+With more than one display, that wakes the main one; add `&display=kitchen` (the display's ID, shown under **Settings > Per display > All displays**) to wake another, or `&display=all` for every one. The token works on `/api/display/` addresses only. The full list of one-word commands is under [Display Control](/docs/api#display-control) in the API reference, and the [Voice Control](/docs/voice-control) guide drives all of them from Home Assistant.
 
 ### Profiles from the phone
 
-If you have [profiles](/docs/profiles), they appear as pills under the brightness slider. Tap one to switch the wall to that profile's screens; tap it again to go back to showing everything. With more than one display, the pills follow the display picked under **Send to**.
+If you have [profiles](/docs/profiles), they appear as pills under the brightness slider. Tap one to switch the wall to that profile's screens, or tap **All screens** to go back to showing everything. When a scheduled profile is on, its pill is the one ticked and the phone says it is on a schedule; a pill you tap then takes over when the schedule ends. With more than one display, the pills follow the display picked under **Send to**.
 
 ## Next steps
 

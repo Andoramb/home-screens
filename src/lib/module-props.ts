@@ -2,6 +2,7 @@ import type { FamilyGroup, FamilyMember } from '@/types/family';
 import { type CalendarFetchStatus, type CalendarPerson, type CalendarSettings, type CalendarSourceStatus, type ModuleType, type TimeFormat } from '@/types/config';
 import { getModuleDefinition } from '@/lib/module-registry';
 import { hasAnyCalendarSource } from '@/lib/calendar-sources';
+import { hasCalendarOwners, livePersonSources } from '@/lib/calendar-source-refs';
 import { settingsPath } from './settings-route';
 import type { FetchError } from './fetch-error';
 
@@ -297,11 +298,16 @@ export function extractCalendarEvents(calendarData: unknown): unknown[] | null {
   return ((calendarData as Record<string, unknown>).events as unknown[] | undefined) ?? [];
 }
 
-/** Join the household identity with the calendar-owned source mapping. */
+/**
+ * Join the household identity with the calendar-owned source mapping. Only
+ * calendars that still exist count, so someone whose only calendar was
+ * removed gets no row of their own.
+ */
 export function calendarPeopleForFamily(
   members: readonly FamilyMember[],
-  personSources: Record<string, string[]> | undefined,
+  calendar: CalendarSettings | undefined,
 ): CalendarPerson[] {
+  const personSources = livePersonSources(calendar);
   return members.flatMap(({ id, name, color }) => {
     const sourceIds = personSources?.[id] ?? [];
     return sourceIds.length > 0 ? [{ id, name, color, sourceIds }] : [];
@@ -348,8 +354,8 @@ export function toDisplaySource(
     calendarSourceStatus: calendarData && !Array.isArray(calendarData)
       ? ((calendarData as Record<string, unknown>).sourceStatus as CalendarSourceStatus[] | undefined) ?? null
       : null,
-    calendarPeople: calendarPeopleForFamily(sharedData.familyMembers ?? [], settings.calendar?.personSources),
-    calendarPeopleState: Object.values(settings.calendar?.personSources ?? {}).some((ids) => ids.length > 0) ? sharedData.familyState : undefined,
+    calendarPeople: calendarPeopleForFamily(sharedData.familyMembers ?? [], settings.calendar),
+    calendarPeopleState: hasCalendarOwners(settings.calendar) ? sharedData.familyState : undefined,
     familyGroups: sharedData.familyGroups ?? null,
     calendarConfigured: hasAnyCalendarSource(settings.calendar),
     availableDisplays,

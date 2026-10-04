@@ -3,8 +3,9 @@ import { cachedProxyRoute, fetchWithTimeout, parseCommaList } from '@/lib/api-ut
 import { LEAGUE_MAP, parseESPNEvent } from '@/lib/espn';
 import type { Game, TeamCard } from '@/lib/espn';
 import { findRosterTeam } from '@/lib/espn-rosters';
+import { fetchScoreboard } from '@/lib/espn-scoreboard';
 import { MAX_FAVORITE_TEAMS, parseTeamKey, teamKey } from '@/lib/sports-order';
-import { pickFeaturedGame } from '@/lib/sports-team';
+import { fillMissingScores, leaguesMissingScores, pickFeaturedGame } from '@/lib/sports-team';
 import { logger } from '@/lib/logger';
 
 const log = logger('sports-team');
@@ -98,6 +99,26 @@ async function fetchTeamCard(league: string, abbr: string): Promise<TeamCard> {
   return { ...card, ...pickFeaturedGame(scheduleResult.value) };
 }
 
+/**
+ * ESPN's team schedule now and then drops the score from a game in progress.
+ * The league scoreboard carries the same event, so a started or finished
+ * game missing a score reads it from there; each league is read once. A
+ * scoreboard that cannot be read leaves the score missing, never 0.
+ */
+async function withScoreboardScores(cards: TeamCard[]): Promise<TeamCard[]> {
+  const leagues = leaguesMissingScores(cards);
+  if (leagues.length === 0) return cards;
+  const boards = await Promise.all(leagues.map(async (league) => {
+    try {
+      return [league, await fetchScoreboard(league)] as const;
+    } catch (err) {
+      log.warn(`scoreboard lookup failed for ${league}: ${String(err)}`);
+      return [league, [] as Game[]] as const;
+    }
+  }));
+  return fillMissingScores(cards, new Map(boards));
+}
+
 function parseTeams(param: string | null): { league: string; abbr: string }[] {
   const seen = new Set<string>();
   const out: { league: string; abbr: string }[] = [];
@@ -127,7 +148,7 @@ const { GET, cache } = cachedProxyRoute<{ cards: TeamCard[] }>({
       return NextResponse.json({ error: `At most ${MAX_FAVORITE_TEAMS} teams per request` }, { status: 400 });
     }
     const cards = await Promise.all(teams.map((t) => fetchTeamCard(t.league, t.abbr)));
-    return { cards };
+    return { cards: await withScoreboardScores(cards) };
   },
   errorMessage: 'Failed to fetch team scores',
 });

@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profiles",
-    "noProfile": "All screens"
+    "noProfile": "All screens",
+    "scheduledNote": "{profile} is on a schedule right now. What you pick here starts when it ends."
   },
   "displayPicker": {
     "targeting": "Send to",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Finish your grab first, or tick this if it's done.",
       "youDidItOn": "You did it {day}",
+      "youDidItOnDate": "You did it on {day}",
       "didItOn": "{name} did it {day}",
+      "didItOnDate": "{name} did it on {day}",
       "limitLineMany": "Finish one of your grabs first, or tick this if it's done.",
       "yours": "Yours",
       "didItToday": "{name} did it today",
@@ -1020,6 +1023,9 @@
     "noConfirm": "{name} didn't respond. It may be off or offline.",
     "profileSwitched": "{name} switched to {profile}",
     "profileCleared": "{name} is showing all screens",
+    "profileAfterSchedule": "{name} will switch to {profile} when {scheduled} ends",
+    "profileClearedAfterSchedule": "{name} will show all screens when {scheduled} ends",
+    "profileKeptAfterSchedule": "{name} will keep showing {profile} after its schedule ends",
     "profileFailed": "Couldn't switch the profile on {name}",
     "hubBack": "Home Screens is back",
     "alertSentUnnamed": "Alert sent to the display",

@@ -61,7 +61,7 @@ When the hub has more than one display registered, every display-control endpoin
 
 Use the reserved word `all` as the display target to broadcast to every registered display plus the legacy default queue. Broadcast is allowed for command-enqueue actions (simple commands, brightness, sleep-override, alert, module-command) and rejected for read-only or mutate-config actions (status, profile, module-enabled). It is also rejected for goto-screen, even though that enqueues a command, because screen sets differ per display and a broadcast jump would be meaningless on most of them.
 
-Calls with no display target continue to drive the legacy single-display queue, so single-display installs and existing scripts keep working unchanged. See the [Multi-display guide](/docs/multi-display) for the full multi-display setup.
+A command or a status read with no display target goes to the main display (the display with ID `main`, or the first one listed if none has that ID). On a single-display install, with no displays registered, it goes to that one display, so bookmarks and scripts written before you added a second display keep reaching the first one. The display's own calls (its command poll and its status report) are the exception: a display always names itself. See the [Multi-display guide](/docs/multi-display) for the full multi-display setup.
 
 **Bookmarks need a token once you set a password.** Every endpoint in this section is protected at the display level, and a link you tap from your phone can't send an `Authorization` header. Add the display token to the link instead:
 
@@ -160,7 +160,7 @@ The `revisions` object from the command drain on its own, `{ "revisions": { ... 
 
 ### GET /api/display/status
 
-Returns the last-known display status as reported by the display client. Accepts `?display=<id>` for the multi-display case; without a target, the legacy default queue's status is returned. Before the first heartbeat arrives this returns `404 { "error": "No status reported yet" }`.
+Returns the last-known display status as reported by the display client. Accepts `?display=<id>` for the multi-display case; without a target, it returns the main display's status (or the one display's, on a single-display install). Before the first heartbeat arrives this returns `200` with `null`, because a display that has not reported yet is a normal state on a new install, not an error.
 
 **Response:**
 ```json
@@ -168,6 +168,7 @@ Returns the last-known display status as reported by the display client. Accepts
   "currentScreen": { "index": 0, "id": "abc-123", "name": "Main" },
   "screenCount": 3,
   "activeProfile": "evening",
+  "profileScheduled": false,
   "displayState": "active",
   "timestamp": 1709913600000,
   "lastSeen": 1709913600000,
@@ -177,6 +178,8 @@ Returns the last-known display status as reported by the display client. Accepts
 }
 ```
 
+`activeProfile` is the profile whose screens the display is showing right now, or `null` when every screen rotates. While a scheduled profile's time is on, that is the scheduled profile and `profileScheduled` is `true`; the profile picked by hand (from [POST /api/display/profile](#post-api-display-profile) or the editor) takes over when the schedule ends.
+
 `hwStats` is present only when the per-Pi reporter has posted to `/api/display/hw-stats`. `browserStats` is present once the display has sent at least one heartbeat from a modern client; older clients omit it.
 
 ### GET /api/display/shared-state
@@ -185,7 +188,7 @@ Returns the most recent snapshot of a display's [shared values](/docs/plugin-dev
 
 | Parameter | Type | Description |
 |---|---|---|
-| `display` | string | Which display's snapshot to read. Omit it in single-display mode |
+| `display` | string | Which display's snapshot to read. Without it, the main display's (or the one display's, on a single-display install) |
 
 **Response:**
 ```json
@@ -252,7 +255,7 @@ Wakes the display and holds off the automatic sleep machinery, the sleep schedul
 
 ### POST /api/display/profile
 
-Switches the active profile. Persists the selection to the config file. Display access, a display token is enough, same as the other command verbs, so a Home Assistant automation can switch profiles; the write only touches the active-profile pointer, the same value the display's own rules engine flips. Accepts `?display=<id>` or `displayId` in the body; does **not** accept `all` (profile switches are per-display).
+Switches the active profile. Persists the selection to the config file. A scheduled profile still wins while its time is on, and the profile picked here takes over when it ends. Display access, a display token is enough, same as the other command verbs, so a Home Assistant automation can switch profiles; the write only touches the active-profile pointer, the same value the display's own rules engine flips. Accepts `?display=<id>` or `displayId` in the body; does **not** accept `all` (profile switches are per-display).
 
 **Body:** `{ "profile": "profile-id", "displayId": "kitchen" }` (`displayId` optional)
 
@@ -304,6 +307,7 @@ The `type` field accepts `info`, `warning`, or `urgent`; anything else quietly b
   "currentScreen": { "index": 0, "id": "abc-123", "name": "Main" },
   "screenCount": 3,
   "activeProfile": null,
+  "profileScheduled": false,
   "displayState": "active",
   "timestamp": 1709913600000,
   "browserStats": {
@@ -533,7 +537,7 @@ Returns saved meals, weekly plan, grocery checked state, and shared meal-planner
   "plan": [
     { "date": "2026-04-04", "slot": "dinner", "mealId": "meal-1" }
   ],
-  "groceryChecked": ["tortillas"],
+  "groceryChecked": { "2026-03-30": ["tortillas"] },
   "settings": {
     "enabledSlots": ["breakfast", "lunch", "dinner"],
     "weekStartDay": "monday",
@@ -544,7 +548,7 @@ Returns saved meals, weekly plan, grocery checked state, and shared meal-planner
 }
 ```
 
-`settings.timeFormat` is optional, when absent, meal times follow the household `GlobalSettings.timeFormat`, which the top-level `globalTimeFormat` field mirrors so clients can resolve "follow global" without a second config fetch. The `plan` array uses ISO date strings (e.g. `"2026-04-04"`) for multi-week support. Entries older than 12 weeks are pruned on write.
+`settings.timeFormat` is optional, when absent, meal times follow the household `GlobalSettings.timeFormat`, which the top-level `globalTimeFormat` field mirrors so clients can resolve "follow global" without a second config fetch. The `plan` array uses ISO date strings (e.g. `"2026-04-04"`) for multi-week support. Entries older than 12 weeks are pruned on write. `groceryChecked` holds each week's ticked items separately, keyed by the date that week starts on (per `settings.weekStartDay`), so an item bought this week is still on next week's list.
 
 ### PUT /api/meals/data
 
@@ -557,7 +561,7 @@ The entire read-modify-write cycle runs inside the meal-data store queue, so cro
 {
   "savedMeals": [ ... ],
   "plan": [ ... ],
-  "groceryChecked": [ ... ],
+  "groceryChecked": { "2026-03-30": [ ... ] },
   "settings": { "enabledSlots": ["breakfast", "lunch", "dinner"], "weekStartDay": "monday", "defaultSlotTimes": { "dinner": "18:00" }, "timeFormat": "12h" },
   "force": false
 }
@@ -565,15 +569,15 @@ The entire read-modify-write cycle runs inside the meal-data store queue, so cro
 
 When `settings` is present it replaces the stored settings object: include `"timeFormat": "12h"` or `"24h"` for an explicit override, or omit the key to follow the household `GlobalSettings.timeFormat`.
 
-When present, `savedMeals`, `plan`, and `groceryChecked` must be arrays. An empty-overwrite guard fires when every `savedMeals` / `plan` field present in the body is `[]` and the existing data is not empty; the write is refused with `409` and you can resend with `force: true` to override. If the body sends both fields and only one of them is empty, that is a normal write and the guard stays out of the way. Settings-only and grocery-only writes skip the guard entirely.
+When present, `savedMeals` and `plan` must be arrays, and `groceryChecked` must map the date each week starts on (`YYYY-MM-DD`) to that week's ticked item names; weeks with nothing planned are dropped, and a `plan` write drops the stored ticks of any week it leaves with nothing planned, so a cleared week starts its list over. When `settings` changes the week start day, the stored ticks move to the matching new weeks. An empty-overwrite guard fires when every `savedMeals` / `plan` field present in the body is `[]` and the existing data is not empty; the write is refused with `409` and you can resend with `force: true` to override. If the body sends both fields and only one of them is empty, that is a normal write and the guard stays out of the way. Settings-only and grocery-only writes skip the guard entirely.
 
 **Response:** The full `{ savedMeals, plan, groceryChecked, settings }` object after the write.
 
 ### GET /api/meals/grocery
 
-Returns just the grocery checked state.
+Returns one week's grocery checked state. `?week=YYYY-MM-DD` picks the week holding that date; without it, the household's current week (the same one `/api/meals/grocery/list` shows).
 
-**Response:** `{ "groceryChecked": ["tortillas", "cheese"] }`
+**Response:** `{ "week": "2026-08-02", "groceryChecked": ["tortillas", "cheese"] }`: `week` is the date that week starts on.
 
 ### GET /api/meals/grocery/list
 
@@ -593,19 +597,22 @@ Returns the **resolved** grocery list for the current week, ingredients aggregat
 
 ### POST /api/meals/grocery
 
-Toggles a grocery item's checked state. If the item is already checked, it is unchecked; otherwise it is checked. Display access, a display token works, so an automation or voice assistant can check items off. The item name is matched after trimming and lowercasing, so senders can use the display-cased name from `/api/meals/grocery/list`.
+Toggles a grocery item's checked state on one week's list. If the item is already checked, it is unchecked; otherwise it is checked. Display access, a display token works, so an automation or voice assistant can check items off. The item name is matched after trimming and lowercasing, so senders can use the display-cased name from `/api/meals/grocery/list`.
 
 **Body:**
 ```json
 {
   "item": "tortillas",
-  "direction": "check"
+  "direction": "check",
+  "week": "2026-08-05"
 }
 ```
 
+`week` is optional: any date in the week whose list the tick belongs to. Omitted, it is the household's current week, which is what "check off the tortillas" means. Ticks never carry over to another week's list.
+
 `direction` is optional. Omitted, the call is the historical flip. Set to `"check"` or `"uncheck"`, the call only ever moves the item in that direction and is a no-op when it's already there, so a repeated voice "check off milk" can never silently un-check it. Any other value is rejected with `400`.
 
-**Response:** `{ "groceryChecked": [...], "changed": true }`: `changed` reports whether this call actually flipped anything.
+**Response:** `{ "week": "2026-08-02", "groceryChecked": [...], "changed": true }`: that week's ticks after the call. `changed` reports whether this call actually flipped anything.
 
 ---
 

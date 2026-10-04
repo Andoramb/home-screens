@@ -224,52 +224,61 @@ function stopAllDevPolling(): void {
 async function migratePluginConfigs(
   manifest: PluginManifest,
   oldVersion: string,
-): Promise<{ ok: boolean; changed: boolean; revision: string | null }> {
+): Promise<{ ok: boolean; changed: boolean; revision: string | null; previousRevision: string | null }> {
   try {
     const res = await editorFetch('/api/plugins/migrate-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ pluginId: manifest.id, oldVersion }),
     });
-    if (!res.ok) return { ok: false, changed: false, revision: null };
-    const body = (await res.json().catch(() => ({}))) as { changed?: boolean };
-    return { ok: true, changed: body.changed === true, revision: res.headers.get(CONFIG_REVISION_HEADER) };
+    if (!res.ok) return { ok: false, changed: false, revision: null, previousRevision: null };
+    const body = (await res.json().catch(() => ({}))) as { changed?: boolean; previousRevision?: unknown };
+    return {
+      ok: true,
+      changed: body.changed === true,
+      revision: res.headers.get(CONFIG_REVISION_HEADER),
+      previousRevision: typeof body.previousRevision === 'string' ? body.previousRevision : null,
+    };
   } catch (err) {
     log.warn(`Config migration for ${manifest.id} failed:`, err);
-    return { ok: false, changed: false, revision: null };
+    return { ok: false, changed: false, revision: null, previousRevision: null };
   }
+}
+
+/** One migration the hub ran, with the revisions it went from and to. */
+interface AppliedMigration {
+  manifest: PluginManifest;
+  oldVersion: string;
+  previousRevision: string | null;
+  revision: string | null;
 }
 
 /**
  * A migration that rewrote config.json moved the hub's revision on without
  * the editor knowing, so its next save would be refused as a conflict with
  * nobody else involved, and "Keep mine" would then undo the migration. Bring
- * the editor store along: reload when it is clean; when it holds unsaved
- * edits, apply the same pure migration to the in-memory config and adopt the
- * hub's revision, so the pending save carries the migrated shape. Dynamic
- * import: the editor store is not a dependency of the plugin loader, and a
- * display page never has one.
+ * the editor store along through `adoptHubRewrite`, with the run treated as
+ * one rewrite: from the revision the first migration started on to the one
+ * the last left, but only when each started where the one before it ended.
+ * Anything else landing in between leaves no previous revision to match, so
+ * an editor with unsaved edits keeps its own and meets a conflict rather than
+ * overwriting it. Dynamic import: the editor store is not a dependency of the
+ * plugin loader, and a display page never has one.
  */
-async function syncEditorAfterMigrations(applied: { manifest: PluginManifest; oldVersion: string; revision: string | null }[]): Promise<void> {
+async function syncEditorAfterMigrations(applied: AppliedMigration[]): Promise<void> {
   if (applied.length === 0) return;
-  const { useEditorStore } = await import('@/stores/editor-store');
-  const store = useEditorStore.getState();
-  // Config not loaded yet: the load that follows fetches the migrated file.
-  if (!store.config) return;
-  if (!store.isDirty && !store.isSaving) {
-    await store.loadConfig();
-    return;
-  }
-  const config = structuredClone(store.config);
-  for (const { manifest, oldVersion } of applied) migrateConfigModules(config, manifest, oldVersion);
   const revision = applied[applied.length - 1].revision;
-  // Bump the generation like every other outside-the-session replacement, so
-  // an open settings form re-hydrates instead of writing its pre-migration
-  // snapshot back over the migrated shape on the next keystroke.
-  useEditorStore.setState({
-    config,
-    configGeneration: store.configGeneration + 1,
-    ...(revision ? { configRevision: revision } : {}),
+  if (!revision) return;
+  const unbroken = applied.every((step, i) => i === 0 || (step.previousRevision != null && step.previousRevision === applied[i - 1].revision));
+  const { useEditorStore } = await import('@/stores/editor-store');
+  await useEditorStore.getState().adoptHubRewrite({
+    rewrite: (config) => {
+      const copy = structuredClone(config);
+      for (const { manifest, oldVersion } of applied) migrateConfigModules(copy, manifest, oldVersion);
+      return copy;
+    },
+    previousRevision: unbroken ? applied[0].previousRevision : null,
+    revision,
   });
 }
 
@@ -367,9 +376,9 @@ async function loadDevOverrides(
 
 /** Run queued config migrations sequentially to avoid concurrent read-modify-write. */
 async function runPendingMigrations(pendingMigrations: PendingMigration[]): Promise<void> {
-  const applied: { manifest: PluginManifest; oldVersion: string; revision: string | null }[] = [];
+  const applied: AppliedMigration[] = [];
   for (const { manifest, oldVersion, pluginId } of pendingMigrations) {
-    const { ok, changed, revision } = await migratePluginConfigs(manifest, oldVersion);
+    const { ok, changed, revision, previousRevision } = await migratePluginConfigs(manifest, oldVersion);
     // Only clear previousVersion if migration succeeded — otherwise it retries on next load
     if (ok) {
       fetch('/api/plugins/install', {
@@ -378,7 +387,7 @@ async function runPendingMigrations(pendingMigrations: PendingMigration[]): Prom
         body: JSON.stringify({ pluginId, clearPrevVersion: true }),
       }).catch(() => {}); // fire-and-forget
     }
-    if (ok && changed) applied.push({ manifest, oldVersion, revision });
+    if (ok && changed) applied.push({ manifest, oldVersion, previousRevision, revision });
   }
   await syncEditorAfterMigrations(applied);
 }

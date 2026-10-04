@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { X } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
 import type { ICalSource, ICloudSource } from '@/types/config';
@@ -17,6 +17,7 @@ import { SettingsArea, SourceBlock, SourceHealthBadge, SourceHealthError, useCal
 import { useLocale, useTranslate } from '@/i18n';
 import { localizedHolidayCountries, type HolidayCountry } from '@/lib/holiday-countries';
 import { settingsPath } from '@/lib/settings-route';
+import { configuredCalendarSourceIds, prunePersonSources } from '@/lib/calendar-source-refs';
 
 
 interface CalendarSettings {
@@ -34,9 +35,27 @@ interface Props {
   onChange: (updates: Partial<CalendarSettings>) => void;
 }
 
-export default function CalendarSection({ values, onChange }: Props) {
+export default function CalendarSection({ values, onChange: stageChange }: Props) {
   const { selectedCalendarIds, icalSources, icloudSources, personSources, daysAhead, holidayCountry, hideDeclined } = values;
   const t = useTranslate('editor');
+
+  // Every way a calendar leaves the list arrives here: a feed removed, a
+  // Google calendar unpicked or signed out, an iCloud calendar unticked or
+  // its account removed, the holidays turned off. Whoever owned it lets go in
+  // the same edit, so People never keeps a tick it has no box to untick.
+  const valuesRef = useRef(values);
+  valuesRef.current = values;
+  const onChange = useCallback((updates: Partial<CalendarSettings>) => {
+    const next = { ...valuesRef.current, ...updates };
+    const configured = configuredCalendarSourceIds({
+      googleCalendarIds: next.selectedCalendarIds,
+      icalSources: next.icalSources,
+      icloudSources: next.icloudSources,
+      holidayCountry: next.holidayCountry,
+    });
+    const pruned = prunePersonSources(next.personSources, (id) => configured.has(id));
+    stageChange(pruned === next.personSources ? updates : { ...updates, personSources: pruned });
+  }, [stageChange]);
 
   const [availableCountries, setAvailableCountries] = useState<HolidayCountry[]>([]);
   const locale = useLocale();

@@ -34,6 +34,12 @@ const ROLLING_WEEKEND_IDX = ROLLING_CELL_DOW
   .filter((i) => i >= 0);
 const ROLLING_WEEKDAY_IDX = ROLLING_CELL_DOW.findIndex((dow, i) => i > 0 && dow !== 0 && dow !== 6);
 
+// A grid cell lists only the events its week row has room for. At the
+// default 540x340 a six-week grid has room for one pill a day in the banner
+// theme and none in the modern ones (their day row is taller), so rows that
+// assert on pills render the grid at this size, where the per-cell cap decides.
+const ROOMY_GRID_SIZE = { w: 900, h: 900 };
+
 // --- The matrix ------------------------------------------------------------
 
 export const TIME_DATE_VARIANTS: ConfigVariant[] = [
@@ -490,8 +496,11 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
 
   {
     // scale bumps the flip-card font size: basePx = 28 * scale = 42px at 1.5.
+    // A 2099 date has five-digit days, which at 42px is wider than the default
+    // card, and the list shrinks to fit its box: this one is wide enough.
     type: 'countdown', name: 'scale', kind: 'network-free',
     config: { view: 'all', scale: 1.5, events: [{ id: 'cd-scale', name: 'CD SCALE', date: '2099-06-01' }] },
+    size: { w: 760, h: 360 },
     expect: async (mod) => {
       await has('CD SCALE')(mod);
       const block = mod.locator('.items-start.justify-center').first();
@@ -766,6 +775,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     // timed events on day+1, cap 2 shows the first two, hides the third, and
     // "+1 more" reports it.
     type: 'calendar', name: 'events-per-cell', kind: 'networked', stubKey: 'calendar',
+    size: ROOMY_GRID_SIZE,
     stubBody: [
       { id: 'cwec-1', title: 'CAL CAP ONE', start: localIso(1, 8), end: localIso(1, 9), allDay: false },
       { id: 'cwec-2', title: 'CAL CAP TWO', start: localIso(1, 10), end: localIso(1, 11), allDay: false },
@@ -787,6 +797,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     type: 'calendar', name: 'grid-day-label-scale', kind: 'networked', stubKey: 'calendar',
     stubBody: [todayEvent('cdls-1', 'CAL SCALED')],
     config: { viewMode: 'multi-week', gridTheme: 'clean', gridDayLabelScale: 1.5 },
+    size: ROOMY_GRID_SIZE,
     expect: async (mod) => {
       // Matched on a regex, not a substring: React's SSR markup serializes
       // inline styles without the space after the colon, and an element the
@@ -861,6 +872,8 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
       todayEvent('cges-b', 'CAL TIMED', { calendarColor: '#3b82f6' }),
     ],
     config: { viewMode: 'multi-week', gridTheme: 'banner', gridEventStyle: 'colored' },
+    // Two events on one day.
+    size: ROOMY_GRID_SIZE,
     expect: async (mod) => {
       const solid = mod.locator('[data-event-id="cges-a"]');
       await expect(solid).toHaveCSS('background-color', 'rgb(234, 179, 8)');
@@ -906,6 +919,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     type: 'calendar', name: 'multi-week-theme-clean', kind: 'networked', stubKey: 'calendar',
     stubBody: [{ id: 'cmt-c', title: 'CAL THEME CLEAN', start: localIso(1, 8, 5), end: localIso(1, 9), allDay: false }],
     config: { viewMode: 'multi-week', gridTheme: 'clean' },
+    size: ROOMY_GRID_SIZE,
     expect: async (mod) => {
       await expect(mod.locator('[data-grid-theme="clean"]')).toBeVisible();
       await expect(mod).toContainText(/20\d\d/);
@@ -920,6 +934,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     type: 'calendar', name: 'month-theme-clean', kind: 'networked', stubKey: 'calendar',
     stubBody: [todayEvent('cmc-1', 'CAL MONTH CLEAN', { start: localIso(0, 8, 5), end: localIso(0, 9) })],
     config: { viewMode: 'month', gridTheme: 'clean' },
+    size: ROOMY_GRID_SIZE,
     expect: async (mod) => {
       await expect(mod.locator('[data-grid-theme="clean"]')).toBeVisible();
       await expect(mod.locator('[data-grid-theme="clean"] > p')).toHaveText(/^[^–]+ 20\d\d$/);
@@ -931,6 +946,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     type: 'calendar', name: 'multi-week-theme-minimal', kind: 'networked', stubKey: 'calendar',
     stubBody: [{ id: 'cmt-m', title: 'CAL THEME MIN', start: localIso(1, 8, 5), end: localIso(1, 9), allDay: false }],
     config: { viewMode: 'multi-week', gridTheme: 'minimal' },
+    size: ROOMY_GRID_SIZE,
     expect: async (mod) => {
       await expect(mod.locator('[data-grid-theme="minimal"]')).toBeVisible();
       await expect(mod).toContainText('CAL THEME MIN');
@@ -943,6 +959,7 @@ export const TIME_DATE_VARIANTS: ConfigVariant[] = [
     type: 'calendar', name: 'multi-week-theme-vivid', kind: 'networked', stubKey: 'calendar',
     stubBody: [{ id: 'cmt-v', title: 'CAL THEME VIVID', start: localIso(1, 8), end: localIso(1, 9), allDay: false, calendarColor: '#eab308' }],
     config: { viewMode: 'multi-week', gridTheme: 'vivid' },
+    size: ROOMY_GRID_SIZE,
     expect: async (mod) => {
       const pill = mod.locator('[data-event-id="cmt-v"]');
       await expect(pill).toHaveCSS('background-color', 'rgb(234, 179, 8)');

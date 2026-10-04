@@ -108,6 +108,22 @@ export interface ConfigActions {
   /** `revision` is the hub's revision of exactly this config (a restore's
    *  read-back), so the next save is not refused as a conflict. */
   importConfig: (json: string, revision?: string | null) => void;
+  /**
+   * Bring the editor along after the hub rewrote config.json on its own (a
+   * plugin uninstalled, a custom icon removed, library files moved or a
+   * folder renamed, a plugin's config migrated). See `HubRewrite`.
+   */
+  adoptHubRewrite: (change: HubRewrite) => Promise<void>;
+}
+
+/** A change the hub made to config.json by itself, for `adoptHubRewrite`. */
+export interface HubRewrite {
+  /** The same pure change, for the editor's own copy. Must not mutate its input. */
+  rewrite: (config: ScreenConfiguration) => ScreenConfiguration;
+  /** The revision of the config the hub applied it to; null when unknown. */
+  previousRevision: string | null;
+  /** The revision it left. */
+  revision: string;
 }
 
 export interface SelectionActions {
@@ -138,7 +154,17 @@ export interface ModuleActions {
   resizeModule: (screenId: string, moduleId: string, size: ModuleSize) => void;
   /** Move a module to the front or back of its screen's stacking order. */
   reorderModule: (screenId: string, moduleId: string, to: 'front' | 'back') => void;
-  scaleAllModules: (oldWidth: number, oldHeight: number, newWidth: number, newHeight: number) => void;
+  /**
+   * Scale every module on one display's screens from the old canvas to the
+   * new one. `displayId` null scales the single-display screens.
+   */
+  scaleAllModules: (
+    displayId: string | null,
+    oldWidth: number,
+    oldHeight: number,
+    newWidth: number,
+    newHeight: number,
+  ) => void;
 }
 
 export interface ScreenActions {

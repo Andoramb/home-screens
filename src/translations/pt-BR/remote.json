@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Perfis",
-    "noProfile": "Todas as páginas"
+    "noProfile": "Todas as páginas",
+    "scheduledNote": "O perfil {profile} está ativo agora por agendamento. O que você escolher aqui começa quando ele terminar."
   },
   "displayPicker": {
     "targeting": "Enviar para",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Termine primeiro a que você pegou, ou marque esta se já fez.",
       "youDidItOn": "Você fez {day}",
+      "youDidItOnDate": "Você fez em {day}",
       "didItOn": "{name} fez {day}",
+      "didItOnDate": "{name} fez em {day}",
       "limitLineMany": "Termine primeiro uma das que você pegou, ou marque esta se já fez.",
       "yours": "Sua",
       "didItToday": "{name} fez hoje",
@@ -1021,6 +1024,9 @@
     "noConfirm": "{name} não respondeu. Pode estar desligada ou sem conexão.",
     "profileSwitched": "{name} mudou para {profile}",
     "profileCleared": "{name} está mostrando todas as páginas",
+    "profileAfterSchedule": "{name} vai mudar para {profile} quando {scheduled} terminar",
+    "profileClearedAfterSchedule": "{name} vai mostrar todas as páginas quando {scheduled} terminar",
+    "profileKeptAfterSchedule": "{name} vai continuar com {profile} quando o agendamento terminar",
     "profileFailed": "Não foi possível trocar o perfil em {name}",
     "hubBack": "O Home Screens voltou",
     "alertSentUnnamed": "Aviso enviado para a tela",

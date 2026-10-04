@@ -63,6 +63,8 @@ Apple lets you make a password just for Home Screens, so your real Apple ID pass
 
 Add your household under **Settings > Family** (see [Family](/docs/family)), then return to **Settings > Calendar > Whose calendars?** and pick which calendars are theirs. The Full-Screen Calendar's **family grid** and **free time** views draw one row per person from this list. A calendar you do not give to anyone counts as shared by the whole house.
 
+Taking a calendar away (removing a feed, unticking a Google or iCloud calendar, or signing out) also takes it off whoever it belonged to, and out of any calendar module's own list of calendars to show. A module that showed only that calendar goes back to showing them all. Switching a feed off with its tick box keeps its owner.
+
 The same list drives three options on both calendar modules, under **What shows** in the module's settings:
 
 - **Name tags** puts each person's initials, in their colour, where the calendar dot goes, so two events called "Practice" read as Ella's and Noah's. Calendars nobody owns keep a plain dot.

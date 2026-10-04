@@ -104,7 +104,7 @@ describe('PirateWeatherProvider', () => {
     });
   });
 
-  it('getMinutely maps precip intensity/probability, defaulting missing values', async () => {
+  it('getMinutely maps precip intensity/probability, leaving a missing chance unsaid', async () => {
     spy = mockPw({
       minutely: {
         data: [
@@ -118,7 +118,8 @@ describe('PirateWeatherProvider', () => {
 
     expect(out).toHaveLength(2);
     expect(out[0]).toMatchObject({ time: NOW_EPOCH, intensity: 0.5, probability: 90, type: 'rain' });
-    expect(out[1]).toMatchObject({ time: NOW_EPOCH + 60, intensity: 0, probability: 0 });
+    expect(out[1]).toMatchObject({ time: NOW_EPOCH + 60, intensity: 0 });
+    expect(out[1].probability).toBeUndefined();
   });
 
   it('getAlerts normalizes unknown severities to "Unknown"', async () => {

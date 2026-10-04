@@ -61,7 +61,7 @@ Strava only lets subscribers create the developer app the plugin connects throug
 
 ## Updates and removal
 
-The **Updates** tab of the Plugins panel lists plugins with a newer version and updates them in place; your settings and sign-ins stay. To remove a plugin, open the **Installed** tab and click **Uninstall** on its row. Modules from a removed plugin show a placeholder on your screens until you delete them.
+The **Updates** tab of the Plugins panel lists plugins with a newer version and updates them in place; your settings and sign-ins stay. To remove a plugin, open the **Installed** tab and click **Uninstall** on its row. Its modules come off every screen on every display, and its saved settings and sign-ins are deleted.
 
 ## Values plugins share
 

@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, withDisplayAuth, parseJsonBody } from '@/lib/api-utils';
-import { listLibraryFolder, safeLibraryPath, writeLibraryFile } from '@/lib/library-files';
+import { libraryMediaKind, listLibraryFolder, safeLibraryPath, writeLibraryFile } from '@/lib/library-files';
 import {
   IMAGE_FILE_RE,
   IMAGE_MIME_TYPES,
@@ -98,25 +98,26 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     }
   }
   const entries = await fs.readdir(dir, { withFileTypes: true });
-  // Top-level `rotation-` downloads belong to the background rotation, not to
-  // a slideshow or a picture picker (Settings and the phone leave them out too).
+  // Only what the library lists (`libraryMediaKind`): top-level `rotation-`
+  // downloads belong to the background rotation, not to a slideshow or a
+  // picture picker, and the folder counts leave them out the same way.
   const files = entries
-    .filter((e) => e.isFile() && !isRotationFile(directory ? `${directory}/${e.name}` : e.name))
-    .map((e) => e.name);
+    .filter((e) => e.isFile())
+    .map((e) => ({ name: e.name, kind: libraryMediaKind(directory ? `${directory}/${e.name}` : e.name) }));
 
   // No media param → legacy string[] of image URLs, exactly as before videos existed.
   if (!media) {
     const paths = files
-      .filter((name) => IMAGE_FILE_RE.test(name))
-      .map((name) => serveUrl(name, directory || undefined));
+      .filter((f) => f.kind === 'image')
+      .map((f) => serveUrl(f.name, directory || undefined));
     return NextResponse.json(paths, { headers: listHeaders });
   }
 
   const items: MediaListItem[] = [];
-  for (const name of files) {
-    if (IMAGE_FILE_RE.test(name) && media !== 'videos') {
+  for (const { name, kind } of files) {
+    if (kind === 'image' && media !== 'videos') {
       items.push({ url: serveUrl(name, directory || undefined), type: 'image' });
-    } else if (VIDEO_FILE_RE.test(name) && media !== 'photos') {
+    } else if (kind === 'video' && media !== 'photos') {
       // Bind the token to the same `file` value the serve route reads back.
       const filePath = directory ? `${directory}/${name}` : name;
       const token = await mintMediaToken(filePath);

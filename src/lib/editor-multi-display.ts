@@ -98,6 +98,26 @@ export function getActiveDimensions(
 }
 
 /**
+ * The canvas `displayId` would have with `patch` written onto its node: what
+ * a resize or rotation on the display's own settings page leaves the editor
+ * laying modules out against, by the same ownership rules as
+ * `getActiveDimensions`.
+ */
+export function getPatchedDisplayDimensions(
+  config: ScreenConfiguration,
+  displayId: string,
+  patch: Pick<DisplayNode, 'displayWidth' | 'displayHeight' | 'displayTransform'>,
+): { width: number; height: number } {
+  return getActiveDimensions(
+    {
+      ...config,
+      displays: config.displays?.map((d) => (d.id === displayId ? { ...d, ...patch } : d)),
+    },
+    displayId,
+  );
+}
+
+/**
  * The full-screen theme the selected display paints with where a module sets
  * none: the display's own override, else the shared default. Undefined when
  * neither is set, so each module keeps its own last resort (Midnight for

@@ -9364,10 +9364,10 @@
           "name": "groceryChecked",
           "optional": false,
           "type": {
-            "kind": "array",
-            "text": "string[]"
+            "kind": "object",
+            "text": "GroceryChecked"
           },
-          "description": "Ingredient names checked off the grocery list. The list itself is built from the planned meals and is not stored"
+          "description": "Ingredient names checked off each week's grocery list, keyed by the date that week starts on. The list itself is built from the week's planned meals and is not stored"
         },
         {
           "name": "settings",

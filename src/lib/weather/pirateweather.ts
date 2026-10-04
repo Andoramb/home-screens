@@ -142,7 +142,7 @@ export class PirateWeatherProvider implements WeatherProvider {
     return data.minutely.data.map((m) => ({
       time: m.time,
       intensity: m.precipIntensity ?? 0,
-      probability: m.precipProbability != null ? Math.round(m.precipProbability * 100) : 0,
+      probability: m.precipProbability != null ? Math.round(m.precipProbability * 100) : undefined,
       type: m.precipType,
     }));
   }

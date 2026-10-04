@@ -48,15 +48,10 @@ const storeState = vi.hoisted(() => ({
   setSelectedDisplay: vi.fn(),
   selectScreen: vi.fn(),
   selectModule: vi.fn(),
-  isDirty: false,
-  isSaving: false,
-  loadConfig: vi.fn(async () => {}),
-  config: null as unknown,
-  configRevision: 'r0',
+  adoptHubRewrite: vi.fn(async (_change: { rewrite: (config: unknown) => unknown; previousRevision: string | null; revision: string }) => {}),
 }));
-const storeSetState = vi.hoisted(() => vi.fn());
 vi.mock('@/stores/editor-store', () => ({
-  useEditorStore: { getState: () => storeState, setState: (...args: unknown[]) => storeSetState(...args) },
+  useEditorStore: { getState: () => storeState },
 }));
 
 import MediaLibraryPage from '../MediaLibraryPage';
@@ -233,11 +228,7 @@ beforeEach(() => {
   storeState.setSelectedDisplay.mockReset();
   storeState.selectScreen.mockReset();
   storeState.selectModule.mockReset();
-  storeState.loadConfig.mockReset();
-  storeSetState.mockReset();
-  storeState.isDirty = false;
-  storeState.isSaving = false;
-  storeState.config = null;
+  storeState.adoptHubRewrite.mockClear();
   confirmState.ask.mockReset();
   confirmState.ask.mockResolvedValue(true);
   mockApi();
@@ -815,24 +806,19 @@ describe('MediaLibraryPage move', () => {
     await waitFor(() => expect(libraryOps.move).toHaveBeenCalledWith(['nature/foggy_ridge.webp'], ''));
   });
 
-  it('reloads a clean editor store after a move, and rewrites a dirty one in memory', async () => {
-    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }], kept: [], rewritten: 1, revision: 'r9' } });
+  it('hands the editor store the move, with the revision it was made from', async () => {
+    // The store decides between a reload and an in-memory rewrite, and moves
+    // onto the new revision only from the one the hub rewrote.
+    libraryOps.move.mockResolvedValue({ ok: true, status: 200, data: { moved: [{ from: 'lake_sunset.jpg', to: 'nature/lake_sunset.jpg' }], kept: [], rewritten: 1, revision: 'r9', previousRevision: 'r8' } });
     await renderLoaded();
     select('lake_sunset.jpg');
     fireEvent.change(screen.getByTestId('media-move-select'), { target: { value: 'nature' } });
-    await waitFor(() => expect(storeState.loadConfig).toHaveBeenCalledTimes(1));
-    expect(storeSetState).not.toHaveBeenCalled();
-
-    storeState.isDirty = true;
-    storeState.config = { screens: [{ id: 's1', backgroundImage: 'lake_sunset.jpg' }] };
-    select('lake_sunset.jpg');
-    fireEvent.change(screen.getByTestId('media-move-select'), { target: { value: 'nature' } });
-    await waitFor(() => expect(storeSetState).toHaveBeenCalledTimes(1));
-    expect(storeSetState).toHaveBeenCalledWith({
-      config: { screens: [{ id: 's1', backgroundImage: 'nature/lake_sunset.jpg' }] },
-      configRevision: 'r9',
-    });
-    expect(storeState.loadConfig).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(storeState.adoptHubRewrite).toHaveBeenCalledTimes(1));
+    const change = storeState.adoptHubRewrite.mock.calls[0][0];
+    expect(change.previousRevision).toBe('r8');
+    expect(change.revision).toBe('r9');
+    expect(change.rewrite({ screens: [{ id: 's1', backgroundImage: 'lake_sunset.jpg' }] }))
+      .toEqual({ screens: [{ id: 's1', backgroundImage: 'nature/lake_sunset.jpg' }] });
   });
 
   it('shows the server reason when a move is refused and keeps the selection', async () => {

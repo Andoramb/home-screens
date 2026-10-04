@@ -195,6 +195,23 @@ export function getLocalizedMonthNames(
   return result;
 }
 
+const DAY_MONTH_FORMATTERS = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * A day's short numeric date for a YYYY-MM-DD string: "9/28" in en-US,
+ * "28.9." in de-DE, "28/09" in fr-FR. Pass the formatting locale
+ * (`useFormattingLocale`). Built by hand as month/day, "10/1" read as the
+ * 10th of January in every other shipped language.
+ */
+export function formatShortDayMonth(date: string, locale: string = DEFAULT_LOCALE): string {
+  let formatter = DAY_MONTH_FORMATTERS.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { month: 'numeric', day: 'numeric' });
+    DAY_MONTH_FORMATTERS.set(locale, formatter);
+  }
+  return formatter.format(fromISODate(date));
+}
+
 /** Get ordered day indices based on week start */
 export function getOrderedDays(weekStartDay: 'sunday' | 'monday'): number[] {
   if (weekStartDay === 'monday') return [1, 2, 3, 4, 5, 6, 0];

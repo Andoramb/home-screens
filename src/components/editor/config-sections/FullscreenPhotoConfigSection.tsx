@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { isSinglePhotoMode } from '@/lib/fullscreen-photo-mode';
-import { photoThemeTokens, defaultClockBackdrop, autoClockBackdropColor } from '@/lib/fullscreen-photo-theme';
+import { photoThemeTokens, inheritedPhotoTheme, defaultClockBackdrop, autoClockBackdropColor } from '@/lib/fullscreen-photo-theme';
 import { useActiveFullscreenTheme } from '@/hooks/useFullscreenThemeTokens';
 import ColorPicker from '@/components/ui/ColorPicker';
 import Slider from '@/components/ui/Slider';
@@ -75,7 +75,8 @@ export function FullscreenPhotoConfigSection({ mod, screenId }: { mod: ModuleIns
   // there, and landing back on either clears its field so a later theme or
   // color change still moves it. The theme resolves the way the canvas
   // preview resolves it.
-  const photoTheme = photoThemeTokens(c.theme, useActiveFullscreenTheme());
+  const activeFullscreenTheme = useActiveFullscreenTheme();
+  const photoTheme = photoThemeTokens(c.theme, activeFullscreenTheme);
   const autoBackdropColor = autoClockBackdropColor(photoTheme);
   const themeBackdrop = defaultClockBackdrop(photoTheme, c.clockBackdropColor);
   const clockBackdrop = c.clockBackdrop ?? themeBackdrop;
@@ -108,7 +109,9 @@ export function FullscreenPhotoConfigSection({ mod, screenId }: { mod: ModuleIns
       <FullscreenThemeSelect
         value={c.theme}
         onChange={(theme) => set({ theme })}
-        defaultOptionKey="configSections.fullscreen-photo.themeDefaultMidnight"
+        defaultOptionKey={inheritedPhotoTheme(activeFullscreenTheme).fromSettings
+          ? 'configSections.fullscreen-photo.themeDefault'
+          : 'configSections.fullscreen-photo.themeDefaultMidnight'}
       />
 
       <LabeledSelect

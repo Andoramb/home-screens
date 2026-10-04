@@ -4,6 +4,7 @@ import { readMealData, updateMealData, prunePlan, type MealData } from '@/lib/me
 import { readConfigCached } from '@/lib/config-cache';
 import { withAuth, withDisplayAuth, guardEmptyOverwrite, assertOptionalArrays, parseJsonBody } from '@/lib/api-utils';
 import { normalizeMealSettings } from '@/lib/meal-constants';
+import { isGroceryChecked, normalizeGroceryChecked, pruneGroceryChecked, rekeyGroceryChecked } from '@/lib/grocery-checks';
 import { mealRevision } from '@/lib/meal-revision';
 import { settingsTimeFormat } from '@/lib/clock-time';
 
@@ -48,7 +49,8 @@ export const GET = withDisplayAuth(async () => {
  * existing on-disk data, so callers can write only what they actually changed:
  *   - meals modal sends `{ savedMeals, plan }` (settings preserved)
  *   - settings sheets send `{ settings }` (meals/plan/groceries preserved)
- *   - grocery checks send `{ savedMeals, plan, groceryChecked }`
+ *   - a whole set of grocery ticks sends `{ groceryChecked }` (one tick at a
+ *     time goes through `POST /api/meals/grocery`)
  *
  * Required: at least one writable field must be present (otherwise the request
  * is a no-op and returns 400). Each present field must be a valid type.
@@ -74,7 +76,7 @@ export const PUT = withAuth(async (req: NextRequest) => {
   const body = await parseJsonBody<{
     savedMeals?: MealData['savedMeals'];
     plan?: MealData['plan'];
-    groceryChecked?: MealData['groceryChecked'];
+    groceryChecked?: unknown;
     settings?: unknown;
     force?: boolean;
     revision?: unknown;
@@ -82,8 +84,14 @@ export const PUT = withAuth(async (req: NextRequest) => {
   if (body instanceof NextResponse) return body;
   const { savedMeals, plan, groceryChecked, settings, force, revision } = body;
 
-  const arrayCheck = assertOptionalArrays(body, ['savedMeals', 'plan', 'groceryChecked']);
+  const arrayCheck = assertOptionalArrays(body, ['savedMeals', 'plan']);
   if (arrayCheck) return arrayCheck;
+  if (groceryChecked !== undefined && !isGroceryChecked(groceryChecked)) {
+    return NextResponse.json(
+      { error: 'groceryChecked must map the date each week starts on (YYYY-MM-DD) to a list of item names' },
+      { status: 400 },
+    );
+  }
 
   // Determine which fields are present so we know what to write
   const hasSavedMeals = savedMeals !== undefined;
@@ -147,11 +155,28 @@ export const PUT = withAuth(async (req: NextRequest) => {
       if (guard) throw guard;
     }
 
+    const nextPlan = hasPlan ? prunePlan(plan) : existing.plan;
+    const nextSettings = hasSettings ? normalizeMealSettings(settings) : existing.settings;
+    // Ticks are kept per week, keyed by the day the week starts on. Sent ticks
+    // are taken as they are; stored ones follow a change of week start day to
+    // the week that now holds them. Either way a week with nothing planned
+    // loses its ticks once the plan is written, so clearing a week and
+    // planning it again starts its shopping list over instead of bringing
+    // back what was bought the first time.
+    const carriedGroceryChecked = hasGroceryChecked
+      ? normalizeGroceryChecked(groceryChecked)
+      : nextSettings.weekStartDay !== existing.settings.weekStartDay
+        ? rekeyGroceryChecked(existing.groceryChecked, nextSettings.weekStartDay)
+        : existing.groceryChecked;
+    const nextGroceryChecked = hasGroceryChecked || hasPlan
+      ? pruneGroceryChecked(carriedGroceryChecked, nextPlan, nextSettings.weekStartDay)
+      : carriedGroceryChecked;
+
     return {
       savedMeals: hasSavedMeals ? savedMeals : existing.savedMeals,
-      plan: hasPlan ? prunePlan(plan) : existing.plan,
-      groceryChecked: hasGroceryChecked ? groceryChecked : existing.groceryChecked,
-      settings: hasSettings ? normalizeMealSettings(settings) : existing.settings,
+      plan: nextPlan,
+      groceryChecked: nextGroceryChecked,
+      settings: nextSettings,
     };
   });
 

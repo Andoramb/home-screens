@@ -30,12 +30,12 @@ import { useScreenRotationTimer } from './useScreenRotationTimer';
 import { usePauseRotation } from './usePauseRotation';
 import { useScreenTransition } from './useScreenTransition';
 import { useSwipeNavigation } from './useSwipeNavigation';
-import { useInteractionHeld } from '@/lib/interaction-hold';
+import { useInteractionHeld, useRotationHeld } from '@/lib/interaction-hold';
 import { useTapRotationHold } from './useTapRotationHold';
 import { resolveScreenDuration } from '@/lib/resolve-screen-duration';
 import { resolveScreenTargetIndex } from '@/lib/resolve-screen-target';
 import { useWallClock } from '@/hooks/useTZClock';
-import { resolveProfileScreens, isModuleVisible } from '@/lib/schedule';
+import { resolveProfile, isModuleVisible } from '@/lib/schedule';
 import { DEFAULT_DISPLAY_WIDTH, DEFAULT_DISPLAY_HEIGHT } from '@/lib/constants';
 import { getLocation } from '@/lib/location';
 import { useIdleCursor } from '@/hooks/useIdleCursor';
@@ -160,6 +160,14 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     return filtered.length > 0 ? filtered : enabledScreens;
   }, [enabledScreens, now]);
 
+  // The profile in effect is what the heartbeat reports, not the manual pick:
+  // a scheduled profile overrides the pick, and a phone that showed the pick
+  // would name screens the wall is not showing.
+  const resolvedProfile = useMemo(
+    () => resolveProfile(scheduledScreens, profiles, settings.activeProfile, now),
+    [scheduledScreens, profiles, settings.activeProfile, now],
+  );
+
   // Last filter before the rotation list is final: a screen nobody has put
   // anything on yet does not get a turn on the wall (see selectRotatingScreens
   // for what counts as empty, and for the all-empty case the watermark owns).
@@ -167,10 +175,8 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   // the hub all read this same list, so a skipped screen leaves no dot behind
   // and no gap in "2 of 3".
   const screens = useMemo(
-    () => selectRotatingScreens(
-      resolveProfileScreens(scheduledScreens, profiles, settings.activeProfile, now),
-    ),
-    [scheduledScreens, profiles, settings.activeProfile, now],
+    () => selectRotatingScreens(resolvedProfile.screens),
+    [resolvedProfile],
   );
 
   // Stable key derived from resolved screen IDs — changes only when actual set changes
@@ -314,7 +320,7 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
     screenId: renderedScreen?.id ?? '',
     screenName: renderedScreen?.name ?? '',
     screenCount: screens.length,
-    activeProfile: settings.activeProfile,
+    activeProfile: resolvedProfile,
     nextScreen,
     prevScreen,
     gotoScreen: gotoScreenByTarget,
@@ -351,10 +357,13 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   const contentIsLive = displayState === 'active'
     || (displayState === 'dimmed' && brightnessOverride !== null);
 
-  // interactionHeld gates both the swipe gesture below and the rotation
-  // timer further down: true while an overlay (e.g. an open recipe) is up, and
-  // for a moment after someone taps a control (useTapRotationHold below).
+  // Two holds, two gates. interactionHeld is true while an overlay (e.g. an
+  // open recipe) is up, and turns off both the swipe gesture below and the
+  // rotation timer further down. rotationHeld is also true for a moment after
+  // someone taps a control (useTapRotationHold below) and gates only the
+  // timer: a flick right after ticking a chore still changes the screen.
   const interactionHeld = useInteractionHeld();
+  const rotationHeld = useRotationHeld();
 
   // A tap on any control holds the screen briefly, so a rotation cannot take
   // the chart out from under a half-finished tap. Only while the content is
@@ -565,28 +574,30 @@ export default function ScreenRotator({ screens: initialScreens, settings: initi
   // Rotation timer: schedules a single setTimeout per screen using the
   // screen's resolved duration. Sticky screens (0) skip scheduling entirely.
   // rotationEpoch resets the timer after manual navigation or on current-screen changes.
-  // interactionHeld pauses rotation while an overlay (e.g. an open recipe) is
-  // being read; the overlay's own auto-dismiss timers bound the hold.
+  // rotationHeld pauses rotation while an overlay (e.g. an open recipe) is
+  // being read, which the overlay's own auto-dismiss timers bound, and for a
+  // few seconds after a tap on a control.
   const dwellStartedAt = useScreenRotationTimer({
     durationMs: currentDuration,
     onAdvance: nextScreen,
     // SIX ways a kiosk sits frozen on one screen, all of which look identical
     // from across the room. Start here when debugging "it stopped rotating":
-    //   1. screens.length <= 1  — only one screen resolves for the active
+    //   1. screens.length <= 1: only one screen resolves for the active
     //      profile/schedule, so there is nothing to rotate to
-    //   2. displayState === 'asleep'  — sleep schedule or a remote/rule sleep
-    //   3. paused  — someone double-tapped the active pagination dot
+    //   2. displayState === 'asleep': sleep schedule or a remote/rule sleep
+    //   3. paused: someone double-tapped the active pagination dot
     //      (auto-resumes after settings.pauseTimeoutSeconds, 0 = never)
-    //   4. interactionHeld  — an overlay such as an open recipe is being read;
-    //      the overlay's own auto-dismiss timers bound this
-    //   5. takeoverScreen  — a display rule is pinning a screen. currentIndex
+    //   4. rotationHeld: an overlay such as an open recipe is being read (the
+    //      overlay's own auto-dismiss timers bound this), or a control was
+    //      tapped in the last few seconds (TAP_ROTATION_HOLD_MS)
+    //   5. takeoverScreen: a display rule is pinning a screen. currentIndex
     //      is untouched, so rotation resumes exactly where it was on release
-    //   6. preview  — an editor preview window (?preview=1); held on purpose
+    //   6. preview: an editor preview window (?preview=1); held on purpose
     // Unsticking paths: dot taps, remote/voice commands, and (unless
-    // swipeEnabled is off or the display is dimmed/asleep) a horizontal
-    // flick anywhere on the touchscreen — states 3-5 all yield to any of
-    // them.
-    active: screens.length > 1 && displayState !== 'asleep' && !paused && !interactionHeld && !takeoverScreen && !preview,
+    // swipeEnabled is off, the display is dimmed/asleep, or an overlay is
+    // open) a horizontal flick anywhere on the touchscreen. States 3-5 all
+    // yield to any of them; an open overlay leaves with its screen.
+    active: screens.length > 1 && displayState !== 'asleep' && !paused && !rotationHeld && !takeoverScreen && !preview,
     resetKey: rotationEpoch,
   });
 

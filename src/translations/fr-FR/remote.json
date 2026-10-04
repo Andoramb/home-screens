@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profils",
-    "noProfile": "Toutes les pages"
+    "noProfile": "Toutes les pages",
+    "scheduledNote": "Le profil programmé {profile} est en cours. Ce que tu choisis ici prendra le relais quand il se terminera."
   },
   "displayPicker": {
     "targeting": "Envoyer à",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Finis d'abord celle que tu as prise, ou coche celle-ci si elle est faite.",
       "youDidItOn": "Tu l'as faite {day}",
+      "youDidItOnDate": "Tu l'as faite le {day}",
       "didItOn": "{name} l'a faite {day}",
+      "didItOnDate": "{name} l'a faite le {day}",
       "limitLineMany": "Finis d'abord une de celles que tu as prises, ou coche celle-ci si elle est faite.",
       "yours": "À toi",
       "didItToday": "{name} l'a faite aujourd'hui",
@@ -1018,8 +1021,11 @@
     "alertsCleared": "Alertes effacées sur {name}",
     "alertsClearedAll": "Alertes effacées sur tous les écrans",
     "noConfirm": "{name} n'a pas répondu. Il est peut-être éteint ou hors ligne.",
-    "profileSwitched": "{name} est passé à {profile}",
+    "profileSwitched": "{name} affiche maintenant le profil {profile}",
     "profileCleared": "{name} affiche toutes les pages",
+    "profileAfterSchedule": "{name} passera à {profile} à la fin du profil {scheduled}",
+    "profileClearedAfterSchedule": "{name} affichera toutes les pages à la fin du profil {scheduled}",
+    "profileKeptAfterSchedule": "{name} restera sur le profil {profile} à la fin de sa programmation",
     "profileFailed": "Impossible de changer le profil sur {name}",
     "hubBack": "Home Screens est de retour",
     "alertSentUnnamed": "Alerte envoyée à l'écran",

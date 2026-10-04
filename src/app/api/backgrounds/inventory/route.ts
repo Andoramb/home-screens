@@ -4,10 +4,9 @@ import path from 'path';
 import { readConfig } from '@/lib/config';
 import { scanMediaUsage, scanMissingMedia, slideshowFolders } from '@/lib/media-usage';
 import { withAuth } from '@/lib/api-utils';
-import { libraryRoot } from '@/lib/library-files';
-import { IMAGE_FILE_RE, VIDEO_FILE_RE } from '@/lib/media-formats';
+import { libraryMediaKind, libraryRoot } from '@/lib/library-files';
 import { readImageDimensions } from '@/lib/image-dimensions';
-import { ROTATION_FILE_RE } from '@/lib/background-rotation-cache';
+import { isRotationFile } from '@/lib/background-rotation-cache';
 import type {
   MediaInventory,
   MediaInventoryDirectory,
@@ -84,11 +83,11 @@ async function walkLibrary(): Promise<LibraryWalk> {
         continue;
       }
       if (!entry.isFile()) continue;
-      const isImage = IMAGE_FILE_RE.test(entry.name);
-      const isVideo = VIDEO_FILE_RE.test(entry.name);
-      if (!isImage && !isVideo) continue;
-      if (depth === 0 && ROTATION_FILE_RE.test(entry.name)) {
-        hidden.push(entry.name);
+      const relPath = rel ? `${rel}/${entry.name}` : entry.name;
+      const kind = libraryMediaKind(relPath);
+      if (!kind) {
+        // Not listed, but a picture the rotation is showing is not missing.
+        if (isRotationFile(relPath)) hidden.push(relPath);
         continue;
       }
       let stat;
@@ -98,12 +97,12 @@ async function walkLibrary(): Promise<LibraryWalk> {
         continue;
       }
       const item: MediaInventoryItem = {
-        path: rel ? `${rel}/${entry.name}` : entry.name,
-        kind: isImage ? 'image' : 'video',
+        path: relPath,
+        kind,
         bytes: stat.size,
         mtimeMs: Math.round(stat.mtimeMs),
       };
-      if (isImage) {
+      if (kind === 'image') {
         const dims = await cachedImageDimensions(full, stat);
         if (dims) {
           item.width = dims.width;

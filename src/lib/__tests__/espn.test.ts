@@ -148,4 +148,33 @@ describe('parseESPNEvent', () => {
     expect(g).toMatchObject({ homeScore: 16, awayScore: 23, homeRecord: '2-2', state: 'post', broadcast: 'CBS', status: 'Final' });
     expect(g.venue).toBeUndefined();
   });
+
+  it('leaves a score ESPN left out null, and keeps a real 0', () => {
+    // The team schedule mid-game, with `score` dropped from both sides.
+    const live = parseESPNEvent({
+      id: '3', date: '2026-10-03T19:30Z',
+      competitions: [{
+        status: { type: { description: 'In Progress', state: 'in' } },
+        competitors: [
+          { homeAway: 'home', team: { abbreviation: 'MINN' } },
+          { homeAway: 'away', team: { abbreviation: 'MICH' }, score: {} },
+        ],
+      }],
+    }, 'ncaaf');
+    expect(live.homeScore).toBeNull();
+    expect(live.awayScore).toBeNull();
+    expect(live.homeRecord).toBe('');
+
+    const shutout = parseESPNEvent({
+      id: '4',
+      competitions: [{
+        competitors: [
+          { homeAway: 'home', score: '0' },
+          { homeAway: 'away', score: { value: 0, displayValue: '0' } },
+        ],
+      }],
+    }, 'nfl');
+    expect(shutout.homeScore).toBe(0);
+    expect(shutout.awayScore).toBe(0);
+  });
 });

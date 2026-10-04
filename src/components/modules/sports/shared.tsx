@@ -33,15 +33,16 @@ export const FAVORITE_GUTTER = '9px';
 export type KickoffFn = (game: { startTime: string }) => string | null;
 
 export function isWinner(
-  game: { state: string; homeScore: number; awayScore: number },
+  game: { state: string; homeScore: number | null; awayScore: number | null },
   side: 'home' | 'away',
 ): boolean {
-  if (game.state !== 'post') return false;
+  if (game.state !== 'post' || game.homeScore === null || game.awayScore === null) return false;
   return side === 'home' ? game.homeScore > game.awayScore : game.awayScore > game.homeScore;
 }
 
-export function formatScore(game: { state: string }, score: number): string {
-  return game.state === 'pre' ? '–' : String(score);
+/** A dash before kickoff, and for a score ESPN left out, rather than a made-up 0. */
+export function formatScore(game: { state: string }, score: number | null): string {
+  return game.state === 'pre' || score === null ? '–' : String(score);
 }
 
 /**

@@ -3,6 +3,7 @@ import { normalizeMealSettings } from '@/lib/meal-constants';
 import { mealWriteBody, type MealDataWrite } from '@/lib/meal-write';
 import { mealsDataUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { displayCache } from '@/lib/display-cache';
+import { normalizeGroceryChecked, withGroceryWeek, type GroceryChecked, type GroceryCheckDirection } from '@/lib/grocery-checks';
 
 /**
  * The transport contract of `/api/meals/data`, shared by the phone's Meals
@@ -19,7 +20,8 @@ export type MealFetch = (url: string, init?: RequestInit) => Promise<Response>;
 export interface MealSnapshot {
   savedMeals: SavedMeal[];
   plan: PlannedMeal[];
-  groceryChecked: string[];
+  /** Each week's grocery ticks (see `grocery-checks.ts`). */
+  groceryChecked: GroceryChecked;
   settings: MealSettings;
   globalTimeFormat: TimeFormat;
   /** Quoted back on every save of `savedMeals` or `plan`. */
@@ -58,7 +60,7 @@ function asSnapshot(json: unknown, fallbackTimeFormat: TimeFormat): MealSnapshot
   return {
     savedMeals: d.savedMeals as SavedMeal[],
     plan: d.plan as PlannedMeal[],
-    groceryChecked: Array.isArray(d.groceryChecked) ? (d.groceryChecked as string[]) : [],
+    groceryChecked: normalizeGroceryChecked(d.groceryChecked),
     settings: normalizeMealSettings(d.settings),
     globalTimeFormat: d.globalTimeFormat === '24h' || d.globalTimeFormat === '12h' ? d.globalTimeFormat : fallbackTimeFormat,
     revision: d.revision,
@@ -86,6 +88,39 @@ export async function loadMeals(fetcher: MealFetch): Promise<MealSnapshot> {
   const snapshot = res.ok ? asSnapshot(json, '12h') : null;
   if (!snapshot) throw new MealClientError('load', refusalMessage(json, 'The meals could not be loaded.'));
   return snapshot;
+}
+
+/** One week's grocery ticks as the hub has them after a tick was saved. */
+export interface GroceryWeekChecks {
+  /** The week's key: the date it starts on. */
+  week: string;
+  checked: string[];
+}
+
+/**
+ * Tick or untick one item on one week's grocery list (`week` is that week's
+ * key). Ticks have their own route rather than a `PUT` of the whole set, so a
+ * tick never races a plan edit, and two phones ticking the same list each
+ * keep the other's. Rejects on any refusal; transport failures (including an
+ * expired session) propagate untouched.
+ */
+export async function saveGroceryCheck(
+  fetcher: MealFetch,
+  week: string,
+  item: string,
+  direction: GroceryCheckDirection,
+): Promise<GroceryWeekChecks> {
+  const res = await fetcher('/api/meals/grocery', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item, direction, week }),
+  });
+  const json = await readJson(res);
+  const d = json as { week?: unknown; groceryChecked?: unknown } | null;
+  if (!res.ok || typeof d?.week !== 'string' || !Array.isArray(d.groceryChecked)) {
+    throw new MealClientError('save', refusalMessage(json, 'The grocery list could not be saved.'));
+  }
+  return { week: d.week, checked: d.groceryChecked.filter((name): name is string => typeof name === 'string') };
 }
 
 /** Only the halves the edit actually changed, or null when it changed nothing. */
@@ -140,6 +175,11 @@ export async function saveMealEdit(fetcher: MealFetch, base: MealSnapshot, edit:
  * a surface whether the snapshot it just received is the last word or an
  * older save's, so it can keep its optimistic state until the queue drains.
  *
+ * Grocery ticks go through the same queue. Sent around it, two quick ticks
+ * could be answered out of order and leave the older answer on screen, a
+ * reload started before a tick could put the old ticks back, and a save that
+ * changed nothing handed back a copy without them.
+ *
  * A save made before the first load has answered waits for it: a tap on a
  * slow hub must not be refused for having beaten the first GET, and the copy
  * that GET delivers is the right base for it. A later reload is not waited
@@ -150,7 +190,7 @@ export class MealSession {
   private loading: Promise<MealSnapshot> | null = null;
   private tail: Promise<unknown> = Promise.resolve();
   private pending = 0;
-  /** Saves answered so far; a load that started before one is older than it. */
+  /** Saves and ticks answered so far; a load that started before one is older than it. */
   private answered = 0;
 
   constructor(private readonly fetcher: MealFetch) {}
@@ -170,7 +210,7 @@ export class MealSession {
     const answeredBefore = this.answered;
     try {
       const loaded = await attempt;
-      // A save answered since this load started is newer than what it
+      // A save or tick answered since this load started is newer than what it
       // delivers, whether or not that save is still counted as pending.
       if (this.answered === answeredBefore) this.snapshot = loaded;
       return this.snapshot ?? loaded;
@@ -180,16 +220,35 @@ export class MealSession {
   }
 
   save(edit: MealEdit): Promise<MealSnapshot> {
+    return this.enqueue((base) => saveMealEdit(this.fetcher, base, edit));
+  }
+
+  /**
+   * Tick or untick one item on one week's grocery list (`week` is that week's
+   * key). Answered with this session's copy, that week's ticks replaced by
+   * what the hub now has.
+   */
+  tick(week: string, item: string, direction: GroceryCheckDirection): Promise<MealSnapshot> {
+    return this.enqueue(async (base) => {
+      const answer = await saveGroceryCheck(this.fetcher, week, item, direction);
+      // The copy as it is now, not the one the tick was sent from: a reload
+      // adopted while the tick was out is newer than that.
+      const latest = this.snapshot ?? base;
+      return { ...latest, groceryChecked: withGroceryWeek(latest.groceryChecked, answer.week, answer.checked) };
+    });
+  }
+
+  private enqueue(work: (base: MealSnapshot) => Promise<MealSnapshot>): Promise<MealSnapshot> {
     this.pending += 1;
     const run = this.tail.then(async () => {
       // Only the first load is worth waiting for: a later reload delivers
       // nothing newer than the save's own answer.
       if (!this.snapshot && this.loading) await this.loading.catch(() => undefined);
       if (!this.snapshot) throw new MealClientError('save', 'Reopen the meal planner and try again.');
-      const saved = await saveMealEdit(this.fetcher, this.snapshot, edit);
-      this.snapshot = saved;
+      const next = await work(this.snapshot);
+      this.snapshot = next;
       this.answered += 1;
-      return saved;
+      return next;
     });
     this.tail = run.then(() => undefined, () => undefined);
     return run.finally(() => { this.pending -= 1; });

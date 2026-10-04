@@ -1685,6 +1685,7 @@
         "enableLabel": "Notify me when an update is available"
       },
       "upToDate": "You're on the latest version",
+      "checkFailed": "Couldn't check for updates right now",
       "changelog": {
         "heading": "Changelog",
         "viewButton": "View Changelog",
@@ -3789,6 +3790,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Default (Midnight)",
+      "themeDefault": "Default (from Settings)",
       "photoSource": "Photo Source",
       "sourceLocal": "Local Photos",
       "sourceImmich": "Immich",

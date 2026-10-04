@@ -128,8 +128,10 @@ export interface Game {
   awayTeamLogo: string;
   homeTeamColor: string;
   awayTeamColor: string;
-  homeScore: number;
-  awayScore: number;
+  /** Null when ESPN left the score off; a view shows a gap, never a made-up 0. */
+  homeScore: number | null;
+  awayScore: number | null;
+  /** Empty when ESPN sends no record. */
   homeRecord: string;
   awayRecord: string;
   status: string;
@@ -192,13 +194,19 @@ export interface TeamCard {
   error?: boolean;
 }
 
-/** Score fields differ between ESPN's scoreboard (string) and schedule (`{ value }`) payloads. */
-function readScore(raw: unknown): number {
-  if (raw && typeof raw === 'object') {
-    const value = (raw as Record<string, unknown>).value ?? (raw as Record<string, unknown>).displayValue;
-    return Number(value ?? 0) || 0;
-  }
-  return Number(raw ?? 0) || 0;
+/**
+ * Score fields differ between ESPN's scoreboard (string) and schedule
+ * (`{ value }`) payloads. A score that is absent or unreadable is null, not
+ * 0: the team schedule drops `score` mid-game now and then, and a live game
+ * must not read 0-0.
+ */
+function readScore(raw: unknown): number | null {
+  const value = raw && typeof raw === 'object'
+    ? (raw as Record<string, unknown>).value ?? (raw as Record<string, unknown>).displayValue
+    : raw;
+  if (value === undefined || value === null || value === '') return null;
+  const score = Number(value);
+  return Number.isFinite(score) ? score : null;
 }
 
 /**

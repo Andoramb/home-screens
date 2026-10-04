@@ -363,26 +363,39 @@ function parseTime(time: string | undefined): number | null {
   return h * 60 + m;
 }
 
+/** The profile a display is running on, and the screens it gives. */
+export interface ResolvedProfile {
+  screens: Screen[];
+  /** The profile whose screens these are; null when every screen rotates. */
+  profileId: string | null;
+  /**
+   * True when a profile's schedule chose it. The manual pick then waits for
+   * the schedule to end, so a phone or a status readout that showed the pick
+   * would name screens the wall is not showing.
+   */
+  scheduled: boolean;
+}
+
 /**
- * Resolve which screens should be displayed based on profiles.
+ * Resolve which profile is in effect, and so which screens are displayed.
  * - If a profile with a matching schedule exists, use its screens.
  * - Otherwise fall back to the manually set activeProfile.
  * - If no profile matches, return all screens (backward compatible).
  */
-export function resolveProfileScreens(
+export function resolveProfile(
   allScreens: Screen[],
   profiles: Profile[] | undefined,
   activeProfileId: string | undefined,
   now: ScheduleClock,
-): Screen[] {
-  if (!profiles || profiles.length === 0) return allScreens;
+): ResolvedProfile {
+  if (!profiles || profiles.length === 0) return { screens: allScreens, profileId: null, scheduled: false };
 
   // Check scheduled profiles first (first match wins, skip if no valid screens)
   for (const profile of profiles) {
     if (profile.schedule && isModuleVisible(profile.schedule, now)) {
       const filtered = filterScreens(allScreens, profile.screenIds);
-      if (filtered.length > 0) return filtered;
-      // Schedule matched but all screens are stale — fall through to next
+      if (filtered.length > 0) return { screens: filtered, profileId: profile.id, scheduled: true };
+      // Schedule matched but all screens are stale: fall through to next
     }
   }
 
@@ -391,12 +404,22 @@ export function resolveProfileScreens(
     const active = profiles.find((p) => p.id === activeProfileId);
     if (active) {
       const filtered = filterScreens(allScreens, active.screenIds);
-      if (filtered.length > 0) return filtered;
+      if (filtered.length > 0) return { screens: filtered, profileId: active.id, scheduled: false };
     }
   }
 
-  // No profile produced valid screens — show all
-  return allScreens;
+  // No profile produced valid screens: show all
+  return { screens: allScreens, profileId: null, scheduled: false };
+}
+
+/** The screens `resolveProfile` picks, for callers that only need those. */
+export function resolveProfileScreens(
+  allScreens: Screen[],
+  profiles: Profile[] | undefined,
+  activeProfileId: string | undefined,
+  now: ScheduleClock,
+): Screen[] {
+  return resolveProfile(allScreens, profiles, activeProfileId, now).screens;
 }
 
 function filterScreens(allScreens: Screen[], screenIds: string[]): Screen[] {

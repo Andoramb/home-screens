@@ -49,10 +49,13 @@ export function TeamView({ cards, kickoff }: { cards: TeamCard[]; kickoff: Kicko
     const side = ourSide(last, card.abbr);
     const ours = side === 'home' ? last.homeScore : last.awayScore;
     const theirs = side === 'home' ? last.awayScore : last.homeScore;
-    const result = ours > theirs ? t('sports.win') : ours < theirs ? t('sports.loss') : t('sports.tie');
-    const opponent = side === 'home' ? last.awayTeamAbbr : last.homeTeamAbbr;
-    const where = side === 'home' ? t('sports.vs') : t('sports.at');
-    lastLine = `${result} ${ours}-${theirs} ${where} ${opponent}`;
+    // Without both scores there is no result to call, so the line is left out.
+    if (ours !== null && theirs !== null) {
+      const result = ours > theirs ? t('sports.win') : ours < theirs ? t('sports.loss') : t('sports.tie');
+      const opponent = side === 'home' ? last.awayTeamAbbr : last.homeTeamAbbr;
+      const where = side === 'home' ? t('sports.vs') : t('sports.at');
+      lastLine = `${result} ${ours}-${theirs} ${where} ${opponent}`;
+    }
   }
 
   return (

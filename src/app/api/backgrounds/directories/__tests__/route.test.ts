@@ -66,6 +66,28 @@ describe('GET /api/backgrounds/directories', () => {
     expect(body.directories[0]).toEqual({ name: 'All Photos', path: '', imageCount: 4 });
     expect(mockFs.mkdir).toHaveBeenCalled();
   });
+
+  it('leaves the background rotation\'s downloads out of the counts, as the grid does', async () => {
+    const file = (name: string) => ({ name, isFile: () => true, isDirectory: () => false });
+    mockFs.readdir.mockImplementation(async (p: string, opts?: { withFileTypes?: boolean }) => {
+      const inFamily = p.endsWith('Family');
+      if (opts?.withFileTypes) {
+        // Only top-level rotation- files are the rotation's; one in a folder is the family's.
+        return inFamily
+          ? [file('rotation-day.jpg'), file('kids.jpg')]
+          : [file('a.jpg'), file('rotation-unsplash-abc123.jpg'), file('rotation-nasa-apod-2026-10-03.jpg')];
+      }
+      return inFamily ? [] : ['Family', 'a.jpg'];
+    });
+    mockFs.stat.mockImplementation(async (p: string) => ({ isDirectory: () => p.endsWith('Family') }));
+
+    const body = await (await GET(getRequest())).json();
+
+    expect(body.directories).toEqual([
+      { name: 'All Photos', path: '', imageCount: 1 },
+      { name: 'Family', path: 'Family', imageCount: 2 },
+    ]);
+  });
 });
 
 describe('POST /api/backgrounds/directories', () => {

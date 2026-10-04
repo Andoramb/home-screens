@@ -43,9 +43,27 @@ async function getMealData(request: APIRequestContext) {
   return res.json() as Promise<{
     savedMeals: Array<{ id: string; name: string }>;
     plan: Array<{ slot: string; mealId?: string; date: string }>;
-    groceryChecked: string[];
+    groceryChecked: Record<string, string[]>;
     settings: { weekStartDay: 'sunday' | 'monday' };
   }>;
+}
+
+/**
+ * The key a week's grocery ticks live under: the day that week starts on, by
+ * the household's week start setting (an earlier test may have changed it).
+ * `offsetDays` picks the week holding that day.
+ */
+async function groceryWeekKey(request: APIRequestContext, offsetDays = 0): Promise<string> {
+  const { settings } = await getMealData(request);
+  const d = new Date();
+  d.setDate(d.getDate() + offsetDays);
+  const dow = d.getDay();
+  d.setDate(d.getDate() - (settings.weekStartDay === 'monday' ? (dow + 6) % 7 : dow));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+async function groceryTicks(request: APIRequestContext, week: string): Promise<string[]> {
+  return (await getMealData(request)).groceryChecked[week] ?? [];
 }
 
 async function openMeals(page: Page) {
@@ -123,7 +141,8 @@ test('changing the week start day round-trips', async ({ page, request }) => {
 // ── Grocery ───────────────────────────────────────────────────────────
 
 test('the grocery list is generated from planned meals and check-off round-trips', async ({ page, request }) => {
-  await seedMeals(request, mealWithIngredients());
+  await seedMeals(request, { ...mealWithIngredients(), groceryChecked: {} });
+  const week = await groceryWeekKey(request);
   await page.goto('/remote');
   await openMeals(page);
   await page.getByRole('button', { name: 'Grocery' }).click();
@@ -133,15 +152,46 @@ test('the grocery list is generated from planned meals and check-off round-trips
   await expect(item).toBeVisible();
   await item.click();
 
-  // Check-off posts to /api/meals/grocery, persisting the lowercased name.
+  // Check-off posts to /api/meals/grocery, persisting the lowercased name
+  // on this week's list.
   await expect
-    .poll(async () => (await getMealData(request)).groceryChecked)
+    .poll(async () => groceryTicks(request, week))
     .toContain('tortillas');
 });
 
+test('a grocery tick stays on the week it was made on', async ({ page, request }) => {
+  // The same meal this week and next: tortillas bought this week are still to
+  // buy next week.
+  await seedMeals(request, {
+    savedMeals: mealWithIngredients().savedMeals,
+    plan: [
+      { slot: 'dinner', mealId: 'meal-1', date: isoDate(0) },
+      { slot: 'dinner', mealId: 'meal-1', date: isoDate(7) },
+    ],
+    groceryChecked: {},
+  });
+  const thisWeek = await groceryWeekKey(request);
+  const nextWeek = await groceryWeekKey(request, 7);
+  await page.goto('/remote');
+  await openMeals(page);
+  await page.getByRole('button', { name: 'Grocery' }).click();
+
+  await page.getByRole('button', { name: /Tortillas/ }).click();
+  await expect.poll(async () => groceryTicks(request, thisWeek)).toContain('tortillas');
+  await expect(page.getByText('1 of 2 items')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Next week' }).click();
+  await expect(page.getByText('0 of 2 items')).toBeVisible();
+  expect(await groceryTicks(request, nextWeek)).toEqual([]);
+
+  await page.getByRole('button', { name: 'Previous week' }).click();
+  await expect(page.getByText('1 of 2 items')).toBeVisible();
+});
+
 test('unchecking a grocery item round-trips', async ({ page, request }) => {
-  // Seed the same planned meal but with Tortillas already checked off.
-  await seedMeals(request, { ...mealWithIngredients(), groceryChecked: ['tortillas'] });
+  // Seed the same planned meal but with Tortillas already checked off this week.
+  const week = await groceryWeekKey(request);
+  await seedMeals(request, { ...mealWithIngredients(), groceryChecked: { [week]: ['tortillas'] } });
   await page.goto('/remote');
   await openMeals(page);
   await page.getByRole('button', { name: 'Grocery' }).click();
@@ -150,7 +200,7 @@ test('unchecking a grocery item round-trips', async ({ page, request }) => {
   await page.getByRole('button', { name: /Tortillas/ }).click();
 
   await expect
-    .poll(async () => (await getMealData(request)).groceryChecked)
+    .poll(async () => groceryTicks(request, week))
     .not.toContain('tortillas');
 });
 
@@ -158,7 +208,7 @@ test('the grocery list groups items by ingredient category', async ({ page, requ
   // Each ingredient carries its own category (Tortillas → bakery, Ground Beef →
   // meat), and generateGroceryList buckets by that field, so two labelled groups
   // render. Reset groceryChecked so a prior test's checks don't leak in.
-  await seedMeals(request, { ...mealWithIngredients(), groceryChecked: [] });
+  await seedMeals(request, { ...mealWithIngredients(), groceryChecked: {} });
   await page.goto('/remote');
   await openMeals(page);
   await page.getByRole('button', { name: 'Grocery' }).click();

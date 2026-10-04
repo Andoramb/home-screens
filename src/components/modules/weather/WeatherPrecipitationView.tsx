@@ -3,26 +3,26 @@
 import { CloudRain } from 'lucide-react';
 import { TEXT_OPACITY } from '@/lib/constants';
 import { useTranslate } from '@/i18n';
+import { FULL_BAR_INTENSITY, isPrecipitating, precipitationOutlook } from '@/lib/weather/precipitation';
 import type { WeatherViewProps } from './types';
 
-export default function WeatherPrecipitationView({ minutely, scaledFontSize }: WeatherViewProps) {
+export default function WeatherPrecipitationView({ minutely, units, scaledFontSize }: WeatherViewProps) {
   const t = useTranslate('modules');
   const data = (minutely ?? []).slice(0, 60);
-  const maxIntensity = Math.max(...data.map((m) => m.intensity), 0.5);
+  // A minute too light or too unlikely to count draws no bar at all, the
+  // same minutes the summary calls dry. Bars are measured against a downpour
+  // in the unit the rate is in, and the scale stretches for a heavier minute.
+  const wet = data.map((m) => isPrecipitating(m, units));
+  const maxIntensity = Math.max(...data.filter((_, i) => wet[i]).map((m) => m.intensity), FULL_BAR_INTENSITY[units]);
 
-  const hasRain = data.some((m) => m.intensity > 0);
-  const firstRainIdx = data.findIndex((m) => m.intensity > 0);
-  const firstDryIdx = hasRain && data[0]?.intensity > 0
-    ? data.findIndex((m, i) => i > 0 && m.intensity === 0)
-    : -1;
-
+  const outlook = precipitationOutlook(data, units);
   let summary = t('weather.noPrecipitationExpected');
-  if (hasRain && data[0]?.intensity > 0 && firstDryIdx > 0) {
-    summary = t('weather.stoppingInMin', { minutes: firstDryIdx });
-  } else if (hasRain && data[0]?.intensity > 0) {
+  if (outlook.kind === 'stopping') {
+    summary = t('weather.stoppingInMin', { minutes: outlook.minutes });
+  } else if (outlook.kind === 'continuing') {
     summary = t('weather.precipitationForNextHour');
-  } else if (firstRainIdx > 0) {
-    summary = t('weather.startingInMin', { minutes: firstRainIdx });
+  } else if (outlook.kind === 'starting') {
+    summary = t('weather.startingInMin', { minutes: outlook.minutes });
   }
 
   function barColor(type?: string): string {
@@ -53,7 +53,7 @@ export default function WeatherPrecipitationView({ minutely, scaledFontSize }: W
         <div className="flex-1 flex flex-col min-h-0">
           <div className="flex items-end gap-px flex-1 min-h-0">
             {data.map((m, i) => {
-              const height = maxIntensity > 0 ? (m.intensity / maxIntensity) * 100 : 0;
+              const height = wet[i] ? (m.intensity / maxIntensity) * 100 : 0;
               return (
                 <div
                   key={i}
@@ -62,9 +62,9 @@ export default function WeatherPrecipitationView({ minutely, scaledFontSize }: W
                   <div
                     className="w-full rounded-t-sm transition-all"
                     style={{
-                      height: `${Math.max(height, m.intensity > 0 ? 4 : 0)}%`,
+                      height: `${Math.max(height, wet[i] ? 4 : 0)}%`,
                       backgroundColor: barColor(m.type),
-                      minHeight: m.intensity > 0 ? 2 : 0,
+                      minHeight: wet[i] ? 2 : 0,
                     }}
                   />
                 </div>

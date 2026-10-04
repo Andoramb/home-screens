@@ -16,6 +16,7 @@ import { dispatchModuleCommand } from '@/hooks/useModuleCommand';
 import { publishRevisions, type DisplayRevisions } from '@/lib/display-heartbeat';
 import type { ShownPhoto } from '@/stores/photo-show-store';
 import type { AlertType } from '@/types/config';
+import type { ResolvedProfile } from '@/lib/schedule';
 
 export interface CommandHandlers {
   wake: () => void;
@@ -341,6 +342,9 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
   }, [displayId, drain]);
 }
 
+/** The profile a display reports: the one in effect, and whether a schedule chose it. */
+type ReportedProfile = Pick<ResolvedProfile, 'profileId' | 'scheduled'>;
+
 /**
  * Reports display status to /api/display/status periodically (every 30s)
  * and immediately on significant state changes.
@@ -353,7 +357,7 @@ export function useStatusReporter(
   currentScreenId: string,
   currentScreenName: string,
   screenCount: number,
-  activeProfile: string | undefined | null,
+  activeProfile: ReportedProfile,
   displayState: string,
   brightness: number,
   displayId?: string,
@@ -395,13 +399,14 @@ export function useStatusReporter(
   // value it sent until this display confirms it, so a brightness command
   // must be answered on the spot rather than on the next 30s beat.
   const prevKeyRef = useRef('');
+  const { profileId, scheduled: profileScheduled } = activeProfile;
   useEffect(() => {
     if (!enabled) return;
-    const key = `${currentScreenIndex}:${currentScreenId}:${screenCount}:${displayState}:${activeProfile}:${displayId ?? ''}:${brightness}`;
+    const key = `${currentScreenIndex}:${currentScreenId}:${screenCount}:${displayState}:${profileId}:${profileScheduled}:${displayId ?? ''}:${brightness}`;
     if (key === prevKeyRef.current) return;
     prevKeyRef.current = key;
     reportStatus(valuesRef.current);
-  }, [currentScreenIndex, currentScreenId, screenCount, displayState, activeProfile, displayId, enabled, brightness]);
+  }, [currentScreenIndex, currentScreenId, screenCount, displayState, profileId, profileScheduled, displayId, enabled, brightness]);
 
   // Same immediacy for the two facts the remote confirms against that live
   // outside React props: the alert count (Send Alert / Clear alerts) and the
@@ -475,7 +480,7 @@ function reportStatus(s: {
   currentScreenId: string;
   currentScreenName: string;
   screenCount: number;
-  activeProfile: string | undefined | null;
+  activeProfile: ReportedProfile;
   displayState: string;
   displayId?: string;
   brightness: number;
@@ -534,7 +539,8 @@ function reportStatus(s: {
         name: s.currentScreenName,
       },
       screenCount: s.screenCount,
-      activeProfile: s.activeProfile ?? null,
+      activeProfile: s.activeProfile.profileId,
+      profileScheduled: s.activeProfile.scheduled,
       displayState: s.displayState,
       brightness: s.brightness,
       timerSessionId: getShowingTimerSession(),

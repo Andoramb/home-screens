@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { MealSlotType, MealSettings } from '@/types/config';
+import { groceryWeekKey } from '@/lib/grocery-checks';
 import { useMealsData } from './useMealsData';
 import { useMealsWeekNav } from './useMealsWeekNav';
 import { useMealsPlanActions } from './useMealsPlanActions';
@@ -90,11 +91,18 @@ export function useMealsTabData() {
     setConfirmAction,
   });
 
+  // Ticks belong to the list they were made on: the viewed week's.
+  const groceryWeek = groceryWeekKey(weekNav.weekDates[0].date, settings.weekStartDay);
   const grocery = useMealsGrocery({
     weekPlan: planActions.weekPlan,
     savedMeals,
     groceryChecked,
+    week: groceryWeek,
   });
+  const toggleViewedGroceryItem = useCallback(
+    (itemName: string) => toggleGroceryItem(groceryWeek, itemName),
+    [toggleGroceryItem, groceryWeek],
+  );
 
   const saveSettings = useCallback(async (next: MealSettings): Promise<boolean> => {
     const prev = settings;
@@ -107,9 +115,13 @@ export function useMealsTabData() {
       // what's actually on disk. The useMealsData hook will have set
       // `saveError` which the toast already renders.
       setSettings(prev);
+    } else if (next.weekStartDay !== prev.weekStartDay) {
+      // The hub moved every week's grocery ticks to the new weeks; fetch them
+      // rather than show the realigned week unticked until the next poll.
+      fetchData();
     }
     return ok;
-  }, [settings, saveSettingsOnly, setSettings]);
+  }, [settings, saveSettingsOnly, setSettings, fetchData]);
 
   return {
     savedMeals,
@@ -153,7 +165,7 @@ export function useMealsTabData() {
     toggleFavorite: library.toggleFavorite,
     groceryList: grocery.groceryList,
     groceryStats: grocery.groceryStats,
-    toggleGroceryItem,
+    toggleGroceryItem: toggleViewedGroceryItem,
     confirmAction,
     setConfirmAction,
     saveSettings,

@@ -27,6 +27,21 @@ export function countOffCanvasModules(
   return count;
 }
 
+/**
+ * How many modules a canvas resize from `from` to `to` would leave past its
+ * edge. Zero unless the canvas shrinks along either side: a canvas that only
+ * grows cuts off nothing that was not already off it. A rotation swaps width
+ * and height, so it always shrinks one side.
+ */
+export function modulesCutOffByResize(
+  screens: Screen[],
+  from: { width: number; height: number },
+  to: { width: number; height: number },
+): number {
+  if (to.width >= from.width && to.height >= from.height) return 0;
+  return countOffCanvasModules(screens, to.width, to.height);
+}
+
 /** Total module count across all screens. */
 export function totalModuleCount(screens: Screen[]): number {
   return screens.reduce((sum, s) => sum + s.modules.length, 0);

@@ -243,7 +243,7 @@ You can also install a plugin directly from any HTTPS tarball URL, useful for pr
 | `/api/plugins/installed` | GET | List installed plugins with a content hash for change detection |
 | `/api/plugins/install` | POST | Install a plugin from the registry (`{ pluginId, version }`) |
 | `/api/plugins/install-external` | POST | Install a plugin from any HTTPS tarball URL (`{ tarballUrl, version? }`), the URL may include a `{version}` placeholder |
-| `/api/plugins/install` | DELETE | Uninstall a plugin (`{ pluginId }`) |
+| `/api/plugins/install` | DELETE | Uninstall a plugin (`{ pluginId }`) and remove its modules from every screen |
 | `/api/plugins/install` | PATCH | Enable/disable a plugin or clear migration state (`{ pluginId, enabled?, clearPrevVersion? }`) |
 | `/api/plugins/manifest/<id>` | GET | Read a plugin's manifest |
 | `/api/plugins/bundle/<id>` | GET | Serve a plugin's JavaScript bundle |
@@ -925,13 +925,12 @@ PATCH /api/plugins/install
 
 ### Uninstall
 
-1. All plugin secrets are deleted from `data/plugin-secrets/<pluginId>.json` (and any legacy `data/plugins/<pluginId>/secrets.json`)
-2. Stored auth tokens at `data/plugin-tokens/<pluginId>.json` are deleted, along with any half-finished sign-in flow
-3. The plugin directory `data/plugins/<pluginId>/` is removed
-4. The entry is removed from `data/plugins/installed.json`
-5. The module is unregistered from the module registry and Zustand store, and the plugin's shared-state keys are cleared
-
-Any module instances of that plugin type remaining in the config will render as empty/missing modules until removed by the user.
+1. Every module instance of the plugin's type is removed from `config.json`, on every screen of every display, in one atomic write. If that write fails, the uninstall stops there and nothing else is touched
+2. All plugin secrets are deleted from `data/plugin-secrets/<pluginId>.json` (and any legacy `data/plugins/<pluginId>/secrets.json`)
+3. Stored auth tokens at `data/plugin-tokens/<pluginId>.json` are deleted, along with any half-finished sign-in flow
+4. The plugin directory `data/plugins/<pluginId>/` is removed
+5. The entry is removed from `data/plugins/installed.json`
+6. The module is unregistered from the module registry and Zustand store, and the plugin's shared-state keys are cleared
 
 ---
 

@@ -89,6 +89,8 @@ export interface MoveResult {
   rewritten: number;
   /** Revision of the config after the rewrite, for an editor holding a copy. */
   revision: string;
+  /** Revision of the config the rewrite was applied to, read in the same write. */
+  previousRevision: string;
 }
 
 interface PlannedMove {
@@ -147,7 +149,8 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
   }
 
   if (plan.length === 0) {
-    return { moved: [], kept: [], rewritten: 0, revision: configRevision(await readCurrentConfig()) };
+    const revision = configRevision(await readCurrentConfig());
+    return { moved: [], kept: [], rewritten: 0, revision, previousRevision: revision };
   }
 
   const done: PlannedMove[] = [];
@@ -160,9 +163,11 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
   };
 
   let rewritten = 0;
+  let previousRevision = '';
   let next: ScreenConfiguration | null = null;
   try {
     next = await updateConfigAtomic(async (current) => {
+      previousRevision = configRevision(current);
       moving = await withoutLastPictures(current, plan, kept);
       try {
         for (const step of moving) {
@@ -185,7 +190,7 @@ export async function moveLibraryFiles(files: string[], directory: string): Prom
   }
   await Promise.all(moving.map((step) => removeThumbnails(step.from)));
   if (moving.length > 0) bumpLibraryRevision();
-  return { moved: moving.map(({ from, to }) => ({ from, to })), kept, rewritten, revision: configRevision(next) };
+  return { moved: moving.map(({ from, to }) => ({ from, to })), kept, rewritten, revision: configRevision(next), previousRevision };
 }
 
 /**
@@ -216,6 +221,8 @@ export interface RenameResult {
   to: string;
   rewritten: number;
   revision: string;
+  /** Revision of the config the rewrite was applied to, read in the same write. */
+  previousRevision: string;
 }
 
 /**
@@ -232,7 +239,8 @@ export async function renameLibraryFolder(current: string, newName: string): Pro
   const parent = folderOf(from);
   const to = parent ? `${parent}/${safeName}` : safeName;
   if (to === from) {
-    return { from, to, rewritten: 0, revision: configRevision(await readCurrentConfig()) };
+    const revision = configRevision(await readCurrentConfig());
+    return { from, to, rewritten: 0, revision, previousRevision: revision };
   }
   if (to.split('/').length > MAX_FOLDER_DEPTH) throw new LibraryMoveError('Maximum folder depth is 2', 400);
   const absTo = safeLibraryPath(to);
@@ -248,9 +256,11 @@ export async function renameLibraryFolder(current: string, newName: string): Pro
   const prefix = `${from}/`;
   let renamed = false;
   let rewritten = 0;
+  let previousRevision = '';
   let next: ScreenConfiguration;
   try {
     next = await updateConfigAtomic(async (config) => {
+      previousRevision = configRevision(config);
       await fs.rename(absFrom, absTo);
       renamed = true;
       const result = rewriteMediaRefs(
@@ -268,7 +278,7 @@ export async function renameLibraryFolder(current: string, newName: string): Pro
   // Thumbnails are keyed by path, so every copy under the old name is dead.
   await Promise.all(files.map((f) => removeThumbnails(f)));
   bumpLibraryRevision();
-  return { from, to, rewritten, revision: configRevision(next) };
+  return { from, to, rewritten, revision: configRevision(next), previousRevision };
 }
 
 async function listFilesUnder(absDir: string, rel: string): Promise<string[]> {

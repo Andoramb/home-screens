@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Check, Hand, Ticket } from 'lucide-react';
 import type { FamilyMember } from '@/types/family';
-import { bonusDisplayOrder, type BonusItem } from '@/lib/chore-bonus';
+import { bonusDisplayOrder, bonusDoneDay, type BonusItem } from '@/lib/chore-bonus';
 import { useTranslate } from '@/i18n';
 import MemberDot from '../shared/MemberDot';
 import AssigneeDot from './AssigneeDot';
@@ -42,8 +42,8 @@ interface TileProps {
   allowTouch: boolean;
   /** The wall's today, as `YYYY-MM-DD`. */
   today: string;
-  /** A day as a tile names it ("Monday"). */
-  formatDay: (date: string) => string;
+  /** The formatting locale, for the day a "did it" line names. */
+  locale: string;
   onOpenGrab: (item: BonusItem) => void;
   onOpenGrabbed: (item: BonusItem) => void;
   onToggle: (params: ToggleParams) => void;
@@ -56,8 +56,12 @@ interface TileProps {
  * holder's ring; tap to finish or let go) or done (greyed, says who). An
  * everyone-can tile has a ring per person, each its own tap target.
  */
-function BonusTile({ item, memberMap, initialsMap, s, cols, allowTouch, today, formatDay, onOpenGrab, onOpenGrabbed, onToggle, inSheet = false }: TileProps) {
+function BonusTile({ item, memberMap, initialsMap, s, cols, allowTouch, today, locale, onOpenGrab, onOpenGrabbed, onToggle, inSheet = false }: TileProps) {
   const t = useTranslate('modules');
+  const didItOn = (name: string, date: string) => {
+    const { form, day } = bonusDoneDay(date, today, locale);
+    return t(form === 'weekday' ? 'chore-chart.bonus.didItOn' : 'chore-chart.bonus.didItOnDate', { name, day });
+  };
   const { chore, grab } = item;
   const first = !!grab;
   const done = grab?.status === 'done';
@@ -125,7 +129,7 @@ function BonusTile({ item, memberMap, initialsMap, s, cols, allowTouch, today, f
           <span style={{ minWidth: 0 }}>
             {/* Done on an earlier day this week: say which, or a kid reads it as done today. */}
             {done && grab.date !== today
-              ? t('chore-chart.bonus.didItOn', { name: holder.name, day: formatDay(grab.date) })
+              ? didItOn(holder.name, grab.date)
               : t(done ? 'chore-chart.bonus.didIt' : 'chore-chart.bonus.onIt', { name: holder.name })}
             {!done && allowTouch && (
               <span style={{ display: 'block', fontSize: 18 * s, fontWeight: 500, color: 'var(--fcc-text-2)' }}>{t('chore-chart.bonus.tapWhenDone')}</span>
@@ -155,7 +159,7 @@ function BonusTile({ item, memberMap, initialsMap, s, cols, allowTouch, today, f
                 initial={initialsMap.get(id) ?? member.name[0]}
                 allowTouch={allowTouch && !doneOtherDay}
                 onToggle={onToggle}
-                doneEarlierLabel={doneOtherDay ? t('chore-chart.bonus.didItOn', { name: member.name, day: formatDay(doneOn) }) : undefined}
+                doneEarlierLabel={doneOtherDay ? didItOn(member.name, doneOn) : undefined}
               />
             );
           })}

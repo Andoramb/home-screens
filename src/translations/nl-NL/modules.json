@@ -92,6 +92,7 @@
     "noUpcoming": "Geen aankomende gebeurtenissen",
     "agoSuffix": "(geleden)",
     "todayBang": "Vandaag!",
+    "moreCount": "+{count} meer",
     "unitDays": "dagen",
     "unitHours": "uur",
     "unitMinutes": "min",
@@ -693,6 +694,7 @@
         "other": "Dat bonusklusje kan nu even niet"
       },
       "didItOn": "{name} heeft het {day} gedaan",
+      "didItOnDate": "{name} heeft het op {day} gedaan",
       "bandHintEach": "Extra tickets. Iedereen mag deze één keer doen."
     },
     "settings": {
@@ -850,6 +852,7 @@
     "today": "Vandaag",
     "tomorrow": "Morgen",
     "pickTeam": "Kies je team in de module-instellingen",
+    "teamLeagueOff": "Zet de competitie van je team aan in de module-instellingen",
     "unavailable": "De uitslagen nemen even pauze",
     "last": "Laatst:",
     "win": "W",
@@ -908,7 +911,10 @@
     "loading": "Verkeer laden…",
     "unitMin": "min",
     "mockNotice": "Voorbeeldcijfers tot er een verkeerssleutel is toegevoegd",
-    "needsKey": "Verkeer heeft een Google Maps- of TomTom-sleutel nodig"
+    "needsKey": "Verkeer heeft een Google Maps- of TomTom-sleutel nodig",
+    "routeIncomplete": "Wachten op een begin- en eindadres",
+    "routeNotFound": "Deze route is niet gevonden. Controleer de adressen.",
+    "routeUnavailable": "De reistijd is nu even niet beschikbaar"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "of kies een map in de editor",

@@ -256,10 +256,8 @@ rest_command:
   # display client resolves the name case-insensitively against its own
   # rotation, so `screen` is whatever the screen is called in the editor.
   # No broadcast: screen sets differ per display, so the hub rejects
-  # display=all, omit `display` only on a single-display install (the
-  # command then goes to the legacy default queue that display polls).
-  # Multi-display installs should pass a display, or change the intent
-  # handler's default below to their main display's ID.
+  # display=all. Without `display` the command goes to your one display,
+  # or to the main display once you have more than one.
   homescreens_goto_screen:
     url: "http://{{ states('input_text.homescreens_host') }}/api/display/goto-screen"
     method: post
@@ -357,9 +355,8 @@ intent_script:
       text: "Done"
 
   # "show the calendar [on the kitchen display]", jumps straight to a
-  # screen by name. Without a spoken display this targets the legacy
-  # single-display queue; multi-display installs should either always say
-  # the display or change default('') below to their main display's ID.
+  # screen by name. Without a spoken display this goes to the main display;
+  # change default('') below to another display's ID to aim it elsewhere.
   HomeScreensGotoScreen:
     action:
       - action: rest_command.homescreens_goto_screen

@@ -8,7 +8,8 @@ import { useTranslate } from '@/i18n';
 interface SidebarGroceryProps {
   plan: PlannedMeal[];
   meals: SavedMeal[];
-  checkedItems: Set<string>;
+  /** The viewed week's ticks (`groceryChecksForWeek`) */
+  checkedItems: readonly string[];
   onToggleItem: (key: string) => void;
 }
 
@@ -18,7 +19,7 @@ export default function SidebarGrocery({ plan, meals, checkedItems, onToggleItem
   // (shared with /remote).
   const tCore = useTranslate('core');
   const groceryMap = useMemo(
-    () => generateGroceryList(plan, meals, Array.from(checkedItems)),
+    () => generateGroceryList(plan, meals, checkedItems),
     [plan, meals, checkedItems],
   );
 

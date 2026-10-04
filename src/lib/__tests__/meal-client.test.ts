@@ -6,6 +6,7 @@ import { displayCache } from '@/lib/display-cache';
 import {
   loadMeals,
   saveMealEdit,
+  saveGroceryCheck,
   MealSession,
   MealClientError,
   MAX_CONFLICT_RETRIES,
@@ -20,7 +21,7 @@ function payload(overrides: Partial<MealSnapshot> = {}) {
   return {
     savedMeals: [meal('m1')],
     plan: [entry('m1')],
-    groceryChecked: [],
+    groceryChecked: {},
     settings: {},
     globalTimeFormat: '24h',
     revision: 'rev-1',
@@ -62,6 +63,44 @@ describe('loadMeals', () => {
   it('rejects a success that carries no revision to quote back', async () => {
     const fetcher: MealFetch = vi.fn().mockResolvedValue(ok({ ...payload(), revision: undefined }));
     await expect(loadMeals(fetcher)).rejects.toBeInstanceOf(MealClientError);
+  });
+});
+
+describe('grocery ticks in a snapshot', () => {
+  it('keeps each week\'s ticks apart', async () => {
+    const fetcher: MealFetch = vi.fn().mockResolvedValue(ok(payload({
+      groceryChecked: { '2026-09-27': ['tortillas'], '2026-10-04': ['lettuce'] },
+    })));
+    const snapshot = await loadMeals(fetcher);
+    expect(snapshot.groceryChecked).toEqual({ '2026-09-27': ['tortillas'], '2026-10-04': ['lettuce'] });
+  });
+
+  it('reads a single all-weeks list as nothing ticked', async () => {
+    const fetcher: MealFetch = vi.fn().mockResolvedValue(ok({ ...payload(), groceryChecked: ['tortillas'] }));
+    expect((await loadMeals(fetcher)).groceryChecked).toEqual({});
+  });
+});
+
+describe('saveGroceryCheck', () => {
+  it('posts the tick with its week and direction and answers that week\'s ticks', async () => {
+    const fetcher = vi.fn().mockResolvedValue(ok({ week: '2026-10-04', groceryChecked: ['lettuce'], changed: true }));
+
+    const answer = await saveGroceryCheck(fetcher, '2026-10-04', 'Lettuce', 'check');
+
+    expect(fetcher.mock.calls[0][0]).toBe('/api/meals/grocery');
+    expect(bodyOf(fetcher.mock.calls[0])).toEqual({ item: 'Lettuce', direction: 'check', week: '2026-10-04' });
+    expect(answer).toEqual({ week: '2026-10-04', checked: ['lettuce'] });
+  });
+
+  it('rejects a refusal with the route\'s own sentence', async () => {
+    const fetcher = vi.fn().mockResolvedValue(status(400, { error: 'week must be a date like 2026-09-27 when provided' }));
+    await expect(saveGroceryCheck(fetcher, 'soon', 'milk', 'check')).rejects.toThrow(/week must be a date/);
+  });
+
+  it('lets a transport failure through untouched', async () => {
+    const failure = new Error('expired');
+    const fetcher = vi.fn().mockRejectedValue(failure);
+    await expect(saveGroceryCheck(fetcher, '2026-10-04', 'milk', 'check')).rejects.toBe(failure);
   });
 });
 
@@ -235,6 +274,103 @@ describe('MealSession', () => {
     await expect(session.save(() => ({ plan: [entry('x')] }))).rejects.toBeInstanceOf(MealClientError);
     await load;
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  /* ─── grocery ticks ─────────────────────
+   * Ticks used to go around the session: two quick ticks answered out of
+   * order left the older answer on screen, a reload started before a tick
+   * put the old ticks back, and a save that changed nothing handed back a
+   * copy without the tick. */
+  const tickAnswer = (week: string, checked: string[]) => ok({ week, groceryChecked: checked, changed: true });
+  const isTick = (url: unknown) => url === '/api/meals/grocery';
+
+  it('sends ticks one at a time, in the order they were made', async () => {
+    let answerFirst!: (value: Response) => void;
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(ok(payload()))
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { answerFirst = resolve; }))
+      .mockResolvedValueOnce(tickAnswer('2026-09-27', ['milk', 'eggs']));
+    const session = new MealSession(fetcher);
+    await session.load();
+
+    const first = session.tick('2026-09-27', 'milk', 'check');
+    const second = session.tick('2026-09-27', 'eggs', 'check');
+    await Promise.resolve();
+    // The second waits for the first's answer, so it can never land first.
+    expect(fetcher.mock.calls.filter(([url]) => isTick(url))).toHaveLength(1);
+    expect(session.idle).toBe(false);
+
+    answerFirst(tickAnswer('2026-09-27', ['milk']));
+    await first;
+    expect(session.idle).toBe(false);
+    const last = await second;
+
+    expect(fetcher.mock.calls.filter(([url]) => isTick(url)).map(bodyOf).map((b) => b.item)).toEqual(['milk', 'eggs']);
+    expect(last.groceryChecked).toEqual({ '2026-09-27': ['milk', 'eggs'] });
+    expect(session.current).toBe(last);
+    expect(session.idle).toBe(true);
+  });
+
+  it('does not let a load started before a tick put the old ticks back', async () => {
+    let answerLoad!: (value: Response) => void;
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(ok(payload()))
+      .mockImplementationOnce(() => new Promise<Response>((resolve) => { answerLoad = resolve; }))
+      .mockResolvedValueOnce(tickAnswer('2026-09-27', ['milk']));
+    const session = new MealSession(fetcher);
+    await session.load();
+
+    const reload = session.load();
+    await session.tick('2026-09-27', 'milk', 'check');
+    answerLoad(ok(payload()));
+    const delivered = await reload;
+
+    expect(delivered.groceryChecked).toEqual({ '2026-09-27': ['milk'] });
+    expect(session.current?.groceryChecked).toEqual({ '2026-09-27': ['milk'] });
+  });
+
+  it('keeps a tick through a save that changed nothing', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(ok(payload()))
+      .mockResolvedValueOnce(tickAnswer('2026-09-27', ['milk']));
+    const session = new MealSession(fetcher);
+    await session.load();
+    await session.tick('2026-09-27', 'milk', 'check');
+
+    const unchanged = await session.save((c) => ({ plan: c.plan }));
+
+    expect(unchanged.groceryChecked).toEqual({ '2026-09-27': ['milk'] });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps the other weeks and the meals when a tick is answered', async () => {
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(ok(payload({ groceryChecked: { '2026-09-27': ['milk'] } })))
+      .mockResolvedValueOnce(tickAnswer('2026-10-04', ['lettuce']));
+    const session = new MealSession(fetcher);
+    const loaded = await session.load();
+
+    const ticked = await session.tick('2026-10-04', 'Lettuce', 'check');
+
+    expect(bodyOf(fetcher.mock.calls[1])).toEqual({ item: 'Lettuce', direction: 'check', week: '2026-10-04' });
+    expect(ticked.groceryChecked).toEqual({ '2026-09-27': ['milk'], '2026-10-04': ['lettuce'] });
+    expect(ticked.plan).toBe(loaded.plan);
+    expect(ticked.revision).toBe(loaded.revision);
+  });
+
+  it('refuses a tick before anything has loaded and keeps going after a refused one', async () => {
+    const empty = new MealSession(vi.fn());
+    await expect(empty.tick('2026-09-27', 'milk', 'check')).rejects.toBeInstanceOf(MealClientError);
+
+    const fetcher = vi.fn()
+      .mockResolvedValueOnce(ok(payload()))
+      .mockResolvedValueOnce(status(500, { error: 'boom' }))
+      .mockResolvedValueOnce(tickAnswer('2026-09-27', ['eggs']));
+    const session = new MealSession(fetcher);
+    await session.load();
+    await expect(session.tick('2026-09-27', 'milk', 'check')).rejects.toBeInstanceOf(MealClientError);
+    await expect(session.tick('2026-09-27', 'eggs', 'check')).resolves.toMatchObject({ groceryChecked: { '2026-09-27': ['eggs'] } });
+    expect(session.idle).toBe(true);
   });
 
   it('keeps going after a failed save', async () => {

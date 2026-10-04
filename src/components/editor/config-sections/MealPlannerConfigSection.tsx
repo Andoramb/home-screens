@@ -41,7 +41,7 @@ export function MealPlannerConfigSection({ mod, screenId }: { mod: ModuleInstanc
     { value: 'list', label: t('configSections.meal-planner.viewList') },
   ];
   const [showModal, setShowModal] = useState(false);
-  const { mealData, handleModalUpdate, saveError } = useMealPlannerData<Config>({
+  const { mealData, handleModalUpdate, toggleGroceryItem, saveError } = useMealPlannerData<Config>({
     mod,
     set,
     showModal,
@@ -132,6 +132,8 @@ export function MealPlannerConfigSection({ mod, screenId }: { mod: ModuleInstanc
           savedMeals={mealData.savedMeals}
           plan={mealData.plan}
           settings={mealData.settings}
+          groceryChecked={mealData.groceryChecked}
+          onToggleGroceryItem={toggleGroceryItem}
           accentColor={c.accentColor ?? DEFAULT_ACCENT_COLOR}
           onUpdate={handleModalUpdate}
           onClose={() => setShowModal(false)}

@@ -3,14 +3,24 @@
 import { useEffect, useSyncExternalStore } from 'react';
 
 /**
- * Per-tab hold counter that pauses screen rotation while someone is
- * mid-interaction (e.g. reading a recipe overlay). Counter-based so
- * overlapping holds compose; rotation resumes only when every hold is
- * released. Holders release via cleanup on unmount, so an interaction
- * component's own auto-dismiss timers bound how long rotation can stall.
+ * Per-tab holds that pause screen rotation while someone is using the display.
+ *
+ * Two kinds, because a person reading and a person tapping want different
+ * things from a flick:
+ * - An interaction hold (an open overlay such as a recipe) lasts for the
+ *   lifetime of the component that took it. Counter-based so overlapping
+ *   holds compose; it ends only when every one is released, and an overlay's
+ *   own auto-dismiss timers bound how long it can last. It pauses the
+ *   rotation timer and turns flick navigation off: the finger is on the
+ *   overlay, not on the screen behind it.
+ * - A tap hold follows a tap on a control and expires on its own. It pauses
+ *   only the rotation timer. Someone who ticks a chore and then flicks wants
+ *   the next screen, and a flick is one of the ways a held display is
+ *   unstuck, so it must never swallow one.
  */
 
-let holdCount = 0;
+let overlayCount = 0;
+let tapHeld = false;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -18,15 +28,21 @@ function emit() {
 }
 
 function acquireInteractionHold(): () => void {
-  holdCount += 1;
-  if (holdCount === 1) emit();
+  overlayCount += 1;
+  if (overlayCount === 1) emit();
   let released = false;
   return () => {
     if (released) return;
     released = true;
-    holdCount -= 1;
-    if (holdCount === 0) emit();
+    overlayCount -= 1;
+    if (overlayCount === 0) emit();
   };
+}
+
+function setTapHeld(next: boolean) {
+  if (tapHeld === next) return;
+  tapHeld = next;
+  emit();
 }
 
 function subscribe(listener: () => void): () => void {
@@ -34,20 +50,25 @@ function subscribe(listener: () => void): () => void {
   return () => listeners.delete(listener);
 }
 
-const isHeld = () => holdCount > 0;
+const isInteractionHeld = () => overlayCount > 0;
+const isRotationHeld = () => overlayCount > 0 || tapHeld;
 const serverIsHeld = () => false;
 
-/** True while any component or tap holds rotation. Outside React, for tests. */
+/** True while a component holds the display. Outside React, for tests. */
 export function interactionIsHeld(): boolean {
-  return isHeld();
+  return isInteractionHeld();
+}
+
+/** True while a component or a recent tap holds rotation. Outside React, for tests. */
+export function rotationIsHeld(): boolean {
+  return isRotationHeld();
 }
 
 /** The single timed hold, so repeated taps extend one window instead of stacking. */
-let tapRelease: (() => void) | null = null;
 let tapTimer: ReturnType<typeof setTimeout> | null = null;
 
 /**
- * Hold rotation for `ms` after a deliberate touch.
+ * Hold the rotation timer for `ms` after a deliberate touch.
  *
  * A screen change used to land in the middle of someone using it: the chart a
  * finger was heading for became page background and the tap produced nothing,
@@ -56,29 +77,39 @@ let tapTimer: ReturnType<typeof setTimeout> | null = null;
  * afterwards and then gets a fresh dwell.
  *
  * Unlike `useInteractionHold` this is not tied to a component's lifetime, so a
- * second tap extends the same window rather than opening another. Returns a
- * release for a caller that wants to end it early.
+ * second tap extends the same window rather than opening another, and it
+ * leaves flick navigation alone. Returns a release for a caller that wants to
+ * end it early.
  */
-export function holdInteractionFor(ms: number): () => void {
+export function holdRotationFor(ms: number): () => void {
   if (ms <= 0) return () => {};
   if (tapTimer) clearTimeout(tapTimer);
-  if (!tapRelease) tapRelease = acquireInteractionHold();
+  setTapHeld(true);
   const end = () => {
     if (tapTimer) { clearTimeout(tapTimer); tapTimer = null; }
-    const release = tapRelease;
-    tapRelease = null;
-    release?.();
+    setTapHeld(false);
   };
   tapTimer = setTimeout(end, ms);
   return end;
 }
 
-/** True while any component holds rotation. Read by ScreenRotator. */
+/**
+ * True while a component holds the display. ScreenRotator turns flick
+ * navigation off for it, as well as the rotation timer.
+ */
 export function useInteractionHeld(): boolean {
-  return useSyncExternalStore(subscribe, isHeld, serverIsHeld);
+  return useSyncExternalStore(subscribe, isInteractionHeld, serverIsHeld);
 }
 
-/** Hold rotation for the lifetime of the calling component. */
+/**
+ * True while anything holds the rotation timer: a component, or a tap on a
+ * control in the last few seconds. Read by ScreenRotator's rotation timer.
+ */
+export function useRotationHeld(): boolean {
+  return useSyncExternalStore(subscribe, isRotationHeld, serverIsHeld);
+}
+
+/** Hold rotation and flick navigation for the lifetime of the calling component. */
 export function useInteractionHold(): void {
   useEffect(() => acquireInteractionHold(), []);
 }

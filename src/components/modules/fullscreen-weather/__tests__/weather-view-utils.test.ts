@@ -20,13 +20,28 @@ describe('nowcastVerdict', () => {
   });
 
   it('normalises intensity against the unit the provider reports in', () => {
-    // 0.5 mm/h is a light drizzle in metric and would saturate the bar if the
+    // 1 mm/h is light rain in metric and would saturate the bar if the
     // imperial threshold (0.4 in/h) were applied to it.
-    const drizzle = minutes(Array(60).fill(0.5));
-    const metric = nowcastVerdict(drizzle, 'metric', t)!;
-    const imperial = nowcastVerdict(drizzle, 'imperial', t)!;
-    expect(metric.series[0]).toBeCloseTo(0.05, 5);
+    const light = minutes(Array(60).fill(1));
+    const metric = nowcastVerdict(light, 'metric', t)!;
+    const imperial = nowcastVerdict(light, 'imperial', t)!;
+    expect(metric.series[0]).toBeCloseTo(0.1, 5);
     expect(imperial.series[0]).toBe(1);
+  });
+
+  it('calls a clear hour of trace readings dry and draws no bars for it', () => {
+    // A clear Pirate Weather hour: tiny nonzero rates, chances under 10%.
+    const clear = Array.from({ length: 60 }, (_, i) => ({ time: i * 60, intensity: i % 3 ? 0.0002 : 0.02, probability: i % 10 }));
+    const verdict = nowcastVerdict(clear, 'imperial', t)!;
+    expect(verdict.text).toBe('fullscreen-weather.nowcast.dry');
+    expect(verdict.series.every((v) => v === 0)).toBe(true);
+  });
+
+  it('draws no bar for an unlikely minute, whatever its rate', () => {
+    const unlikely = [{ time: 0, intensity: 0.3, probability: 10 }, ...minutes(Array(59).fill(0))];
+    const verdict = nowcastVerdict(unlikely, 'imperial', t)!;
+    expect(verdict.text).toBe('fullscreen-weather.nowcast.dry');
+    expect(verdict.series[0]).toBe(0);
   });
 
   it('caps the bar at a downpour in either unit', () => {

@@ -2,6 +2,7 @@
 
 import { useRotatingIndex } from '@/hooks/useRotatingIndex';
 import type { StandingsGroup } from '@/lib/espn-standings';
+import { leagueWallCode } from '@/lib/espn';
 import { isFavoriteTeam } from '@/lib/sports-order';
 import { formatRecord, getPlayoffTeamCount, StandingsTeamRow } from './shared';
 import { PaginationDots } from '../shared/PaginationDots';
@@ -86,7 +87,7 @@ export function ConferenceView({ groups, teamsToShow, showPlayoffLine, rotationI
           className="font-semibold tracking-widest uppercase text-current/40"
           style={{ fontSize: '0.65em' }}
         >
-          {pair[0].league}
+          {leagueWallCode(pair[0].league)}
         </span>
         <PaginationDots total={pairs.length} current={index} />
       </div>

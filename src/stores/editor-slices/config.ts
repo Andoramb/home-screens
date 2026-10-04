@@ -332,5 +332,37 @@ export function createConfigSlice(set: EditorSet, get: EditorGet): ConfigActions
         syncEditorUrl({ screen: firstId });
       }
     },
+
+    adoptHubRewrite: async ({ rewrite, previousRevision, revision }) => {
+      const state = get();
+      // Not loaded yet: the load on its way fetches the rewritten file.
+      if (!state.config) return;
+      // Nothing of the editor's own to keep: the hub's file is the truth.
+      if (!state.isDirty && !state.isSaving) {
+        await get().loadConfig();
+        return;
+      }
+      // Edits not yet on the hub: make the same change to this copy, so the
+      // two merge at the next save. Only a copy of exactly the version the
+      // hub rewrote may move onto the version it left. If the hub had moved
+      // on before (someone else saved, and this editor's own save failed or
+      // was refused), the old revision stays, so the next save is refused as
+      // a conflict instead of quietly replacing their changes.
+      const config = rewrite(state.config);
+      const selectedGone = state.selectedModuleId != null
+        && !getActiveScreens(config, state.selectedDisplayId)
+          .some((screen) => screen.modules.some((m) => m.id === state.selectedModuleId));
+      set({
+        config,
+        // Like every other replacement from outside the session, so an open
+        // settings form re-hydrates instead of writing its older snapshot
+        // back over the rewrite on the next keystroke.
+        configGeneration: state.configGeneration + 1,
+        ...(previousRevision != null && state.configRevision === previousRevision
+          ? { configRevision: revision }
+          : {}),
+        ...(selectedGone ? { selectedModuleId: null } : {}),
+      });
+    },
   };
 }

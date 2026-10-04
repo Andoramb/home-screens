@@ -427,10 +427,12 @@ export default function RemoteClient({ initialData }: { initialData: RemoteIniti
               {showSingleDisplayControls && effectiveProfiles.length > 0 && (
                 // The page-load profile only stands in until the first
                 // heartbeat. After that the display's report wins, and its
-                // null means "no profile", not "unknown".
+                // null means "no profile", not "unknown". The report names
+                // the profile in effect, which a schedule can override.
                 <ProfileSwitcher
                   profiles={effectiveProfiles}
                   activeProfile={status ? status.activeProfile : effectiveInitialActiveProfile}
+                  scheduled={status?.profileScheduled === true}
                   displayName={targetName ?? t('displayHero.theDisplay')}
                 />
               )}

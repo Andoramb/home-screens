@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Perfiles",
-    "noProfile": "Todas las páginas"
+    "noProfile": "Todas las páginas",
+    "scheduledNote": "Ahora mismo está activo el perfil programado {profile}. Lo que elijas aquí empezará cuando termine."
   },
   "displayPicker": {
     "targeting": "Enviar a",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Termina primero la que te has pedido, o marca esta si ya la has hecho.",
       "youDidItOn": "La hiciste el {day}",
+      "youDidItOnDate": "La hiciste el {day}",
       "didItOn": "{name} la hizo el {day}",
+      "didItOnDate": "{name} la hizo el {day}",
       "limitLineMany": "Termina primero una de las que te has pedido, o marca esta si ya la has hecho.",
       "yours": "Tuya",
       "didItToday": "{name} la ha hecho hoy",
@@ -1020,6 +1023,9 @@
     "noConfirm": "{name} no ha respondido. Puede estar apagada o sin conexión.",
     "profileSwitched": "{name} ha cambiado a {profile}",
     "profileCleared": "{name} muestra todas las páginas",
+    "profileAfterSchedule": "{name} cambiará a {profile} cuando termine {scheduled}",
+    "profileClearedAfterSchedule": "{name} mostrará todas las páginas cuando termine {scheduled}",
+    "profileKeptAfterSchedule": "{name} seguirá mostrando {profile} cuando termine su programación",
     "profileFailed": "No se pudo cambiar el perfil en {name}",
     "hubBack": "Home Screens ha vuelto",
     "alertSentUnnamed": "Aviso enviado a la pantalla",

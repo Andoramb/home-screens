@@ -205,9 +205,15 @@ describe('the icon library', () => {
     const config = JSON.parse(await fs.readFile(path.join(data, 'config.json'), 'utf8').catch(() => '{"settings":{},"screens":[]}'));
     config.screens = [{ id: 's', name: 'S', modules: [{ id: 't', type: 'text', config: { icon: `custom:${icon.id}` } }] }];
     await fs.writeFile(path.join(data, 'config.json'), JSON.stringify(config));
-    expect(await deleteCustomIcon(icon.id)).toEqual({ configChanged: true });
+    const { readConfig, configRevision } = await import('@/lib/config');
+    const before = configRevision(await readConfig());
+    // The revision it was rewritten from and the one it left, both read
+    // inside the removal, so an editor copy of exactly the old one can follow.
+    const { config: rewrite } = await deleteCustomIcon(icon.id);
+    expect(rewrite).toEqual({ previousRevision: before, revision: configRevision(await readConfig()) });
+    expect(rewrite!.revision).not.toBe(before);
     const other = await addKept(await sharp({ create: { width: 30, height: 30, channels: 3, background: '#0f0' } }).png().toBuffer(), 'Unused');
-    expect(await deleteCustomIcon(other.id)).toEqual({ configChanged: false });
+    expect(await deleteCustomIcon(other.id)).toEqual({ config: null });
   });
 
   it('asks for a name', async () => {

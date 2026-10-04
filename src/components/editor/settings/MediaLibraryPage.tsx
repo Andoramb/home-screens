@@ -243,23 +243,18 @@ export default function MediaLibraryPage() {
   /**
    * The server rewrote config references on disk; the editor's copy must not
    * lag behind or "Open in the editor" shows old paths and the next save
-   * conflicts. A clean store simply reloads. One holding unsaved edits gets
-   * the same rewrite applied in memory plus the new revision, so its edits
-   * and the moved references merge at the next save.
+   * conflicts (see adoptHubRewrite).
    */
   const adoptConfigChange = (
-    revision: string,
+    revisions: { previousRevision: string; revision: string },
     mapFile: (p: string) => string | null,
     mapFolder: (folder: string) => string | null,
   ) => {
-    const store = useEditorStore.getState();
-    if (!store.isDirty && !store.isSaving) {
-      void store.loadConfig();
-      return;
-    }
-    if (!store.config) return;
-    const { config } = rewriteMediaRefs(store.config, mapFile, mapFolder);
-    useEditorStore.setState({ config, configRevision: revision });
+    void useEditorStore.getState().adoptHubRewrite({
+      rewrite: (config) => rewriteMediaRefs(config, mapFile, mapFolder).config,
+      previousRevision: revisions.previousRevision ?? null,
+      revision: revisions.revision,
+    });
   };
 
   const uploadFiles = async (list: FileList | null) => {
@@ -416,7 +411,7 @@ export default function MediaLibraryPage() {
       }
       setSelected(new Set());
       const byFrom = new Map(result.data.moved.map((m) => [m.from, m.to]));
-      adoptConfigChange(result.data.revision, (p) => byFrom.get(p) ?? null, () => null);
+      adoptConfigChange(result.data, (p) => byFrom.get(p) ?? null, () => null);
       const movedText = t('settings.mediaPage.moved', { count: result.data.moved.length });
       const refsText = result.data.rewritten > 0
         ? ` ${t('settings.mediaPage.placesUpdated', { count: result.data.rewritten })}`
@@ -460,7 +455,7 @@ export default function MediaLibraryPage() {
         const { from, to } = result.data;
         const prefix = `${from}/`;
         adoptConfigChange(
-          result.data.revision,
+          result.data,
           (p) => (p.startsWith(prefix) ? to + p.slice(from.length) : null),
           (f) => (f === from ? to : f.startsWith(prefix) ? to + f.slice(from.length) : null),
         );

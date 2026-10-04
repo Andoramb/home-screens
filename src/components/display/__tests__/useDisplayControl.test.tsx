@@ -57,7 +57,7 @@ function renderControl() {
       screenId: 's1',
       screenName: 'Screen 1',
       screenCount: 2,
-      activeProfile: null,
+      activeProfile: { profileId: null, scheduled: false },
       nextScreen,
       prevScreen,
       gotoScreen,

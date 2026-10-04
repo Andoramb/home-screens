@@ -79,6 +79,24 @@ test('a heartbeat reporting no profile beats the page-load profile', async ({ pa
   await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
 });
 
+test('a scheduled profile is shown as running, and a pick waits for it', async ({ page, request }) => {
+  // Evening is the saved pick, but the wall reports Morning on its schedule.
+  // The phone used to tick Evening, and a tap claimed a switch that the
+  // schedule overrode.
+  await putConfig(request, profileConfig('p2'));
+  await postHeartbeat(request, { activeProfile: 'p1', profileScheduled: true });
+  await page.goto('/remote');
+  const chips = page.getByTestId('profile-switcher');
+  await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('profile-scheduled-note'))
+    .toHaveText('Morning is on a schedule right now. What you pick here starts when it ends.');
+
+  await chips.getByRole('button', { name: 'All screens' }).click();
+  await expect(page.getByTestId('remote-toast')).toHaveText('The display will show all screens when Morning ends');
+  await expect.poll(async () => (await getConfig(request)).settings.activeProfile).toBeUndefined();
+  await expect(chips.getByRole('button', { name: /Morning/ })).toHaveAttribute('aria-pressed', 'true');
+});
+
 test('the display resolves the active profile screens', async ({ page, request }) => {
   // p2 (Evening) is scoped to s2 only, so the display must show s2 and hide s1.
   await putConfig(request, profileConfig('p2'));

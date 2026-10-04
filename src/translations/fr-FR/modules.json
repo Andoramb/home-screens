@@ -92,6 +92,7 @@
     "noUpcoming": "Aucun événement à venir",
     "agoSuffix": "(passé)",
     "todayBang": "Aujourd'hui !",
+    "moreCount": "+{count} de plus",
     "unitDays": "jours",
     "unitHours": "h",
     "unitMinutes": "min",
@@ -693,6 +694,7 @@
         "other": "Cette tâche bonus n'est pas libre pour le moment"
       },
       "didItOn": "{name} l'a faite {day}",
+      "didItOnDate": "{name} l'a faite le {day}",
       "bandHintEach": "Des tickets en plus. Chacun peut les faire une fois."
     },
     "settings": {
@@ -850,6 +852,7 @@
     "today": "Aujourd'hui",
     "tomorrow": "Demain",
     "pickTeam": "Choisis ton équipe dans les réglages du module",
+    "teamLeagueOff": "Active la ligue de ton équipe dans les réglages du module",
     "unavailable": "Les scores font une petite pause",
     "last": "Dernier :",
     "win": "V",
@@ -908,7 +911,10 @@
     "loading": "Chargement du trafic…",
     "unitMin": "min",
     "mockNotice": "Valeurs d'exemple jusqu'à l'ajout d'une clé trafic",
-    "needsKey": "Le trafic a besoin d'une clé Google Maps ou TomTom"
+    "needsKey": "Le trafic a besoin d'une clé Google Maps ou TomTom",
+    "routeIncomplete": "En attente d'une adresse de départ et d'arrivée",
+    "routeNotFound": "Trajet introuvable. Vérifie les adresses.",
+    "routeUnavailable": "Temps de trajet indisponible pour le moment"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "ou choisis un dossier dans l'éditeur",

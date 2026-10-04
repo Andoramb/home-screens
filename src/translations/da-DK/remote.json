@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profiler",
-    "noProfile": "Alle sider"
+    "noProfile": "Alle sider",
+    "scheduledNote": "{profile} kører efter planen lige nu. Det, du vælger her, starter, når den er slut."
   },
   "displayPicker": {
     "targeting": "Send til",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Gør den, du har snuppet, færdig først, eller sæt flueben her, hvis den er klaret.",
       "youDidItOn": "Du klarede den i {day}s",
+      "youDidItOnDate": "Du klarede den d. {day}",
       "didItOn": "{name} klarede den i {day}s",
+      "didItOnDate": "{name} klarede den d. {day}",
       "limitLineMany": "Gør en af dem, du har snuppet, færdig først, eller sæt flueben her, hvis den er klaret.",
       "yours": "Din",
       "didItToday": "{name} klarede den i dag",
@@ -1020,6 +1023,9 @@
     "noConfirm": "{name} svarede ikke. Den er måske slukket eller offline.",
     "profileSwitched": "{name} skiftede til {profile}",
     "profileCleared": "{name} viser alle sider",
+    "profileAfterSchedule": "{name} skifter til {profile}, når {scheduled} er slut",
+    "profileClearedAfterSchedule": "{name} viser alle sider, når {scheduled} er slut",
+    "profileKeptAfterSchedule": "{name} bliver ved med at vise {profile}, når planen er slut",
     "profileFailed": "Kunne ikke skifte profil på {name}",
     "hubBack": "Home Screens er tilbage",
     "alertSentUnnamed": "Besked sendt til skærmen",

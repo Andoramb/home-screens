@@ -65,7 +65,7 @@ describe('GET /api/meals/grocery/list', () => {
     mockRead.mockResolvedValue({
       savedMeals: [meal],
       plan: [{ date: start, slot: 'dinner', mealId: 'meal-1' }],
-      groceryChecked: ['tortillas'],
+      groceryChecked: { [start]: ['tortillas'] },
       settings: { enabledSlots: ['dinner'], weekStartDay: 'sunday', defaultTimes: {} },
     } as never);
 
@@ -80,11 +80,32 @@ describe('GET /api/meals/grocery/list', () => {
     expect(bakery.items).toEqual([{ name: 'Tortillas', amount: '12', checked: true }]);
   });
 
+  it('reads this week\'s ticks only, never another week\'s', async () => {
+    // Tortillas bought last week and next week are still to buy this week.
+    const { start } = getWeekRange(new Date(), 'sunday');
+    const day = (offset: number) => {
+      const d = new Date(start + 'T12:00:00');
+      d.setDate(d.getDate() + offset);
+      return getWeekRange(d, 'sunday').start;
+    };
+    mockRead.mockResolvedValue({
+      savedMeals: [meal],
+      plan: [{ date: start, slot: 'dinner', mealId: 'meal-1' }],
+      groceryChecked: { [day(-7)]: ['tortillas'], [day(7)]: ['tortillas', 'ground beef'] },
+      settings: { enabledSlots: ['dinner'], weekStartDay: 'sunday', defaultTimes: {} },
+    } as never);
+
+    const body = (await (await GET(request())).json()) as ListResponse;
+
+    expect(body.total).toBe(2);
+    expect(body.checked).toBe(0);
+  });
+
   it('excludes meals planned outside the current week', async () => {
     mockRead.mockResolvedValue({
       savedMeals: [meal],
       plan: [{ date: '2000-01-01', slot: 'dinner', mealId: 'meal-1' }],
-      groceryChecked: [],
+      groceryChecked: {},
       settings: { enabledSlots: ['dinner'], weekStartDay: 'sunday', defaultTimes: {} },
     } as never);
 
@@ -104,7 +125,7 @@ describe('GET /api/meals/grocery/list', () => {
     mockRead.mockResolvedValue({
       savedMeals: [meal],
       plan: [{ date: '2026-09-26', slot: 'dinner', mealId: 'meal-1' }],
-      groceryChecked: [],
+      groceryChecked: {},
       settings: { enabledSlots: ['dinner'], weekStartDay: 'sunday', defaultTimes: {} },
     } as never);
 
@@ -122,7 +143,7 @@ describe('GET /api/meals/grocery/list', () => {
     mockRead.mockResolvedValue({
       savedMeals: [meal],
       plan: [],
-      groceryChecked: [],
+      groceryChecked: {},
       settings: { enabledSlots: ['dinner'], weekStartDay: 'monday', defaultTimes: {} },
     } as never);
 

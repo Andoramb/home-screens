@@ -652,6 +652,14 @@ export const NEWS_FINANCE_VARIANTS: ConfigVariant[] = [
     config: { view: 'team', favoriteTeams: ['nfl:MIN'] },
     expect: async (mod) => { await has('24')(mod); await has('17')(mod); await has('Q3 4:12')(mod); },
   },
+  {
+    // Team view mid-game with the score ESPN left out: no score is drawn,
+    // rather than a made-up 0-0 (team-live draws two).
+    type: 'sports', name: 'team-live-no-score', kind: 'networked', stubKey: 'sports-team',
+    stubBody: { cards: [{ ...SPORTS_TEAM_LIVE.cards[0], featured: { ...SPORTS_TEAM_LIVE.cards[0].featured, homeScore: null, awayScore: null } }] },
+    config: { view: 'team', favoriteTeams: ['nfl:MIN'] },
+    expect: async (mod) => { await has('Q3 4:12')(mod); await count('.tabular-nums.leading-none', 0)(mod); },
+  },
 
   // -- standings --
   {
@@ -683,6 +691,13 @@ export const NEWS_FINANCE_VARIANTS: ConfigVariant[] = [
     type: 'standings', name: 'rotation-interval', kind: 'networked', stubKey: 'standings', stubBody: STANDINGS_2_GROUPS,
     config: { view: 'table', league: 'nfl', grouping: 'division', rotationIntervalMs: 400 },
     expect: has('GROUP BRAVO'),
+  },
+  {
+    // The wire carries the upper-cased league id; the header prints the league's code.
+    type: 'standings', name: 'league-code', kind: 'networked', stubKey: 'standings',
+    stubBody: { groups: [{ ...STANDINGS_8.groups[0], league: 'LIGA_MX' }] },
+    config: { view: 'table', league: 'liga_mx', grouping: 'conference' },
+    expect: lacks('LIGA MX', 'LIGA_MX'),
   },
   {
     // grouping='league' doubles the NFL playoff count (7→14). With only 8 teams no

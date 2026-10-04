@@ -123,6 +123,16 @@ describe('trafficUrl', () => {
   it('returns null when routes is empty array', () => {
     expect(trafficUrl({ routes: [] })).toBeNull();
   });
+
+  it('leaves out a route still missing an address, so it is never looked up', () => {
+    const home = { label: 'Home', origin: '1 Main St', destination: '2 Oak Ave' };
+    const routes = [home, { label: 'New route', origin: '1 Main St', destination: '  ' }, { label: 'Gym', origin: '', destination: '' }];
+    expect(trafficUrl({ routes })).toBe(`/api/traffic?routes=${encodeURIComponent(JSON.stringify([home]))}`);
+  });
+
+  it('returns null when no route has both addresses yet', () => {
+    expect(trafficUrl({ routes: [{ label: 'New route', origin: '1 Main St', destination: '' }] })).toBeNull();
+  });
 });
 
 // ── URL builders with defaults ──────────────────────────────────
@@ -191,9 +201,22 @@ describe('sportsTeamUrl', () => {
   });
 
   it('keeps the favorites in priority order and stops at the route cap', () => {
-    expect(sportsTeamUrl({ favoriteTeams: ['ncaaf:MINN', 'nfl:MIN'] })).toBe('/api/sports/team?teams=ncaaf%3AMINN%2Cnfl%3AMIN');
+    expect(sportsTeamUrl({ leagues: ['nfl', 'ncaaf'], favoriteTeams: ['ncaaf:MINN', 'nfl:MIN'] })).toBe('/api/sports/team?teams=ncaaf%3AMINN%2Cnfl%3AMIN');
     const nine = Array.from({ length: 9 }, (_, i) => `nfl:T${i}`);
-    expect(sportsTeamUrl({ favoriteTeams: nine })).toBe(`/api/sports/team?teams=${encodeURIComponent(nine.slice(0, 8).join(','))}`);
+    expect(sportsTeamUrl({ leagues: ['nfl'], favoriteTeams: nine })).toBe(`/api/sports/team?teams=${encodeURIComponent(nine.slice(0, 8).join(','))}`);
+  });
+
+  it('leaves out favorites whose league is switched off', () => {
+    const favoriteTeams = ['ncaaf:MINN', 'nfl:MIN', 'epl:ARS'];
+    expect(sportsTeamUrl({ leagues: ['ncaaf'], favoriteTeams })).toBe('/api/sports/team?teams=ncaaf%3AMINN');
+    // No leagues saved means the default NFL and NBA.
+    expect(sportsTeamUrl({ favoriteTeams })).toBe('/api/sports/team?teams=nfl%3AMIN');
+    expect(sportsTeamUrl({ leagues: ['nba'], favoriteTeams })).toBeNull();
+  });
+
+  it('caps after leaving out the switched-off leagues, so the eight shown teams are fetched', () => {
+    const favoriteTeams = ['epl:ARS', ...Array.from({ length: 8 }, (_, i) => `nfl:T${i}`)];
+    expect(sportsTeamUrl({ leagues: ['nfl'], favoriteTeams })).toBe(`/api/sports/team?teams=${encodeURIComponent(favoriteTeams.slice(1).join(','))}`);
   });
 });
 

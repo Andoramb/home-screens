@@ -266,8 +266,8 @@ describe('sports API route', () => {
 
       expect(json.games[0].homeTeam).toBe('TBD');
       expect(json.games[0].awayTeam).toBe('TBD');
-      expect(json.games[0].homeScore).toBe(0);
-      expect(json.games[0].awayScore).toBe(0);
+      expect(json.games[0].homeScore).toBeNull();
+      expect(json.games[0].awayScore).toBeNull();
     });
 
     it('defaults to TBD when team object is missing', async () => {
@@ -301,7 +301,7 @@ describe('sports API route', () => {
       expect(json.games[0].awayScore).toBe(45);
     });
 
-    it('defaults score to 0 when score is missing', async () => {
+    it('leaves a missing score null rather than 0', async () => {
       const eventNoScore = {
         id: '202',
         date: '2024-06-01T20:00Z',
@@ -325,8 +325,8 @@ describe('sports API route', () => {
       const res = await GET(req);
       const json = await res.json();
 
-      expect(json.games[0].homeScore).toBe(0);
-      expect(json.games[0].awayScore).toBe(0);
+      expect(json.games[0].homeScore).toBeNull();
+      expect(json.games[0].awayScore).toBeNull();
       expect(json.games[0].homeTeam).toBe('Team A');
       expect(json.games[0].awayTeam).toBe('Team B');
     });
@@ -406,8 +406,8 @@ describe('sports API route', () => {
 
       expect(json.games[0].homeTeam).toBe('TBD');
       expect(json.games[0].awayTeam).toBe('TBD');
-      expect(json.games[0].homeScore).toBe(0);
-      expect(json.games[0].awayScore).toBe(0);
+      expect(json.games[0].homeScore).toBeNull();
+      expect(json.games[0].awayScore).toBeNull();
     });
 
     it('handles empty events array from ESPN', async () => {

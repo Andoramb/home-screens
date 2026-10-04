@@ -290,8 +290,10 @@ function validateContentSections(body: FamilyRestoreContent): string | null {
     || Object.values(body.rewards.balances).some((value) => typeof value !== 'number' || !Number.isFinite(value))
     || body.rewards.rewards.some((reward) => !record(reward) || typeof reward.id !== 'string' || typeof reward.name !== 'string' || !stringArray(reward.memberIds) || typeof reward.cost !== 'number' || !Number.isFinite(reward.cost))
     || body.rewards.redemptions.some((redemption) => !record(redemption) || typeof redemption.redeemedAt !== 'string'))) return 'Rewards need valid choices, balances and history.';
+  // Grocery ticks are not checked: the meal store keeps only a map of week to
+  // ticked names and reads anything else as nothing ticked, which is how the
+  // single list in a backup from an older build restores.
   if (body.meals !== undefined && (!record(body.meals) || !Array.isArray(body.meals.savedMeals) || !Array.isArray(body.meals.plan)
-    || (body.meals.groceryChecked !== undefined && !stringArray(body.meals.groceryChecked))
     || body.meals.savedMeals.some((meal) => !record(meal) || typeof meal.id !== 'string' || typeof meal.name !== 'string')
     || body.meals.plan.some((meal) => !record(meal) || (typeof meal.date !== 'string' && typeof meal.day !== 'number')))) return 'Meals need valid saved meals and a plan.';
   if (body.routines !== undefined) {

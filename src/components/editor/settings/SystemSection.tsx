@@ -257,10 +257,18 @@ export default function SystemSection({ onUpgrade, onRollback }: Props) {
           </div>
         )}
 
-        {!versionInfo.updateAvailable && !withheld && (
+        {/* No resolved release means the lookup never got an answer (GitHub
+            unreachable, no tags), which is not the same as being current. */}
+        {!versionInfo.updateAvailable && !withheld && versionInfo.latest !== null && (
           <p className="text-xs text-hs-success/80 mt-2 flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-hs-success inline-block" />
             {t('settings.systemPage.upToDate')}
+          </p>
+        )}
+
+        {!versionInfo.updateAvailable && !withheld && versionInfo.latest === null && (
+          <p data-testid="system-check-failed" className="text-xs text-hs-text-secondary mt-2">
+            {t('settings.systemPage.checkFailed')}
           </p>
         )}
 

@@ -45,7 +45,10 @@ export const POST = withAuth(async (request: NextRequest) => {
   }
 
   let changed = false;
+  let previousRevision = '';
   const result = await updateConfigAtomic((current) => {
+    // Hashed before the migration, which changes `current` in place.
+    previousRevision = configRevision(current);
     changed = migrateConfigModules(current, manifest, oldVersion);
     // `updateConfigAtomic` skips the disk write when the mutator returns the
     // reference it was given, so a mutated-in-place config MUST come back as a
@@ -54,7 +57,12 @@ export const POST = withAuth(async (request: NextRequest) => {
     return changed ? { ...current } : current;
   });
 
-  // The revision after the write, so the editor can move onto it instead of
-  // tripping a save conflict against its own plugin update.
-  return NextResponse.json({ ok: true, changed }, { headers: { [CONFIG_REVISION_HEADER]: configRevision(result) } });
+  // The revision after the write (header) and the one the migration was
+  // applied to (body), so an editor holding a copy of exactly that version
+  // can move onto the new one instead of tripping a save conflict against
+  // its own plugin update (see adoptHubRewrite).
+  return NextResponse.json(
+    { ok: true, changed, previousRevision },
+    { headers: { [CONFIG_REVISION_HEADER]: configRevision(result) } },
+  );
 }, 'Failed to migrate plugin config');

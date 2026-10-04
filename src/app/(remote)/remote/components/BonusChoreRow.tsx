@@ -3,12 +3,12 @@
 import { useRef } from 'react';
 import { Check, Hand, Lock, MoreHorizontal, RotateCcw } from 'lucide-react';
 import type { FamilyMember } from '@/types/family';
-import type { BonusItem } from '@/lib/chore-bonus';
+import { bonusDoneDay, type BonusItem } from '@/lib/chore-bonus';
 import ChoreIcon from '@/components/modules/chore-chart/ChoreIcon';
 import { useHoldToUncheck } from '@/hooks/useHoldToUncheck';
 import { useLongPress } from '@/hooks/useLongPress';
 import { useMovedTapGuard } from '@/hooks/useMovedTapGuard';
-import { useTranslate } from '@/i18n';
+import { useFormattingLocale, useTranslate } from '@/i18n';
 
 const AMBER = '#f59e0b';
 /** How long after Let it go a tap on the same row does not tick it. */
@@ -33,7 +33,6 @@ export default function BonusChoreRow({
   members,
   date,
   today,
-  formatDay,
   canEdit,
   canGrab,
   atLimit,
@@ -58,8 +57,6 @@ export default function BonusChoreRow({
   date: string;
   /** The hub's today, as `YYYY-MM-DD`: a job done today says "today", not the weekday. */
   today: string;
-  /** A day as the row names it ("Tuesday"). */
-  formatDay: (date: string) => string;
   /** False for a kid looking at a past day. */
   canEdit: boolean;
   /** Grabs are for today only. */
@@ -86,6 +83,7 @@ export default function BonusChoreRow({
 }) {
   const t = useTranslate('remote');
   const tModules = useTranslate('modules');
+  const locale = useFormattingLocale();
   const hold = useHoldToUncheck();
   const longPress = useLongPress();
   const { chore } = item;
@@ -105,9 +103,12 @@ export default function BonusChoreRow({
   // from today's page. What you did on the day on screen stays yours to undo.
   const roundLocked = item.roundIsToday && mineHeld;
   const locked = !!othersId || doneOtherDay || pastLocked || roundLocked;
-  const didOn = (day: string, name?: string) => day === today
-    ? (name ? t('choresTab.bonus.didItToday', { name }) : t('choresTab.bonus.youDidItToday'))
-    : (name ? t('choresTab.bonus.didItOn', { name, day: formatDay(day) }) : t('choresTab.bonus.youDidItOn', { day: formatDay(day) }));
+  const didOn = (date: string, name?: string) => {
+    if (date === today) return name ? t('choresTab.bonus.didItToday', { name }) : t('choresTab.bonus.youDidItToday');
+    const { form, day } = bonusDoneDay(date, today, locale);
+    if (form === 'weekday') return name ? t('choresTab.bonus.didItOn', { name, day }) : t('choresTab.bonus.youDidItOn', { day });
+    return name ? t('choresTab.bonus.didItOnDate', { name, day }) : t('choresTab.bonus.youDidItOnDate', { day });
+  };
   const tickets = chore.points === 1
     ? t('choresTab.ticketCountSingular', { n: chore.points })
     : t('choresTab.ticketCountPlural', { n: chore.points });

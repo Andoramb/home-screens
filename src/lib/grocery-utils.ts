@@ -29,11 +29,16 @@ export function groceryListNeedsHeadings(
   return list.size > 1;
 }
 
-/** Generate a grocery list grouped by category from planned meals. */
+/**
+ * Generate a grocery list grouped by category from one week's planned meals.
+ *
+ * `checkedItems` is that same week's ticks (`groceryChecksForWeek`): a tick
+ * belongs to the list it was made on, never to every week's.
+ */
 export function generateGroceryList(
   planArr: PlannedMeal[],
   meals: SavedMeal[],
-  checkedItems: string[],
+  checkedItems: readonly string[],
 ): Map<string, { items: Array<{ name: string; amount: string; checked: boolean }> }> {
   const mealMap = new Map(meals.map((m) => [m.id, m]));
   const grouped = new Map<string, Map<string, string>>(); // category -> name -> amount

@@ -71,9 +71,10 @@ function BarRow({ label, value, max, accentColor, fontSize }: BarRowProps) {
 
 export default function ClockBarView({ config, time, scaledFontSize, autoFontSize, fitToBox, containerRef, boxWidth }: ClockViewProps) {
   const t = useTranslate('modules');
-  const { hours, minutes, seconds, hStr, mStr, sStr } = parseClockTime(config.format24h, time);
+  const { hours, minutes, seconds, h, hStr, mStr, sStr } = parseClockTime(config.format24h, time);
   const period = config.format24h ? '' : hours >= 12 ? ` ${t('clock.pm')}` : ` ${t('clock.am')}`;
-  const h12 = hours % 12;
+  // The hour bar shows the hour the clock reads, out of 12 or 24: 12 o'clock
+  // is "12" and a full bar in 12-hour mode, never "00" with an empty one.
   const hoursMax = config.format24h ? 24 : 12;
 
   const timeStr = config.showSeconds
@@ -113,7 +114,7 @@ export default function ClockBarView({ config, time, scaledFontSize, autoFontSiz
       <div className="flex flex-col" style={{ width: fitToBox ? '100%' : scaledFontSize * 18, maxWidth: scaledFontSize * 18, gap: barGap }}>
         <BarRow
           label={t('clock.barHoursLabel')}
-          value={config.format24h ? hours : h12}
+          value={h}
           max={hoursMax}
           accentColor={accentColor}
           fontSize={barFontSize}

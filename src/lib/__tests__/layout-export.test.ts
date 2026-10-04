@@ -256,13 +256,40 @@ describe('importLayout', () => {
     expect(result.settings.locationName).toBe('Prior Lake, MN');
   });
 
-  it('remaps profile screenIds correctly', () => {
+  it('add mode brings in screens only, leaving the display\'s profiles as they were', () => {
+    // A scheduled profile from the file would take the wall over from the
+    // screens already there; importing your own export again would
+    // duplicate every profile.
+    const layout = makeLayout(
+      [makeScreen('s1', 'Weekend')],
+      [{ id: 'p1', name: 'Weekend', screenIds: ['s1'], schedule: { daysOfWeek: [0, 6] } }],
+    );
+    const existing = makeConfig([makeScreen('e1', 'Clock')]);
+    existing.profiles = [{ id: 'mine', name: 'Mornings', screenIds: ['e1'] }];
+    const result = importLayout(layout, existing, { mode: 'add' });
+
+    expect(result.screens.map((s) => s.name)).toEqual(['Clock', 'Weekend']);
+    expect(result.profiles).toEqual([{ id: 'mine', name: 'Mornings', screenIds: ['e1'] }]);
+  });
+
+  it('add mode on a display with no profiles adds none', () => {
+    const layout = makeLayout(
+      [makeScreen('s1', 'A')],
+      [{ id: 'p1', name: 'Only A', screenIds: ['s1'] }],
+    );
+    const existing = makeConfig([makeScreen('e1', 'Existing')]);
+    const result = importLayout(layout, existing, { mode: 'add' });
+
+    expect(result.profiles).toBeUndefined();
+  });
+
+  it('replace mode remaps profile screenIds correctly', () => {
     const layout = makeLayout(
       [makeScreen('s1', 'A'), makeScreen('s2', 'B')],
       [{ id: 'p1', name: 'Both', screenIds: ['s1', 's2'] }],
     );
     const existing = makeConfig([makeScreen('e1', 'Existing')]);
-    const result = importLayout(layout, existing, { mode: 'add' });
+    const result = importLayout(layout, existing, { mode: 'replace' });
 
     const importedProfile = result.profiles!.find((p) => p.name === 'Both');
     expect(importedProfile).toBeDefined();

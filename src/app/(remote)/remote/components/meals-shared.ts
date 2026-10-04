@@ -5,10 +5,10 @@ import { UI_SANS_STACK } from '@/lib/font-registry';
 /**
  * Compute the 7 dates of the week containing `referenceDate`, aligned to
  * the household's `weekStartDay`. Returns each date plus its `dayIndex`
- * (0=Sun…6=Sat) and a `shortDate` like "4/8". Callers that need a localized
- * day-of-week name should look it up via `getLocalizedDayNames(locale)[dayIndex]`
- * — keeping locale resolution out of this helper makes it usable from
- * non-React code paths.
+ * (0=Sun…6=Sat). Callers that need a localized day-of-week name should look
+ * it up via `getLocalizedDayNames(locale)[dayIndex]`, and a short date via
+ * `formatShortDayMonth(date, locale)`. Keeping locale resolution out of this
+ * helper makes it usable from non-React code paths.
  *
  * `referenceDate` is read through its local getters, so "this week" must be
  * the household's clock (`useHouseholdNow`), not `new Date()`: a phone in
@@ -18,18 +18,13 @@ import { UI_SANS_STACK } from '@/lib/font-registry';
 export function getWeekDates(
   referenceDate: Date,
   weekStartDay: 'sunday' | 'monday' = 'sunday',
-): { date: string; dayIndex: number; shortDate: string }[] {
+): { date: string; dayIndex: number }[] {
   const start = alignToWeekStart(referenceDate, weekStartDay);
-  const result: { date: string; dayIndex: number; shortDate: string }[] = [];
+  const result: { date: string; dayIndex: number }[] = [];
   for (let i = 0; i < 7; i++) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
-    const dayIdx = d.getDay();
-    result.push({
-      date: toISODate(d),
-      dayIndex: dayIdx,
-      shortDate: `${d.getMonth() + 1}/${d.getDate()}`,
-    });
+    result.push({ date: toISODate(d), dayIndex: d.getDay() });
   }
   return result;
 }

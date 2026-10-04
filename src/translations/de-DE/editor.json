@@ -1685,6 +1685,7 @@
         "enableLabel": "Benachrichtigen, wenn ein Update verfügbar ist"
       },
       "upToDate": "Du bist auf der neuesten Version",
+      "checkFailed": "Die Suche nach Updates hat gerade nicht geklappt",
       "changelog": {
         "heading": "Änderungsprotokoll",
         "viewButton": "Änderungsprotokoll anzeigen",
@@ -3789,6 +3790,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Standard (Midnight)",
+      "themeDefault": "Standard (aus Einstellungen)",
       "photoSource": "Fotoquelle",
       "sourceLocal": "Lokale Fotos",
       "sourceImmich": "Immich",

@@ -5,7 +5,7 @@ import path from 'path';
 import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { withAuth, parseJsonBody } from '@/lib/api-utils';
 import { sanitizeFolderName } from '@/lib/library-folder-name';
-import { IMAGE_FILE_RE } from '@/lib/media-formats';
+import { libraryMediaKind } from '@/lib/library-files';
 import { LibraryMoveError, renameLibraryFolder } from '@/lib/library-moves';
 
 export const dynamic = 'force-dynamic';
@@ -19,11 +19,15 @@ function safePath(relativePath: string): string | null {
   return resolved;
 }
 
-/** Count image files in a directory (non-recursive) */
-async function countImages(dirPath: string): Promise<number> {
+/**
+ * Count the pictures the library lists directly inside one folder (`folder`
+ * is its library path, '' for the top level), so the number matches the grid:
+ * the background rotation's own downloads are not counted.
+ */
+async function countImages(dirPath: string, folder: string): Promise<number> {
   try {
     const entries = await fs.readdir(dirPath, { withFileTypes: true });
-    return entries.filter((e) => e.isFile() && IMAGE_FILE_RE.test(e.name)).length;
+    return entries.filter((e) => e.isFile() && libraryMediaKind(folder ? `${folder}/${e.name}` : e.name) === 'image').length;
   } catch {
     return 0;
   }
@@ -59,7 +63,7 @@ async function scanDirectories(
     if (!stat.isDirectory()) continue;
 
     const relPath = path.relative(relativeTo, fullPath);
-    const imageCount = await countImages(fullPath);
+    const imageCount = await countImages(fullPath, relPath);
 
     results.push({
       name: entry,
@@ -80,7 +84,7 @@ export const GET = withAuth(async () => {
   await fs.mkdir(BGS, { recursive: true });
 
   // Count images in root
-  const rootImageCount = await countImages(BGS);
+  const rootImageCount = await countImages(BGS, '');
 
   // Scan subdirectories (max depth 2)
   const subdirs = await scanDirectories(BGS, BGS, 1, 2);

@@ -2,7 +2,7 @@
 import type { FamilyMember } from '@/types/family';
 
 import { TAP_CHECKBOX_SIZE } from '../shared/TapCheckbox';
-import type { MemberStats } from './types';
+import type { MemberStats, ResolvedAssignment } from './types';
 
 /**
  * Layout helpers shared by the small chore-chart views and the fullscreen
@@ -73,6 +73,134 @@ export function weekMembers(members: FamilyMember[], memberStats: Map<string, Me
   return members.filter((m) => (memberStats.get(m.id)?.weekAssigned ?? 0) > 0);
 }
 
+// ── Board ─────────────────────────────────────────────────────────────
+
+/** A board column: one member and the chores it lists today (none on a day off). */
+export interface BoardColumn {
+  member: FamilyMember;
+  chores: ResolvedAssignment[];
+}
+
+/**
+ * The board's columns, in household order: everyone with chores this week,
+ * each listing what they owe today. A member with nothing today keeps a column
+ * that says "Day off!"; one with nothing all week is not on the board.
+ *
+ * The fit and the board both read this, so the type is sized for the columns
+ * actually drawn. Sized for the members with a chore today instead, two on a
+ * day off made a second row of columns the type had no room for, and every
+ * list hid its last chores.
+ */
+export function boardColumns(
+  members: FamilyMember[],
+  memberStats: Map<string, MemberStats>,
+  todayAssignments: readonly ResolvedAssignment[],
+): BoardColumn[] {
+  const { idle } = partitionMembers(members, memberStats);
+  const idleIds = new Set(idle.map((m) => m.id));
+  return members.filter((m) => !idleIds.has(m.id)).map((member) => ({
+    member,
+    // A chore marked "not today" is owed by nobody; the board lists what is owed.
+    chores: todayAssignments.filter((a) => a.memberId === member.id && !a.isSkipped),
+  }));
+}
+
+/** The narrowest a column gets, in em of the size it is drawn at, whatever its names. */
+const BOARD_COLUMN_EM = 6;
+export const BOARD_COLUMN_GAP_PX = 8;
+
+/** A chore name is set at 0.8em, 1.25 lines high, and clamped to three lines. */
+const BOARD_NAME_EM = 0.8;
+export const BOARD_NAME_LINES = 3;
+
+/**
+ * How wide a character of a chore name can be, in em: upper bounds for the
+ * card's default face (Inter) up to bold, by class, rounded up. A pure
+ * function cannot measure text, and guessing low is what breaks a word in
+ * half ("Coun / ters"), so a name that is really narrower only gets more room.
+ */
+function glyphEm(ch: string): number {
+  if (ch === ' ') return 0.3;
+  if ('ijl.,:;!|\''.includes(ch)) return 0.32;
+  if ('frtI()-'.includes(ch)) return 0.45;
+  if (ch === 'm' || ch === 'w') return 0.98;
+  if (ch === 'M' || ch === 'W') return 1.06;
+  if (ch >= 'A' && ch <= 'Z') return 0.82;
+  if (ch >= '0' && ch <= '9') return 0.68;
+  if (ch >= 'a' && ch <= 'z') return 0.66;
+  // Accented, other scripts and emoji: as wide as a full em.
+  return 1;
+}
+
+function textEm(text: string): number {
+  let em = 0;
+  for (const ch of text) em += glyphEm(ch);
+  return em;
+}
+
+/**
+ * Lines a chore name takes when its text has `room` px across at font size
+ * `fontSize`: greedy word wrap on the upper bounds above, never more than the
+ * clamp. A word wider than the room breaks inside itself, which the board's
+ * column widths are chosen to prevent.
+ */
+export function boardNameLines(name: string, room: number, fontSize: number): number {
+  const px = BOARD_NAME_EM * fontSize;
+  const space = glyphEm(' ') * px;
+  let lines = 0;
+  let used = 0;
+  for (const word of name.split(/\s+/).filter(Boolean)) {
+    const w = textEm(word) * px;
+    if (lines > 0 && used + space + w <= room) {
+      used += space + w;
+    } else {
+      lines += Math.max(1, Math.ceil(w / Math.max(1, room)));
+      used = w > room ? w % Math.max(1, room) : w;
+    }
+  }
+  return Math.min(BOARD_NAME_LINES, Math.max(1, lines));
+}
+
+/**
+ * What a card spends across beside its name: 0.4em of padding either side at
+ * the name's 0.8em, the tap box, and the chore's icon where it has one, each
+ * 6px (`gap-1.5`) from the next.
+ */
+function boardCardChrome(fontSize: number, hasIcon: boolean): number {
+  return 0.64 * fontSize + choreTapSize(fontSize) + 6 + (hasIcon ? choreIconSize(fontSize) + 6 : 0);
+}
+
+/**
+ * The narrowest a column may be at `fontSize`: wide enough for the longest
+ * word of every name it lists to sit whole beside the tap box and icon, and
+ * never under six em. Six em alone broke "Counters" and "Dishwasher" in half
+ * once the tap box and icon took their share of a 131px column.
+ */
+export function boardMinColumnWidth(columns: readonly BoardColumn[], fontSize: number): number {
+  let widest = BOARD_COLUMN_EM * fontSize;
+  for (const { chores } of columns) {
+    for (const { chore } of chores) {
+      const longestWord = Math.max(0, ...chore.name.split(/\s+/).map(textEm));
+      widest = Math.max(widest, boardCardChrome(fontSize, !!chore.emoji) + longestWord * BOARD_NAME_EM * fontSize);
+    }
+  }
+  return widest;
+}
+
+/** The px a card's name has across in a column `columnWidth` wide. */
+export function boardNameRoom(columnWidth: number, fontSize: number, hasIcon: boolean): number {
+  return columnWidth - boardCardChrome(fontSize, hasIcon);
+}
+
+/**
+ * The member's icon at the top of a board column. A fixed 28px set the height
+ * of every column header on a small card, so the type could not shrink past it
+ * and the last chore of each list stayed under the progress bar.
+ */
+export function boardIconSize(fontSize: number): number {
+  return Math.round(Math.max(12, Math.min(28, fontSize * 1.15)));
+}
+
 /** Rows and section headers a view has to fit, in the em units it draws them at. */
 interface ChoreFitInput {
   /** Measured box, px. Zero on the first paint. */
@@ -120,7 +248,7 @@ const STAR_LEGEND_TOP_PX = 8;
 const STAR_LEGEND_GAP_PX = 4;
 
 /** Padding a row adds around its tap target, in em, per view. */
-const ROW_PADDING_EM: Record<string, number> = { today: 0.7, compact: 0.5, board: 1.35 };
+const ROW_PADDING_EM: Record<string, number> = { today: 0.7, compact: 0.5 };
 
 /**
  * Views whose rows carry no tap target, so a row is a plain line of text: its
@@ -148,7 +276,7 @@ const SECTION_EM = 1.9;
  * more than the others: a member column header above the matrix and a
  * per-member totals legend under it.
  */
-const CHROME_EM: Record<string, number> = { today: 3.7, compact: 9, board: 3.7, 'reward-history': 2.4 };
+const CHROME_EM: Record<string, number> = { today: 3.7, compact: 9, 'reward-history': 2.4 };
 
 /**
  * The strip `FitRows` keeps for its "N more below" pill. Budgeted on every
@@ -195,7 +323,7 @@ export function fitChoreFontSize({ width, height, requested, rows, sections, vie
     return search(tallStar, height - fixedPx, Math.min(requested, width / STAR_WIDTH_EM));
   }
 
-  const listView = view === 'today' || view === 'board' || view === 'compact' || view === 'reward-history';
+  const listView = view === 'today' || view === 'compact' || view === 'reward-history';
   if (!listView) {
     // The progress rings are one block per member rather than a list, so they
     // key off the box alone.
@@ -224,6 +352,134 @@ export function fitChoreFontSize({ width, height, requested, rows, sections, vie
     + (CHROME_EM[view] + MORE_PILL_EM) * f;
 
   return search(tall, budget, Math.min(requested, width / (LIST_WIDTH_EM_BY_VIEW[view] ?? LIST_WIDTH_EM)));
+}
+
+/**
+ * Board geometry, from what `BoardView` draws. The px parts are Tailwind
+ * spacing, which does not follow the type; the em parts are line boxes at the
+ * 1.5 line height the card inherits.
+ */
+/** The title: a 0.85em line and its 8px margin. */
+const BOARD_TITLE_EM = 1.275;
+const BOARD_TITLE_PX = 8;
+/**
+ * A column header: the icon row (a 1.3em line, which `boardIconSize` stays
+ * inside) and the name (a 0.7em line), in 12px of padding and a 4px margin.
+ */
+const BOARD_HEADER_EM = 3;
+const BOARD_HEADER_PX = 16;
+/** The ticket balance under the name: a 0.55em line and its 2px margin. */
+const BOARD_BALANCE_EM = 0.825;
+const BOARD_BALANCE_PX = 2;
+/** The progress bar (0.35em) and its count (a 0.6em line), 6px and 2px below what is above them. */
+const BOARD_FOOTER_EM = 1.25;
+const BOARD_FOOTER_PX = 8;
+/**
+ * A chore card: the tap box or its name's lines (each 1em: 0.8em at a 1.25
+ * line height), whichever is taller, in 0.3em of padding at that 0.8em.
+ */
+const BOARD_CARD_PAD_EM = 0.48;
+/** `space-y-1` between cards. */
+const BOARD_CARD_GAP_PX = 4;
+/** "All done" under the columns: a 0.75em line and its 8px margin. */
+const BOARD_ALL_DONE_EM = 1.125;
+const BOARD_ALL_DONE_PX = 8;
+
+export interface BoardFitInput {
+  /** Measured box, px. Zero on the first paint. */
+  width: number;
+  height: number;
+  /** The module's own font size: the ceiling, never exceeded. */
+  requested: number;
+  /** The columns the board draws (`boardColumns`), whose names set their width and depth. */
+  columns: readonly BoardColumn[];
+  showTitle: boolean;
+  /** Someone's ticket balance shows under their name. */
+  showBalance: boolean;
+  /** Everything is done, so the board adds its "all done" line. */
+  allDone: boolean;
+}
+
+/** What the board draws at: its font size, and the columns across each row. */
+export interface BoardFit {
+  fontSize: number;
+  /** BoardView draws exactly this many across: the height was budgeted for it. */
+  perRow: number;
+}
+
+/**
+ * The font size the board can draw at inside its box, and how its columns wrap.
+ *
+ * Columns wrap into rows of equal height, and each row has to hold a header,
+ * the tallest column's cards and a progress bar. Those headers and bars are
+ * mostly fixed pixels and line boxes, not chore rows, so the board is
+ * budgeted from its own geometry: the list views' 1.9em per section counted a
+ * fraction of each row's header and bar, and a two-row board came out taller
+ * than the box at the size that was supposed to fit.
+ *
+ * A card is as deep as its name's lines at the column's real text width
+ * (`boardNameLines`), not a flat two: a three-line name in a two-line budget
+ * clipped the last card of a column by half a card.
+ *
+ * Every way of wrapping the columns into rows is tried, each only at sizes
+ * where its columns are wide enough for every word of every name to sit whole
+ * (`boardMinColumnWidth`, never under six em of that size); the one that fits
+ * the largest type wins, and a tie goes to fewer rows. Wrapping at the
+ * authored size instead held a family of seven in two rows at 11px in a card
+ * with room for more, and in a tall, narrow landscape card made three rows
+ * that could not fit at all. When no wrap fits even at the floor, the one with
+ * the fewest rows (the shortest) is drawn.
+ */
+export function fitBoard({ width, height, requested, columns, showTitle, showBalance, allDone }: BoardFitInput): BoardFit {
+  const count = Math.max(1, columns.length);
+  if (height <= 0 || width <= 0) return { fontSize: requested, perRow: count };
+  const floor = Math.min(requested, CHORE_FONT_FLOOR);
+  /** Height of the board at `f` in `groups` rows of columns `columnWidth` wide. */
+  const tall = (f: number, groups: number, columnWidth: number) => {
+    const tap = choreTapSize(f);
+    const card = (lines: number) => Math.max(tap, lines * f) + BOARD_CARD_PAD_EM * f;
+    // A day off still draws its one "Day off!" line, budgeted as a card.
+    let deepest = card(1);
+    for (const { chores } of columns) {
+      let depth = Math.max(0, chores.length - 1) * BOARD_CARD_GAP_PX;
+      for (const { chore } of chores) {
+        depth += card(boardNameLines(chore.name, boardNameRoom(columnWidth, f, !!chore.emoji), f));
+      }
+      deepest = Math.max(deepest, depth);
+    }
+    const column = BOARD_HEADER_PX + BOARD_HEADER_EM * f
+      + (showBalance ? BOARD_BALANCE_PX + BOARD_BALANCE_EM * f : 0)
+      + deepest
+      + BOARD_FOOTER_PX + BOARD_FOOTER_EM * f;
+    return groups * column + (groups - 1) * BOARD_COLUMN_GAP_PX
+      + (showTitle ? BOARD_TITLE_PX + BOARD_TITLE_EM * f : 0)
+      + (allDone ? BOARD_ALL_DONE_PX + BOARD_ALL_DONE_EM * f : 0);
+  };
+  let best: BoardFit | null = null;
+  let shortest: BoardFit | null = null;
+  // Fewest rows first, so a tie keeps the earlier arrangement.
+  for (let groups = 1; groups <= count; groups++) {
+    // The widest row `balanceRows` makes for this many rows; a row count that
+    // gives the same widest row as one with fewer rows is the same wrap.
+    const across = Math.ceil(count / groups);
+    if (Math.ceil(count / across) !== groups) continue;
+    // Every column measured as one of the widest row's, the narrowest there are.
+    const columnWidth = (width - (across - 1) * BOARD_COLUMN_GAP_PX) / across;
+    if (boardMinColumnWidth(columns, floor) > columnWidth) continue;
+    // Too narrow for a word is never a fit, at any height.
+    const fontSize = search(
+      (f) => (boardMinColumnWidth(columns, f) <= columnWidth ? tall(f, groups, columnWidth) : Infinity),
+      height,
+      requested,
+    );
+    const fit = { fontSize, perRow: across };
+    if (tall(fontSize, groups, columnWidth) > height) {
+      shortest ??= fit;
+    } else if (!best || fontSize > best.fontSize) {
+      best = fit;
+    }
+  }
+  return best ?? shortest ?? { fontSize: CHORE_FONT_FLOOR, perRow: 1 };
 }
 
 /**

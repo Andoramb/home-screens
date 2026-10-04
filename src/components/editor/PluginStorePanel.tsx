@@ -16,6 +16,7 @@ import { latestVersion, hasUpdate, resolveChannel, isBetaHiddenEntry, isBetaOnly
 import { compareSemver } from '@/lib/semver';
 import { usePluginStore } from '@/stores/plugin-store';
 import { useEditorStore } from '@/stores/editor-store';
+import { removePluginModules } from '@/lib/plugin-modules';
 import Button from '@/components/ui/Button';
 import type { RegistryPlugin, InstalledPlugin, PluginRegistry, PluginPermission, PluginSecretDeclaration } from '@/types/plugins';
 import type { DevPlugin } from '@/lib/plugin-loader';
@@ -98,7 +99,12 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
 
   const installedVersions = new Map(installed.map((p) => [p.id, p.version]));
 
-  const runAction = async (pluginId: string, method: string, body: Record<string, unknown>) => {
+  const runAction = async (
+    pluginId: string,
+    method: string,
+    body: Record<string, unknown>,
+    onDone?: (data: Record<string, unknown>) => void,
+  ) => {
     setActionInProgress(pluginId);
     setActionError(null);
     try {
@@ -114,6 +120,7 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
           : (data.error ?? t('settings.pluginStorePanel.errors.requestFailed', { status: res.status }));
         throw new Error(msg);
       }
+      onDone?.(await res.json().catch(() => ({})));
       await fetchData();
       usePluginStore.getState().loadPlugins('editor');
     } catch (err) {
@@ -143,7 +150,22 @@ export default function PluginStorePanel({ onClose }: PluginStorePanelProps) {
       variant: 'danger',
     });
     if (!confirmed) return;
-    await runAction(pluginId, 'DELETE', { pluginId });
+    // Edits still on their way to the hub land first, so the removal is made
+    // on top of them and the editor can simply reload afterwards.
+    const editor = useEditorStore.getState();
+    if (editor.isDirty || editor.isSaving) await editor.saveConfig().catch(() => {});
+    // The hub took the plugin's modules off every screen; the editor's copy
+    // follows, or its next save is refused as a conflict and "Keep mine"
+    // puts them back.
+    await runAction(pluginId, 'DELETE', { pluginId }, (data) => {
+      const { moduleType, configRevision, previousConfigRevision } = data;
+      if (typeof moduleType !== 'string' || typeof configRevision !== 'string') return;
+      void useEditorStore.getState().adoptHubRewrite({
+        rewrite: (config) => removePluginModules(config, moduleType),
+        previousRevision: typeof previousConfigRevision === 'string' ? previousConfigRevision : null,
+        revision: configRevision,
+      });
+    });
   };
 
   const handleToggle = (pluginId: string, enabled: boolean) =>

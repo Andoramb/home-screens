@@ -1685,6 +1685,7 @@
         "enableLabel": "Mij melden wanneer er een update beschikbaar is"
       },
       "upToDate": "Je gebruikt de nieuwste versie",
+      "checkFailed": "Controleren op updates lukt nu even niet",
       "changelog": {
         "heading": "Changelog",
         "viewButton": "Changelog bekijken",
@@ -3789,6 +3790,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Standaard (Midnight)",
+      "themeDefault": "Standaard (uit Instellingen)",
       "photoSource": "Fotobron",
       "sourceLocal": "Lokale foto's",
       "sourceImmich": "Immich",

@@ -4,11 +4,9 @@ import { useMemo } from 'react';
 import type { ChoreChartConfig, ModuleStyle } from '@/types/config';
 import { useTranslate } from '@/i18n';
 import { useElementBox } from '@/hooks/useElementBox';
-import { balanceRows, fitChoreFontSize, fitPerRow, fitStoreFontSize, resolveHistoryLimit, weekMembers } from './layout';
-
-/** Mirrors BoardView's own column sizing, for the height estimate. */
-const BOARD_COLUMN_EM = 6;
-const BOARD_COLUMN_GAP = 8;
+import {
+  balanceRows, boardColumns, fitBoard, fitChoreFontSize, fitPerRow, fitStoreFontSize, resolveHistoryLimit, weekMembers,
+} from './layout';
 
 /** Mirrors StarChartView's legend sizing, for the height estimate. */
 const STAR_LEGEND_ITEM_PX = (fontSize: number) => 5.5 * 0.65 * fontSize;
@@ -44,22 +42,16 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
   // without this a ten-chore day simply ran off the bottom of its own card.
   const [frameRef, box] = useElementBox();
 
+  // The board's columns, exactly as BoardView draws them: the fit has to make
+  // room for every column on the board, day offs included.
+  const columns = useMemo(
+    () => (view === 'board' ? boardColumns(data.members, data.memberStats, data.todayAssignments) : []),
+    [view, data.members, data.memberStats, data.todayAssignments],
+  );
+
   // What the chosen view actually has to stack down the box.
   const { rows, sections } = useMemo(() => {
     const assignments = data.todayAssignments;
-    if (view === 'board') {
-      // A column per member, wrapped into groups when they do not all fit
-      // across the box. Each group costs its own header plus its tallest
-      // column, so that is what has to fit down the box.
-      const perMember = new Map<string, number>();
-      for (const a of assignments) perMember.set(a.memberId, (perMember.get(a.memberId) ?? 0) + 1);
-      const tallest = Math.max(1, ...perMember.values());
-      // Estimated at the module's own font size (the ceiling), so the guess
-      // errs toward more groups and therefore smaller type, never clipping.
-      const perRow = fitPerRow(box.width, BOARD_COLUMN_EM * style.fontSize, BOARD_COLUMN_GAP, perMember.size);
-      const groups = Math.max(1, Math.ceil(perMember.size / perRow));
-      return { rows: groups * tallest, sections: groups };
-    }
     if (view === 'compact') {
       return { rows: new Set(assignments.map((a) => a.chore.id)).size, sections: 0 };
     }
@@ -121,7 +113,20 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
   // frame as well as passed down. The frame fills the wrapper either way, so
   // setting its font size cannot feed back into the measurement.
   const storeLayout = resolveStoreLayout(config.storeLayout);
-  const fontSize = view === 'rewards-store'
+  // The board's fit also picks how its columns wrap, and the board draws that
+  // arrangement: the height was budgeted for it and no other.
+  const boardFit = view === 'board'
+    ? fitBoard({
+      width: box.width,
+      height: box.height,
+      requested: style.fontSize,
+      columns,
+      showTitle: config.showTitle !== false,
+      showBalance: !!config.showPoints && columns.some((c) => (data.memberStats.get(c.member.id)?.rewardBalance ?? 0) > 0),
+      allDone: data.todayAssignments.length > 0 && data.todayAssignments.every((a) => a.isCompleted),
+    })
+    : null;
+  const fontSize = boardFit ? boardFit.fontSize : view === 'rewards-store'
     ? fitStoreFontSize({
       width: box.width,
       height: box.height,
@@ -144,7 +149,7 @@ export default function ChoreChartModule({ config, style, timezone }: ChoreChart
     <ModuleWrapper style={style}>
       <div ref={frameRef} className="w-full h-full min-h-0 flex flex-col" style={{ fontSize: `${fontSize}px` }}>
         <div className="flex-1 min-h-0">
-          {view === 'board' && <BoardView {...viewProps} authoredFontSize={style.fontSize} />}
+          {boardFit && <BoardView config={config} data={data} fontSize={fontSize} perRow={boardFit.perRow} />}
           {view === 'star-chart' && <StarChartView {...viewProps} />}
           {view === 'today' && <TodayView {...viewProps} timezone={timezone} />}
           {view === 'progress' && <ProgressView {...viewProps} />}

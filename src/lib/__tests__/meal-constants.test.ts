@@ -29,6 +29,7 @@ import {
   SLOT_META,
   getLocalizedDayNames,
   getLocalizedMonthNames,
+  formatShortDayMonth,
 } from '@/lib/meal-constants';
 import { preloadDateLocale } from '@/i18n/formatters';
 import type { SavedMeal, PlannedMeal, MealSlotType } from '@/types/config';
@@ -54,6 +55,28 @@ describe('getLocalizedMonthNames', () => {
     // could offer English month names.
     expect(getLocalizedMonthNames('de-DE')[2]).toBe('März');
     expect(getLocalizedMonthNames('fr-FR')[0]).toBe('janvier');
+  });
+});
+
+// ── formatShortDayMonth ──
+
+describe('formatShortDayMonth', () => {
+  it('puts day and month in the order the language reads them', () => {
+    expect(formatShortDayMonth('2026-09-28', 'en-US')).toBe('9/28');
+    expect(formatShortDayMonth('2026-09-28', 'de-DE')).toBe('28.9.');
+    // October 1st, which month/day everywhere showed as "10/1": the 10th of
+    // January to anyone who reads day first.
+    expect(formatShortDayMonth('2026-10-01', 'en-US')).toBe('10/1');
+    for (const locale of ['de-DE', 'fr-FR', 'es-ES', 'nl-NL', 'pt-BR', 'da-DK']) {
+      const shown = formatShortDayMonth('2026-10-01', locale);
+      expect(shown, locale).toMatch(/^0?1\D+10\D*$/);
+    }
+  });
+
+  it('keeps the calendar day whatever the hour offset', () => {
+    // Read at local noon, so a date never slides to the day before.
+    expect(formatShortDayMonth('2026-03-01', 'en-US')).toBe('3/1');
+    expect(formatShortDayMonth('2026-12-31', 'en-US')).toBe('12/31');
   });
 });
 

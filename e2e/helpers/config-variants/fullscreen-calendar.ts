@@ -160,8 +160,10 @@ const PEOPLE_ROSTER = [
   { id: 'p3', name: 'Quiet Person', color: '#2563eb' },
 ];
 const PEOPLE_GROUPS = [{ id: 'g-kids', name: 'Kids', memberIds: ['p1'] }];
+/** A configured feed for each id below: only calendars that still exist give their owner a row. */
+const icalStub = (id: string) => ({ id, type: 'ical', name: id, url: `https://example.com/${id}.ics`, color: BLUE, enabled: true });
 const PEOPLE_SETTINGS = { calendar: {
-  googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [], daysAhead: 7,
+  googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [icalStub('src-a'), icalStub('src-b')], daysAhead: 7,
   personSources: { p1: ['src-a'], p2: ['src-b'] },
 } };
 
@@ -1005,7 +1007,7 @@ export const FULLSCREEN_CALENDAR_VARIANTS: ConfigVariant[] = [
       { id: 'p2', name: 'Quiet Person', color: '#059669' },
     ],
     settings: { calendar: {
-      googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [], daysAhead: 7,
+      googleCalendarId: 'primary', googleCalendarIds: ['primary'], icalSources: [icalStub('src-a'), icalStub('src-none')], daysAhead: 7,
       personSources: { p1: ['src-a'], p2: ['src-none'] },
     } },
     config: { view: 'family-grid' },

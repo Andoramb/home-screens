@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   photoThemeTokens,
+  inheritedPhotoTheme,
   autoClockBackdropColor,
   defaultClockBackdrop,
   clockOverlayPaint,
@@ -27,6 +28,16 @@ describe('photoThemeTokens', () => {
     expect(photoThemeTokens('paper', 'slate')).toEqual(getThemeTokens('paper'));
     expect(photoThemeTokens(undefined, 'slate')).toEqual(getThemeTokens('slate'));
     expect(photoThemeTokens(undefined, undefined)).toEqual(getThemeTokens('midnight'));
+  });
+});
+
+describe('inheritedPhotoTheme', () => {
+  it('follows the Settings full-screen theme when one is set, so Default is not called Midnight', () => {
+    expect(inheritedPhotoTheme('linen')).toEqual({ theme: 'linen', fromSettings: true });
+  });
+
+  it('falls back to Midnight only when Settings names no theme', () => {
+    expect(inheritedPhotoTheme(undefined)).toEqual({ theme: 'midnight', fromSettings: false });
   });
 });
 

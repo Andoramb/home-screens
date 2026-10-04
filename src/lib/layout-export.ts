@@ -134,24 +134,17 @@ export function importLayout(
     };
   });
 
-  // Remap profile screenIds
-  const newProfiles: Profile[] = (layout.profiles ?? []).map((p) => ({
-    ...p,
-    id: uuidv4(),
-    screenIds: p.screenIds
-      .map((sid) => screenIdMap.get(sid))
-      .filter((id): id is string => !!id),
-  }));
-
   const screens =
     mode === 'replace' ? newScreens : [...existingConfig.screens, ...newScreens];
 
-  const profiles =
-    mode === 'replace'
-      ? newProfiles.length > 0 ? newProfiles : undefined
-      : [...(existingConfig.profiles ?? []), ...newProfiles].length > 0
-        ? [...(existingConfig.profiles ?? []), ...newProfiles]
-        : undefined;
+  // Profiles describe a whole layout, so only a replace brings them in.
+  // Adding screens leaves the display's own profiles exactly as they were:
+  // an imported profile keeps its schedule, and a scheduled one would take
+  // the wall over from the screens that were already there, while importing
+  // your own export again would duplicate every profile.
+  const profiles = mode === 'replace'
+    ? remapProfiles(layout.profiles ?? [], screenIdMap)
+    : existingConfig.profiles;
 
   const baseSettings = applyVisual
     ? {
@@ -177,6 +170,18 @@ export function importLayout(
     screens,
     profiles,
   };
+}
+
+/** The file's profiles with fresh ids, pointing at the imported screens. */
+function remapProfiles(profiles: Profile[], screenIdMap: Map<string, string>): Profile[] | undefined {
+  const remapped = profiles.map((p) => ({
+    ...p,
+    id: uuidv4(),
+    screenIds: p.screenIds
+      .map((sid) => screenIdMap.get(sid))
+      .filter((id): id is string => !!id),
+  }));
+  return remapped.length > 0 ? remapped : undefined;
 }
 
 // ── Validation ──────────────────────────────────────────────────────

@@ -388,11 +388,13 @@ export async function postHeartbeat(
     timerSessionId?: string | null;
     activeAlerts?: number;
     activeProfile?: string | null;
+    /** A schedule chose `activeProfile` (the manual pick waits for it). */
+    profileScheduled?: boolean;
   } = {},
 ): Promise<void> {
   const {
     screenCount = 2, currentIndex = 0, display, displayState = 'active',
-    brightness, timerSessionId, activeAlerts, activeProfile = null,
+    brightness, timerSessionId, activeAlerts, activeProfile = null, profileScheduled = false,
   } = overrides;
   // A specific `display` lands the heartbeat in that display's statusMap slot
   // (via ?display= and a matching body displayId); omit it for the legacy
@@ -404,6 +406,7 @@ export async function postHeartbeat(
       currentScreen: { index: currentIndex, id: `screen-${currentIndex}`, name: `Screen ${currentIndex}` },
       screenCount,
       activeProfile,
+      profileScheduled,
       displayState,
       timestamp: Date.now(),
       ...(brightness !== undefined ? { brightness } : {}),

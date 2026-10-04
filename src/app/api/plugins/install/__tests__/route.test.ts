@@ -5,6 +5,9 @@ import path from 'path';
 import os from 'os';
 import crypto from 'crypto';
 import { __resetPackageVersionCacheForTests } from '@/lib/version';
+import { DEFAULT_CONFIG, configRevision } from '@/lib/config';
+import { getLatestSchemaVersion } from '@/lib/migrations';
+import type { ScreenConfiguration } from '@/types/config';
 
 // Bypass session auth but PRESERVE the withAuth try/catch → 500 behaviour, so a
 // throw from the real installPlugin (SHA mismatch, path traversal) surfaces as
@@ -384,6 +387,48 @@ describe('DELETE /api/plugins/install', () => {
     expect(res.status).toBe(200);
     await expect(fs.access(base)).rejects.toThrow();
     expect((await readInstalled()).plugins).toEqual([]);
+  });
+
+  it('takes the plugin\'s modules off every screen of every display', async () => {
+    // The confirm says "It comes off every screen that shows it"; the
+    // modules used to stay as a "Plugin not available" box.
+    const mod = (id: string, type: string) => ({
+      id, type, position: { x: 0, y: 0 }, size: { w: 200, h: 200 }, zIndex: 1, config: {}, style: {},
+    });
+    const config = {
+      ...DEFAULT_CONFIG,
+      version: getLatestSchemaVersion(),
+      screens: [{ id: 'legacy', name: 'Legacy', backgroundImage: '', modules: [mod('l1', 'plugin:flag')] }],
+      displays: [
+        {
+          id: 'main', name: 'Main',
+          screens: [{ id: 'm1', name: 'Home', backgroundImage: '', modules: [mod('m-flag', 'plugin:flag'), mod('m-clock', 'clock')] }],
+        },
+        {
+          id: 'porch', name: 'Porch',
+          screens: [{ id: 'p1', name: 'Porch', backgroundImage: '', modules: [mod('p-flag', 'plugin:flag')] }],
+        },
+      ],
+    };
+    await fs.mkdir(path.join(tmpDir, 'data', 'plugins', 'flag-status'), { recursive: true });
+    await fs.writeFile(path.join(tmpDir, 'data', 'config.json'), JSON.stringify(config));
+    await seedInstalled([{ id: 'flag-status', version: '1.0.0', enabled: true, moduleType: 'flag' }]);
+
+    const res = await DELETE(makeRequest('DELETE', { pluginId: 'flag-status' }));
+    expect(res.status).toBe(200);
+
+    const saved = JSON.parse(await fs.readFile(path.join(tmpDir, 'data', 'config.json'), 'utf-8'));
+    expect(saved.screens[0].modules).toEqual([]);
+    expect(saved.displays[0].screens[0].modules.map((m: { id: string }) => m.id)).toEqual(['m-clock']);
+    expect(saved.displays[1].screens[0].modules).toEqual([]);
+    // Both revisions: an editor holding unsaved edits moves onto the new one
+    // only when its own is the one the removal was made to.
+    expect(await res.json()).toEqual({
+      ok: true,
+      moduleType: 'flag',
+      configRevision: configRevision(saved),
+      previousConfigRevision: configRevision(config as unknown as ScreenConfiguration),
+    });
   });
 });
 

@@ -519,6 +519,27 @@ export function bonusDisplayOrder(items: readonly BonusItem[]): BonusItem[] {
   return [...items].sort((a, b) => rank(a) - rank(b));
 }
 
+/** How a "did it" line names the day: by weekday, or by a short date. */
+export interface BonusDoneDay {
+  form: 'weekday' | 'date';
+  /** "Friday", or "Sep 18", in `locale`. */
+  day: string;
+}
+
+/**
+ * The day a bonus chore was done, as a "did it" line names it: the weekday
+ * within the last six days, a short date before that. A put-back chore can
+ * stay done for weeks, and "did it Friday" about a job three Fridays back
+ * reads as yesterday. Most languages say the two differently ("on Sep 18",
+ * "le 18 sept."), so the caller picks its sentence by `form`.
+ */
+export function bonusDoneDay(date: string, today: string, locale: string): BonusDoneDay {
+  const d = parseISO(date);
+  return date <= today && date >= addDays(today, -6)
+    ? { form: 'weekday', day: d.toLocaleDateString(locale, { weekday: 'long' }) }
+    : { form: 'date', day: d.toLocaleDateString(locale, { month: 'short', day: 'numeric' }) };
+}
+
 /**
  * Tickets `memberId` earned from bonus chores on `dates`. Bonus chores stay out
  * of every count, but what they pay is still tickets earned that week, so the

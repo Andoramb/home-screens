@@ -989,6 +989,73 @@ describe('furniture that does not fit its column takes a shorter form', () => {
 });
 
 /**
+ * The day headers, measured with letters as wide as a weekday's really are.
+ *
+ * A short weekday is two of the widest letters a face has, and the bound the
+ * rest of the card is measured with charged them half an em each. Three cards
+ * across a 1000px module on a 1920x1080 wall left 37.2px day columns, and the
+ * row kept "We 7", which Inter draws 44px wide at the row's 17px: the 7 was
+ * cut off, and "Th 8" lost two pixels of its 8.
+ */
+describe('a day header gives up its date before it is cut', () => {
+  /** Saturday the 3rd of October: the card turns to the week of Monday the 5th. */
+  const nextWeek = () => resolveFocus(utc('2026-10-03T08:00:00Z'), ZONE, context(LEON, GAR));
+
+  /** What an English wall hands down for that week: "We", "7" and "Oct 5". */
+  const ENGLISH: TimetableWords = {
+    endCap: 'Ends at '.length,
+    room: 'Room '.length,
+    careFull: ' until '.length,
+    careShort: 'until '.length,
+    lateStart: 'not until '.length,
+    timeRange: ' to '.length,
+    focusWord: 'Monday'.length,
+    dayName: 'We'.length,
+    dayNumber: '7'.length,
+    dayMonth: 'Oct 5'.length,
+    holidayFull: 'Autumn Holidays, back to school on Monday, November 2'.length,
+    holidayShort: 'Autumn Holidays, back to school on Nov 2'.length,
+    holidayBrief: 'Autumn Holidays, back Nov 2'.length,
+  };
+
+  /** The same week in Brazilian Portuguese, whose short weekdays are three letters: "qua". */
+  const PORTUGUESE: TimetableWords = { ...ENGLISH, dayName: 'qua'.length, dayMonth: '5 de out'.length };
+
+  /** One of three cards across that module, on the 12-hour clock its gutter is capped for. */
+  const THREE_ACROSS = { cardWidth: 286, cardHeight: 846, baseFontSize: 18, padding: 0, timeFormat: '12h' as const };
+  /** A card wide enough for "We 7" and its gap in every face, at the same 17px. */
+  const ROOMY = { ...THREE_ACROSS, cardWidth: 420 };
+
+  const card = (geometry: typeof THREE_ACROSS, words: TimetableWords) =>
+    model(MEMBERS.leon, LEON, GAR, 'less', geometry, nextWeek(), { words });
+
+  it('drops every date in a 37px column rather than cutting its figures off', () => {
+    const tight = card(THREE_ACROSS, ENGLISH);
+    expect(tight.metrics.quietColumnEm * tight.metrics.baseFontSize).toBeCloseTo(37.2, 1);
+    expect(tight.metrics.focusRatio).toBe(1);
+    // Another week than this one, so even Less asks every column for a date.
+    expect(tight.showDayDates).toBe(true);
+    expect(tight.days.find((day) => day.isFocus)?.day).toBe('mon');
+    for (const day of tight.days) {
+      expect(day, day.day).toMatchObject({ showDate: false, showMonth: false, letter: false });
+    }
+  });
+
+  it('keeps the dates in a column that holds them', () => {
+    const roomy = card(ROOMY, ENGLISH);
+    expect(roomy.metrics.quietColumnEm * roomy.metrics.baseFontSize).toBeGreaterThan(48);
+    for (const day of roomy.days) expect(day.showDate, day.day).toBe(true);
+  });
+
+  it('charges a three-letter weekday for its third letter', () => {
+    // A third weekday letter is charged like the other two, and the column
+    // that holds "We 7" has no room for it.
+    const roomy = card(ROOMY, PORTUGUESE);
+    for (const day of roomy.days.filter((d) => !d.isFocus)) expect(day.showDate, day.day).toBe(false);
+  });
+});
+
+/**
  * The boxes the fixes in this round were measured against, read off the
  * rendered wall rather than reasoned about.
  *
@@ -1239,7 +1306,7 @@ describe('the school-holiday line has three forms of the same fact', () => {
     focusWord: 'Heute'.length,
     dayName: 'Do'.length,
     dayNumber: '10.'.length,
-    dayHead: 'Do10. Okt.'.length,
+    dayMonth: '10. Okt.'.length,
     holidayFull: 'Herbstferien, wieder Schule am Montag, 2. November'.length,
     holidayShort: 'Herbstferien, wieder Schule am 2. Nov.'.length,
     holidayBrief: 'Herbstferien, wieder ab 2. Nov.'.length,

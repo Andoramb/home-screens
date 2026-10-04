@@ -32,7 +32,7 @@ Under **Plan**, tap a day and a slot and pick a meal from the library. Three sho
 
 ## 4. The grocery list
 
-**Grocery** builds a shopping list from the ingredients of every meal in the week you are looking at, grouped by aisle. Tap an item to tick it off; ticks show up on every phone. **Share** sends the unticked items to your phone's share sheet, or copies them if sharing is not available.
+**Grocery** builds a shopping list from the ingredients of every meal in the week you are looking at, grouped by aisle. Tap an item to tick it off; ticks show up on every phone and stay with that week's list, so next week's list starts fresh. **Share** sends the unticked items to your phone's share sheet, or copies them if sharing is not available.
 
 You cannot type straight into the list. To add something, add it as an ingredient to a meal in the library.
 

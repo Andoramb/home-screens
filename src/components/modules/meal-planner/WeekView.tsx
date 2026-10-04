@@ -5,7 +5,8 @@ import type { MealPlannerConfig, MealSettings, SavedMeal, PlannedMeal, MealSlotT
 import { TEXT_OPACITY, ink } from '@/lib/constants';
 import { SLOT_META, getLocalizedDayNames, resolveMealWithEntry, getWeekDatesForRange, getWeekRange, dateToDayIndex, formatMealTime, resolvePlannedMealTime } from '@/lib/meal-constants';
 import { useFormattingLocale, useTranslate } from '@/i18n';
-import { useElementWidth } from '@/hooks/useElementBox';
+import { useElementBox } from '@/hooks/useElementBox';
+import { pictureAboveName } from '@/lib/meal-week-cell';
 import { MealTapTarget, type RecipeTapMode } from '../shared/MealTapTarget';
 import Glyph from '@/components/ui/Glyph';
 import { DEFAULT_MEAL_EMOJI, GRID_PICTURE_SIZE } from '@/lib/meal-constants';
@@ -27,6 +28,18 @@ interface WeekViewProps {
 const DAY_COLUMN_EM = 2.5;
 /** A slot column at least this wide (in em) spells "Breakfast" instead of "B". */
 const FULL_LABEL_COLUMN_EM = 4.5;
+/** A meal cell's padding (px-1.5 either side) and its 2px left border, across. */
+const CELL_INSET_X_PX = 6 * 2 + 2;
+/** The same cell's padding (py-0.5) top and bottom. */
+const CELL_INSET_Y_PX = 2 * 2;
+/** The 1px gap the grid draws between its columns and between its rows. */
+const GRID_GAP_PX = 1;
+/** The gap (gap-1) a cell draws between the dish and its serving time. */
+const CELL_GAP_PX = 4;
+/** The picture's line beside or above a dish name: an emoji at 0.8em on a 1.5 line. */
+const PICTURE_LINE_EM = 0.8 * 1.5;
+/** A serving time's figures and its AM or PM, a character at a time, in em of its size. */
+const TIME_CHAR_EM = 0.6;
 
 export function WeekView({ config, settings, timeFormat, plan, savedMeals, todayISO, recipeTapMode, fontSize }: WeekViewProps) {
   const t = useTranslate('modules');
@@ -47,10 +60,20 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
   const slots = usedSlots;
 
   // Spelled-out slot names when the columns have room; single letters otherwise.
-  const [frameRef, width] = useElementWidth();
+  const [frameRef, frame] = useElementBox();
+  const width = frame.width;
   const columnWidth = width > 0 ? (width - DAY_COLUMN_EM * fontSize) / slots.length : 0;
   const fullLabels = columnWidth >= FULL_LABEL_COLUMN_EM * fontSize;
   const slotLabel = (s: MealSlotType) => t(fullLabels ? `meal-planner.slots.${s}` : `meal-planner.slotShort.${s}`);
+
+  // The room a dish name has, for whether its picture sits beside it or above.
+  const namePx = Math.max(0.72 * fontSize, 13);
+  // The slot labels and the serving times share one small size.
+  const smallPx = Math.max(0.55 * fontSize, 11);
+  const cellPx = columnWidth > 0 ? columnWidth - GRID_GAP_PX - CELL_INSET_X_PX : 0;
+  // The slot labels' row (a 1.5 line, pb-1 and mb-1) comes off the top first.
+  const headerPx = smallPx * 1.5 + 8;
+  const rowPx = (frame.height - headerPx - GRID_GAP_PX * (weekDates.length - 1)) / weekDates.length - CELL_INSET_Y_PX;
 
   const columns = `${DAY_COLUMN_EM}em repeat(${slots.length}, minmax(0, 1fr))`;
 
@@ -103,6 +126,15 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
               {slots.map((slot) => {
                 const { meal, planned, name } = resolveMealWithEntry(date, slot, plan, savedMeals);
                 const time = resolvePlannedMealTime(planned, slot, settings.defaultSlotTimes);
+                const timeLabel = time ? formatMealTime(time, timeFormat) : '';
+                const pictured = showEmoji && !!meal?.emoji;
+                const above = pictureAboveName({
+                  cellPx,
+                  rowPx,
+                  namePx,
+                  picturePx: pictured ? PICTURE_LINE_EM * fontSize : 0,
+                  besidePx: timeLabel ? timeLabel.length * TIME_CHAR_EM * smallPx + CELL_GAP_PX : 0,
+                });
                 return (
                   <div
                     key={slot}
@@ -114,8 +146,14 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
                   >
                     {name ? (
                       <>
-                        <MealTapTarget meal={meal} mode={recipeTapMode} className="flex items-center gap-1 min-w-0">
-                          {showEmoji && meal?.emoji && (
+                        {/* The picture goes above a name it would squeeze to a
+                            few letters, so the name gets the whole cell. */}
+                        <MealTapTarget
+                          meal={meal}
+                          mode={recipeTapMode}
+                          className={above ? 'flex flex-col items-start gap-1 min-w-0' : 'flex items-center gap-1 min-w-0'}
+                        >
+                          {pictured && (
                             <span className="shrink-0" style={{ fontSize: '0.8em' }}><Glyph value={meal?.emoji} fallback={DEFAULT_MEAL_EMOJI} pictureSize={GRID_PICTURE_SIZE} /></span>
                           )}
                           {/* Two lines at most: rows are tall enough, columns are not. */}
@@ -129,7 +167,11 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
                               WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
-                              // One long word ("Cheeseburgers") breaks rather than clips.
+                              // A word wider than the column ("Cheeseburgers") breaks at
+                              // a hyphen where the browser knows the page's language, and
+                              // anywhere at all where it does not, so it never clips.
+                              // Breaking anywhere alone cut "Pancakes" to "Pancak / es".
+                              hyphens: 'auto',
                               overflowWrap: 'anywhere',
                             }}
                           >
@@ -145,7 +187,7 @@ export function WeekView({ config, settings, timeFormat, plan, savedMeals, today
                               fontVariantNumeric: 'tabular-nums',
                             }}
                           >
-                            {formatMealTime(time, timeFormat)}
+                            {timeLabel}
                           </span>
                         )}
                       </>

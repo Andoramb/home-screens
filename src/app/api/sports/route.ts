@@ -1,20 +1,8 @@
-import { cachedProxyRoute, fetchWithTimeout, parseCommaList } from '@/lib/api-utils';
-import { scoreboardUrl, parseESPNEvent } from '@/lib/espn';
+import { cachedProxyRoute, parseCommaList } from '@/lib/api-utils';
 import type { Game } from '@/lib/espn';
+import { fetchScoreboard } from '@/lib/espn-scoreboard';
 
 export const dynamic = 'force-dynamic';
-
-async function fetchLeague(league: string): Promise<Game[]> {
-  const url = scoreboardUrl(league);
-  if (!url) return [];
-
-  const res = await fetchWithTimeout(url);
-  if (!res.ok) throw new Error(`Failed to fetch ${league} scores`);
-
-  const data = await res.json();
-  const events = (data.events ?? []) as Record<string, unknown>[];
-  return events.map((event) => parseESPNEvent(event, league));
-}
 
 const { GET, cache } = cachedProxyRoute<{ games: Game[] }>({
   auth: 'display',
@@ -27,7 +15,7 @@ const { GET, cache } = cachedProxyRoute<{ games: Game[] }>({
     const leaguesParam = req.nextUrl.searchParams.get('leagues') || 'nfl,nba';
     const leagues = parseCommaList(leaguesParam);
 
-    const results = await Promise.all(leagues.map(fetchLeague));
+    const results = await Promise.all(leagues.map(fetchScoreboard));
     const games = results.flat();
     return { games };
   },

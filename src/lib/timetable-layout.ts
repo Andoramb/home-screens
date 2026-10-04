@@ -245,15 +245,23 @@ export const CARD_GAP_PX = 20;
 const DAY_GAP_EM = 0.35;
 
 /**
- * A little more than the estimate, for the day header only, in em of the size
- * it is drawn at.
+ * How wide a day header's two halves are, a character at a time, in em of the
+ * size it is drawn at: the short weekday, and the date beside it, which is the
+ * bare day of the month or the day with its month.
  *
- * The header is drawn at weight 650 and its date in tabular figures, both a
- * shade wider per character than the bound the rest of the card is measured
- * with. Without this, "Fr 11" came out one or two pixels past its column, and
- * two pixels of a day number is a digit.
+ * The furniture bound charges half an em a character, and a short weekday is
+ * two of the widest letters there are: "We" is 1.65em in Inter at the pill's
+ * weight and "ma" 1.74em in Poppins, where that bound allowed 1.1. Estimated
+ * that way, "We 7" passed a 37px column it is 44px wide in and lost its 7.
+ *
+ * These hold for every short weekday a school week prints in the seven
+ * languages ("We", "Mo", "Mi", "qua", "ma"), every day of the month and every
+ * month, at the weights the header draws them in and with its tabular
+ * figures, in every face the Font control offers. They are checked on whole
+ * headers rather than per half, so the weekday's share also covers the few
+ * hundredths of an em a bold Georgia figure runs over the date's.
  */
-const DAY_HEAD_SLACK_EM = 0.2;
+const DAY_HEAD_EM = { weekday: 0.88, date: 0.66 };
 
 /** What the header row draws: how much of the day line, and which chips. */
 interface HeaderForm {
@@ -401,14 +409,16 @@ export interface TimetableWords {
   /** The word before the lit day: "Today", or the day's own name. */
   focusWord: number;
   /**
-   * The widest day header this week prints: the short weekday on its own, the
-   * bare day of the month beside it, and the two together where the week
-   * crosses a month and the header has to name it. The gaps between the pieces
-   * are the card's own and are added where they are used, not counted here.
+   * The widest day header this week prints, in its pieces: the short weekday,
+   * the bare day of the month beside it, and the day with its month, for where
+   * the week crosses a month and the header has to name it. The pieces are
+   * estimated apart because a weekday's letters are much wider than its
+   * figures, and the gaps between them are the card's own and are added where
+   * they are used, not counted here.
    */
   dayName: number;
   dayNumber: number;
-  dayHead: number;
+  dayMonth: number;
   /**
    * The three forms of the school-holiday line: the whole sentence with the
    * long date, the whole sentence with a short one, and the two facts on their
@@ -429,7 +439,7 @@ const DEFAULT_WORDS: TimetableWords = {
   focusWord: 'Today'.length,
   dayName: 'Th'.length,
   dayNumber: '10'.length,
-  dayHead: 'ThOct 1'.length,
+  dayMonth: 'Oct 10'.length,
   holidayFull: 'Autumn Holidays, back to school on Monday, November 2'.length,
   holidayShort: 'Autumn Holidays, back to school on Nov 2'.length,
   holidayBrief: 'Autumn Holidays, back Nov 2'.length,
@@ -1488,10 +1498,9 @@ function labelWidthEm(chars: number): number {
  * How wide a word drawn at the header's own weight is, in em of its size.
  *
  * Measured off the rendered day row rather than reasoned about: "Heute" comes
- * to 0.56em a character at weight 700 and "Vandaag" to 0.605, where the
- * tabular digits beside them run 0.44. A bound of its own keeps the "today"
- * word from being dropped on a card that would have held it, and from being
- * kept on one that would not.
+ * to 0.56em a character at weight 700 and "Vandaag" to 0.605. A bound of its
+ * own keeps the "today" word from being dropped on a card that would have held
+ * it, and from being kept on one that would not.
  */
 function wordWidthEm(chars: number): number {
   return Math.max(0, chars) * 0.62 + 0.1;
@@ -2750,14 +2759,16 @@ export function cardModel(input: TimetableCardInput): TimetableCardModel {
       ladder.push({ pill: 'none', showDate: false, showMonth: false, word: false });
     }
 
+    // The pill sets its date a quarter em from the weekday, and a quiet column
+    // at the row's own gap, which is wider.
+    const dateGap = isFocus ? PILL.gapEm : DAY_GAP_EM;
     for (const form of ladder) {
-      const chars = form.showDate
-        ? (form.showMonth ? words.dayHead : words.dayName + words.dayNumber)
-        : words.dayName;
       const pill = form.pill === 'full' ? full : form.pill === 'tight' ? tight : 0;
+      const date = form.showDate
+        ? dateGap + (form.showMonth ? words.dayMonth : words.dayNumber) * DAY_HEAD_EM.date
+        : 0;
       const wanted = pill
-        + (form.showDate ? PILL.gapEm : 0)
-        + labelWidthEm(chars) + DAY_HEAD_SLACK_EM
+        + words.dayName * DAY_HEAD_EM.weekday + date
         + (form.word ? wordEm : 0);
       if (wanted * px <= available) return form;
     }

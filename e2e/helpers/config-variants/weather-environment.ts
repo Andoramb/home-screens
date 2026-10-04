@@ -8,7 +8,7 @@ import { getRadarTileUrls } from '../stubs';
  * see .claude/plans/2026-07-09-e2e-100-percent-coverage.md.
  *
  * The default matrix serves matrixSettings() with imperial units, so weather
- * distance/pressure stats surface as ` mi`/` hPa` unless a row overrides units.
+ * distance/pressure stats surface as ` mi`/` inHg` unless a row overrides units.
  *
  * Every rain-map row sets allowsExternal: true — the module loads basemap and
  * radar tiles from CDNs unconditionally, independent of the field being flipped.
@@ -83,11 +83,11 @@ export const WEATHER_ENVIRONMENT_VARIANTS: ConfigVariant[] = [
     expect: has('0.5"'),
   },
   // showPressure / showVisibility / showDewPoint each add a station stat to the
-  // current view (unit is imperial in the matrix → " mi", plus " hPa" and "°").
+  // current view (unit is imperial in the matrix → " mi", " inHg" and "°").
   {
     type: 'weather', name: 'station-stats', kind: 'networked', stubKey: 'weather', stubBody: WEATHER_STATION,
     config: { view: 'current', showPressure: true, showVisibility: true, showDewPoint: true },
-    expect: async (mod) => { await has('1013 hPa')(mod); await has('10 mi')(mod); await has('55°')(mod); },
+    expect: async (mod) => { await has('29.91 inHg')(mod); await has('10 mi')(mod); await has('55°')(mod); },
   },
   // hoursToShow caps how many hourly entries the hourly view renders.
   {

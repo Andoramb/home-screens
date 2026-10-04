@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { getTimeRemaining, pad, resolveEventDate, processEvents, selectCountdownUnits } from '../countdown-utils';
+import { countdownEventsThatFit, getTimeRemaining, pad, resolveEventDate, processEvents, selectCountdownUnits } from '../countdown-utils';
 import type { TimeRemaining } from '../types';
 import type { CountdownEvent } from '@/types/config';
 
@@ -328,5 +328,25 @@ describe('selectCountdownUnits', () => {
         { unit: 'seconds', value: 0 },
       ]);
     });
+  });
+});
+
+describe('countdownEventsThatFit', () => {
+  // Four events, each 100px tall with 20px between them.
+  const bottoms = [100, 220, 340, 460];
+
+  it('keeps the events that end above the line saved for "+N more"', () => {
+    expect(countdownEventsThatFit(bottoms, 360, 4)).toBe(3);
+    expect(countdownEventsThatFit(bottoms, 339, 4)).toBe(2);
+  });
+
+  it('always gives up at least one event while the list still overflows, so it settles', () => {
+    // Every event "fits" the room it was measured against, yet the list is too tall.
+    expect(countdownEventsThatFit(bottoms, 1000, 4)).toBe(3);
+  });
+
+  it('never hides the last event', () => {
+    expect(countdownEventsThatFit(bottoms, 50, 4)).toBe(1);
+    expect(countdownEventsThatFit([100], 50, 1)).toBe(1);
   });
 });

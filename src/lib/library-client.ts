@@ -104,6 +104,8 @@ export interface MoveLibraryResult {
   rewritten: number;
   /** Config revision after the rewrite, so an editor copy can catch up. */
   revision: string;
+  /** Config revision the rewrite was applied to. */
+  previousRevision: string;
 }
 
 /** Move files into a folder ('' for the top level); references follow. */
@@ -120,6 +122,7 @@ export interface RenameFolderResult {
   to: string;
   rewritten: number;
   revision: string;
+  previousRevision: string;
 }
 
 /** Rename a folder in place; references to its files follow. */

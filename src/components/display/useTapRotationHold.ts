@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { holdInteractionFor } from '@/lib/interaction-hold';
+import { holdRotationFor } from '@/lib/interaction-hold';
 
 /**
  * How long a tap on a control keeps the screen where it is.
@@ -36,9 +36,10 @@ const EXCLUDED_SELECTOR = '[data-rotation-hold="off"]';
  * calls. The screen it rotates to has no controls at all, so a kid could not
  * tick anything for about two minutes.
  *
- * Reuses the hold counter the recipe overlay already pauses rotation with, so
- * nothing new has to be taught to unstick a display, and no paused pill
- * appears: this is not the deliberate double-tap pause, and it self-releases.
+ * Pauses only the rotation timer, never flick navigation: a flick right after
+ * a tap is someone asking for the next screen, and the flick is one of the
+ * ways a held display is unstuck. No paused pill appears either: this is not
+ * the deliberate double-tap pause, and it self-releases.
  */
 export function useTapRotationHold(enabled: boolean): void {
   useEffect(() => {
@@ -48,7 +49,7 @@ export function useTapRotationHold(enabled: boolean): void {
       if (!(target instanceof Element)) return;
       if (target.closest(EXCLUDED_SELECTOR)) return;
       if (!target.closest(CONTROL_SELECTOR)) return;
-      holdInteractionFor(TAP_ROTATION_HOLD_MS);
+      holdRotationFor(TAP_ROTATION_HOLD_MS);
     };
     document.addEventListener('pointerdown', onPointerDown, true);
     return () => document.removeEventListener('pointerdown', onPointerDown, true);

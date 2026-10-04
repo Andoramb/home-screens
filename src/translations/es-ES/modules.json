@@ -92,6 +92,7 @@
     "noUpcoming": "Sin eventos próximos",
     "agoSuffix": "(pasado)",
     "todayBang": "¡Hoy!",
+    "moreCount": "+{count} más",
     "unitDays": "días",
     "unitHours": "h",
     "unitMinutes": "min",
@@ -693,6 +694,7 @@
         "other": "Esa tarea extra no está libre ahora mismo"
       },
       "didItOn": "{name} la hizo el {day}",
+      "didItOnDate": "{name} la hizo el {day}",
       "bandHintEach": "Tickets extra. Todos pueden hacerlas una vez."
     },
     "settings": {
@@ -850,6 +852,7 @@
     "today": "Hoy",
     "tomorrow": "Mañana",
     "pickTeam": "Elige tu equipo en los ajustes del módulo",
+    "teamLeagueOff": "Activa la liga de tu equipo en los ajustes del módulo",
     "unavailable": "Los marcadores están descansando",
     "last": "Último:",
     "win": "G",
@@ -908,7 +911,10 @@
     "loading": "Cargando tráfico…",
     "unitMin": "min",
     "mockNotice": "Cifras de ejemplo hasta que añadas una clave de tráfico",
-    "needsKey": "El tráfico necesita una clave de Google Maps o TomTom"
+    "needsKey": "El tráfico necesita una clave de Google Maps o TomTom",
+    "routeIncomplete": "Esperando las direcciones de origen y destino",
+    "routeNotFound": "No se encuentra esta ruta. Revisa las direcciones.",
+    "routeUnavailable": "Ahora mismo no se puede calcular el tiempo de viaje"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "o elige una carpeta en el editor",

@@ -5,7 +5,7 @@ import { useElementBox } from '@/hooks/useElementBox';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import { Wind, Droplets, Sun, Gauge, Sunset } from 'lucide-react';
 import type { WeatherViewProps } from './weather-view-utils';
-import { windUnitLabel } from '@/lib/weather/units';
+import { pressureForUnits, windUnitLabel } from '@/lib/weather/units';
 import {
   hourLabel, smoothPath, nowcastVerdict, tzHour, isNightHour, spanHours,
   LANDSCAPE_LEFT_FRACTION, STRIP_COLUMNS, CANVAS_PAD_X_U, CARD_PAD_X_U, HOURLY_RAIN_SHOWN_PCT,
@@ -527,7 +527,10 @@ function statCells(p: WeatherViewProps): StatCell[] {
   if (now.windSpeed != null) cells.push({ icon: Wind, key: p.t('fullscreen-weather.stats.wind'), value: `${Math.round(now.windSpeed)} ${windUnit}` });
   if (now.humidity != null) cells.push({ icon: Droplets, key: p.t('fullscreen-weather.stats.humidity'), value: `${Math.round(now.humidity)}%` });
   if (now.uvIndex != null) cells.push({ icon: Sun, key: p.t('fullscreen-weather.stats.uv'), value: String(now.uvIndex) });
-  if (now.pressure != null) cells.push({ icon: Gauge, key: p.t('fullscreen-weather.stats.pressure'), value: String(Math.round(now.pressure)) });
+  if (now.pressure != null) {
+    const reading = pressureForUnits(now.pressure, p.units);
+    cells.push({ icon: Gauge, key: p.t('fullscreen-weather.stats.pressure'), value: `${reading.value} ${reading.unit}` });
+  }
   if (p.sun.sunset) {
     cells.push({
       icon: Sunset,

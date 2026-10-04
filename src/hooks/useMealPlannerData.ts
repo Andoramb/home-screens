@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { editorFetch, isSessionExpired } from '@/lib/editor-fetch';
 import { DEFAULT_MEAL_SETTINGS } from '@/lib/meal-constants';
 import { MealSession, type MealEdit, type MealSnapshot } from '@/lib/meal-client';
+import { groceryTapDirection, setGroceryCheck, type GroceryChecked } from '@/lib/grocery-checks';
 import { displayCache } from '@/lib/display-cache';
 import type {
   ModuleInstance,
@@ -12,10 +13,11 @@ import type {
   PlannedMeal,
 } from '@/types/config';
 
-/** What the modal renders: the two editable halves plus the shared settings. */
+/** What the modal renders: the two editable halves, the grocery ticks and the shared settings. */
 export interface MealsPayload {
   savedMeals: SavedMeal[];
   plan: PlannedMeal[];
+  groceryChecked: GroceryChecked;
   settings: MealSettings;
 }
 
@@ -34,7 +36,12 @@ const LEGACY_EMBEDDED_FIELDS = [
 ] as const;
 
 function view(snapshot: MealSnapshot): MealsPayload {
-  return { savedMeals: snapshot.savedMeals, plan: snapshot.plan, settings: snapshot.settings };
+  return {
+    savedMeals: snapshot.savedMeals,
+    plan: snapshot.plan,
+    groceryChecked: snapshot.groceryChecked,
+    settings: snapshot.settings,
+  };
 }
 
 /**
@@ -72,6 +79,7 @@ export function useMealPlannerData<C>({
   const [mealData, setMealData] = useState<MealsPayload>(() => ({
     savedMeals: [],
     plan: [],
+    groceryChecked: {},
     settings: { ...DEFAULT_MEAL_SETTINGS },
   }));
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -127,9 +135,9 @@ export function useMealPlannerData<C>({
     const current = mealDataRef.current;
     const changes = edit(current);
     setMealData({
+      ...current,
       savedMeals: changes.savedMeals ?? current.savedMeals,
       plan: changes.plan ?? current.plan,
-      settings: current.settings,
     });
     setSaveError(null);
     try {
@@ -143,10 +151,32 @@ export function useMealPlannerData<C>({
       // to the loaded copy, or to nothing when there is none.
       setMealData(session.current
         ? view(session.current)
-        : { savedMeals: [], plan: [], settings: { ...DEFAULT_MEAL_SETTINGS } });
+        : { savedMeals: [], plan: [], groceryChecked: {}, settings: { ...DEFAULT_MEAL_SETTINGS } });
       setSaveError('save-failed');
     }
   }, [session]);
 
-  return { mealData, handleModalUpdate, saveError };
+  /**
+   * Tick or untick one item on the list of `week` (that week's key), in the
+   * same store and by the same rules as the phone, so the dialog and the
+   * phone show one list. Applied optimistically, sent through the session's
+   * queue like any save, and put back if refused.
+   */
+  const toggleGroceryItem = useCallback(async (week: string, item: string) => {
+    const direction = groceryTapDirection(mealDataRef.current.groceryChecked, week, item);
+    const apply = (dir: typeof direction) =>
+      setMealData((d) => ({ ...d, groceryChecked: setGroceryCheck(d.groceryChecked, week, item, dir) }));
+    apply(direction);
+    setSaveError(null);
+    try {
+      const saved = await session.tick(week, item, direction);
+      if (session.idle) setMealData(view(saved));
+    } catch (err) {
+      if (isSessionExpired(err)) return;
+      apply(direction === 'check' ? 'uncheck' : 'check');
+      setSaveError('save-failed');
+    }
+  }, [session]);
+
+  return { mealData, handleModalUpdate, toggleGroceryItem, saveError };
 }

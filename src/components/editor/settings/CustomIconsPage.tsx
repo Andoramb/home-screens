@@ -33,24 +33,6 @@ import {
 import { customIconUseCount, customIconUseRows } from '@/lib/custom-icon-usage';
 import type { TranslateFn } from '@/i18n';
 
-/**
- * The hub rewrote the screen config when a removed icon was used there (a
- * Text prefix, a calendar rule). The editor's copy must not lag behind, or
- * its next save of the older copy is refused as a conflict. A clean store
- * simply reloads; one holding unsaved edits gets the same rewrite applied in
- * memory plus the new revision, so its edits and the rewrite merge at the
- * next save. Mirrors the media library's move.
- */
-function adoptIconRemoval(value: string, revision: string): void {
-  const store = useEditorStore.getState();
-  if (!store.isDirty && !store.isSaving) {
-    void store.loadConfig();
-    return;
-  }
-  if (!store.config) return;
-  useEditorStore.setState({ config: replaceIconReferences(store.config, value, undefined), configRevision: revision });
-}
-
 /** One line under the upload button about a file that was not added. */
 type UploadNote =
   | { file: string; code: CustomIconErrorCode | 'failed' }
@@ -262,8 +244,18 @@ function IconTile({ icon, usage, renaming, onRename, onChanged }: {
     });
     if (!confirmed) return;
     try {
-      const { configRevision } = await deleteCustomIcon(icon.id);
-      if (configRevision) adoptIconRemoval(customIconValue(icon.id), configRevision);
+      const { configRevision, previousConfigRevision } = await deleteCustomIcon(icon.id);
+      // The hub rewrote the screen config where a Text prefix or a calendar
+      // rule used the icon; the editor's copy follows, or its next save of
+      // the older copy is refused as a conflict.
+      if (configRevision) {
+        const value = customIconValue(icon.id);
+        void useEditorStore.getState().adoptHubRewrite({
+          rewrite: (config) => replaceIconReferences(config, value, undefined),
+          previousRevision: previousConfigRevision ?? null,
+          revision: configRevision,
+        });
+      }
       onChanged();
     } catch { /* the tile stays; nothing changed */ }
   };

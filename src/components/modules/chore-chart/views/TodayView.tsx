@@ -5,7 +5,7 @@ import type { FamilyGroup, FamilyMember } from '@/types/family';
 
 import type { ChoreChartConfig, ChoreTimeOfDay} from '@/types/config';
 import type { ResolvedAssignment, MemberStats } from '../types';
-import { bonusDisplayOrder, type BonusItem } from '@/lib/chore-bonus';
+import { bonusDisplayOrder, bonusDoneDay, type BonusItem } from '@/lib/chore-bonus';
 import { TIME_OF_DAY_META, getCurrentTimeOfDay, parseISO } from '../types';
 import { buildChoreRows, getUniqueInitials, type ChoreRow } from '@/lib/chore-rows';
 import { TEXT_OPACITY, DIVIDER, ink } from '@/lib/constants';
@@ -73,7 +73,10 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
   const totalDone = owed.filter((a) => a.isCompleted).length;
   // Grabbed first, finished last: the order the wall's band uses.
   const todayBonus = bonusDisplayOrder(data.todayBonus ?? []);
-  const formatDay = (iso: string) => parseISO(iso).toLocaleDateString(locale, { weekday: 'long' });
+  const didItOn = (name: string, date: string) => {
+    const { form, day } = bonusDoneDay(date, today, locale);
+    return t(form === 'weekday' ? 'chore-chart.bonus.didItOn' : 'chore-chart.bonus.didItOnDate', { name, day });
+  };
 
   const memberMap = useMemo(() => new Map(members.map((m) => [m.id, m])), [members]);
   const memberOrder = useMemo(() => new Map(members.map((m, i) => [m.id, i])), [members]);
@@ -249,7 +252,7 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
                   <span className="shrink-0" style={{ fontSize: '0.6em', opacity: TEXT_OPACITY.secondary }}>
                     {grab.status === 'grabbed'
                       ? t('chore-chart.bonus.onIt', { name: holder.name })
-                      : t('chore-chart.bonus.didItOn', { name: holder.name, day: formatDay(grab.status === 'done' ? grab.date : today) })}
+                      : didItOn(holder.name, grab.status === 'done' ? grab.date : today)}
                   </span>
                 )}
                 <MemberDot
@@ -275,7 +278,7 @@ export function TodayView({ config, data, timezone, fontSize }: TodayViewProps) 
               // Done on another day this week: theirs, and not undone from here.
               allowTouch && (item.doneOn[id] === undefined || item.doneOn[id] === today),
               item.doneOn[id] !== undefined && item.doneOn[id] !== today
-                ? t('chore-chart.bonus.didItOn', { name: memberMap.get(id)?.name ?? '', day: formatDay(item.doneOn[id]) })
+                ? didItOn(memberMap.get(id)?.name ?? '', item.doneOn[id])
                 : undefined,
             ))
           )}

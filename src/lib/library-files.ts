@@ -4,7 +4,7 @@ import { pipeline } from 'stream/promises';
 import path from 'path';
 import { BACKGROUNDS_DIR } from './constants';
 import { mediaKindOf } from './media-formats';
-import { ROTATION_FILE_RE } from './background-rotation-cache';
+import { isRotationFile } from './background-rotation-cache';
 
 /**
  * Shared filesystem plumbing for the media library (public/backgrounds).
@@ -29,9 +29,20 @@ export function safeLibraryPath(relativePath: string): string | null {
 }
 
 /**
+ * What the library shows the file at a library-relative path as: a picture,
+ * a video, or nothing. Top-level `rotation-` downloads belong to the
+ * background rotation and are nothing here. Every listing and count of the
+ * library reads files through this, so a folder's number is always the
+ * number of pictures its grid draws.
+ */
+export function libraryMediaKind(libraryPath: string): 'image' | 'video' | null {
+  if (isRotationFile(libraryPath)) return null;
+  return mediaKindOf(libraryPath);
+}
+
+/**
  * Library paths of the pictures and videos directly inside one folder ('' for
- * the top level), the same set the inventory lists for it: top-level
- * `rotation-` downloads belong to the background rotation and are left out.
+ * the top level), the same set the inventory lists for it (`libraryMediaKind`).
  * A missing or unreadable folder holds nothing.
  */
 export async function listLibraryFolder(folder: string): Promise<string[]> {
@@ -45,9 +56,8 @@ export async function listLibraryFolder(folder: string): Promise<string[]> {
   }
   const out: string[] = [];
   for (const entry of entries) {
-    if (!entry.isFile() || mediaKindOf(entry.name) === null) continue;
-    if (folder === '' && ROTATION_FILE_RE.test(entry.name)) continue;
-    out.push(folder ? `${folder}/${entry.name}` : entry.name);
+    const libraryPath = folder ? `${folder}/${entry.name}` : entry.name;
+    if (entry.isFile() && libraryMediaKind(libraryPath)) out.push(libraryPath);
   }
   return out;
 }

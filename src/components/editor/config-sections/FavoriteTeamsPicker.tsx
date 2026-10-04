@@ -10,7 +10,7 @@ import Combobox from '@/components/ui/Combobox';
 import { useTranslate } from '@/i18n';
 import { useEditorData } from '@/hooks/useEditorData';
 import { SPORTS_LEAGUES, leagueLabel, leagueWallCode, type TeamOption } from '@/lib/espn';
-import { MAX_FAVORITE_TEAMS, parseTeamKey, teamKey } from '@/lib/sports-order';
+import { MAX_FAVORITE_TEAMS, isFavoriteLeagueEnabled, parseTeamKey, teamKey } from '@/lib/sports-order';
 import { TeamLogo } from '@/components/modules/shared/TeamLogo';
 import type { ComboboxOption } from '@/lib/combobox-filter';
 
@@ -156,7 +156,7 @@ export function FavoriteTeamsPicker({ leagues, value, onChange, help }: Favorite
                     name={name}
                     logo={team?.logo ?? ''}
                     code={leagueWallCode(parsed?.league ?? '')}
-                    off={!!parsed && !enabled.has(parsed.league)}
+                    off={!isFavoriteLeagueEnabled(key, leagues)}
                     onRemove={() => onChange(value.filter((k) => k !== key))}
                     removeLabel={t('configSections.sports.favoriteTeamsRemove', { team: name })}
                     dragLabel={t('configSections.sports.favoriteTeamsDrag', { team: name })}

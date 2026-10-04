@@ -68,7 +68,8 @@
   },
   "profileSwitcher": {
     "heading": "Profile",
-    "noProfile": "Alle Bildschirme"
+    "noProfile": "Alle Bildschirme",
+    "scheduledNote": "Gerade läuft „{profile}“ nach Zeitplan. Was du hier wählst, startet danach."
   },
   "displayPicker": {
     "targeting": "Senden an",
@@ -148,7 +149,9 @@
       },
       "limitLine": "Mach erst fertig, was du dir geschnappt hast. Schon gemacht? Dann hak diese ab.",
       "youDidItOn": "Du hast sie am {day} gemacht",
+      "youDidItOnDate": "Du hast sie am {day} gemacht",
       "didItOn": "{name} hat sie am {day} gemacht",
+      "didItOnDate": "{name} hat sie am {day} gemacht",
       "limitLineMany": "Mach erst eine deiner geschnappten Aufgaben fertig. Schon gemacht? Dann hak diese ab.",
       "yours": "Deine",
       "didItToday": "{name} hat sie heute gemacht",
@@ -1018,8 +1021,11 @@
     "alertsCleared": "Meldungen auf {name} gelöscht",
     "alertsClearedAll": "Meldungen auf allen Displays gelöscht",
     "noConfirm": "{name} hat nicht geantwortet. Vielleicht ist es aus oder offline.",
-    "profileSwitched": "{name} zeigt jetzt {profile}",
+    "profileSwitched": "{name} zeigt jetzt „{profile}“",
     "profileCleared": "{name} zeigt alle Bildschirme",
+    "profileAfterSchedule": "{name} wechselt zu „{profile}“, sobald „{scheduled}“ endet",
+    "profileClearedAfterSchedule": "{name} zeigt alle Bildschirme, sobald „{scheduled}“ endet",
+    "profileKeptAfterSchedule": "{name} bleibt bei „{profile}“, wenn der Zeitplan endet",
     "profileFailed": "Das Profil auf {name} konnte nicht gewechselt werden",
     "hubBack": "Home Screens ist wieder da",
     "alertSentUnnamed": "Meldung an das Display gesendet",

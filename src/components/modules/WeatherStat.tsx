@@ -3,7 +3,8 @@ import { TEXT_OPACITY } from '@/lib/constants';
 
 export function WeatherStat({ icon: Icon, value, unit, visible, fontSize = '0.7em' }: {
   icon: LucideIcon;
-  value: number | null | undefined;
+  /** A number is rounded; text (an already formatted reading) shows as is. */
+  value: number | string | null | undefined;
   visible?: boolean;
   unit?: string;
   fontSize?: string;
@@ -11,7 +12,7 @@ export function WeatherStat({ icon: Icon, value, unit, visible, fontSize = '0.7e
   if (!visible || value == null) return null;
   return (
     <span className="flex items-center gap-0.5" style={{ fontSize, opacity: TEXT_OPACITY.dim }}>
-      <Icon size="1em" aria-hidden="true" />{Math.round(value)}{unit}
+      <Icon size="1em" aria-hidden="true" />{typeof value === 'number' ? Math.round(value) : value}{unit}
     </span>
   );
 }

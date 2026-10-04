@@ -1685,6 +1685,7 @@
         "enableLabel": "Giv mig besked, når en opdatering er tilgængelig"
       },
       "upToDate": "Du kører den nyeste version",
+      "checkFailed": "Kunne ikke søge efter opdateringer lige nu",
       "changelog": {
         "heading": "Ændringer",
         "viewButton": "Se ændringer",
@@ -3789,6 +3790,7 @@
     },
     "fullscreen-photo": {
       "themeDefaultMidnight": "Standard (midnat)",
+      "themeDefault": "Standard (fra Indstillinger)",
       "photoSource": "Billedkilde",
       "sourceLocal": "Lokale billeder",
       "sourceImmich": "Immich",

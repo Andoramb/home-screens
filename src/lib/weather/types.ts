@@ -40,8 +40,10 @@ export interface ForecastDay {
 
 export interface MinutelyPrecip {
   time: number;
+  /** Rate for that minute: inches per hour for imperial, millimetres per hour for metric. */
   intensity: number;
-  probability: number;
+  /** Chance of any precipitation that minute, 0-100; absent when the provider did not say. */
+  probability?: number;
   type?: string;
 }
 

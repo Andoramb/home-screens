@@ -256,7 +256,7 @@ Live and recent scores from ESPN for the leagues you turn on. College teams in t
 - **cards**: A two-column grid of compact game cards.
 - **list**: One line per game, league code first, for many games at once.
 - **ticker**: A scrolling marquee of scores; `tickerSpeed` sets seconds per game.
-- **team**: One card per favorite team showing its record, standing line, the live or next game with broadcast and venue, and the last result. Several favorites take turns every 10 seconds.
+- **team**: One card per favorite team showing its record, standing line, the live or next game with broadcast and venue, and the last result. Several favorites take turns every 10 seconds. A team whose league is switched off in **Leagues** gets no card.
 {% /module %}
 
 {% module type="standings" %}

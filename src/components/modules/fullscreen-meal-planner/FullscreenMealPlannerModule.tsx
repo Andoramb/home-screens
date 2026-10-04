@@ -9,6 +9,7 @@ import { useFetchData } from '@/hooks/useFetchData';
 import { mealsDataUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import type { FullscreenMealPlannerConfig, MealSettings, SavedMeal, PlannedMeal, TimeFormat } from '@/types/config';
 import type { ModuleStyle } from '@/types/config';
+import type { GroceryChecked } from '@/lib/grocery-checks';
 import { getActiveSlot, DEFAULT_MEAL_SETTINGS, DEFAULT_ACCENT_COLOR, getWeekRange, filterPlanToWeek, toISODate, resolveMealTimeFormat, resolveMealWithEntry, getNextPlannedMeal } from '@/lib/meal-constants';
 import type { MealPlannerViewProps } from './meal-planner-utils';
 import { resolveRecipeTapMode } from '../shared/MealTapTarget';
@@ -26,7 +27,7 @@ const NOW_DOT_PULSE_KEYFRAMES = heldPulseKeyframes('fmpPulse', { rest: 1, peak: 
 interface MealDataResponse {
   savedMeals: SavedMeal[];
   plan: PlannedMeal[];
-  groceryChecked: string[];
+  groceryChecked: GroceryChecked;
   settings?: MealSettings;
   /** Household GlobalSettings.timeFormat, reported alongside the settings */
   globalTimeFormat?: TimeFormat;

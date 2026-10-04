@@ -121,14 +121,14 @@ Every module can be styled except the full-screen ones and Display Control, whic
 
 **Shape**
 
-- **Border Radius**: round the corners (0–50)
-- **Padding**: add inner spacing (0–64)
+- **Corner rounding**: round the corners (0–50)
+- **Space inside**: add room between the module's edge and its content (0–64)
 - **Border Width**: draw an outline around the module (0–4)
 
 **Effects**
 
-- **Opacity**: fade the module (0–1, in steps of 0.05)
-- **Backdrop Blur**: apply a frosted glass effect behind the module (0–40)
+- **Solid**: how see-through the module is, from 0 (invisible) to 1 (fully solid), in steps of 0.05
+- **Frosted glass**: blur whatever is behind the module (0–40)
 - **Shadow Size**: drop a soft shadow behind the module (0–48)
 
 **Color**
@@ -141,11 +141,11 @@ The sticky note has no Background or Text Color here: its paper colour is the no
 
 **Text**
 
-- **Card Title**: show a centered title at the top of the module. The title sits on the module card, above its content, and is cut off with an ellipsis when it is too long to fit. Leave it empty for no title. Some modules (like the to-do list) also show a title of their own from their settings; setting both means you will see both
-- **Title size**: set the title's font size (8–72). It appears once a title is set and starts at the module's font size, so leaving the slider alone keeps them matched; use Reset to default to match the font size again. Clearing the title clears this too
 - **Text size**: a percent of the size the module shows on its own, from 10% to 450%. The clock, date, countdown, greeting, weather, news, quote, dad joke, word of the day, this day in history, affirmations, sticky note, to-do list and multi-month calendar fit their text to their box, so 100% is that fitted size and the slider makes it smaller or larger from there. Every other module's 100% is its base size. A module that was given a pixel size in an older version shows that size as a percent of what it shows on its own, so nothing changes until you move the slider
-- **Font Weight**: make all of the module's text lighter or bolder (100–900). Leave it on Default to keep the module's built-in look, and use Reset to default to go back. The title always stays at its normal weight
+- **Text thickness**: make all of the module's text lighter or bolder (100–900). Leave it on Default to keep the module's built-in look, and use Reset to default to go back. The title always stays at its normal weight
 - **Font Family**: choose from available fonts
+
+A module's title is set under **Module settings > Title**, not here: **The module's own title** (for modules that have one), **My own words**, or **No title**. With **My own words** you type the **Title words** and can set a **Title size** (8–72); the title is centered on the module card above its content and cut off with an ellipsis when it is too long to fit.
 
 ## Managing Screens
 
@@ -324,7 +324,7 @@ The two phone addresses (the kids' chores page and the family remote) with QR co
 
 Keys and logins that unlock extra content, one card per service, each showing whether it is set up. They are stored on the Pi and never sent anywhere else. Weather keys are the exception and live on their provider's card under **Settings > Weather**.
 
-Which service needs which key is listed under [API keys](/docs/calendars#api-keys). One gotcha worth repeating: for **TomTom**, the Geocoding, Reverse Geocoding, and Routing APIs must be enabled **on the key itself**, not just on your account, or the traffic module fails with an unhelpful error.
+Which service needs which key is listed under [API keys](/docs/calendars#api-keys). One gotcha worth repeating: for **TomTom**, the Geocoding, Reverse Geocoding, and Routing APIs must be enabled **on the key itself**, not just on your account, or the traffic module shows "The TomTom key isn't working".
 
 ### Pictures & videos
 

@@ -92,6 +92,7 @@
     "noUpcoming": "Keine bevorstehenden Ereignisse",
     "agoSuffix": "(vergangen)",
     "todayBang": "Heute!",
+    "moreCount": "+{count} weitere",
     "unitDays": "Tage",
     "unitHours": "Std",
     "unitMinutes": "Min",
@@ -693,6 +694,7 @@
         "other": "Diese Bonusaufgabe ist gerade nicht frei"
       },
       "didItOn": "{name} hat sie am {day} gemacht",
+      "didItOnDate": "{name} hat sie am {day} gemacht",
       "bandHintEach": "Extra-Tickets. Alle dürfen die hier einmal machen."
     },
     "settings": {
@@ -850,6 +852,7 @@
     "today": "Heute",
     "tomorrow": "Morgen",
     "pickTeam": "Wähle dein Team in den Moduleinstellungen",
+    "teamLeagueOff": "Schalte die Liga deines Teams in den Moduleinstellungen ein",
     "unavailable": "Die Ergebnisse machen gerade Pause",
     "last": "Zuletzt:",
     "win": "S",
@@ -908,7 +911,10 @@
     "loading": "Verkehr wird geladen…",
     "unitMin": "Min.",
     "mockNotice": "Beispielwerte, bis ein Verkehrsschlüssel hinzugefügt wird",
-    "needsKey": "Verkehr braucht einen Google-Maps- oder TomTom-Schlüssel"
+    "needsKey": "Verkehr braucht einen Google-Maps- oder TomTom-Schlüssel",
+    "routeIncomplete": "Wartet auf Start- und Zieladresse",
+    "routeNotFound": "Diese Route wurde nicht gefunden. Prüfe die Adressen.",
+    "routeUnavailable": "Die Fahrzeit ist gerade nicht verfügbar"
   },
   "fullscreen-photo": {
     "noPhotosYetFolderHint": "oder wähle einen Ordner im Editor",
