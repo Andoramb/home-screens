@@ -2458,10 +2458,6 @@
       "photoCountOther": "{count} foto's",
       "noPhotosInFolder": "Nog geen foto's in deze map."
     },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Achtergronden"
-    },
     "intervals": {
       "minutes": "{count} minuten",
       "hourSingular": "1 uur",
@@ -2495,8 +2491,6 @@
       "collectionNotFound": "Collectie niet gevonden. Controleer de ID of link.",
       "collectionValid": "{title} ({count} foto's)"
     },
-    "needsKey": "Heeft een gratis sleutel nodig",
-    "starterHeading": "Achtergronden die bij Home Screens zitten",
     "groups": {
       "theme": "Passend bij een volledig-scherm thema",
       "color": "Kleuren",
@@ -2527,9 +2521,7 @@
       "pattern-diagonal": "Diagonaal",
       "pattern-paper": "Papier"
     },
-    "yourPicturesHeading": "Je eigen foto's",
     "sourceKeyMissing": "Deze bron heeft een sleutel nodig die nog niet is ingesteld, dus het scherm houdt de laatste foto. Voeg de sleutel toe bij Instellingen, of kies een andere bron.",
-    "pickerHint": "Kies hieronder één vaste afbeelding, of zet Auto-rotatie hierboven aan zodat Home Screens automatisch door een bron roteert.",
     "shadeGroup": "Verduistering",
     "shadeEnable": "Achtergrond donkerder maken",
     "shadeStyleLabel": "Stijl",

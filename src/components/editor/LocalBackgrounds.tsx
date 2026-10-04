@@ -1,10 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useId, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
-import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
-import Button from '@/components/ui/Button';
 import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
 import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
 import { useTranslate, tOrFallback } from '@/i18n';
@@ -14,11 +12,7 @@ import {
   type StarterBackground,
   type StarterBackgroundGroup,
 } from '@/lib/starter-backgrounds';
-import { logger } from '@/lib/logger';
-import { tileThumbnailUrl } from '@/lib/media-paths';
 import { isRotationActive } from '@/lib/screen-background';
-
-const log = logger('backgrounds');
 
 interface Props {
   selectedScreenId: string;
@@ -37,6 +31,7 @@ function readGroupOpen(id: string): boolean {
 /** One collapsible heading in the shipped set. Open by default; the choice sticks per browser. */
 function StarterGroup({ id, title, count, children }: { id: StarterBackgroundGroup; title: string; count: number; children: ReactNode }) {
   const [open, setOpen] = useState(true);
+  const panelId = useId();
   useEffect(() => { setOpen(readGroupOpen(id)); }, [id]);
   const toggle = () => {
     const next = !open;
@@ -47,73 +42,29 @@ function StarterGroup({ id, title, count, children }: { id: StarterBackgroundGro
   return (
     <div className="mt-2">
       <button
+        id={`starter-group-${id}`}
         type="button"
         onClick={toggle}
         aria-expanded={open}
+        aria-controls={panelId}
         data-testid={`starter-group-${id}`}
-        className="flex w-full items-center gap-1 py-1 text-[10px] text-hs-text-faint hover:text-hs-text-muted"
+        className="flex w-full items-center gap-1 rounded border border-hs-border-strong bg-hs-card px-2 py-1.5 text-xs font-medium text-hs-text-body hover:bg-hs-hover"
       >
         <Chevron size={11} />
         <span>{title}</span>
         <span className="ml-auto">{count}</span>
       </button>
-      {open && <div className="mt-1">{children}</div>}
+      {open && <div id={panelId} className="mt-1">{children}</div>}
     </div>
   );
 }
 
 export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const t = useTranslate('editor');
-  const [localBackgrounds, setLocalBackgrounds] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { config, selectedDisplayId, updateScreen } = useEditorStore();
 
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
-
-  useEffect(() => {
-    async function fetchBackgrounds() {
-      try {
-        const res = await editorFetch('/api/backgrounds');
-        const data = await res.json();
-        if (Array.isArray(data)) setLocalBackgrounds(data);
-      } catch (err) {
-        log.debug('Failed to fetch backgrounds:', err);
-      }
-    }
-    fetchBackgrounds();
-  }, []);
-
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsLoading(true);
-    setUploadError(null);
-    const formData = new FormData();
-    formData.append('file', file);
-    try {
-      const res = await editorFetch('/api/backgrounds', { method: 'POST', body: formData });
-      const data = await res.json();
-      if (!res.ok) {
-        setUploadError(
-          data.error ?? t('settings.localBackgrounds.uploadFailedWithStatus', { status: res.status }),
-        );
-      } else if (data.path) {
-        setLocalBackgrounds((prev) => prev.includes(data.path) ? prev : [...prev, data.path]);
-        const updates: Record<string, unknown> = { backgroundImage: data.path };
-        if (isRotationActive(currentScreen?.backgroundRotation)) {
-          updates.backgroundRotation = { ...currentScreen?.backgroundRotation, enabled: false, sources: [] };
-        }
-        updateScreen(selectedScreenId, updates);
-      }
-    } catch (err) {
-      setUploadError(err instanceof Error ? err.message : t('settings.localBackgrounds.uploadFailed'));
-    }
-    setIsLoading(false);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
 
   if (!currentScreen || !config) return null;
 
@@ -134,7 +85,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const tileAspect = landscape ? 'aspect-video' : 'aspect-[9/16]';
   const tileGrid = landscape ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-4 gap-1.5';
   const isCurrent = (path: string) => currentScreen.backgroundImage === path;
-  const tileBorder = (path: string) => (isCurrent(path) ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong');
+  const tileBorder = (path: string) => (isCurrent(path) && !isRotationActive(currentScreen.backgroundRotation) ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong');
 
   // The theme the selected display paints its fullscreen modules with: its
   // own override first, then the shared default, then the shipped default.
@@ -152,6 +103,9 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
     return (
       <div key={bg.id}>
         <button
+          type="button"
+          aria-label={name}
+          aria-pressed={isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation)}
           onClick={() => pick(bg.path)}
           title={name}
           data-testid={`starter-background-${bg.id}`}
@@ -160,7 +114,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
           {/* The thumbnail is the wall's own file, so it cannot drift from what the display paints. */}
           <img src={bg.path} alt="" className="h-full w-full object-cover" />
         </button>
-        <div className={`mt-0.5 truncate text-center text-[9px] leading-tight ${isCurrent(bg.path) ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>
+        <div className={`mt-0.5 truncate text-center text-[9px] leading-tight ${isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation) ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>
           {name}
         </div>
       </div>
@@ -169,14 +123,12 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   return (
     <>
-      <p className="text-[10px] text-hs-text-faint">{t('backgroundPicker.starterHeading')}</p>
-
       <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count={themeWalls.length}>
         <div className="grid grid-cols-2 gap-1.5">
           {orderedThemeWalls.map((bg) => {
             const theme = FULLSCREEN_THEMES.find((th) => th.id === bg.themeId);
             if (!theme) return null;
-            const selected = isCurrent(bg.path);
+            const selected = isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation);
             const inUse = theme.id === themeInUse;
             const group = tOrFallback(t, `settings.defaultDisplayPage.themeGroups.${theme.group}`, theme.group);
             return (
@@ -207,10 +159,12 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
         <div className={tileGrid}>
           <div>
             <button
-              onClick={() => updateScreen(selectedScreenId, { backgroundImage: '' })}
+              type="button"
+              aria-pressed={!currentScreen.backgroundImage && !isRotationActive(currentScreen.backgroundRotation)}
+              onClick={() => pick('')}
               data-testid="starter-background-none"
               className={`block w-full rounded border text-[10px] text-hs-text-faint ${tileAspect} ${
-                !currentScreen.backgroundImage ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'
+                !currentScreen.backgroundImage && !isRotationActive(currentScreen.backgroundRotation) ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'
               }`}
             >
               {t('settings.localBackgrounds.none')}
@@ -224,34 +178,6 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
       <StarterGroup id="pattern" title={t('backgroundPicker.groups.pattern')} count={patternWalls.length}>
         <div className={tileGrid}>{patternWalls.map(wallTile)}</div>
       </StarterGroup>
-
-      <div className="mt-3 space-y-2">
-        <p className="text-[10px] text-hs-text-faint">{t('backgroundPicker.yourPicturesHeading')}</p>
-        {/* Not rendered while empty, so the button sits one gap under the heading, not two. */}
-        {localBackgrounds.length > 0 && (
-          <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
-            {localBackgrounds.map((bg) => (
-              <div key={bg}>
-                <button
-                  onClick={() => pick(bg)}
-                  className={`${tileAspect} w-full rounded border overflow-hidden ${
-                    currentScreen.backgroundImage === bg ? 'border-hs-accent' : 'border-hs-border-strong'
-                  }`}
-                >
-                  <img src={tileThumbnailUrl(bg)} alt="" loading="lazy" decoding="async" className="w-full h-full object-cover" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-        {uploadError && (
-          <p className="text-xs text-hs-danger">{uploadError}</p>
-        )}
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleUpload} data-file-input="" className="hidden" />
-        <Button size="sm" onClick={() => fileInputRef.current?.click()} disabled={isLoading} className="w-full">
-          {isLoading ? t('settings.localBackgrounds.uploadingButton') : t('settings.localBackgrounds.uploadButton')}
-        </Button>
-      </div>
     </>
   );
 }

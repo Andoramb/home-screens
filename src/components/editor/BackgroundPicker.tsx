@@ -5,9 +5,6 @@ import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import type { BackgroundRotationSourceId } from '@/types/config';
 import LocalBackgrounds from './LocalBackgrounds';
-import UnsplashBrowser from './UnsplashBrowser';
-import NasaBrowser from './NasaBrowser';
-import ImmichBrowser from './ImmichBrowser';
 import { Lock, RefreshCw } from 'lucide-react';
 import AccordionSection from './AccordionSection';
 import PropertyGroup from './PropertyGroup';
@@ -20,7 +17,6 @@ import BackgroundShadeFields from './BackgroundShadeFields';
 
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
-  const [tab, setTab] = useState<'unsplash' | 'nasa' | 'immich' | 'local'>('local');
   const { config, selectedDisplayId, selectedScreenId, updateScreen, updateScreenRotation } = useEditorStore();
   const { status: secretStatus } = useSecretStatus();
   const hasUnsplashKey = !!secretStatus.unsplash_access_key;
@@ -120,6 +116,7 @@ export default function BackgroundPicker() {
               }
             >
               <div className="space-y-2">
+                <LocalBackgrounds selectedScreenId={selectedScreenId} />
                 <div className="space-y-1.5">
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
@@ -280,14 +277,21 @@ export default function BackgroundPicker() {
           <div className="flex gap-2 pt-0.5">
             <button
               type="button"
-              onClick={() => setTab('local')}
+              onClick={() => {
+                const group = document.getElementById('starter-group-theme');
+                if (group?.getAttribute('aria-expanded') === 'false') group.click();
+                group?.focus();
+              }}
               className="text-[11px] font-medium px-2.5 py-1 rounded-md text-hs-text-body bg-hs-card border border-hs-border-strong hover:bg-hs-hover transition-colors"
             >
               {t('backgroundPicker.missing.pickAnother')}
             </button>
             <button
               type="button"
-              onClick={() => updateScreen(selectedScreenId, { backgroundImage: '' })}
+              onClick={() => updateScreen(selectedScreenId, {
+                backgroundImage: '',
+                ...(rotationSources.length ? { backgroundRotation: { ...currentScreen.backgroundRotation!, enabled: false, sources: [] } } : {}),
+              })}
               className="text-[11px] font-medium px-2.5 py-1 rounded-md text-hs-text-body bg-hs-card border border-hs-border-strong hover:bg-hs-hover transition-colors"
             >
               {t('backgroundPicker.missing.useSolid')}
@@ -295,49 +299,6 @@ export default function BackgroundPicker() {
           </div>
         </div>
       )}
-      <p className="text-[10px] text-hs-text-faint leading-relaxed">{t('backgroundPicker.pickerHint')}</p>
-      <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
-        {([
-          { id: 'local' as const, label: t('backgroundPicker.tabs.local'), locked: false },
-          { id: 'unsplash' as const, label: 'Unsplash', locked: !hasUnsplashKey },
-          { id: 'nasa' as const, label: t('backgroundPicker.tabs.nasa'), locked: !hasNasaKey },
-          { id: 'immich' as const, label: 'Immich', locked: !hasImmichKey },
-        ]).map((entry) => (
-          <button
-            key={entry.id}
-            onClick={() => setTab(entry.id)}
-            data-testid={`background-tab-${entry.id}`}
-            title={entry.locked ? t('backgroundPicker.needsKey') : undefined}
-            className={`flex items-center justify-center gap-1 truncate rounded px-2 py-1.5 text-xs ${
-              tab === entry.id
-                ? 'bg-hs-hover text-hs-text-primary'
-                : entry.locked
-                  ? 'text-hs-text-faint hover:text-hs-text-muted'
-                  : 'text-hs-text-muted hover:text-hs-text-secondary'
-            }`}
-          >
-            {entry.locked && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
-            {entry.label}
-          </button>
-        ))}
-      </div>
-      <div className="min-h-96">
-        {tab === 'unsplash' && (
-          <UnsplashBrowser selectedScreenId={selectedScreenId} hasUnsplashKey={hasUnsplashKey} />
-        )}
-
-        {tab === 'nasa' && (
-          <NasaBrowser selectedScreenId={selectedScreenId} hasNasaKey={hasNasaKey} />
-        )}
-
-        {tab === 'immich' && (
-          <ImmichBrowser selectedScreenId={selectedScreenId} hasImmichKey={hasImmichKey} />
-        )}
-
-        {tab === 'local' && (
-          <LocalBackgrounds selectedScreenId={selectedScreenId} />
-        )}
-      </div>
     </AccordionSection>
   );
 }

@@ -2458,10 +2458,6 @@
       "photoCountOther": "{count} fotos",
       "noPhotosInFolder": "Ainda não há fotos nesta pasta."
     },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Planos de fundo"
-    },
     "intervals": {
       "minutes": "{count} minutos",
       "hourSingular": "1 hora",
@@ -2495,8 +2491,6 @@
       "collectionNotFound": "Coleção não encontrada. Verifique o ID ou o link.",
       "collectionValid": "{title} ({count} fotos)"
     },
-    "needsKey": "Precisa de uma chave gratuita",
-    "starterHeading": "Planos de fundo que já vêm com o Home Screens",
     "groups": {
       "theme": "Combina com um tema de tela cheia",
       "color": "Cores",
@@ -2527,9 +2521,7 @@
       "pattern-diagonal": "Diagonal",
       "pattern-paper": "Papel"
     },
-    "yourPicturesHeading": "Suas próprias fotos",
     "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
-    "pickerHint": "Escolha uma única imagem fixa abaixo, ou ative a Auto-rotação acima para que o Home Screens gire automaticamente por uma fonte.",
     "shadeGroup": "Escurecimento",
     "shadeEnable": "Escurecer o plano de fundo",
     "shadeStyleLabel": "Estilo",

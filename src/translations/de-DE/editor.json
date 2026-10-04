@@ -2458,10 +2458,6 @@
       "photoCountOther": "{count} Fotos",
       "noPhotosInFolder": "Noch keine Fotos in diesem Ordner."
     },
-    "tabs": {
-      "nasa": "NASA",
-      "local": "Hintergründe"
-    },
     "intervals": {
       "minutes": "{count} Minuten",
       "hourSingular": "1 Stunde",
@@ -2495,8 +2491,6 @@
       "collectionNotFound": "Sammlung nicht gefunden. ID oder Link prüfen.",
       "collectionValid": "{title} ({count} Fotos)"
     },
-    "needsKey": "Braucht einen kostenlosen Schlüssel",
-    "starterHeading": "Hintergründe, die bei Home Screens dabei sind",
     "groups": {
       "theme": "Passend zu einem Vollbild-Design",
       "color": "Farben",
@@ -2527,9 +2521,7 @@
       "pattern-diagonal": "Diagonal",
       "pattern-paper": "Papier"
     },
-    "yourPicturesHeading": "Deine eigenen Bilder",
     "sourceKeyMissing": "Für diese Quelle fehlt ein API-Schlüssel, deshalb behält der Bildschirm sein letztes Bild. Trage den Schlüssel in den Einstellungen ein oder wähle eine andere Quelle.",
-    "pickerHint": "Wähle unten ein einzelnes festes Bild, oder aktiviere oben die automatische Rotation, damit Home Screens automatisch durch eine Quelle rotiert.",
     "shadeGroup": "Abdunklung",
     "shadeEnable": "Hintergrund abdunkeln",
     "shadeStyleLabel": "Stil",
