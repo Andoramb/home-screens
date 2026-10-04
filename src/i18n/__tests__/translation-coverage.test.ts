@@ -44,7 +44,6 @@ const SHARED_UNTRANSLATABLE: ReadonlySet<string> = new Set([
   'editor|backgroundPicker.immich.personLabel',
   'editor|backgroundPicker.statusGroup',
   'editor|backgroundPicker.sourcesGroup',
-  'editor|backgroundPicker.tabs.nasa',
   // "Beta" is the same software term in every shipped language; the update
   // choice's other labels are translated words.
   'editor|settings.systemPage.channel.beta.label',
@@ -438,7 +437,6 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'modules|stock-ticker.chartLabels.week',
     'core|actions.color',
     'core|timer.minutesShort',
-    'editor|backgroundPicker.tabs.local',
     'editor|choreChartModal.choreForm.ticketsLabel',
     'modules|chore-chart.choreSummary.ticketCountPlural',
     'modules|chore-chart.choreSummary.ticketCountSingular',
@@ -511,7 +509,6 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'core|timer.minutesShort',
     'editor|backgroundPicker.intervals.minutes',
     'editor|backgroundPicker.sourceLabel',
-    'editor|backgroundPicker.tabs.local',
     // "Collections" and "photo(s)" are the same words in French.
     'editor|backgroundPicker.unsplash.modeCollections',
     'editor|backgroundPicker.unsplash.collectionValid',
@@ -814,7 +811,6 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'modules|stock-ticker.chartLabels.day',
     'modules|stock-ticker.chartLabels.week',
     'core|timer.minutesShort',
-    'editor|backgroundPicker.tabs.local',
     'editor|choreChartModal.choreForm.ticketsLabel',
     'modules|chore-chart.choreSummary.ticketCountPlural',
     'modules|chore-chart.choreSummary.ticketCountSingular',

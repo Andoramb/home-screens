@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, fireEvent } from '@testing-library/react';
+import { render, cleanup, fireEvent, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { ScreenConfiguration } from '@/types/config';
 import { I18nProvider } from '@/i18n/provider';
@@ -30,7 +30,7 @@ function Wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-function seedStore(backgroundRotation: ScreenConfiguration['screens'][number]['backgroundRotation']): void {
+function seedStore(backgroundRotation: ScreenConfiguration['screens'][number]['backgroundRotation'], backgroundImage = ''): void {
   const config: ScreenConfiguration = {
     version: 14,
     settings: {
@@ -42,7 +42,7 @@ function seedStore(backgroundRotation: ScreenConfiguration['screens'][number]['b
       weather: { provider: 'weatherapi', latitude: 0, longitude: 0, units: 'imperial' },
       calendar: { googleCalendarId: '', googleCalendarIds: [], icalSources: [], daysAhead: 7 },
     },
-    screens: [{ id: 'screen-1', name: 'Screen 1', backgroundImage: '', modules: [], backgroundRotation }],
+    screens: [{ id: 'screen-1', name: 'Screen 1', backgroundImage, modules: [], backgroundRotation }],
   };
 
   useEditorStore.setState({
@@ -211,5 +211,48 @@ describe('BackgroundPicker — shade color semantics', () => {
     fireEvent.change(shadeColor, { target: { value: '#112233' } });
 
     expect(useEditorStore.getState().config?.screens[0].shade?.color).toBe('#112233');
+  });
+});
+
+
+describe('BackgroundPicker — unified Sources', () => {
+  it('keeps only Shade and Sources cards, with all bundled groups inside Sources', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const headings = Array.from(container.querySelectorAll('h4')).map((h) => h.textContent);
+    expect(headings).toEqual([enUSEditor.backgroundPicker.shadeGroup, enUSEditor.backgroundPicker.sourcesGroup]);
+    const sources = container.querySelectorAll('h4')[1].parentElement!.parentElement!;
+    expect(within(sources).getByTestId('starter-group-theme')).not.toBeNull();
+    expect(within(sources).getByTestId('starter-group-color')).not.toBeNull();
+    expect(within(sources).getByTestId('starter-group-pattern')).not.toBeNull();
+    expect(within(sources).getByTestId('starter-background-theme-linen').getAttribute('data-in-use')).toBe('true');
+    expect(container.querySelector('[data-testid^="background-tab-"]')).toBeNull();
+    expect(container.textContent).not.toContain('Your own pictures');
+    expect(container.textContent).not.toContain('Upload Background');
+    expect(sources.querySelectorAll('input[type="checkbox"]')).toHaveLength(5);
+  });
+
+  it('choosing a wall then None disables rotation and retains other rotation settings', () => {
+    seedStore({ enabled: true, sources: ['icloud', 'local'], query: '', intervalMinutes: 30, localFolder: 'holiday' }, '/starter-backgrounds/ocean.svg');
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const theme = getByTestId('starter-background-theme-linen');
+    fireEvent.click(theme);
+    let screen = useEditorStore.getState().config!.screens[0];
+    expect(screen.backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
+    expect(screen.backgroundRotation).toMatchObject({ enabled: false, sources: [], localFolder: 'holiday', intervalMinutes: 30 });
+    expect(theme.getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(getByTestId('starter-background-none'));
+    screen = useEditorStore.getState().config!.screens[0];
+    expect(screen.backgroundImage).toBe('');
+    expect(screen.backgroundRotation?.sources).toEqual([]);
+    expect(getByTestId('starter-background-none').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('None disables rotation even when no fixed image was set', () => {
+    seedStore({ enabled: true, sources: ['icloud'], query: '', intervalMinutes: 60 });
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('starter-background-none').getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(getByTestId('starter-background-none'));
+    expect(useEditorStore.getState().config!.screens[0].backgroundRotation?.sources).toEqual([]);
   });
 });
