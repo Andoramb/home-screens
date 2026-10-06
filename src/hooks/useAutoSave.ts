@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react';
 import { useEditorStore } from '@/stores/editor-store';
 import { validateAllSchedules, validateDisplays } from '@/lib/display-filter';
+import { useDebouncedSave } from '@/hooks/useDebouncedSave';
 
 const AUTO_SAVE_DELAY = 800;
 
@@ -24,13 +25,20 @@ export function useAutoSave() {
     [config],
   );
 
-  // Auto-save: debounce 800ms after last change. Held while a save conflict
-  // is waiting on the user — retrying would just be refused again.
-  useEffect(() => {
-    if (!isDirty || isSaving || isInvalid || saveConflict) return;
-    const timer = setTimeout(() => saveConfig().catch(() => {}), AUTO_SAVE_DELAY);
-    return () => clearTimeout(timer);
-  }, [config, isDirty, isSaving, isInvalid, saveConflict, saveConfig]);
+  // Auto-save: debounce 800ms after the last change. Held while a save
+  // conflict is waiting on the user — retrying would just be refused again.
+  // Flush on unmount so a quick jump from /editor to /display (or closing the
+  // editor tab right after tweaking an effect slider) still kicks off the
+  // pending save instead of strandanding the draft only in local editor state.
+  useDebouncedSave({
+    values: [config],
+    save: () => saveConfig(),
+    debounceMs: AUTO_SAVE_DELAY,
+    enabled: !!isDirty && !isSaving && !isInvalid && !saveConflict,
+    skipInitial: false,
+    flushOnUnmount: true,
+    onError: () => {},
+  });
 
   // Prevent navigating away with unsaved changes
   useEffect(() => {

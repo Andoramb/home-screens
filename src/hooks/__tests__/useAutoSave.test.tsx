@@ -110,4 +110,16 @@ describe('useAutoSave validity gate', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
   });
+
+  it('flushes a pending auto-save when the editor unmounts', async () => {
+    useEditorStore.setState({ config: makeConfig(), isDirty: true, isSaving: false, saveError: null });
+
+    const { unmount } = renderHook(() => useAutoSave());
+    await act(() => vi.advanceTimersByTimeAsync(400));
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    unmount();
+
+    expect(fetchMock).toHaveBeenCalledOnce();
+  });
 });
