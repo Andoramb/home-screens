@@ -220,8 +220,12 @@ describe('BackgroundPicker — unified Sources', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
     const headings = Array.from(container.querySelectorAll('h4')).map((h) => h.textContent);
-    expect(headings).toEqual([enUSEditor.backgroundPicker.shadeGroup, enUSEditor.backgroundPicker.sourcesGroup]);
-    const sources = container.querySelectorAll('h4')[1].parentElement!.parentElement!;
+    expect(headings).toEqual([
+      enUSEditor.backgroundPicker.shadeGroup,
+      enUSEditor.backgroundPicker.effectsGroup,
+      enUSEditor.backgroundPicker.sourcesGroup,
+    ]);
+    const sources = container.querySelectorAll('h4')[2].parentElement!.parentElement!;
     expect(within(sources).getByTestId('starter-source-theme')).not.toBeNull();
     expect(within(sources).getByTestId('starter-source-color')).not.toBeNull();
     expect(within(sources).getByTestId('starter-source-pattern')).not.toBeNull();
@@ -257,7 +261,8 @@ describe('BackgroundPicker — unified Sources', () => {
     fireEvent.click(theme);
     let screen = useEditorStore.getState().config!.screens[0];
     expect(screen.backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
-    expect(screen.backgroundRotation).toMatchObject({ enabled: false, sources: [], localFolder: 'holiday', intervalMinutes: 30 });
+    expect(screen.backgroundRotation).toMatchObject({ sources: [], localFolder: 'holiday', intervalMinutes: 30 });
+    expect(screen.backgroundRotation).not.toHaveProperty('enabled');
     expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
     fireEvent.click(getByText(enUSEditor.backgroundPicker.groups.color).closest('label')!.querySelector('input')!);
     fireEvent.click(getByTestId('starter-background-none'));
@@ -274,5 +279,34 @@ describe('BackgroundPicker — unified Sources', () => {
     expect(getByTestId('starter-background-none').getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(getByTestId('starter-background-none'));
     expect(useEditorStore.getState().config!.screens[0].backgroundRotation?.sources).toEqual([]);
+  });
+});
+
+describe('BackgroundPicker — effects', () => {
+  it('edits effect sliders directly without a preset picker', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    const { getByText, queryByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    expect(queryByRole('combobox', { name: /preset/i })).toBeNull();
+
+    const warmthSlider = getByText(enUSEditor.backgroundPicker.effectsWarmthLabel).closest('label')!.querySelector('input[type="range"]') as HTMLInputElement;
+    fireEvent.change(warmthSlider, { target: { value: '12' } });
+
+    expect(useEditorStore.getState().config?.screens[0].effects).toEqual({
+      brightness: 100, contrast: 100, saturation: 100, warmth: 12,
+    });
+  });
+
+  it('resets an individual effect slider from the right-side reset button', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    const { getByText, getByLabelText } = render(<BackgroundPicker />, { wrapper: Wrapper });
+
+    const warmthSlider = getByText(enUSEditor.backgroundPicker.effectsWarmthLabel).closest('label')!.querySelector('input[type="range"]') as HTMLInputElement;
+    fireEvent.change(warmthSlider, { target: { value: '12' } });
+    fireEvent.click(getByLabelText(`Reset ${enUSEditor.backgroundPicker.effectsWarmthLabel}`));
+
+    expect(useEditorStore.getState().config?.screens[0].effects).toEqual({
+      brightness: 100, contrast: 100, saturation: 100, warmth: 0,
+    });
   });
 });

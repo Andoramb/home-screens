@@ -388,6 +388,18 @@ export interface BackgroundShade {
   color: string;
 }
 
+/** CSS-filter-based tuning applied to the screen background media only. */
+export interface BackgroundEffects {
+  /** CSS brightness(), 0-200 with 100 neutral. */
+  brightness: number;
+  /** CSS contrast(), 0-200 with 100 neutral. */
+  contrast: number;
+  /** CSS saturate(), 0-200 with 100 neutral. */
+  saturation: number;
+  /** Warm/cool tint approximation, -100..100, built from CSS filter primitives. */
+  warmth: number;
+}
+
 export interface Screen {
   /** Unique ID */
   id: string;
@@ -405,6 +417,8 @@ export interface Screen {
   backgroundRotation?: BackgroundRotation;
   /** Dim/vignette overlay drawn over the background (see BackgroundShade) */
   shade?: BackgroundShade;
+  /** CSS-filter-based tuning applied to background media only (see BackgroundEffects) */
+  effects?: BackgroundEffects;
   /** The modules on this screen (see ModuleInstance) */
   modules: ModuleInstance[];
   /**

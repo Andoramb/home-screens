@@ -2571,7 +2571,12 @@
       "topBottom": "Boven en onder",
       "edges": "Randen",
       "both": "Beide"
-    }
+    },
+    "effectsGroup": "Effects",
+    "effectsBrightnessLabel": "Brightness",
+    "effectsContrastLabel": "Contrast",
+    "effectsSaturationLabel": "Saturation",
+    "effectsWarmthLabel": "Warmth"
   },
   "imageBrowserModal": {
     "title": "Afbeeldingsbibliotheek",

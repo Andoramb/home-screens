@@ -2571,7 +2571,12 @@
       "topBottom": "Arriba y abajo",
       "edges": "Bordes",
       "both": "Ambos"
-    }
+    },
+    "effectsGroup": "Effects",
+    "effectsBrightnessLabel": "Brightness",
+    "effectsContrastLabel": "Contrast",
+    "effectsSaturationLabel": "Saturation",
+    "effectsWarmthLabel": "Warmth"
   },
   "imageBrowserModal": {
     "title": "Biblioteca de imágenes",

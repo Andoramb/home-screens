@@ -7,7 +7,7 @@ import { useEditorStore } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import type { ImmichAlbumSummary } from '@/lib/immich';
-import { isRotationActive } from '@/lib/screen-background';
+import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 
 interface Props {
   selectedScreenId: string;

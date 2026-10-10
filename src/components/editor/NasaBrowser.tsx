@@ -6,7 +6,7 @@ import { useEditorStore } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import ImageSearchBrowser, { type BrowsePhoto, type CategoryDef, type SearchResult } from './ImageSearchBrowser';
-import { isRotationActive } from '@/lib/screen-background';
+import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 
 interface NasaPhoto {
   id: string;

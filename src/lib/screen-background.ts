@@ -13,6 +13,12 @@ export function isRotationActive(rotation: Screen['backgroundRotation'] | undefi
   return (rotation?.sources?.length ?? 0) > 0;
 }
 
+export function stopBackgroundRotation(rotation: Screen['backgroundRotation'] | undefined): Screen['backgroundRotation'] | undefined {
+  if (!rotation) return undefined;
+  const { enabled: _enabled, ...rest } = rotation;
+  return { ...rest, sources: [] };
+}
+
 /**
  * The picture a screen paints behind its modules, on the wall and in the
  * editor alike. With rotation on, the screen's own picture is only what the

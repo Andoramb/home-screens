@@ -12,7 +12,7 @@ import {
   type StarterBackground,
   type StarterBackgroundGroup,
 } from '@/lib/starter-backgrounds';
-import { isRotationActive } from '@/lib/screen-background';
+import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 
 interface Props {
   selectedScreenId: string;
