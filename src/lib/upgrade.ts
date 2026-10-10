@@ -413,13 +413,24 @@ function setupSystemStep(progress: number): PipelineStep {
   };
 }
 
-function restartStep(progress: number): PipelineStep {
+/**
+ * `scheduled`: the install was started by the automatic update, with nobody
+ * at the System page. When setup-system then left something only a fresh
+ * kiosk session picks up (a replaced Chromium or labwc, a new launcher),
+ * the restart script's detached job ends the kiosk session once the new
+ * release answers, so the wall comes back on the new programs by itself and
+ * the "restart to finish" note goes with it. The device is never restarted.
+ * A manual install leaves the note and its Restart now button instead.
+ */
+function restartStep(progress: number, scheduled = false): PipelineStep {
   return {
     step: 'restart',
     progress,
     message: 'Restarting service...',
     run: async () => {
-      const restartOut = await runUpgradeScript('restart', [], streamTo('restart'), { cwd: APP_DIR });
+      const args = scheduled && currentUpgrade.restartNeeded ? ['--restart-kiosk'] : [];
+      if (args.length > 0) emitOutput('restart', 'The kiosk session restarts once the new version is up');
+      const restartOut = await runUpgradeScript('restart', args, streamTo('restart'), { cwd: APP_DIR });
       const restart = parseResult(restartOut);
       if (restart.method === 'systemctl') {
         emit({ step: 'restart', progress: 95, message: 'Server will restart momentarily...' });
@@ -531,12 +542,17 @@ export function cancelUpgrade(): boolean {
 
 // ─── Public Pipeline Functions ───
 
-export async function runUpgrade(targetTag: string): Promise<void> {
+export interface RunUpgradeOptions {
+  /** Started by the automatic update rather than a person; see restartStep. */
+  scheduled?: boolean;
+}
+
+export async function runUpgrade(targetTag: string, options: RunUpgradeOptions = {}): Promise<void> {
   // Determine whether a pre-built tarball is available for this tag
   const useTarball = await hasReleaseTarball(targetTag);
 
   if (useTarball) {
-    await runTarballUpgrade(targetTag);
+    await runTarballUpgrade(targetTag, options.scheduled === true);
   } else {
     // For tarball-based installs (no .git), falling through to the git
     // pipeline would produce confusing errors. Surface a clear message.
@@ -611,7 +627,7 @@ async function recoverFromInterruptedDeploy(): Promise<void> {
 }
 
 /** Tarball-based upgrade: download → migrate → deploy → setup-system → restart */
-async function runTarballUpgrade(targetTag: string): Promise<void> {
+async function runTarballUpgrade(targetTag: string, scheduled = false): Promise<void> {
   // Recover from a previously interrupted deploy before starting
   await recoverFromInterruptedDeploy();
 
@@ -665,7 +681,7 @@ async function runTarballUpgrade(targetTag: string): Promise<void> {
     // nothing to recover from if startup fails. Instead, the `restart`
     // action below schedules a detached background job that polls the new
     // server's health and only then removes the rollback directory.
-    restartStep(92),
+    restartStep(92, scheduled),
     completeStep(`Upgrade to ${targetTag} complete!`),
   ];
 

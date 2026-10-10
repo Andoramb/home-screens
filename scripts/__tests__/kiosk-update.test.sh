@@ -274,6 +274,41 @@ rc=0; timer_tick || rc=$?
 [ ! -f "${PENDING}" ] || fail "a restart was left pending after restarting"
 install -m 0755 "${SCRIPTS_DIR}/kiosk-update.sh" "${UPDATER}"
 
+echo "Test 11e: inside the hub's window the helper may update the kiosk's programs, and a replaced one restarts the kiosk"
+# The privileged helper brings Chromium and labwc up to date only while the
+# window file the updater leaves for it is fresh, and leaves the changed file
+# behind when it replaced one. A fake helper plays both halves.
+WINDOW="${APP_DIR}/data/kiosk-upgrade-window"
+CHANGED="${APP_DIR}/data/kiosk-session-packages-changed"
+HELPER_LOG="${WORK}/helper.log"
+PACKAGE_HELPER="${WORK}/package-helper.sh"
+cat > "${PACKAGE_HELPER}" <<EOF
+#!/usr/bin/env bash
+if [ -e "${WINDOW}" ]; then echo "window open" >> "${HELPER_LOG}"; echo "chromium labwc" > "${CHANGED}"; else echo "window shut" >> "${HELPER_LOG}"; fi
+exit 0
+EOF
+chmod +x "${PACKAGE_HELPER}"
+sed -e "s#^PRIV_HELPER=.*#PRIV_HELPER=\"${PACKAGE_HELPER}\"#" -e "s#sudo -n \"\${PRIV_HELPER}\"#\"\${PRIV_HELPER}\"#" "${SCRIPTS_DIR}/kiosk-update.sh" \
+  > "${APP_DIR}/scripts/kiosk-update-packages.sh"
+chmod +x "${APP_DIR}/scripts/kiosk-update-packages.sh"
+package_tick() { PATH="${STUBS}:${PATH}" "${APP_DIR}/scripts/kiosk-update-packages.sh" --timeout 5 --restart-if-advised; }
+# Display in use: the window stays shut and nothing restarts.
+write_manifest "9.0.0" "$(bundle_sha)" "false"
+rm -f "${HELPER_LOG}"
+rc=0; package_tick || rc=$?
+[ "${rc}" -eq 0 ] || fail "expected a no-op tick, got ${rc}"
+grep -qx 'window shut' "${HELPER_LOG}" || fail "the window was open while the display was in use"
+[ "$(pkills)" -eq 2 ] || fail "restarted with nothing changed"
+# Quiet hours: the window opens, the helper replaces a program, the kiosk restarts, the window closes again.
+write_manifest "9.0.0" "$(bundle_sha)" "true"
+rm -f "${HELPER_LOG}"
+rc=0; package_tick || rc=$?
+[ "${rc}" -eq 0 ] || fail "expected a no-op tick, got ${rc}"
+grep -qx 'window open' "${HELPER_LOG}" || fail "the window did not open inside the hub's window"
+[ "$(pkills)" -eq 3 ] || fail "a replaced program did not restart the kiosk"
+[ ! -e "${CHANGED}" ] || fail "the changed file was not consumed"
+[ ! -e "${WINDOW}" ] || fail "the window file was left open"
+
 echo "Test 12: an unreachable hub changes nothing"
 kill "${SERVER_PID}" 2>/dev/null || true
 wait "${SERVER_PID}" 2>/dev/null || true

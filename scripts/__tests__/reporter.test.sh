@@ -66,4 +66,35 @@ hub_out=$(REPORTER_DRY_RUN=1 \
 echo "$hub_out" | jq -e '.hwStats.kioskUpdater == false' >/dev/null || {
   echo "FAIL: a hub tree was reported as a self-updating spoke"; exit 1; }
 
+echo "Test 6: package versions survive a dpkg-query that fails on one missing name"
+# dpkg-query prints the installed ones and exits 1 for the one it does not
+# know; the payload must still be one JSON value with the versions in it.
+STUBS="${SPOKE}/stubs"
+mkdir -p "${STUBS}"
+cat > "${STUBS}/dpkg-query" <<'EOF'
+#!/usr/bin/env bash
+printf 'chromium\t1:154.0.8037.92-1~deb13u1+rpt1\nlabwc\t0.20.2-1~bpo13+1\n'
+echo "dpkg-query: no packages found matching wlopm" >&2
+exit 1
+EOF
+chmod +x "${STUBS}/dpkg-query"
+printf '{"checkedAt":"2026-10-10T22:23:54Z","versions":{"chromium":"1:154.0.8037.92-1~deb13u1+rpt1"}}\n' > "${SPOKE}/data/system-packages.json"
+pkg_out=$(PATH="${STUBS}:${PATH}" REPORTER_DRY_RUN=1 \
+     HOME_SCREENS_DISPLAY_ID=kitchen \
+     HOME_SCREENS_HUB_URL=http://localhost:3000 \
+     HOME_SCREENS_APP_DIR="${SPOKE}" \
+     bash reporter.sh)
+echo "$pkg_out" | jq -e '.hwStats.packages.chromium == "1:154.0.8037.92-1~deb13u1+rpt1" and .hwStats.packages.labwc == "0.20.2-1~bpo13+1"' >/dev/null || {
+  echo "FAIL: expected the installed versions despite the missing name"; echo "$pkg_out" | head -c 600; exit 1; }
+echo "$pkg_out" | jq -e '.hwStats.packagesCheckedAt == "2026-10-10T22:23:54Z"' >/dev/null || {
+  echo "FAIL: expected packagesCheckedAt from system-packages.json"; exit 1; }
+echo "Test 7: no dpkg-query at all reports null, not a broken payload"
+NODPKG="${SPOKE}/nodpkg"
+mkdir -p "${NODPKG}"
+for t in bash jq awk date printf cat head tr grep cut sed uname nproc; do p=$(command -v "$t" 2>/dev/null) && ln -sf "$p" "${NODPKG}/$t"; done
+no_out=$(PATH="${NODPKG}" REPORTER_DRY_RUN=1 HOME_SCREENS_DISPLAY_ID=kitchen HOME_SCREENS_HUB_URL=http://localhost:3000 HOME_SCREENS_APP_DIR="${SPOKE}" bash reporter.sh 2>/dev/null || true)
+if [ -n "${no_out}" ]; then
+  echo "$no_out" | jq -e '.hwStats.packages == null' >/dev/null || { echo "FAIL: expected packages=null without dpkg-query"; exit 1; }
+fi
+
 echo "All reporter tests passed."

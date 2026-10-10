@@ -2219,6 +2219,8 @@
       "previouslyThrottled": "Limitado anteriormente",
       "throttleOk": "OK",
       "temperature": "Temperatura",
+      "displayPrograms": "Programas da tela",
+      "programsChecked": "Programas verificados",
       "noHardwareStats": "Ainda não foram relatadas estatísticas de hardware para este display. Instale home-screens-reporter.timer no Pi correspondente.",
       "storageTitle": "Armazenamento",
       "used": "Usado",

@@ -141,6 +141,29 @@ if [ -x "${APP_DIR}/scripts/kiosk-update.sh" ] \
   fi
 fi
 
+# --- Programs the kiosk runs ------------------------------------------------
+# Their installed versions, for the Stats page, and when setup-system or the
+# display-only helper last checked the archive for newer ones
+# (data/system-packages.json, written by either). Both are omitted (null)
+# where dpkg is not the package manager or nothing has checked yet.
+# dpkg-query exits 1 when one of the names is not installed, after printing
+# the others, so its output is taken on its own before anything turns it into
+# JSON: under pipefail a fallback at the end of a pipe would add to what jq
+# already printed and leave two values where --argjson wants one.
+PACKAGES_JSON="null"
+if command -v dpkg-query >/dev/null 2>&1; then
+  PACKAGE_LINES=$(dpkg-query -W -f='${Package}\t${Version}\n' chromium labwc kanshi wlopm 2>/dev/null || true)
+  PACKAGES_JSON=$(printf '%s\n' "${PACKAGE_LINES}" \
+    | awk -F'\t' 'NF == 2 && $2 != ""' \
+    | jq -R -s 'split("\n") | map(select(length > 0) | split("\t") | {key: .[0], value: .[1]}) | from_entries | if length == 0 then null else . end' 2>/dev/null \
+    || echo null)
+  printf '%s' "${PACKAGES_JSON}" | jq -e 'type == "object" or type == "null"' >/dev/null 2>&1 || PACKAGES_JSON="null"
+fi
+PACKAGES_CHECKED_AT=""
+if [ -r "${APP_DIR}/data/system-packages.json" ]; then
+  PACKAGES_CHECKED_AT=$(jq -r '.checkedAt // empty' "${APP_DIR}/data/system-packages.json" 2>/dev/null | head -c 64 || true)
+fi
+
 # --- Assemble payload -------------------------------------------------------
 NOW_ISO=$(date -u +"%Y-%m-%dT%H:%M:%S.000Z")
 
@@ -155,6 +178,8 @@ HW_JSON=$(jq -n \
   --argjson diskTotal "${DISK_TOTAL}" --argjson diskFree "${DISK_FREE}" \
   --arg kioskVersion "${KIOSK_VERSION}" \
   --argjson kioskUpdater "${KIOSK_UPDATER}" \
+  --argjson packages "${PACKAGES_JSON}" \
+  --arg packagesCheckedAt "${PACKAGES_CHECKED_AT}" \
   --arg reportedAt "${NOW_ISO}" \
   '{
      piModel:    (if $piModel  == "" then null else $piModel  end),
@@ -167,6 +192,8 @@ HW_JSON=$(jq -n \
      diskTotal: $diskTotal, diskFree: $diskFree,
      kioskUpdater: $kioskUpdater,
      kioskVersion: (if $kioskVersion == "" then null else $kioskVersion end),
+     packages: $packages,
+     packagesCheckedAt: (if $packagesCheckedAt == "" then null else $packagesCheckedAt end),
      reportedAt: $reportedAt
    }')
 

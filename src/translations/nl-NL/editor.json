@@ -2219,6 +2219,8 @@
       "previouslyThrottled": "Eerder gethrottled",
       "throttleOk": "OK",
       "temperature": "Temperatuur",
+      "displayPrograms": "Programma's van het scherm",
+      "programsChecked": "Programma's gecontroleerd",
       "noHardwareStats": "Er zijn nog geen hardwaregegevens gerapporteerd voor dit scherm. Installeer home-screens-reporter.timer op de bijbehorende Pi.",
       "storageTitle": "Opslag",
       "used": "Gebruikt",

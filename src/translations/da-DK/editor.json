@@ -2219,6 +2219,8 @@
       "previouslyThrottled": "Har tidligere haft nedsat ydelse",
       "throttleOk": "OK",
       "temperature": "Temperatur",
+      "displayPrograms": "Skærmens programmer",
+      "programsChecked": "Programmer tjekket",
       "noHardwareStats": "Der er endnu ikke rapporteret hardwaredata for dette display. Installér home-screens-reporter.timer på dets Pi.",
       "storageTitle": "Lagerplads",
       "used": "Brugt",

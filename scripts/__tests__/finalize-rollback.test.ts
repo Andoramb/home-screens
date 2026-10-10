@@ -155,6 +155,78 @@ describe('finalize-deploy', () => {
     expect(readFileSync(path.join(current, 'release'), 'utf8')).toBe('old');
   });
 
+  // A scheduled install passes --restart-kiosk: once the new release answers,
+  // the job ends the kiosk session (the autologin cycle starts it again on
+  // the new programs) and drops the restart note. A failed finalize, which
+  // put the old tree back, restarts nothing and keeps the job's own status.
+  function runRestartJob(flag: boolean, httpCode: string, afterNote?: () => void) {
+    writeFileSync(path.join(bin, 'systemctl'), `#!/bin/sh\ncase "$1" in is-active) exit 0;; show) if [ -f "${directory}/restarted" ]; then echo 222; else echo 111; fi;; restart) touch "${directory}/restarted";; esac\nexit 0\n`, { mode: 0o755 });
+    writeFileSync(path.join(bin, 'systemd-run'), `#!/bin/sh\nprintf '%s\\0' "$@" > "${directory}/systemd-run.args"\nexit 0\n`, { mode: 0o755 });
+    writeFileSync(path.join(bin, 'pkill'), `#!/bin/sh\necho "$@" >> "${directory}/pkill.log"\nexit 0\n`, { mode: 0o755 });
+    fakeCurl(httpCode);
+    writeFileSync(path.join(current, 'data/restart-needed.json'), '{"bootId":"b","changed":["session-packages"],"version":"2.0.0","at":"now"}');
+    afterNote?.();
+    rmSync(path.join(directory, 'pkill.log'), { force: true });
+    const restart = spawnSync('bash', [path.join(current, 'scripts/upgrade.sh'), 'restart', ...(flag ? ['--restart-kiosk'] : [])], {
+      cwd: directory, encoding: 'utf8', timeout: 20_000, env: { ...process.env, PATH: `${bin}:${process.env.PATH}` },
+    });
+    expect(restart.status).toBe(0);
+    const args = readFileSync(path.join(directory, 'systemd-run.args'), 'utf8').split('\0').filter(Boolean);
+    const script = readFileSync(args.at(-1)!, 'utf8').replace(/sleep [0-9]+/g, 'true');
+    const job = spawnSync('bash', ['-c', script], {
+      cwd: directory, encoding: 'utf8', timeout: 30_000,
+      env: { ...process.env, PATH: `${bin}:${process.env.PATH}`, HS_FINALIZE_ATTEMPTS: '2', HS_FINALIZE_SLEEP: '0' },
+    });
+    const pkills = existsSync(path.join(directory, 'pkill.log')) ? readFileSync(path.join(directory, 'pkill.log'), 'utf8').trim() : '';
+    return { job, pkills, noteKept: existsSync(path.join(current, 'data/restart-needed.json')) };
+  }
+
+  it('restart --restart-kiosk ends the kiosk session and drops the note once the new release answers', () => {
+    const { job, pkills, noteKept } = runRestartJob(true, '200');
+    expect(job.status).toBe(0);
+    expect(pkills).toBe('-TERM chromium');
+    expect(noteKept).toBe(false);
+  });
+
+  it('restart without the flag leaves the kiosk and the note alone', () => {
+    const { job, pkills, noteKept } = runRestartJob(false, '200');
+    expect(job.status).toBe(0);
+    expect(pkills).toBe('');
+    expect(noteKept).toBe(true);
+  });
+
+  it('restart --restart-kiosk restarts nothing when the new release never answered', () => {
+    const { job, pkills } = runRestartJob(true, '000');
+    expect(job.status).toBe(1);
+    expect(pkills).toBe('');
+  });
+
+  // The server that installs this release is the previous one, which knows
+  // no flag. The automatic update's own record on disk says the install was
+  // scheduled, and the restart note says what it left, so restart reads both.
+  const scheduledState = (tag: string, pending: boolean) =>
+    JSON.stringify({ runDate: '2026-10-11', at: '2026-10-11T04:00:00.000Z', result: 'installed', tag, pending });
+
+  it('restart without the flag still cycles the kiosk for a pending automatic install of this version', () => {
+    writeFileSync(path.join(current, 'data/auto-update-state.json'), scheduledState('v2.0.0', true));
+    const { job, pkills, noteKept } = runRestartJob(false, '200');
+    expect(job.status).toBe(0);
+    expect(pkills).toBe('-TERM chromium');
+    expect(noteKept).toBe(false);
+  });
+
+  it('restart without the flag leaves the kiosk alone when the record is settled, names another version, or the note needs no restart', () => {
+    writeFileSync(path.join(current, 'data/auto-update-state.json'), scheduledState('v2.0.0', false));
+    expect(runRestartJob(false, '200').pkills).toBe('');
+    writeFileSync(path.join(current, 'data/auto-update-state.json'), scheduledState('v1.9.0', true));
+    expect(runRestartJob(false, '200').pkills).toBe('');
+    writeFileSync(path.join(current, 'data/auto-update-state.json'), scheduledState('v2.0.0', true));
+    const note = path.join(current, 'data/restart-needed.json');
+    const run = runRestartJob(false, '200', () => writeFileSync(note, '{"bootId":"b","changed":["packages","labwc-rc"],"version":"2.0.0","at":"now"}'));
+    expect(run.pkills).toBe('');
+    expect(run.noteKept).toBe(true);
+  });
+
   it('prepare-deploy clears a failed tree left by an earlier attempt', () => {
     mkdirSync(`${current}.failed`);
     mkdirSync(`${current}.staging`);

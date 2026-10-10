@@ -112,7 +112,7 @@ describe('autoUpdateTick', () => {
     enable();
     await autoUpdateTick(DUE);
     expect(mockInfo).toHaveBeenCalledWith({ channel: 'nightly', localSchema: 20, force: true });
-    expect(mockRunUpgrade).toHaveBeenCalledWith('v1.13.0-dev.20260922');
+    expect(mockRunUpgrade).toHaveBeenCalledWith('v1.13.0-dev.20260922', { scheduled: true });
     // Written before the install, since a good one replaces this process.
     expect(store.writes).toEqual([{
       runDate: '2026-09-22',

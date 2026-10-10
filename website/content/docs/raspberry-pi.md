@@ -148,6 +148,16 @@ With **Install updates automatically** on (Settings > System & updates, under ad
 - Display-only Pis are not affected. They already follow the hub.
 - `HS_DISABLE_AUTO_UPDATE=1` in the service environment turns it off regardless of the setting. The E2E harness sets it for every test server.
 
+## The programs the Pi runs
+
+Home Screens draws the wall with programs from Raspberry Pi OS: Chromium, labwc, kanshi, wlopm, wlr-randr and wtype. A Pi used to keep the versions it was flashed with for good, so a fix in one of them only ever reached Pis flashed after it. Now every install of Home Screens, the Update button and the automatic one alike, also brings those programs to the newest version in the Pi OS archive, which is what a fresh image gets.
+
+- On a hub this happens in the same step that checks the Pi's setup (`scripts/upgrade.sh setup-system`), after the update itself is in place. It never holds up or fails an update: an archive that cannot be reached, or a disk with no room to unpack Chromium, means the programs stay as they are until the next time. The Update window shows what it did.
+- Those programs are all running in the kiosk session, so a change needs a restart to take effect. After an update you started, **Settings > System & updates** says **Restart to finish the update**. An automatic update restarts the screen itself once the new version is up; it never restarts the whole device.
+- A display-only Pi does the same from its hourly check, but only while the hub says it may restart (the display's own sleep window, or the small hours for a display that never sleeps), and it restarts its screen right after. So a replaced Chromium never runs for hours under a page made for the old one.
+- **Settings > Stats** shows the versions installed and when they were last checked, for the hub and for every display that reports in.
+- Should a version in the archive turn out bad, a release can hold a program back (`SYSTEM_PACKAGE_HOLDS` in `scripts/lib/common.sh`); the next release that drops it from the list releases the hold. Holds you set yourself with `apt-mark` are left alone.
+
 ## Changing orientation from the command line
 
 Change orientation in the editor under **Settings > Screen** where you can. It applies straight away with no reboot, and it is saved.

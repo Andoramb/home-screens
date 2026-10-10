@@ -257,7 +257,7 @@ async function runSlot(slot: RunSlot, now: Date, channel: ReturnType<typeof pars
   // record has to say the day's run happened so the new one does not repeat it.
   await writeAutoUpdateState(record({ result: 'installed', tag: decision.tag, pending: true }, known));
   try {
-    await runUpgrade(decision.tag);
+    await runUpgrade(decision.tag, { scheduled: true });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     log.warn(`Could not install ${decision.tag}:`, message);

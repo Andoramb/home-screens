@@ -141,20 +141,189 @@ hs_launcher_changed() {
 }
 
 # hs_installs_session_package <package>...
-# True when one of the packages just installed is a program the kiosk session
-# starts and keeps running: wlopm behind the panel power agent, kanshi behind
-# the screen settings. A session that started without them goes on without
-# them until the device restarts. Every other package either works as soon as
-# it is installed or only matters at the next boot, so installing vim or a
-# font must not ask anyone to restart a wall that is not out of date.
+# True when one of the packages just installed or updated is a program the
+# kiosk session runs (SYSTEM_PACKAGES in lib/common.sh: Chromium, labwc,
+# kanshi, wlopm, wlr-randr, wtype). The running session keeps the old one
+# until the device restarts, and Chromium in particular misbehaves once its
+# files change under it. Every other package either works as soon as it is
+# installed or only matters at the next boot, so installing vim or a font
+# must not ask anyone to restart a wall that is not out of date.
 hs_installs_session_package() {
-  local pkg
+  local pkg session
+  session="${SYSTEM_PACKAGES:-chromium labwc kanshi wlopm wlr-randr wtype}"
   for pkg in "$@"; do
-    case "${pkg}" in
-      wlopm|kanshi) return 0 ;;
+    case " ${session} " in
+      *" ${pkg} "*) return 0 ;;
     esac
   done
   return 1
+}
+
+# hs_package_versions <package>...
+# "name version" per installed package, one a line. Packages apt does not
+# know, or knows but has not installed, are left out.
+hs_package_versions() {
+  [ $# -gt 0 ] || return 0
+  dpkg-query -W -f='${Package} ${Version}\n' "$@" 2>/dev/null | awk 'NF == 2' || true
+}
+
+# hs_write_system_packages_record <packages>
+# data/system-packages.json: what is installed and when it was last checked,
+# for the System page. Versions are trimmed to the characters a Debian
+# version can hold, so the file is always valid JSON.
+hs_write_system_packages_record() {
+  local file="${APP_DIR}/data/system-packages.json" line name version first="true" json
+  json="{\"checkedAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"versions\":{"
+  while read -r name version; do
+    [ -n "${name}" ] || continue
+    version="$(printf '%s' "${version}" | tr -cd 'A-Za-z0-9.:+~-')"
+    [ "${first}" = "true" ] || json="${json},"
+    json="${json}\"${name}\":\"${version}\""
+    first="false"
+    # shellcheck disable=SC2086
+  done <<< "$(hs_package_versions $1)"
+  json="${json}}}"
+  mkdir -p "${APP_DIR}/data" 2>/dev/null || true
+  printf '%s\n' "${json}" > "${file}.tmp" 2>/dev/null && mv -f "${file}.tmp" "${file}" 2>/dev/null || true
+}
+
+# hs_upgrade_system_packages
+# Brings SYSTEM_PACKAGES to the archive's newest version and leaves the names
+# of the ones that changed in HS_UPGRADED_PACKAGES. Best effort end to end:
+# every apt call is bounded, and a failure only means the Pi keeps what it
+# has until the next install, which is what the missing-package step above it
+# has always done. Skipped in the image build (the packages are installed
+# fresh there), where apt is not the package manager, and when the disk has
+# no room to unpack Chromium. Holds from SYSTEM_PACKAGE_HOLDS are placed
+# first, the ones a previous release placed are released, and held packages
+# (ours or a person's) are left out of the request: apt refuses the whole
+# transaction otherwise.
+#
+# The budget: the server runs setup-system with a ten-minute limit, the one
+# that installs this release included, so the whole pass has to fit well
+# inside it with room for the rest of setup-system. Update 60 s, download
+# 240 s, install 180 s. The download is a step of its own so a slow night on
+# WiFi ends with files in apt's cache and nothing half installed; the next
+# install picks the download up where it stopped.
+#
+# Test seams (never set on a device): HS_APT_UPDATE_TIMEOUT,
+# HS_APT_DOWNLOAD_TIMEOUT and HS_APT_UPGRADE_TIMEOUT (seconds), HS_MIN_FREE_KB.
+hs_upgrade_system_packages() {
+  HS_UPGRADED_PACKAGES=""
+  local packages="${SYSTEM_PACKAGES:-}" holds="${SYSTEM_PACKAGE_HOLDS:-}"
+  [ -n "${packages}" ] || return 0
+  [ "${HS_CHROOT:-0}" = "1" ] && return 0
+  command -v apt-get >/dev/null 2>&1 || return 0
+
+  local installed="" pkg
+  for pkg in ${packages}; do
+    dpkg -s "${pkg}" >/dev/null 2>&1 && installed="${installed} ${pkg}"
+  done
+  installed="${installed# }"
+  [ -n "${installed}" ] || return 0
+
+  local free_kb
+  free_kb="$(df --output=avail -k "${APP_DIR}" 2>/dev/null | tail -n 1 | tr -d ' ')"
+  if [ -n "${free_kb}" ] && [ "${free_kb}" -lt "${HS_MIN_FREE_KB:-409600}" ]; then
+    echo "Not enough free space to update the display's programs; they stay as they are"
+    hs_write_system_packages_record "${installed}"
+    return 0
+  fi
+
+  # Holds: release the ones an earlier release placed and this one dropped,
+  # place this release's. Only holds recorded here are ever released.
+  local holds_file="${APP_DIR}/data/system-package-holds" placed=""
+  [ -f "${holds_file}" ] && placed="$(tr '\n' ' ' < "${holds_file}")"
+  for pkg in ${placed}; do
+    case " ${holds} " in
+      *" ${pkg} "*) ;;
+      *) sudo apt-mark unhold "${pkg}" >/dev/null 2>&1 || true ;;
+    esac
+  done
+  for pkg in ${holds}; do
+    sudo apt-mark hold "${pkg}" >/dev/null 2>&1 || true
+  done
+  if [ -n "${holds}${placed}" ]; then
+    printf '%s\n' "${holds}" > "${holds_file}" 2>/dev/null || true
+  fi
+
+  # Held packages stay out of the request. A held package with an update
+  # waiting makes apt refuse everything named with it.
+  local held wanted=""
+  held="$(sudo apt-mark showhold 2>/dev/null | tr '\n' ' ')"
+  for pkg in ${installed}; do
+    case " ${held} " in
+      *" ${pkg} "*) ;;
+      *) wanted="${wanted} ${pkg}" ;;
+    esac
+  done
+  wanted="${wanted# }"
+  if [ -z "${wanted}" ]; then
+    hs_write_system_packages_record "${installed}"
+    return 0
+  fi
+
+  echo "Checking for newer versions of the display's programs..."
+  if ! sudo timeout "${HS_APT_UPDATE_TIMEOUT:-60}" apt-get update -qq \
+        -o DPkg::Lock::Timeout=60 -o Acquire::Retries=2 >/dev/null 2>&1; then
+    echo "Could not reach the package archive; the display's programs stay as they are"
+    hs_write_system_packages_record "${installed}"
+    return 0
+  fi
+
+  local before after
+  # shellcheck disable=SC2086
+  before="$(hs_package_versions ${installed})"
+  # shellcheck disable=SC2086
+  if ! sudo timeout "${HS_APT_DOWNLOAD_TIMEOUT:-240}" \
+        apt-get install --only-upgrade --download-only -y -qq -o DPkg::Lock::Timeout=60 \
+        ${wanted} >/dev/null 2>&1; then
+    echo "Still downloading newer versions of the display's programs; they install at the next update"
+    hs_write_system_packages_record "${installed}"
+    return 0
+  fi
+  # shellcheck disable=SC2086
+  if ! sudo env DEBIAN_FRONTEND=noninteractive timeout "${HS_APT_UPGRADE_TIMEOUT:-180}" \
+        apt-get install --only-upgrade -y -qq -o DPkg::Lock::Timeout=60 \
+        -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold \
+        ${wanted} >/dev/null 2>&1; then
+    echo "Updating the display's programs did not finish; they stay as they are until the next update"
+  fi
+  # shellcheck disable=SC2086
+  after="$(hs_package_versions ${installed})"
+  HS_UPGRADED_PACKAGES="$(comm -13 <(printf '%s\n' "${before}" | sort) <(printf '%s\n' "${after}" | sort) | awk '{ print $1 }' | tr '\n' ' ')"
+  HS_UPGRADED_PACKAGES="${HS_UPGRADED_PACKAGES% }"
+  hs_write_system_packages_record "${installed}"
+  if [ -n "${HS_UPGRADED_PACKAGES}" ]; then
+    echo "Updated the display's programs: ${HS_UPGRADED_PACKAGES}"
+  fi
+  return 0
+}
+
+# hs_scheduled_install_owes_restart
+# True while data/auto-update-state.json records a pending automatic install
+# of this tree's version and data/restart-needed.json names a change the
+# running kiosk session will not pick up (the names are those of
+# RESTART_NEEDED_CHANGES in src/lib/restart-needed.ts; a test keeps the two
+# lists the same). Read by `restart`; see there.
+hs_scheduled_install_owes_restart() {
+  local state="${APP_DIR}/data/auto-update-state.json" marker="${APP_DIR}/data/restart-needed.json" version
+  [ -f "${state}" ] && [ -f "${marker}" ] || return 1
+  command -v node >/dev/null 2>&1 || return 1
+  version=$(sed -n 's/^ *"version": *"\([^"]*\)".*/\1/p' "${APP_DIR}/package.json" 2>/dev/null | head -n 1)
+  [ -n "${version}" ] || return 1
+  HS_STATE="${state}" HS_MARKER="${marker}" HS_TAG="v${version}" node -e '
+    const fs = require("fs");
+    const needs = ["launcher", "bash-profile", "labwc-autostart", "legacy-kiosk", "session-packages"];
+    let scheduled = false, owed = false;
+    try {
+      const state = JSON.parse(fs.readFileSync(process.env.HS_STATE, "utf8"));
+      scheduled = !!state && state.result === "installed" && state.pending === true && state.tag === process.env.HS_TAG;
+      const marker = JSON.parse(fs.readFileSync(process.env.HS_MARKER, "utf8"));
+      owed = !!marker && Array.isArray(marker.changed) && marker.changed.some((c) => needs.includes(c));
+    } catch {}
+    process.exit(scheduled && owed ? 0 : 1);
+  ' 2>/dev/null
 }
 
 # hs_record_restart_changes <comma-separated change names>
@@ -634,6 +803,25 @@ case "${action}" in
     # it immediately would kill the process orchestrating this upgrade.
     # We schedule the restart with a short delay so this script can exit
     # cleanly and the API can respond before the process is terminated.
+    #
+    # --restart-kiosk: once the new release answers, end the kiosk session as
+    # well (Chromium exits, labwc with it, and the autologin cycle starts both
+    # again from the new launcher and packages), and drop the "restart to
+    # finish" note, since a fresh session has read everything it covers. The
+    # scheduled install passes it when setup-system reported such a change:
+    # nobody is up to tap Restart now at four in the morning, and a Chromium
+    # whose files were replaced under it should not run until someone is.
+    # The device itself is never restarted.
+    restart_kiosk="false"
+    [ "${1:-}" = "--restart-kiosk" ] && restart_kiosk="true"
+    # The flag comes from a server that knows it, this release on. The server
+    # that installs this release is the previous one and passes nothing, so
+    # the same decision is also made from what is on disk: the automatic
+    # update's record says an install of this very version is in flight, and
+    # setup-system left a change only a fresh kiosk session picks up.
+    if [ "${restart_kiosk}" = "false" ] && hs_scheduled_install_owes_restart; then
+      restart_kiosk="true"
+    fi
     if command -v systemctl &>/dev/null && systemctl is-active "${SERVICE_NAME}" &>/dev/null; then
       # Read port now so the detached job doesn't depend on the orchestrating
       # process's environment after restart. Wrap cat||echo in braces so the
@@ -668,6 +856,13 @@ if [ "\${new_pid}" != "0" ] && [ "\${new_pid}" = "\${old_pid}" ]; then
   exit 1
 fi
 bash '${APP_DIR}/scripts/upgrade.sh' finalize-deploy '${finalize_port}'
+finalize_rc=\$?
+if [ "\${finalize_rc}" -eq 0 ] && [ '${restart_kiosk}' = 'true' ]; then
+  echo "Restarting the kiosk session to finish the scheduled update"
+  rm -f '${APP_DIR}/data/restart-needed.json'
+  pkill -TERM chromium 2>/dev/null || true
+fi
+exit "\${finalize_rc}"
 EOF_JOB
       # The job cannot be a child of this process: the service's cgroup is
       # SIGKILLed once its main process stops (KillMode=mixed), and neither
@@ -886,6 +1081,15 @@ EOF_JOB
       if hs_installs_session_package ${missing}; then
         changed="${changed}session-packages,"
       fi
+    fi
+
+    # 0a. Bring the programs the kiosk runs to the archive's newest version.
+    # A Pi keeps the Chromium and labwc it was flashed with otherwise, and a
+    # fix that lands in a package only ever reaches Pis flashed after it. Every
+    # one of them is a session program, so a change is a restart to finish.
+    hs_upgrade_system_packages
+    if [ -n "${HS_UPGRADED_PACKAGES}" ]; then
+      changed="${changed}packages,session-packages,"
     fi
 
     # 0b. Generic font-family aliases (see setup_font_aliases in lib/common.sh).

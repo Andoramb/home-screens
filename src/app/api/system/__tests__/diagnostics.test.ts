@@ -110,6 +110,8 @@ beforeEach(() => {
     diskFree: 16_000_000_000,
     kioskUpdater: false,
     kioskVersion: null,
+    packages: null,
+    packagesCheckedAt: null,
     reportedAt: '2026-04-17T00:00:00.000Z',
   });
 });

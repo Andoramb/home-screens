@@ -56,7 +56,30 @@ function emulatorStubs(): { packages: string[]; binaries: string[] } {
   return { packages: words(packages[1]), binaries: words(binaries[1]) };
 }
 
+/** The list setup-system and the display-only helper bring to the archive's newest version. */
+function systemPackages(source: string, file: string): string[] {
+  const match = source.match(/^SYSTEM_PACKAGES="([^"]+)"$/m);
+  if (!match) throw new Error(`no SYSTEM_PACKAGES in ${file}`);
+  return words(match[1]);
+}
+function packageHolds(source: string, file: string): string[] {
+  const match = source.match(/^SYSTEM_PACKAGE_HOLDS="([^"]*)"$/m);
+  if (!match) throw new Error(`no SYSTEM_PACKAGE_HOLDS in ${file}`);
+  return words(match[1]);
+}
+
 describe('kiosk packages', () => {
+  // The helper takes no input, so it carries its own copy of the list; a
+  // package added to one and not the other would be kept current on hubs
+  // and frozen on spokes, or the other way round.
+  it('the hub and the display-only helper keep the same programs current, and hold the same', () => {
+    const common = read('scripts/lib/common.sh');
+    const helper = read('scripts/kiosk-update-privileged.sh');
+    expect(systemPackages(helper, 'kiosk-update-privileged.sh')).toEqual(systemPackages(common, 'lib/common.sh'));
+    expect(packageHolds(helper, 'kiosk-update-privileged.sh')).toEqual(packageHolds(common, 'lib/common.sh'));
+    expect(systemPackages(common, 'lib/common.sh')).toEqual(expect.arrayContaining(KIOSK_SESSION_PACKAGES));
+  });
+
   it.each([
     ['setup-system on a hub', hubPackages],
     ['the display-only installer', displayOnlyPackages],

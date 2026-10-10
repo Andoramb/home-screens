@@ -23,9 +23,35 @@ describe('validateHardwareStats', () => {
       diskFree: 20_000_000_000,
       kioskUpdater: false,
       kioskVersion: null,
+      packages: null,
+      packagesCheckedAt: null,
       reportedAt: '2026-04-17T12:00:00.000Z',
     };
     expect(validateHardwareStats(payload)).toEqual(payload);
+  });
+
+  // The programs the kiosk runs, as the reporter and the hub collector send
+  // them. A reporter from before the field sends nothing, which reads as
+  // "not reported", never as a rejected payload.
+  it('keeps a short map of package versions and drops anything odd in it', () => {
+    const base = {
+      cpuCores: 4, load1: 0, load5: 0, load15: 0,
+      memoryTotal: 1, memoryFree: 1, diskTotal: 1, diskFree: 1,
+      reportedAt: '2026-10-10T04:00:00.000Z',
+    };
+    expect(validateHardwareStats(base)?.packages).toBeNull();
+    expect(validateHardwareStats(base)?.packagesCheckedAt).toBeNull();
+    const withPackages = validateHardwareStats({
+      ...base,
+      packages: { chromium: '154.0.8037.92-1~deb13u1', labwc: '0.20.2-1~bpo13+1', 'Not A Name': '1', empty: '', count: 3 },
+      packagesCheckedAt: '2026-10-10T04:01:00Z',
+    });
+    expect(withPackages?.packages).toEqual({ chromium: '154.0.8037.92-1~deb13u1', labwc: '0.20.2-1~bpo13+1' });
+    expect(withPackages?.packagesCheckedAt).toBe('2026-10-10T04:01:00Z');
+    expect(validateHardwareStats({ ...base, packages: ['chromium'], packagesCheckedAt: 'yesterday' })).toMatchObject({
+      packages: null,
+      packagesCheckedAt: null,
+    });
   });
 
   it('returns null when required numeric fields are missing', () => {
@@ -48,6 +74,8 @@ describe('validateHardwareStats', () => {
       memoryFree: 3_000_000_000,
       diskTotal: 500_000_000_000,
       diskFree: 100_000_000_000,
+      packages: null,
+      packagesCheckedAt: null,
       reportedAt: new Date().toISOString(),
     };
     // A reporter predating the self-update fields omits them entirely. That
@@ -57,6 +85,8 @@ describe('validateHardwareStats', () => {
       ...payload,
       kioskUpdater: false,
       kioskVersion: null,
+    packages: null,
+    packagesCheckedAt: null,
     });
   });
 
@@ -67,6 +97,8 @@ describe('validateHardwareStats', () => {
       memoryTotal: 0, memoryFree: 0, diskTotal: 0, diskFree: 0,
       kioskUpdater: true,
       kioskVersion: '1.9.0',
+      packages: null,
+      packagesCheckedAt: null,
       reportedAt: new Date().toISOString(),
     };
     expect(validateHardwareStats(payload)).toEqual(payload);

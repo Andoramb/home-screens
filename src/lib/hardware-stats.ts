@@ -46,6 +46,17 @@ export interface HardwareStats {
    * ago, and for any Pi not yet adopted on the hub).
    */
   kioskVersion: string | null;
+  /**
+   * Installed versions of the programs the kiosk runs (chromium, labwc,
+   * kanshi, wlopm), from dpkg; null where dpkg is not the package manager
+   * or from a reporter that predates the field.
+   */
+  packages: Record<string, string> | null;
+  /**
+   * When setup-system or the display-only helper last looked for newer
+   * versions of them (data/system-packages.json); null until one has.
+   */
+  packagesCheckedAt: string | null;
   /** ISO 8601 timestamp at which the reporter collected this snapshot. */
   reportedAt: string;
 }
@@ -88,6 +99,22 @@ function asIsoString(v: unknown): string | null {
   const d = new Date(v);
   if (Number.isNaN(d.getTime())) return null;
   return v.slice(0, 64);
+}
+
+const MAX_PACKAGES = 12;
+const PACKAGE_NAME = /^[a-z0-9][a-z0-9.+-]{0,63}$/;
+
+/** A short map of package name to version; anything else reads as "not reported". */
+function validatePackages(v: unknown): Record<string, string> | null {
+  if (v === null || v === undefined || typeof v !== 'object' || Array.isArray(v)) return null;
+  const out: Record<string, string> = {};
+  let count = 0;
+  for (const [name, version] of Object.entries(v as Record<string, unknown>)) {
+    if (!PACKAGE_NAME.test(name) || typeof version !== 'string' || version.length === 0) continue;
+    if (++count > MAX_PACKAGES) break;
+    out[name] = version.slice(0, 64);
+  }
+  return count > 0 ? out : null;
 }
 
 function validateThrottled(v: unknown): ThrottledInfo | null {
@@ -145,6 +172,8 @@ export function validateHardwareStats(input: unknown): HardwareStats | null {
     // migration prompt.
     kioskUpdater: Boolean(o.kioskUpdater),
     kioskVersion: asOptionalString(o.kioskVersion, 64),
+    packages: validatePackages(o.packages),
+    packagesCheckedAt: o.packagesCheckedAt === null || o.packagesCheckedAt === undefined ? null : asIsoString(o.packagesCheckedAt),
     reportedAt,
   };
 }

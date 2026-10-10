@@ -137,6 +137,21 @@ ensure_npm_floor() {
   info "npm $(npm --version) installed."
 }
 
+# --- Programs the kiosk session runs ---
+# Brought to the archive's newest version on every install by setup-system
+# (hub) and on the nightly tick by kiosk-update-privileged.sh (spoke; the
+# list is copied there because that helper takes no input, and
+# scripts/__tests__/kiosk-packages.test.ts keeps the copies identical). The
+# newest version is what a fresh image gets, so a release is tested against
+# it. wlroots follows labwc as its dependency; its package name carries the
+# soname and changes between releases, so it is never named.
+SYSTEM_PACKAGES="chromium labwc kanshi wlopm wlr-randr wtype"
+# Packages a release knows to be bad at the archive's newest version, held
+# back with apt-mark until a later release takes them off this list. The
+# holds setup-system placed are remembered in data/system-package-holds, so
+# only those are released, never a hold a person set.
+SYSTEM_PACKAGE_HOLDS=""
+
 # --- Chromium kiosk flags ---
 #
 # The kiosk browser invocation is emitted or executed from five places: the

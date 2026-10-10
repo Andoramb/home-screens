@@ -21,6 +21,14 @@ export function HardwareCard({
   const hwStats = reporterStats ?? hubStats;
   const hwSource: 'reporter' | 'hub' | null = reporterStats ? 'reporter' : hubStats ? 'hub' : null;
 
+  // "Chromium 154.0.8037.92 · labwc 0.20.2": the upstream version without
+  // the epoch and Debian revision, which say nothing to a person.
+  const programs = hwStats?.packages
+    ? Object.entries(hwStats.packages)
+      .map(([name, version]) => `${name === 'chromium' ? 'Chromium' : name} ${version.replace(/^\d+:/, '').replace(/-[^-]*$/, '')}`)
+      .join(' · ')
+    : null;
+
   // Temperature semantic color: ≤60 ok, 60–75 warn, >75 danger.
   let tempColor: SemanticColor = 'success';
   if (hwStats?.cpuTempC != null) {
@@ -98,6 +106,21 @@ export function HardwareCard({
                 <span className="text-hs-text-faint">{t('settings.statsSection.unavailable')}</span>
               )}
             </div>
+
+            {programs && (
+              <>
+                <div className="text-hs-text-faint">{t('settings.statsSection.displayPrograms')}</div>
+                <div className="text-hs-text-secondary text-right truncate" title={programs}>{programs}</div>
+              </>
+            )}
+            {hwStats.packagesCheckedAt && (
+              <>
+                <div className="text-hs-text-faint">{t('settings.statsSection.programsChecked')}</div>
+                <div className="text-hs-text-secondary text-right tabular-nums">
+                  {new Date(hwStats.packagesCheckedAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                </div>
+              </>
+            )}
           </div>
         </div>
       ) : (

@@ -842,6 +842,41 @@ describe('setup-system step: restart to finish updating', () => {
   });
 });
 
+describe('scheduled install: the restart step cycles the kiosk session', () => {
+  // The automatic update has nobody at the System page to tap Restart now,
+  // so when setup-system left something only a fresh kiosk session picks up
+  // it asks the restart script to end the session once the new release
+  // answers. A person's own install keeps the note instead. The device is
+  // never restarted either way.
+  beforeEach(() => {
+    mockHasReleaseTarball.mockResolvedValue(true);
+  });
+
+  const restartArgs = () => {
+    const call = mockSpawn.mock.calls.find((c: unknown[]) => (c[1] as string[])?.[1] === 'restart');
+    expect(call).toBeDefined();
+    return (call![1] as string[]).slice(2);
+  };
+
+  it('asks for the kiosk restart when a scheduled install changed what the session runs', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"packages,session-packages"}' });
+    await upgradeModule.runUpgrade('v1.2.0', { scheduled: true });
+    expect(restartArgs()).toEqual(['--restart-kiosk']);
+  });
+
+  it('asks for nothing when a scheduled install changed nothing the session needs', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"packages,labwc-rc"}' });
+    await upgradeModule.runUpgrade('v1.2.0', { scheduled: true });
+    expect(restartArgs()).toEqual([]);
+  });
+
+  it('never asks for it on an install a person started', async () => {
+    setupSpawnForSuccess({ 'setup-system': '{"ok":true,"changed":"session-packages,launcher"}' });
+    await upgradeModule.runUpgrade('v1.2.0');
+    expect(restartArgs()).toEqual([]);
+  });
+});
+
 describe('runUpgrade — install path guard', () => {
   function release(tag: string, body: string) {
     return { tag_name: tag, name: tag, body, draft: false, prerelease: false, published_at: '', assets: [] };

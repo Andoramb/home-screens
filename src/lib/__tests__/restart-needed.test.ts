@@ -26,6 +26,18 @@ const NO_NOTICE = [
   'cloud-init-hostname', 'cloud-init-network',
 ];
 
+describe('the shell copy of the list', () => {
+  // `upgrade.sh restart` decides the kiosk cycle of a scheduled install from
+  // the restart note itself, with its own copy of these names.
+  it('upgrade.sh names the same changes as RESTART_NEEDED_CHANGES', () => {
+    const upgrade = readFileSync(path.join(process.cwd(), 'scripts', 'upgrade.sh'), 'utf-8');
+    const match = upgrade.match(/const needs = \[([^\]]+)\]/);
+    expect(match).not.toBeNull();
+    const names = match![1].split(',').map((s) => s.trim().replace(/^"|"$/g, ''));
+    expect(names).toEqual([...RESTART_NEEDED_CHANGES]);
+  });
+});
+
 describe('parseSetupSystemChanges', () => {
   it('reads the change names off the last line', () => {
     const output = [

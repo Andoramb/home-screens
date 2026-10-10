@@ -51,6 +51,12 @@ LOCK_DIR="${APP_DIR}/data/.kiosk-update.lock"
 # Present while files have been applied that the running Chromium has not
 # picked up yet, because the hub said the display was in use at the time.
 RESTART_PENDING="${APP_DIR}/data/kiosk-restart-pending"
+# Touched for the privileged helper on a tick the hub allows a restart: the
+# helper then brings the programs the kiosk runs to the archive's newest
+# version (see kiosk-update-privileged.sh), and leaves the changed file when
+# it replaced one, which is a restart to carry out.
+UPGRADE_WINDOW="${APP_DIR}/data/kiosk-upgrade-window"
+SESSION_CHANGED="${APP_DIR}/data/kiosk-session-packages-changed"
 
 TIMEOUT=20
 RESTART_IF_ADVISED="false"
@@ -210,6 +216,28 @@ restart_if_advised() {
   fi
 }
 
+# Runs the privileged helper. Opens its upgrade window first when the hub
+# allows a restart on this tick, and afterwards turns a replaced program into
+# a restart (kept pending when the advice changed meanwhile). Returns the
+# helper's own status.
+run_privileged_helper() {
+  local rc=0
+  if [ "${RESTART_IF_ADVISED}" = "true" ] && [ "${RESTART_ADVISED}" = "true" ]; then
+    : > "${UPGRADE_WINDOW}"
+  else
+    rm -f "${UPGRADE_WINDOW}"
+  fi
+  sudo -n "${PRIV_HELPER}" 2>/dev/null || rc=$?
+  rm -f "${UPGRADE_WINDOW}"
+  if [ -f "${SESSION_CHANGED}" ]; then
+    log "display programs updated: $(tr '\n' ' ' < "${SESSION_CHANGED}")"
+    rm -f "${SESSION_CHANGED}"
+    SESSION_PACKAGES_CHANGED="true"
+  fi
+  return "${rc}"
+}
+SESSION_PACKAGES_CHANGED="false"
+
 if [ "${REMOTE_VERSION}" = "${LOCAL_VERSION}" ]; then
   if MISSING="$(missing_file)"; then
     log "display software ${LOCAL_VERSION} is missing ${MISSING} — reapplying"
@@ -217,14 +245,16 @@ if [ "${REMOTE_VERSION}" = "${LOCAL_VERSION}" ]; then
     # Current and complete. The timer tick still gives the privileged
     # helper a turn: it also installs any apt packages the shell layer has
     # grown to need, and a spoke that was offline when they first came up
-    # would otherwise never retry. The boot-time check skips this so a slow
-    # or absent archive never delays the display coming up.
+    # would otherwise never retry, and inside the hub's window it brings the
+    # programs the kiosk runs up to date. The boot-time check skips this so a
+    # slow or absent archive never delays the display coming up.
     if [ "${RESTART_IF_ADVISED}" = "true" ] && [ -x "${PRIV_HELPER}" ]; then
-      sudo -n "${PRIV_HELPER}" 2>/dev/null || true
+      run_privileged_helper || true
     fi
-    # An update an earlier tick applied while the display was in use.
-    if [ "${RESTART_IF_ADVISED}" = "true" ] && [ -f "${RESTART_PENDING}" ] \
-       && [ "${RESTART_ADVISED}" = "true" ]; then
+    # An update an earlier tick applied while the display was in use, or a
+    # program the helper just replaced.
+    if [ "${RESTART_IF_ADVISED}" = "true" ] && [ "${RESTART_ADVISED}" = "true" ] \
+       && { [ -f "${RESTART_PENDING}" ] || [ "${SESSION_PACKAGES_CHANGED}" = "true" ]; }; then
       restart_if_advised
     fi
     exit 0
@@ -331,7 +361,7 @@ if [ -d "${EXTRACT}/system" ]; then
   if [ ! -x "${PRIV_HELPER}" ]; then
     log "no privileged helper at ${PRIV_HELPER} — reporter and timers were not updated;" \
         "re-run the display setup command from the hub to repair this"
-  elif ! sudo -n "${PRIV_HELPER}" 2>/dev/null; then
+  elif ! run_privileged_helper; then
     SYSTEM_RETRYABLE_FAILURE="true"
     log "privileged helper failed — reporter and timers left at their current versions"
   fi

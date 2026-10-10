@@ -109,11 +109,13 @@ describe('hs_installs_session_package', () => {
   const ask = (packages: string) =>
     run(`if hs_installs_session_package ${packages}; then echo session; else echo other; fi`);
 
-  it.each(['kanshi', 'wlopm', 'vim kanshi fonts-dejavu-core'])('says session for %s', (packages) => {
+  // Every program the kiosk session runs (SYSTEM_PACKAGES in lib/common.sh),
+  // installed or brought to a newer version.
+  it.each(['kanshi', 'wlopm', 'chromium', 'labwc', 'wlr-randr', 'wtype', 'vim kanshi fonts-dejavu-core'])('says session for %s', (packages) => {
     expect(ask(packages)).toBe('session');
   });
 
-  it.each(['vim', 'fonts-noto-color-emoji plymouth plymouth-themes', 'wlr-randr', ''])('says other for "%s"', (packages) => {
+  it.each(['vim', 'fonts-noto-color-emoji plymouth plymouth-themes', 'libwlroots-0.20', ''])('says other for "%s"', (packages) => {
     expect(ask(packages)).toBe('other');
   });
 
