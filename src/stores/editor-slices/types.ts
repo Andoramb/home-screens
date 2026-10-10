@@ -10,6 +10,7 @@ import type {
   Screen,
   BackgroundRotation,
   BackgroundShade,
+  BackgroundEffects,
   Profile,
   DisplayNode,
   DisplayNodeSettings,
@@ -151,6 +152,8 @@ export interface ScreenActions {
   updateScreenRotation: (id: string, updates: Partial<BackgroundRotation>) => void;
   /** Same live-merge guarantee as `updateScreenRotation`, for `shade`. */
   updateScreenShade: (id: string, updates: Partial<BackgroundShade>) => void;
+  /** Same live-merge guarantee as `updateScreenRotation`, for `effects`. */
+  updateScreenEffects: (id: string, updates: Partial<BackgroundEffects>) => void;
 }
 
 export interface SettingsActions {

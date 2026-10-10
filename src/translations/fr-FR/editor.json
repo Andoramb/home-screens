@@ -2535,7 +2535,12 @@
       "topBottom": "Haut et bas",
       "edges": "Bords",
       "both": "Les deux"
-    }
+    },
+    "effectsGroup": "Effects",
+    "effectsBrightnessLabel": "Brightness",
+    "effectsContrastLabel": "Contrast",
+    "effectsSaturationLabel": "Saturation",
+    "effectsWarmthLabel": "Warmth"
   },
   "imageBrowserModal": {
     "title": "Bibliothèque d'images",

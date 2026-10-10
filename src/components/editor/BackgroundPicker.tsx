@@ -12,8 +12,10 @@ import { useSecretStatus } from '@/hooks/useSecretStatus';
 import { useTranslate } from '@/i18n';
 import { eventBus } from '@/lib/event-bus';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
+import { stopBackgroundRotation } from '@/lib/screen-background';
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
 import BackgroundShadeFields from './BackgroundShadeFields';
+import BackgroundEffectsFields from './BackgroundEffectsFields';
 
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
@@ -97,6 +99,7 @@ export default function BackgroundPicker() {
   return (
     <AccordionSection title={t('backgroundPicker.title')}>
       <BackgroundShadeFields screenId={selectedScreenId} shade={currentScreen.shade} />
+      <BackgroundEffectsFields screenId={selectedScreenId} effects={currentScreen.effects} />
 
       <PropertyGroup
         title={t('backgroundPicker.sourcesGroup')}
@@ -290,7 +293,7 @@ export default function BackgroundPicker() {
               type="button"
               onClick={() => updateScreen(selectedScreenId, {
                 backgroundImage: '',
-                ...(rotationSources.length ? { backgroundRotation: { ...currentScreen.backgroundRotation!, enabled: false, sources: [] } } : {}),
+                ...(rotationSources.length ? { backgroundRotation: stopBackgroundRotation(currentScreen.backgroundRotation) } : {}),
               })}
               className="text-[11px] font-medium px-2.5 py-1 rounded-md text-hs-text-body bg-hs-card border border-hs-border-strong hover:bg-hs-hover transition-colors"
             >

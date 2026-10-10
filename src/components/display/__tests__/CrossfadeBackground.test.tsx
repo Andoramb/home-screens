@@ -120,4 +120,12 @@ describe('CrossfadeBackground', () => {
     const { container } = render(<CrossfadeBackground src={undefined} />);
     expect(container.querySelectorAll('img, video')).toHaveLength(0);
   });
+
+  it('applies the same transition timing to filter changes', () => {
+    const { container } = render(<CrossfadeBackground src="/a.jpg" filter="brightness(1.20)" />);
+    const image = container.querySelector('img') as HTMLImageElement;
+
+    expect(image.style.filter).toBe('brightness(1.20)');
+    expect(image.style.transition).toBe(`opacity ${CROSSFADE_MS}ms ease-in-out, filter ${CROSSFADE_MS}ms ease-in-out`);
+  });
 });

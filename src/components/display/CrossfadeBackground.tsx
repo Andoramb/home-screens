@@ -16,10 +16,11 @@ export interface CrossfadeBackgroundProps {
   src?: string;
   alt?: string;
   authenticate?: boolean;
+  filter?: string;
 }
 
 /** Retains the previous media until its replacement loads and fades in. */
-export default function CrossfadeBackground({ src, alt = '', authenticate = false }: CrossfadeBackgroundProps) {
+export default function CrossfadeBackground({ src, alt = '', authenticate = false, filter }: CrossfadeBackgroundProps) {
   const [layers, setLayers] = useState<Layer[]>(() => (src ? [{ key: 0, src }] : []));
   const [loadedKeys, setLoadedKeys] = useState<ReadonlySet<number>>(new Set());
   const nextKey = useRef(1);
@@ -60,6 +61,7 @@ export default function CrossfadeBackground({ src, alt = '', authenticate = fals
           loaded={loadedKeys.has(layer.key)}
           alt={alt}
           authenticate={authenticate}
+          filter={filter}
           onLoaded={markLoaded}
           onFailed={markFailed}
         />
@@ -68,12 +70,13 @@ export default function CrossfadeBackground({ src, alt = '', authenticate = fals
   );
 }
 
-function MediaLayer({ layer, isTop, loaded, alt, authenticate, onLoaded, onFailed }: {
+function MediaLayer({ layer, isTop, loaded, alt, authenticate, filter, onLoaded, onFailed }: {
   layer: Layer;
   isTop: boolean;
   loaded: boolean;
   alt: string;
   authenticate: boolean;
+  filter?: string;
   onLoaded: (key: number) => void;
   onFailed: (key: number) => void;
 }) {
@@ -90,8 +93,9 @@ function MediaLayer({ layer, isTop, loaded, alt, authenticate, onLoaded, onFaile
     height: '100%',
     objectFit: 'cover',
     opacity: isTop ? (loaded ? 1 : 0) : 1,
-    transition: `opacity ${CROSSFADE_MS}ms ease-in-out`,
+    transition: `opacity ${CROSSFADE_MS}ms ease-in-out, filter ${CROSSFADE_MS}ms ease-in-out`,
     zIndex: isTop ? 1 : 0,
+    filter,
   };
   if (!src) return null;
   return isVideo ? (

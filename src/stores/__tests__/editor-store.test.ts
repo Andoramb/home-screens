@@ -565,6 +565,25 @@ describe('editor store', () => {
     });
   });
 
+
+  describe('updateScreenEffects', () => {
+    it('merges partial updates onto the live effects, not a stale snapshot', () => {
+      const store = useEditorStore;
+      const config = makeConfig();
+      config.screens[0].effects = { brightness: 102, contrast: 103, saturation: 108, warmth: 32 };
+      store.setState({ config });
+
+      store.getState().updateScreenEffects('screen-1', { brightness: 120 });
+      store.getState().updateScreenEffects('screen-1', { warmth: 18 });
+
+      const effects = store.getState().config!.screens[0].effects!;
+      expect(effects.brightness).toBe(120);
+      expect(effects.warmth).toBe(18);
+      expect(effects.contrast).toBe(103);
+      expect(effects.saturation).toBe(108);
+    });
+  });
+
   describe('addScreen', () => {
     it('adds a new screen and selects it', () => {
       const store = useEditorStore;

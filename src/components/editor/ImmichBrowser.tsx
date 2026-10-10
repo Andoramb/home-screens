@@ -7,7 +7,7 @@ import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import type { ImmichAlbumSummary } from '@/lib/immich';
-import { isRotationActive } from '@/lib/screen-background';
+import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 
 interface Props {
   selectedScreenId: string;
@@ -72,7 +72,7 @@ export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props)
       if (data.path) {
         const updates: Record<string, unknown> = { backgroundImage: data.path };
         if (isRotationActive(currentScreen?.backgroundRotation)) {
-          updates.backgroundRotation = { ...currentScreen?.backgroundRotation, enabled: false, sources: [] };
+          updates.backgroundRotation = stopBackgroundRotation(currentScreen?.backgroundRotation);
         }
         updateScreen(selectedScreenId, updates);
       }

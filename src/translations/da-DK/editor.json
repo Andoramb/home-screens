@@ -2535,7 +2535,12 @@
       "topBottom": "Top og bund",
       "edges": "Kanter",
       "both": "Begge"
-    }
+    },
+    "effectsGroup": "Effects",
+    "effectsBrightnessLabel": "Brightness",
+    "effectsContrastLabel": "Contrast",
+    "effectsSaturationLabel": "Saturation",
+    "effectsWarmthLabel": "Warmth"
   },
   "imageBrowserModal": {
     "title": "Billedarkiv",

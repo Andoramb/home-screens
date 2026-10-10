@@ -28,7 +28,7 @@ import { resolveScreenBackground, isRotationActive } from '@/lib/screen-backgrou
 import BackgroundMediaLayer from '@/components/BackgroundMediaLayer';
 import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
 import { useTranslate, type TranslateFn } from '@/i18n';
-import type { ModuleInstance, BackgroundShade } from '@/types/config';
+import type { ModuleInstance, BackgroundEffects, BackgroundShade } from '@/types/config';
 import { stackOrder } from '@/lib/module-utils';
 import { isScreenEmpty, getDisplayProfiles, getActiveProfileId } from '@/lib/display-filter';
 import { displayShowsPaginationDots } from '@/lib/pagination-dots';
@@ -490,6 +490,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
                 screenBackground={resolveScreenBackground(currentScreen, rotatingBackground)}
                 canvas={{ w: displayWidth, h: displayHeight }}
                 shade={currentScreen.shade}
+                effects={currentScreen.effects}
               />
               {snapEnabled && <GridOverlay scale={effectiveScale} />}
               {isScreenEmpty(currentScreen) && (
@@ -584,14 +585,15 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
 }
 
 /** Reads the PageBackgroundContext override and renders the appropriate background, plus its shade overlay */
-function CanvasBackground({ screenBackground, canvas, shade }: {
+function CanvasBackground({ screenBackground, canvas, shade, effects }: {
   screenBackground: string | undefined;
   canvas: PictureBox;
   shade: BackgroundShade | undefined;
+  effects: BackgroundEffects | undefined;
 }) {
   const { overrideBackground } = usePageBackground();
   // The same canvas-sized copy the wall asks for, not the camera original:
   // the hub makes it once for both.
   const bg = displaySizedUrl(overrideBackground || screenBackground, canvas);
-  return <BackgroundMediaLayer src={bg} shade={shade} />;
+  return <BackgroundMediaLayer src={bg} shade={shade} effects={effects} />;
 }

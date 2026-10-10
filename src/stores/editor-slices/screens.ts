@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { arrayMove } from '@dnd-kit/sortable';
 import type { Screen } from '@/types/config';
 import { pruneDanglingScreenRefs } from '@/lib/display-filter';
+import { normalizeBackgroundEffects } from '@/lib/background-effects';
 import { getActiveScreens, withActiveScreens } from '@/lib/editor-multi-display';
 import { COALESCE_KEYS } from '@/stores/editor-save';
 import { syncEditorUrl } from '@/stores/editor-url';
@@ -164,6 +165,19 @@ export function createScreenSlice(
           ),
         ),
       }), { coalesce: COALESCE_KEYS.screenShade(id) });
+    },
+
+    updateScreenEffects: (id, updates) => {
+      const { selectedDisplayId } = get();
+      mutateConfig((config) => ({
+        config: withActiveScreens(
+          config,
+          selectedDisplayId,
+          getActiveScreens(config, selectedDisplayId).map((s) =>
+            s.id === id ? { ...s, effects: normalizeBackgroundEffects({ ...s.effects, ...updates }) as Screen['effects'] } : s,
+          ),
+        ),
+      }), { coalesce: COALESCE_KEYS.updateScreen(id) });
     },
   };
 }

@@ -12,7 +12,7 @@ import {
   type StarterBackground,
   type StarterBackgroundGroup,
 } from '@/lib/starter-backgrounds';
-import { isRotationActive } from '@/lib/screen-background';
+import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 
 interface Props {
   selectedScreenId: string;
@@ -106,7 +106,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const pick = (backgroundImage: string) => {
     const updates: Record<string, unknown> = { backgroundImage };
     if (isRotationActive(currentScreen?.backgroundRotation)) {
-      updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false, sources: [] };
+      updates.backgroundRotation = stopBackgroundRotation(currentScreen.backgroundRotation);
     }
     updateScreen(selectedScreenId, updates);
   };
