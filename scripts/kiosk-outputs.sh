@@ -27,6 +27,16 @@
 #                            save path runs inside the home-screens service,
 #                            and anything started from there is killed with
 #                            the service on its next restart (KillMode=mixed).
+#   kiosk-outputs.sh light   Switch on every connected screen that is off,
+#                            with the rotation and resolution, unless the
+#                            power agent is holding the screen off. kanshi
+#                            runs it after every profile it applies (the
+#                            `exec` line in the config), and start runs it
+#                            before kanshi takes over. Needed because labwc
+#                            0.20 answers kanshi's configuration for a screen
+#                            that reconnected with "applied" and leaves it
+#                            off, while the same request from wlr-randr lights
+#                            it (seen on the v1.13.0 image, 2026-10-10).
 #
 # Where kanshi cannot do the job (not installed yet, not running, a config
 # someone else wrote, more screens than a profile covers) this falls back to
@@ -50,9 +60,18 @@
 #   - A mode the monitor does not list fails the whole profile, rotation
 #     included, so a mode is only written when the monitor lists it (or did
 #     the last time it was connected; see KANSHI_MODE below).
-#   - Applying a profile switches a dark panel back on. The power agent turns
-#     it off again within a few seconds, so a save made while the wall sleeps
-#     lights it briefly.
+#   - Applying a profile switches a dark panel back on. While the power agent
+#     holds the screen off it also stops kanshi (see kiosk-power-agent.sh), so
+#     a save made while the wall sleeps only writes the config: kanshi reads
+#     it when the agent starts it again at wake. The agent says so through a
+#     state file in XDG_RUNTIME_DIR (home-screens-panel, "off" while dark).
+#   - With <core><autoEnableOutputs>no</autoEnableOutputs></core> in labwc's
+#     rc.xml (scripts/labwc-rc.sh writes it from labwc 0.8.3), nothing but
+#     this script and kanshi switches a screen on. A start lights a dark
+#     screen itself before kanshi takes over, and kanshi's exec line lights
+#     one after every apply, so a profile kanshi refuses or a configuration
+#     labwc does not act on leaves the wall landscape rather than black.
+#   - exec runs a command after a successful apply (kanshi 1.3.1 to 1.7).
 #
 # Test hooks (never set in production):
 #   HS_OUTPUTS_START_WAIT   seconds to wait before checking a started kanshi
@@ -64,9 +83,9 @@ set -u
 
 ACTION="${1:-}"
 case "${ACTION}" in
-  start|apply) ;;
+  start|apply|light) ;;
   *)
-    echo "usage: $0 start|apply" >&2
+    echo "usage: $0 start|apply|light" >&2
     exit 2
     ;;
 esac
@@ -88,6 +107,23 @@ log() {
 # variable; the kiosk session has both.
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/${USER_ID}}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+PANEL_STATE_FILE="${XDG_RUNTIME_DIR}/home-screens-panel"
+# Left here when a save could not reach the screen because it was held off;
+# the power agent runs `start` at wake while it exists, and a start or apply
+# that reaches the screen removes it.
+DEFERRED_FILE="${XDG_RUNTIME_DIR}/home-screens-outputs-deferred"
+
+# Whether the power agent is holding the screen off right now. Nothing here
+# may switch it on then: the agent restarts kanshi at wake, and kanshi reads
+# whatever config is in place by then.
+panel_held_off() {
+  [ "$(cat "${PANEL_STATE_FILE}" 2>/dev/null)" = "off" ]
+}
+
+defer_until_wake() {
+  log "$1"
+  : > "${DEFERRED_FILE}" 2>/dev/null || true
+}
 if [ ! -e "${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}" ]; then
   # No compositor: a laptop or a Docker box running the app, a hub with no
   # screen attached, the image build chroot. Nothing to set.
@@ -167,14 +203,53 @@ set_mode_once() {
 }
 
 # Rotation and resolution once, as separate calls so a mode the monitor
-# refuses cannot stop the rotation.
+# refuses cannot stop the rotation. --on because with autoEnableOutputs off
+# nothing else lights a screen labwc left disabled; on every other setup the
+# screen is on already and the flag changes nothing.
 apply_once() {
-  wlr-randr --output "${OUTPUT}" --transform "${TRANSFORM}" 2>/dev/null \
+  if panel_held_off; then
+    defer_until_wake "the screen is switched off; the settings apply when the display wakes"
+    return 0
+  fi
+  rm -f "${DEFERRED_FILE}" 2>/dev/null || true
+  wlr-randr --output "${OUTPUT}" --on --transform "${TRANSFORM}" 2>/dev/null \
     || log "wlr-randr could not set rotation ${TRANSFORM} on ${OUTPUT}"
   if [ -n "${MODE}" ]; then
     set_mode_once
   fi
 }
+
+# Whether any screen is on.
+screen_lit() {
+  wlr-randr 2>/dev/null | grep -Eq '^[[:space:]]+Enabled: yes'
+}
+
+# Switches on every connected screen that is off: the chosen one with the
+# rotation and resolution, any other as it is. Nothing while the power agent
+# holds the screen off. kanshi's own apply then finds them on and changes
+# nothing. Reads the listing afresh: this runs from kanshi's exec line right
+# after a reconnect, and the listing taken at the top may predate it.
+light_unlit_heads() {
+  if panel_held_off; then
+    return 0
+  fi
+  local head
+  for head in $(wlr-randr 2>/dev/null | awk '/^[^[:space:]]/ { n = $1 } /^[[:space:]]+Enabled: no/ { print n }'); do
+    if [ "${head}" = "${OUTPUT}" ]; then
+      log "switching ${head} on"
+      apply_once
+    else
+      log "switching ${head} on"
+      wlr-randr --output "${head}" --on 2>/dev/null \
+        || log "wlr-randr could not switch ${head} on"
+    fi
+  done
+}
+
+if [ "${ACTION}" = "light" ]; then
+  light_unlit_heads
+  exit 0
+fi
 
 if ! command -v kanshi >/dev/null 2>&1; then
   apply_once
@@ -187,10 +262,12 @@ kanshi_config() {
 # whenever the screen settings change. Set the rotation in Settings, not here.
 profile home-screens {
   output * transform ${TRANSFORM}${KANSHI_MODE}
+  exec "${APP_DIR}/scripts/kiosk-outputs.sh" light
 }
 profile home-screens-two-screens {
   output ${OUTPUT} transform ${TRANSFORM}${KANSHI_MODE}
   output *
+  exec "${APP_DIR}/scripts/kiosk-outputs.sh" light
 }
 EOF
 }
@@ -255,14 +332,29 @@ if ! write_config; then
   exit 0
 fi
 
+# A kiosk start with autoEnableOutputs off finds the screen dark. Light it
+# before kanshi takes over, with the rotation, so Chromium opens on a lit
+# screen the right way up and kanshi's apply changes nothing.
+if [ "${ACTION}" = "start" ] && [ "${HEADS}" -gt 0 ] && ! screen_lit; then
+  log "no screen is on; switching it on before kanshi takes over"
+  light_unlit_heads
+fi
+
 if kanshi_running; then
   pkill -HUP -u "${USER_ID}" -x kanshi 2>/dev/null || true
   log "reloaded kanshi: ${SETTINGS}"
+  rm -f "${DEFERRED_FILE}" 2>/dev/null || true
 elif [ "${ACTION}" = "start" ]; then
   if ! start_kanshi; then
     apply_once
     exit 0
   fi
+  rm -f "${DEFERRED_FILE}" 2>/dev/null || true
+elif panel_held_off; then
+  # The power agent holds the screen off and runs start at wake, when kanshi
+  # (or the one-shot fallback) reads the config just written.
+  defer_until_wake "the screen is switched off; the new settings apply when the display wakes"
+  exit 0
 else
   # A kiosk session that started before kanshi was installed: an update
   # waiting for its restart. The config is ready for the next session; set

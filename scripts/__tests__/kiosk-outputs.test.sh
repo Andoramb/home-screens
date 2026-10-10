@@ -114,7 +114,7 @@ reset_state() {
   : > "${PKILL_LOG}"
   : > "${LOGGER_LOG}"
   : > "${PGREP_ANSWER}"
-  rm -f "${REFUSE_MODES}" "${KANSHI_DIES}"
+  rm -f "${REFUSE_MODES}" "${KANSHI_DIES}" "${RUN_DIR}/home-screens-panel" "${RUN_DIR}/home-screens-outputs-deferred"
   rm -rf "${HOME_DIR}/.config"
   stop_stub_kanshi
   block HDMI-A-1 yes 1920x1080 1280x720 > "${LISTING}"
@@ -167,19 +167,33 @@ expect_no_kanshi_start() {
   [ ! -s "${KANSHI_LOG}" ] || fail "expected kanshi not to be started"
 }
 
+# The script only waits HS_OUTPUTS_START_WAIT for the started kanshi to be
+# alive; its stub writes its argument line a moment after that under load,
+# so the line is waited for rather than asserted at once.
+expect_kanshi_started() {
+  local i
+  for i in $(seq 1 30); do
+    grep -qxF -- "-c ${KANSHI_CONF}" "${KANSHI_LOG}" 2>/dev/null && return 0
+    sleep 0.1
+  done
+  fail "expected kanshi started with -c ${KANSHI_CONF}"
+}
+
 echo "Test 1: a launcher with no kanshi running writes the config and starts kanshi"
 reset_state
 run start
 expect_config \
   'profile home-screens {' \
   '  output * transform 90 mode 1920x1080' \
+  "  exec \"${APP_DIR}/scripts/kiosk-outputs.sh\" light" \
   '}' \
   'profile home-screens-two-screens {' \
   '  output HDMI-A-1 transform 90 mode 1920x1080' \
   '  output *' \
+  "  exec \"${APP_DIR}/scripts/kiosk-outputs.sh\" light" \
   '}'
 head -n 1 "${KANSHI_CONF}" | grep -q 'Written by Home Screens' || fail "expected the ownership marker on the first line"
-grep -qxF -- "-c ${KANSHI_CONF}" "${KANSHI_LOG}" || fail "expected kanshi started with -c ${KANSHI_CONF}"
+expect_kanshi_started
 expect_no_wlr
 if ls "${KANSHI_CONF}".tmp.* > /dev/null 2>&1; then fail "left a temporary config behind"; fi
 
@@ -211,7 +225,7 @@ run apply
 expect_config_line '  output * transform 90 mode 1920x1080'
 expect_no_kanshi_start
 [ ! -s "${PKILL_LOG}" ] || fail "nothing was running to reload"
-expect_wlr '--output HDMI-A-1 --transform 90'
+expect_wlr '--output HDMI-A-1 --on --transform 90'
 expect_wlr '--output HDMI-A-1 --mode 1920x1080'
 
 echo "Test 5: no kanshi installed sets the screen once and writes no config"
@@ -222,11 +236,11 @@ rm -rf "${NO_KANSHI_BIN}"; mkdir -p "${NO_KANSHI_BIN}"
 for stub in wlr-randr pgrep pkill systemd-cat logger; do cp "${BIN}/${stub}" "${NO_KANSHI_BIN}/"; done
 run start "${NO_KANSHI_BIN}:/usr/bin:/bin"
 expect_no_config
-expect_wlr '--output HDMI-A-1 --transform 90'
+expect_wlr '--output HDMI-A-1 --on --transform 90'
 expect_wlr '--output HDMI-A-1 --mode 1920x1080'
 : > "${WLR_LOG}"
 run apply "${NO_KANSHI_BIN}:/usr/bin:/bin"
-expect_wlr '--output HDMI-A-1 --transform 90'
+expect_wlr '--output HDMI-A-1 --on --transform 90'
 
 echo "Test 6: a resolution the monitor does not list stays out of the profile and is tried once"
 reset_state
@@ -253,7 +267,7 @@ reset_state
 { block HDMI-A-1 yes 1920x1080; block HDMI-A-2 yes 1920x1080; block DSI-1 yes 800x480; } > "${LISTING}"
 echo 4242 > "${PGREP_ANSWER}"
 run apply
-expect_wlr '--output HDMI-A-1 --transform 90'
+expect_wlr '--output HDMI-A-1 --on --transform 90'
 expect_wlr '--output HDMI-A-1 --mode 1920x1080'
 
 echo "Test 9: a save leaves someone else's kanshi config alone and sets the screen once"
@@ -264,7 +278,7 @@ echo 4242 > "${PGREP_ANSWER}"
 run apply
 grep -q 'profile desk' "${KANSHI_CONF}" || fail "a save replaced a config Home Screens did not write"
 [ ! -s "${PKILL_LOG}" ] || fail "a save reloaded a kanshi reading someone else's config"
-expect_wlr '--output HDMI-A-1 --transform 90'
+expect_wlr '--output HDMI-A-1 --on --transform 90'
 
 echo "Test 10: a launcher moves someone else's config aside once, then owns the file"
 reset_state
@@ -296,7 +310,7 @@ reset_state
 touch "${KANSHI_DIES}"
 run start
 [ -s "${KANSHI_LOG}" ] || fail "expected a start attempt"
-expect_wlr '--output HDMI-A-1 --transform 90'
+expect_wlr '--output HDMI-A-1 --on --transform 90'
 expect_wlr '--output HDMI-A-1 --mode 1920x1080'
 
 echo "Test 13: no compositor (a laptop, a chroot) does nothing at all, and says so with exit 3"
@@ -366,5 +380,66 @@ RC=$?
 set -e
 [ "${RC}" -eq 2 ] || fail "expected exit 2 with no action, got ${RC}"
 expect_no_config
+
+# With autoEnableOutputs off in rc.xml, nothing lights a screen at a kiosk
+# start but this script, and labwc 0.20 does not act on kanshi's own
+# configuration for a reconnected screen.
+echo "Test 19: a start that finds the screen off switches it on, rotated, and still starts kanshi"
+reset_state
+block HDMI-A-1 no 1920x1080 1280x720 > "${LISTING}"
+run start
+expect_kanshi_started
+expect_wlr '--output HDMI-A-1 --on --transform 90'
+expect_wlr '--output HDMI-A-1 --mode 1920x1080'
+grep -q 'switching it on before kanshi' "${LOGGER_LOG}" || fail "expected a note that the screen was switched on"
+
+echo "Test 20: light switches on every screen that is off, the chosen one with its settings"
+reset_state
+{ block HDMI-A-1 no 1920x1080; block HDMI-A-2 no 1280x720; } > "${LISTING}"
+run light
+expect_wlr '--output HDMI-A-1 --on --transform 90'
+expect_wlr '--output HDMI-A-1 --mode 1920x1080'
+expect_wlr '--output HDMI-A-2 --on'
+[ "$(wc -l < "${WLR_LOG}")" -eq 3 ] || fail "expected exactly three wlr-randr changes"
+expect_no_config
+expect_no_kanshi_start
+# Screens already on are left alone.
+: > "${WLR_LOG}"
+block HDMI-A-1 yes 1920x1080 > "${LISTING}"
+run light
+expect_no_wlr
+# Nothing while the power agent holds the screen off.
+block HDMI-A-1 no 1920x1080 > "${LISTING}"
+echo off > "${RUN_DIR}/home-screens-panel"
+run light
+expect_no_wlr
+
+echo "Test 21: a save while the power agent holds the screen off only writes the config"
+reset_state
+echo off > "${RUN_DIR}/home-screens-panel"
+printf 'DISPLAY_MODE="1920x1080"\nDISPLAY_TRANSFORM="270"\n' > "${APP_DIR}/data/kiosk.conf"
+run apply
+expect_config_line '  output * transform 270 mode 1920x1080'
+expect_no_kanshi_start
+expect_no_wlr
+grep -q 'switched off' "${LOGGER_LOG}" || fail "expected a note that the settings wait for the wake"
+[ -e "${RUN_DIR}/home-screens-outputs-deferred" ] || fail "expected the deferred marker for the wake to replay"
+# The same save with the screen on sets it once, as before, and clears the marker.
+echo on > "${RUN_DIR}/home-screens-panel"
+run apply
+expect_wlr '--output HDMI-A-1 --on --transform 270'
+[ ! -e "${RUN_DIR}/home-screens-outputs-deferred" ] || fail "expected the deferred marker cleared once the settings reached the screen"
+
+echo "Test 22: with no kanshi installed, a save while the screen is off touches nothing, and a start at wake sets it"
+reset_state
+echo off > "${RUN_DIR}/home-screens-panel"
+run apply "${NO_KANSHI_BIN}:/usr/bin:/bin"
+expect_no_config
+expect_no_wlr
+[ -e "${RUN_DIR}/home-screens-outputs-deferred" ] || fail "expected the deferred marker"
+echo on > "${RUN_DIR}/home-screens-panel"
+run start "${NO_KANSHI_BIN}:/usr/bin:/bin"
+expect_wlr '--output HDMI-A-1 --on --transform 90'
+[ ! -e "${RUN_DIR}/home-screens-outputs-deferred" ] || fail "expected the deferred marker cleared by the start"
 
 echo "All kiosk-outputs tests passed."

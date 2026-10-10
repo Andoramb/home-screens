@@ -75,6 +75,36 @@ if [ "${HUB_UP}" = "true" ] && [ -z "${HS_KIOSK_RELAUNCHED:-}" ]; then
   fi
 fi
 
+# labwc switches a newly connected screen on by itself. Some monitors drop
+# their HDMI connection every few seconds while they sit without a signal, so
+# while the power agent held the screen off, every return lit it for up to
+# 3 s: a flash every ten seconds all night. From labwc 0.8.3 the setting
+# below leaves switching screens on to kanshi, which the power agent stops
+# while the screen is off. The hub's rc.xml gets it from scripts/labwc-rc.sh;
+# a display-only Pi's rc.xml was written once by install.sh, so it is added
+# here, once, and labwc reloads. Needs kanshi, which is what switches the
+# screen on at boot from then on. The labwc version comes from LABWC_VER,
+# which labwc sets for its session, with the binary as the fallback.
+LABWC_RC="${HOME}/.config/labwc/rc.xml"
+labwc_at_least() {
+  local have major minor patch wmajor wminor wpatch
+  have="${LABWC_VER:-$(labwc --version 2>/dev/null)}"
+  have="$(printf '%s\n' "${have}" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)"
+  [ -n "${have}" ] || return 1
+  IFS=. read -r major minor patch <<< "${have}"
+  IFS=. read -r wmajor wminor wpatch <<< "$1"
+  [ "${major}" -gt "${wmajor}" ] && return 0
+  [ "${major}" -lt "${wmajor}" ] && return 1
+  [ "${minor}" -gt "${wminor}" ] && return 0
+  [ "${minor}" -lt "${wminor}" ] && return 1
+  [ "${patch}" -ge "${wpatch}" ]
+}
+if [ -f "${LABWC_RC}" ] && ! grep -q 'autoEnableOutputs' "${LABWC_RC}" \
+   && command -v kanshi >/dev/null 2>&1 && labwc_at_least 0.8.3; then
+  sed -i 's|<labwc_config>|<labwc_config>\n  <core>\n    <autoEnableOutputs>no</autoEnableOutputs>\n  </core>|' "${LABWC_RC}"
+  pkill -HUP -x labwc 2>/dev/null || true
+fi
+
 # Rotation and resolution, from kiosk.conf. Same flow as the full install:
 # kiosk-outputs.sh hands them to kanshi and starts it, and kanshi puts them
 # back whenever a monitor reconnects; labwc itself forgets them. The wait lets
@@ -86,8 +116,23 @@ fi
 # then set the screen once, the way this launcher always did, rather than
 # leave a portrait wall sideways. The awk is the one in kiosk-outputs.sh
 # (scripts/__tests__/output-detection.test.ts keeps the two identical).
+#
+# With <core><autoEnableOutputs>no</autoEnableOutputs></core> in rc.xml (see
+# below) labwc leaves the screen off until kanshi switches it on, so this runs
+# in the foreground: wait up to 2 s for labwc to list the screen, start
+# kanshi, then wait up to 5 s for a lit screen before Chromium opens, or it
+# would size its window to no screen at all. On a setup without that line
+# both waits end at once.
 if [ -x "${APP_DIR}/scripts/kiosk-outputs.sh" ]; then
-  (sleep 1 && "${APP_DIR}/scripts/kiosk-outputs.sh" start) &
+  for _i in $(seq 1 10); do
+    wlr-randr 2>/dev/null | grep -q '^[^[:space:]]' && break
+    sleep 0.2
+  done
+  "${APP_DIR}/scripts/kiosk-outputs.sh" start
+  for _i in $(seq 1 25); do
+    wlr-randr 2>/dev/null | grep -Eq '^[[:space:]]+Enabled: yes' && break
+    sleep 0.2
+  done
 elif [ -n "${DISPLAY_TRANSFORM}" ] || [ -n "${DISPLAY_MODE}" ]; then
   OUTPUT=$(wlr-randr 2>/dev/null | awk '/^[^[:space:]]/{n=$1;if(f=="")f=n}/^[[:space:]]+Enabled: yes/{if(n!=""){print n;d=1;exit}}END{if(!d)print(f!=""?f:"HDMI-A-1")}')
   [ -n "${DISPLAY_TRANSFORM}" ] && (sleep 1 && wlr-randr --output "${OUTPUT}" --transform "${DISPLAY_TRANSFORM}") &

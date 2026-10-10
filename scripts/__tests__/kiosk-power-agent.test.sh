@@ -29,6 +29,10 @@ trap cleanup EXIT
 APP_DIR="${WORK}/app"
 mkdir -p "${APP_DIR}/scripts" "${APP_DIR}/data" "${WORK}/bin"
 install -m 0755 "${SCRIPTS_DIR}/kiosk-power-agent.sh" "${APP_DIR}/scripts/kiosk-power-agent.sh"
+# A home with no labwc config, so the tests above the kanshi ones run the
+# agent as every setup but the one labwc-rc.sh prepares (tests 11 on).
+export HOME="${WORK}/home-plain"
+mkdir -p "${HOME}"
 
 ARGV_LOG="${WORK}/wlopm.log"
 LISTING="${WORK}/listing"
@@ -39,10 +43,14 @@ echo '{"power":"on"}' > "${STATE}"
 
 # Stub wlopm: logs every invocation, and with no arguments prints whatever
 # listing the test currently wants the compositor to report.
+# While the refuse-off file exists, --off fails as a wlopm that could not
+# reach the compositor would.
+REFUSE_OFF="${WORK}/refuse-off"
 cat > "${WORK}/bin/wlopm" <<EOF
 #!/usr/bin/env bash
 if [ \$# -eq 0 ]; then cat "${LISTING}"; exit 0; fi
 echo "\$*" >> "${ARGV_LOG}"
+if [ -e "${REFUSE_OFF}" ] && [ "\$1" = "--off" ]; then exit 1; fi
 exit 0
 EOF
 chmod +x "${WORK}/bin/wlopm"
@@ -223,5 +231,184 @@ kill "${AGENT_PID}" 2>/dev/null; wait "${AGENT_PID}" 2>/dev/null || true
 AGENT_PID=""
 kill "${WATCH_PID}" 2>/dev/null; wait "${WATCH_PID}" 2>/dev/null || true
 WATCH_PID=""
+
+# --- With labwc told to leave new screens off (scripts/labwc-rc.sh) --------
+#
+# The agent then stops kanshi while the screen is off and starts it again,
+# through kiosk-outputs.sh, when the hub says on. Stubs for pkill, wlr-randr,
+# logger and kiosk-outputs.sh log into the same argv log as wlopm, prefixed,
+# so the order of events can be read off one file.
+GATED_HOME="${WORK}/home-gated"
+RUN_DIR="${WORK}/run"
+WLR_LISTING="${WORK}/wlr-listing"
+LOGGER_LOG="${WORK}/logger.log"
+mkdir -p "${GATED_HOME}/.config/labwc" "${RUN_DIR}"
+cat > "${GATED_HOME}/.config/labwc/rc.xml" <<'EOF'
+<?xml version="1.0"?>
+<labwc_config>
+  <core>
+    <autoEnableOutputs>no</autoEnableOutputs>
+  </core>
+</labwc_config>
+EOF
+cat > "${WORK}/bin/pkill" <<EOF
+#!/usr/bin/env bash
+echo "pkill \$*" >> "${ARGV_LOG}"
+exit 0
+EOF
+cat > "${WORK}/bin/wlr-randr" <<EOF
+#!/usr/bin/env bash
+cat "${WLR_LISTING}"
+EOF
+cat > "${WORK}/bin/logger" <<EOF
+#!/usr/bin/env bash
+echo "\$*" >> "${LOGGER_LOG}"
+EOF
+# kiosk-outputs.sh's part here is to start kanshi, which lights the screen.
+cat > "${APP_DIR}/scripts/kiosk-outputs.sh" <<EOF
+#!/usr/bin/env bash
+echo "outputs \$*" >> "${ARGV_LOG}"
+printf 'HDMI-A-1 "Panel"\n  Enabled: yes\n' > "${WLR_LISTING}"
+EOF
+chmod +x "${WORK}/bin/pkill" "${WORK}/bin/wlr-randr" "${WORK}/bin/logger" "${APP_DIR}/scripts/kiosk-outputs.sh"
+
+# line_of <pattern> <nth>: the argv log line number of the nth match.
+line_of() {
+  grep -n -- "$1" "${ARGV_LOG}" | sed -n "$2p" | cut -d: -f1
+}
+
+start_gated_agent() {
+  sleep 300 &
+  WATCH_PID=$!
+  HOME="${GATED_HOME}" XDG_RUNTIME_DIR="${RUN_DIR}" PATH="${WORK}/bin:${PATH}" \
+  HS_POWER_STATE_URL="file://${STATE}" \
+  HS_POWER_POLL_SECONDS=0.2 HS_POWER_IDLE_POLL_SECONDS=0.2 HS_POWER_REASSERT_LOG_SECONDS=1 \
+    "${APP_DIR}/scripts/kiosk-power-agent.sh" "${WATCH_PID}" &
+  AGENT_PID=$!
+}
+
+stop_gated_agent() {
+  kill "${AGENT_PID}" 2>/dev/null; wait "${AGENT_PID}" 2>/dev/null || true
+  AGENT_PID=""
+  kill "${WATCH_PID}" 2>/dev/null; wait "${WATCH_PID}" 2>/dev/null || true
+  WATCH_PID=""
+}
+
+echo "Test 11: going dark stops kanshi first and notes the state for kiosk-outputs.sh"
+: > "${ARGV_LOG}"; : > "${LOGGER_LOG}"
+printf 'HDMI-A-1 "Panel"\n  Enabled: yes\n' > "${WLR_LISTING}"
+echo "HDMI-A-1 on" > "${LISTING}"
+echo '{"power":"off"}' > "${STATE}"
+start_gated_agent
+wait_for '^--off \*$' 1 "expected wlopm --off"
+grep -qx -- "pkill -u $(id -u) -x kanshi" "${ARGV_LOG}" || { echo "FAIL: kanshi was not stopped"; cat "${ARGV_LOG}"; exit 1; }
+[ "$(line_of '^pkill ' 1)" -lt "$(line_of '^--off \*$' 1)" ] || { echo "FAIL: kanshi must stop before the power is cut"; cat "${ARGV_LOG}"; exit 1; }
+[ "$(cat "${RUN_DIR}/home-screens-panel")" = "off" ] || { echo "FAIL: state file should say off"; exit 1; }
+echo "HDMI-A-1 off" > "${LISTING}"
+
+echo "Test 12: a screen that never went away is lit first, then kanshi comes back"
+echo '{"power":"on"}' > "${STATE}"
+wait_for '^outputs start$' 1 "expected kiosk-outputs.sh start after the hub answered on"
+[ "$(line_of '^--on \*$' 2)" -lt "$(line_of '^outputs start$' 1)" ] || { echo "FAIL: a lit screen must not wait for kanshi"; cat "${ARGV_LOG}"; exit 1; }
+[ "$(cat "${RUN_DIR}/home-screens-panel")" = "on" ] || { echo "FAIL: state file should say on"; exit 1; }
+
+echo "Test 13: a screen that reconnected while dark waits for kanshi, so it does not come up sideways"
+echo '{"power":"off"}' > "${STATE}"
+wait_for '^--off \*$' 2 "expected wlopm --off again"
+echo "HDMI-A-1 off" > "${LISTING}"
+printf 'HDMI-A-1 "Panel"\n  Enabled: no\n' > "${WLR_LISTING}"
+echo '{"power":"on"}' > "${STATE}"
+wait_for '^--on \*$' 3 "expected wlopm --on"
+[ "$(line_of '^outputs start$' 2)" -lt "$(line_of '^--on \*$' 3)" ] || { echo "FAIL: kanshi must start before the power comes on for a reconnected screen"; cat "${ARGV_LOG}"; exit 1; }
+
+echo "Test 14: a screen that comes back on by itself is noted once, then summed up"
+echo '{"power":"off"}' > "${STATE}"
+wait_for '^--off \*$' 3 "expected wlopm --off before the flaps"
+echo "HDMI-A-1 on" > "${LISTING}"
+wait_for '^--off \*$' 5 "expected repeated --off while the listing shows the screen on"
+grep -q 'switched the screen off again after it came back on' "${LOGGER_LOG}" || { echo "FAIL: expected the first flap noted"; cat "${LOGGER_LOG}"; exit 1; }
+sleep 1.2
+wait_for '^--off \*$' 7 "expected more --off"
+grep -q 'switched the screen off again [0-9]* times' "${LOGGER_LOG}" || { echo "FAIL: expected a summed-up note"; cat "${LOGGER_LOG}"; exit 1; }
+[ "$(grep -c 'switched the screen off again' "${LOGGER_LOG}")" -le 3 ] || { echo "FAIL: flaps were noted on every poll"; cat "${LOGGER_LOG}"; exit 1; }
+echo "HDMI-A-1 off" > "${LISTING}"
+
+echo "Test 15: the exit trap brings kanshi back and drops the state file"
+kill -TERM "${AGENT_PID}"
+wait "${AGENT_PID}" 2>/dev/null || true
+AGENT_PID=""
+wait_for '^outputs start$' 3 "expected kiosk-outputs.sh start from the EXIT trap"
+[ ! -e "${RUN_DIR}/home-screens-panel" ] || { echo "FAIL: state file left behind"; exit 1; }
+kill "${WATCH_PID}" 2>/dev/null; wait "${WATCH_PID}" 2>/dev/null || true
+WATCH_PID=""
+
+echo "Test 16: a connected screen found off while awake has kanshi started again"
+: > "${ARGV_LOG}"
+printf 'HDMI-A-1 "Panel"\n  Enabled: no\n' > "${WLR_LISTING}"
+echo '{"power":"on"}' > "${STATE}"
+start_gated_agent
+wait_for '^outputs start$' 1 "expected kiosk-outputs.sh start for a dark screen while awake"
+sleep 0.6
+[ "$(count_of '^outputs start$')" -eq 1 ] || { echo "FAIL: kanshi restarted again after the screen was lit"; cat "${ARGV_LOG}"; exit 1; }
+stop_gated_agent
+
+echo "Test 17: without that line in rc.xml nothing about kanshi changes"
+: > "${ARGV_LOG}"
+printf 'HDMI-A-1 "Panel"\n  Enabled: yes\n' > "${WLR_LISTING}"
+echo "HDMI-A-1 on" > "${LISTING}"
+echo '{"power":"off"}' > "${STATE}"
+sleep 300 &
+WATCH_PID=$!
+XDG_RUNTIME_DIR="${RUN_DIR}" PATH="${WORK}/bin:${PATH}" \
+HS_POWER_STATE_URL="file://${STATE}" \
+HS_POWER_POLL_SECONDS=0.2 HS_POWER_IDLE_POLL_SECONDS=0.2 \
+  "${APP_DIR}/scripts/kiosk-power-agent.sh" "${WATCH_PID}" &
+AGENT_PID=$!
+wait_for '^--off \*$' 1 "expected wlopm --off"
+echo "HDMI-A-1 off" > "${LISTING}"
+echo '{"power":"on"}' > "${STATE}"
+wait_for '^--on \*$' 2 "expected wlopm --on"
+sleep 0.3
+if grep -q '^pkill \|^outputs ' "${ARGV_LOG}"; then echo "FAIL: kanshi was touched without the rc.xml line"; cat "${ARGV_LOG}"; exit 1; fi
+stop_gated_agent
+
+echo "Test 18: a power-off that fails puts kanshi and the state file back"
+: > "${ARGV_LOG}"
+printf 'HDMI-A-1 "Panel"\n  Enabled: yes\n' > "${WLR_LISTING}"
+echo "HDMI-A-1 on" > "${LISTING}"
+echo '{"power":"off"}' > "${STATE}"
+: > "${REFUSE_OFF}"
+start_gated_agent
+wait_for '^--off \*$' 1 "expected the failing wlopm --off"
+wait_for '^outputs start$' 1 "expected kanshi started again after the failed power-off"
+[ "$(line_of '^pkill ' 1)" -lt "$(line_of '^outputs start$' 1)" ] || { echo "FAIL: kanshi should have been stopped, then restarted"; cat "${ARGV_LOG}"; exit 1; }
+[ "$(cat "${RUN_DIR}/home-screens-panel")" = "on" ] || { echo "FAIL: state file should be back to on"; exit 1; }
+# The hub turning round to on before a retry succeeds leaves nothing stuck.
+rm -f "${REFUSE_OFF}"
+echo '{"power":"on"}' > "${STATE}"
+sleep 0.6
+[ "$(cat "${RUN_DIR}/home-screens-panel")" = "on" ] || { echo "FAIL: state file should still say on"; exit 1; }
+stop_gated_agent
+
+echo "Test 19: a save deferred while dark is applied at wake even when kanshi was never stopped"
+: > "${ARGV_LOG}"
+echo "HDMI-A-1 on" > "${LISTING}"
+echo '{"power":"off"}' > "${STATE}"
+sleep 300 &
+WATCH_PID=$!
+# A plain home: no rc.xml line, so this agent never touches kanshi.
+XDG_RUNTIME_DIR="${RUN_DIR}" PATH="${WORK}/bin:${PATH}" \
+HS_POWER_STATE_URL="file://${STATE}" \
+HS_POWER_POLL_SECONDS=0.2 HS_POWER_IDLE_POLL_SECONDS=0.2 \
+  "${APP_DIR}/scripts/kiosk-power-agent.sh" "${WATCH_PID}" &
+AGENT_PID=$!
+wait_for '^--off \*$' 1 "expected wlopm --off"
+echo "HDMI-A-1 off" > "${LISTING}"
+: > "${RUN_DIR}/home-screens-outputs-deferred"   # what kiosk-outputs.sh leaves for a save it could not apply
+echo '{"power":"on"}' > "${STATE}"
+wait_for '^--on \*$' 2 "expected wlopm --on"
+wait_for '^outputs start$' 1 "expected kiosk-outputs.sh start to replay the deferred save"
+rm -f "${RUN_DIR}/home-screens-outputs-deferred"
+stop_gated_agent
 
 echo "All kiosk-power-agent tests passed."

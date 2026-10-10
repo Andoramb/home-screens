@@ -1164,10 +1164,21 @@ fi
 
 # Rotation and resolution, from kiosk.conf. kiosk-outputs.sh hands them to
 # kanshi and starts it, and kanshi puts them back whenever a monitor
-# reconnects; labwc itself forgets them. The wait lets labwc finish bringing
-# its outputs up.
+# reconnects; labwc itself forgets them. With autoEnableOutputs off in rc.xml
+# (scripts/labwc-rc.sh) labwc leaves the screen off until kanshi switches it
+# on, so this runs in the foreground: wait up to 2 s for labwc to list the
+# screen, start kanshi, then wait up to 5 s for a lit screen before Chromium
+# opens. On a setup without that line both waits end at once.
 if [ -x "${APP_DIR}/scripts/kiosk-outputs.sh" ]; then
-  (sleep 1 && "${APP_DIR}/scripts/kiosk-outputs.sh" start) &
+  for _i in $(seq 1 10); do
+    wlr-randr 2>/dev/null | grep -q "^[^[:space:]]" && break
+    sleep 0.2
+  done
+  "${APP_DIR}/scripts/kiosk-outputs.sh" start
+  for _i in $(seq 1 25); do
+    wlr-randr 2>/dev/null | grep -Eq "^[[:space:]]+Enabled: yes" && break
+    sleep 0.2
+  done
 fi
 
 # Hide cursor — triggers the HideCursor keybind defined in labwc rc.xml.

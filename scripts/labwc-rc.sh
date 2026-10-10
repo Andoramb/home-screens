@@ -36,6 +36,17 @@
 # The matrix is the first two rows of libinput's 3x3 calibration matrix, and
 # `category="touch"` applies it to every touchscreen, so no device name is
 # needed.
+#
+# <core><autoEnableOutputs>no</autoEnableOutputs></core> is written when the
+# installed labwc understands it (0.8.3 and later) and kanshi is installed.
+# labwc switches a newly connected screen on by itself. Some monitors drop
+# their HDMI connection every few seconds while they sit without a signal
+# looking for one, so while the panel power agent held the screen off, every
+# return lit it until the agent noticed, a flash every ten seconds all night.
+# With the setting off, labwc leaves a returning screen to kanshi, which
+# kiosk-outputs.sh runs and the power agent stops while the screen is off, so
+# the screen stays dark until the display wakes. Without kanshi nothing would
+# switch the screen on at boot, hence the second condition.
 set -u
 
 APP_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -67,10 +78,35 @@ else
   esac
 fi
 
+# labwc_at_least <major.minor.patch>: whether the labwc on PATH is that
+# version or newer. `labwc --version` prints "labwc 0.9.8" or, from 0.20,
+# "labwc 0.20.2 (+xwayland ...) wlroots-0.20.2"; the first dotted triple is
+# labwc's own. No labwc on PATH (a laptop running the app) reads as too old.
+labwc_at_least() {
+  local have major minor patch wmajor wminor wpatch
+  have="$(labwc --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1)"
+  [ -n "${have}" ] || return 1
+  IFS=. read -r major minor patch <<< "${have}"
+  IFS=. read -r wmajor wminor wpatch <<< "$1"
+  [ "${major}" -gt "${wmajor}" ] && return 0
+  [ "${major}" -lt "${wmajor}" ] && return 1
+  [ "${minor}" -gt "${wminor}" ] && return 0
+  [ "${minor}" -lt "${wminor}" ] && return 1
+  [ "${patch}" -ge "${wpatch}" ]
+}
+
+CORE=""
+if labwc_at_least 0.8.3 && command -v kanshi >/dev/null 2>&1; then
+  CORE="  <core>
+    <autoEnableOutputs>no</autoEnableOutputs>
+  </core>
+"
+fi
+
 DESIRED_RC="<?xml version=\"1.0\"?>
 <!-- ${MARKER} (scripts/labwc-rc.sh) and replaced on every update. Touch alignment is set in Settings, not here. -->
 <labwc_config>
-  <windowRules>
+${CORE}  <windowRules>
     <windowRule identifier=\"*\" serverDecoration=\"no\" skipTaskbar=\"yes\" skipWindowSwitcher=\"yes\" />
   </windowRules>
   <keyboard>

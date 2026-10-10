@@ -386,7 +386,18 @@ export function useSleepManager(
   // display is already at its awake level, and the throttled arm no-ops
   // outside schedule windows.
   useEffect(() => {
-    function onActivity() {
+    function onActivity(event: Event) {
+      // A pointer that merely appears over the window is not a person. labwc
+      // (0.20 on the Pi) places the cursor on a screen it has just switched
+      // on, which Chromium reports as a trusted mousemove with no movement.
+      // A monitor that drops its HDMI connection in standby every few seconds
+      // woke the sleeping display on every return that way. A hand on a
+      // mouse always moves it by at least a pixel; a tap arrives as
+      // touchstart.
+      if (event.type === 'mousemove') {
+        const move = event as MouseEvent;
+        if (move.movementX === 0 && move.movementY === 0) return;
+      }
       const now = Date.now();
       lastActivityRef.current = now;
       // Maintain the schedule-window wake hold on a rolling basis: any

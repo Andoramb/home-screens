@@ -95,21 +95,22 @@ describe('output detection', () => {
   });
 
   it('leaves the screen settings to kiosk-outputs.sh', () => {
-    // A launcher that runs wlr-randr again is a second writer: its one-shot
-    // rotation is gone the next time the monitor reconnects, and it can land
-    // after kanshi's and undo it.
+    // A launcher that sets an output with wlr-randr is a second writer: its
+    // one-shot rotation is gone the next time the monitor reconnects, and it
+    // can land after kanshi's and undo it. Reading the listing (a bare
+    // wlr-randr, to wait for a lit screen before Chromium) changes nothing.
     const hubLauncher = read('upgrade.sh').match(/DESIRED_LAUNCHER='[\s\S]*?--force-gpu-mem-available-mb=256'/)?.[0];
     expect(hubLauncher).toBeDefined();
     expect(hubLauncher).toContain('kiosk-outputs.sh" start');
-    expect(hubLauncher).not.toContain('wlr-randr');
-    // The display-only launcher only reaches wlr-randr when the helper is
+    expect(hubLauncher).not.toContain('wlr-randr --output');
+    // The display-only launcher only sets a screen itself when the helper is
     // missing (see launcher-rotation.test.ts for what it does then).
     const spoke = read('kiosk-launcher-display.sh');
     const helperCall = spoke.indexOf('kiosk-outputs.sh" start');
     const fallback = spoke.indexOf('\nelif [ -n "${DISPLAY_TRANSFORM}" ]');
     expect(helperCall).toBeGreaterThan(-1);
     expect(fallback).toBeGreaterThan(helperCall);
-    expect(spoke.indexOf('wlr-randr')).toBeGreaterThan(fallback);
+    expect(spoke.indexOf('wlr-randr --output')).toBeGreaterThan(fallback);
     expect(read('rotate-display.sh')).toContain('kiosk-outputs.sh" apply');
     expect(readFileSync(path.join(process.cwd(), 'src', 'lib', 'kiosk.ts'), 'utf-8')).not.toContain("'wlr-randr'");
   });
