@@ -1,7 +1,7 @@
 ---
 title: Privacy Policy
 description: What Home Screens keeps on your hub, what the Google sign-in and our small anonymous usage report involve, and what the homescreens.dev website collects.
-effective: '2026-09-27'
+effective: '2026-10-11'
 layout: legal
 nextjs:
   metadata:
@@ -38,6 +38,16 @@ When you sign in with Google, Home Screens asks for only what it needs:
 **Where it goes.** Calendar events and photos go straight from Google to your hub. They are kept on your hub and nowhere else.
 
 **Signing in.** Home Screens' app passwords stay on our sign-in helper at auth.homescreens.dev, so they never ship inside the software. For Google Calendar, your hub asks Google for a short code itself; once you've typed it, your hub collects its sign-in keys through the helper. For Google Photos, Google gives your hub a short-lived code, and your hub trades that code for sign-in keys through the helper. Either way, the helper adds Home Screens' app password and passes the request straight to Google. It does the same when the keys need renewing, about once an hour. It does not store or log the codes or keys, and it never sees your calendar events or photos. To block abuse it counts requests per network address for one minute, and keeps nothing after that. If you connect Google with your own Google app instead, your hub talks to Google directly and the helper isn't involved.
+
+**How your Google data is protected.** We use encryption to protect your information, and security procedures are in place to protect the confidentiality of your data:
+
+- *In transit.* Every connection involved is encrypted with HTTPS (TLS): your hub to Google, your hub to the sign-in helper, and the helper to Google. Nothing is sent over plain HTTP.
+- *Where it's kept.* Your Google sign-in keys are saved in two files in the `data` folder on your hub (`google-tokens.json` for Calendar, `google-picker-tokens.json` for Photos). Imported photos are saved in your hub's photo library in the same folder. Calendar events are held in your hub's memory for a few minutes at a time so the display can draw them, and are fetched again from Google when they're needed; they are not written to disk.
+- *Who can read it.* Only the computer running your hub. We have no copy, and the sign-in helper keeps nothing. Set a password in Settings so that only people you trust can open the editor and the phone remote, and keep the hub's own login private. If you make a backup of your hub, the backup holds these files too, so keep it somewhere safe.
+- *How long it's kept.* Sign-in keys stay until you disconnect. Imported photos stay until you delete them from your photo library. Calendar events are replaced every few minutes and are gone as soon as the hub restarts.
+- *Deleting it.* Disconnecting (below) erases the keys from your hub and asks Google to cancel the sign-in. Deleting a photo in the photo library removes the file from your hub. Wiping or reinstalling the hub removes everything.
+- *The sign-in helper.* The helper at auth.homescreens.dev runs on Cloudflare's network. Home Screens' app passwords are stored there as encrypted secrets that only the helper's code can read. The helper does not store or log sign-in codes, keys, or anything that passes through it.
+- *The code is open.* Home Screens and the helper are open source, so anyone can read exactly what happens to their data: [github.com/home-screens/home-screens](https://github.com/home-screens/home-screens).
 
 **What we never do.** We don't sell Google data, use it for ads, share it with anyone, or use it to develop, improve or train AI or machine learning models. No person at Home Screens can read it, because it never reaches us.
 

@@ -54,6 +54,10 @@ export function Hero({ version }: { version: string }) {
               Chores, calendar, meals, photos and weather, on a screen the whole
               family can read from across the room.
             </p>
+            <p className="mt-3 max-w-lg text-base text-neutral-500">
+              Shows your Google Calendar and the Google Photos you choose, next to
+              iCloud, Immich and your own pictures.
+            </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <Button href="/docs/getting-started">Get Started</Button>
