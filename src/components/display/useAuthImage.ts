@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useReducer, useRef } from 'react';
-import { displayFetch } from '@/lib/display-fetch';
+import { displayFetch, DISPLAY_FETCH_LONG_TIMEOUT_MS } from '@/lib/display-fetch';
 
 export interface AuthImageOptions {
   /**
@@ -94,7 +94,7 @@ function notify(entry: CachedImage): void {
 async function load(entry: CachedImage): Promise<void> {
   entry.busy = true;
   try {
-    const res = await displayFetch(entry.src);
+    const res = await displayFetch(entry.src, { timeoutMs: DISPLAY_FETCH_LONG_TIMEOUT_MS });
     if (!res.ok) {
       entry.failed = true;
       return;
@@ -152,7 +152,7 @@ async function sameBytes(a: Blob, b: Blob): Promise<boolean> {
 async function recheck(entry: CachedImage): Promise<void> {
   entry.busy = true;
   try {
-    const res = await displayFetch(entry.src);
+    const res = await displayFetch(entry.src, { timeoutMs: DISPLAY_FETCH_LONG_TIMEOUT_MS });
     entry.checkedAt = Date.now();
     if (res.status === 404 || res.status === 410) {
       const gone = entry.url;

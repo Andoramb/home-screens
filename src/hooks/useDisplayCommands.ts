@@ -294,7 +294,13 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
       }
     }
 
+    // One beat out at a time. While the hub is unreachable a request can
+    // take the whole timeout to fail; starting another every 3 s meanwhile
+    // would stack five of them on dead sockets.
+    let beating = false;
     async function beat() {
+      if (beating) return;
+      beating = true;
       try {
         const res = await displayFetch(
           drain ? withDisplayParam('/api/display/commands', displayId) : '/api/display/revisions',
@@ -329,7 +335,9 @@ export function useDisplayCommands(handlers: CommandHandlers, displayId?: string
           await publishBuildIdAlone();
         }
       } catch {
-        // silent — keep polling
+        // silent, keep polling
+      } finally {
+        beating = false;
       }
     }
 

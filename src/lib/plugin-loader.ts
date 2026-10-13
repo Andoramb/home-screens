@@ -4,7 +4,7 @@ import type { ProvidedStateKey } from '@/lib/shared-state-types';
 import { usePluginStore } from '@/stores/plugin-store';
 import { registerPluginModule } from '@/lib/module-registry';
 import { registerFetchKey } from '@/lib/fetch-keys';
-import { displayFetch } from '@/lib/display-fetch';
+import { displayFetch, DISPLAY_FETCH_LONG_TIMEOUT_MS } from '@/lib/display-fetch';
 import { CONFIG_REVISION_HEADER } from '@/lib/config-revision';
 import { migrateConfigModules } from '@/lib/plugin-config-migration';
 import { editorFetch } from '@/lib/editor-fetch';
@@ -505,7 +505,7 @@ async function loadSinglePlugin(
     }
 
     // 3. Fetch bundle (version-stamped URL for cache busting)
-    const bundleRes = await displayFetch(`/api/plugins/bundle/${plugin.id}?v=${plugin.version}`);
+    const bundleRes = await displayFetch(`/api/plugins/bundle/${plugin.id}?v=${plugin.version}`, { timeoutMs: DISPLAY_FETCH_LONG_TIMEOUT_MS });
     if (!bundleRes.ok) {
       throw new Error(`Bundle fetch failed: ${bundleRes.status}`);
     }

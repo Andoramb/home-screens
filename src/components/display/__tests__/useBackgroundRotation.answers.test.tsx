@@ -57,6 +57,31 @@ describe('useBackgroundRotation answers', () => {
     expect(result.current.s).toBe(PHOTO);
   });
 
+  /**
+   * With the hub away each lookup takes the whole request timeout, so a
+   * poll can outlast its interval. A second poll on top would double the
+   * dead requests; it waits for the first to finish instead.
+   */
+  it('starts no second poll while the first is still waiting on the hub', async () => {
+    vi.useFakeTimers();
+    try {
+      renderHook(() => useBackgroundRotation([screen(true)]));
+      await act(async () => { await vi.advanceTimersByTimeAsync(0); });
+      expect(displayFetch).toHaveBeenCalledTimes(1);
+
+      // Two poll intervals pass with the first lookup still open.
+      await act(async () => { await vi.advanceTimersByTimeAsync(120_000); });
+      expect(displayFetch).toHaveBeenCalledTimes(1);
+
+      // The lookup fails; the next interval polls again.
+      await act(async () => { open.shift()!(new Error('offline')); });
+      await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+      expect(displayFetch).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('settles on the own picture when the first lookup fails', async () => {
     const { result } = renderHook(() => useBackgroundRotation([screen(true)]));
     await answer(new Error('offline'));

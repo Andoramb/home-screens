@@ -67,7 +67,21 @@ export function useBackgroundRotation(screens: Screen[]) {
 
     const screensWithRotation = screens.filter((s) => s.backgroundRotation?.enabled);
 
+    // One poll at a time: the screens are asked in turn, and with the hub
+    // away each ask can take the whole request timeout, so a poll can outlast
+    // the interval. A second one on top would double the dead requests.
+    let polling = false;
     async function pollBackgrounds() {
+      if (polling) return;
+      polling = true;
+      try {
+        await pollEachScreen();
+      } finally {
+        polling = false;
+      }
+    }
+
+    async function pollEachScreen() {
       for (const screen of screensWithRotation) {
         try {
           const res = await displayFetch(`/api/backgrounds/rotate?screenId=${encodeURIComponent(screen.id)}`);

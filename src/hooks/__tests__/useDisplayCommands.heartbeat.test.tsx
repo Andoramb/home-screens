@@ -19,10 +19,15 @@ let beatStatus = 200;
 let answersRevisions = true;
 let commands: unknown[] = [];
 const fetched: string[] = [];
+// A hub that stopped answering: every beat waits here until the test
+// releases it (or, on the wall, until the request times out).
+let hubAway = false;
+let release: Array<() => void> = [];
 
 vi.mock('@/lib/display-fetch', () => ({
   displayFetch: vi.fn(async (url: string) => {
     fetched.push(url);
+    if (hubAway) await new Promise<void>((resolve) => { release.push(resolve); });
     if (url === '/api/system/build-id') return { ok: true, text: async () => 'build-2' };
     return {
       ok: beatStatus === 200,
@@ -63,6 +68,8 @@ beforeEach(() => {
   vi.useFakeTimers();
   sessionStorage.clear();
   beatStatus = 200;
+  hubAway = false;
+  release = [];
   answersRevisions = true;
   commands = [];
   fetched.length = 0;
@@ -91,6 +98,26 @@ describe('the display heartbeat', () => {
     expect(published).toEqual([REVISIONS]);
 
     commands = [];
+    await flush(3_000);
+    expect(fetched).toHaveLength(2);
+    expect(published).toHaveLength(2);
+  });
+
+  /**
+   * While the hub is away a beat takes the whole request timeout to fail.
+   * Starting another every 3 s meanwhile would stack them on dead sockets.
+   */
+  it('starts no new beat while the last one is still out, and beats again once it settles', async () => {
+    hubAway = true;
+    renderHook(() => useDisplayCommands(handlers(), 'kitchen'));
+    await flush(0);
+    expect(fetched).toHaveLength(1);
+
+    await flush(15_000);
+    expect(fetched).toHaveLength(1);
+
+    hubAway = false;
+    await act(async () => { release.forEach((r) => r()); });
     await flush(3_000);
     expect(fetched).toHaveLength(2);
     expect(published).toHaveLength(2);

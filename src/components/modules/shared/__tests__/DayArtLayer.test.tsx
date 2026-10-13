@@ -17,7 +17,7 @@ import { __resetAuthImageCacheForTests } from '@/components/display/useAuthImage
 import { NO_DECOR, type DayDecor } from '@/lib/calendar-rules';
 
 const displayFetch = vi.hoisted(() => vi.fn());
-vi.mock('@/lib/display-fetch', () => ({ displayFetch }));
+vi.mock('@/lib/display-fetch', () => ({ displayFetch, DISPLAY_FETCH_LONG_TIMEOUT_MS: 60_000 }));
 
 const art = (over: Partial<DayDecor>): DayDecor => ({ ...NO_DECOR, backgroundImage: '/a.png', ...over });
 
@@ -100,7 +100,7 @@ describe('DayArtLayer', () => {
     // Nothing paints until the bytes arrive: a raw serve URL in CSS would
     // be a 401 on a password-protected wall.
     expect(container.querySelector('[data-day-art]')).toBeNull();
-    expect(displayFetch).toHaveBeenCalledWith(serve);
+    expect(displayFetch).toHaveBeenCalledWith(serve, expect.objectContaining({ timeoutMs: 60_000 }));
 
     await act(async () => {
       resolveFetch({ ok: true, headers: new Headers(), blob: async () => new Blob(['x']) });

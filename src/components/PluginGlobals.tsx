@@ -21,7 +21,7 @@ import { displayCache } from '@/lib/display-cache';
 import { getHostSettings } from '@/lib/plugin-host-settings';
 import { toTZWallTime, wallClockParts, type WallClock } from '@/lib/timezone';
 import { pluginEventBus } from '@/lib/plugin-events';
-import { displayFetch } from '@/lib/display-fetch';
+import { displayFetch, DISPLAY_FETCH_LONG_TIMEOUT_MS } from '@/lib/display-fetch';
 import { eventBus } from '@/lib/event-bus';
 import type { EventMap } from '@/lib/event-bus';
 import { sharedStateStore } from '@/lib/shared-state-store';
@@ -243,6 +243,8 @@ export default function PluginGlobals() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(options),
+          // The upstream service answers at its own pace behind the proxy.
+          timeoutMs: DISPLAY_FETCH_LONG_TIMEOUT_MS,
         });
       },
 

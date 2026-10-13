@@ -6,6 +6,7 @@ import { renderToString } from 'react-dom/server';
 
 vi.mock('@/lib/display-fetch', () => ({
   displayFetch: vi.fn(),
+  DISPLAY_FETCH_LONG_TIMEOUT_MS: 60_000,
 }));
 
 import { displayFetch } from '@/lib/display-fetch';

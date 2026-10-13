@@ -20,6 +20,7 @@ import { useFetchData } from '@/hooks/useFetchData';
 const body = JSON.stringify({ reading: { value: 21 }, items: [{ id: 'a' }] });
 let requests = 0;
 vi.mock('@/lib/display-fetch', () => ({
+  DISPLAY_FETCH_LONG_TIMEOUT_MS: 60_000,
   displayFetch: async () => {
     requests++;
     return { ok: true, text: async () => body, headers: new Headers() };

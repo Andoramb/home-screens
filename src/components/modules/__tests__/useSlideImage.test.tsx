@@ -3,7 +3,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 
-vi.mock('@/lib/display-fetch', () => ({ displayFetch: vi.fn() }));
+vi.mock('@/lib/display-fetch', () => ({ displayFetch: vi.fn(), DISPLAY_FETCH_LONG_TIMEOUT_MS: 60_000 }));
 
 import { displayFetch } from '@/lib/display-fetch';
 import { __resetAuthImageCacheForTests } from '@/components/display/useAuthImage';
@@ -34,7 +34,7 @@ describe('useSlideImage', () => {
     const done = deferred();
     renderHook(() => useSlideImage(SLIDE_A, { w: 900, h: 600 }));
     await act(async () => { done(); });
-    expect(mockDisplayFetch).toHaveBeenCalledWith(`${SLIDE_A}&w=1080&h=720`);
+    expect(mockDisplayFetch).toHaveBeenCalledWith(`${SLIDE_A}&w=1080&h=720`, expect.objectContaining({ timeoutMs: 60_000 }));
   });
 
   it('never shows the previous slide while the next one loads', async () => {
