@@ -264,6 +264,30 @@ describe('editor store', () => {
       store.getState().moveModule('screen-1', 'mod-1', { x: 100, y: 100 });
       expect(store.getState().config!.screens[0].modules[0].position).toEqual({ x: 0, y: 0 });
     });
+
+    /**
+     * A drag reports dozens of moves a second and most of them clamp or snap
+     * to where the module already is. Those must not write: each write
+     * re-renders the whole editor, marks the config dirty and autosaves.
+     */
+    it('does nothing when the clamped position is the current one', () => {
+      const store = useEditorStore;
+      const config = makeConfig();
+      config.settings.displayTransform = '90';
+      config.screens[0].modules = [{
+        id: 'mod-1', type: 'clock', position: { x: 680, y: 0 }, size: { w: 400, h: 200 },
+        zIndex: 1, config: {}, style: { ...DEFAULT_MODULE_STYLE },
+      }];
+      store.setState({ config, isDirty: false, _past: [] });
+
+      store.getState().moveModule('screen-1', 'mod-1', { x: 680, y: 0 });
+      // Past the right edge clamps back to 680, which is where it already is.
+      store.getState().moveModule('screen-1', 'mod-1', { x: 900, y: -20 });
+
+      expect(store.getState().config).toBe(config);
+      expect(store.getState().isDirty).toBe(false);
+      expect(store.getState()._past).toHaveLength(0);
+    });
   });
 
   describe('moveModule raiseOnOverlap', () => {
@@ -298,6 +322,20 @@ describe('editor store', () => {
       const mods = store.getState().config!.screens[0].modules;
       expect(mods.find((m) => m.id === 'mod-under')!.zIndex).toBe(1);
       expect(mods.find((m) => m.id === 'mod-over')!.zIndex).toBe(2);
+    });
+
+    it('still raises a module dropped back where it was, under the one covering it', () => {
+      const store = useEditorStore;
+      store.setState({ config: overlapConfig() });
+
+      // Same spot, no position change: the write is only the restack.
+      store.getState().moveModule('screen-1', 'mod-under', { x: 0, y: 0 }, { raiseOnOverlap: true });
+
+      const mods = store.getState().config!.screens[0].modules;
+      const under = mods.find((m) => m.id === 'mod-under')!;
+      const over = mods.find((m) => m.id === 'mod-over')!;
+      expect(under.position).toEqual({ x: 0, y: 0 });
+      expect(under.zIndex).toBeGreaterThan(over.zIndex);
     });
 
     it('does not raise when the drop overlaps nothing above it', () => {
@@ -479,6 +517,25 @@ describe('editor store', () => {
 
       store.getState().resizeModule('screen-1', 'mod-1', { w: 5000, h: 5000 });
       expect(store.getState().config!.screens[0].modules[0].size).toEqual({ w: 480, h: 320 });
+    });
+
+    it('does nothing when the clamped size is the current one', () => {
+      const store = useEditorStore;
+      const config = makeConfig();
+      config.settings.displayTransform = '90';
+      config.screens[0].modules = [{
+        id: 'mod-1', type: 'clock', position: { x: 600, y: 1600 }, size: { w: 480, h: 320 },
+        zIndex: 1, config: {}, style: { ...DEFAULT_MODULE_STYLE },
+      }];
+      store.setState({ config, isDirty: false, _past: [] });
+
+      store.getState().resizeModule('screen-1', 'mod-1', { w: 480, h: 320 });
+      // Past the edge clamps to 480x320, which is the current size.
+      store.getState().resizeModule('screen-1', 'mod-1', { w: 5000, h: 5000 });
+
+      expect(store.getState().config).toBe(config);
+      expect(store.getState().isDirty).toBe(false);
+      expect(store.getState()._past).toHaveLength(0);
     });
 
     it('clamps against the selected display dimensions, not the global ones', () => {

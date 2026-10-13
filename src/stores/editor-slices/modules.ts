@@ -173,32 +173,34 @@ export function createModuleSlice(
       if (fillCanvasInstead(get, mutateConfig, screenId, moduleId)) return;
       mutateConfig((config) => {
         const dims = getActiveDimensions(config, selectedDisplayId);
-        return {
-          config: updateScreenModulesInConfig(config, selectedDisplayId, screenId, (modules) => {
-            const moved = modules.map((m) =>
-              m.id !== moduleId
-                ? m
-                : {
-                    ...m,
-                    position: {
-                      x: Math.max(0, Math.min(dims.width - m.size.w, position.x)),
-                      y: Math.max(0, Math.min(dims.height - m.size.h, position.y)),
-                    },
-                  },
-            );
-            // Drag drops raise the module above anything it now overlaps —
-            // without this, a module dropped onto a larger one vanishes
-            // behind it with only the selection ring left. Deliberate
-            // layering (Send to Back, then nudge via the typed X/Y fields or
-            // arrow keys) doesn't pass the flag and stays put.
-            if (!opts?.raiseOnOverlap) return moved;
-            const order = stackOrder(moved);
-            const idx = order.findIndex((m) => m.id === moduleId);
-            if (idx === -1) return moved;
-            const covered = order.slice(idx + 1).some((m) => modulesOverlap(order[idx], m));
-            return covered ? reorderModuleZ(moved, moduleId, 'front') : moved;
-          }),
-        };
+        // A drag delivers many moves that clamp or snap to the position the
+        // module already has. Each one would otherwise cost a full editor
+        // render and an autosave; an empty result is a no-op in applyMutation.
+        let changed = false;
+        const next = updateScreenModulesInConfig(config, selectedDisplayId, screenId, (modules) => {
+          const moved = modules.map((m) => {
+            if (m.id !== moduleId) return m;
+            const x = Math.max(0, Math.min(dims.width - m.size.w, position.x));
+            const y = Math.max(0, Math.min(dims.height - m.size.h, position.y));
+            if (x === m.position.x && y === m.position.y) return m;
+            changed = true;
+            return { ...m, position: { x, y } };
+          });
+          // Drag drops raise the module above anything it now overlaps.
+          // Without this, a module dropped onto a larger one vanishes
+          // behind it with only the selection ring left. Deliberate
+          // layering (Send to Back, then nudge via the typed X/Y fields or
+          // arrow keys) doesn't pass the flag and stays put.
+          if (!opts?.raiseOnOverlap) return moved;
+          const order = stackOrder(moved);
+          const idx = order.findIndex((m) => m.id === moduleId);
+          if (idx === -1) return moved;
+          const covered = order.slice(idx + 1).some((m) => modulesOverlap(order[idx], m));
+          if (!covered) return moved;
+          changed = true;
+          return reorderModuleZ(moved, moduleId, 'front');
+        });
+        return changed ? { config: next } : {};
       }, { coalesce: COALESCE_KEYS.moveModule(moduleId) });
     },
 
@@ -207,15 +209,17 @@ export function createModuleSlice(
       if (fillCanvasInstead(get, mutateConfig, screenId, moduleId)) return;
       mutateConfig((config) => {
         const dims = getActiveDimensions(config, selectedDisplayId);
-        return {
-          config: updateModuleInConfig(config, selectedDisplayId, screenId, moduleId, (m) => ({
-            ...m,
-            size: {
-              w: Math.max(1, Math.min(dims.width - m.position.x, size.w)),
-              h: Math.max(1, Math.min(dims.height - m.position.y, size.h)),
-            },
-          })),
-        };
+        // Same as moveModule: a handle drag with snap on lands on the current
+        // size most of the time, and an unchanged size must not write.
+        let changed = false;
+        const next = updateModuleInConfig(config, selectedDisplayId, screenId, moduleId, (m) => {
+          const w = Math.max(1, Math.min(dims.width - m.position.x, size.w));
+          const h = Math.max(1, Math.min(dims.height - m.position.y, size.h));
+          if (w === m.size.w && h === m.size.h) return m;
+          changed = true;
+          return { ...m, size: { w, h } };
+        });
+        return changed ? { config: next } : {};
       }, { coalesce: COALESCE_KEYS.resizeModule(moduleId) });
     },
 

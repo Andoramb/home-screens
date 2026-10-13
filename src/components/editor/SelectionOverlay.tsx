@@ -67,22 +67,41 @@ export default function SelectionOverlay({
         startH: mod.size.h,
       };
 
+      // The mouse reports 60-120 moves a second and every write re-renders
+      // the whole editor, so moves are folded into one write per animation
+      // frame. The size is computed per move (snap can change mid-drag) and
+      // only the latest one is written.
+      let pending: { w: number; h: number } | null = null;
+      let frame: number | null = null;
+      const flush = () => {
+        frame = null;
+        if (!pending) return;
+        const size = pending;
+        pending = null;
+        onResize(size);
+      };
+
       const handleMouseMove = (ev: MouseEvent) => {
         if (!resizeRef.current) return;
         const dx = (ev.clientX - resizeRef.current.startX) / scale;
         const dy = (ev.clientY - resizeRef.current.startY) / scale;
         const snap = useEditorStore.getState().snapEnabled;
         const align = snap ? snapToGrid : Math.round;
-        onResize({
+        pending = {
           w: Math.max(GRID_SIZE * 2, align(resizeRef.current.startW + dx)),
           h: Math.max(GRID_SIZE * 2, align(resizeRef.current.startH + dy)),
-        });
+        };
+        if (frame === null) frame = requestAnimationFrame(flush);
       };
 
       const handleMouseUp = () => {
         resizeRef.current = null;
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
+        // The last move may still be waiting for its frame; write it before
+        // the gesture ends or the final size is lost.
+        if (frame !== null) cancelAnimationFrame(frame);
+        flush();
         onResizeEnd();
       };
 

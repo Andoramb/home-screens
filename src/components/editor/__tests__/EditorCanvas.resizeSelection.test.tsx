@@ -153,6 +153,75 @@ describe('EditorCanvas resize selection', () => {
     expect(useEditorStore.getState().selectedModuleId).toBe(MODULE_ID);
   });
 
+  /**
+   * The mouse reports far more moves than the screen draws frames, and every
+   * store write re-renders the whole editor. Moves within one frame fold into
+   * a single write of the latest size; the frame still waiting at mouse up is
+   * written before the gesture ends so the final size is never lost.
+   */
+  it('writes once per frame while dragging and flushes the last size on mouse up', () => {
+    const frames: FrameRequestCallback[] = [];
+    const raf = vi.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => {
+      frames.push(cb);
+      return frames.length;
+    });
+    const caf = vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
+    try {
+      const screen = renderWithSelection();
+      const wrapper = screen.container.querySelector('[data-module-id]') as HTMLElement;
+      const scale = parseFloat(wrapper.style.width) / 400;
+      const handle = screen.container.querySelector('[data-testid="selection-overlay"] .cursor-se-resize') as HTMLElement;
+      const writes: Array<{ w: number; h: number }> = [];
+      const unsubscribe = useEditorStore.subscribe((state) => {
+        writes.push(state.config!.screens[0].modules[0].size);
+      });
+
+      fireEvent.mouseDown(handle, { clientX: 500, clientY: 300 });
+      // Three moves inside one frame: nothing is written until the frame runs.
+      fireEvent.mouseMove(window, { clientX: 500 + 20 * scale, clientY: 300 + 20 * scale });
+      fireEvent.mouseMove(window, { clientX: 500 + 40 * scale, clientY: 300 + 40 * scale });
+      fireEvent.mouseMove(window, { clientX: 500 + 80 * scale, clientY: 300 + 60 * scale });
+      expect(writes).toEqual([]);
+      expect(frames).toHaveLength(1);
+
+      frames[0](performance.now());
+      expect(writes).toEqual([{ w: 480, h: 260 }]);
+
+      // Another move, then release before its frame: the size still lands.
+      fireEvent.mouseMove(window, { clientX: 500 + 120 * scale, clientY: 300 + 100 * scale });
+      expect(writes).toHaveLength(1);
+      fireEvent.mouseUp(window);
+      expect(writes).toEqual([{ w: 480, h: 260 }, { w: 520, h: 300 }]);
+      expect(caf).toHaveBeenCalledWith(2);
+      expect(moduleSize()).toEqual({ w: 520, h: 300 });
+      unsubscribe();
+    } finally {
+      raf.mockRestore();
+      caf.mockRestore();
+    }
+  });
+
+  /**
+   * With snap on, most moves land on the size the module already has. The
+   * store treats those as no-ops: no dirty flag, no history entry, no save.
+   */
+  it('does not write when a move snaps to the current size', () => {
+    const screen = renderWithSelection();
+    const wrapper = screen.container.querySelector('[data-module-id]') as HTMLElement;
+    const scale = parseFloat(wrapper.style.width) / 400;
+    const handle = screen.container.querySelector('[data-testid="selection-overlay"] .cursor-se-resize') as HTMLElement;
+    const before = useEditorStore.getState().config;
+
+    fireEvent.mouseDown(handle, { clientX: 500, clientY: 300 });
+    // 3px at scale 1 snaps back onto the 20px grid, so the size is unchanged.
+    fireEvent.mouseMove(window, { clientX: 500 + 3 * scale, clientY: 300 + 3 * scale });
+    fireEvent.mouseUp(window);
+
+    expect(useEditorStore.getState().config).toBe(before);
+    expect(useEditorStore.getState().isDirty).toBe(false);
+    expect(useEditorStore.getState()._past).toHaveLength(0);
+  });
+
   it('keeps the module selected when the resize ends with a click on the handle itself', () => {
     const screen = renderWithSelection();
 
