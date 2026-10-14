@@ -63,6 +63,7 @@ const GLOBAL_ONLY: Record<string, string> = {
   formattingLocale: 'see locale',
   timeFormat: 'household preference, global-only by design (see TimeFormatFields)',
   touchMatrix: 'lines touch up on the one screen plugged into the hub; with a displays list it lives on that display node, like displayTransform',
+  googleApp: 'which Google app the hub signs in with; the sign-ins are made once per hub and shared by every display, like calendar',
 };
 
 /**

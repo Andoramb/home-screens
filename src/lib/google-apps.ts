@@ -1,3 +1,4 @@
+import type { GoogleAppPreference } from '@/types/config';
 import type { GoogleClientMode } from './google-token-store';
 
 /**
@@ -19,6 +20,8 @@ export interface GoogleAppState {
 export interface GoogleAppsStatus {
   calendar: GoogleAppState;
   photos: GoogleAppState;
+  /** The household's switch: its own saved app, or Home Screens' with the details kept. */
+  preference: GoogleAppPreference;
 }
 
 /**

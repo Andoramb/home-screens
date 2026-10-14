@@ -4,6 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import os from 'os';
 import { readConfig, writeConfig, updateConfigAtomic } from '../config';
+import { calendarRevision } from '../calendar-revision';
 import { getLatestSchemaVersion } from '../migrations';
 import { createWeatherProvider } from '../weather';
 
@@ -742,5 +743,31 @@ describe('v12 to v13 keeps the legacy family inputs for the coordinated fold', (
     expect(folded.settings.calendar.people).toBeUndefined();
     // The saved mapping keeps its order and the folded sourceIds are appended.
     expect(folded.settings.calendar.personSources).toEqual({ 'calendar-alex': ['work', 'school'] });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateConfigAtomic — the Google app switch is a calendar sign-in change
+// ---------------------------------------------------------------------------
+
+describe('updateConfigAtomic — the Google app choice', () => {
+  it('starts a new calendar revision once a changed choice is saved, and only then', async () => {
+    await writeConfig({ ...(await readConfig()) });
+    const before = calendarRevision();
+
+    await updateConfigAtomic((c) => ({ ...c, settings: { ...c.settings, rotationIntervalMs: 12_345 } }));
+    expect(calendarRevision()).toBe(before);
+
+    await updateConfigAtomic((c) => ({ ...c, settings: { ...c.settings, googleApp: 'hosted' } }));
+    const flipped = calendarRevision();
+    expect(flipped).not.toBe(before);
+
+    // Saying 'own' out loud is the same choice as leaving it unset.
+    await updateConfigAtomic((c) => ({ ...c, settings: { ...c.settings, googleApp: 'hosted' } }));
+    expect(calendarRevision()).toBe(flipped);
+    const { googleApp: _dropped, ...withoutChoice } = (await readConfig()).settings;
+    void _dropped;
+    await updateConfigAtomic((c) => ({ ...c, settings: withoutChoice }));
+    expect(calendarRevision()).not.toBe(flipped);
   });
 });

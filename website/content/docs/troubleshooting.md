@@ -149,7 +149,7 @@ Open **Settings > Calendar**. Every connected calendar shows when it last brough
 
 1. Click **Sign in with Google** again on the Calendar page; the sign-in can lapse after a long time unused.
 2. Check that the calendars you want are ticked. Only ticked calendars appear.
-3. In the [Google Cloud console](https://console.cloud.google.com/), make sure the Google Calendar API is still enabled for your project.
+3. If you use your own Google app, make sure the Google Calendar API is still enabled for your project in the [Google Cloud console](https://console.cloud.google.com/). With the built-in sign-in there is nothing to check there.
 
 ### iCloud sign-in
 

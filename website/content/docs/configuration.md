@@ -67,10 +67,10 @@ Supported secret keys:
 | `todoist_token` | Todoist module |
 | `google_maps_key` | Traffic module (Google Routes) |
 | `tomtom_key` | Traffic module (TomTom) |
-| `google_client_id` | Google Calendar OAuth |
-| `google_client_secret` | Google Calendar OAuth |
-| `google_web_client_id` | Google Photos import (web application OAuth client) |
-| `google_web_client_secret` | Google Photos import (web application OAuth client) |
+| `google_client_id` | Google Calendar, only with your own Google app (TVs and Limited Input devices client) |
+| `google_client_secret` | Google Calendar, only with your own Google app |
+| `google_web_client_id` | Google Photos import, only with your own Google app (web application client) |
+| `google_web_client_secret` | Google Photos import, only with your own Google app |
 | `nasa_api_key` | Background rotation (NASA APOD) |
 | `immich_url` | Immich server URL (e.g. `http://192.168.1.50:2283`) |
 | `immich_api_key` | Immich API key (Account Settings → API Keys) |

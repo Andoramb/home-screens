@@ -1314,8 +1314,10 @@
           "title": "Usar tu propia app de Google",
           "hintClosed": "La mayoría de las casas no lo necesita.",
           "hintOpen": "Para quien prefiera tener su propio proyecto de Google Cloud.",
-          "hintSaved": "Abierto porque has guardado una.",
-          "warning": "Si guardas tu propia app, quien ya haya iniciado sesión con Google tendrá que volver a hacerlo, porque cada inicio de sesión solo funciona con la app con la que se hizo."
+          "hintOn": "Es la que te conecta ahora.",
+          "hintOff": "Guardada, pero sin usar. La app de Home Screens te conecta.",
+          "warning": "Si guardas tu propia app, quien ya haya iniciado sesión con Google tendrá que volver a hacerlo, porque cada inicio de sesión solo funciona con la app con la que se hizo.",
+          "switchCallout": "Cambiar de app cierra la sesión de Google. Después, vuelve a iniciar sesión en la página Calendario o en un módulo de fotos."
         }
       },
       "immich": {

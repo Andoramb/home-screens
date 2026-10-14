@@ -195,27 +195,33 @@ iCloud shared albums work without an Apple account or API key, all you need is t
 
 Google no longer lets apps read your photo library directly, but it does let you hand-pick photos to share, so Home Screens brings them in as an import. You choose photos in Google Photos itself, and they download into your library's `google-photos` folder as ordinary local files. After that, no Google connection is needed to display them: they keep working even if you disconnect. Re-running an import only downloads photos you haven't imported before.
 
-### One-time setup
-
-Google Photos needs its own sign-in credential, separate from the Google Calendar one (Google requires a different credential type for this):
-
-1. In [Google Cloud console](https://console.cloud.google.com/apis/credentials) (the same project you may already use for Google Calendar), go to **APIs & Services > Credentials** and create an **OAuth client ID** with the type **Web application**
-2. Under **Authorized redirect URIs**, add exactly `https://homescreens.dev/connect/google` (leave **Authorized JavaScript origins** empty)
-3. In the **API Library**, search for **Google Photos Picker API** and enable it
-4. Paste the new client ID and secret into **Settings > API keys**, in the Google card's **Photos Import** fields
-
-The redirect page at homescreens.dev is just a message board: after you approve access, Google sends your browser there, and the page shows a code to copy back into the editor. It never sees your password, your secret, or your photos.
-
 ### Importing photos
 
-1. Select a Photo slideshow or Full-screen photo module and click **Import from Google Photos** (under the folder picker)
-2. The first time, click **Sign in with Google**, approve access, and paste the code you're given
+Nothing to set up first: Home Screens brings its own Google app.
+
+1. Select a Photo slideshow or Full-screen photo module. Under the folder picker, click **Sign in with Google**
+2. A Google tab opens. Pick your account and approve; the tab comes straight back to your hub, says Google Photos is connected, and the editor moves on by itself. If your hub lives on a public web address, the Google page shows a code to paste into the editor instead
 3. Click **Choose photos**: Google Photos opens with its own photo picker
 4. Pick the photos you want and confirm; the import starts on its own and shows progress as it saves
+
+Home Screens only ever sees the photos you pick; the permission it asks for cannot read the rest of your library. The sign-in passes through Home Screens' helper at auth.homescreens.dev, which adds the app's password on the way and keeps nothing; the photos themselves download straight from Google to your hub. The [privacy policy](/privacy) has the details.
 
 When it finishes, the module automatically points at the `google-photos` folder. To add more photos later, run the import again and pick more, existing photos are skipped, new ones are added.
 
 Photos are saved as high-quality display-sized copies (up to 4096 pixels on the long edge), which keeps imports fast and light on the SD card. Imports are capped at 2000 photos at a time.
+
+### Use your own Google app
+
+If you would rather run your own Google Cloud project, open **Settings > API keys**, expand **Use your own Google app** on the Google card, and fill in the **Photos Import** fields with a credential made like this. It is a different type from the Google Calendar one, so you need both if you use your own app for both:
+
+1. In [Google Cloud console](https://console.cloud.google.com/apis/credentials) (the same project you may already use for Google Calendar), go to **APIs & Services > Credentials** and create an **OAuth client ID** with the type **Web application**
+2. Under **Authorized redirect URIs**, add exactly `https://homescreens.dev/connect/google` (leave **Authorized JavaScript origins** empty)
+3. In the **API Library**, search for **Google Photos Picker API** and enable it
+4. Paste the new client ID and secret into those fields
+
+With your own app, the sign-in ends on a page at homescreens.dev that shows a code to copy back into the editor. That page is just a message board: it never sees your password, your secret, or your photos.
+
+To go back to Home Screens' app later, flip the switch next to **Use your own Google app** off on the API keys page. Your details stay saved, and the next import signs in with Google again.
 
 ---
 

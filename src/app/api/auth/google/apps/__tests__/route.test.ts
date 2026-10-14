@@ -10,6 +10,11 @@ vi.mock('@/lib/auth', () => ({
   isAuthEnabled: vi.fn().mockResolvedValue(false),
 }));
 
+let preference: 'own' | 'hosted' = 'own';
+vi.mock('@/lib/google-app-preference', () => ({
+  readGoogleAppPreference: vi.fn(async () => preference),
+}));
+
 const secrets = new Map<string, string>();
 vi.mock('@/lib/secrets', () => ({
   getSecret: vi.fn(async (key: string) => secrets.get(key) ?? null),
@@ -25,7 +30,8 @@ async function apps() {
 
 beforeEach(() => {
   secrets.clear();
-  vi.stubEnv('HS_GOOGLE_HOSTED', '');
+  preference = 'own';
+  vi.stubEnv('HS_GOOGLE_HOSTED', '0');
 });
 
 afterEach(() => {
@@ -37,6 +43,7 @@ describe('/api/auth/google/apps', () => {
     expect(await apps()).toEqual({
       calendar: { mode: null, hostedAvailable: false },
       photos: { mode: null, hostedAvailable: false },
+      preference: 'own',
     });
   });
 
@@ -46,24 +53,39 @@ describe('/api/auth/google/apps', () => {
     expect(await apps()).toEqual({
       calendar: { mode: 'own', hostedAvailable: false },
       photos: { mode: null, hostedAvailable: false },
+      preference: 'own',
     });
   });
 
-  it('reports Home Screens\' app for both when the switch is on and nothing is saved', async () => {
-    vi.stubEnv('HS_GOOGLE_HOSTED', '1');
+  it('reports Home Screens\' app for both by default when nothing is saved', async () => {
+    vi.stubEnv('HS_GOOGLE_HOSTED', '');
     expect(await apps()).toEqual({
       calendar: { mode: 'hosted', hostedAvailable: true },
       photos: { mode: 'hosted', hostedAvailable: true },
+      preference: 'own',
     });
   });
 
   it('keeps each integration on the household\'s own app, even half saved', async () => {
-    vi.stubEnv('HS_GOOGLE_HOSTED', '1');
+    vi.stubEnv('HS_GOOGLE_HOSTED', '');
     secrets.set('google_web_client_id', 'own-web-id');
     expect(await apps()).toEqual({
       calendar: { mode: 'hosted', hostedAvailable: true },
       // Half an own app is still the household's app, and it can't sign in yet.
       photos: { mode: null, hostedAvailable: true },
+      preference: 'own',
+    });
+  });
+
+  it('reports the household\'s switch, and Home Screens\' app in use while it is flipped', async () => {
+    vi.stubEnv('HS_GOOGLE_HOSTED', '');
+    secrets.set('google_client_id', 'own-tv-id');
+    secrets.set('google_client_secret', 'own-tv-secret');
+    preference = 'hosted';
+    expect(await apps()).toEqual({
+      calendar: { mode: 'hosted', hostedAvailable: true },
+      photos: { mode: 'hosted', hostedAvailable: true },
+      preference: 'hosted',
     });
   });
 });

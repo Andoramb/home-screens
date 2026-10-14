@@ -1,5 +1,6 @@
 import { createGoogleTokenStore } from './google-token-store';
 import { hostedCalendarClient, hostedPhotosClient } from './google-hosted';
+import { readGoogleAppPreference } from './google-app-preference';
 import type { GoogleAppsStatus } from './google-apps';
 
 /**
@@ -20,6 +21,7 @@ export const googleCalendarTokenStore = createGoogleTokenStore({
   clientIdKey: 'google_client_id',
   clientSecretKey: 'google_client_secret',
   hosted: hostedCalendarClient,
+  preference: readGoogleAppPreference,
   missingCredentialsMessage:
     'Google Calendar needs both a Client ID and a Client Secret. Add them in Settings → API keys.',
   logName: 'google-auth',
@@ -31,6 +33,7 @@ export const googlePickerTokenStore = createGoogleTokenStore({
   clientIdKey: 'google_web_client_id',
   clientSecretKey: 'google_web_client_secret',
   hosted: hostedPhotosClient,
+  preference: readGoogleAppPreference,
   missingCredentialsMessage:
     'Google Photos import needs both a Photos Import Client ID and Secret. Add them in Settings → API keys.',
   logName: 'google-picker',
@@ -38,12 +41,14 @@ export const googlePickerTokenStore = createGoogleTokenStore({
 
 /** Which app each integration signs in with, for the editor's Google screens. */
 export async function getGoogleAppsStatus(): Promise<GoogleAppsStatus> {
-  const [calendarMode, photosMode] = await Promise.all([
+  const [calendarMode, photosMode, preference] = await Promise.all([
     googleCalendarTokenStore.getMode(),
     googlePickerTokenStore.getMode(),
+    readGoogleAppPreference(),
   ]);
   return {
     calendar: { mode: calendarMode, hostedAvailable: googleCalendarTokenStore.hostedAvailable() },
     photos: { mode: photosMode, hostedAvailable: googlePickerTokenStore.hostedAvailable() },
+    preference,
   };
 }

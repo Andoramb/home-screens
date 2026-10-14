@@ -143,15 +143,14 @@ Then visit:
 
 All API keys and credentials are managed through the editor UI at **Settings > API keys**. No `.env.local` file needed. Configuration is stored as a single JSON file (`data/config.json`), with no database.
 
-### Google Calendar
+### Google Calendar and Google Photos
 
-Uses **OAuth 2.0 Device Flow**, so you can authorize from any device with no redirect URI:
+No Google Cloud project needed: Home Screens brings its own Google app.
 
-1. [Google Cloud Console](https://console.cloud.google.com) > **APIs & Services > Credentials** > Create OAuth Client ID
-2. Application type: **TVs and Limited Input devices**
-3. Enter Client ID and Secret in **Settings > API keys**
-4. Enable the **Google Calendar API** in APIs & Services > Library
-5. **Settings > Calendar > Sign in with Google**, then enter the code at `google.com/device`
+- **Calendar:** **Settings > Calendar > Sign in with Google**, enter the short code at `google.com/device` on any phone or computer, then tick the calendars to show.
+- **Photos:** in a Photo slideshow or Full-screen photo module, click **Sign in with Google**, approve, and the browser comes straight back to your hub. Then **Choose photos** opens Google's own picker.
+
+Prefer your own Google app? Expand **Use your own Google app** on the Google card under **Settings > API keys**. Calendar takes a **TVs and Limited Input devices** OAuth client with the Google Calendar API enabled; Photos takes a **Web application** client with `https://homescreens.dev/connect/google` as its redirect URI and the Google Photos Picker API enabled.
 
 ### iCloud Calendar
 

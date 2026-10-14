@@ -15,13 +15,13 @@ Three ways to get events onto the wall. Pasting a calendar link is the quickest 
 | | **Calendar link** | **Google sign-in** | **iCloud sign-in** |
 |---|---|---|---|
 | Works with | Google, Apple, Outlook, Fastmail, school and sports calendars, anything that offers an iCal or ICS link | Google Calendar | Apple calendars, plus birthdays from your contacts |
-| Setup time | About 2 minutes | About 10 minutes, including a Google Cloud project | About 3 minutes |
+| Setup time | About 2 minutes | About 3 minutes | About 3 minutes |
 | Picking calendars | One link per calendar | A pick-list of every calendar on the account | A pick-list of every calendar on the account |
 | Colours | You choose one per feed | Google's own colours | Apple's own colours |
 | How fresh | Google caches its links for a few hours; others vary | Near real time | Near real time |
 | Shared family calendars | Yes, when the owner shares the link | Yes | Yes |
 
-**Rule of thumb:** start with a calendar link. Move to the Google sign-in only if you want Google's colours or the picker. For Apple calendars the iCloud sign-in is nicer than public links, because nothing has to be made public.
+**Rule of thumb:** start with a calendar link. Sign in with Google if you want Google's colours, the picker, or events that show up right away. For Apple calendars the iCloud sign-in is nicer than public links, because nothing has to be made public.
 
 {% screenshot name="settings-calendar" caption="Settings > Calendar. Feeds show when they last brought in events, so a link that quietly stops working is visible here." /%}
 
@@ -39,16 +39,28 @@ Repeat for each calendar. Every calendar module shows all of them together, and 
 
 ## Sign in with Google {% #google-sign-in %}
 
-Google asks every app to bring its own sign-in credentials, so this takes a one-time trip through Google Cloud:
+Nothing to set up first: Home Screens brings its own Google app.
+
+1. In the editor, open **Settings > Calendar** and click **Sign in with Google**. You get a short code and a link to `google.com/device`.
+2. Open the link on any phone or computer, enter the code, and approve. Home Screens asks to read your calendars and nothing else.
+3. Tick the calendars you want on the wall.
+
+The sign-in happens on your phone or laptop, so the Pi never needs a keyboard. **Hide events you declined** skips invitations you turned down; it applies to Google calendars only.
+
+Your hub fetches events from Google directly. Only the sign-in itself, and the renewal of its keys about once an hour, passes through Home Screens' sign-in helper at auth.homescreens.dev, which adds the app's password on the way and keeps nothing. The [privacy policy](/privacy) has the details.
+
+### Use your own Google app {% #own-google-app %}
+
+If you would rather run your own Google Cloud project, you can. Open **Settings > API keys**, expand **Use your own Google app** on the Google card, and fill in the Calendar fields with a credential made like this:
 
 1. Open the [Google Cloud console](https://console.cloud.google.com) and go to **APIs & Services > Credentials**.
 2. Click **Create Credentials > OAuth Client ID**. For the application type, pick **TVs and Limited Input devices**, and name it anything, such as "Home Screens".
-3. Copy the **Client ID** and **Client Secret** into the Google card on **Settings > API keys** in the editor.
+3. Copy the **Client ID** and **Client Secret** into those fields.
 4. Still in the Cloud console, open **APIs & Services > Library** and enable the **Google Calendar API**.
-5. In the editor, open **Settings > Calendar** and click **Sign in with Google**. You get a short code and a link to `google.com/device`; open the link on any phone or computer, enter the code, and approve.
-6. Tick the calendars you want on the wall.
 
-The sign-in happens on your phone or laptop, so the Pi never needs a keyboard. **Hide events you declined** skips invitations you turned down; it applies to Google calendars only.
+Then sign in on the Calendar page as above. A sign-in only works with the app it came from, so anyone already signed in with Google on this hub signs in again after you save your own app.
+
+To go back to Home Screens' app later, flip the switch next to **Use your own Google app** off. Your details stay saved for whenever you want them again; sign in with Google once more and the Calendar page carries on.
 
 ## Sign in with iCloud {% #icloud-sign-in %}
 
@@ -87,7 +99,7 @@ Most of Home Screens needs no key at all. Keys that are needed live on **Setting
 
 | Service | What it unlocks |
 |---|---|
-| Google | Calendar sign-in, traffic and commute times (Routes), and the Google Photos import |
+| Google | Nothing to add for the Calendar sign-in or the Google Photos import: both work out of the box. The card holds a Maps key for traffic and commute times (Routes), and the fields for [your own Google app](/docs/calendars#own-google-app) if you would rather use one. |
 | TomTom | Traffic and commute times, as an alternative to Google. Turn on the **Geocoding**, **Reverse Geocoding** and **Routing** APIs on the key itself, not just the account. |
 | Immich | Photos from your own Immich photo library |
 | Microsoft OneDrive | Photos from a OneDrive folder, after a one-time sign-in from the photo module (see [OneDrive photos](/docs/modules#one-drive-photos)) |

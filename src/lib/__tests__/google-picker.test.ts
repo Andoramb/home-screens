@@ -110,9 +110,8 @@ async function waitForJob(jobId: string) {
 
 beforeEach(() => {
   vi.unstubAllGlobals();
-  // These cover the household's own app with Home Screens' app off; keep a
-  // developer's shell setting out of them.
-  vi.stubEnv('HS_GOOGLE_HOSTED', '');
+  // These cover the household's own app with Home Screens' app switched off.
+  vi.stubEnv('HS_GOOGLE_HOSTED', '0');
   mockedGetSecret.mockReset();
   mockMkdir.mockReset().mockResolvedValue(undefined);
   mockReaddir.mockReset().mockRejectedValue(new Error('ENOENT'));

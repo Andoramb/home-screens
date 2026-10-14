@@ -696,6 +696,9 @@ export interface AutoUpdateSettings {
   time?: string;
 }
 
+/** Which Google app signs the household in once it has saved its own: its own, or Home Screens'. */
+export type GoogleAppPreference = 'own' | 'hosted';
+
 export interface GlobalSettings {
   /** How long each screen shows before the next one, in milliseconds */
   rotationIntervalMs: number;
@@ -719,6 +722,14 @@ export interface GlobalSettings {
   locationName?: string;
   /** IANA timezone the displays keep time in (e.g. `America/Chicago`) */
   timezone?: string;
+  /**
+   * Which Google app signs the household in when it has saved its own: `own` (its own app) or
+   * `hosted` (Home Screens' app, keeping the saved details for later). Without saved details,
+   * Home Screens' app is used either way
+   *
+   * @default "own"
+   */
+  googleApp?: GoogleAppPreference;
   /** Weather source, location, and units (see WeatherSettings) */
   weather: WeatherSettings;
   /** Calendar sources and options (see CalendarSettings) */

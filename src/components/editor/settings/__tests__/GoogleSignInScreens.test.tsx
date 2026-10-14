@@ -38,14 +38,37 @@ function jsonResponse(body: unknown, status = 200) {
 const OFF: GoogleAppsStatus = {
   calendar: { mode: null, hostedAvailable: false },
   photos: { mode: null, hostedAvailable: false },
+  preference: 'own',
 };
 const HOSTED: GoogleAppsStatus = {
   calendar: { mode: 'hosted', hostedAvailable: true },
   photos: { mode: 'hosted', hostedAvailable: true },
+  preference: 'own',
 };
+const OWN_SAVED = { google_client_id: true, google_client_secret: true };
+
+/**
+ * The editor store as the API keys page sees it: a config with the switch set
+ * as given, and a save that lands (the hub answers with a new revision) unless
+ * told to refuse.
+ */
+function seedStore(googleApp?: 'own' | 'hosted', save: 'lands' | 'refused' = 'lands') {
+  let saves = 0;
+  const saveConfig = vi.fn(async () => {
+    if (save === 'refused') throw new Error('409');
+    useEditorStore.setState({ configRevision: `rev-${++saves}` });
+  });
+  useEditorStore.setState({
+    config: { version: 1, screens: [], settings: googleApp ? { googleApp } : {} } as unknown as ScreenConfiguration,
+    configRevision: 'rev-0',
+    saveConfig,
+  });
+  return saveConfig;
+}
 
 beforeEach(() => {
   editorFetch.mockReset();
+  useEditorStore.setState({ config: null });
 });
 afterEach(() => {
   cleanup();
@@ -85,14 +108,81 @@ describe('Google card on the API keys page', () => {
 
   it('opens on the household\'s own app, and says Photos alone is ready when only Photos uses Home Screens\' app', () => {
     const view = card(
-      { calendar: { mode: 'own', hostedAvailable: true }, photos: { mode: 'hosted', hostedAvailable: true } },
-      { google_client_id: true, google_client_secret: true },
+      { calendar: { mode: 'own', hostedAvailable: true }, photos: { mode: 'hosted', hostedAvailable: true }, preference: 'own' },
+      OWN_SAVED,
     );
     expect(view.getByText('Using your own Google app')).toBeTruthy();
-    expect(view.getByText('Open because you\'ve saved one.')).toBeTruthy();
+    expect(view.getByText('Signing you in now.')).toBeTruthy();
     expect(view.getByText('Google Photos is ready to use')).toBeTruthy();
     expect(view.queryByText('Connect Google Calendar →')).toBeNull();
     expect(view.getByText('Calendar Client ID')).toBeTruthy();
+    expect(view.getByText(/Switching apps signs Google out/)).toBeTruthy();
+    expect(view.queryByText(/anyone already signed in with Google will need to sign in again/)).toBeNull();
+    expect(view.getByRole('switch', { name: 'Use your own Google app' }).getAttribute('aria-checked')).toBe('true');
+    expect(view.getByTestId('google-own-app-fields').className).toBe('');
+  });
+
+  it('says the household is on its own app while its saved switch is on, even with half a pair that cannot sign in', () => {
+    const view = card(
+      { calendar: { mode: null, hostedAvailable: true }, photos: { mode: null, hostedAvailable: true }, preference: 'own' },
+      { google_client_id: true, google_web_client_id: true },
+    );
+    expect(view.getByText('Using your own Google app')).toBeTruthy();
+    expect(view.queryByText('Ready')).toBeNull();
+    expect(view.queryByTestId('google-ready')).toBeNull();
+  });
+
+  it('shows no switch until there is something to switch to', () => {
+    const view = card(HOSTED);
+    expect(view.queryByRole('switch')).toBeNull();
+  });
+
+  it('switched off: reads like a hub that never saved anything, with the details kept and dimmed', () => {
+    seedStore('hosted');
+    const view = card({ ...HOSTED, preference: 'hosted' }, OWN_SAVED);
+    expect(view.getByText('Ready')).toBeTruthy();
+    expect(view.queryByText('Using your own Google app')).toBeNull();
+    expect(view.getByText('Google Calendar and Google Photos are ready to use')).toBeTruthy();
+    expect(view.getByText('Saved, not in use. Home Screens\' app signs you in.')).toBeTruthy();
+    expect(view.getByRole('switch').getAttribute('aria-checked')).toBe('false');
+    expect(view.getByText('Calendar Client ID')).toBeTruthy();
+    expect(view.getByTestId('google-own-app-fields').className).toContain('opacity-60');
+  });
+
+  it('flipping the switch saves the choice at once and asks the hub again', async () => {
+    const saveConfig = seedStore();
+    const onSaved = vi.fn();
+    const view = render(
+      <GoogleIntegrationCard status={OWN_SAVED} onSaved={onSaved} apps={{ calendar: { mode: 'own', hostedAvailable: true }, photos: { mode: 'hosted', hostedAvailable: true }, preference: 'own' }} />,
+      { wrapper: Wrapper },
+    );
+    await act(async () => { fireEvent.click(view.getByRole('switch')); });
+    expect(useEditorStore.getState().config?.settings.googleApp).toBe('hosted');
+    expect(saveConfig).toHaveBeenCalledTimes(1);
+    expect(onSaved).toHaveBeenCalledTimes(1);
+    expect(view.getByRole('switch').getAttribute('aria-checked')).toBe('false');
+
+    await act(async () => { fireEvent.click(view.getByRole('switch')); });
+    expect(useEditorStore.getState().config?.settings.googleApp).toBe('own');
+    expect(onSaved).toHaveBeenCalledTimes(2);
+  });
+
+  it('a refused save is left to the toolbar, and the hub is asked once the save lands another way', async () => {
+    seedStore('own', 'refused');
+    const onSaved = vi.fn();
+    const view = render(
+      <GoogleIntegrationCard status={OWN_SAVED} onSaved={onSaved} apps={{ calendar: { mode: 'own', hostedAvailable: true }, photos: { mode: 'hosted', hostedAvailable: true }, preference: 'own' }} />,
+      { wrapper: Wrapper },
+    );
+    await act(async () => { fireEvent.click(view.getByRole('switch')); });
+    // The choice is in the editor, unsaved; the hub was not asked, and nothing threw.
+    expect(view.getByRole('switch').getAttribute('aria-checked')).toBe('false');
+    expect(onSaved).not.toHaveBeenCalled();
+    expect(view.getByRole('switch').hasAttribute('disabled')).toBe(false);
+
+    // A retry or "Keep mine" lands the same config: the hub answers with a new revision.
+    await act(async () => { useEditorStore.setState({ configRevision: 'rev-after-conflict' }); });
+    expect(onSaved).toHaveBeenCalledTimes(1);
   });
 });
 

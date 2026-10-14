@@ -1031,13 +1031,14 @@ test('photo-slideshow: switching Transition persists', async ({ page, request })
   expect((await moduleConfig(request, 'photo-slideshow')).transition).toBe('none');
 });
 
-test('photo-slideshow: the Google Photos import panel opens and reports setup state', async ({ page, request }) => {
+test('photo-slideshow: the Google Photos import offers the sign-in in place', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('photo-slideshow'));
 
-  // The local source shows an import entry point; the sandbox has no Google
-  // web client secrets, so opening it lands on the setup hint.
-  await page.getByRole('button', { name: 'Import from Google Photos' }).click();
-  await expect(page.getByText('add a Google Photos import Client ID')).toBeVisible();
+  // The local source carries the Google Photos import. With Home Screens' own
+  // Google app (the default) there is nothing to set up, so the panel is open
+  // on Google's button; google-hosted-switch.spec.ts covers the switched-off
+  // hub, which asks for the household's own client instead.
+  await expect(page.getByTestId('google-photos-hosted').getByRole('button', { name: 'Sign in with Google' })).toBeVisible();
 });
 
 test('photo-slideshow: OneDrive source offers sign-in and persists the choice', async ({ page, request }) => {

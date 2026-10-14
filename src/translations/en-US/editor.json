@@ -1314,8 +1314,10 @@
           "title": "Use your own Google app",
           "hintClosed": "Most homes don't need this.",
           "hintOpen": "For people who'd rather run their own Google Cloud project.",
-          "hintSaved": "Open because you've saved one.",
-          "warning": "If you save your own app, anyone already signed in with Google will need to sign in again, because a sign-in only works with the app it came from."
+          "hintOn": "Signing you in now.",
+          "hintOff": "Saved, not in use. Home Screens' app signs you in.",
+          "warning": "If you save your own app, anyone already signed in with Google will need to sign in again, because a sign-in only works with the app it came from.",
+          "switchCallout": "Switching apps signs Google out. Sign in again afterwards on the Calendar page or in a photo module."
         }
       },
       "immich": {

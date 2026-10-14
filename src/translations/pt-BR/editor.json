@@ -1314,8 +1314,10 @@
           "title": "Usar seu próprio app do Google",
           "hintClosed": "A maioria das casas não precisa disso.",
           "hintOpen": "Para quem prefere ter o próprio projeto no Google Cloud.",
-          "hintSaved": "Aberto porque você salvou um.",
-          "warning": "Se você salvar seu próprio app, quem já entrou com o Google vai precisar entrar de novo, porque um login só funciona com o app de onde veio."
+          "hintOn": "É o que faz seu login agora.",
+          "hintOff": "Salvo, mas sem uso. O app do Home Screens faz seu login.",
+          "warning": "Se você salvar seu próprio app, quem já entrou com o Google vai precisar entrar de novo, porque um login só funciona com o app de onde veio.",
+          "switchCallout": "Trocar de app desconecta o Google. Depois, entre de novo na página Calendário ou em um módulo de fotos."
         }
       },
       "immich": {

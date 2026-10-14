@@ -1,5 +1,7 @@
+import type { GoogleAppPreference } from '@/types/config';
 import { getSecret, type SecretKey } from './secrets';
 import { fetchWithTimeout } from './api-utils';
+import { chooseGoogleApp } from './google-app-choice';
 import { createOAuthTokenStore, type StoredOAuthTokens } from './oauth-token-store';
 import { logger } from './logger';
 
@@ -66,6 +68,8 @@ export interface GoogleTokenStoreOptions {
   clientSecretKey: SecretKey;
   /** Home Screens' own app for this integration, or null while unavailable. */
   hosted: () => HostedGoogleClient | null;
+  /** The household's choice between its own saved app and Home Screens' (the API keys switch). */
+  preference: () => Promise<GoogleAppPreference>;
   /** Thrown when neither the household's app nor Home Screens' app is usable. */
   missingCredentialsMessage: string;
   /** Logger namespace. */
@@ -137,16 +141,22 @@ export function createGoogleTokenStore(opts: GoogleTokenStoreOptions): GoogleTok
   const log = logger(opts.logName);
 
   /**
-   * Any own credential saved, even half of one, means the household is using
-   * its own app: a sign-in never silently falls through to Home Screens' app
-   * while the household is partway through setting up theirs.
+   * Any own credential saved, even half of one, counts as the household's own
+   * app, so a sign-in never silently falls through to Home Screens' app while
+   * the household is partway through setting up theirs. The household's
+   * switch on the API keys page can still send it to Home Screens' app with
+   * its details kept (chooseGoogleApp has the whole rule).
    */
   async function resolveClient(): Promise<ResolvedClient | null> {
     const clientId = (await getSecret(opts.clientIdKey))?.trim() || undefined;
     const clientSecret = (await getSecret(opts.clientSecretKey))?.trim() || undefined;
-    if (clientId || clientSecret) return { mode: 'own', clientId, clientSecret, tokenUrl: GOOGLE_TOKEN_URL };
+    const ownSaved = Boolean(clientId || clientSecret);
     const hosted = opts.hosted();
-    return hosted ? { mode: 'hosted', ...hosted } : null;
+    const preference = ownSaved && hosted ? await opts.preference() : 'own';
+    const mode = chooseGoogleApp({ ownSaved, preference, hostedAvailable: hosted !== null });
+    if (mode === 'own') return { mode: 'own', clientId, clientSecret, tokenUrl: GOOGLE_TOKEN_URL };
+    if (mode === 'hosted' && hosted) return { mode: 'hosted', ...hosted };
+    return null;
   }
 
   function isUsable(client: ResolvedClient | null): client is ResolvedClient & { clientId: string } {

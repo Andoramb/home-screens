@@ -116,6 +116,9 @@ function mockRefreshFetch(body: unknown, ok = true) {
 
 beforeEach(() => {
   vi.unstubAllGlobals();
+  // These cover the household's own Google app with Home Screens' app
+  // switched off; google-hosted.test.ts covers the hosted app.
+  vi.stubEnv('HS_GOOGLE_HOSTED', '0');
   mockedGetSecret.mockReset();
   storeFiles.clear();
   mockWriteFile.mockReset();

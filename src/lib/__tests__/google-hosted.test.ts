@@ -1,7 +1,7 @@
 import { createHash } from 'crypto';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-// Home Screens' own Google apps: off unless HS_GOOGLE_HOSTED=1, and never
+// Home Screens' own Google apps: on unless HS_GOOGLE_HOSTED=0, and never
 // used while the household has any credential of its own saved. These tests
 // drive the real Calendar and Photos sign-in modules end to end over an
 // in-memory secrets file and tokens files.
@@ -9,6 +9,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 const secrets = new Map<string, string>();
 vi.mock('@/lib/secrets', () => ({
   getSecret: vi.fn(async (key: string) => secrets.get(key) ?? null),
+}));
+
+// The household's switch on the API keys page (settings.googleApp), stood in
+// so these tests never touch the config store.
+let preference: 'own' | 'hosted' = 'own';
+vi.mock('@/lib/google-app-preference', () => ({
+  readGoogleAppPreference: vi.fn(async () => preference),
 }));
 
 const files = new Map<string, string>();
@@ -65,7 +72,11 @@ function seed(path: string, tokens: Record<string, unknown>) {
 }
 
 function enableHosted() {
-  vi.stubEnv('HS_GOOGLE_HOSTED', '1');
+  vi.stubEnv('HS_GOOGLE_HOSTED', '');
+}
+
+function disableHosted() {
+  vi.stubEnv('HS_GOOGLE_HOSTED', '0');
 }
 
 function saveOwnPhotosApp() {
@@ -83,10 +94,12 @@ const grantResponse = { access_token: 'ya29.new', refresh_token: '1//new', expir
 beforeEach(() => {
   secrets.clear();
   files.clear();
+  preference = 'own';
   vi.unstubAllEnvs();
   vi.unstubAllGlobals();
-  // Keep a developer's own shell settings out of the tests.
-  vi.stubEnv('HS_GOOGLE_HOSTED', '');
+  // Keep a developer's own shell settings out of the tests. Most of these
+  // tests want the hosted apps off, the way a hub was before they existed.
+  disableHosted();
   vi.stubEnv('HS_GOOGLE_CALENDAR_TOKEN_URL', '');
   vi.stubEnv('HS_GOOGLE_PHOTOS_TOKEN_URL', '');
   clearPendingSignIn();
@@ -97,7 +110,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('switched off (the default)', () => {
+describe('switched off with HS_GOOGLE_HOSTED=0', () => {
+  it('is on when the variable is unset, and off only for an exact 0', async () => {
+    vi.stubEnv('HS_GOOGLE_HOSTED', '');
+    expect(await googleCalendarTokenStore.getMode()).toBe('hosted');
+    expect(await googlePickerTokenStore.getMode()).toBe('hosted');
+    vi.stubEnv('HS_GOOGLE_HOSTED', ' 0 ');
+    expect(await googleCalendarTokenStore.getMode()).toBeNull();
+    vi.stubEnv('HS_GOOGLE_HOSTED', '1');
+    expect(await googleCalendarTokenStore.getMode()).toBe('hosted');
+  });
+
   it('leaves an unconfigured hub exactly as before: not set up, nothing sent', async () => {
     const calls = answerWith(grantResponse);
 
@@ -308,6 +331,61 @@ describe('switching between apps', () => {
     await getPickerAuthUrl();
     await exchangePickerCode('4/0AdLIrY-code');
     expect(await isPickerConnected()).toBe(true);
+  });
+});
+
+describe("the switch: Home Screens' app with the household's own details kept", () => {
+  it('sends both integrations through the helper while the saved details stay put', async () => {
+    enableHosted();
+    saveOwnCalendarApp();
+    saveOwnPhotosApp();
+    preference = 'hosted';
+
+    expect(await googleCalendarTokenStore.getMode()).toBe('hosted');
+    expect(await googlePickerTokenStore.getMode()).toBe('hosted');
+    const calls = answerWith(grantResponse);
+    await getPickerAuthUrl();
+    await exchangePickerCode('4/0AdLIrY-code');
+    expect(calls[0].url).toBe(HELPER_URL);
+    expect(calls[0].body.get('client_id')).toBe(HOSTED_PHOTOS_CLIENT_ID);
+    expect(calls[0].body.has('client_secret')).toBe(false);
+    expect(secrets.get('google_web_client_secret')).toBe('own-web-secret');
+  });
+
+  it('governs only what is saved: an integration without details already uses Home Screens\' app', async () => {
+    enableHosted();
+    saveOwnCalendarApp();
+    expect(await googleCalendarTokenStore.getMode()).toBe('own');
+    expect(await googlePickerTokenStore.getMode()).toBe('hosted');
+    preference = 'hosted';
+    expect(await googleCalendarTokenStore.getMode()).toBe('hosted');
+    expect(await googlePickerTokenStore.getMode()).toBe('hosted');
+  });
+
+  it('cannot strand a hub: with Home Screens\' app switched off the saved details are used whatever it says', async () => {
+    disableHosted();
+    saveOwnCalendarApp();
+    preference = 'hosted';
+    expect(await googleCalendarTokenStore.getMode()).toBe('own');
+    expect(await hasGoogleCredentials()).toBe(true);
+  });
+
+  it('flipping signs Google out, and flipping back brings the old sign-in back untouched', async () => {
+    enableHosted();
+    saveOwnCalendarApp();
+    const ownGrant = { access_token: 'ya29.x', refresh_token: '1//own', expiry_date: Date.now() + 3_600_000 };
+    seed(CALENDAR_TOKENS, ownGrant);
+    expect(await isAuthenticated()).toBe(true);
+
+    preference = 'hosted';
+    const calls = answerWith(grantResponse);
+    expect(await isAuthenticated()).toBe(false);
+    expect(await googleCalendarTokenStore.getAccessToken()).toBeNull();
+    expect(calls).toHaveLength(0);
+    expect(tokensIn(CALENDAR_TOKENS)).toEqual(ownGrant);
+
+    preference = 'own';
+    expect(await isAuthenticated()).toBe(true);
   });
 });
 

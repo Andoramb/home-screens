@@ -1314,8 +1314,10 @@
           "title": "Brug din egen Google-app",
           "hintClosed": "De fleste hjem har ikke brug for det.",
           "hintOpen": "Til dem, der hellere vil have deres eget Google Cloud-projekt.",
-          "hintSaved": "Åben, fordi du har gemt din egen app.",
-          "warning": "Hvis du gemmer din egen app, skal alle, der allerede er logget ind med Google, logge ind igen, fordi et login kun virker med den app, det kom fra."
+          "hintOn": "Logger dig ind lige nu.",
+          "hintOff": "Gemt, men ikke i brug. Home Screens' app logger dig ind.",
+          "warning": "Hvis du gemmer din egen app, skal alle, der allerede er logget ind med Google, logge ind igen, fordi et login kun virker med den app, det kom fra.",
+          "switchCallout": "Skifter du app, bliver Google logget ud. Log ind igen bagefter på siden Kalender eller i et fotomodul."
         }
       },
       "immich": {

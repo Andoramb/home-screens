@@ -7,6 +7,8 @@ import { withDataTransaction, onDataTransactionCommit, readTransactionFile, dura
 import { planConfigMigrationBackup } from './config-migration-backup';
 import { migrateUp, getLatestSchemaVersion } from './migrations';
 import { repairConfigShape } from './config-repair';
+import { bumpCalendarRevision } from './calendar-revision';
+import { googleAppPreference } from './google-app-choice';
 // Circular with config-cache (it reads via readConfig, we invalidate it on
 // write) — safe because both sides only touch the other at call time, never
 // during module init.
@@ -137,6 +139,10 @@ export function updateConfigAtomic(
   mutator: (current: ScreenConfiguration) => ScreenConfiguration | Promise<ScreenConfiguration>,
 ): Promise<ScreenConfiguration> {
   const target = getLatestSchemaVersion();
+  // The Google app choice decides which grant the calendar reads with, so a
+  // change is a sign-in change as far as the calendar route's cache and the
+  // walls' heartbeat are concerned. Noted here, bumped once the write landed.
+  let googleAppChanged = false;
   return configStore
     .updateAtomic(async (current) => {
       // Migrate-on-read inside the queue so the mutator always sees the
@@ -147,6 +153,7 @@ export function updateConfigAtomic(
       if (result === migrated && !wasMigrated) {
         return current;
       }
+      googleAppChanged = googleAppPreference(migrated.settings) !== googleAppPreference(result.settings);
       if (wasMigrated) {
         // A source/manual upgrade may reach this path without the updater's
         // snapshot step. Keep the exact original bytes before publishing any
@@ -163,6 +170,7 @@ export function updateConfigAtomic(
       // Invalidate the read cache even on the no-op path — cheaper
       // than detecting it, and a spurious re-read costs one disk hit.
       invalidateConfigReadCache();
+      if (googleAppChanged) bumpCalendarRevision();
       return result;
     });
 }

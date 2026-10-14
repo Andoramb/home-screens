@@ -7238,6 +7238,20 @@
           "description": "IANA timezone the displays keep time in (e.g. `America/Chicago`)"
         },
         {
+          "name": "googleApp",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "GoogleAppPreference",
+            "values": [
+              "own",
+              "hosted"
+            ]
+          },
+          "description": "Which Google app signs the household in when it has saved its own: `own` (its own app) or `hosted` (Home Screens' app, keeping the saved details for later). Without saved details, Home Screens' app is used either way",
+          "defaultText": "\"own\""
+        },
+        {
           "name": "weather",
           "optional": false,
           "type": {

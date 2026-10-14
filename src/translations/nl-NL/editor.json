@@ -1314,8 +1314,10 @@
           "title": "Je eigen Google-app gebruiken",
           "hintClosed": "De meeste huishoudens hebben dit niet nodig.",
           "hintOpen": "Voor wie liever een eigen Google Cloud-project beheert.",
-          "hintSaved": "Staat open omdat je een eigen app hebt opgeslagen.",
-          "warning": "Als je je eigen app opslaat, moet iedereen die al met Google is aangemeld zich opnieuw aanmelden, want een aanmelding werkt alleen met de app waar die vandaan komt."
+          "hintOn": "Meldt je nu aan.",
+          "hintOff": "Opgeslagen, niet in gebruik. De app van Home Screens meldt je aan.",
+          "warning": "Als je je eigen app opslaat, moet iedereen die al met Google is aangemeld zich opnieuw aanmelden, want een aanmelding werkt alleen met de app waar die vandaan komt.",
+          "switchCallout": "Wisselen van app meldt Google af. Meld je daarna opnieuw aan op de pagina Kalender of in een fotomodule."
         }
       },
       "immich": {

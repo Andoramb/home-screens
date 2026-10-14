@@ -1314,8 +1314,10 @@
           "title": "Eigene Google-App verwenden",
           "hintClosed": "Die meisten Haushalte brauchen das nicht.",
           "hintOpen": "Für alle, die lieber ihr eigenes Google-Cloud-Projekt betreiben.",
-          "hintSaved": "Offen, weil du eine gespeichert hast.",
-          "warning": "Wenn du eine eigene App speicherst, müssen sich alle, die schon mit Google angemeldet sind, neu anmelden, denn eine Anmeldung funktioniert nur mit der App, von der sie stammt."
+          "hintOn": "Meldet dich gerade an.",
+          "hintOff": "Gespeichert, aber nicht aktiv. Die App von Home Screens meldet dich an.",
+          "warning": "Wenn du eine eigene App speicherst, müssen sich alle, die schon mit Google angemeldet sind, neu anmelden, denn eine Anmeldung funktioniert nur mit der App, von der sie stammt.",
+          "switchCallout": "Ein Wechsel der App meldet Google ab. Melde dich danach auf der Seite Kalender oder in einem Fotomodul neu an."
         }
       },
       "immich": {

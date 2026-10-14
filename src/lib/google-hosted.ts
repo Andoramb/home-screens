@@ -4,10 +4,11 @@ import type { HostedGoogleClient } from './google-token-store';
  * Home Screens' own Google apps, so a household can connect Google without
  * creating a Google Cloud project of its own.
  *
- * Off until Google's review approves the apps: nothing here is offered
- * unless HS_GOOGLE_HOSTED=1. Even then a household's own Google app, saved in
- * Settings, always wins (google-token-store.ts), so turning this on changes
- * nothing for a household that already set one up.
+ * On by default now that Google has approved the apps; HS_GOOGLE_HOSTED=0
+ * switches it off, which leaves a hub exactly as it was before the hosted
+ * apps existed. Either way a household's own Google app, saved in Settings,
+ * always wins (google-token-store.ts), so the hosted apps change nothing for
+ * a household that already set one up.
  *
  * Client ids are public (they appear in every sign-in link). Both secrets
  * stay in the sign-in helper (infrastructure/google-oauth-worker), never in
@@ -29,7 +30,7 @@ const CALENDAR_TOKEN_URL = 'https://auth.homescreens.dev/google/calendar/token';
 const PHOTOS_TOKEN_URL = 'https://auth.homescreens.dev/google/photos/token';
 
 function hostedEnabled(): boolean {
-  return process.env.HS_GOOGLE_HOSTED === '1';
+  return process.env.HS_GOOGLE_HOSTED?.trim() !== '0';
 }
 
 // The HS_GOOGLE_*_TOKEN_URL overrides point a development hub at

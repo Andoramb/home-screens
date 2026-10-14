@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
 import SecretField, { type SecretCheck, type SecretStatus } from './shared/SecretField';
 import IntegrationCard from './shared/IntegrationCard';
 import { getStatusInfo } from './shared/integration-status';
 import { useTranslate, type TranslateFn } from '@/i18n';
 import { hostedSignInOn, type GoogleAppsStatus } from '@/lib/google-apps';
+import { googleAppPreference } from '@/lib/google-app-choice';
 import { settingsPath } from '@/lib/settings-route';
+import { useEditorStore } from '@/stores/editor-store';
 
 function GoogleIcon() {
   return (
@@ -88,7 +90,9 @@ interface Props {
  * the card leads with "ready to use", keeps the Maps key in the open (it has
  * nothing to do with signing in), and folds the four sign-in boxes under
  * "Use your own Google app". A household that saved its own app finds that
- * section open, and its sign-ins carry on exactly as before.
+ * section open, and its sign-ins carry on exactly as before; a switch on its
+ * header row lets it hand sign-ins to Home Screens' app and back without
+ * losing the saved details (the rule is in google-app-choice.ts).
  */
 export default function GoogleIntegrationCard({ status, onSaved, apps }: Props) {
   const t = useTranslate('editor');
@@ -221,6 +225,7 @@ export default function GoogleIntegrationCard({ status, onSaved, apps }: Props) 
     <HostedGoogleCard
       status={status}
       apps={apps!}
+      onSaved={onSaved}
       t={t}
       calendarFields={calendarFields}
       photosFields={photosFields}
@@ -232,6 +237,7 @@ export default function GoogleIntegrationCard({ status, onSaved, apps }: Props) 
 function HostedGoogleCard({
   status,
   apps,
+  onSaved,
   t,
   calendarFields,
   photosFields,
@@ -239,6 +245,7 @@ function HostedGoogleCard({
 }: {
   status: SecretStatus;
   apps: GoogleAppsStatus;
+  onSaved: () => void;
   t: TranslateFn;
   calendarFields: React.ReactNode;
   photosFields: React.ReactNode;
@@ -252,7 +259,40 @@ function HostedGoogleCard({
   );
   const calendarReady = apps.calendar.mode === 'hosted';
   const photosReady = apps.photos.mode === 'hosted';
+  // The pill says whose app the household is on, as the hub last saw it: its
+  // own while the switch it saved is on, even with half a pair that cannot
+  // sign in yet (the modes alone would call that "Ready"). The switch itself
+  // shows the choice in the editor, which may be a save ahead of the hub.
+  const ownInUse = ownSaved && apps.preference === 'own';
+  const { config, updateSettings, saveConfig, configRevision } = useEditorStore();
+  const preference = googleAppPreference(config?.settings);
   const [ownOpen, setOwnOpen] = useState(ownSaved);
+  const [switching, setSwitching] = useState(false);
+
+  // The hub is asked again whenever a save lands, whichever way it got
+  // there: the flip itself, a retry after a failed save, or a resolved
+  // conflict. The revision is the one signal all of those share.
+  const seenRevision = useRef(configRevision);
+  useEffect(() => {
+    if (seenRevision.current === configRevision) return;
+    seenRevision.current = configRevision;
+    onSaved();
+  }, [configRevision, onSaved]);
+
+  // Saved like every other setting, then flushed at once (the API keys page
+  // has no debounced auto-save of its own). A refused save is already on the
+  // toolbar with its retry; the effect above catches up once that lands.
+  async function flipApp() {
+    setSwitching(true);
+    try {
+      updateSettings({ googleApp: preference === 'own' ? 'hosted' : 'own' });
+      await saveConfig();
+    } catch {
+      // Reported by the store (saveError); nothing more to say here.
+    } finally {
+      setSwitching(false);
+    }
+  }
 
   const readyTitle = calendarReady && photosReady
     ? t('settings.integrationsPage.google.ready.titleBoth')
@@ -263,10 +303,17 @@ function HostedGoogleCard({
         : null;
 
   const ownHint = ownSaved
-    ? ownOpen ? t('settings.integrationsPage.google.ownApp.hintSaved') : null
+    ? preference === 'own'
+      ? t('settings.integrationsPage.google.ownApp.hintOn')
+      : t('settings.integrationsPage.google.ownApp.hintOff')
     : ownOpen
       ? t('settings.integrationsPage.google.ownApp.hintOpen')
       : t('settings.integrationsPage.google.ownApp.hintClosed');
+  const callout = ownSaved
+    ? t('settings.integrationsPage.google.ownApp.switchCallout')
+    : calendarReady || photosReady
+      ? t('settings.integrationsPage.google.ownApp.warning')
+      : null;
 
   return (
     <IntegrationCard
@@ -275,8 +322,8 @@ function HostedGoogleCard({
       iconBg="linear-gradient(135deg, #4285f4 0%, #34a853 50%, #fbbc05 75%, #ea4335 100%)"
       name={t('settings.integrationsPage.google.name')}
       description={t('settings.integrationsPage.google.description')}
-      statusLabel={ownSaved ? t('settings.integrationsPage.status.ownApp') : t('settings.integrationsPage.status.ready')}
-      statusType={ownSaved ? 'own' : 'connected'}
+      statusLabel={ownInUse ? t('settings.integrationsPage.status.ownApp') : t('settings.integrationsPage.status.ready')}
+      statusType={ownInUse ? 'own' : 'connected'}
       defaultOpen
     >
       {readyTitle && (
@@ -324,42 +371,70 @@ function HostedGoogleCard({
       {mapsField}
 
       <div className="border-t border-hs-border-strong/60 mt-4 -mb-1.5">
-        <button
-          type="button"
-          onClick={() => setOwnOpen((open) => !open)}
-          aria-expanded={ownOpen}
-          data-testid="google-own-app-toggle"
-          className="flex w-full items-center gap-2 py-3 text-left text-[13px] text-hs-text-secondary hover:text-hs-text-body"
-        >
-          <ChevronRight
-            className={`h-3.5 w-3.5 shrink-0 text-hs-text-faint transition-transform ${ownOpen ? 'rotate-90' : ''}`}
-          />
-          <span className="whitespace-nowrap">{t('settings.integrationsPage.google.ownApp.title')}</span>
-          {ownHint && <span className="ml-1 min-w-0 truncate text-xs text-hs-text-faint">{ownHint}</span>}
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOwnOpen((open) => !open)}
+            aria-expanded={ownOpen}
+            data-testid="google-own-app-toggle"
+            className="flex min-w-0 flex-1 items-center gap-2 py-3 text-left text-[13px] text-hs-text-secondary hover:text-hs-text-body"
+          >
+            <ChevronRight
+              className={`h-3.5 w-3.5 shrink-0 text-hs-text-faint transition-transform ${ownOpen ? 'rotate-90' : ''}`}
+            />
+            <span className="whitespace-nowrap">{t('settings.integrationsPage.google.ownApp.title')}</span>
+            {ownHint && <span className="ml-1 min-w-0 truncate text-xs text-hs-text-faint">{ownHint}</span>}
+          </button>
+          {ownSaved && (
+            // The switch: on, the saved app signs the household in; off, Home
+            // Screens' app does and the details stay saved. No switch until
+            // there is something to switch to.
+            <button
+              type="button"
+              role="switch"
+              aria-checked={preference === 'own'}
+              aria-label={t('settings.integrationsPage.google.ownApp.title')}
+              disabled={switching}
+              onClick={() => void flipApp()}
+              data-testid="google-own-app-switch"
+              className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors disabled:opacity-50 ${
+                preference === 'own' ? 'bg-hs-accent' : 'bg-hs-card'
+              }`}
+            >
+              <span
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white transition-transform ${
+                  preference === 'own' ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                }`}
+              />
+            </button>
+          )}
+        </div>
         {ownOpen && (
           <div className="pb-4" data-testid="google-own-app">
-            {(calendarReady || photosReady) && (
+            {callout && (
               <p className="mb-4 rounded-lg border border-hs-warning/35 bg-hs-warning/10 px-3 py-2.5 text-xs text-hs-warning">
-                {t('settings.integrationsPage.google.ownApp.warning')}
+                {callout}
               </p>
             )}
-            <GoogleBand
-              title={t('settings.integrationsPage.google.calendarBand.title')}
-              help={t('settings.integrationsPage.google.calendarBand.helpOwnApp')}
-              docsHref={GOOGLE_CALENDAR_DOCS}
-              t={t}
-            />
-            {calendarFields}
-            <div className="border-t border-hs-border-strong/60 mt-4 pt-4">
+            {/* Saved but switched off: dimmed so the eye lands on the switch, still editable. */}
+            <div className={ownSaved && preference === 'hosted' ? 'opacity-60' : undefined} data-testid="google-own-app-fields">
               <GoogleBand
-                title={t('settings.integrationsPage.google.photosBand.title')}
-                help={t('settings.integrationsPage.google.photosBand.helpOwnApp')}
-                docsHref={GOOGLE_PHOTOS_DOCS}
+                title={t('settings.integrationsPage.google.calendarBand.title')}
+                help={t('settings.integrationsPage.google.calendarBand.helpOwnApp')}
+                docsHref={GOOGLE_CALENDAR_DOCS}
                 t={t}
               />
+              {calendarFields}
+              <div className="border-t border-hs-border-strong/60 mt-4 pt-4">
+                <GoogleBand
+                  title={t('settings.integrationsPage.google.photosBand.title')}
+                  help={t('settings.integrationsPage.google.photosBand.helpOwnApp')}
+                  docsHref={GOOGLE_PHOTOS_DOCS}
+                  t={t}
+                />
+              </div>
+              {photosFields}
             </div>
-            {photosFields}
           </div>
         )}
       </div>

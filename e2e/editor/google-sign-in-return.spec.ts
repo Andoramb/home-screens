@@ -11,10 +11,11 @@ import { baseConfig } from '../helpers/config-fixtures';
 /**
  * A Google Photos sign-in coming straight back to the hub
  * (/editor/connect/google), as homescreens.dev forwards it when the sign-in
- * link carries a home-network hub address. Home Screens' own Google app is
- * switched on for this hub, and its sign-in helper is a local stand-in, so
+ * link carries a home-network hub address. This hub uses Home Screens' own
+ * Google app (the default), and its sign-in helper is a local stand-in, so
  * nothing reaches Google: the stand-in accepts the code `good-code` and
- * refuses every other one the way Google refuses a used code.
+ * refuses every other one the way Google refuses a used code. The switched-off
+ * hub lives in google-hosted-switch.spec.ts.
  */
 
 interface TokenStub {
@@ -58,7 +59,7 @@ const test = base.extend<object, { tokenStub: TokenStub; hostedServer: HsServer 
   hostedServer: [async ({ tokenStub }, use) => {
     const server = await launchServer(
       { 'config.json': baseConfig() },
-      { HS_GOOGLE_HOSTED: '1', HS_GOOGLE_PHOTOS_TOKEN_URL: tokenStub.url },
+      { HS_GOOGLE_PHOTOS_TOKEN_URL: tokenStub.url },
     );
     await use(server);
     await server.stop();
@@ -144,12 +145,5 @@ test.describe('Google Photos sign-in coming back to the hub', () => {
 
     await expect(page.getByRole('heading', { name: 'Sign-in was cancelled' })).toBeVisible();
     expect(tokenStub.calls).toHaveLength(0);
-  });
-});
-
-base.describe('with the switch off', () => {
-  base('the return page does not exist', async ({ page }) => {
-    const res = await page.goto('/editor/connect/google?code=good-code&state=anything');
-    expect(res?.status()).toBe(404);
   });
 });

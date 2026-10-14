@@ -9,6 +9,7 @@ function apps(calendar: GoogleAppsStatus['calendar']['mode']): GoogleAppsStatus 
   return {
     calendar: { mode: calendar, hostedAvailable: calendar === 'hosted' },
     photos: { mode: null, hostedAvailable: calendar === 'hosted' },
+    preference: 'own',
   };
 }
 
