@@ -1193,6 +1193,7 @@ const PUBLIC_ROUTES: Record<string, string> = {
   '/api/auth/logout': 'clearing your own cookie needs no proof of who you are.',
   '/api/auth/status': 'answers only whether auth is switched on, which the login page needs before anyone can log in.',
   '/api/chores/grab': 'the /chores kid view and the wall grab bonus chores with no session, exactly as they tick chores through /api/chores. It moves no tickets.',
+  '/api/health': 'the liveness probe: the upgrade pipeline and the display-only launcher ask it whether the hub booted, and a support thread asks for it first. Version, build, schema and uptime only, nothing about the household.',
   '/api/i18n/[locale]': 'ships the UI dictionaries. Every surface needs them before login, and they are the same strings for every household.',
   '/api/plugins/auth/callback': 'the OAuth redirect target. The provider sends the browser here with no session; the HMAC-signed state is what proves the exchange is ours.',
   '/api/plugins/registry': 'a read-only index of publicly available plugins, identical for every household.',

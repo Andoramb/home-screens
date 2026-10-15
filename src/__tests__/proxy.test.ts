@@ -1050,6 +1050,16 @@ describe('proxy — IP access restriction (exempt paths)', () => {
     expect(isPassThrough(proxy(makeRequest('/api/auth/status', { clientIp: '10.0.0.99' })))).toBe(true);
   });
 
+  it('/api/health is exempt even for blocked IPs (the upgrade pipeline probes it from loopback)', () => {
+    expect(isPassThrough(proxy(makeRequest('/api/health', { clientIp: '127.0.0.1' })))).toBe(true);
+    expect(isPassThrough(proxy(makeRequest('/api/health', { clientIp: '10.0.0.99' })))).toBe(true);
+  });
+
+  it('/api/health/anything is NOT exempt, the exemption is an exact match', async () => {
+    const result = proxy(makeRequest('/api/health/evil', { clientIp: '10.0.0.99' }));
+    expect(await is403IpRestricted(result)).toBe(true);
+  });
+
   it('/api/auth/login is NOT exempt — POST from blocked IP is 403', async () => {
     // Even though /api/auth/login is in PUBLIC_AUTH_ROUTES for the auth gate,
     // the IP restriction runs first and doesn't exempt it. This prevents a

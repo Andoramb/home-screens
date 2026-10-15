@@ -266,9 +266,12 @@ export function proxy(request: NextRequest) {
   // ─── IP access restriction ─────────────────
   // Runs before auth checks so non-allowlisted IPs can't even reach the login page
   // via a protected route. /login and /api/auth/status are always exempt so the
-  // login page can render its "IP restricted" note.
+  // login page can render its "IP restricted" note. /api/health is exempt
+  // because the upgrade pipeline probes it from the Pi's own loopback address,
+  // which an allowlist rarely names, to decide whether a new release booted;
+  // it answers only the version, build, schema and uptime.
   if (config.ipRestrictAccess && config.ipAllowlist.length > 0) {
-    if (pathname !== '/login' && pathname !== '/api/auth/status') {
+    if (pathname !== '/login' && pathname !== '/api/auth/status' && pathname !== '/api/health') {
       const clientIp = extractIp(request);
       if (!ipMatchesAllowlist(clientIp, config.ipAllowlist)) {
         if (pathname.startsWith('/api/')) {

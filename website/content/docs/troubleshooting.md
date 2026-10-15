@@ -292,6 +292,16 @@ The bundle holds recent logs, system information, module counts and error traces
 
 The rest of this page assumes SSH access to the Pi (the pre-built image's login is under [Install](/docs/getting-started#the-pis-own-login)).
 
+### Is the hub running?
+
+Ask the hub directly, from the Pi or from any computer on your network:
+
+```bash
+curl http://<pi-address>:3000/api/health
+```
+
+A running hub answers with its version, for example `{"ok":true,"version":"1.13.0",...}`. This works with a password set and from an address that is not on the allowlist, so it separates "the hub is down" from "I cannot sign in". If nothing answers, check the service: `sudo systemctl status home-screens` and `journalctl -u home-screens -n 30 --no-pager`. If it answers but the display is still blank, the problem is on the screen's side; see [Display is blank](#display-is-blank).
+
 ### High memory usage on Raspberry Pi
 
 1. **Fewer modules.** Each one uses memory; remove those you do not look at.

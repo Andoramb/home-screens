@@ -24,7 +24,17 @@ There are three levels of protection:
 
 Endpoints below that say "requires a valid session" are the first level. Endpoints that say "display access" are the second, and a browser session works for those too.
 
-A few endpoints are open at every level on purpose, and each one says so where it appears: `GET`/`POST /api/chores`, `POST /api/chores/grab` and `GET`/`POST /api/rewards` (so the kid-facing `/chores` page keeps working when a password is set), `GET /api/plugins/registry`, `GET /api/system/build-id`, and `GET /api/plugins/auth/callback`.
+A few endpoints are open at every level on purpose, and each one says so where it appears: `GET`/`POST /api/chores`, `POST /api/chores/grab` and `GET`/`POST /api/rewards` (so the kid-facing `/chores` page keeps working when a password is set), `GET /api/plugins/registry`, `GET /api/system/build-id`, `GET /api/health`, and `GET /api/plugins/auth/callback`.
+
+### Is the hub up?
+
+`GET /api/health` answers from any device on your network, with or without a password, and it is the one endpoint that ignores the [IP allowlist](/docs/networking). It says which version is running and nothing else:
+
+```json
+{"ok":true,"version":"1.13.0","build":"a1b2c3d4","schema":5,"uptime":864}
+```
+
+`uptime` is seconds since the hub started. Home Screens uses this route itself: an update is only kept once the new version answers here, and a display-only Pi checks it before showing the connecting screen. It is also the first thing to try when a display is blank, see [Troubleshooting](/docs/troubleshooting#is-the-hub-running).
 
 ### Using the display token
 

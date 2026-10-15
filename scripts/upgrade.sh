@@ -677,13 +677,13 @@ case "${action}" in
     # to start on data it cannot read still lands the device back where
     # it was, with that data untouched.
     #
-    # Health check accepts ANY HTTP response code (incl. 401) — when auth
-    # is enabled /api/config requires a session or display token, but the
-    # 401 still proves the server is bound to the port and processing
-    # requests, which is what "healthy" means here. We just want to know
-    # the new release booted successfully. A release that must not run on
-    # the data it finds has to exit rather than serve errors, or it counts
-    # as healthy here.
+    # The probe is GET /api/health, which needs no login, is exempt from the
+    # IP allowlist, and answers 200 only once the app is routing requests.
+    # A 401 or 403 from a guarded route used to count as healthy here; a
+    # release that answered 500 on every request did too, and lost its
+    # rollback tree. A release that must not run on the data it finds still
+    # has to exit rather than serve errors, since the route itself never
+    # fails.
     port="${1:-${PORT:-3000}}"
     rollback_dir="${APP_DIR}.rollback"
     if [ ! -d "${rollback_dir}" ]; then
@@ -693,14 +693,13 @@ case "${action}" in
     attempt=0
     max_attempts="${HS_FINALIZE_ATTEMPTS:-45}"  # 45 * 2s = 90s
     while [ "${attempt}" -lt "${max_attempts}" ]; do
-      # %{http_code} is "000" when curl can't connect at all; any HTTP
-      # response (200, 401, 500, ...) means the server is reachable. Only a
-      # three-digit status counts. curl prints 000 and ALSO exits non-zero
-      # when it cannot connect, so an `|| echo 000` fallback used to yield
-      # "000000", which is not "000", and a dead server passed as healthy.
+      # %{http_code} is "000" when curl can't connect at all. curl prints
+      # 000 and ALSO exits non-zero then, so an `|| echo 000` fallback used
+      # to yield "000000", which is not "000", and a dead server passed as
+      # healthy. Only an exact 200 counts.
       http_code=$(curl -s -o /dev/null --max-time 5 -w "%{http_code}" \
-        "http://localhost:${port}/api/config" 2>/dev/null || true)
-      if [[ "${http_code}" =~ ^[1-5][0-9][0-9]$ ]]; then
+        "http://localhost:${port}/api/health" 2>/dev/null || true)
+      if [ "${http_code}" = "200" ]; then
         rm -rf "${rollback_dir}" 2>/dev/null || true
         echo "{\"ok\":true,\"healthy\":true,\"attempts\":${attempt},\"status\":${http_code}}"
         exit 0
@@ -1005,19 +1004,23 @@ EOF_JOB
     ;;
 
   health-check)
-    # Accept any HTTP response code (incl. 401 from auth-enabled installs)
-    # as proof the server is up. We're checking liveness, not authorization.
+    # Wait for GET /api/health to answer 200: the app is up and routing
+    # requests. The route needs no login and ignores the IP allowlist, so
+    # this works from the Pi's own loopback address on every install. The
+    # answer carries the version, which the JSON below passes on.
     port="${1:-${PORT}}"
-    max_attempts=30
+    max_attempts="${HS_HEALTH_ATTEMPTS:-30}"
     attempt=0
-    while [ $attempt -lt $max_attempts ]; do
-      http_code=$(curl -s -o /dev/null --max-time 5 -w "%{http_code}" \
-        "http://localhost:${port}/api/config" 2>/dev/null || echo "000")
-      if [ -n "${http_code}" ] && [ "${http_code}" != "000" ]; then
-        echo "{\"ok\":true,\"attempts\":${attempt},\"status\":${http_code}}"
+    while [ "${attempt}" -lt "${max_attempts}" ]; do
+      body=$(curl -s --max-time 5 -w '\n%{http_code}' \
+        "http://localhost:${port}/api/health" 2>/dev/null || true)
+      http_code="${body##*$'\n'}"
+      if [ "${http_code}" = "200" ]; then
+        version=$(printf '%s' "${body%$'\n'*}" | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p')
+        echo "{\"ok\":true,\"attempts\":${attempt},\"status\":200,\"version\":\"${version}\"}"
         exit 0
       fi
-      sleep 2
+      sleep "${HS_HEALTH_SLEEP:-2}"
       attempt=$(( attempt + 1 ))
     done
     echo "{\"ok\":false,\"error\":\"Server did not respond within 60 seconds\"}"

@@ -39,14 +39,25 @@ if [ -z "${DISPLAY_URL}" ]; then
   exit 1
 fi
 
-HEALTH_URL="${BACKEND_URL:-${DISPLAY_URL%/display/*}}/api/system/build-id"
+HUB_BASE_URL="${BACKEND_URL:-${DISPLAY_URL%/display/*}}"
 SPLASH_URL="file://${APP_DIR}/share/connecting.html"
+
+# hub_up <curl timeout>: is the hub answering. GET /api/health needs no login
+# and ignores the hub's IP allowlist, so a spoke that is not allowlisted still
+# learns whether the hub is up. A display-only install fetches this launcher
+# from main, independently of the hub's version, so a hub from before that
+# route answers 404 there; /api/system/build-id is the public route every hub
+# has had, and it is asked next.
+hub_up() {
+  curl -fsS --max-time "$1" "${HUB_BASE_URL}/api/health" >/dev/null 2>&1 \
+    || curl -fsS --max-time "$1" "${HUB_BASE_URL}/api/system/build-id" >/dev/null 2>&1
+}
 
 # Single immediate health check. We don't loop here because labwc's
 # autologin-on-exit cycle re-runs this script every few seconds anyway,
 # and we want the splash to render in the meantime.
 HUB_UP="false"
-curl -fsS --max-time 5 "${HEALTH_URL}" >/dev/null 2>&1 && HUB_UP="true"
+hub_up 5 && HUB_UP="true"
 
 # The update check runs BEFORE any of the boot side effects below, because it
 # can end in `exec "$0"`. Anything started first would be started twice: the
@@ -185,7 +196,7 @@ else
   # cycle. Loop terminates with chromium so we don't leak the watcher.
   (
     while sleep 5; do
-      if curl -fsS --max-time 3 "${HEALTH_URL}" >/dev/null 2>&1; then
+      if hub_up 3; then
         pkill -TERM chromium 2>/dev/null || true
         break
       fi

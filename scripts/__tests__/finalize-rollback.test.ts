@@ -64,14 +64,25 @@ function systemctlLog(): string {
 }
 
 describe('finalize-deploy', () => {
-  it('drops the rollback tree once the new release answers', () => {
-    fakeCurl('401');
+  it('drops the rollback tree once the new release answers 200 on /api/health', () => {
+    fakeCurl('200');
     const result = finalize();
     expect(result.status, result.stderr).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({ ok: true, healthy: true });
     expect(existsSync(`${current}.rollback`)).toBe(false);
     expect(readFileSync(path.join(current, 'release'), 'utf8')).toBe('new');
     expect(systemctlLog()).toBe('');
+  });
+
+  // The probe is the public /api/health route, so a refusal or an error from
+  // it means the app is not serving: a bound port alone no longer counts.
+  it.each(['401', '500'])('treats a %s from /api/health as not booted and puts the previous tree back', (code) => {
+    fakeCurl(code);
+    const result = finalize();
+    expect(result.status).toBe(1);
+    expect(JSON.parse(result.stdout)).toMatchObject({ ok: false, rolledBack: true });
+    expect(readFileSync(path.join(current, 'release'), 'utf8')).toBe('old');
+    expect(existsSync(`${current}.rollback`)).toBe(false);
   });
 
   it('puts the previous tree back, restarts it and leaves a marker when the new release never answers', () => {

@@ -10650,6 +10650,15 @@
       ]
     },
     {
+      "path": "/api/health",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "open"
+        }
+      ]
+    },
+    {
       "path": "/api/history",
       "methods": [
         {
