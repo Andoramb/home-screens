@@ -2,17 +2,14 @@
 
 import { useState, useEffect, useId } from 'react';
 import { Check, ChevronDown, ChevronRight } from 'lucide-react';
-import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
-import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
-import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
-import { useTranslate, tOrFallback } from '@/i18n';
-import { FULLSCREEN_THEMES } from '@/lib/fullscreen-themes';
+import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
+import { useTranslate } from '@/i18n';
 import {
   starterBackgroundsIn,
   type StarterBackground,
   type StarterBackgroundGroup,
 } from '@/lib/starter-backgrounds';
-import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
+import { isRotationActive } from '@/lib/screen-background';
 
 interface Props {
   selectedScreenId: string;
@@ -31,8 +28,7 @@ function readGroupOpen(id: string): boolean {
 /** Heading checkbox switches the group's tiles from "pick one" to "rotate through the selection". */
 function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   id: StarterBackgroundGroup; title: string; count: string; checked: boolean; hint?: string;
-  /** Omitted for a group that is a single choice and cannot rotate. */
-  onChange?: (checked: boolean) => void; children: React.ReactNode;
+  onChange: (checked: boolean) => void; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
   const panelId = useId();
@@ -46,14 +42,10 @@ function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   return (
     <div data-testid={`starter-source-${id}`} className="space-y-1.5">
       <div className="flex items-center gap-2">
-        {onChange ? (
-          <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-xs text-hs-text-body">
-            <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-hs-border-strong" />
-            <span>{title}</span>
-          </label>
-        ) : (
-          <span className="min-w-0 flex-1 text-xs text-hs-text-body">{title}</span>
-        )}
+        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-xs text-hs-text-body">
+          <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-hs-border-strong" />
+          <span>{title}</span>
+        </label>
         <button id={`starter-group-${id}`} type="button" onClick={toggle} aria-expanded={open}
           aria-controls={panelId} data-testid={`starter-group-${id}`}
           aria-label={checked ? `${title} ${count}` : title} className="flex items-center gap-1 rounded px-1 text-[10px] text-hs-text-muted hover:bg-hs-hover">
@@ -102,8 +94,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
     updateScreenRotation(selectedScreenId, { starterBackgroundIds: { ...selections, [group]: next } });
   };
   const selectionCount = (group: StarterBackgroundGroup) => `${selectedIds(group).length}/${starterBackgroundsIn(group).length}`;
-  // Themes are a single choice: a rotation of several full-screen themes has no use.
-  const rotating = (group: StarterBackgroundGroup) => group !== 'theme' && selectedSources.includes(group);
+  const rotating = (group: StarterBackgroundGroup) => selectedSources.includes(group);
   const groupHint = (group: StarterBackgroundGroup) => (selectedIds(group).length === 0 ? t('backgroundPicker.pickToRotate') : undefined);
 
   const pick = (backgroundImage: string) => pickScreenBackground(selectedScreenId, backgroundImage);
@@ -123,14 +114,6 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const tileLabel = (bg: StarterBackground, name: string) =>
     t(rotating(bg.group) ? 'backgroundPicker.includeInRotation' : 'backgroundPicker.useFixed', { name });
 
-  // The theme the selected display paints its fullscreen modules with: its
-  // own override first, then the shared default, then the shipped default.
-  const themeInUse = getActiveFullscreenTheme(config, selectedDisplayId) ?? 'linen';
-  const themeWalls = starterBackgroundsIn('theme');
-  const orderedThemeWalls = [
-    ...themeWalls.filter((bg) => bg.themeId === themeInUse),
-    ...themeWalls.filter((bg) => bg.themeId !== themeInUse),
-  ];
   const colorWalls = starterBackgroundsIn('color');
   const patternWalls = starterBackgroundsIn('pattern');
 
@@ -161,40 +144,6 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   return (
     <>
-      <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count="" checked={false}>
-        <div className="grid grid-cols-2 gap-1.5">
-          {orderedThemeWalls.map((bg) => {
-            const theme = FULLSCREEN_THEMES.find((th) => th.id === bg.themeId);
-            if (!theme) return null;
-            const selected = isMarked(bg);
-            const inUse = theme.id === themeInUse;
-            const group = tOrFallback(t, `settings.defaultDisplayPage.themeGroups.${theme.group}`, theme.group);
-            return (
-              <button
-                key={bg.id}
-                type="button"
-                aria-label={tileLabel(bg, theme.name)}
-                aria-pressed={selected}
-                onClick={() => onTile(bg)}
-                data-testid={`starter-background-${bg.id}`}
-                data-in-use={inUse ? 'true' : undefined}
-                className={`flex min-w-0 items-center gap-1.5 rounded-lg border px-1.5 py-1.5 text-left transition-colors ${themeTileClass(selected)}`}
-              >
-                <FullscreenThemePreview tokens={theme.tokens} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <div className={`truncate text-[10px] font-semibold ${selected ? 'text-hs-accent-hover' : 'text-hs-text-body'}`}>{theme.name}</div>
-                  <div className="truncate text-[9px] text-hs-text-faint">
-                    <span className="capitalize">{group}</span>
-                    {inUse && <span> · {t('backgroundPicker.inUse')}</span>}
-                  </div>
-                </div>
-                {selected && rotating(bg.group) && <Check size={11} className="shrink-0 text-hs-accent-hover" aria-hidden="true" />}
-              </button>
-            );
-          })}
-        </div>
-      </StarterGroup>
-
       <StarterGroup id="color" title={t('backgroundPicker.groups.color')} count={selectionCount('color')}
         hint={groupHint('color')} checked={selectedSources.includes('color')} onChange={(checked) => selectSource('color', checked)}>
         <div className={tileGrid}>

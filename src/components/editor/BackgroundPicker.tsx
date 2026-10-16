@@ -17,6 +17,7 @@ import IntegrationSettingsLink, { type BackgroundIntegration } from './Integrati
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
 import BackgroundShadeFields from './BackgroundShadeFields';
 import BackgroundEffectsFields from './BackgroundEffectsFields';
+import ThemeBackgrounds from './ThemeBackgrounds';
 
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
@@ -101,6 +102,8 @@ export default function BackgroundPicker() {
     <AccordionSection title={t('backgroundPicker.title')}>
       <BackgroundShadeFields screenId={selectedScreenId} shade={currentScreen.shade} />
       <BackgroundEffectsFields screenId={selectedScreenId} effects={currentScreen.effects} />
+
+      <ThemeBackgrounds selectedScreenId={selectedScreenId} />
 
       <PropertyGroup
         title={t('backgroundPicker.sourcesGroup')}
