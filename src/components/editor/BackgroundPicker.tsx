@@ -120,10 +120,10 @@ export default function BackgroundPicker() {
               }
             >
               <div className="space-y-2">
-                <p className="text-xs font-medium text-hs-text-secondary" data-testid="background-mode">
+                <p className="text-xs font-medium text-hs-text-secondary" data-testid="background-mode" title={t('backgroundPicker.modeHelp')}>
                   {rotationSources.length > 0 ? t('backgroundPicker.modeRotating') : t('backgroundPicker.modeFixed')}
                 </p>
-                <LocalBackgrounds selectedScreenId={selectedScreenId} hasUnsplashKey={hasUnsplashKey} hasNasaKey={hasNasaKey} hasImmichKey={hasImmichKey} />
+                <LocalBackgrounds selectedScreenId={selectedScreenId} />
                 <div className="space-y-2">
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);

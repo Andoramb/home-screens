@@ -1,11 +1,7 @@
 'use client';
 
 import { useState, useEffect, useId } from 'react';
-import { Check, ChevronDown, ChevronRight, Lock } from 'lucide-react';
-import ImageBrowserModal from './ImageBrowserModal';
-import ImmichBrowser from './ImmichBrowser';
-import NasaBrowser from './NasaBrowser';
-import UnsplashBrowser from './UnsplashBrowser';
+import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
 import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
 import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
@@ -20,9 +16,6 @@ import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-backgroun
 
 interface Props {
   selectedScreenId: string;
-  hasUnsplashKey: boolean;
-  hasNasaKey: boolean;
-  hasImmichKey: boolean;
 }
 
 const GROUP_STORAGE_PREFIX = 'hs-background-group-';
@@ -77,53 +70,7 @@ function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   );
 }
 
-type PhotoSource = 'library' | 'unsplash' | 'nasa' | 'immich';
-
-/** One specific photo as a fixed background, from the library (with upload) or a connected service. */
-function SinglePhotoPicker({ selectedScreenId, onPickImage, hasKey }: {
-  selectedScreenId: string;
-  onPickImage: (url: string) => void;
-  hasKey: Record<'unsplash' | 'nasa' | 'immich', boolean>;
-}) {
-  const t = useTranslate('editor');
-  const [open, setOpen] = useState<PhotoSource | null>(null);
-  const entries: { id: PhotoSource; label: string; locked: boolean }[] = [
-    { id: 'library', label: t('backgroundPicker.pickOneLibrary'), locked: false },
-    { id: 'unsplash', label: t('backgroundPicker.sources.unsplash'), locked: !hasKey.unsplash },
-    { id: 'nasa', label: t('backgroundPicker.sources.nasaApod'), locked: !hasKey.nasa },
-    { id: 'immich', label: t('backgroundPicker.sources.immich'), locked: !hasKey.immich },
-  ];
-  return (
-    <div className="space-y-1.5" data-testid="single-photo-picker">
-      <div className="text-[10px] text-hs-text-faint">{t('backgroundPicker.pickOneTitle')}</div>
-      <div className="grid grid-cols-2 gap-1">
-        {entries.map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            aria-expanded={entry.id === 'library' ? undefined : open === entry.id}
-            data-testid={`pick-photo-${entry.id}`}
-            onClick={() => setOpen(entry.id === 'library' ? 'library' : open === entry.id ? null : entry.id)}
-            className={`flex min-w-0 items-center justify-center gap-1 rounded border px-2 py-1 text-[11px] ${entry.id === 'library' ? 'col-span-2 ' : ''}${
-              open === entry.id ? 'border-hs-accent bg-hs-hover text-hs-text-primary' : 'border-hs-border-strong bg-hs-card text-hs-text-body hover:bg-hs-hover'
-            }`}
-          >
-            {entry.locked && <Lock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />}
-            <span className="truncate">{entry.label}</span>
-          </button>
-        ))}
-      </div>
-      {open === 'unsplash' && <UnsplashBrowser selectedScreenId={selectedScreenId} hasUnsplashKey={hasKey.unsplash} />}
-      {open === 'nasa' && <NasaBrowser selectedScreenId={selectedScreenId} hasNasaKey={hasKey.nasa} />}
-      {open === 'immich' && <ImmichBrowser selectedScreenId={selectedScreenId} hasImmichKey={hasKey.immich} />}
-      {open === 'library' && (
-        <ImageBrowserModal mode="pick-image" onSelectImage={onPickImage} onClose={() => setOpen(null)} />
-      )}
-    </div>
-  );
-}
-
-export default function LocalBackgrounds({ selectedScreenId, hasUnsplashKey, hasNasaKey, hasImmichKey }: Props) {
+export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const t = useTranslate('editor');
   const { config, selectedDisplayId, updateScreen, pickScreenBackground, updateScreenRotation } = useEditorStore();
 
@@ -214,12 +161,6 @@ export default function LocalBackgrounds({ selectedScreenId, hasUnsplashKey, has
 
   return (
     <>
-      <SinglePhotoPicker
-        selectedScreenId={selectedScreenId}
-        onPickImage={pick}
-        hasKey={{ unsplash: hasUnsplashKey, nasa: hasNasaKey, immich: hasImmichKey }}
-      />
-
       <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count="" checked={false}>
         <div className="grid grid-cols-2 gap-1.5">
           {orderedThemeWalls.map((bg) => {

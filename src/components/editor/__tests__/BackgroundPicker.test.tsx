@@ -9,12 +9,6 @@ import { useEditorStore } from '@/stores/editor-store';
 import enUSEditor from '@/translations/en-US/editor.json';
 import BackgroundPicker from '../BackgroundPicker';
 
-vi.mock('../ImageBrowserModal', () => ({
-  default: ({ onSelectImage, onClose }: { onSelectImage?: (url: string) => void; onClose: () => void }) => (
-    <button type="button" data-testid="mock-library-pick" onClick={() => { onSelectImage?.('/api/backgrounds/serve?file=me.jpg'); onClose(); }}>pick</button>
-  ),
-}));
-
 // The checklist needs every source's key status; stub it so `icloud` and
 // `local` (no key required) sit alongside a `false` for the keyed ones —
 // exercising the checklist without pulling in a real /api/secrets round trip.
@@ -276,6 +270,7 @@ describe('BackgroundPicker — unified Sources', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { getByTestId, getByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeFixed);
+    expect(getByTestId('background-mode').getAttribute('title')).toBe(enUSEditor.backgroundPicker.modeHelp);
     fireEvent.click(getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.color }));
     expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeRotating);
   });
@@ -289,30 +284,6 @@ describe('BackgroundPicker — unified Sources', () => {
     fireEvent.click(tile);
     expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
     expect(currentRotation()?.sources).toEqual([]);
-  });
-
-  it('offers a single-photo picker for the library and each connected service', () => {
-    seedStore({ sources: [], query: '', intervalMinutes: 60 }, '/starter-backgrounds/ocean.svg');
-    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
-    const picker = within(getByTestId('single-photo-picker'));
-    for (const id of ['library', 'unsplash', 'nasa', 'immich']) expect(picker.getByTestId(`pick-photo-${id}`)).not.toBeNull();
-    // A service without a key opens its browser, which explains the setup and links to Settings.
-    expect(picker.queryByTestId('integration-settings-link-immich')).toBeNull();
-    fireEvent.click(picker.getByTestId('pick-photo-immich'));
-    const link = picker.getByTestId('integration-settings-link-immich') as HTMLAnchorElement;
-    expect(link.getAttribute('href')).toContain('/editor/settings');
-    expect(link.getAttribute('href')).toContain('integrations.immich');
-    fireEvent.click(picker.getByTestId('pick-photo-immich'));
-    expect(picker.queryByTestId('integration-settings-link-immich')).toBeNull();
-  });
-
-  it('a photo picked from the library becomes the fixed background and ends rotation', () => {
-    seedStore({ sources: ['icloud'], query: '', intervalMinutes: 60, localFolder: 'holiday' }, '');
-    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
-    fireEvent.click(getByTestId('pick-photo-library'));
-    fireEvent.click(getByTestId('mock-library-pick'));
-    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/api/backgrounds/serve?file=me.jpg');
-    expect(currentRotation()).toMatchObject({ sources: [], localFolder: 'holiday' });
   });
 
   it('shows a visible hint and a disabled checkbox for sources that are not set up', () => {
