@@ -11,14 +11,22 @@ vi.mock('@/lib/download', () => ({ downloadBlob: mocks.downloadBlob }));
 
 import { useBackupReminder } from '../useBackupReminder';
 
-const OLD = new Date(Date.now() - 30 * 86_400_000).toISOString();
-
-function fetchFn(url: string): Promise<Response> {
-  if (url === '/api/backup/reminder') {
-    return Promise.resolve(new Response(JSON.stringify({ lastBackupDate: OLD, lastDismissedDate: null })));
-  }
-  return Promise.resolve(new Response(JSON.stringify({ _type: 'home-screens-backup' })));
+/** A backup date the reminder treats as stale: 30 days before whatever `Date.now()` says when called. */
+function staleBackupDate(): string {
+  return new Date(Date.now() - 30 * 86_400_000).toISOString();
 }
+
+/** A hub whose last backup is `lastBackupDate`, read when the hook asks, so a frozen clock is honoured. */
+function fetchFnWith(lastBackupDate: () => string) {
+  return function fetchFn(url: string): Promise<Response> {
+    if (url === '/api/backup/reminder') {
+      return Promise.resolve(new Response(JSON.stringify({ lastBackupDate: lastBackupDate(), lastDismissedDate: null })));
+    }
+    return Promise.resolve(new Response(JSON.stringify({ _type: 'home-screens-backup' })));
+  };
+}
+
+const fetchFn = fetchFnWith(staleBackupDate);
 
 beforeEach(() => {
   mocks.attachCustomIcons.mockReset();
