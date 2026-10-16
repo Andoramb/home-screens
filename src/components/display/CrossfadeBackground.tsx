@@ -58,6 +58,7 @@ export default function CrossfadeBackground({ src, alt = '', authenticate = fals
           key={layer.key}
           layer={layer}
           isTop={i === layers.length - 1}
+          hasLayerBelow={i > 0}
           loaded={loadedKeys.has(layer.key)}
           alt={alt}
           authenticate={authenticate}
@@ -70,9 +71,10 @@ export default function CrossfadeBackground({ src, alt = '', authenticate = fals
   );
 }
 
-function MediaLayer({ layer, isTop, loaded, alt, authenticate, filter, onLoaded, onFailed }: {
+function MediaLayer({ layer, isTop, hasLayerBelow, loaded, alt, authenticate, filter, onLoaded, onFailed }: {
   layer: Layer;
   isTop: boolean;
+  hasLayerBelow: boolean;
   loaded: boolean;
   alt: string;
   authenticate: boolean;
@@ -92,15 +94,20 @@ function MediaLayer({ layer, isTop, loaded, alt, authenticate, filter, onLoaded,
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    opacity: isTop ? (loaded ? 1 : 0) : 1,
+    // Only a layer stacked over another one fades in; the first layer is visible immediately.
+    opacity: isTop && hasLayerBelow ? (loaded ? 1 : 0) : 1,
     transition: `opacity ${CROSSFADE_MS}ms ease-in-out, filter ${CROSSFADE_MS}ms ease-in-out`,
     zIndex: isTop ? 1 : 0,
     filter,
   };
+  // Cached or pre-hydration images can finish before React attaches onLoad.
+  const markIfComplete = useCallback((img: HTMLImageElement | null) => {
+    if (img?.complete && img.naturalWidth > 0) onLoaded(layer.key);
+  }, [layer.key, onLoaded]);
   if (!src) return null;
   return isVideo ? (
     <video src={src} autoPlay muted loop playsInline onLoadedData={() => onLoaded(layer.key)} onError={() => onFailed(layer.key)} style={style} />
   ) : (
-    <img src={src} alt={alt} onLoad={() => onLoaded(layer.key)} onError={() => onFailed(layer.key)} style={style} />
+    <img ref={markIfComplete} src={src} alt={alt} onLoad={() => onLoaded(layer.key)} onError={() => onFailed(layer.key)} style={style} />
   );
 }
