@@ -26,6 +26,30 @@ describe('CrossfadeBackground', () => {
     expect(imgs[0].src).toContain('/a.jpg');
   });
 
+  it('shows the first layer immediately without waiting for onLoad', () => {
+    const { container } = render(<CrossfadeBackground src="/a.jpg" />);
+    expect((container.querySelector('img') as HTMLImageElement).style.opacity).toBe('1');
+  });
+
+  it('marks an already-complete image as loaded on mount so a later swap can retire it', () => {
+    vi.useFakeTimers();
+    const complete = vi.spyOn(HTMLImageElement.prototype, 'complete', 'get').mockReturnValue(true);
+    const width = vi.spyOn(HTMLImageElement.prototype, 'naturalWidth', 'get').mockReturnValue(640);
+    try {
+      const { container, rerender } = render(<CrossfadeBackground src="/a.jpg" />);
+      finishLoadFrame();
+      rerender(<CrossfadeBackground src="/b.jpg" />);
+      const imgs = Array.from(container.querySelectorAll('img'));
+      expect(imgs).toHaveLength(2);
+      // The new layer starts hidden over the old one, then both complete-checks pass and it fades in.
+      finishLoadFrame();
+      expect((container.querySelectorAll('img')[1] as HTMLImageElement).style.opacity).toBe('1');
+    } finally {
+      complete.mockRestore();
+      width.mockRestore();
+    }
+  });
+
   it('keeps the previous image mounted underneath while the new one loads, then drops it after the fade', () => {
     vi.useFakeTimers();
     const { container, rerender } = render(<CrossfadeBackground src="/a.jpg" />);
