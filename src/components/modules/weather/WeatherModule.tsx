@@ -21,6 +21,12 @@ import WeatherCompactView from './WeatherCompactView';
 import WeatherTableView from './WeatherTableView';
 import WeatherPrecipitationView from './WeatherPrecipitationView';
 import WeatherAlertsView from './WeatherAlertsView';
+import WeatherRibbonView from './WeatherRibbonView';
+import WeatherWeekView from './WeatherWeekView';
+import WeatherTimelineView from './WeatherTimelineView';
+import WeatherStatsView from './WeatherStatsView';
+import WeatherSunView from './WeatherSunView';
+import WeatherNarrativeView from './WeatherNarrativeView';
 import { useHouseholdTimeFormat } from '@/hooks/useHouseholdTimeFormat';
 
 interface WeatherModuleProps {
@@ -62,6 +68,14 @@ const SCALE_FACTORS: Record<WeatherView, number> = {
   table: 0.08,
   precipitation: 0.09,
   alerts: 0.08,
+  // The full-screen pieces lay out across the width as much as the height,
+  // and each one fits itself to its box on top of this starting size.
+  ribbon: 0.08,
+  week: 0.09,
+  timeline: 0.075,
+  stats: 0.1,
+  sun: 0.09,
+  narrative: 0.075,
 };
 
 // `current` centers its hero temperature, so a centered header reads as part of
@@ -75,6 +89,12 @@ const LABEL_ALIGN: Record<WeatherView, string> = {
   table: 'text-left',
   precipitation: 'text-left',
   alerts: 'text-left',
+  ribbon: 'text-left',
+  week: 'text-left',
+  timeline: 'text-left',
+  stats: 'text-left',
+  sun: 'text-left',
+  narrative: 'text-left',
 };
 
 const VIEW_COMPONENTS = {
@@ -86,6 +106,12 @@ const VIEW_COMPONENTS = {
   table: WeatherTableView,
   precipitation: WeatherPrecipitationView,
   alerts: WeatherAlertsView,
+  ribbon: WeatherRibbonView,
+  week: WeatherWeekView,
+  timeline: WeatherTimelineView,
+  stats: WeatherStatsView,
+  sun: WeatherSunView,
+  narrative: WeatherNarrativeView,
 };
 
 export default function WeatherModule({ config, style, hourly, forecast, minutely, alerts, units = 'imperial', timezone, timeFormat: savedTimeFormat, locationMissing, locationSettingsHref, locationName, latitude, longitude, weatherError }: WeatherModuleProps) {
@@ -184,6 +210,8 @@ export default function WeatherModule({ config, style, hourly, forecast, minutel
             timezone={timezone}
             timeFormat={timeFormat}
             scaledFontSize={viewFontSize}
+            latitude={latitude}
+            longitude={longitude}
           />
         </div>
       </div>

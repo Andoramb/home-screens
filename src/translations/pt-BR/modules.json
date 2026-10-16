@@ -298,7 +298,9 @@
     },
     "loading": "Buscando a previsão…",
     "notUpdating": "O tempo não está atualizando",
-    "notAvailableForSource": "Não disponível na sua fonte de tempo"
+    "notAvailableForSource": "Não disponível na sua fonte de tempo",
+    "rightNow": "Agora",
+    "sunrise": "Nascer do sol"
   },
   "air-quality": {
     "loading": "Carregando qualidade do ar…",

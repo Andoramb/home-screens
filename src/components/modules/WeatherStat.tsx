@@ -1,17 +1,18 @@
 import type { LucideIcon } from 'lucide-react';
 import { TEXT_OPACITY } from '@/lib/constants';
 
-export function WeatherStat({ icon: Icon, value, unit, visible, fontSize = '0.7em' }: {
+export function WeatherStat({ icon: Icon, value, unit, visible, fontSize = '0.7em', testId }: {
   icon: LucideIcon;
   /** A number is rounded; text (an already formatted reading) shows as is. */
   value: number | string | null | undefined;
   visible?: boolean;
   unit?: string;
   fontSize?: string;
+  testId?: string;
 }) {
   if (!visible || value == null) return null;
   return (
-    <span className="flex items-center gap-0.5" style={{ fontSize, opacity: TEXT_OPACITY.dim }}>
+    <span className="flex items-center gap-0.5" style={{ fontSize, opacity: TEXT_OPACITY.dim }} data-testid={testId}>
       <Icon size="1em" aria-hidden="true" />{typeof value === 'number' ? Math.round(value) : value}{unit}
     </span>
   );

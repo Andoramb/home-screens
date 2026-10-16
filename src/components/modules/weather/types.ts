@@ -13,4 +13,7 @@ export interface WeatherViewProps {
    *  alert expiry follow it, same as the clock. */
   timeFormat: TimeFormat;
   scaledFontSize: number;
+  /** Coordinates, for the views that draw today's daylight (ribbon, timeline, sun). */
+  latitude?: number;
+  longitude?: number;
 }

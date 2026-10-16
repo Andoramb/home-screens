@@ -298,7 +298,9 @@
     },
     "loading": "Vorhersage wird geladen…",
     "notUpdating": "Wetter wird nicht aktualisiert",
-    "notAvailableForSource": "Bei deiner Wetterquelle nicht verfügbar"
+    "notAvailableForSource": "Bei deiner Wetterquelle nicht verfügbar",
+    "rightNow": "Jetzt gerade",
+    "sunrise": "Sonnenaufgang"
   },
   "air-quality": {
     "loading": "Luftqualität wird geladen…",

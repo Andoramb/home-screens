@@ -10,7 +10,7 @@ import {
   labelStride, spanHours, cachedFormat, meteogramColumnPx, valueLabelled, hourLabelled,
   HOURLY_RAIN_SHOWN_PCT,
 } from './weather-view-utils';
-import { tempColor } from './temp-ramp';
+import { tempColor } from '@/lib/weather/temp-ramp';
 import { Card, Label, TopBar, AlertBand, MiniHero, PrecipLegendHeader } from './weather-parts';
 
 /**

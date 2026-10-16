@@ -2040,7 +2040,13 @@ export interface CalendarConfig {
 }
 
 // Unified weather module config
-export type WeatherView = 'current' | 'hourly' | 'daily' | 'combined' | 'compact' | 'table' | 'precipitation' | 'alerts';
+/**
+ * The last five are the Full-Screen Weather module's pieces, one per option:
+ * `ribbon` the temperature curve, `week` the day bands, `timeline` the
+ * hour-by-hour chart, `stats` the readouts, `sun` the sun arc and moon.
+ */
+export type WeatherView = 'current' | 'hourly' | 'daily' | 'combined' | 'compact' | 'table' | 'precipitation' | 'alerts'
+  | 'ribbon' | 'week' | 'timeline' | 'stats' | 'sun' | 'narrative';
 
 export type WeatherIconSet = 'outline' | 'color';
 export type WeatherProviderOption = 'global' | 'openweathermap' | 'weatherapi' | 'pirateweather' | 'noaa' | 'open-meteo' | 'yr' | 'smhi' | 'metoffice' | 'envcanada';
@@ -2101,6 +2107,18 @@ export interface WeatherConfig {
    * @default false
    */
   showDewPoint: boolean;
+  /**
+   * Show the UV index (current and compact views)
+   *
+   * @default false
+   */
+  showUV?: boolean;
+  /**
+   * Show today's sunrise and sunset times (current and compact views)
+   *
+   * @default false
+   */
+  showSunTimes?: boolean;
   /** Hide the alerts view when there are no active alerts */
   hideWhenNoAlerts: boolean;
   /**

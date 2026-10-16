@@ -3,7 +3,7 @@
 import { getWeatherIcon } from '@/lib/weather-icons';
 import type { WeatherViewProps, WeekRange } from './weather-view-utils';
 import { weekRange, MIN_BAR_PCT } from './weather-view-utils';
-import { tempColor } from './temp-ramp';
+import { tempColor } from '@/lib/weather/temp-ramp';
 import { Card, Label, TopBar, AlertBand, MiniHero, DayDetails, RangeBar, NowRing, dayName, shortDate } from './weather-parts';
 
 /**

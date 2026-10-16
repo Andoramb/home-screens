@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
-import SunCalc from 'suncalc';
+import { sunTimesFor } from '@/lib/weather/sun-times';
 import { useFullscreenDims } from '@/hooks/useFullscreenDims';
 import { useRealClock } from '@/hooks/useTZClock';
 import { useTranslate, useFormattingLocale } from '@/i18n';
@@ -17,7 +17,7 @@ import type { FetchError } from '@/lib/fetch-error';
 import { resolveWeatherLocationLabel } from '../weather/location-label';
 import { resolveSkyCondition, skyBackground, SKY_ACCENT, particleKind } from './sky-layer';
 import {
-  tzHour, getOrientation, isNightHour, timelineHours, hoursWithin, baseUnit,
+  getOrientation, timelineHours, hoursWithin, baseUnit,
   CANVAS_PAD_X_U, CANVAS_PAD_Y_U,
   type WeatherScale, type WeatherViewProps, type SunTimes,
 } from './weather-view-utils';
@@ -54,8 +54,6 @@ interface FullscreenWeatherModuleProps {
 /** Particle colours differ by theme group: pale blue drops vanish on Linen. */
 const DROP_LIGHT = 'rgba(71,85,105,.62)';
 const DROP_DARK = 'rgba(196,220,255,.88)';
-
-const DAY_MS = 86_400_000;
 
 /** How long to promise a forecast before admitting it is not arriving. */
 const WEATHER_STALL_MS = 20_000;
@@ -163,29 +161,7 @@ export default function FullscreenWeatherModule({
   // Sun times drive the sky layer, the ribbon's night shading, and the Almanac
   // sun arc. Without coordinates there is no daylight model, so the module
   // falls back to "always day" rather than guessing.
-  const sun: SunTimes = useMemo(() => {
-    if (latitude == null || longitude == null) {
-      return { sunrise: null, sunset: null, sunriseHour: 0, sunsetHour: 24, isNight: false, dayLengthMs: 0 };
-    }
-    const times = SunCalc.getTimes(now, latitude, longitude);
-    const valid = (d: Date | undefined) => (d && !Number.isNaN(d.getTime()) ? d : null);
-    const sunrise = valid(times.sunrise);
-    const sunset = valid(times.sunset);
-    if (!sunrise || !sunset) {
-      // Polar day or night: the sun never crosses the horizon today, so its
-      // altitude right now settles which one, for the whole day.
-      const up = SunCalc.getPosition(now, latitude, longitude).altitude > 0;
-      return { sunrise: null, sunset: null, sunriseHour: 0, sunsetHour: 24, isNight: !up, dayLengthMs: up ? DAY_MS : 0 };
-    }
-    const window: SunTimes = {
-      sunrise, sunset,
-      sunriseHour: tzHour(sunrise, timezone),
-      sunsetHour: tzHour(sunset, timezone),
-      isNight: false,
-      dayLengthMs: Math.max(0, sunset.getTime() - sunrise.getTime()),
-    };
-    return { ...window, isNight: isNightHour(tzHour(now, timezone), window) };
-  }, [latitude, longitude, now, timezone]);
+  const sun: SunTimes = useMemo(() => sunTimesFor(now, latitude, longitude, timezone), [latitude, longitude, now, timezone]);
 
   const skyCondition = resolveSkyCondition(hourly[0]?.icon, sun.isNight);
   const accent = config.accentColor || SKY_ACCENT[skyCondition];

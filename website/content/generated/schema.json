@@ -2874,7 +2874,13 @@
               "compact",
               "table",
               "precipitation",
-              "alerts"
+              "alerts",
+              "ribbon",
+              "week",
+              "timeline",
+              "stats",
+              "sun",
+              "narrative"
             ]
           },
           "description": "Which view to render (see list above)",
@@ -3049,6 +3055,26 @@
           "defaultText": "false"
         },
         {
+          "name": "showUV",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Show the UV index (current and compact views)",
+          "defaultText": "false"
+        },
+        {
+          "name": "showSunTimes",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Show today's sunrise and sunset times (current and compact views)",
+          "defaultText": "false"
+        },
+        {
           "name": "hideWhenNoAlerts",
           "optional": false,
           "type": {
@@ -3096,7 +3122,13 @@
         "compact",
         "table",
         "precipitation",
-        "alerts"
+        "alerts",
+        "ribbon",
+        "week",
+        "timeline",
+        "stats",
+        "sun",
+        "narrative"
       ]
     },
     {

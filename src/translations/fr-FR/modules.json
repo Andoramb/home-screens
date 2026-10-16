@@ -298,7 +298,9 @@
     },
     "loading": "Récupération des prévisions…",
     "notUpdating": "La météo ne se met pas à jour",
-    "notAvailableForSource": "Non disponible avec ta source météo"
+    "notAvailableForSource": "Non disponible avec ta source météo",
+    "rightNow": "En ce moment",
+    "sunrise": "Lever du soleil"
   },
   "air-quality": {
     "loading": "Chargement de la qualité de l'air…",

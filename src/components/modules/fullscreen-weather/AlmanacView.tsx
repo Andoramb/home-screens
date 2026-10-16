@@ -6,7 +6,8 @@ import { getWeatherIcon } from '@/lib/weather-icons';
 import type { WeatherViewProps } from './weather-view-utils';
 import { pressureForUnits, windUnitLabel } from '@/lib/weather/units';
 import { hourLabel, smoothPath, tzHour, hoursWithin, HOURLY_RAIN_SHOWN_PCT } from './weather-view-utils';
-import { tempColor } from './temp-ramp';
+import { tempColor } from '@/lib/weather/temp-ramp';
+import { moonPhaseKey } from '@/lib/weather/moon-phase-name';
 import { Card, Label, TopBar, AlertBand, MiniHero } from './weather-parts';
 
 /** Every bento card takes its placement from the caller, not from itself. */
@@ -209,12 +210,13 @@ function MoonCard({ p, place }: CardProps) {
   const { s, u } = p.scale;
   const illum = SunCalc.getMoonIllumination(p.now);
   const pct = Math.round(illum.fraction * 100);
-  const phaseKey = phaseNameKey(illum.phase);
+  const phaseKey = moonPhaseKey(illum.phase);
 
   // Terminator geometry. `c` runs +1 (new) -> 0 (quarter) -> -1 (full).
-  // Render = lit disc, then a dark half on the unlit limb, then an ellipse of
-  // width |c|*R that is dark for a crescent (c > 0) and lit for a gibbous
-  // (c < 0). Verified at all four quarters plus both crescents.
+  // Render = lit disc, then the unlit half covered by a rectangle (a circle
+  // shifted by one radius only meets the middle at the equator and left lit
+  // slivers at the poles), then an ellipse of width |c|*R that is dark for a
+  // crescent (c > 0) and lit for a gibbous (c < 0).
   const c = Math.cos(2 * Math.PI * illum.phase);
   const waxing = illum.phase < 0.5;
   const uid = useId();
@@ -245,7 +247,7 @@ function MoonCard({ p, place }: CardProps) {
           <circle cx="75" cy="75" r="62" fill={DARK} />
           <g clipPath={`url(#${clipId})`}>
             <circle cx="75" cy="75" r={R} fill={LIT} />
-            <circle cx={waxing ? 75 - R : 75 + R} cy="75" r={R} fill={DARK} />
+            <rect x={waxing ? 75 - R : 75} y={75 - R} width={R} height={R * 2} fill={DARK} />
             <ellipse cx="75" cy="75" rx={Math.abs(c) * R} ry={R} fill={c > 0 ? DARK : LIT} />
           </g>
           <circle cx="75" cy="75" r="62" fill="none" stroke="var(--fsw-border)" strokeWidth={1.5} />
@@ -255,16 +257,6 @@ function MoonCard({ p, place }: CardProps) {
   );
 }
 
-function phaseNameKey(phase: number): string {
-  if (phase < 0.03 || phase > 0.97) return 'new';
-  if (phase < 0.22) return 'waxingCrescent';
-  if (phase < 0.28) return 'firstQuarter';
-  if (phase < 0.47) return 'waxingGibbous';
-  if (phase < 0.53) return 'full';
-  if (phase < 0.72) return 'waningGibbous';
-  if (phase < 0.78) return 'lastQuarter';
-  return 'waningCrescent';
-}
 
 function WindCard({ p, place }: CardProps) {
   const { s, u } = p.scale;

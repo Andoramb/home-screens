@@ -4593,6 +4593,8 @@
       "daysToShow": "Days to Show",
       "showFeaturedDay": "Show large first day",
       "showRelativeDayLabels": "Use Today and Tmrw labels",
+      "uvIndex": "UV Index",
+      "sunTimes": "Sunrise and sunset",
       "feelsLike": "Feels Like",
       "highLow": "High / Low",
       "precipitation": "Precipitation",
@@ -4614,7 +4616,13 @@
         "compact": "Compact",
         "table": "Table",
         "precipitation": "Precipitation",
-        "alerts": "Weather Alerts"
+        "alerts": "Weather Alerts",
+        "ribbon": "Temperature ribbon",
+        "week": "Week ahead",
+        "timeline": "Hour by hour",
+        "stats": "Stats",
+        "sun": "Sun and moon",
+        "narrative": "Written forecast"
       },
       "providers": {
         "global": "Same as Settings",

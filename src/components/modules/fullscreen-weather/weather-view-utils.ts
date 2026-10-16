@@ -2,6 +2,7 @@ import type { HourlyWeather, ForecastDay, MinutelyPrecip, WeatherAlert } from '@
 import type { FullscreenWeatherConfig } from '@/types/config';
 import { FULL_BAR_INTENSITY, isPrecipitating, precipitationOutlook } from '@/lib/weather/precipitation';
 import type { SkyCondition } from './sky-layer';
+import type { SunTimes } from '@/lib/weather/sun-times';
 
 /**
  * Scale system shared by every view.
@@ -152,31 +153,8 @@ export interface WeatherViewProps {
  * `isNight` is constant for the whole day and `isNightHour` returns it for
  * every hour, rather than pretending there was a sunrise at midnight.
  */
-export interface SunTimes {
-  sunrise: Date | null;
-  sunset: Date | null;
-  /** Fractional hours in the display timezone, for placing markers on a 24h axis. */
-  sunriseHour: number;
-  sunsetHour: number;
-  isNight: boolean;
-  dayLengthMs: number;
-}
-
-/**
- * Whether a wall-clock hour falls outside today's daylight window.
- *
- * One implementation for the sky layer, the ribbon's night shading, and the
- * hero: the ribbon applies today's window to every hour it draws, which is a
- * fair approximation over 48 hours and avoids a SunCalc call per point.
- */
-export function isNightHour(hour: number, sun: SunTimes): boolean {
-  if (!sun.sunrise || !sun.sunset) return sun.isNight;
-  const { sunriseHour, sunsetHour } = sun;
-  if (sunriseHour === sunsetHour) return sun.isNight;
-  return sunriseHour < sunsetHour
-    ? hour < sunriseHour || hour >= sunsetHour
-    : hour < sunriseHour && hour >= sunsetHour;
-}
+export { isNightHour } from '@/lib/weather/sun-times';
+export type { SunTimes } from '@/lib/weather/sun-times';
 
 /** Short hour label: 0 -> "12a", 13 -> "1p"; "00", "13" in 24-hour mode. */
 export function hourLabel(hour: number, timeFormat: '12h' | '24h' = '12h'): string {

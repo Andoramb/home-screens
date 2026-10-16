@@ -4593,6 +4593,8 @@
       "daysToShow": "Días a mostrar",
       "showFeaturedDay": "Mostrar el primer día en grande",
       "showRelativeDayLabels": "Usar Hoy y Mañana",
+      "uvIndex": "Índice UV",
+      "sunTimes": "Amanecer y atardecer",
       "feelsLike": "Sensación térmica",
       "highLow": "Máx. / mín.",
       "precipitation": "Precipitación",
@@ -4614,7 +4616,13 @@
         "compact": "Compacta",
         "table": "Tabla",
         "precipitation": "Precipitación",
-        "alerts": "Alertas meteorológicas"
+        "alerts": "Alertas meteorológicas",
+        "ribbon": "Curva de temperatura",
+        "week": "La semana",
+        "timeline": "Hora a hora",
+        "stats": "Datos",
+        "sun": "Sol y luna",
+        "narrative": "Pronóstico en texto"
       },
       "providers": {
         "global": "El mismo que en Ajustes",

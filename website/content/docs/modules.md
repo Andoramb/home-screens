@@ -85,7 +85,7 @@ Ambient displays that fill the whole screen. They have no position, size or styl
 
 All of these use the location under **Settings > Location & language**; see [Weather](/docs/weather).
 
-- **Weather** ([reference](/docs/module-reference#weather)): the forecast in {% $stats.weatherViewCount %} views: **Current**, **Hourly**, **Daily**, **Combined**, **Compact**, **Table**, **Precipitation** and **Alerts**. A **Weather source** setting picks a provider other than the default. Works with no key on the default provider.
+- **Weather** ([reference](/docs/module-reference#weather)): the forecast in {% $stats.weatherViewCount %} views: **Current**, **Hourly**, **Daily**, **Combined**, **Compact**, **Table**, **Precipitation**, **Alerts**, and five pieces borrowed from Full-Screen Weather: **Temperature ribbon**, **Week ahead**, **Hour by hour**, **Stats** and **Sun and moon**, plus a **Written forecast** that shows the sentences the US National Weather Service writes for each day. A **Weather source** setting picks a provider other than the default. Works with no key on the default provider.
 - **Moon Phase** ([reference](/docs/module-reference#moon-phase)): tonight's moon, its name and how much of it is lit.
 - **Sunrise / Sunset** ([reference](/docs/module-reference#sunrise-sunset)): today's sunrise and sunset. Views: **Default**, **Arc** and a 24-hour **Circle**.
 - **Air Quality** ([reference](/docs/module-reference#air-quality)): the air quality index and its parts. Needs an OpenWeatherMap key on the Weather page, whichever weather provider you use.

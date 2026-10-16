@@ -4593,6 +4593,8 @@
       "daysToShow": "Dage der vises",
       "showFeaturedDay": "Vis første dag stort",
       "showRelativeDayLabels": "Brug I dag og I morgen",
+      "uvIndex": "UV-indeks",
+      "sunTimes": "Solopgang og solnedgang",
       "feelsLike": "Føles som",
       "highLow": "Maks. / min.",
       "precipitation": "Nedbør",
@@ -4614,7 +4616,13 @@
         "compact": "Kompakt",
         "table": "Tabel",
         "precipitation": "Nedbør",
-        "alerts": "Vejrvarsler"
+        "alerts": "Vejrvarsler",
+        "ribbon": "Temperaturkurve",
+        "week": "Ugen frem",
+        "timeline": "Timekurve",
+        "stats": "Målinger",
+        "sun": "Sol og måne",
+        "narrative": "Skrevet udsigt"
       },
       "providers": {
         "global": "Samme som i Indstillinger",

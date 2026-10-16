@@ -298,7 +298,9 @@
     },
     "loading": "Voorspelling ophalen…",
     "notUpdating": "Het weer wordt niet bijgewerkt",
-    "notAvailableForSource": "Niet beschikbaar bij jouw weerbron"
+    "notAvailableForSource": "Niet beschikbaar bij jouw weerbron",
+    "rightNow": "Op dit moment",
+    "sunrise": "Zonsopkomst"
   },
   "air-quality": {
     "loading": "Luchtkwaliteit laden…",

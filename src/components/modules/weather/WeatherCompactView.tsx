@@ -9,7 +9,7 @@ import { WeatherEmptyState } from './WeatherEmptyState';
 import { getLocalizedConditionLabel } from './condition-label';
 import type { WeatherViewProps } from './types';
 
-export default function WeatherCompactView({ config, hourly, forecast, units, scaledFontSize }: WeatherViewProps) {
+export default function WeatherCompactView({ config, hourly, forecast, units, timezone, timeFormat, scaledFontSize, latitude, longitude }: WeatherViewProps) {
   const t = useTranslate('modules');
   const tWeather = useTranslate('weather');
   const current = hourly[0];
@@ -24,7 +24,7 @@ export default function WeatherCompactView({ config, hourly, forecast, units, sc
       today != null && config.showHighLow !== false, showFeelsLike,
       config.showPrecipitation !== false, config.showHumidity, config.showWind,
       config.showPressure, config.showVisibility, config.showDewPoint,
-      current?.description,
+      config.showUV, config.showSunTimes, current?.description,
     ].join('|'),
   );
 
@@ -81,7 +81,7 @@ export default function WeatherCompactView({ config, hourly, forecast, units, sc
               {t('weather.feelsShort', { temp: `${Math.round(current.feelsLike as number)}°` })}
             </span>
           )}
-          <CurrentWeatherStats config={config} current={current} units={units} fontSize="0.7em" />
+          <CurrentWeatherStats config={config} current={current} units={units} fontSize="0.7em" latitude={latitude} longitude={longitude} timezone={timezone} timeFormat={timeFormat} />
         </div>
       </div>
     </div>

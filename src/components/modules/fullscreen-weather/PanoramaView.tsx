@@ -10,7 +10,7 @@ import {
   hourLabel, smoothPath, nowcastVerdict, tzHour, isNightHour, spanHours,
   LANDSCAPE_LEFT_FRACTION, STRIP_COLUMNS, CANVAS_PAD_X_U, CARD_PAD_X_U, HOURLY_RAIN_SHOWN_PCT,
 } from './weather-view-utils';
-import { tempColor } from './temp-ramp';
+import { tempColor } from '@/lib/weather/temp-ramp';
 import { Card, Label, TopBar, AlertBand, DayRangeBars, DayTallBands, PrecipLegendHeader } from './weather-parts';
 import { HourlyRows } from './HourlyView';
 import { FIT_MEASURE_ATTR } from '@/hooks/useFitScale';

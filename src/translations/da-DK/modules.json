@@ -298,7 +298,9 @@
     },
     "loading": "Henter vejrudsigten…",
     "notUpdating": "Vejret opdaterer ikke",
-    "notAvailableForSource": "Ikke tilgængeligt fra din vejrkilde"
+    "notAvailableForSource": "Ikke tilgængeligt fra din vejrkilde",
+    "rightNow": "Lige nu",
+    "sunrise": "Solopgang"
   },
   "air-quality": {
     "loading": "Indlæser luftkvalitet…",

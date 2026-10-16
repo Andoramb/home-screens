@@ -58,6 +58,6 @@ If you run your own LibreWXR at home, enter its address under **Settings > Weath
 
 ## Next steps
 
-- [Modules](/docs/modules#weather-and-environment): the weather module's eight views and the full-screen weather wall
+- [Modules](/docs/modules#weather-and-environment): the weather module's fourteen views and the full-screen weather wall
 - [Weather not loading](/docs/troubleshooting#weather-not-loading) if the module shows an error
 - [API keys](/docs/calendars#api-keys) for the other services that want one

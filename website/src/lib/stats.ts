@@ -13,7 +13,7 @@ export const MODULE_CATEGORY_COUNT = 9;
 export const WEATHER_PROVIDER_COUNT = 9;
 export const STANDINGS_LEAGUE_COUNT = 15;
 export const CLOCK_VIEW_COUNT = 18;
-export const WEATHER_VIEW_COUNT = 8;
+export const WEATHER_VIEW_COUNT = 14;
 export const SHAPE_VIEW_COUNT = 15;
 export const LOCALE_COUNT = 7;
 

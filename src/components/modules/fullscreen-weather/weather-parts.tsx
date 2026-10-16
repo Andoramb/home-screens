@@ -10,7 +10,7 @@ import {
   alertTone, cachedFormat, weekRange,
   CARD_PAD_X_U, CARD_PAD_Y_U, DAILY_RAIN_SHOWN_PCT, MIN_BAR_PCT,
 } from './weather-view-utils';
-import { tempColor } from './temp-ramp';
+import { tempColor } from '@/lib/weather/temp-ramp';
 import { isoDateInTZ } from '@/lib/timezone';
 
 /** Section label: small, tracked-out, muted. Shared by every card. */

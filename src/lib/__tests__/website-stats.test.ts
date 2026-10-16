@@ -47,6 +47,9 @@ function countWeatherProviderFiles(): number {
     'eccc-stations.ts',
     'today-record.ts',
     'precipitation.ts',
+    'sun-times.ts',
+    'temp-ramp.ts',
+    'moon-phase-name.ts',
   ]);
   return fs
     .readdirSync(weatherDir)

@@ -4593,6 +4593,8 @@
       "daysToShow": "Aantal dagen tonen",
       "showFeaturedDay": "Eerste dag groot tonen",
       "showRelativeDayLabels": "Vandaag en morgen gebruiken",
+      "uvIndex": "UV-index",
+      "sunTimes": "Zonsopkomst en -ondergang",
       "feelsLike": "Gevoelstemperatuur",
       "highLow": "Hoog / laag",
       "precipitation": "Neerslag",
@@ -4614,7 +4616,13 @@
         "compact": "Compact",
         "table": "Tabel",
         "precipitation": "Neerslag",
-        "alerts": "Weerwaarschuwingen"
+        "alerts": "Weerwaarschuwingen",
+        "ribbon": "Temperatuurcurve",
+        "week": "Week vooruit",
+        "timeline": "Uur voor uur",
+        "stats": "Metingen",
+        "sun": "Zon en maan",
+        "narrative": "Geschreven verwachting"
       },
       "providers": {
         "global": "Zoals in Instellingen",

@@ -298,7 +298,9 @@
     },
     "loading": "Getting the forecast…",
     "notUpdating": "Weather is not updating",
-    "notAvailableForSource": "Not available from your weather source"
+    "notAvailableForSource": "Not available from your weather source",
+    "rightNow": "Right now",
+    "sunrise": "Sunrise"
   },
   "air-quality": {
     "loading": "Loading air quality…",

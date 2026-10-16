@@ -61,6 +61,13 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
     { value: 'table', label: t('configSections.weather.views.table') },
     { value: 'precipitation', label: t('configSections.weather.views.precipitation') },
     { value: 'alerts', label: t('configSections.weather.views.alerts') },
+    // The Full-Screen Weather module's pieces, one option each.
+    { value: 'ribbon', label: t('configSections.weather.views.ribbon') },
+    { value: 'week', label: t('configSections.weather.views.week') },
+    { value: 'timeline', label: t('configSections.weather.views.timeline') },
+    { value: 'stats', label: t('configSections.weather.views.stats') },
+    { value: 'sun', label: t('configSections.weather.views.sun') },
+    { value: 'narrative', label: t('configSections.weather.views.narrative') },
   ];
   const { config: c, set } = useModuleConfig<Partial<WeatherConfig>>(mod, screenId);
 
@@ -119,11 +126,17 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
     ? configuredProviders.filter((p) => PROVIDER_CAPS[p]?.[viewRequirement])
     : configuredProviders;
 
-  const showsHours = view === 'hourly' || view === 'combined';
-  const showsDays = view === 'daily' || view === 'combined' || view === 'table';
+  const showsHours = ['hourly', 'combined', 'ribbon', 'timeline'].includes(view);
+  const showsDays = ['daily', 'combined', 'table', 'week', 'narrative'].includes(view);
   const showsCurrent = ['current', 'hourly', 'combined', 'compact'].includes(view);
-  // Alerts and precipitation views have no configurable data toggles
-  const showsStats = !['alerts', 'precipitation'].includes(view);
+  // Views with no configurable data toggles: alerts and precipitation have
+  // none, and the full-screen pieces draw their fixed set (the ribbon and
+  // timeline always show rain, the stats view shows whatever the provider has).
+  const showsStats = !['alerts', 'precipitation', 'ribbon', 'timeline', 'stats', 'sun', 'narrative'].includes(view);
+  // Icon style applies wherever a condition icon is drawn.
+  const showsIcons = showsStats || view === 'timeline' || view === 'narrative';
+  // The chips the current and compact views can add beside their stats.
+  const showsChips = view === 'current' || view === 'compact';
 
   return (
     <>
@@ -161,7 +174,7 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
       {view === 'alerts' && caps.alerts && (
         <Toggle label={t('configSections.weather.hideWhenNoAlerts')} checked={!!c.hideWhenNoAlerts} onChange={(v) => set({ hideWhenNoAlerts: v })} />
       )}
-      {showsStats && (
+      {showsIcons && (
         <LabeledSelect
           label={t('configSections.weather.iconStyle')}
           value={c.iconSet ?? 'color'}
@@ -251,6 +264,12 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
           )}
           {caps.dewPoint && (
             <Toggle label={t('configSections.weather.dewPoint')} checked={!!c.showDewPoint} onChange={(v) => set({ showDewPoint: v })} />
+          )}
+          {showsChips && caps.uv && (
+            <Toggle label={t('configSections.weather.uvIndex')} checked={!!c.showUV} onChange={(v) => set({ showUV: v })} />
+          )}
+          {showsChips && (
+            <Toggle label={t('configSections.weather.sunTimes')} checked={!!c.showSunTimes} onChange={(v) => set({ showSunTimes: v })} />
           )}
         </>
       )}

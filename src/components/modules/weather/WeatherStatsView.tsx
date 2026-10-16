@@ -1,0 +1,151 @@
+'use client';
+
+import { Droplets, Gauge, Sun, Sunrise, Sunset, Wind, type LucideIcon } from 'lucide-react';
+import { TEXT_OPACITY } from '@/lib/constants';
+import { useFormattingLocale, useTranslate } from '@/i18n';
+import { useFitFontSize } from '@/hooks/useFitFontSize';
+import { formatTimeInTZ } from '@/lib/timezone';
+import { decompose, formatDuration } from '@/lib/duration-format';
+import { pressureForUnits, windUnitLabel } from '@/lib/weather/units';
+import { hoursWithin } from '../fullscreen-weather/weather-view-utils';
+import { ViewTitle, useSunTimes, useViewBox } from './chart-parts';
+import { WeatherEmptyState } from './WeatherEmptyState';
+import type { WeatherViewProps } from './types';
+
+/**
+ * The Panorama stat rail as a module view: wind, humidity, UV, pressure,
+ * sunrise and sunset. Each cell drops out when the provider has no figure.
+ *
+ * A squarish box gets a grid with a note under each number (dew point, the
+ * UV advice, the pressure trend, the day's length); a wide shallow box gets
+ * one row of numbers; a narrow column gets a list with the number on the
+ * right. The cells are the same in every shape, only the arrangement moves.
+ */
+type Mode = 'grid' | 'row' | 'list';
+
+interface Cell {
+  key: string;
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  unit?: string;
+  note?: React.ReactNode;
+  /** UV only: a 0-1 position on the meter under the number. */
+  meter?: number;
+}
+
+/** UV advice bands, as the full-screen UV card draws them. */
+function uvKey(uv: number): 'low' | 'moderate' | 'high' | 'veryHigh' {
+  return uv >= 8 ? 'veryHigh' : uv >= 6 ? 'high' : uv >= 3 ? 'moderate' : 'low';
+}
+
+export default function WeatherStatsView({ config, hourly, units, timezone, timeFormat, scaledFontSize, latitude, longitude }: WeatherViewProps) {
+  const t = useTranslate('modules');
+  const locale = useFormattingLocale();
+  const sun = useSunTimes(latitude, longitude, timezone);
+  const [outerRef, box] = useViewBox();
+  const now = hourly[0];
+
+  const clock = { timezone, locale, hour12: timeFormat !== '24h' };
+  const cells: Cell[] = [];
+  if (now?.windSpeed != null) {
+    cells.push({ key: 'wind', icon: Wind, label: t('fullscreen-weather.stats.wind'), value: String(Math.round(now.windSpeed)), unit: windUnitLabel(units) });
+  }
+  if (now?.humidity != null) {
+    cells.push({
+      key: 'humidity', icon: Droplets, label: t('fullscreen-weather.stats.humidity'), value: String(Math.round(now.humidity)), unit: '%',
+      note: now.dewPoint != null ? t('fullscreen-weather.cards.dewPoint', { temp: Math.round(now.dewPoint) }) : undefined,
+    });
+  }
+  if (now?.uvIndex != null) {
+    cells.push({
+      key: 'uv', icon: Sun, label: t('fullscreen-weather.stats.uv'), value: String(now.uvIndex),
+      note: t(`fullscreen-weather.uv.${uvKey(now.uvIndex)}`), meter: Math.min(1, now.uvIndex / 11),
+    });
+  }
+  if (now?.pressure != null) {
+    const reading = pressureForUnits(now.pressure, units);
+    const series = hoursWithin(hourly, 12).map((h) => h.pressure).filter((v): v is number => v != null);
+    const trend = series.length > 1 ? series[series.length - 1] - series[0] : 0;
+    cells.push({
+      key: 'pressure', icon: Gauge, label: t('fullscreen-weather.stats.pressure'), value: reading.value, unit: reading.unit,
+      note: series.length > 1 ? t(trend < -1 ? 'fullscreen-weather.cards.pressureFalling' : trend > 1 ? 'fullscreen-weather.cards.pressureRising' : 'fullscreen-weather.cards.pressureSteady') : undefined,
+    });
+  }
+  if (sun.sunrise) {
+    const { days, hours, minutes } = decompose(sun.dayLengthMs);
+    const length = formatDuration([{ unit: 'hours', value: days * 24 + hours }, { unit: 'minutes', value: minutes }], 'units', locale);
+    cells.push({ key: 'sunrise', icon: Sunrise, label: t('weather.sunrise'), value: formatTimeInTZ(sun.sunrise, clock), note: `${length} ${t('fullscreen-weather.cards.daylight')}` });
+  }
+  if (sun.sunset) {
+    cells.push({ key: 'sunset', icon: Sunset, label: t('fullscreen-weather.stats.sunset'), value: formatTimeInTZ(sun.sunset, clock) });
+  }
+
+  const mode: Mode = box.width > box.height * 3 ? 'row' : box.width < scaledFontSize * 16 ? 'list' : 'grid';
+  const columns = cells.length >= 5 ? 3 : cells.length >= 3 ? 2 : 1;
+
+  const { boxRef, contentRef, fontSize } = useFitFontSize(
+    scaledFontSize,
+    [mode, cells.map((c) => c.key).join(','), config.showTitle !== false].join('|'),
+  );
+
+  return (
+    <div ref={outerRef} className="w-full h-full">
+      <div ref={boxRef} className="w-full h-full overflow-hidden" style={{ fontSize: `${fontSize}px` }} data-weather-stats-mode={mode}>
+        {/* Title and cells measured together (see WeatherWeekView). The cells
+            sit in a block with auto margins rather than a centred container:
+            auto margins never go negative, so a block taller than its box
+            overflows past the bottom edge, where the fit loop measures it,
+            instead of splitting the overflow across both. */}
+        <div ref={contentRef} className="h-full flex flex-col">
+          {config.showTitle !== false && mode !== 'row' && <ViewTitle>{t('weather.rightNow')}</ViewTitle>}
+          {cells.length === 0 ? (
+            <WeatherEmptyState />
+          ) : (
+            <div
+              className={mode === 'grid' ? 'my-auto grid gap-x-[1em] gap-y-[0.5em]' : mode === 'row' ? 'my-auto flex items-center justify-between gap-[0.6em]' : 'my-auto flex flex-col'}
+              style={mode === 'grid' ? { gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` } : undefined}
+            >
+              {cells.map((c, i) => <StatCell key={c.key} cell={c} mode={mode} first={i === 0} />)}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function StatCell({ cell, mode, first }: { cell: Cell; mode: Mode; first: boolean }) {
+  const Icon = cell.icon;
+  const label = (
+    <span className="inline-flex items-center gap-[0.4em] whitespace-nowrap" style={{ fontSize: mode === 'list' ? '0.85em' : '0.7em', opacity: TEXT_OPACITY.secondary }}>
+      <Icon size="1.1em" strokeWidth={1.6} aria-hidden="true" />{cell.label}
+    </span>
+  );
+  const value = (
+    <span className="tabular-nums whitespace-nowrap leading-none" style={{ fontSize: mode === 'list' ? '1.1em' : '1.7em', fontWeight: mode === 'list' ? 500 : 300 }}>
+      {cell.value}{cell.unit && <span style={{ fontSize: '0.5em', opacity: TEXT_OPACITY.secondary, marginLeft: '0.25em', fontWeight: 400 }}>{cell.unit}</span>}
+    </span>
+  );
+  if (mode === 'list') {
+    return (
+      <div data-testid={`weather-stat-${cell.key}`} className="flex items-center justify-between gap-[1em] py-[0.35em]" style={{ borderTop: first ? 0 : '1px solid color-mix(in srgb, currentColor 10%, transparent)' }}>
+        {label}{value}
+      </div>
+    );
+  }
+  return (
+    <div data-testid={`weather-stat-${cell.key}`} className={`flex flex-col gap-[0.1em] min-w-0 ${mode === 'row' ? 'items-center text-center flex-1' : ''}`}>
+      {label}
+      {value}
+      {mode === 'grid' && cell.note && (
+        <span className="line-clamp-2" style={{ fontSize: '0.7em', opacity: TEXT_OPACITY.dim }}>{cell.note}</span>
+      )}
+      {mode === 'grid' && cell.meter != null && (
+        <div className="relative rounded-full mt-[0.35em]" style={{ height: '0.3em', maxWidth: '8em', background: 'linear-gradient(90deg,#22c55e,#eab308,#f97316,#dc2626,#7c3aed)' }} aria-hidden="true">
+          <span className="absolute rounded-full" style={{ top: '50%', left: `${cell.meter * 100}%`, width: '0.7em', height: '0.7em', transform: 'translate(-50%,-50%)', background: 'rgba(0,0,0,.55)', border: '2px solid currentColor' }} />
+        </div>
+      )}
+    </div>
+  );
+}

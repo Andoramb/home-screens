@@ -47,6 +47,14 @@ const WEATHER_HOURLY_4 = {
   forecast: [{ date: '2099-07-07', high: 78, low: 61, icon: 'clear-day', description: 'Sunny' }],
 };
 
+/** Weather body with a UV reading on the current hour. */
+const WEATHER_UV = {
+  hourly: [
+    { time: '2099-07-07T12:00:00Z', temp: 72, feelsLike: 70, humidity: 55, icon: 'clear-day', description: 'Clear', windSpeed: 8, precipProbability: 10, uvIndex: 3 },
+  ],
+  forecast: [{ date: '2099-07-07', high: 78, low: 61, icon: 'clear-day', description: 'Sunny' }],
+};
+
 const WEATHER_DAILY = {
   hourly: [],
   forecast: [
@@ -113,6 +121,18 @@ export const WEATHER_ENVIRONMENT_VARIANTS: ConfigVariant[] = [
       await expect(mod).not.toContainText('Today');
       await expect(mod).not.toContainText('Tmrw');
     },
+  },
+  // showUV adds a UV chip to the current view's stats row (uvIndex on the hour).
+  {
+    type: 'weather', name: 'show-uv', kind: 'networked', stubKey: 'weather', stubBody: WEATHER_UV,
+    config: { view: 'current', showUV: true },
+    expect: has('UV 3'),
+  },
+  // showSunTimes adds sunrise and sunset chips, computed from the matrix location.
+  {
+    type: 'weather', name: 'show-sun-times', kind: 'networked', stubKey: 'weather',
+    config: { view: 'current', showSunTimes: true },
+    expect: async (mod) => { await child('[data-testid="weather-stat-sunrise"]')(mod); await child('[data-testid="weather-stat-sunset"]')(mod); },
   },
   // showLocation adds a place-name header above the view, sourced from
   // settings.locationName (matrixSettings has coordinates but no name).

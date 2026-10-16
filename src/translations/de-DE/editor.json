@@ -4593,6 +4593,8 @@
       "daysToShow": "Anzuzeigende Tage",
       "showFeaturedDay": "Ersten Tag groß anzeigen",
       "showRelativeDayLabels": "Heute und Morgen verwenden",
+      "uvIndex": "UV-Index",
+      "sunTimes": "Sonnenauf- und -untergang",
       "feelsLike": "Gefühlt",
       "highLow": "Höchst-/Tiefstwert",
       "precipitation": "Niederschlag",
@@ -4614,7 +4616,13 @@
         "compact": "Kompakt",
         "table": "Tabelle",
         "precipitation": "Niederschlag",
-        "alerts": "Wetterwarnungen"
+        "alerts": "Wetterwarnungen",
+        "ribbon": "Temperaturkurve",
+        "week": "Wochenausblick",
+        "timeline": "Stunde für Stunde",
+        "stats": "Messwerte",
+        "sun": "Sonne und Mond",
+        "narrative": "Wetterbericht"
       },
       "providers": {
         "global": "Wie in den Einstellungen",
