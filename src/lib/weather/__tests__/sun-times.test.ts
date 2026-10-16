@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALWAYS_DAY, isNightHour, sunTimesFor } from '../sun-times';
+import { ALWAYS_DAY, isNightHour, nightBandRadius, sunTimesFor } from '../sun-times';
 
 // Prior Lake, MN on an October afternoon: sunrise about 7:26, sunset about 6:27 local.
 const PRIOR_LAKE = { lat: 44.7133, lon: -93.4227, tz: 'America/Chicago' };
@@ -56,5 +56,27 @@ describe('isNightHour', () => {
     expect(isNightHour(8, sun)).toBe(false);
     expect(isNightHour(18, sun)).toBe(false);
     expect(isNightHour(19, sun)).toBe(true);
+  });
+});
+
+describe('nightBandRadius', () => {
+  // Day, then a three-hour night run, then day.
+  const hours = [false, false, true, true, true, false].map((night) => ({ night }));
+
+  it('rounds only the ends of a run of night hours laid out across', () => {
+    expect(nightBandRadius(hours, 2, '0.4em', 'row')).toBe('0.4em 0 0 0.4em');
+    expect(nightBandRadius(hours, 3, '0.4em', 'row')).toBe('0 0 0 0');
+    expect(nightBandRadius(hours, 4, '0.4em', 'row')).toBe('0 0.4em 0.4em 0');
+  });
+
+  it('rounds the top of the first and the bottom of the last hour laid out down', () => {
+    expect(nightBandRadius(hours, 2, '8px', 'column')).toBe('8px 8px 0 0');
+    expect(nightBandRadius(hours, 4, '8px', 'column')).toBe('0 0 8px 8px');
+  });
+
+  it('rounds every corner of a lone night hour and of a run at either end of the list', () => {
+    expect(nightBandRadius([{ night: false }, { night: true }, { night: false }], 1, '0.4em', 'row')).toBe('0.4em 0.4em 0.4em 0.4em');
+    expect(nightBandRadius(hours.slice(2), 0, '0.4em', 'row')).toBe('0.4em 0 0 0.4em');
+    expect(nightBandRadius(hours.slice(0, 5), 4, '0.4em', 'row')).toBe('0 0.4em 0.4em 0');
   });
 });

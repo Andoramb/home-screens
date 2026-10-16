@@ -29,6 +29,7 @@ function waHour(overrides: Record<string, unknown> = {}) {
     wind_mph: 11.2,
     condition: { text: 'Sunny', code: 1000 },
     chance_of_rain: 20,
+    is_day: 1,
     ...overrides,
   };
 }
@@ -97,7 +98,7 @@ describe('WeatherAPIProvider', () => {
   it('getHourly picks Fahrenheit/mph fields and the night icon variant when is_day=0', async () => {
     spy = mockWa({
       current: { is_day: 0 },
-      forecast: { forecastday: [{ date: '2026-04-18', day: {}, hour: [waHour()] }] },
+      forecast: { forecastday: [{ date: '2026-04-18', day: {}, hour: [waHour({ is_day: 0 })] }] },
     });
 
     const out = await new WeatherAPIProvider('key').getHourly(44.71, -93.42, 'imperial');
@@ -105,6 +106,26 @@ describe('WeatherAPIProvider', () => {
     expect(out[0].temp).toBe(53.6);
     expect(out[0].windSpeed).toBe(11.2);
     expect(out[0].icon).toBe('moon'); // code 1000, is_day=0
+  });
+
+  it('getHourly reads each hour\'s own day flag, not the current one', async () => {
+    // Fetched in daylight: the afternoon stays a sun and the evening is a moon.
+    spy = mockWa({
+      current: { is_day: 1 },
+      forecast: {
+        forecastday: [{
+          date: '2026-04-18',
+          day: {},
+          hour: [
+            waHour({ time_epoch: NOW_EPOCH, is_day: 1 }),
+            waHour({ time_epoch: NOW_EPOCH + 8 * 3600, is_day: 0 }),
+          ],
+        }],
+      },
+    });
+
+    const out = await new WeatherAPIProvider('key').getHourly(44.71, -93.42, 'imperial');
+    expect(out.map((h) => h.icon)).toEqual(['sun', 'moon']);
   });
 
   it('getHourly drops hours before now', async () => {

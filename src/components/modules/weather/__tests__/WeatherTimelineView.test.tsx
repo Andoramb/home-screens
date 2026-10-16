@@ -26,6 +26,17 @@ describe('WeatherTimelineView', () => {
     expect(screen.getByTestId('weather-timeline-spline').querySelector('path')).toBeTruthy();
   });
 
+  it('shades a run of night hours as one band, rounded only at its ends', () => {
+    stubBox(640, 360);
+    renderView(<WeatherTimelineView {...viewProps({}, { hoursToShow: 12 })} />);
+    // 2 PM to 1 AM Chicago in October: day until sunset, then night to the end.
+    const shaded = screen.getAllByTestId('weather-hour').filter((el) => el.style.background !== '');
+    expect(shaded.length).toBeGreaterThan(2);
+    expect(shaded[0].style.borderRadius).toBe('0.4em 0 0 0.4em');
+    for (const el of shaded.slice(1, -1)) expect(el.style.borderRadius).toBe('0 0 0 0');
+    expect(shaded[shaded.length - 1].style.borderRadius).toBe('0 0.4em 0.4em 0');
+  });
+
   it('runs the hours down the page as rows in a tall box, with the wind unit on every row', () => {
     stubBox(420, 600);
     const { container } = renderView(<WeatherTimelineView {...viewProps({}, { hoursToShow: 8 })} />);

@@ -23,6 +23,8 @@ interface WAHour {
   condition: WACondition;
   chance_of_rain: number;
   uv?: number;
+  /** 1 between sunrise and sunset at that hour, 0 otherwise. */
+  is_day: number;
 }
 
 interface WADay {
@@ -65,7 +67,6 @@ export class WeatherAPIProvider implements WeatherProvider {
     const url = `https://api.weatherapi.com/v1/forecast.json?key=${this.apiKey}&q=${lat},${lon}&days=2&aqi=no`;
     const data = await fetchKeyedWeatherJSON<WAForecastResponse>(url, 'WeatherAPI.com');
     const isCelsius = units === 'metric';
-    const isDay = data.current?.is_day === 1;
 
     const allHours = data.forecast.forecastday.flatMap((d) => d.hour);
     const nowEpoch = Math.floor(Date.now() / 1000);
@@ -78,7 +79,9 @@ export class WeatherAPIProvider implements WeatherProvider {
       temp: isCelsius ? h.temp_c : h.temp_f,
       feelsLike: isCelsius ? h.feelslike_c : h.feelslike_f,
       humidity: h.humidity,
-      icon: this.mapConditionToIcon(h.condition.code, isDay),
+      // Each hour carries its own day flag. Reading `current.is_day` once
+      // painted a whole evening with suns when the fetch happened by day.
+      icon: this.mapConditionToIcon(h.condition.code, h.is_day === 1),
       description: h.condition.text ?? '',
       windSpeed: isCelsius ? h.wind_kph : h.wind_mph,
       precipProbability: h.chance_of_rain ?? 0,

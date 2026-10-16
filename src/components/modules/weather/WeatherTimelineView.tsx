@@ -7,7 +7,7 @@ import { useFormattingLocale, useTranslate } from '@/i18n';
 import { useFitFontSize } from '@/hooks/useFitFontSize';
 import { windUnitLabel } from '@/lib/weather/units';
 import { tempColor } from '@/lib/weather/temp-ramp';
-import { isNightHour } from '@/lib/weather/sun-times';
+import { isNightHour, nightBandRadius } from '@/lib/weather/sun-times';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import type { HourlyWeather } from '@/lib/weather';
 import {
@@ -161,10 +161,11 @@ function Meteogram({ entries, units, boxWidth, fontSize, iconSet, tWeather, grad
             <div
               key={e.i}
               data-testid="weather-hour"
-              className="flex-1 min-w-0 flex flex-col gap-[0.3em] relative rounded-[0.4em]"
+              className="flex-1 min-w-0 flex flex-col gap-[0.3em] relative"
               style={{
                 borderLeft: e.midnight ? DIVIDER : '1px solid transparent',
                 background: e.night ? 'color-mix(in srgb, currentColor 5%, transparent)' : undefined,
+                borderRadius: e.night ? nightBandRadius(entries, e.i, '0.4em', 'row') : undefined,
               }}
             >
               {/* Every band box is sized in the base em, same as the ghost

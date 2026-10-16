@@ -68,3 +68,16 @@ export function sunTimesFor(now: Date, latitude?: number, longitude?: number, ti
   };
   return { ...window, isNight: isNightHour(hoursInTZ(now, timezone), window) };
 }
+
+/**
+ * Corner radii for one hour in a run of night hours, so the run shades as a
+ * single band: rounded where the run starts and ends, square where two night
+ * hours meet. Rounding every hour on its own notched every boundary. `axis`
+ * is the direction the hours run in; `radius` is any CSS length.
+ */
+export function nightBandRadius(hours: readonly { night: boolean }[], i: number, radius: string, axis: 'row' | 'column'): string {
+  const start = hours[i - 1]?.night ? '0' : radius;
+  const end = hours[i + 1]?.night ? '0' : radius;
+  // top-left, top-right, bottom-right, bottom-left
+  return axis === 'row' ? `${start} ${end} ${end} ${start}` : `${start} ${start} ${end} ${end}`;
+}

@@ -71,6 +71,15 @@ async function openManage(page: Page, members?: number) {
   if (members !== undefined) await expect(page.getByRole('button', { name: `Members ${members}`, exact: true })).toBeVisible();
 }
 
+/**
+ * Open the blank chore form from Manage. The bottom-of-list button reads
+ * "Write your own" while the list is empty (the starter card sits above it)
+ * and "Add Chore" once chores exist, so match either.
+ */
+async function openChoreForm(page: Page) {
+  await page.getByRole('button', { name: /^(Write your own|Add Chore)$/ }).first().click();
+}
+
 test.beforeEach(async ({ request }) => {
   // A chore-chart module in config is what surfaces the Chores tab on /remote.
   await putConfig(request, baseConfig({
@@ -85,7 +94,7 @@ test('admin adds a member and it round-trips to family.json', async ({ page, req
   await page.goto('/remote');
   await openManage(page);
 
-  await page.getByRole('button', { name: 'Members' }).click();
+  await page.getByRole('button', { name: /^Members \d+$/ }).click();
   await page.getByRole('button', { name: 'Add person' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Charlie');
   // The list-add and overlay-save buttons share the name "Add Member"; the
@@ -113,7 +122,7 @@ test('a failed member save warns in the sub-view where the edit happened', async
   await page.goto('/remote');
   await openManage(page);
 
-  await page.getByRole('button', { name: 'Members' }).click();
+  await page.getByRole('button', { name: /^Members \d+$/ }).click();
   await page.getByRole('button', { name: 'Add person' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Charlie');
   await page.getByTestId('family-manager').getByRole('button', { name: 'Save', exact: true }).click();
@@ -127,7 +136,7 @@ test('admin edits a member name and it round-trips', async ({ page, request, san
   await page.goto('/remote');
   await openManage(page);
 
-  await page.getByRole('button', { name: 'Members' }).click();
+  await page.getByRole('button', { name: /^Members \d+$/ }).click();
   await page.getByRole('button', { name: 'Edit Avery' }).click();
   await page.getByLabel('Name', { exact: true }).fill('Avery Rose');
   await page.getByRole('button', { name: 'Save', exact: true }).click();
@@ -142,7 +151,7 @@ test('admin deletes a member and it round-trips', async ({ page, request, sandbo
   await page.goto('/remote');
   await openManage(page);
 
-  await page.getByRole('button', { name: 'Members' }).click();
+  await page.getByRole('button', { name: /^Members \d+$/ }).click();
   await page.getByRole('button', { name: 'Remove Avery?' }).click();
   // The overlay's delete button and the ConfirmSheet's confirm both read
   // "Delete Member", scope to the sheet so the click waits for it.
@@ -161,7 +170,7 @@ test('admin adds a chore assigned to a member and it round-trips', async ({ page
   await page.goto('/remote');
   await openManage(page, 1);
 
-  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await openChoreForm(page);
   await page.getByPlaceholder('Chore name...').fill('Water the plants');
   await page.getByRole('button', { name: 'Avery' }).click(); // assignee toggle
   await page.getByRole('button', { name: 'Add Chore' }).last().click();
@@ -184,7 +193,7 @@ test('admin gives a chore to a group and it is saved as the group, with its rota
   await page.goto('/remote');
   await openManage(page, 2);
 
-  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await openChoreForm(page);
   await page.getByPlaceholder('Chore name...').fill('Empty the dishwasher');
   await page.getByRole('button', { name: /^Kids/ }).click();
 
@@ -246,7 +255,7 @@ test('picking a group nobody is in yet warns that the chore would go to no one',
   await seedHouseholdChores(request, sandboxDir, { ...ONE_MEMBER, groups: [{ id: 'g-cousins', name: 'Cousins', memberIds: [] }] });
   await page.goto('/remote');
   await openManage(page, 1);
-  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await openChoreForm(page);
   await page.getByPlaceholder('Chore name...').fill('Walk the dog');
   await expect(page.getByText('Everyone in a group gets the chore.', { exact: false })).toBeVisible();
   await page.getByRole('button', { name: /^Cousins/ }).click();
@@ -331,7 +340,7 @@ test('a household with no groups sees no Groups block on the chore form', async 
   await seedHouseholdChores(request, sandboxDir, ONE_MEMBER);
   await page.goto('/remote');
   await openManage(page, 1);
-  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await openChoreForm(page);
   await expect(page.getByRole('button', { name: 'Avery' })).toBeVisible();
   await expect(page.getByText('Groups', { exact: true })).toHaveCount(0);
 });
@@ -403,7 +412,7 @@ for (const [label, reloadBody] of [['malformed', {}], ['empty', { chores: [] }]]
     await seedHouseholdChores(request, sandboxDir, MEMBER_AND_CHORE);
     await page.goto('/remote');
     await openManage(page);
-    await page.getByRole('button', { name: 'Members' }).click();
+    await page.getByRole('button', { name: /^Members \d+$/ }).click();
     await page.getByRole('button', { name: 'Edit Avery' }).click();
     await page.getByLabel('Name', { exact: true }).fill('Avery Rose');
 
@@ -441,7 +450,7 @@ test('a single-assignee chore saves as fixed rotation', async ({ page, request, 
   await page.goto('/remote');
   await openManage(page, 1);
 
-  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await openChoreForm(page);
   await page.getByPlaceholder('Chore name...').fill('Solo chore');
   await page.getByRole('button', { name: 'Avery' }).click();
 
@@ -463,7 +472,7 @@ test('a multi-assignee chore can be set to rotate daily and it round-trips', asy
   await page.goto('/remote');
   await openManage(page, 2);
 
-  await page.getByRole('button', { name: 'Add Chore' }).first().click();
+  await openChoreForm(page);
   await page.getByPlaceholder('Chore name...').fill('Take out trash');
   await page.getByRole('button', { name: 'Avery' }).click();
   await page.getByRole('button', { name: 'Blair' }).click();
@@ -629,7 +638,7 @@ test('the chore & reward management UI avoids developer jargon', async ({ page, 
   await expect(page.getByPlaceholder('Chore name...')).toBeHidden(); // let the overlay unmount
 
   // Members list.
-  await page.getByRole('button', { name: 'Members' }).click();
+  await page.getByRole('button', { name: /^Members \d+$/ }).click();
   await expectNoJargon();
 
   // Reward add form.
@@ -995,7 +1004,7 @@ test('member avatar and color picks persist through the member form', async ({ p
 
   await page.goto('/remote');
   await openManage(page);
-  await page.getByRole('button', { name: 'Members' }).click();
+  await page.getByRole('button', { name: /^Members \d+$/ }).click();
   await page.getByRole('button', { name: 'Edit Pat' }).click();
 
   await page.getByLabel('Emoji (optional)').fill('👑');

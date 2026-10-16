@@ -2,6 +2,7 @@
 
 import { useId } from 'react';
 import { getWeatherIcon } from '@/lib/weather-icons';
+import { nightBandRadius } from '@/lib/weather/sun-times';
 import { Droplet, Wind } from 'lucide-react';
 import { windUnitLabel } from '@/lib/weather/units';
 import type { WeatherViewProps } from './weather-view-utils';
@@ -240,7 +241,7 @@ export default function HourlyView(p: WeatherViewProps) {
                 position: 'relative', borderRadius: u * .8,
                 borderLeft: e.midnight ? '1px solid var(--fsw-border)' : '1px solid transparent',
               }}>
-                {e.night && <NightShade radius={u * .8} />}
+                {e.night && <NightShade radius={nightBandRadius(entries, e.i, `${u * .8}px`, 'row')} />}
                 {bands.map((b) => (
                   <div key={b.key} style={band(b, b.key === 'rain' ? { alignItems: 'flex-end', padding: '0 18%' } : undefined)}>
                     {columnCell(e, b.key)}
@@ -421,7 +422,7 @@ export function HourlyRows({ p, narrow = false }: { p: WeatherViewProps; narrow?
                 position: 'relative', borderRadius: u * .6,
                 borderTop: e.midnight ? '1px solid var(--fsw-border)' : '1px solid transparent',
               }}>
-                {e.night && <NightShade radius={u * .6} />}
+                {e.night && <NightShade radius={nightBandRadius(entries, e.i, `${u * .6}px`, 'column')} />}
                 {cols.map((c) => (
                   <div key={c.key} style={cell(c, { position: 'relative', ...(c.key === 'track' ? { alignSelf: 'stretch' } : {}) })}>
                     {rowCell(e, c.key)}
@@ -453,6 +454,6 @@ function Dot({ p, temp, size, style }: { p: WeatherViewProps; temp: number; size
 
 /** Night hours: a faint wash of the text colour. An overlay child rather
  *  than a background so it needs no alpha arithmetic on the theme token. */
-function NightShade({ radius }: { radius: number }) {
+function NightShade({ radius }: { radius: string }) {
   return <div aria-hidden style={{ position: 'absolute', inset: 0, borderRadius: radius, background: 'var(--fsw-text)', opacity: .045, pointerEvents: 'none' }} />;
 }
