@@ -2674,7 +2674,13 @@
       "weeklyTotalsHeading": "Wochensumme",
       "memberLine": "{chores} Aufgaben, {tickets} Tickets"
     },
-    "finishFormFirst": "Speichere oder verwirf zuerst das offene Formular."
+    "finishFormFirst": "Speichere oder verwirf zuerst das offene Formular.",
+    "starter": {
+      "openButton": "Aus den Vorschlägen auswählen",
+      "hint": "{count} alltägliche Aufgaben, nach Tageszeit sortiert",
+      "headerButton": "Vorschläge",
+      "columnTitle": "Aufgabenvorschläge"
+    }
   },
   "todoListModal": {
     "title": "Liste bearbeiten",

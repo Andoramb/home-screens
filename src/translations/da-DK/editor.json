@@ -2674,7 +2674,13 @@
       "weeklyTotalsHeading": "Ugen i alt",
       "memberLine": "{chores} pligter, {tickets} billetter"
     },
-    "finishFormFirst": "Gem eller annullér først den åbne formular."
+    "finishFormFirst": "Gem eller annullér først den åbne formular.",
+    "starter": {
+      "openButton": "Vælg fra forslagslisten",
+      "hint": "{count} hverdagspligter, sorteret efter tid på dagen",
+      "headerButton": "Forslagsliste",
+      "columnTitle": "Forslag til pligter"
+    }
   },
   "todoListModal": {
     "title": "Rediger liste",

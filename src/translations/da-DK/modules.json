@@ -732,6 +732,29 @@
       },
       "change": "Ret",
       "close": "Luk"
+    },
+    "starter": {
+      "title": "Forslag til pligter",
+      "intro": "Sæt kryds ved de pligter, I har derhjemme. Hver af dem bliver en almindelig pligt, som du kan ændre senere.",
+      "whoLabel": "Hvem skal gøre dem",
+      "whoHint": "Alle, du sætter kryds ved, får alle de pligter, du vælger.",
+      "whoNobody": "Sæt kryds ved mindst én person eller gruppe.",
+      "sections": {
+        "morning": "Morgen",
+        "afternoon": "Efter skole",
+        "evening": "Aften",
+        "weekly": "Én gang om ugen"
+      },
+      "selectAll": "Alle",
+      "selectNone": "Ingen",
+      "pickedCount": "{picked} af {total}",
+      "alreadyAdded": "Allerede tilføjet",
+      "addButton": {
+        "one": "Tilføj {count} pligt",
+        "other": "Tilføj {count} pligter"
+      },
+      "addButtonNone": "Vælg nogle pligter",
+      "weeklyDay": "Hvilken dag"
     }
   },
   "fullscreen-chore-chart": {

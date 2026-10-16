@@ -180,7 +180,7 @@ export const CHORE_ICONS = [
   'trash', 'utensils', 'utensils-crossed', 'cooking-pot', 'hand-platter',
   'shirt', 'washing-machine', 'towel-rack', 'droplets', 'bath', 'shower-head',
   'toilet', 'soap',
-  'bone', 'paw-print', 'footprints',
+  'bone', 'paw-print', 'footprints', 'dog',
   'flower', 'leaf', 'tree', 'recycle', 'shovel', 'fence',
   'paint-roller', 'hammer', 'blinds',
   'chef-hat', 'microwave', 'refrigerator', 'apple', 'coffee', 'egg',
@@ -188,7 +188,7 @@ export const CHORE_ICONS = [
   'pill', 'alarm-clock', 'timer', 'dumbbell',
   'toy-brick', 'backpack',
   'mail', 'mailbox', 'shopping-cart', 'shopping-bag', 'car', 'bike',
-  'lamp', 'wrench', 'scissors', 'package', 'home', 'key', 'lightbulb', 'wifi',
+  'lamp', 'wrench', 'scissors', 'package', 'home', 'key', 'lightbulb', 'wifi', 'tv',
 ];
 
 // ── Prefix convention ─────────────────────────────────────────────

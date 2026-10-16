@@ -252,6 +252,15 @@
       "title": "Delete \"{name}\"?",
       "description": "The chore goes away. Tickets the kids have already earned for it stay on their cards.",
       "confirmLabel": "Delete Chore"
+    },
+    "starter": {
+      "cardTitle": "Start with ready-made chores",
+      "cardDescription": "{count} everyday chores, sorted by time of day. Pick the ones your house does and change anything later.",
+      "cardButton": "Pick from the list",
+      "cardNoMembers": "Add the people in your house first, then pick chores for them.",
+      "cardNoMembersButton": "Add family members",
+      "writeYourOwn": "Write your own",
+      "link": "Add from the starter list"
     }
   },
   "mealsTab": {

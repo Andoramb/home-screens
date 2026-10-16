@@ -732,6 +732,29 @@
       },
       "change": "Modifier",
       "close": "Fermer"
+    },
+    "starter": {
+      "title": "Tâches toutes prêtes",
+      "intro": "Coche les tâches qui se font chez toi. Chacune devient une tâche normale que tu pourras modifier ensuite.",
+      "whoLabel": "Qui les fait",
+      "whoHint": "Chaque personne cochée reçoit toutes les tâches choisies.",
+      "whoNobody": "Coche au moins une personne ou un groupe.",
+      "sections": {
+        "morning": "Matin",
+        "afternoon": "Après l'école",
+        "evening": "Soir",
+        "weekly": "Une fois par semaine"
+      },
+      "selectAll": "Toutes",
+      "selectNone": "Aucune",
+      "pickedCount": "{picked} sur {total}",
+      "alreadyAdded": "Déjà ajoutée",
+      "addButton": {
+        "one": "Ajouter {count} tâche",
+        "other": "Ajouter {count} tâches"
+      },
+      "addButtonNone": "Choisis des tâches",
+      "weeklyDay": "Quel jour"
     }
   },
   "fullscreen-chore-chart": {

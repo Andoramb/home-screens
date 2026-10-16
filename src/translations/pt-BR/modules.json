@@ -732,6 +732,29 @@
       },
       "change": "Mudar",
       "close": "Fechar"
+    },
+    "starter": {
+      "title": "Tarefas sugeridas",
+      "intro": "Marque as tarefas que vocês fazem em casa. Cada uma vira uma tarefa normal, que você pode mudar depois.",
+      "whoLabel": "Quem vai fazer",
+      "whoHint": "Todo mundo que você marcar recebe todas as tarefas escolhidas.",
+      "whoNobody": "Marque pelo menos uma pessoa ou grupo.",
+      "sections": {
+        "morning": "Manhã",
+        "afternoon": "Depois da escola",
+        "evening": "Noite",
+        "weekly": "Uma vez por semana"
+      },
+      "selectAll": "Todas",
+      "selectNone": "Nenhuma",
+      "pickedCount": "{picked} de {total}",
+      "alreadyAdded": "Já adicionada",
+      "addButton": {
+        "one": "Adicionar {count} tarefa",
+        "other": "Adicionar {count} tarefas"
+      },
+      "addButtonNone": "Escolha algumas tarefas",
+      "weeklyDay": "Em qual dia"
     }
   },
   "fullscreen-chore-chart": {

@@ -1,0 +1,32 @@
+import type { StarterChoreId } from '../starter-chores-catalog';
+
+/** Starter chore names, da-DK. Short, spoken to the child, no trailing period. */
+export const DA_DK_STARTER_CHORE_NAMES: Record<StarterChoreId, string> = {
+  'make-bed': 'Red din seng',
+  'brush-teeth': 'Børst tænder',
+  'get-dressed': 'Tag tøj på',
+  'breakfast-plate': 'Spis morgenmad og bær din tallerken ud',
+  'pack-school-bag': 'Pak din skoletaske',
+  'feed-pets': 'Giv dyrene mad',
+  'homework': 'Lav dine lektier',
+  'read-20-minutes': 'Læs i 20 minutter',
+  'practice-instrument': 'Øv dig på dit instrument',
+  'shoes-and-coat': 'Sæt sko og jakke på plads',
+  'unpack-lunch-box': 'Tøm din madkasse',
+  'set-table': 'Dæk bord',
+  'clear-table': 'Ryd af bordet',
+  'load-dishwasher': 'Fyld opvaskemaskinen',
+  'empty-dishwasher': 'Tøm opvaskemaskinen',
+  'tidy-room': 'Ryd op på dit værelse',
+  'clothes-in-hamper': 'Læg beskidt tøj i vasketøjskurven',
+  'brush-teeth-bedtime': 'Børst tænder før sengetid',
+  'screens-off': 'Sluk skærmen ved sengetid',
+  'take-out-trash': 'Gå ud med skraldet',
+  'vacuum-room': 'Støvsug dit værelse',
+  'fold-laundry': 'Læg dit vasketøj sammen og på plads',
+  'water-plants': 'Vand blomsterne',
+  'walk-dog': 'Gå tur med hunden',
+  'clean-bathroom-sink': 'Gør håndvasken ren',
+  'put-groceries-away': 'Hjælp med at pakke varerne ud',
+  'recycling-out': 'Gå ud med genbrugsaffaldet',
+};

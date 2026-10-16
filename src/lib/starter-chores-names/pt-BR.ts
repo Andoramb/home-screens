@@ -1,0 +1,32 @@
+import type { StarterChoreId } from '../starter-chores-catalog';
+
+/** Starter chore names, pt-BR. Short, spoken to the child, no trailing period. */
+export const PT_BR_STARTER_CHORE_NAMES: Record<StarterChoreId, string> = {
+  'make-bed': 'Arrume a cama',
+  'brush-teeth': 'Escove os dentes',
+  'get-dressed': 'Troque de roupa',
+  'breakfast-plate': 'Tome o café da manhã e leve o prato para a pia',
+  'pack-school-bag': 'Arrume a mochila',
+  'feed-pets': 'Dê comida aos bichinhos',
+  'homework': 'Faça a lição de casa',
+  'read-20-minutes': 'Leia por 20 minutos',
+  'practice-instrument': 'Pratique seu instrumento',
+  'shoes-and-coat': 'Guarde os sapatos e o casaco',
+  'unpack-lunch-box': 'Esvazie a lancheira',
+  'set-table': 'Ponha a mesa',
+  'clear-table': 'Tire a mesa',
+  'load-dishwasher': 'Coloque a louça na lava-louças',
+  'empty-dishwasher': 'Esvazie a lava-louças',
+  'tidy-room': 'Arrume o quarto',
+  'clothes-in-hamper': 'Ponha a roupa suja no cesto',
+  'brush-teeth-bedtime': 'Escove os dentes antes de dormir',
+  'screens-off': 'Desligue as telas na hora de dormir',
+  'take-out-trash': 'Leve o lixo para fora',
+  'vacuum-room': 'Passe o aspirador no quarto',
+  'fold-laundry': 'Dobre e guarde suas roupas',
+  'water-plants': 'Regue as plantas',
+  'walk-dog': 'Leve o cachorro para passear',
+  'clean-bathroom-sink': 'Limpe a pia do banheiro',
+  'put-groceries-away': 'Ajude a guardar as compras',
+  'recycling-out': 'Leve o lixo reciclável para fora',
+};

@@ -82,6 +82,71 @@ test('admin view on /remote shows the Manage view', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Manage', exact: true })).toBeVisible();
 });
 
+test('the Manage view offers the starter list and adds the picked chores to the group', async ({ page, request, sandboxDir }) => {
+  // An empty chore list with a Kids group: the start card replaces "No chores yet".
+  await seedHouseholdChores(request, sandboxDir, {
+    members: [
+      { id: 'k1', name: 'Ada', emoji: '', color: '#f472b6' },
+      { id: 'k2', name: 'Bram', emoji: '', color: '#60a5fa' },
+      { id: 'p1', name: 'Mom', emoji: '', color: '#94a3b8' },
+    ],
+    groups: [{ id: 'g-kids', name: 'Kids', memberIds: ['k1', 'k2'] }],
+    chores: [],
+  });
+
+  await page.goto('/remote');
+  await page.getByRole('button', { name: 'Chores', exact: true }).click();
+  await page.getByRole('button', { name: 'Manage', exact: true }).click();
+  await expect(page.getByText('Start with ready-made chores')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Write your own' })).toBeVisible();
+  await page.getByTestId('starter-open').click();
+
+  const sheet = page.getByRole('dialog', { name: 'Starter chores' });
+  await expect(sheet).toBeVisible();
+  // The Kids group is picked by default; the people are not.
+  await expect(sheet.getByRole('button', { name: /Kids/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(sheet.getByRole('button', { name: 'Ada', exact: true })).toHaveAttribute('aria-pressed', 'false');
+  const add = page.getByTestId('starter-add');
+  await expect(add).toBeDisabled();
+  await expect(add).toHaveText('Pick some chores');
+
+  await page.getByTestId('starter-make-bed').click();
+  await page.getByTestId('starter-take-out-trash').click();
+  await expect(add).toHaveText('Add 2 chores');
+  // Weekly starters land on Saturday unless another day is picked for the section.
+  await expect(page.getByTestId('starter-weekly-day-6')).toHaveAttribute('aria-checked', 'true');
+  await page.getByTestId('starter-weekly-day-2').click();
+  // "All" on a section ticks every row in it; the footer counts them.
+  await page.getByTestId('starter-section-afternoon').getByRole('button', { name: 'All', exact: true }).click();
+  await expect(add).toHaveText('Add 7 chores');
+  await page.getByTestId('starter-section-afternoon').getByRole('button', { name: 'None', exact: true }).click();
+  await expect(add).toHaveText('Add 2 chores');
+
+  const saved = page.waitForResponse((r) => r.url().includes('/api/chores/data') && r.request().method() === 'PUT' && r.ok());
+  await add.click();
+  await saved;
+  await expect(sheet).toBeHidden();
+  await expect(page.getByText('Make your bed')).toBeVisible();
+  await expect(page.getByText('Take out the trash')).toBeVisible();
+  await expect(page.getByText('Start with ready-made chores')).toBeHidden();
+
+  // Saved as ordinary chores: daily morning for the bed, weekly on Tuesday for the trash, both to the Kids group.
+  const data = await (await request.get('/api/chores/data')).json();
+  const chores = data.chores as Array<{ name: string; frequency: string; daysOfWeek: number[]; timeOfDay: string; points: number; emoji: string; assigneeIds: string[]; assigneeGroupIds?: string[]; rotation: string }>;
+  expect(chores.map((c) => c.name)).toEqual(['Make your bed', 'Take out the trash']);
+  expect(chores[0]).toMatchObject({ frequency: 'daily', daysOfWeek: [0, 1, 2, 3, 4, 5, 6], timeOfDay: 'morning', points: 1, emoji: 'lucide:bed', assigneeIds: [], assigneeGroupIds: ['g-kids'], rotation: 'fixed' });
+  expect(chores[1]).toMatchObject({ frequency: 'weekly', daysOfWeek: [2], timeOfDay: 'anytime', points: 3, emoji: 'lucide:trash', assigneeGroupIds: ['g-kids'] });
+
+  // Reopened from the link under Add Chore, the two are marked and cannot be picked again.
+  await page.getByTestId('starter-link').click();
+  await expect(sheet).toBeVisible();
+  await expect(page.getByTestId('starter-make-bed')).toHaveAttribute('aria-disabled', 'true');
+  await expect(page.getByTestId('starter-make-bed')).toContainText('Already added');
+  // Playwright refuses a normal click on an aria-disabled control; dispatch one to prove the row ignores taps.
+  await page.getByTestId('starter-make-bed').dispatchEvent('click');
+  await expect(add).toBeDisabled();
+});
+
 test('/chores shows the empty state when no chore module is configured', async ({ page, request }) => {
   await putConfig(request, baseConfig()); // no chore-chart module
   await page.goto('/chores');

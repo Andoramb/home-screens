@@ -1,0 +1,32 @@
+import type { StarterChoreId } from '../starter-chores-catalog';
+
+/** Starter chore names, de-DE. Short, spoken to the child, no trailing period. */
+export const DE_DE_STARTER_CHORE_NAMES: Record<StarterChoreId, string> = {
+  'make-bed': 'Bett machen',
+  'brush-teeth': 'Zähne putzen',
+  'get-dressed': 'Anziehen',
+  'breakfast-plate': 'Frühstücken und Teller abräumen',
+  'pack-school-bag': 'Schultasche packen',
+  'feed-pets': 'Haustiere füttern',
+  'homework': 'Hausaufgaben machen',
+  'read-20-minutes': '20 Minuten lesen',
+  'practice-instrument': 'Instrument üben',
+  'shoes-and-coat': 'Jacke aufhängen und Schuhe wegstellen',
+  'unpack-lunch-box': 'Brotdose ausräumen',
+  'set-table': 'Tisch decken',
+  'clear-table': 'Tisch abräumen',
+  'load-dishwasher': 'Spülmaschine einräumen',
+  'empty-dishwasher': 'Spülmaschine ausräumen',
+  'tidy-room': 'Zimmer aufräumen',
+  'clothes-in-hamper': 'Schmutzige Wäsche in den Wäschekorb',
+  'brush-teeth-bedtime': 'Vor dem Schlafen Zähne putzen',
+  'screens-off': 'Zur Schlafenszeit Bildschirme aus',
+  'take-out-trash': 'Müll rausbringen',
+  'vacuum-room': 'Zimmer staubsaugen',
+  'fold-laundry': 'Wäsche zusammenlegen und wegräumen',
+  'water-plants': 'Blumen gießen',
+  'walk-dog': 'Mit dem Hund Gassi gehen',
+  'clean-bathroom-sink': 'Waschbecken im Bad putzen',
+  'put-groceries-away': 'Einkäufe mit einräumen',
+  'recycling-out': 'Altpapier und Gelben Sack rausbringen',
+};

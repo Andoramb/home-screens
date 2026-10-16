@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useMemo, useState } from 'react';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, ListChecks, Plus } from 'lucide-react';
 import type { FamilyGroup, FamilyMember } from '@/types/family';
 import type { ChoreDefinition, ChoreSettings } from '@/types/config';
 import {
@@ -15,8 +15,10 @@ import { useTranslate, useFormattingLocale } from '@/i18n';
 import { getLocalizedDayNames } from '@/lib/meal-constants';
 import { buildChoreAssigneeLine, buildChoreSummaryLine, getChoreRotationSummaryKey, grabRulesSummary } from '@/components/modules/chore-chart/chore-form-presentation';
 import { DEFAULT_CHORE_ICON } from '@/lib/chore-constants';
+import { STARTER_CHORE_COUNT } from '@/lib/starter-chores';
 import FamilyManager from '@/components/family/FamilyManager';
 import ChoreFormOverlay from './ChoreFormOverlay';
+import StarterChoresOverlay from './StarterChoresOverlay';
 
 // ── Main Exported Component ───────────────────────────────────────
 
@@ -54,6 +56,7 @@ export default function ChoresManageView({
   const [section, setSection] = useState<'members' | 'chores'>('chores');
   const [overlay, setOverlay] = useState<
     | { type: 'chore-form'; chore?: ChoreDefinition }
+    | { type: 'starter' }
     | null
   >(null);
 
@@ -61,6 +64,12 @@ export default function ChoresManageView({
 
   const addChore = (data: Omit<ChoreDefinition, 'id'>) => {
     onChoresChange(addChoreToList(chores, data));
+    setOverlay(null);
+  };
+
+  /** The starter picker's batch: every pick becomes an ordinary chore in one save. */
+  const addChores = (batch: Omit<ChoreDefinition, 'id'>[]) => {
+    onChoresChange(batch.reduce((list, data) => addChoreToList(list, data), chores));
     setOverlay(null);
   };
 
@@ -138,20 +147,64 @@ export default function ChoresManageView({
 
       {section === 'chores' && (
         <div>
+          {/* An empty list opens with the starter list, not a blank page: the
+              one button leads to 27 ready-made chores, and "write your own"
+              below it is the form. With nobody in the family yet, the same
+              card sends people to the Family tab first. */}
           {chores.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px 16px' }}>
-              <p style={{ fontSize: 14, color: 'var(--hs-text-faint)', marginBottom: 4 }}>
-                {t('choresManage.chores.empty')}
+            <div
+              data-testid="starter-card"
+              style={{
+                background: 'var(--hs-bg-panel)',
+                border: '1px solid var(--hs-border)',
+                borderRadius: 16,
+                padding: '18px 16px 16px',
+                textAlign: 'center',
+                margin: '8px 0 14px',
+              }}
+            >
+              <div
+                aria-hidden
+                style={{
+                  width: 48, height: 48, borderRadius: 14, margin: '0 auto 12px',
+                  background: 'color-mix(in srgb, #f59e0b 16%, transparent)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                <ListChecks size={24} color="#f59e0b" />
+              </div>
+              <h4 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700, color: 'var(--hs-text-primary)' }}>
+                {t('choresManage.starter.cardTitle')}
+              </h4>
+              <p style={{ margin: '0 0 14px', fontSize: 13, color: 'var(--hs-text-faint)', lineHeight: 1.4 }}>
+                {members.length === 0
+                  ? t('choresManage.starter.cardNoMembers')
+                  : t('choresManage.starter.cardDescription', { count: STARTER_CHORE_COUNT })}
               </p>
-              {members.length === 0 ? (
-                <p style={{ fontSize: 12, color: 'var(--hs-text-faint)' }}>
-                  {t('choresManage.chores.emptyHintNoMembers')}
-                </p>
-              ) : (
-                <p style={{ fontSize: 12, color: 'var(--hs-text-faint)' }}>
-                  {t('choresManage.chores.emptyHintAddChores')}
-                </p>
-              )}
+              <button
+                className="press-btn"
+                data-testid="starter-open"
+                onClick={() => {
+                  if (members.length === 0) { setSection('members'); return; }
+                  setOverlay({ type: 'starter' });
+                }}
+                style={{
+                  width: '100%',
+                  minHeight: 48,
+                  padding: 14,
+                  borderRadius: 12,
+                  fontSize: 15,
+                  fontWeight: 700,
+                  color: '#fff',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#f59e0b',
+                }}
+              >
+                {members.length === 0
+                  ? t('choresManage.starter.cardNoMembersButton')
+                  : t('choresManage.starter.cardButton')}
+              </button>
             </div>
           )}
 
@@ -281,8 +334,28 @@ export default function ChoresManageView({
             }}
           >
             <Plus size={18} />
-            {t('choresManage.chores.addButton')}
+            {chores.length === 0 && members.length > 0
+              ? t('choresManage.starter.writeYourOwn')
+              : t('choresManage.chores.addButton')}
           </button>
+
+          {/* The list is still reachable once chores exist, in one quiet line. */}
+          {chores.length > 0 && members.length > 0 && (
+            <div style={{ textAlign: 'center', marginTop: 12 }}>
+              <button
+                type="button"
+                className="press-scale-xs"
+                data-testid="starter-link"
+                onClick={() => setOverlay({ type: 'starter' })}
+                style={{
+                  background: 'none', border: 'none', padding: '8px 12px', minHeight: 44,
+                  color: '#f59e0b', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}
+              >
+                {t('choresManage.starter.link')}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -306,6 +379,16 @@ export default function ChoresManageView({
               ? () => deleteChore(overlay.chore!.id)
               : undefined
           }
+          onBack={() => setOverlay(null)}
+        />
+      )}
+
+      {overlay?.type === 'starter' && (
+        <StarterChoresOverlay
+          chores={chores}
+          members={members}
+          groups={groups}
+          onAdd={addChores}
           onBack={() => setOverlay(null)}
         />
       )}

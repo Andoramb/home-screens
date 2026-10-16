@@ -34,7 +34,9 @@ You can add up to 64 people. Existing larger families are preserved. With five o
 
 ## 3. Add chores
 
-Still under **Manage**, add a chore with a name, an emoji, and how many **tickets** it is worth. Then decide when and who:
+The quickest start is the ready-made list. While the chore list is empty, **Manage** shows **Pick from the list**: 27 everyday chores sorted into Morning, After school, Evening and Once a week, each with an icon and a ticket value. Tick the ones your house does, say who they go to (a group such as "Kids" is picked for you when the family has one), choose the day the once-a-week ones land on (Saturday unless you change it), and add them in one go. They become ordinary chores you can change one by one afterwards. The list stays reachable later through **Add from the starter list** under the Add Chore button, and the editor's chore window offers the same list; anything already on your list is marked so it cannot be added twice.
+
+To write a chore yourself, still under **Manage**, add it with a name, an emoji, and how many **tickets** it is worth. Then decide when and who:
 
 - **When:** every day, certain days of the week, or once on a date. Each chore also has a time of day (morning, afternoon, evening, or anytime), which is how the wall groups the list and highlights what is due now.
 - **Who:** one person, several, or a [group](/docs/family#groups) such as "Kids". Give a chore to a group and everyone in it gets it, each with their own tick. Add somebody to the group later and they get it too. With several people you choose how it is shared:

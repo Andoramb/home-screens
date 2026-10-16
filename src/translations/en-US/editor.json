@@ -2674,7 +2674,13 @@
       "weeklyTotalsHeading": "Weekly totals",
       "memberLine": "{chores} chores, {tickets} tickets"
     },
-    "finishFormFirst": "Save or cancel the open form first."
+    "finishFormFirst": "Save or cancel the open form first.",
+    "starter": {
+      "openButton": "Pick from the starter list",
+      "hint": "{count} everyday chores, sorted by time of day",
+      "headerButton": "Starter list",
+      "columnTitle": "Starter chores"
+    }
   },
   "todoListModal": {
     "title": "Edit list",

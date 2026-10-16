@@ -1,0 +1,32 @@
+import type { StarterChoreId } from '../starter-chores-catalog';
+
+/** Starter chore names, nl-NL. Short, spoken to the child, no trailing period. */
+export const NL_NL_STARTER_CHORE_NAMES: Record<StarterChoreId, string> = {
+  'make-bed': 'Bed opmaken',
+  'brush-teeth': 'Tanden poetsen',
+  'get-dressed': 'Aankleden',
+  'breakfast-plate': 'Ontbijten en je bord opruimen',
+  'pack-school-bag': 'Schooltas inpakken',
+  'feed-pets': 'Huisdieren eten geven',
+  'homework': 'Huiswerk maken',
+  'read-20-minutes': '20 minuten lezen',
+  'practice-instrument': 'Oefenen op je instrument',
+  'shoes-and-coat': 'Jas ophangen en schoenen opruimen',
+  'unpack-lunch-box': 'Broodtrommel leegmaken',
+  'set-table': 'Tafel dekken',
+  'clear-table': 'Tafel afruimen',
+  'load-dishwasher': 'Vaatwasser inruimen',
+  'empty-dishwasher': 'Vaatwasser uitruimen',
+  'tidy-room': 'Je kamer opruimen',
+  'clothes-in-hamper': 'Vuile kleren in de wasmand doen',
+  'brush-teeth-bedtime': 'Tanden poetsen voor het slapengaan',
+  'screens-off': 'Schermen uit voor bedtijd',
+  'take-out-trash': 'Vuilnis buitenzetten',
+  'vacuum-room': 'Je kamer stofzuigen',
+  'fold-laundry': 'Je was opvouwen en opruimen',
+  'water-plants': 'Planten water geven',
+  'walk-dog': 'Hond uitlaten',
+  'clean-bathroom-sink': 'Wastafel schoonmaken',
+  'put-groceries-away': 'Boodschappen helpen opruimen',
+  'recycling-out': 'Papier en plastic wegbrengen',
+};

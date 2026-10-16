@@ -1,0 +1,32 @@
+import type { StarterChoreId } from '../starter-chores-catalog';
+
+/** Starter chore names, es-ES. Short, spoken to the child, no trailing period. */
+export const ES_ES_STARTER_CHORE_NAMES: Record<StarterChoreId, string> = {
+  'make-bed': 'Haz la cama',
+  'brush-teeth': 'Lávate los dientes',
+  'get-dressed': 'Vístete',
+  'breakfast-plate': 'Desayuna y recoge tu plato',
+  'pack-school-bag': 'Prepara la mochila del cole',
+  'feed-pets': 'Da de comer a las mascotas',
+  'homework': 'Haz los deberes',
+  'read-20-minutes': 'Lee durante 20 minutos',
+  'practice-instrument': 'Practica con tu instrumento',
+  'shoes-and-coat': 'Guarda los zapatos y el abrigo',
+  'unpack-lunch-box': 'Vacía la fiambrera',
+  'set-table': 'Pon la mesa',
+  'clear-table': 'Recoge la mesa',
+  'load-dishwasher': 'Carga el lavavajillas',
+  'empty-dishwasher': 'Vacía el lavavajillas',
+  'tidy-room': 'Ordena tu cuarto',
+  'clothes-in-hamper': 'Echa la ropa sucia al cesto',
+  'brush-teeth-bedtime': 'Lávate los dientes antes de dormir',
+  'screens-off': 'Apaga las pantallas antes de dormir',
+  'take-out-trash': 'Saca la basura',
+  'vacuum-room': 'Pasa la aspiradora por tu cuarto',
+  'fold-laundry': 'Dobla y guarda tu ropa',
+  'water-plants': 'Riega las plantas',
+  'walk-dog': 'Saca a pasear al perro',
+  'clean-bathroom-sink': 'Limpia el lavabo',
+  'put-groceries-away': 'Ayuda a guardar la compra',
+  'recycling-out': 'Saca el reciclaje',
+};

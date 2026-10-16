@@ -732,6 +732,29 @@
       },
       "change": "Ändern",
       "close": "Schließen"
+    },
+    "starter": {
+      "title": "Aufgabenvorschläge",
+      "intro": "Hake die Aufgaben an, die es bei euch zu Hause gibt. Jede wird zu einer ganz normalen Aufgabe, die du später noch ändern kannst.",
+      "whoLabel": "Wer macht diese Aufgaben",
+      "whoHint": "Alle, die du anhakst, bekommen jede Aufgabe, die du auswählst.",
+      "whoNobody": "Hake mindestens eine Person oder Gruppe an.",
+      "sections": {
+        "morning": "Morgens",
+        "afternoon": "Nach der Schule",
+        "evening": "Abends",
+        "weekly": "Einmal pro Woche"
+      },
+      "selectAll": "Alle",
+      "selectNone": "Keine",
+      "pickedCount": "{picked} von {total}",
+      "alreadyAdded": "Schon dabei",
+      "addButton": {
+        "one": "{count} Aufgabe hinzufügen",
+        "other": "{count} Aufgaben hinzufügen"
+      },
+      "addButtonNone": "Wähle ein paar Aufgaben aus",
+      "weeklyDay": "An welchem Tag"
     }
   },
   "fullscreen-chore-chart": {

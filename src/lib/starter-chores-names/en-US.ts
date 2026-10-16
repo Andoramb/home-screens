@@ -1,0 +1,32 @@
+import type { StarterChoreId } from '../starter-chores-catalog';
+
+/** Starter chore names, en-US. Short, spoken to the child, no trailing period. */
+export const EN_US_STARTER_CHORE_NAMES: Record<StarterChoreId, string> = {
+  'make-bed': 'Make your bed',
+  'brush-teeth': 'Brush your teeth',
+  'get-dressed': 'Get dressed',
+  'breakfast-plate': 'Eat breakfast and clear your plate',
+  'pack-school-bag': 'Pack your school bag',
+  'feed-pets': 'Feed the pets',
+  'homework': 'Do your homework',
+  'read-20-minutes': 'Read for 20 minutes',
+  'practice-instrument': 'Practice your instrument',
+  'shoes-and-coat': 'Put your shoes and coat away',
+  'unpack-lunch-box': 'Unpack your lunch box',
+  'set-table': 'Set the table',
+  'clear-table': 'Clear the table',
+  'load-dishwasher': 'Load the dishwasher',
+  'empty-dishwasher': 'Empty the dishwasher',
+  'tidy-room': 'Tidy your room',
+  'clothes-in-hamper': 'Put dirty clothes in the hamper',
+  'brush-teeth-bedtime': 'Brush your teeth before bed',
+  'screens-off': 'Screens off at bedtime',
+  'take-out-trash': 'Take out the trash',
+  'vacuum-room': 'Vacuum your room',
+  'fold-laundry': 'Fold and put away your laundry',
+  'water-plants': 'Water the plants',
+  'walk-dog': 'Walk the dog',
+  'clean-bathroom-sink': 'Clean the bathroom sink',
+  'put-groceries-away': 'Help put the groceries away',
+  'recycling-out': 'Take the recycling out',
+};

@@ -732,6 +732,29 @@
       },
       "change": "Wijzigen",
       "close": "Sluiten"
+    },
+    "starter": {
+      "title": "Kant-en-klare klusjes",
+      "intro": "Vink de klusjes aan die jullie thuis doen. Ze worden gewone klusjes die je later nog kunt aanpassen.",
+      "whoLabel": "Wie doet deze klusjes",
+      "whoHint": "Iedereen die je aanvinkt, krijgt alle klusjes die je kiest.",
+      "whoNobody": "Vink minstens één persoon of groep aan.",
+      "sections": {
+        "morning": "Ochtend",
+        "afternoon": "Na school",
+        "evening": "Avond",
+        "weekly": "Eén keer per week"
+      },
+      "selectAll": "Alles",
+      "selectNone": "Niets",
+      "pickedCount": "{picked} van {total}",
+      "alreadyAdded": "Al toegevoegd",
+      "addButton": {
+        "one": "{count} klusje toevoegen",
+        "other": "{count} klusjes toevoegen"
+      },
+      "addButtonNone": "Kies een paar klusjes",
+      "weeklyDay": "Op welke dag"
     }
   },
   "fullscreen-chore-chart": {

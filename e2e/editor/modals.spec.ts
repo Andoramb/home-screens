@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { test, expect } from '../fixtures';
-import { getConfig, putConfig, seedHouseholdChores, seedMeals } from '../helpers/api';
+import { getConfig, putConfig, seedFamily, seedHouseholdChores, seedMeals } from '../helpers/api';
 import { baseConfig, makeScreen, textModule, choreChartModule } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
 import { autosaved, selectModule, moduleConfig } from '../helpers/editor';
@@ -166,6 +166,54 @@ test.describe('ChoreChartModal (editor-side chore manager)', () => {
         return (data.members as Array<{ name: string }>).map((m) => m.name);
       })
       .toContain('Robin');
+  });
+
+  test('the empty chore column offers the starter list and adds the picks in one save', async ({ page, request, sandboxDir }) => {
+    seedFamily(sandboxDir, [
+      { id: 'k1', name: 'Ada', emoji: '', color: '#f472b6' },
+      { id: 'k2', name: 'Bram', emoji: '', color: '#60a5fa' },
+    ]);
+    await putConfig(request, baseConfig({
+      screens: [makeScreen('screen-1', 'Screen 1', [choreChartModule()])],
+    }));
+    await page.goto('/editor');
+    await expect(page.getByTestId('editor-canvas')).toBeVisible();
+    await page.locator('[data-module-id="chore-chart-1"]').click();
+    await page.getByRole('button', { name: 'Edit Chore Chart' }).click();
+    await expect(page.getByRole('heading', { name: 'Chore Chart', exact: true })).toBeVisible();
+
+    await page.getByTestId('starter-open').click();
+    const panel = page.getByTestId('starter-panel');
+    await expect(panel).toBeVisible();
+    // No group in this family, so everyone is picked by default.
+    await expect(panel.getByRole('button', { name: 'Ada', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(panel.getByRole('button', { name: 'Bram', exact: true })).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByTestId('starter-brush-teeth').click();
+    await page.getByTestId('starter-walk-dog').click();
+    await page.getByTestId('starter-walk-dog').click();
+    await page.getByTestId('starter-set-table').click();
+    const add = page.getByTestId('starter-add');
+    await expect(add).toHaveText('Add 2 chores');
+
+    const saved = page.waitForResponse((r) => r.url().includes('/api/chores/data') && r.request().method() === 'PUT' && r.ok());
+    await add.click();
+    await saved;
+    await expect(panel).toBeHidden();
+    await expect(page.getByText('2 members · 2 chores')).toBeVisible();
+
+    const data = await (await request.get('/api/chores/data')).json();
+    const chores = data.chores as Array<{ name: string; assigneeIds: string[]; timeOfDay: string }>;
+    expect(chores.map((c) => c.name)).toEqual(['Brush your teeth', 'Set the table']);
+    expect(chores[0]).toMatchObject({ assigneeIds: ['k1', 'k2'], timeOfDay: 'morning' });
+    expect(chores[1]).toMatchObject({ timeOfDay: 'evening' });
+
+    // With chores in the list the offer moves to a header button, and the picks are marked.
+    await page.getByTestId('starter-header-button').click();
+    await expect(page.getByTestId('starter-brush-teeth')).toHaveAttribute('aria-disabled', 'true');
+    // Opening the add form takes the column back.
+    await page.getByRole('button', { name: '+ Add Chore' }).click();
+    await expect(panel).toBeHidden();
   });
 
   test('nothing is editable until the chore data lands', async ({ page, request, sandboxDir }) => {

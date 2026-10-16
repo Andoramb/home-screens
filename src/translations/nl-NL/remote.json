@@ -252,6 +252,15 @@
       "title": "\"{name}\" verwijderen?",
       "description": "Het klusje verdwijnt. Tickets die de kinderen er al mee verdiend hebben, blijven op hun kaart staan.",
       "confirmLabel": "Klusje verwijderen"
+    },
+    "starter": {
+      "cardTitle": "Begin met kant-en-klare klusjes",
+      "cardDescription": "{count} alledaagse klusjes, ingedeeld per moment van de dag. Kies de klusjes die jullie thuis doen. Je kunt alles later nog aanpassen.",
+      "cardButton": "Kies uit de lijst",
+      "cardNoMembers": "Voeg eerst je gezinsleden toe en kies daarna klusjes voor ze.",
+      "cardNoMembersButton": "Gezinsleden toevoegen",
+      "writeYourOwn": "Zelf een klusje maken",
+      "link": "Kant-en-klare klusjes toevoegen"
     }
   },
   "mealsTab": {

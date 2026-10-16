@@ -2674,7 +2674,13 @@
       "weeklyTotalsHeading": "Totales semanales",
       "memberLine": "{chores} tareas, {tickets} tickets"
     },
-    "finishFormFirst": "Guarda o cancela primero el formulario abierto."
+    "finishFormFirst": "Guarda o cancela primero el formulario abierto.",
+    "starter": {
+      "openButton": "Elegir de las tareas sugeridas",
+      "hint": "{count} tareas de cada día, ordenadas por momento del día",
+      "headerButton": "Tareas sugeridas",
+      "columnTitle": "Tareas sugeridas"
+    }
   },
   "todoListModal": {
     "title": "Editar lista",

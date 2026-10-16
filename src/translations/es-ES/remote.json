@@ -252,6 +252,15 @@
       "title": "¿Eliminar «{name}»?",
       "description": "La tarea desaparece. Los tickets que los niños ya han ganado con ella se quedan en su tarjeta.",
       "confirmLabel": "Eliminar tarea"
+    },
+    "starter": {
+      "cardTitle": "Empieza con tareas ya preparadas",
+      "cardDescription": "{count} tareas de cada día, ordenadas por momento del día. Elige las que se hacen en tu casa y cambia lo que quieras después.",
+      "cardButton": "Elegir de la lista",
+      "cardNoMembers": "Primero añade a las personas de tu casa y luego elige sus tareas.",
+      "cardNoMembersButton": "Añadir miembros de la familia",
+      "writeYourOwn": "Crear tu propia tarea",
+      "link": "Añadir de las tareas sugeridas"
     }
   },
   "mealsTab": {

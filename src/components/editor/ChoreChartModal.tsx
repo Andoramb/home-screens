@@ -37,11 +37,13 @@ import { getLocalizedDayNames } from '@/lib/meal-constants';
 import ChoreIcon, {
   CHORE_ICONS,
 } from '@/components/modules/chore-chart/ChoreIcon';
-import { Users, X } from 'lucide-react';
+import { ListChecks, Users, X } from 'lucide-react';
 import IconPicker from '@/components/modules/chore-chart/IconPicker';
 import { useChoreForm, useChoreLabelMaps } from '@/components/modules/chore-chart/form-hooks';
 import { buildChoreAssigneeLine, buildChoreSummaryLine, comesBackHintKey, getChoreRotationSummaryKey } from '@/components/modules/chore-chart/chore-form-presentation';
 import GrabRulesLine from './GrabRulesLine';
+import StarterChoresPanel from './StarterChoresPanel';
+import { STARTER_CHORE_COUNT } from '@/lib/starter-chores';
 import { useEditorHouseholdToday } from './useEditorHouseholdClock';
 import { groupMembers } from '@/lib/family-groups';
 import { bonusShowsOn } from '@/lib/chore-bonus';
@@ -709,6 +711,10 @@ interface ChoreColumnProps {
   setShowAddChore: (v: boolean) => void;
   setEditingChoreId: (v: string | null) => void;
   deleteChore: (id: string) => void;
+  /** Opens the starter list in the right-hand column. */
+  openStarter: () => void;
+  /** Closes it, when a form takes that column instead. */
+  closeStarter: () => void;
   /** The household's grab rules, once loaded. */
   choreSettings: ChoreSettings | null;
   setChoreSettings: (next: ChoreSettings) => void;
@@ -725,6 +731,8 @@ function ChoreColumn({
   setShowAddChore,
   setEditingChoreId,
   deleteChore,
+  openStarter,
+  closeStarter,
   choreSettings,
   setChoreSettings,
 }: ChoreColumnProps) {
@@ -740,17 +748,31 @@ function ChoreColumn({
           {t('choreChartModal.chores.columnTitle')}
         </span>
         {members.length > 0 && (
-          <button
-            type="button"
-            data-add-chore
-            onClick={() => {
-              setShowAddChore(true);
-              setEditingChoreId(null);
-            }}
-            className="text-[11px] font-medium px-2 py-0.5 rounded bg-hs-card text-hs-text-body hover:bg-hs-hover transition-colors"
-          >
-            + {t('choreChartModal.chores.addButton')}
-          </button>
+          <div className="flex items-center gap-1.5">
+            {/* Once chores exist the list keeps one quiet door; the empty state below is the loud one. */}
+            {chores.length > 0 && (
+              <button
+                type="button"
+                data-testid="starter-header-button"
+                onClick={openStarter}
+                className="text-[11px] font-medium px-2 py-0.5 rounded text-hs-text-faint hover:text-hs-text-body hover:bg-hs-hover transition-colors"
+              >
+                {t('choreChartModal.starter.headerButton')}
+              </button>
+            )}
+            <button
+              type="button"
+              data-add-chore
+              onClick={() => {
+                setShowAddChore(true);
+                setEditingChoreId(null);
+                closeStarter();
+              }}
+              className="text-[11px] font-medium px-2 py-0.5 rounded bg-hs-card text-hs-text-body hover:bg-hs-hover transition-colors"
+            >
+              + {t('choreChartModal.chores.addButton')}
+            </button>
+          </div>
         )}
       </div>
 
@@ -769,9 +791,22 @@ function ChoreColumn({
       <div className="flex-1 overflow-y-auto p-3 space-y-1.5">
         {chores.length === 0 && !showAddChore && (
           <div className="flex flex-col items-center justify-center py-6 gap-2">
+            {members.length > 0 && <ListChecks size={22} className="text-hs-warning" aria-hidden />}
             <p className="text-xs text-hs-text-faint">{t('choreChartModal.chores.empty')}</p>
-            {members.length === 0 && (
+            {members.length === 0 ? (
               <p className="text-[11px] text-hs-text-faint">{t('choreChartModal.chores.addMembersFirst')}</p>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  data-testid="starter-open"
+                  onClick={openStarter}
+                  className="mt-1 px-3 py-1.5 rounded-md text-xs font-semibold bg-hs-warning/15 text-hs-warning hover:bg-hs-warning/25 transition-colors"
+                >
+                  {t('choreChartModal.starter.openButton')}
+                </button>
+                <p className="text-[11px] text-hs-text-faint">{t('choreChartModal.starter.hint', { count: STARTER_CHORE_COUNT })}</p>
+              </>
             )}
           </div>
         )}
@@ -836,6 +871,7 @@ function ChoreColumn({
                   onClick={() => {
                     setEditingChoreId(chore.id);
                     setShowAddChore(false);
+                    closeStarter();
                   }}
                   className="w-6 h-6 rounded flex items-center justify-center text-hs-text-faint hover:text-hs-text-body hover:bg-hs-card transition-colors text-xs"
                   aria-label={t('choreChartModal.chores.editAriaLabel', { name: chore.name })}
@@ -869,12 +905,15 @@ interface PreviewColumnProps {
   familyReady: boolean;
   showAddChore: boolean;
   editingChoreId: string | null;
+  showStarter: boolean;
   weekStartDay: 'sunday' | 'monday';
   accentColor: string;
   addChore: (data: Omit<ChoreDefinition, 'id'>) => void;
+  addChores: (batch: Omit<ChoreDefinition, 'id'>[]) => void;
   updateChore: (id: string, data: Omit<ChoreDefinition, 'id'>) => void;
   setShowAddChore: (v: boolean) => void;
   setEditingChoreId: (v: string | null) => void;
+  setShowStarter: (v: boolean) => void;
 }
 
 function PreviewColumn({
@@ -884,20 +923,26 @@ function PreviewColumn({
   familyReady,
   showAddChore,
   editingChoreId,
+  showStarter,
   weekStartDay,
   accentColor,
   addChore,
+  addChores,
   updateChore,
   setShowAddChore,
   setEditingChoreId,
+  setShowStarter,
 }: PreviewColumnProps) {
   const t = useTranslate('editor');
   let columnTitle: string;
-  if (showAddChore) columnTitle = t('choreChartModal.preview.columnTitleNew');
+  if (showStarter) columnTitle = t('choreChartModal.starter.columnTitle');
+  else if (showAddChore) columnTitle = t('choreChartModal.preview.columnTitleNew');
   else if (editingChoreId) columnTitle = t('choreChartModal.preview.columnTitleEdit');
   else columnTitle = t('choreChartModal.preview.columnTitleSchedule');
+  // Two columns of starter rows need the width; the form takes less, the preview least.
+  const width = showStarter ? 'w-[560px]' : showAddChore || editingChoreId ? 'w-[450px]' : 'w-[280px]';
   return (
-    <div className={`${showAddChore || editingChoreId ? 'w-[450px]' : 'w-[280px]'} flex flex-col transition-all duration-200`}>
+    <div className={`${width} flex flex-col transition-all duration-200`}>
       <div className="px-3 py-2 border-b border-hs-border-strong/50">
         <span className="text-xs font-semibold text-hs-text-muted uppercase tracking-wider">
           {columnTitle}
@@ -905,7 +950,15 @@ function PreviewColumn({
       </div>
 
       <div className="flex-1 overflow-y-auto p-3">
-        {showAddChore ? (
+        {showStarter ? (
+          <StarterChoresPanel
+            chores={chores}
+            members={members}
+            groups={groups}
+            onAdd={addChores}
+            onCancel={() => setShowStarter(false)}
+          />
+        ) : showAddChore ? (
           <ChoreForm
             members={members}
             groups={groups}
@@ -975,9 +1028,15 @@ export default function ChoreChartModal({
   }, [session]);
   const [showAddChore, setShowAddChore] = useState(false);
   const [editingChoreId, setEditingChoreId] = useState<string | null>(null);
-  const choreFormOpen = showAddChore || editingChoreId !== null;
+  // The starter list takes the form's column, so opening one closes the other.
+  const [showStarter, setShowStarterState] = useState(false);
+  const choreFormOpen = showAddChore || editingChoreId !== null || showStarter;
   const [familyEditing, setFamilyEditing] = useState(false);
-  const closeChoreForm = useCallback(() => { setShowAddChore(false); setEditingChoreId(null); }, []);
+  const closeChoreForm = useCallback(() => { setShowAddChore(false); setEditingChoreId(null); setShowStarterState(false); }, []);
+  const setShowStarter = useCallback((open: boolean) => {
+    setShowStarterState(open);
+    if (open) { setShowAddChore(false); setEditingChoreId(null); }
+  }, []);
   // A confirm on top (deleting a chore) takes its own Escape; the form under it stays.
   const confirmOpen = useConfirmStore((state) => state.open);
   useEscapeKey(closeChoreForm, choreFormOpen && !confirmOpen && !familyEditing);
@@ -987,7 +1046,7 @@ export default function ChoreChartModal({
   const formFor = useRef<string | null>(null);
   useEffect(() => {
     if (choreFormOpen) {
-      formFor.current = editingChoreId ?? 'add';
+      formFor.current = showStarter ? 'starter' : editingChoreId ?? 'add';
       return;
     }
     const was = formFor.current;
@@ -995,11 +1054,11 @@ export default function ChoreChartModal({
     formFor.current = null;
     // On the next frame: the key that closed the form has finished by then.
     const id = requestAnimationFrame(() => {
-      const edit = was === 'add' ? null : document.querySelector<HTMLElement>(`[data-edit-chore="${CSS.escape(was)}"]`);
+      const edit = was === 'add' || was === 'starter' ? null : document.querySelector<HTMLElement>(`[data-edit-chore="${CSS.escape(was)}"]`);
       (edit ?? document.querySelector<HTMLElement>('[data-add-chore]'))?.focus();
     });
     return () => cancelAnimationFrame(id);
-  }, [choreFormOpen, editingChoreId]);
+  }, [choreFormOpen, editingChoreId, showStarter]);
   const [choreSearch, setChoreSearch] = useState('');
 
   useEffect(() => {
@@ -1047,6 +1106,12 @@ export default function ChoreChartModal({
   const addChore = (data: Omit<ChoreDefinition, 'id'>) => {
     setChores((prev) => addChoreToList(prev, data));
     setShowAddChore(false);
+  };
+
+  /** The starter picker's batch: every pick becomes an ordinary chore in one save. */
+  const addChores = (batch: Omit<ChoreDefinition, 'id'>[]) => {
+    setChores((prev) => batch.reduce((list, data) => addChoreToList(list, data), prev));
+    setShowStarterState(false);
   };
 
   const updateChore = (id: string, data: Omit<ChoreDefinition, 'id'>) => {
@@ -1122,6 +1187,8 @@ export default function ChoreChartModal({
             setShowAddChore={setShowAddChore}
             setEditingChoreId={setEditingChoreId}
             deleteChore={deleteChore}
+            openStarter={() => setShowStarter(true)}
+            closeStarter={() => setShowStarterState(false)}
             choreSettings={choreSettings}
             setChoreSettings={setChoreSettings}
           />
@@ -1132,12 +1199,15 @@ export default function ChoreChartModal({
             familyReady={familyRevision !== null}
             showAddChore={showAddChore}
             editingChoreId={editingChoreId}
+            showStarter={showStarter}
             weekStartDay={weekStartDay}
             accentColor={accentColor}
             addChore={addChore}
+            addChores={addChores}
             updateChore={updateChore}
             setShowAddChore={setShowAddChore}
             setEditingChoreId={setEditingChoreId}
+            setShowStarter={setShowStarter}
           />
         </div>
       )}

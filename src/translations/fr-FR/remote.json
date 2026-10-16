@@ -252,6 +252,15 @@
       "title": "Supprimer « {name} » ?",
       "description": "La tâche disparaît. Les tickets que les enfants ont déjà gagnés pour elle restent sur leur carte.",
       "confirmLabel": "Supprimer la tâche"
+    },
+    "starter": {
+      "cardTitle": "Commence avec des tâches toutes prêtes",
+      "cardDescription": "{count} tâches du quotidien, classées par moment de la journée. Choisis celles qui se font chez toi, tu pourras tout changer plus tard.",
+      "cardButton": "Choisir dans la liste",
+      "cardNoMembers": "Ajoute d'abord les membres de ta famille, puis choisis leurs tâches.",
+      "cardNoMembersButton": "Ajouter des membres",
+      "writeYourOwn": "Créer ma propre tâche",
+      "link": "Ajouter des tâches toutes prêtes"
     }
   },
   "mealsTab": {

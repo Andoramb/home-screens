@@ -2674,7 +2674,13 @@
       "weeklyTotalsHeading": "Weektotalen",
       "memberLine": "{chores} klusjes, {tickets} tickets"
     },
-    "finishFormFirst": "Sla eerst het open formulier op of annuleer het."
+    "finishFormFirst": "Sla eerst het open formulier op of annuleer het.",
+    "starter": {
+      "openButton": "Kiezen uit kant-en-klare klusjes",
+      "hint": "{count} alledaagse klusjes, ingedeeld per moment van de dag",
+      "headerButton": "Kant-en-klare lijst",
+      "columnTitle": "Kant-en-klare klusjes"
+    }
   },
   "todoListModal": {
     "title": "Lijst bewerken",

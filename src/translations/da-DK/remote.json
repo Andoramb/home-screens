@@ -252,6 +252,15 @@
       "title": "Slet \"{name}\"?",
       "description": "Pligten forsvinder. Billetter, som børnene allerede har tjent for den, bliver på deres kort.",
       "confirmLabel": "Slet pligt"
+    },
+    "starter": {
+      "cardTitle": "Start med forslag til pligter",
+      "cardDescription": "{count} hverdagspligter, sorteret efter tid på dagen. Vælg dem, der passer til jeres hjem. Du kan altid ændre dem senere.",
+      "cardButton": "Vælg fra listen",
+      "cardNoMembers": "Tilføj først dem, der bor hjemme hos jer, og vælg så pligter til dem.",
+      "cardNoMembersButton": "Tilføj familiemedlemmer",
+      "writeYourOwn": "Skriv din egen",
+      "link": "Tilføj fra forslagslisten"
     }
   },
   "mealsTab": {

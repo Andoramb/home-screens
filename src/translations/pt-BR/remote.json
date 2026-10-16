@@ -252,6 +252,15 @@
       "title": "Excluir \"{name}\"?",
       "description": "A tarefa some. Os tickets que as crianças já ganharam com ela ficam no cartão delas.",
       "confirmLabel": "Excluir tarefa"
+    },
+    "starter": {
+      "cardTitle": "Comece com tarefas sugeridas",
+      "cardDescription": "{count} tarefas do dia a dia, separadas por período do dia. Escolha as que vocês fazem em casa e mude o que quiser depois.",
+      "cardButton": "Escolher da lista",
+      "cardNoMembers": "Primeiro adicione as pessoas da sua casa, depois escolha tarefas para elas.",
+      "cardNoMembersButton": "Adicionar membros da família",
+      "writeYourOwn": "Criar a sua",
+      "link": "Adicionar da lista de sugestões"
     }
   },
   "mealsTab": {

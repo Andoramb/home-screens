@@ -732,6 +732,29 @@
       },
       "change": "Change",
       "close": "Close"
+    },
+    "starter": {
+      "title": "Starter chores",
+      "intro": "Tick the chores your house does. Each one becomes a normal chore you can change later.",
+      "whoLabel": "Who does these",
+      "whoHint": "Everyone you tick gets every chore you pick.",
+      "whoNobody": "Tick at least one person or group.",
+      "sections": {
+        "morning": "Morning",
+        "afternoon": "After school",
+        "evening": "Evening",
+        "weekly": "Once a week"
+      },
+      "selectAll": "All",
+      "selectNone": "None",
+      "pickedCount": "{picked} of {total}",
+      "alreadyAdded": "Already added",
+      "addButton": {
+        "one": "Add {count} chore",
+        "other": "Add {count} chores"
+      },
+      "addButtonNone": "Pick some chores",
+      "weeklyDay": "On which day"
     }
   },
   "fullscreen-chore-chart": {

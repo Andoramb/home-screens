@@ -2674,7 +2674,13 @@
       "weeklyTotalsHeading": "Totaux de la semaine",
       "memberLine": "{chores} tâches, {tickets} tickets"
     },
-    "finishFormFirst": "Enregistre ou annule d'abord le formulaire ouvert."
+    "finishFormFirst": "Enregistre ou annule d'abord le formulaire ouvert.",
+    "starter": {
+      "openButton": "Choisir parmi les tâches toutes prêtes",
+      "hint": "{count} tâches du quotidien, classées par moment de la journée",
+      "headerButton": "Tâches toutes prêtes",
+      "columnTitle": "Tâches toutes prêtes"
+    }
   },
   "todoListModal": {
     "title": "Modifier la liste",
