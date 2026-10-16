@@ -372,7 +372,7 @@ export interface BackgroundRotation {
   icloudAlbumUrl?: string;
   /** Local media library folder to rotate through, relative to the library root */
   localFolder?: string;
-  /** Starter wall IDs selected within each group. Missing or empty = every wall in that group. Unknown IDs are ignored. */
+  /** Starter wall IDs selected within each group. Missing or empty = no walls from that group are in rotation. Unknown IDs are ignored. */
   starterBackgroundIds?: Partial<Record<'theme' | 'color' | 'pattern', string[]>>;
 }
 

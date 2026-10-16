@@ -2525,6 +2525,8 @@
       "pattern-paper": "Papier"
     },
     "sourceKeyMissing": "Für diese Quelle fehlt ein API-Schlüssel, deshalb behält der Bildschirm sein letztes Bild. Trage den Schlüssel in den Einstellungen ein oder wähle eine andere Quelle.",
+    "sourceNotSetUp": "Noch nicht eingerichtet. Richte {source} in den Einstellungen ein, um die Quelle zu nutzen.",
+    "pickToRotate": "Tippe auf die Hintergründe für die Rotation. Noch keiner ausgewählt.",
     "shadeGroup": "Abdunklung",
     "shadeEnable": "Hintergrund abdunkeln",
     "shadeStyleLabel": "Stil",

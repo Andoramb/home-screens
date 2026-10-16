@@ -8071,6 +8071,15 @@
           "description": "Dim/vignette overlay drawn over the background (see BackgroundShade)"
         },
         {
+          "name": "effects",
+          "optional": true,
+          "type": {
+            "kind": "object",
+            "text": "BackgroundEffects"
+          },
+          "description": "CSS-filter-based tuning applied to background media only (see BackgroundEffects)"
+        },
+        {
           "name": "modules",
           "optional": false,
           "type": {
@@ -8215,6 +8224,15 @@
             "text": "string"
           },
           "description": "Local media library folder to rotate through, relative to the library root"
+        },
+        {
+          "name": "starterBackgroundIds",
+          "optional": true,
+          "type": {
+            "kind": "object",
+            "text": "Partial<Record<\"color\" | \"theme\" | \"pattern\", string[]>>"
+          },
+          "description": "Starter wall IDs selected within each group. Missing or empty = no walls from that group are in rotation. Unknown IDs are ignored."
         }
       ]
     },

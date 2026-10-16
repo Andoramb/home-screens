@@ -233,43 +233,71 @@ describe('BackgroundPicker — unified Sources', () => {
     expect(container.querySelector('[data-testid^="background-tab-"]')).toBeNull();
     expect(container.textContent).not.toContain('Your own pictures');
     expect(container.textContent).not.toContain('Upload Background');
+    // Only source-level toggles: no per-tile checkboxes.
     expect(sources.querySelectorAll('input[type="checkbox"]')).toHaveLength(8);
   });
 
-  it('bundled group selection and tile inclusion are separate from static tile actions', () => {
+  it('enabling a bundled group selects nothing; tiles then toggle by highlight, with no per-tile checkboxes', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 30 }, '/starter-backgrounds/ocean.svg');
-    const { getByRole, getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
-    const theme = getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme });
-    fireEvent.click(theme);
-    expect(currentRotation()?.sources).toEqual(['theme']);
-    expect(getByTestId('starter-group-theme').textContent).toContain('12/12');
-    const include = getByRole('checkbox', { name: 'Include Linen in rotation' });
-    fireEvent.click(include);
-    expect(currentRotation()?.starterBackgroundIds?.theme).toHaveLength(11);
-    expect(getByTestId('starter-group-theme').textContent).toContain('11/12');
-    expect(getByTestId('starter-background-theme-linen').getAttribute('aria-pressed')).toBe('false');
+    const { getByRole, getByTestId, getByText, container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.color }));
+    expect(currentRotation()?.sources).toEqual(['color']);
+    expect(currentRotation()?.starterBackgroundIds?.color ?? []).toEqual([]);
+    expect(getByTestId('starter-group-color').textContent).toContain('0/');
+    expect(getByText(enUSEditor.backgroundPicker.pickToRotate)).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid^="starter-source-color"] input[type="checkbox"]')).toHaveLength(1);
+
+    const tile = container.querySelector('[data-testid^="starter-background-"][aria-label^="Include"]') as HTMLElement;
+    expect(tile.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(tile);
+    expect(currentRotation()?.starterBackgroundIds?.color).toHaveLength(1);
+    expect(tile.getAttribute('aria-pressed')).toBe('true');
+    // Selecting a tile in rotation mode never overwrites the fixed background.
+    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/ocean.svg');
+    fireEvent.click(tile);
+    expect(currentRotation()?.starterBackgroundIds?.color).toEqual([]);
+  });
+
+  it('with the group off, a tile is a fixed pick that ends rotation', () => {
+    seedStore({ sources: ['icloud'], query: '', intervalMinutes: 30 }, '/starter-backgrounds/ocean.svg');
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
     fireEvent.click(getByTestId('starter-background-theme-linen'));
     expect(currentRotation()?.sources).toEqual([]);
     expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
   });
 
-  it('choosing a wall then None disables rotation and retains other rotation settings', () => {
+  it('shows a visible hint and a disabled checkbox for sources that are not set up', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByTestId, getByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const immich = getByRole('checkbox', { name: new RegExp(enUSEditor.backgroundPicker.sources.immich) }) as HTMLInputElement;
+    expect(immich.disabled).toBe(true);
+    expect(immich.closest('label')!.getAttribute('title')).toContain(enUSEditor.backgroundPicker.sources.immich);
+    expect(getByTestId('background-source-not-set-up-immich').textContent).toContain(enUSEditor.backgroundPicker.sources.immich);
+    expect(getByTestId('background-source-not-set-up-nasa-apod')).not.toBeNull();
+  });
+
+  it('lets a stale, already-enabled source that lost its key be turned off', () => {
+    seedStore({ sources: ['immich'], query: '', intervalMinutes: 60 });
+    const { getByRole, getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const immich = getByRole('checkbox', { name: new RegExp(enUSEditor.backgroundPicker.sources.immich) }) as HTMLInputElement;
+    expect(immich.disabled).toBe(false);
+    expect(getByTestId('background-source-key-missing')).not.toBeNull();
+    fireEvent.click(immich);
+    expect(currentRotation()?.sources).toEqual([]);
+  });
+
+  it('choosing a fixed wall then None ends rotation and retains other rotation settings', () => {
     seedStore({ enabled: true, sources: ['icloud', 'local'], query: '', intervalMinutes: 30, localFolder: 'holiday' }, '/starter-backgrounds/ocean.svg');
-    const { getByTestId, getByText } = render(<BackgroundPicker />, { wrapper: Wrapper });
-    fireEvent.click(getByText(enUSEditor.backgroundPicker.groups.theme).closest('label')!.querySelector('input')!);
-    const theme = getByTestId('starter-background-theme-linen');
-    fireEvent.click(theme);
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByTestId('starter-background-theme-linen'));
     let screen = useEditorStore.getState().config!.screens[0];
     expect(screen.backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
     expect(screen.backgroundRotation).toMatchObject({ sources: [], localFolder: 'holiday', intervalMinutes: 30 });
     expect(screen.backgroundRotation).not.toHaveProperty('enabled');
-    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
-    fireEvent.click(getByText(enUSEditor.backgroundPicker.groups.color).closest('label')!.querySelector('input')!);
     fireEvent.click(getByTestId('starter-background-none'));
     screen = useEditorStore.getState().config!.screens[0];
     expect(screen.backgroundImage).toBe('');
     expect(screen.backgroundRotation?.sources).toEqual([]);
-    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('');
   });
 
   it('None disables rotation even when no fixed image was set', () => {

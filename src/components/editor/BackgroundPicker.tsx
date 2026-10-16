@@ -125,11 +125,14 @@ export default function BackgroundPicker() {
                     const checked = rotationSources.includes(entry.id);
                     return (
                       <div key={entry.id}>
-                        <label className={`flex items-center gap-2 ${entry.locked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <label
+                          className={`flex items-center gap-2 ${entry.locked && !checked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                          title={entry.locked ? t('backgroundPicker.sourceNotSetUp', { source: entry.label }) : undefined}
+                        >
                           <input
                             type="checkbox"
                             checked={checked}
-                            disabled={entry.locked}
+                            disabled={entry.locked && !checked}
                             onChange={(e) => toggleRotationSource(entry.id, e.target.checked)}
                             className="rounded border-hs-border-strong"
                           />
@@ -138,13 +141,22 @@ export default function BackgroundPicker() {
                             {entry.label}
                           </span>
                         </label>
-                        {entry.locked && checked && (
-                          <span
-                            className="mt-1 block text-[10px] leading-relaxed text-hs-warning"
-                            data-testid="background-source-key-missing"
-                          >
-                            {t('backgroundPicker.sourceKeyMissing')}
-                          </span>
+                        {entry.locked && (
+                          checked ? (
+                            <span
+                              className="mt-1 block text-[10px] leading-relaxed text-hs-warning"
+                              data-testid="background-source-key-missing"
+                            >
+                              {t('backgroundPicker.sourceKeyMissing')}
+                            </span>
+                          ) : (
+                            <span
+                              className="mt-0.5 block pl-5 text-[10px] leading-relaxed text-hs-text-faint"
+                              data-testid={`background-source-not-set-up-${entry.id}`}
+                            >
+                              {t('backgroundPicker.sourceNotSetUp', { source: entry.label })}
+                            </span>
+                          )
                         )}
                         {checked && (
                           <div className="mt-1.5 ml-5 space-y-2">

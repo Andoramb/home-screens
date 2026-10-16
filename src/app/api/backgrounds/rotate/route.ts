@@ -72,7 +72,7 @@ function configuredSources(rotation: BackgroundRotation): BackgroundRotationSour
   return [...new Set(rotation.sources)].filter((source) => isSourceConfigured(source, rotation));
 }
 
-/** Stable, catalog-filtered selections; omitted/empty means the entire category. */
+/** Stable, catalog-filtered selections; omitted/empty means none selected. */
 function starterSelectionKey(rotation: BackgroundRotation): string | undefined {
   const groups = (['theme', 'color', 'pattern'] as const).filter((group) => rotation.sources.includes(group));
   if (!groups.length) return undefined;
