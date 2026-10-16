@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import ImageSearchBrowser, { type BrowsePhoto, type CategoryDef, type SearchResult } from './ImageSearchBrowser';
 import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
+import IntegrationSettingsLink from './IntegrationSettingsLink';
 
 interface NasaPhoto {
   id: string;
@@ -157,7 +158,7 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
     <>
       {!hasNasaKey && (
         <div className="text-xs text-hs-text-faint bg-hs-hover rounded-md p-3 space-y-2">
-          <p>{t('imageBrowsers.nasa.notConfiguredPrefix')} <strong>{t('imageBrowsers.nasa.settingsWord')}</strong> {t('imageBrowsers.nasa.notConfiguredSuffix')}</p>
+          <p>{t('imageBrowsers.nasa.notConfiguredPrefix')} <IntegrationSettingsLink integration="nasa">{t('imageBrowsers.nasa.settingsWord')}</IntegrationSettingsLink> {t('imageBrowsers.nasa.notConfiguredSuffix')}</p>
           <p className="text-hs-text-faint">{t('imageBrowsers.nasa.apiKeyHint')}</p>
         </div>
       )}

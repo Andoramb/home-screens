@@ -9,6 +9,12 @@ import { useEditorStore } from '@/stores/editor-store';
 import enUSEditor from '@/translations/en-US/editor.json';
 import BackgroundPicker from '../BackgroundPicker';
 
+vi.mock('../ImageBrowserModal', () => ({
+  default: ({ onSelectImage, onClose }: { onSelectImage?: (url: string) => void; onClose: () => void }) => (
+    <button type="button" data-testid="mock-library-pick" onClick={() => { onSelectImage?.('/api/backgrounds/serve?file=me.jpg'); onClose(); }}>pick</button>
+  ),
+}));
+
 // The checklist needs every source's key status; stub it so `icloud` and
 // `local` (no key required) sit alongside a `false` for the keyed ones —
 // exercising the checklist without pulling in a real /api/secrets round trip.
@@ -78,8 +84,8 @@ describe('BackgroundPicker — sources group always visible (item 1/2)', () => {
 
     expect(getByText(enUSEditor.backgroundPicker.sourcesGroup)).not.toBeNull();
     const checkboxes = Array.from(container.querySelectorAll('input[type="checkbox"]')) as HTMLInputElement[];
-    // Three bundled groups plus five existing providers.
-    expect(checkboxes).toHaveLength(8);
+    // Two rotatable bundled groups (colors, patterns; themes are a single choice) plus five providers.
+    expect(checkboxes).toHaveLength(7);
     expect(checkboxes.every((cb) => !cb.checked)).toBe(true);
   });
 
@@ -229,12 +235,12 @@ describe('BackgroundPicker — unified Sources', () => {
     expect(within(sources).getByTestId('starter-source-theme')).not.toBeNull();
     expect(within(sources).getByTestId('starter-source-color')).not.toBeNull();
     expect(within(sources).getByTestId('starter-source-pattern')).not.toBeNull();
-    expect(within(sources).getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme })).not.toBeNull();
+    expect(within(sources).queryByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme })).toBeNull();
     expect(container.querySelector('[data-testid^="background-tab-"]')).toBeNull();
     expect(container.textContent).not.toContain('Your own pictures');
     expect(container.textContent).not.toContain('Upload Background');
     // Only source-level toggles: no per-tile checkboxes.
-    expect(sources.querySelectorAll('input[type="checkbox"]')).toHaveLength(8);
+    expect(sources.querySelectorAll('input[type="checkbox"]')).toHaveLength(7);
   });
 
   it('enabling a bundled group selects nothing; tiles then toggle by highlight, with no per-tile checkboxes', () => {
@@ -274,13 +280,52 @@ describe('BackgroundPicker — unified Sources', () => {
     expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeRotating);
   });
 
+  it('themes are a single choice: no rotation checkbox, and a tile is always a fixed pick', () => {
+    seedStore({ sources: ['theme'], query: '', intervalMinutes: 60 }, '/starter-backgrounds/ocean.svg');
+    const { getByTestId, queryByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(queryByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme })).toBeNull();
+    const tile = getByTestId('starter-background-theme-linen');
+    expect(tile.getAttribute('aria-label')).toBe('Use Linen as a fixed background');
+    fireEvent.click(tile);
+    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
+    expect(currentRotation()?.sources).toEqual([]);
+  });
+
+  it('offers a single-photo picker for the library and each connected service', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 }, '/starter-backgrounds/ocean.svg');
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const picker = within(getByTestId('single-photo-picker'));
+    for (const id of ['library', 'unsplash', 'nasa', 'immich']) expect(picker.getByTestId(`pick-photo-${id}`)).not.toBeNull();
+    // A service without a key opens its browser, which explains the setup and links to Settings.
+    expect(picker.queryByTestId('integration-settings-link-immich')).toBeNull();
+    fireEvent.click(picker.getByTestId('pick-photo-immich'));
+    const link = picker.getByTestId('integration-settings-link-immich') as HTMLAnchorElement;
+    expect(link.getAttribute('href')).toContain('/editor/settings');
+    expect(link.getAttribute('href')).toContain('integrations.immich');
+    fireEvent.click(picker.getByTestId('pick-photo-immich'));
+    expect(picker.queryByTestId('integration-settings-link-immich')).toBeNull();
+  });
+
+  it('a photo picked from the library becomes the fixed background and ends rotation', () => {
+    seedStore({ sources: ['icloud'], query: '', intervalMinutes: 60, localFolder: 'holiday' }, '');
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByTestId('pick-photo-library'));
+    fireEvent.click(getByTestId('mock-library-pick'));
+    expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/api/backgrounds/serve?file=me.jpg');
+    expect(currentRotation()).toMatchObject({ sources: [], localFolder: 'holiday' });
+  });
+
   it('shows a visible hint and a disabled checkbox for sources that are not set up', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { getByTestId, getByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
     const immich = getByRole('checkbox', { name: new RegExp(enUSEditor.backgroundPicker.sources.immich) }) as HTMLInputElement;
     expect(immich.disabled).toBe(true);
     expect(immich.closest('label')!.getAttribute('title')).toContain(enUSEditor.backgroundPicker.sources.immich);
-    expect(getByTestId('background-source-not-set-up-immich').textContent).toContain(enUSEditor.backgroundPicker.sources.immich);
+    const hint = getByTestId('background-source-not-set-up-immich');
+    expect(hint.textContent).toContain(enUSEditor.backgroundPicker.sourceNotSetUp);
+    const settingsLink = within(hint).getByTestId('integration-settings-link-immich') as HTMLAnchorElement;
+    expect(settingsLink.getAttribute('href')).toContain('integrations.immich');
+    expect(settingsLink.textContent).toContain(enUSEditor.backgroundPicker.sources.immich);
     expect(getByTestId('background-source-not-set-up-nasa-apod')).not.toBeNull();
   });
 

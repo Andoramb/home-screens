@@ -2572,7 +2572,10 @@
       "pattern-paper": "Paper"
     },
     "sourceKeyMissing": "This source needs an API key that is not set up, so the screen keeps its last picture. Add the key in Settings, or pick another source.",
-    "sourceNotSetUp": "Not set up yet. Add {source} in Settings to use it.",
+    "sourceNotSetUp": "Not set up yet.",
+    "sourceSetUpLink": "Set up {source} in Settings",
+    "pickOneTitle": "Use one specific photo",
+    "pickOneLibrary": "Photo library / upload",
     "pickToRotate": "Tap the walls you want in the rotation. None selected yet.",
     "modeFixed": "Fixed background",
     "modeRotating": "Rotating between the selected sources",
