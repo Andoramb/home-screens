@@ -216,17 +216,20 @@ describe('BackgroundPicker — shade color semantics', () => {
 
 
 describe('BackgroundPicker — unified Sources', () => {
-  it('keeps only Shade and Sources cards, with all bundled groups inside Sources', () => {
+  it('keeps Shade, Effects, Theme and Sources cards: themes sit outside Sources, colors and patterns inside', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
     const headings = Array.from(container.querySelectorAll('h4')).map((h) => h.textContent);
     expect(headings).toEqual([
       enUSEditor.backgroundPicker.shadeGroup,
       enUSEditor.backgroundPicker.effectsGroup,
+      enUSEditor.backgroundPicker.groups.theme,
       enUSEditor.backgroundPicker.sourcesGroup,
     ]);
-    const sources = container.querySelectorAll('h4')[2].parentElement!.parentElement!;
-    expect(within(sources).getByTestId('starter-source-theme')).not.toBeNull();
+    const sources = container.querySelectorAll('h4')[3].parentElement!.parentElement!;
+    expect(within(sources).queryByTestId('starter-source-theme')).toBeNull();
+    expect(within(sources).queryByTestId('starter-background-theme-linen')).toBeNull();
+    expect(container.querySelector('[data-testid="theme-backgrounds"] [data-testid="starter-background-theme-linen"]')).not.toBeNull();
     expect(within(sources).getByTestId('starter-source-color')).not.toBeNull();
     expect(within(sources).getByTestId('starter-source-pattern')).not.toBeNull();
     expect(within(sources).queryByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme })).toBeNull();

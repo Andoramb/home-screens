@@ -20,6 +20,19 @@ export function stopBackgroundRotation(rotation: Screen['backgroundRotation'] | 
 }
 
 /**
+ * Picking a fixed background turns rotation off: a rotating screen would paint
+ * over the choice within the hour, which reads as "it didn't save".
+ */
+export function fixedBackgroundUpdates(
+  screen: Pick<Screen, 'backgroundRotation'> | undefined,
+  backgroundImage: string,
+): Pick<Screen, 'backgroundImage' | 'backgroundRotation'> | Pick<Screen, 'backgroundImage'> {
+  return isRotationActive(screen?.backgroundRotation)
+    ? { backgroundImage, backgroundRotation: stopBackgroundRotation(screen?.backgroundRotation) }
+    : { backgroundImage };
+}
+
+/**
  * The picture a screen paints behind its modules, on the wall and in the
  * editor alike. With rotation on, the screen's own picture is only what the
  * rotation falls back to, so nothing paints until the first answer is in:
