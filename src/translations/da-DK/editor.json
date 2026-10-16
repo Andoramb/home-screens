@@ -2525,7 +2525,10 @@
       "pattern-paper": "Papir"
     },
     "sourceKeyMissing": "Denne kilde kræver en API-nøgle, som ikke er sat op, så skærmen beholder sit sidste billede. Tilføj nøglen under Indstillinger, eller vælg en anden kilde.",
-    "sourceNotSetUp": "Ikke sat op endnu. Tilføj {source} i Indstillinger for at bruge den.",
+    "sourceNotSetUp": "Ikke sat op endnu.",
+    "sourceSetUpLink": "Sæt {source} op i Indstillinger",
+    "pickOneTitle": "Brug ét bestemt foto",
+    "pickOneLibrary": "Fotobibliotek / upload",
     "pickToRotate": "Tryk på de baggrunde, der skal med i rotationen. Ingen valgt endnu.",
     "modeFixed": "Fast baggrund",
     "modeRotating": "Roterer mellem de valgte kilder",

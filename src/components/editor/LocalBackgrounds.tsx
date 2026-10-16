@@ -1,7 +1,11 @@
 'use client';
 
 import { useState, useEffect, useId } from 'react';
-import { Check, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Lock } from 'lucide-react';
+import ImageBrowserModal from './ImageBrowserModal';
+import ImmichBrowser from './ImmichBrowser';
+import NasaBrowser from './NasaBrowser';
+import UnsplashBrowser from './UnsplashBrowser';
 import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
 import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
 import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
@@ -16,6 +20,9 @@ import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-backgroun
 
 interface Props {
   selectedScreenId: string;
+  hasUnsplashKey: boolean;
+  hasNasaKey: boolean;
+  hasImmichKey: boolean;
 }
 
 const GROUP_STORAGE_PREFIX = 'hs-background-group-';
@@ -31,7 +38,8 @@ function readGroupOpen(id: string): boolean {
 /** Heading checkbox switches the group's tiles from "pick one" to "rotate through the selection". */
 function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   id: StarterBackgroundGroup; title: string; count: string; checked: boolean; hint?: string;
-  onChange: (checked: boolean) => void; children: React.ReactNode;
+  /** Omitted for a group that is a single choice and cannot rotate. */
+  onChange?: (checked: boolean) => void; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
   const panelId = useId();
@@ -45,10 +53,14 @@ function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   return (
     <div data-testid={`starter-source-${id}`} className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-xs text-hs-text-body">
-          <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-hs-border-strong" />
-          <span>{title}</span>
-        </label>
+        {onChange ? (
+          <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-xs text-hs-text-body">
+            <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-hs-border-strong" />
+            <span>{title}</span>
+          </label>
+        ) : (
+          <span className="min-w-0 flex-1 text-xs text-hs-text-body">{title}</span>
+        )}
         <button id={`starter-group-${id}`} type="button" onClick={toggle} aria-expanded={open}
           aria-controls={panelId} data-testid={`starter-group-${id}`}
           aria-label={checked ? `${title} ${count}` : title} className="flex items-center gap-1 rounded px-1 text-[10px] text-hs-text-muted hover:bg-hs-hover">
@@ -65,7 +77,53 @@ function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   );
 }
 
-export default function LocalBackgrounds({ selectedScreenId }: Props) {
+type PhotoSource = 'library' | 'unsplash' | 'nasa' | 'immich';
+
+/** One specific photo as a fixed background, from the library (with upload) or a connected service. */
+function SinglePhotoPicker({ selectedScreenId, onPickImage, hasKey }: {
+  selectedScreenId: string;
+  onPickImage: (url: string) => void;
+  hasKey: Record<'unsplash' | 'nasa' | 'immich', boolean>;
+}) {
+  const t = useTranslate('editor');
+  const [open, setOpen] = useState<PhotoSource | null>(null);
+  const entries: { id: PhotoSource; label: string; locked: boolean }[] = [
+    { id: 'library', label: t('backgroundPicker.pickOneLibrary'), locked: false },
+    { id: 'unsplash', label: t('backgroundPicker.sources.unsplash'), locked: !hasKey.unsplash },
+    { id: 'nasa', label: t('backgroundPicker.sources.nasaApod'), locked: !hasKey.nasa },
+    { id: 'immich', label: t('backgroundPicker.sources.immich'), locked: !hasKey.immich },
+  ];
+  return (
+    <div className="space-y-1.5" data-testid="single-photo-picker">
+      <div className="text-[10px] text-hs-text-faint">{t('backgroundPicker.pickOneTitle')}</div>
+      <div className="grid grid-cols-2 gap-1">
+        {entries.map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            aria-expanded={entry.id === 'library' ? undefined : open === entry.id}
+            data-testid={`pick-photo-${entry.id}`}
+            onClick={() => setOpen(entry.id === 'library' ? 'library' : open === entry.id ? null : entry.id)}
+            className={`flex min-w-0 items-center justify-center gap-1 rounded border px-2 py-1 text-[11px] ${entry.id === 'library' ? 'col-span-2 ' : ''}${
+              open === entry.id ? 'border-hs-accent bg-hs-hover text-hs-text-primary' : 'border-hs-border-strong bg-hs-card text-hs-text-body hover:bg-hs-hover'
+            }`}
+          >
+            {entry.locked && <Lock className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />}
+            <span className="truncate">{entry.label}</span>
+          </button>
+        ))}
+      </div>
+      {open === 'unsplash' && <UnsplashBrowser selectedScreenId={selectedScreenId} hasUnsplashKey={hasKey.unsplash} />}
+      {open === 'nasa' && <NasaBrowser selectedScreenId={selectedScreenId} hasNasaKey={hasKey.nasa} />}
+      {open === 'immich' && <ImmichBrowser selectedScreenId={selectedScreenId} hasImmichKey={hasKey.immich} />}
+      {open === 'library' && (
+        <ImageBrowserModal mode="pick-image" onSelectImage={onPickImage} onClose={() => setOpen(null)} />
+      )}
+    </div>
+  );
+}
+
+export default function LocalBackgrounds({ selectedScreenId, hasUnsplashKey, hasNasaKey, hasImmichKey }: Props) {
   const t = useTranslate('editor');
   const { config, selectedDisplayId, updateScreen, updateScreenRotation } = useEditorStore();
 
@@ -97,7 +155,8 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
     updateScreenRotation(selectedScreenId, { starterBackgroundIds: { ...selections, [group]: next } });
   };
   const selectionCount = (group: StarterBackgroundGroup) => `${selectedIds(group).length}/${starterBackgroundsIn(group).length}`;
-  const rotating = (group: StarterBackgroundGroup) => selectedSources.includes(group);
+  // Themes are a single choice: a rotation of several full-screen themes has no use.
+  const rotating = (group: StarterBackgroundGroup) => group !== 'theme' && selectedSources.includes(group);
   const groupHint = (group: StarterBackgroundGroup) => (selectedIds(group).length === 0 ? t('backgroundPicker.pickToRotate') : undefined);
 
   // Picking any background turns rotation off: a rotating screen would paint
@@ -163,8 +222,13 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   return (
     <>
-      <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count={selectionCount('theme')}
-        hint={groupHint('theme')} checked={selectedSources.includes('theme')} onChange={(checked) => selectSource('theme', checked)}>
+      <SinglePhotoPicker
+        selectedScreenId={selectedScreenId}
+        onPickImage={pick}
+        hasKey={{ unsplash: hasUnsplashKey, nasa: hasNasaKey, immich: hasImmichKey }}
+      />
+
+      <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count="" checked={false}>
         <div className="grid grid-cols-2 gap-1.5">
           {orderedThemeWalls.map((bg) => {
             const theme = FULLSCREEN_THEMES.find((th) => th.id === bg.themeId);

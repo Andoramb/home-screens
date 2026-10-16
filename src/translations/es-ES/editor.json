@@ -2525,7 +2525,10 @@
       "pattern-paper": "Papel"
     },
     "sourceKeyMissing": "Esta fuente necesita una clave de API que no está puesta, así que la pantalla se queda con la última imagen. Añade la clave en Ajustes, o elige otra fuente.",
-    "sourceNotSetUp": "Aún no configurada. Añade {source} en Ajustes para usarla.",
+    "sourceNotSetUp": "Aún no configurada.",
+    "sourceSetUpLink": "Configurar {source} en Ajustes",
+    "pickOneTitle": "Usar una foto concreta",
+    "pickOneLibrary": "Biblioteca de fotos / subir",
     "pickToRotate": "Toca los fondos que quieras en la rotación. Aún no hay ninguno seleccionado.",
     "modeFixed": "Fondo fijo",
     "modeRotating": "Rotando entre las fuentes seleccionadas",

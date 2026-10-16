@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import type { ImmichAlbumSummary } from '@/lib/immich';
 import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
+import IntegrationSettingsLink from './IntegrationSettingsLink';
 
 interface Props {
   selectedScreenId: string;
@@ -85,7 +86,7 @@ export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props)
   if (!hasImmichKey) {
     return (
       <div className="text-xs text-hs-text-faint bg-hs-hover rounded-md p-3 space-y-2">
-        <p>{t('imageBrowsers.immich.notConfiguredPrefix')} <strong>{t('imageBrowsers.immich.settingsWord')}</strong> {t('imageBrowsers.immich.notConfiguredSuffix')}</p>
+        <p>{t('imageBrowsers.immich.notConfiguredPrefix')} <IntegrationSettingsLink integration="immich">{t('imageBrowsers.immich.settingsWord')}</IntegrationSettingsLink> {t('imageBrowsers.immich.notConfiguredSuffix')}</p>
         <p className="text-hs-text-faint">
           {t('imageBrowsers.immich.apiKeyHint')}
         </p>

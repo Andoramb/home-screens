@@ -2525,7 +2525,10 @@
       "pattern-paper": "Papier"
     },
     "sourceKeyMissing": "Für diese Quelle fehlt ein API-Schlüssel, deshalb behält der Bildschirm sein letztes Bild. Trage den Schlüssel in den Einstellungen ein oder wähle eine andere Quelle.",
-    "sourceNotSetUp": "Noch nicht eingerichtet. Richte {source} in den Einstellungen ein, um die Quelle zu nutzen.",
+    "sourceNotSetUp": "Noch nicht eingerichtet.",
+    "sourceSetUpLink": "{source} in den Einstellungen einrichten",
+    "pickOneTitle": "Ein bestimmtes Foto verwenden",
+    "pickOneLibrary": "Fotobibliothek / Upload",
     "pickToRotate": "Tippe auf die Hintergründe für die Rotation. Noch keiner ausgewählt.",
     "modeFixed": "Fester Hintergrund",
     "modeRotating": "Wechselt zwischen den gewählten Quellen",

@@ -13,6 +13,7 @@ import { useTranslate } from '@/i18n';
 import { eventBus } from '@/lib/event-bus';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
 import { stopBackgroundRotation } from '@/lib/screen-background';
+import IntegrationSettingsLink, { type BackgroundIntegration } from './IntegrationSettingsLink';
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
 import BackgroundShadeFields from './BackgroundShadeFields';
 import BackgroundEffectsFields from './BackgroundEffectsFields';
@@ -75,10 +76,10 @@ export default function BackgroundPicker() {
 
   if (!currentScreen || !selectedScreenId) return null;
 
-  const ROTATION_SOURCES: { id: BackgroundRotationSourceId; label: string; locked: boolean }[] = [
-    { id: 'unsplash', label: t('backgroundPicker.sources.unsplash'), locked: !hasUnsplashKey },
-    { id: 'nasa-apod', label: t('backgroundPicker.sources.nasaApod'), locked: !hasNasaKey },
-    { id: 'immich', label: t('backgroundPicker.sources.immich'), locked: !hasImmichKey },
+  const ROTATION_SOURCES: { id: BackgroundRotationSourceId; label: string; locked: boolean; integration?: BackgroundIntegration }[] = [
+    { id: 'unsplash', label: t('backgroundPicker.sources.unsplash'), locked: !hasUnsplashKey, integration: 'unsplash' },
+    { id: 'nasa-apod', label: t('backgroundPicker.sources.nasaApod'), locked: !hasNasaKey, integration: 'nasa' },
+    { id: 'immich', label: t('backgroundPicker.sources.immich'), locked: !hasImmichKey, integration: 'immich' },
     { id: 'icloud', label: t('backgroundPicker.sources.icloud'), locked: false },
     { id: 'local', label: t('backgroundPicker.sources.local'), locked: false },
   ];
@@ -119,10 +120,10 @@ export default function BackgroundPicker() {
               }
             >
               <div className="space-y-2">
-                <p className="text-[10px] text-hs-text-faint" data-testid="background-mode">
+                <p className="text-xs font-medium text-hs-text-secondary" data-testid="background-mode">
                   {rotationSources.length > 0 ? t('backgroundPicker.modeRotating') : t('backgroundPicker.modeFixed')}
                 </p>
-                <LocalBackgrounds selectedScreenId={selectedScreenId} />
+                <LocalBackgrounds selectedScreenId={selectedScreenId} hasUnsplashKey={hasUnsplashKey} hasNasaKey={hasNasaKey} hasImmichKey={hasImmichKey} />
                 <div className="space-y-2">
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
@@ -130,7 +131,7 @@ export default function BackgroundPicker() {
                       <div key={entry.id}>
                         <label
                           className={`flex items-center gap-2 ${entry.locked && !checked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                          title={entry.locked ? t('backgroundPicker.sourceNotSetUp', { source: entry.label }) : undefined}
+                          title={entry.locked ? t('backgroundPicker.sourceSetUpLink', { source: entry.label }) : undefined}
                         >
                           <input
                             type="checkbox"
@@ -157,7 +158,12 @@ export default function BackgroundPicker() {
                               className="mt-0.5 block pl-5 text-[10px] leading-relaxed text-hs-text-faint"
                               data-testid={`background-source-not-set-up-${entry.id}`}
                             >
-                              {t('backgroundPicker.sourceNotSetUp', { source: entry.label })}
+                              {t('backgroundPicker.sourceNotSetUp')}{' '}
+                              {entry.integration && (
+                                <IntegrationSettingsLink integration={entry.integration}>
+                                  {t('backgroundPicker.sourceSetUpLink', { source: entry.label })}
+                                </IntegrationSettingsLink>
+                              )}
                             </span>
                           )
                         )}
