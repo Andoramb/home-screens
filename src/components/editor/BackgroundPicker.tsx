@@ -119,6 +119,9 @@ export default function BackgroundPicker() {
               }
             >
               <div className="space-y-2">
+                <p className="text-[10px] text-hs-text-faint" data-testid="background-mode">
+                  {rotationSources.length > 0 ? t('backgroundPicker.modeRotating') : t('backgroundPicker.modeFixed')}
+                </p>
                 <LocalBackgrounds selectedScreenId={selectedScreenId} />
                 <div className="space-y-2">
                   {ROTATION_SOURCES.map((entry) => {

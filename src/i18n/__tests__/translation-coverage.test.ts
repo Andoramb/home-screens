@@ -496,6 +496,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
   'fr-FR': new Set([
     // "Conditions" is the same word in French (the Weather module's Conditions view).
     'editor|configSections.fullscreen-weather.viewConditions',
+    // "Saturation" is the same word in this language.
+    'editor|backgroundPicker.effectsSaturationLabel',
     // "Bonus" is the same word in this language (bonus chores).
     'modules|chore-chart.bonus.heading',
     'modules|chore-chart.choreForm.kindBonus',
@@ -656,6 +658,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'modules|sports.win',
     // "Media" is the Dutch word too (a template category).
     'editor|templatePicker.categories.Media',
+    // "Contrast" is the same word in this language.
+    'editor|backgroundPicker.effectsContrastLabel',
     // "Bonus" is the same word in this language (bonus chores).
     'modules|chore-chart.bonus.heading',
     'modules|chore-chart.choreForm.kindBonus',

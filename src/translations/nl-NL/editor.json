@@ -2563,6 +2563,8 @@
     "sourceKeyMissing": "Deze bron heeft een sleutel nodig die nog niet is ingesteld, dus het scherm houdt de laatste foto. Voeg de sleutel toe bij Instellingen, of kies een andere bron.",
     "sourceNotSetUp": "Nog niet ingesteld. Voeg {source} toe in Instellingen om deze te gebruiken.",
     "pickToRotate": "Tik op de achtergronden voor de rotatie. Nog geen geselecteerd.",
+    "modeFixed": "Vaste achtergrond",
+    "modeRotating": "Wisselt tussen de gekozen bronnen",
     "shadeGroup": "Verduistering",
     "shadeEnable": "Achtergrond donkerder maken",
     "shadeStyleLabel": "Stijl",
@@ -2574,11 +2576,11 @@
       "edges": "Randen",
       "both": "Beide"
     },
-    "effectsGroup": "Effects",
-    "effectsBrightnessLabel": "Brightness",
+    "effectsGroup": "Effecten",
+    "effectsBrightnessLabel": "Helderheid",
     "effectsContrastLabel": "Contrast",
-    "effectsSaturationLabel": "Saturation",
-    "effectsWarmthLabel": "Warmth"
+    "effectsSaturationLabel": "Verzadiging",
+    "effectsWarmthLabel": "Warmte"
   },
   "imageBrowserModal": {
     "title": "Afbeeldingsbibliotheek",
