@@ -1271,7 +1271,11 @@
       "waningGibbous": "Waning Gibbous",
       "lastQuarter": "Last Quarter",
       "waningCrescent": "Waning Crescent",
-      "illuminated": "{percent}% lit"
+      "illuminated": "{percent}% lit",
+      "fullMoonIn": {
+        "one": "Full moon tomorrow",
+        "other": "Full moon in {count} days"
+      }
     },
     "uv": {
       "low": "Low, no protection needed",

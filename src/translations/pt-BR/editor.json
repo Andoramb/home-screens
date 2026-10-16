@@ -4590,6 +4590,7 @@
       "iconStyle": "Estilo do ícone",
       "dataProvider": "Fonte da previsão",
       "hoursToShow": "Horas a mostrar",
+      "hoursToShowHint": "As fontes de clima dão até um dia e meio à frente, então no máximo 36 horas aparecem.",
       "daysToShow": "Dias a mostrar",
       "showFeaturedDay": "Mostrar primeiro dia em destaque",
       "showRelativeDayLabels": "Usar Hoje e Amanhã",

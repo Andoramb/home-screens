@@ -35,15 +35,20 @@ export default function WeatherRibbonView({ config, hourly, units, timezone, tim
   return (
     <div className="w-full h-full flex flex-col" style={{ fontSize: `${scaledFontSize}px` }}>
       {showTitle && (
-        <div className="flex items-baseline justify-between gap-[1em] shrink-0 mb-[0.3em]">
+        /* The header is a container query root (em here is its own fitted
+           size): the condition goes first when the row is under 23em, then the
+           hour span under 16em, then the legend under 10em, so a small box
+           keeps its temperature instead of "Part…" or "Next 12 hours" drawn
+           across the figure. The hour axis under the chart still tells the span. */
+        <div className="@container flex items-baseline justify-between gap-[1em] shrink-0 mb-[0.3em]">
           {now ? (
             <div className="flex items-baseline gap-[0.5em] min-w-0">
               <span className="font-light leading-none tabular-nums" style={{ fontSize: '2em' }}>{Math.round(now.temp)}&deg;</span>
-              <span className="truncate capitalize" style={{ fontSize: '0.9em', opacity: TEXT_OPACITY.secondary }}>{now.description}</span>
+              <span className="truncate capitalize @max-[23em]:hidden" style={{ fontSize: '0.9em', opacity: TEXT_OPACITY.secondary }}>{now.description}</span>
             </div>
           ) : <span />}
-          <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-[0.8em]" style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.secondary }}>
-            <span>{t('fullscreen-weather.sections.nextHours', { hours: spanHours(hrs) })}</span>
+          <span className="shrink-0 whitespace-nowrap inline-flex items-center gap-[0.8em] @max-[10em]:hidden" style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.secondary }}>
+            <span className="@max-[16em]:hidden">{t('fullscreen-weather.sections.nextHours', { hours: spanHours(hrs) })}</span>
             <RainLegend />
           </span>
         </div>

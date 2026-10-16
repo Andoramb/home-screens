@@ -4590,6 +4590,7 @@
       "iconStyle": "Pictogramstijl",
       "dataProvider": "Weerbron",
       "hoursToShow": "Aantal uren tonen",
+      "hoursToShowHint": "Weerbronnen kijken tot anderhalve dag vooruit, dus meer dan 36 uur wordt niet getoond.",
       "daysToShow": "Aantal dagen tonen",
       "showFeaturedDay": "Eerste dag groot tonen",
       "showRelativeDayLabels": "Vandaag en morgen gebruiken",

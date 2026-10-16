@@ -4590,6 +4590,7 @@
       "iconStyle": "Style d'icône",
       "dataProvider": "Source météo",
       "hoursToShow": "Heures à afficher",
+      "hoursToShowHint": "Les services météo donnent jusqu'à un jour et demi d'avance, 36 heures au plus s'affichent.",
       "daysToShow": "Jours à afficher",
       "showFeaturedDay": "Afficher le premier jour en grand",
       "showRelativeDayLabels": "Utiliser Aujourd’hui et Demain",

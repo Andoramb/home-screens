@@ -1276,7 +1276,11 @@
       "waningGibbous": "Gibosa menguante",
       "lastQuarter": "Cuarto menguante",
       "waningCrescent": "Menguante",
-      "illuminated": "{percent}% iluminada"
+      "illuminated": "{percent}% iluminada",
+      "fullMoonIn": {
+        "one": "Luna llena mañana",
+        "other": "Luna llena en {count} días"
+      }
     },
     "uv": {
       "low": "Bajo, sin protección",

@@ -10,7 +10,7 @@ import { useFitFontSize } from '@/hooks/useFitFontSize';
 import { formatTimeInTZ } from '@/lib/timezone';
 import { decompose, formatDuration } from '@/lib/duration-format';
 import { hoursInTZ } from '@/lib/sun-astro';
-import { moonPhaseKey } from '@/lib/weather/moon-phase-name';
+import { daysToFullMoon, moonPhaseKey } from '@/lib/weather/moon-phase-name';
 import { smoothPath } from '../fullscreen-weather/weather-view-utils';
 import { useSunTimes, useViewBox } from './chart-parts';
 import { WeatherEmptyState } from './WeatherEmptyState';
@@ -33,8 +33,16 @@ export default function WeatherSunView({ config, timezone, timeFormat, scaledFon
   const [outerRef, box] = useViewBox();
   const uid = useId();
   const landscape = box.landscape;
+  // What a small box keeps: the arc and the times are the view, so the moon
+  // goes first (a side-by-side box under 420 px wide, a stacked one under
+  // 320 px tall) and the daylight headline next (under 160 px tall). Design
+  // canvas pixels, as the Week view's column rule: the starting text size
+  // grows with the box, so a rule in em would read the same for every size.
+  const dropMoon = box.width > 0 && (landscape ? box.width < 420 : box.height < 320);
+  const dropHeadline = box.height > 0 && box.height < 160;
+  const fullMoonCaption = box.width >= 480;
 
-  const { boxRef, contentRef, fontSize } = useFitFontSize(scaledFontSize, [landscape, config.showTitle !== false].join('|'));
+  const { boxRef, contentRef, fontSize } = useFitFontSize(scaledFontSize, [landscape, dropMoon, dropHeadline, fullMoonCaption, config.showTitle !== false].join('|'));
 
   if (latitude == null || longitude == null) {
     return (
@@ -60,21 +68,30 @@ export default function WeatherSunView({ config, timezone, timeFormat, scaledFon
   const illum = SunCalc.getMoonIllumination(now);
   const phaseKey = moonPhaseKey(illum.phase);
   const litPct = Math.round(illum.fraction * 100);
+  const fullIn = daysToFullMoon(illum.phase);
+  const showFullIn = fullMoonCaption && phaseKey !== 'full' && fullIn > 0;
 
   return (
     <div ref={outerRef} className="w-full h-full">
       <div ref={boxRef} className="w-full h-full overflow-hidden" style={{ fontSize: `${fontSize}px` }} data-weather-sun-mode={landscape ? 'side' : 'stacked'}>
         <div ref={contentRef} className={`w-full h-full flex ${landscape ? 'flex-row gap-[1.5em]' : 'flex-col gap-[0.6em]'}`}>
           <div className="flex-1 min-w-0 min-h-0 flex flex-col" data-testid="weather-sun-card">
-            <div className="font-light tabular-nums leading-none" style={{ fontSize: '1.8em' }}>
-              {hasArc ? (
-                <>{days * 24 + hours}<small style={{ fontSize: '0.5em', opacity: TEXT_OPACITY.dim }}>h</small> {minutes}<small style={{ fontSize: '0.5em', opacity: TEXT_OPACITY.dim }}>m</small></>
-              ) : (
-                <span style={{ fontSize: '0.7em' }}>{sun.isNight ? t('sunrise-sunset.polarNight') : t('sunrise-sunset.midnightSun')}</span>
-              )}
-            </div>
-            <div style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.dim, marginTop: '0.25em' }} aria-label={dayLength}>{t('fullscreen-weather.cards.daylight')}</div>
-            <div className="flex-1 min-h-0 grid overflow-hidden" style={{ placeItems: 'end center' }}>
+            {!dropHeadline && (
+              <>
+                <div className="font-light tabular-nums leading-none" style={{ fontSize: '1.8em' }}>
+                  {hasArc ? (
+                    <>{days * 24 + hours}<small style={{ fontSize: '0.5em', opacity: TEXT_OPACITY.dim }}>h</small> {minutes}<small style={{ fontSize: '0.5em', opacity: TEXT_OPACITY.dim }}>m</small></>
+                  ) : (
+                    <span style={{ fontSize: '0.7em' }}>{sun.isNight ? t('sunrise-sunset.polarNight') : t('sunrise-sunset.midnightSun')}</span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.dim, marginTop: '0.25em' }} aria-label={dayLength}>{t('fullscreen-weather.cards.daylight')}</div>
+              </>
+            )}
+            {/* The arc keeps a floor: squeezed below it the box overflows and
+                the fit loop shrinks the type, rather than the arc thinning
+                to a line while the text stays large. */}
+            <div className="flex-1 min-h-0 grid overflow-hidden" style={{ placeItems: 'end center', minHeight: '3em' }}>
               <svg viewBox={`0 0 ${ARC_W} ${ARC_H}`} preserveAspectRatio="xMidYMid meet" className="w-full max-h-full" aria-hidden="true">
                 <defs>
                   <linearGradient id={`${uid}-sun`} x1="0" x2="1">
@@ -85,7 +102,9 @@ export default function WeatherSunView({ config, timezone, timeFormat, scaledFon
                 </defs>
                 <line x1={18} y1={ARC_H - 24} x2={ARC_W - 18} y2={ARC_H - 24} stroke="currentColor" strokeOpacity=".2" strokeWidth={1.5} strokeDasharray="4 6" />
                 <path d={arc} fill="none" stroke={`url(#${uid}-sun)`} strokeWidth={4} strokeLinecap="round" />
-                {hasArc && (
+                {/* After sunset the sun is gone, not parked on the horizon;
+                    the times below and the moon beside say it is night. */}
+                {hasArc && !sun.isNight && (
                   <>
                     <circle cx={ax(prog)} cy={ay(prog)} r={22} fill="#fbbf24" opacity=".2" />
                     <circle cx={ax(prog)} cy={ay(prog)} r={11} fill="#fbbf24" />
@@ -99,11 +118,15 @@ export default function WeatherSunView({ config, timezone, timeFormat, scaledFon
             </div>
           </div>
 
+          {!dropMoon && (
           <div className={landscape ? 'flex-[0.8] min-w-0 min-h-0 flex flex-col' : 'shrink-0 flex items-center gap-[1em]'} data-testid="weather-moon-card">
             {!landscape && <MoonDisc phase={illum.phase} uid={uid} style={{ width: '4.5em', flex: 'none' }} />}
             <div className="min-w-0">
               <div className="font-light leading-tight" style={{ fontSize: '1.3em' }}>{t(`fullscreen-weather.moon.${phaseKey}`)}</div>
               <div style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.dim, marginTop: '0.25em' }}>{t('fullscreen-weather.moon.illuminated', { percent: litPct })}</div>
+              {showFullIn && (
+                <div style={{ fontSize: '0.75em', opacity: TEXT_OPACITY.dim, marginTop: '0.1em' }} data-testid="weather-full-moon">{t('fullscreen-weather.moon.fullMoonIn', { count: fullIn })}</div>
+              )}
             </div>
             {landscape && (
               <div className="flex-1 min-h-0 grid place-items-center overflow-hidden">
@@ -111,6 +134,7 @@ export default function WeatherSunView({ config, timezone, timeFormat, scaledFon
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </div>

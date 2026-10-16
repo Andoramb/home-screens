@@ -4590,6 +4590,7 @@
       "iconStyle": "Ikonstil",
       "dataProvider": "Vejrkilde",
       "hoursToShow": "Timer der vises",
+      "hoursToShowHint": "Vejrkilder giver op til halvandet døgn frem, så højst 36 timer vises.",
       "daysToShow": "Dage der vises",
       "showFeaturedDay": "Vis første dag stort",
       "showRelativeDayLabels": "Brug I dag og I morgen",

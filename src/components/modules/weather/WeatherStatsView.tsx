@@ -84,8 +84,12 @@ export default function WeatherStatsView({ config, hourly, units, timezone, time
   const mode: Mode = box.width > box.height * 3 ? 'row' : box.width < scaledFontSize * 16 ? 'list' : 'grid';
   const columns = cells.length >= 5 ? 3 : cells.length >= 3 ? 2 : 1;
 
+  // A row is a strip: start from its height (a 180 px band gets 40 px
+  // figures, not the 18 px the box's short edge would give) and let the fit
+  // loop bring the six cells back inside the width.
+  const desired = mode === 'row' ? Math.max(scaledFontSize, box.height / 4.5) : scaledFontSize;
   const { boxRef, contentRef, fontSize } = useFitFontSize(
-    scaledFontSize,
+    desired,
     [mode, cells.map((c) => c.key).join(','), config.showTitle !== false].join('|'),
   );
 
@@ -135,7 +139,10 @@ function StatCell({ cell, mode, first }: { cell: Cell; mode: Mode; first: boolea
     );
   }
   return (
-    <div data-testid={`weather-stat-${cell.key}`} className={`flex flex-col gap-[0.1em] min-w-0 ${mode === 'row' ? 'items-center text-center flex-1' : ''}`}>
+    // A row cell never shrinks below its figure: six that do not fit run past
+    // the strip's end, where the fit loop measures them, instead of the times
+    // sliding under each other.
+    <div data-testid={`weather-stat-${cell.key}`} className={`flex flex-col gap-[0.1em] ${mode === 'row' ? 'items-center text-center flex-1 min-w-fit' : 'min-w-0'}`}>
       {label}
       {value}
       {mode === 'grid' && cell.note && (

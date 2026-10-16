@@ -4590,6 +4590,7 @@
       "iconStyle": "Symbolstil",
       "dataProvider": "Wetterquelle",
       "hoursToShow": "Anzuzeigende Stunden",
+      "hoursToShowHint": "Wetterdienste liefern bis zu anderthalb Tage im Voraus, mehr als 36 Stunden werden nicht angezeigt.",
       "daysToShow": "Anzuzeigende Tage",
       "showFeaturedDay": "Ersten Tag groß anzeigen",
       "showRelativeDayLabels": "Heute und Morgen verwenden",

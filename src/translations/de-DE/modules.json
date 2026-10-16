@@ -1271,7 +1271,11 @@
       "waningGibbous": "Abnehmender Mond",
       "lastQuarter": "Letztes Viertel",
       "waningCrescent": "Abnehmende Sichel",
-      "illuminated": "{percent}% beleuchtet"
+      "illuminated": "{percent}% beleuchtet",
+      "fullMoonIn": {
+        "one": "Vollmond morgen",
+        "other": "Vollmond in {count} Tagen"
+      }
     },
     "uv": {
       "low": "Niedrig, kein Schutz nötig",

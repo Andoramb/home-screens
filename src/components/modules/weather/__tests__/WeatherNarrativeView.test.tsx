@@ -34,7 +34,7 @@ describe('WeatherNarrativeView', () => {
     expect(screen.queryByTestId('weather-narrative-text')).toBeNull();
     expect(screen.getByText('Partly cloudy')).toBeTruthy();
     expect(screen.getByText('10%')).toBeTruthy();
-    expect(screen.getByText('9')).toBeTruthy();
+    expect(screen.getByText('9 mph')).toBeTruthy();
   });
 
   it('hides the high and low when the toggle is off', () => {

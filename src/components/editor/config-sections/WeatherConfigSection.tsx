@@ -44,6 +44,37 @@ const VIEW_REQUIRES: Partial<Record<WeatherView, 'minutely' | 'alerts'>> = {
   alerts: 'alerts',
 };
 
+/**
+ * The settings each view reads, so the panel offers a toggle only where it
+ * changes the wall. Built from what the view components read: a toggle shown
+ * for a view that ignores it (Dew Point on Week ahead, Humidity on the written
+ * forecast) is a control that does nothing.
+ */
+type Field =
+  | 'icons' | 'hours' | 'days' | 'featuredDay' | 'relativeDays' | 'feelsLike' | 'highLow'
+  | 'precipitation' | 'precipAmount' | 'humidity' | 'wind' | 'pressure' | 'visibility' | 'dewPoint'
+  | 'uv' | 'sunTimes';
+const STATION: readonly Field[] = ['precipitation', 'humidity', 'wind', 'pressure', 'visibility', 'dewPoint'];
+const VIEW_FIELDS: Record<WeatherView, readonly Field[]> = {
+  current: ['icons', 'feelsLike', ...STATION, 'uv', 'sunTimes'],
+  hourly: ['icons', 'hours', 'feelsLike', 'precipitation', 'humidity', 'wind'],
+  daily: ['icons', 'days', 'featuredDay', 'relativeDays', 'highLow', 'precipitation', 'precipAmount', 'humidity', 'wind'],
+  combined: ['icons', 'hours', 'days', 'feelsLike', 'highLow', ...STATION],
+  compact: ['icons', 'feelsLike', 'highLow', ...STATION, 'uv', 'sunTimes'],
+  table: ['icons', 'days', 'highLow', 'precipitation', 'precipAmount', 'humidity', 'wind'],
+  precipitation: [],
+  alerts: [],
+  ribbon: ['hours'],
+  week: ['icons', 'days', 'relativeDays', 'highLow', 'precipitation', 'humidity', 'wind'],
+  timeline: ['icons', 'hours'],
+  stats: [],
+  sun: [],
+  narrative: ['icons', 'days', 'relativeDays', 'highLow'],
+};
+
+/** Sources give up to a day and a half ahead; past this the field asks for hours no source has. */
+const MAX_HOURS = 36;
+
 export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; screenId: string }) {
   const t = useTranslate('editor');
 
@@ -126,17 +157,9 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
     ? configuredProviders.filter((p) => PROVIDER_CAPS[p]?.[viewRequirement])
     : configuredProviders;
 
-  const showsHours = ['hourly', 'combined', 'ribbon', 'timeline'].includes(view);
-  const showsDays = ['daily', 'combined', 'table', 'week', 'narrative'].includes(view);
-  const showsCurrent = ['current', 'hourly', 'combined', 'compact'].includes(view);
-  // Views with no configurable data toggles: alerts and precipitation have
-  // none, and the full-screen pieces draw their fixed set (the ribbon and
-  // timeline always show rain, the stats view shows whatever the provider has).
-  const showsStats = !['alerts', 'precipitation', 'ribbon', 'timeline', 'stats', 'sun', 'narrative'].includes(view);
+  const has = (field: Field) => VIEW_FIELDS[view].includes(field);
   // Icon style applies wherever a condition icon is drawn.
-  const showsIcons = showsStats || view === 'timeline' || view === 'narrative';
-  // The chips the current and compact views can add beside their stats.
-  const showsChips = view === 'current' || view === 'compact';
+  const showsIcons = has('icons');
 
   return (
     <>
@@ -220,15 +243,20 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
           </select>
         </LabeledField>
       )}
-      {showsHours && (
-        <LabeledInput
-          label={t('configSections.weather.hoursToShow')}
-          type="number"
-          value={c.hoursToShow ?? 8}
-          onChange={(v) => set({ hoursToShow: Number(v) })}
-        />
+      {has('hours') && (
+        <>
+          <LabeledInput
+            label={t('configSections.weather.hoursToShow')}
+            type="number"
+            min={2}
+            max={MAX_HOURS}
+            value={c.hoursToShow ?? 8}
+            onChange={(v) => set({ hoursToShow: Math.min(MAX_HOURS, Number(v)) })}
+          />
+          <span className="text-xs text-hs-text-muted">{t('configSections.weather.hoursToShowHint')}</span>
+        </>
       )}
-      {showsDays && (
+      {has('days') && (
         <LabeledInput
           label={t('configSections.weather.daysToShow')}
           type="number"
@@ -236,42 +264,44 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
           onChange={(v) => set({ daysToShow: Number(v) })}
         />
       )}
-      {view === 'daily' && (
-        <>
-          <Toggle label={t('configSections.weather.showFeaturedDay')} checked={c.showFeaturedDay !== false} onChange={(v) => set({ showFeaturedDay: v })} />
-          <Toggle label={t('configSections.weather.showRelativeDayLabels')} checked={c.showRelativeDayLabels !== false} onChange={(v) => set({ showRelativeDayLabels: v })} />
-        </>
+      {has('featuredDay') && (
+        <Toggle label={t('configSections.weather.showFeaturedDay')} checked={c.showFeaturedDay !== false} onChange={(v) => set({ showFeaturedDay: v })} />
       )}
-      {showsCurrent && (
+      {has('relativeDays') && (
+        <Toggle label={t('configSections.weather.showRelativeDayLabels')} checked={c.showRelativeDayLabels !== false} onChange={(v) => set({ showRelativeDayLabels: v })} />
+      )}
+      {has('feelsLike') && (
         <Toggle label={t('configSections.weather.feelsLike')} checked={c.showFeelsLike !== false} onChange={(v) => set({ showFeelsLike: v })} />
       )}
-      {showsDays && (
+      {has('highLow') && (
         <Toggle label={t('configSections.weather.highLow')} checked={c.showHighLow !== false} onChange={(v) => set({ showHighLow: v })} />
       )}
-      {showsStats && (
-        <>
-          <Toggle label={t('configSections.weather.precipitation')} checked={c.showPrecipitation !== false} onChange={(v) => set({ showPrecipitation: v })} />
-          {showsDays && (
-            <Toggle label={t('configSections.weather.precipitationAmount')} checked={!!c.showPrecipAmount} onChange={(v) => set({ showPrecipAmount: v })} />
-          )}
-          <Toggle label={t('configSections.weather.humidity')} checked={!!c.showHumidity} onChange={(v) => set({ showHumidity: v })} />
-          <Toggle label={t('configSections.weather.windSpeed')} checked={!!c.showWind} onChange={(v) => set({ showWind: v })} />
-          {caps.pressure && (
-            <Toggle label={t('configSections.weather.pressure')} checked={!!c.showPressure} onChange={(v) => set({ showPressure: v })} />
-          )}
-          {caps.visibility && (
-            <Toggle label={t('configSections.weather.visibility')} checked={!!c.showVisibility} onChange={(v) => set({ showVisibility: v })} />
-          )}
-          {caps.dewPoint && (
-            <Toggle label={t('configSections.weather.dewPoint')} checked={!!c.showDewPoint} onChange={(v) => set({ showDewPoint: v })} />
-          )}
-          {showsChips && caps.uv && (
-            <Toggle label={t('configSections.weather.uvIndex')} checked={!!c.showUV} onChange={(v) => set({ showUV: v })} />
-          )}
-          {showsChips && (
-            <Toggle label={t('configSections.weather.sunTimes')} checked={!!c.showSunTimes} onChange={(v) => set({ showSunTimes: v })} />
-          )}
-        </>
+      {has('precipitation') && (
+        <Toggle label={t('configSections.weather.precipitation')} checked={c.showPrecipitation !== false} onChange={(v) => set({ showPrecipitation: v })} />
+      )}
+      {has('precipAmount') && (
+        <Toggle label={t('configSections.weather.precipitationAmount')} checked={!!c.showPrecipAmount} onChange={(v) => set({ showPrecipAmount: v })} />
+      )}
+      {has('humidity') && (
+        <Toggle label={t('configSections.weather.humidity')} checked={!!c.showHumidity} onChange={(v) => set({ showHumidity: v })} />
+      )}
+      {has('wind') && (
+        <Toggle label={t('configSections.weather.windSpeed')} checked={!!c.showWind} onChange={(v) => set({ showWind: v })} />
+      )}
+      {has('pressure') && caps.pressure && (
+        <Toggle label={t('configSections.weather.pressure')} checked={!!c.showPressure} onChange={(v) => set({ showPressure: v })} />
+      )}
+      {has('visibility') && caps.visibility && (
+        <Toggle label={t('configSections.weather.visibility')} checked={!!c.showVisibility} onChange={(v) => set({ showVisibility: v })} />
+      )}
+      {has('dewPoint') && caps.dewPoint && (
+        <Toggle label={t('configSections.weather.dewPoint')} checked={!!c.showDewPoint} onChange={(v) => set({ showDewPoint: v })} />
+      )}
+      {has('uv') && caps.uv && (
+        <Toggle label={t('configSections.weather.uvIndex')} checked={!!c.showUV} onChange={(v) => set({ showUV: v })} />
+      )}
+      {has('sunTimes') && (
+        <Toggle label={t('configSections.weather.sunTimes')} checked={!!c.showSunTimes} onChange={(v) => set({ showSunTimes: v })} />
       )}
     </>
   );

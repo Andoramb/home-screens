@@ -6,6 +6,7 @@ import { useFormattingLocale, useTranslate } from '@/i18n';
 import { useTZClock } from '@/hooks/useTZClock';
 import { useFitFontSize } from '@/hooks/useFitFontSize';
 import { localISODate } from '@/lib/timezone';
+import { windUnitLabel } from '@/lib/weather/units';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import { WeatherStat } from '../WeatherStat';
 import { dayLabel } from './day-label';
@@ -20,7 +21,7 @@ import type { WeatherViewProps } from './types';
  * other provider the row carries the short condition with the rain chance
  * and wind beside it, so the view never goes blank.
  */
-export default function WeatherNarrativeView({ config, forecast, timezone, scaledFontSize }: WeatherViewProps) {
+export default function WeatherNarrativeView({ config, forecast, units, timezone, scaledFontSize }: WeatherViewProps) {
   const t = useTranslate('modules');
   const tCore = useTranslate('core');
   const tWeather = useTranslate('weather');
@@ -36,10 +37,12 @@ export default function WeatherNarrativeView({ config, forecast, timezone, scale
   );
 
   return (
-    <div ref={boxRef} className="w-full h-full overflow-hidden" style={{ fontSize: `${fontSize}px` }}>
+    <div ref={boxRef} className="w-full h-full overflow-hidden flex flex-col" style={{ fontSize: `${fontSize}px` }}>
       {/* Title and rows measured together: the rows take their natural
-          height and run past the box when they do not fit. */}
-      <div ref={contentRef} className="flex flex-col">
+          height and run past the box when they do not fit. Auto margins
+          centre a short list and never go negative, so a tall one still
+          overflows past the bottom edge where the fit loop sees it. */}
+      <div ref={contentRef} className="flex flex-col my-auto">
         {config.showTitle !== false && (
           <h2 className="font-semibold mb-[0.35em] shrink-0" style={{ fontSize: '1.125em', opacity: TEXT_OPACITY.heading }}>{t('weather.forecast')}</h2>
         )}
@@ -68,7 +71,7 @@ export default function WeatherNarrativeView({ config, forecast, timezone, scale
                     <div className="flex items-center gap-[0.8em] flex-wrap" style={{ fontSize: '0.85em', opacity: TEXT_OPACITY.heading }}>
                       <span className="capitalize">{day.description}</span>
                       <WeatherStat icon={CloudRain} value={day.precipProbability} unit="%" visible fontSize="0.85em" />
-                      <WeatherStat icon={Wind} value={day.windSpeed} visible={day.windSpeed != null} fontSize="0.85em" />
+                      <WeatherStat icon={Wind} value={day.windSpeed} unit={` ${windUnitLabel(units)}`} visible={day.windSpeed != null} fontSize="0.85em" />
                     </div>
                   )}
                 </div>

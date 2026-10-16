@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, screen } from '@testing-library/react';
 import WeatherWeekView from '../WeatherWeekView';
-import { renderView, stubBox, viewProps } from './view-test-helpers';
+import { WEEK, renderView, stubBox, viewProps } from './view-test-helpers';
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -33,6 +33,15 @@ describe('WeatherWeekView', () => {
     expect(container.querySelector('[data-weather-week-mode]')?.getAttribute('data-weather-week-mode')).toBe('bands');
     expect(screen.getByText('Oct 16')).toBeTruthy();
     expect(screen.getByText('Showers')).toBeTruthy();
+  });
+
+  it('lets a long condition wrap to two lines in a column instead of cutting it', () => {
+    stubBox(640, 360);
+    const { container } = renderView(<WeatherWeekView {...viewProps({ forecast: [{ ...WEEK[0], description: 'Widespread Frost Then Sunny' }, ...WEEK.slice(1)] })} />);
+    const text = screen.getByText('Widespread Frost Then Sunny');
+    expect(text.className).toContain('line-clamp-2');
+    expect(text.className).not.toContain('truncate');
+    expect(container.querySelector('[data-weather-day]')).toBeTruthy();
   });
 
   it('falls back to the plain day list in a wide box too short for columns', () => {

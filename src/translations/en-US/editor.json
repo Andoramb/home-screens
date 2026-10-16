@@ -4590,6 +4590,7 @@
       "iconStyle": "Icon Style",
       "dataProvider": "Weather source",
       "hoursToShow": "Hours to Show",
+      "hoursToShowHint": "Weather sources give up to a day and a half ahead, so 36 is the most that will show.",
       "daysToShow": "Days to Show",
       "showFeaturedDay": "Show large first day",
       "showRelativeDayLabels": "Use Today and Tmrw labels",

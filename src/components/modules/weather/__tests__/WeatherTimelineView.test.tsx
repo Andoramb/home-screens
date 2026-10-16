@@ -38,11 +38,20 @@ describe('WeatherTimelineView', () => {
   });
 
   it('runs the hours down the page as rows in a tall box, with the wind unit on every row', () => {
-    stubBox(420, 600);
+    stubBox(560, 800);
     const { container } = renderView(<WeatherTimelineView {...viewProps({}, { hoursToShow: 8 })} />);
     expect(container.querySelector('[data-weather-timeline-mode]')?.getAttribute('data-weather-timeline-mode')).toBe('rows');
     expect(screen.getAllByTestId('weather-hour')).toHaveLength(8);
     expect(screen.getAllByText('9 mph')).toHaveLength(8);
+  });
+
+  it('drops the icon and wind columns in a narrow tall box and keeps a floor under the track', () => {
+    stubBox(300, 600);
+    const { container } = renderView(<WeatherTimelineView {...viewProps({}, { hoursToShow: 8 })} />);
+    expect(container.querySelector('[data-weather-timeline-mode]')?.getAttribute('data-weather-timeline-mode')).toBe('rows');
+    expect(screen.queryAllByText('9 mph')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-testid="weather-hour"] [role="img"]')).toHaveLength(0);
+    expect(container.querySelector('[data-testid="weather-hour"] .min-w-\\[9em\\]')).toBeTruthy();
   });
 
   it('names the span by elapsed time, not by entry count, for a three-hourly source', () => {

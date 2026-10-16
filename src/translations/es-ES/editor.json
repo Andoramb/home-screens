@@ -4590,6 +4590,7 @@
       "iconStyle": "Estilo de icono",
       "dataProvider": "Fuente del tiempo",
       "hoursToShow": "Horas a mostrar",
+      "hoursToShowHint": "Las fuentes del tiempo dan hasta un día y medio por delante, así que se muestran 36 horas como máximo.",
       "daysToShow": "Días a mostrar",
       "showFeaturedDay": "Mostrar el primer día en grande",
       "showRelativeDayLabels": "Usar Hoy y Mañana",

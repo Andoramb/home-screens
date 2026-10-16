@@ -59,10 +59,18 @@ export default function WeatherTimelineView({ config, hourly, units, timezone, t
     };
   });
   const landscape = box.landscape;
+  // Rows in a narrow box drop the icon and wind columns, as the full-screen
+  // HourlyRows do: with every column fixed in em, a 420 px box left the
+  // temperature track 17 px wide and nothing overflowed for the fit loop
+  // to shrink. The track also has a floor (see Rows) so a box too narrow for
+  // the remaining columns overflows instead of collapsing it. Design canvas
+  // pixels: the starting text size follows the box height, so a rule in em
+  // would not tell a narrow box from a wide one.
+  const narrow = !landscape && box.width > 0 && box.width < 480;
 
   const { boxRef, contentRef, fontSize } = useFitFontSize(
     scaledFontSize,
-    [landscape, N, config.showTitle !== false, config.iconSet].join('|'),
+    [landscape, narrow, N, config.showTitle !== false, config.iconSet].join('|'),
   );
 
   const gradient = (vertical: boolean) => (
@@ -86,7 +94,7 @@ export default function WeatherTimelineView({ config, hourly, units, timezone, t
           ) : landscape ? (
             <Meteogram entries={entries} units={units} boxWidth={box.width} fontSize={fontSize} iconSet={config.iconSet} tWeather={tWeather} gradient={gradient(false)} gradId={`${uid}-g`} />
           ) : (
-            <Rows entries={entries} units={units} axis={axis} iconSet={config.iconSet} tWeather={tWeather} gradient={gradient(true)} gradId={`${uid}-g`} />
+            <Rows entries={entries} units={units} axis={axis} iconSet={config.iconSet} tWeather={tWeather} gradient={gradient(true)} gradId={`${uid}-g`} narrow={narrow} />
           )}
         </div>
       </div>
@@ -211,8 +219,11 @@ function Meteogram({ entries, units, boxWidth, fontSize, iconSet, tWeather, grad
   );
 }
 
-function Rows({ entries, units, axis, iconSet, tWeather, gradient, gradId }: ChartProps & { axis: { min: number; max: number } }) {
+function Rows({ entries, units, axis, iconSet, tWeather, gradient, gradId, narrow }: ChartProps & { axis: { min: number; max: number }; narrow: boolean }) {
   const N = entries.length;
+  // The track is never narrower than this: a row that cannot seat it runs
+  // past the box, where the fit loop measures it and shrinks the type.
+  const TRACK_MIN = 'min-w-[9em]';
   const pts = entries.map((e) => [e.k * 100, e.i + 0.5] as [number, number]);
   const trackInset: React.CSSProperties = { position: 'absolute', top: 0, bottom: 0, left: '0.3em', right: '2.6em' };
   const col = {
@@ -229,16 +240,16 @@ function Rows({ entries, units, axis, iconSet, tWeather, gradient, gradId }: Cha
           type inside takes its own size. */}
       <div className="flex gap-[0.6em] shrink-0 pb-[0.4em] font-semibold" style={{ opacity: TEXT_OPACITY.dim, borderBottom: DIVIDER }}>
         <span style={col.hour} />
-        <span style={col.icon} />
-        <span className="flex-1 min-w-0 flex justify-between px-[0.3em] tabular-nums" style={{ fontSize: '0.62em' }}><span>{Math.round(axis.min)}&deg;</span><span>{Math.round(axis.max)}&deg;</span></span>
+        {!narrow && <span style={col.icon} />}
+        <span className={`flex-1 ${TRACK_MIN} flex justify-between px-[0.3em] tabular-nums`} style={{ fontSize: '0.62em' }}><span>{Math.round(axis.min)}&deg;</span><span>{Math.round(axis.max)}&deg;</span></span>
         <span className="flex justify-center" style={col.rain}><Droplet size="0.9em" strokeWidth={1.6} aria-hidden="true" /></span>
-        <span className="flex justify-center" style={col.wind}><Wind size="0.9em" strokeWidth={1.6} aria-hidden="true" /></span>
+        {!narrow && <span className="flex justify-center" style={col.wind}><Wind size="0.9em" strokeWidth={1.6} aria-hidden="true" /></span>}
       </div>
       <div className="flex-1 relative flex flex-col">
         <div aria-hidden className="absolute inset-0 flex gap-[0.6em] pointer-events-none">
           <span style={col.hour} />
-          <span style={col.icon} />
-          <span className="flex-1 min-w-0 relative">
+          {!narrow && <span style={col.icon} />}
+          <span className={`flex-1 ${TRACK_MIN} relative`}>
             <div style={trackInset} data-testid="weather-timeline-spline">
               <svg viewBox={`0 0 100 ${N}`} preserveAspectRatio="none" className="block w-full h-full overflow-visible">
                 {gradient}
@@ -247,17 +258,19 @@ function Rows({ entries, units, axis, iconSet, tWeather, gradient, gradId }: Cha
             </div>
           </span>
           <span style={col.rain} />
-          <span style={col.wind} />
+          {!narrow && <span style={col.wind} />}
         </div>
         {entries.map((e) => {
           const Icon = getWeatherIcon(e.h.icon, iconSet);
           return (
             <div key={e.i} data-testid="weather-hour" className="grow shrink-0 basis-auto flex items-center gap-[0.6em] relative" style={{ minHeight: '1.6em' }}>
               <span className="font-semibold" style={col.hour}><span style={{ fontSize: '0.78em', opacity: e.i === 0 ? 1 : TEXT_OPACITY.secondary }}>{e.label}</span></span>
-              <span className="grid place-items-center" style={{ ...col.icon, color: e.rain >= 50 ? RAIN_COLOR : undefined }}>
-                <Icon size="1.1em" strokeWidth={1.6} aria-label={getLocalizedConditionLabel(e.h.icon, tWeather)} role="img" />
-              </span>
-              <span className="flex-1 min-w-0 relative h-full">
+              {!narrow && (
+                <span className="grid place-items-center" style={{ ...col.icon, color: e.rain >= 50 ? RAIN_COLOR : undefined }}>
+                  <Icon size="1.1em" strokeWidth={1.6} aria-label={getLocalizedConditionLabel(e.h.icon, tWeather)} role="img" />
+                </span>
+              )}
+              <span className={`flex-1 ${TRACK_MIN} relative h-full`}>
                 <div style={trackInset}>
                   <span className="absolute rounded-full" style={{ top: '50%', left: `${e.k * 100}%`, width: '0.5em', height: '0.5em', transform: 'translate(-50%,-50%)', background: tempColor(e.h.temp, units), border: '2px solid rgba(0,0,0,.45)' }} />
                   <span className="absolute font-medium whitespace-nowrap tabular-nums" style={{ top: '50%', left: `${e.k * 100}%`, transform: 'translate(0.45em, -50%)', fontSize: '0.82em' }}>{Math.round(e.h.temp)}&deg;</span>
@@ -269,9 +282,11 @@ function Rows({ entries, units, axis, iconSet, tWeather, gradient, gradId }: Cha
                 </span>
                 <span className="text-right font-semibold" style={{ width: '2em', fontSize: '0.65em', color: RAIN_COLOR }}>{e.rain}%</span>
               </span>
-              <span className="text-right whitespace-nowrap" style={col.wind}>
-                <span style={{ fontSize: '0.72em', opacity: TEXT_OPACITY.secondary }}>{e.wind != null ? `${e.wind} ${windUnitLabel(units)}` : ''}</span>
-              </span>
+              {!narrow && (
+                <span className="text-right whitespace-nowrap" style={col.wind}>
+                  <span style={{ fontSize: '0.72em', opacity: TEXT_OPACITY.secondary }}>{e.wind != null ? `${e.wind} ${windUnitLabel(units)}` : ''}</span>
+                </span>
+              )}
             </div>
           );
         })}

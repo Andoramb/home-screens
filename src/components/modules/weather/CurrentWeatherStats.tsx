@@ -1,6 +1,7 @@
 'use client';
 
 import { CloudRain, Droplets, Wind, Gauge, Eye, Thermometer, Sun, Sunrise, Sunset } from 'lucide-react';
+import { TEXT_OPACITY } from '@/lib/constants';
 import { WeatherStat } from '../WeatherStat';
 import type { TimeFormat, WeatherConfig } from '@/types/config';
 import type { HourlyWeather } from '@/lib/weather';
@@ -35,8 +36,15 @@ export function CurrentWeatherStats({ config, current, units, fontSize, latitude
       <WeatherStat icon={Eye} value={current.visibility} unit={units === 'metric' ? ' km' : ' mi'} visible={config.showVisibility} fontSize={fontSize} />
       <WeatherStat icon={Thermometer} value={current.dewPoint} unit="°" visible={config.showDewPoint} fontSize={fontSize} />
       <WeatherStat icon={Sun} value={current.uvIndex != null ? `UV ${Math.round(current.uvIndex)}` : null} visible={config.showUV} fontSize={fontSize} testId="weather-stat-uv" />
-      <WeatherStat icon={Sunrise} value={sun.sunrise ? formatTimeInTZ(sun.sunrise, clock) : null} visible={config.showSunTimes} fontSize={fontSize} testId="weather-stat-sunrise" />
-      <WeatherStat icon={Sunset} value={sun.sunset ? formatTimeInTZ(sun.sunset, clock) : null} visible={config.showSunTimes} fontSize={fontSize} testId="weather-stat-sunset" />
+      {/* One chip, not two: a row that wraps keeps sunrise and sunset
+          together instead of leaving the sunset alone on the next line. */}
+      {config.showSunTimes && sun.sunrise && sun.sunset && (
+        <span className="flex items-center gap-0.5 whitespace-nowrap" style={{ fontSize, opacity: TEXT_OPACITY.dim }} data-testid="weather-stat-sun-times">
+          <Sunrise size="1em" aria-hidden="true" /><span data-testid="weather-stat-sunrise">{formatTimeInTZ(sun.sunrise, clock)}</span>
+          <span aria-hidden="true" className="mx-0.5">–</span>
+          <Sunset size="1em" aria-hidden="true" /><span data-testid="weather-stat-sunset">{formatTimeInTZ(sun.sunset, clock)}</span>
+        </span>
+      )}
     </>
   );
 }

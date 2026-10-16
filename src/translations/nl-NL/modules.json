@@ -1271,7 +1271,11 @@
       "waningGibbous": "Afnemende maan",
       "lastQuarter": "Laatste kwartier",
       "waningCrescent": "Afnemende sikkel",
-      "illuminated": "{percent}% verlicht"
+      "illuminated": "{percent}% verlicht",
+      "fullMoonIn": {
+        "one": "Morgen volle maan",
+        "other": "Volle maan over {count} dagen"
+      }
     },
     "uv": {
       "low": "Laag, geen bescherming nodig",

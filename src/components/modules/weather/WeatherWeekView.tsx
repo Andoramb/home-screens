@@ -8,7 +8,6 @@ import { useTZClock } from '@/hooks/useTZClock';
 import { useFitFontSize } from '@/hooks/useFitFontSize';
 import { localISODate } from '@/lib/timezone';
 import { formatDateSync } from '@/i18n';
-import { windUnitLabel } from '@/lib/weather/units';
 import { getWeatherIcon } from '@/lib/weather-icons';
 import type { ForecastDay } from '@/lib/weather';
 import type { WeekRange } from '../fullscreen-weather/weather-view-utils';
@@ -117,12 +116,13 @@ interface DayProps {
 
 /**
  * Rain chance, humidity and wind, each behind its toggle; hidden rain keeps
- * the line's height. A column has no room for a unit beside seven of these,
- * so there the wind is its icon and a number, as the full-screen Week draws
- * it; bands and rows spell the unit out. One line always: the fit loop
- * measures a line that runs past the end of the box, never one that wraps.
+ * the line's height. The wind is its icon and a number in every layout, as
+ * the full-screen Week draws it: a column has no room for a unit beside
+ * seven of these, and a band that spelled it out read as a different figure
+ * from the same module stood up. One line always: the fit loop measures a
+ * line that runs past the end of the box, never one that wraps.
  */
-function Details({ config, units, day, mode }: { config: WeatherConfig; units: 'metric' | 'imperial'; day: ForecastDay; mode: 'columns' | 'bands' }) {
+function Details({ config, day, mode }: { config: WeatherConfig; day: ForecastDay; mode: 'columns' | 'bands' }) {
   const rain = Math.round(day.precipProbability ?? 0);
   const items: React.ReactNode[] = [];
   if (config.showPrecipitation !== false && rain >= RAIN_SHOWN_PCT) {
@@ -132,7 +132,7 @@ function Details({ config, units, day, mode }: { config: WeatherConfig; units: '
     items.push(<span key="hum" className="inline-flex items-center gap-[0.2em]"><Droplets size="1em" strokeWidth={2} aria-hidden="true" />{Math.round(day.humidity)}%</span>);
   }
   if (config.showWind && day.windSpeed != null) {
-    items.push(<span key="wind" className="inline-flex items-center gap-[0.2em]"><Wind size="1em" strokeWidth={2} aria-hidden="true" />{Math.round(day.windSpeed)}{mode === 'bands' ? ` ${windUnitLabel(units)}` : ''}</span>);
+    items.push(<span key="wind" className="inline-flex items-center gap-[0.2em]"><Wind size="1em" strokeWidth={2} aria-hidden="true" />{Math.round(day.windSpeed)}</span>);
   }
   return (
     <div
@@ -155,11 +155,14 @@ function DayColumn({ config, units, scale, tWeather, name, day, today, last }: D
     <div data-weather-day={day.date} className="flex-1 min-w-fit flex flex-col items-center gap-[0.12em] px-[0.2em] [&>*]:shrink-0" style={{ borderRight: last ? 0 : '1px solid color-mix(in srgb, currentColor 10%, transparent)' }}>
       <span className={today ? 'font-semibold' : ''} style={{ fontSize: '0.8em', opacity: today ? 1 : TEXT_OPACITY.secondary }}>{name(day)}</span>
       <Icon size="1.9em" strokeWidth={1.5} aria-label={getLocalizedConditionLabel(day.icon, tWeather)} role="img" />
-      <span className="truncate max-w-[8em] capitalize" style={{ fontSize: '0.68em', opacity: TEXT_OPACITY.dim }}>{day.description}</span>
+      {/* Two lines at a fixed height, so "Widespread Frost Then Sunny" wraps
+          instead of ending in an ellipsis and every column's high sits on
+          the same line. The 8em cap still bounds the column's min-width. */}
+      <span className="line-clamp-2 text-center max-w-[8em] capitalize" style={{ fontSize: '0.68em', lineHeight: 1.15, height: '2.3em', opacity: TEXT_OPACITY.dim }}>{day.description}</span>
       {showHighLow && <span className="font-medium tabular-nums" style={{ fontSize: '0.95em' }}>{Math.round(day.high)}&deg;</span>}
       <RangeBar day={day} range={scale} today={today} units={units} vertical />
       {showHighLow && <span className="tabular-nums" style={{ fontSize: '0.85em', opacity: TEXT_OPACITY.dim }}>{Math.round(day.low)}&deg;</span>}
-      <Details config={config} units={units} day={day} mode="columns" />
+      <Details config={config} day={day} mode="columns" />
     </div>
   );
 }
@@ -186,8 +189,8 @@ function DayBand({ config, units, scale, tWeather, name, shortDate, day, today, 
       </div>
       <Icon size="1.8em" strokeWidth={1.5} aria-label={getLocalizedConditionLabel(day.icon, tWeather)} role="img" />
       <div className="flex flex-col">
-        <span className="capitalize truncate max-w-[11em]" style={{ fontSize: '0.78em', lineHeight: 1.1, opacity: TEXT_OPACITY.secondary }}>{day.description}</span>
-        <Details config={config} units={units} day={day} mode="bands" />
+        <span className="capitalize line-clamp-2 max-w-[11em]" style={{ fontSize: '0.78em', lineHeight: 1.1, opacity: TEXT_OPACITY.secondary }}>{day.description}</span>
+        <Details config={config} day={day} mode="bands" />
       </div>
       <span className="text-right tabular-nums" style={{ fontSize: '0.9em', opacity: TEXT_OPACITY.dim, visibility: showHighLow ? 'visible' : 'hidden' }}>{Math.round(day.low)}&deg;</span>
       <RangeBar day={day} range={scale} today={today} units={units} />

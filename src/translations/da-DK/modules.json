@@ -1271,7 +1271,11 @@
       "waningGibbous": "Aftagende halvmåne",
       "lastQuarter": "Sidste kvarter",
       "waningCrescent": "Aftagende måne",
-      "illuminated": "{percent}% oplyst"
+      "illuminated": "{percent}% oplyst",
+      "fullMoonIn": {
+        "one": "Fuldmåne i morgen",
+        "other": "Fuldmåne om {count} dage"
+      }
     },
     "uv": {
       "low": "Lavt, ingen beskyttelse nødvendig",

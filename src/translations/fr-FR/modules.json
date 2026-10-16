@@ -1276,7 +1276,11 @@
       "waningGibbous": "Gibbeuse décroissante",
       "lastQuarter": "Dernier quartier",
       "waningCrescent": "Dernier croissant",
-      "illuminated": "{percent}% éclairée"
+      "illuminated": "{percent}% éclairée",
+      "fullMoonIn": {
+        "one": "Pleine lune demain",
+        "other": "Pleine lune dans {count} jours"
+      }
     },
     "uv": {
       "low": "Faible, aucune protection",
