@@ -266,6 +266,14 @@ describe('BackgroundPicker — unified Sources', () => {
     expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
   });
 
+  it('labels the Sources card as fixed or rotating', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByTestId, getByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeFixed);
+    fireEvent.click(getByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.color }));
+    expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeRotating);
+  });
+
   it('shows a visible hint and a disabled checkbox for sources that are not set up', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { getByTestId, getByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });

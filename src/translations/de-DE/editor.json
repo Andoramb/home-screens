@@ -2527,6 +2527,8 @@
     "sourceKeyMissing": "Für diese Quelle fehlt ein API-Schlüssel, deshalb behält der Bildschirm sein letztes Bild. Trage den Schlüssel in den Einstellungen ein oder wähle eine andere Quelle.",
     "sourceNotSetUp": "Noch nicht eingerichtet. Richte {source} in den Einstellungen ein, um die Quelle zu nutzen.",
     "pickToRotate": "Tippe auf die Hintergründe für die Rotation. Noch keiner ausgewählt.",
+    "modeFixed": "Fester Hintergrund",
+    "modeRotating": "Wechselt zwischen den gewählten Quellen",
     "shadeGroup": "Abdunklung",
     "shadeEnable": "Hintergrund abdunkeln",
     "shadeStyleLabel": "Stil",
@@ -2538,11 +2540,11 @@
       "edges": "Ränder",
       "both": "Beides"
     },
-    "effectsGroup": "Effects",
-    "effectsBrightnessLabel": "Brightness",
-    "effectsContrastLabel": "Contrast",
-    "effectsSaturationLabel": "Saturation",
-    "effectsWarmthLabel": "Warmth"
+    "effectsGroup": "Effekte",
+    "effectsBrightnessLabel": "Helligkeit",
+    "effectsContrastLabel": "Kontrast",
+    "effectsSaturationLabel": "Sättigung",
+    "effectsWarmthLabel": "Wärme"
   },
   "imageBrowserModal": {
     "title": "Bildersammlung",

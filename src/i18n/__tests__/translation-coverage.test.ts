@@ -491,6 +491,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|timers.minutesShort',
   ]),
   'fr-FR': new Set([
+    // "Saturation" is the same word in this language.
+    'editor|backgroundPicker.effectsSaturationLabel',
     // "Bonus" is the same word in this language (bonus chores).
     'modules|chore-chart.bonus.heading',
     'modules|chore-chart.choreForm.kindBonus',
@@ -647,6 +649,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|photosTab.viewer.label',
   ]),
   'nl-NL': new Set([
+    // "Contrast" is the same word in this language.
+    'editor|backgroundPicker.effectsContrastLabel',
     // "Bonus" is the same word in this language (bonus chores).
     'modules|chore-chart.bonus.heading',
     'modules|chore-chart.choreForm.kindBonus',

@@ -2527,6 +2527,8 @@
     "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
     "sourceNotSetUp": "Ainda não configurada. Adicione {source} em Configurações para usá-la.",
     "pickToRotate": "Toque nos fundos que quer na rotação. Nenhum selecionado ainda.",
+    "modeFixed": "Fundo fixo",
+    "modeRotating": "Alternando entre as fontes selecionadas",
     "shadeGroup": "Escurecimento",
     "shadeEnable": "Escurecer o plano de fundo",
     "shadeStyleLabel": "Estilo",
@@ -2538,11 +2540,11 @@
       "edges": "Bordas",
       "both": "Ambos"
     },
-    "effectsGroup": "Effects",
-    "effectsBrightnessLabel": "Brightness",
-    "effectsContrastLabel": "Contrast",
-    "effectsSaturationLabel": "Saturation",
-    "effectsWarmthLabel": "Warmth"
+    "effectsGroup": "Efeitos",
+    "effectsBrightnessLabel": "Brilho",
+    "effectsContrastLabel": "Contraste",
+    "effectsSaturationLabel": "Saturação",
+    "effectsWarmthLabel": "Calor"
   },
   "imageBrowserModal": {
     "title": "Biblioteca de imagens",

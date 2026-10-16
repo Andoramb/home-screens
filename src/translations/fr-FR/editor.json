@@ -2527,6 +2527,8 @@
     "sourceKeyMissing": "Cette source a besoin d'une clé API qui n'est pas encore configurée, l'écran garde donc sa dernière image. Ajoutez la clé dans les Paramètres, ou choisissez une autre source.",
     "sourceNotSetUp": "Pas encore configurée. Ajoutez {source} dans les Réglages pour l'utiliser.",
     "pickToRotate": "Touchez les fonds à inclure dans la rotation. Aucun sélectionné pour l'instant.",
+    "modeFixed": "Fond fixe",
+    "modeRotating": "Rotation entre les sources sélectionnées",
     "shadeGroup": "Assombrissement",
     "shadeEnable": "Assombrir l’arrière-plan",
     "shadeStyleLabel": "Style",
@@ -2538,11 +2540,11 @@
       "edges": "Bords",
       "both": "Les deux"
     },
-    "effectsGroup": "Effects",
-    "effectsBrightnessLabel": "Brightness",
-    "effectsContrastLabel": "Contrast",
+    "effectsGroup": "Effets",
+    "effectsBrightnessLabel": "Luminosité",
+    "effectsContrastLabel": "Contraste",
     "effectsSaturationLabel": "Saturation",
-    "effectsWarmthLabel": "Warmth"
+    "effectsWarmthLabel": "Chaleur"
   },
   "imageBrowserModal": {
     "title": "Bibliothèque d'images",
