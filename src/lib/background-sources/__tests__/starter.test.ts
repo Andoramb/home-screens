@@ -8,14 +8,12 @@ const rotation = (starterBackgroundIds?: BackgroundRotation['starterBackgroundId
 });
 
 describe('built-in starter rotation providers', () => {
-  it.each(['theme', 'color', 'pattern'] as const)('%s defaults to the complete catalog when absent or empty', async (group) => {
-    const walls = starterBackgroundsIn(group);
-    expect(walls.length).toBeGreaterThan(1);
-    const pick = vi.spyOn(Math, 'random').mockReturnValue(0.999999);
-    try {
-      expect(await backgroundSourceProviders[group].fetchRandom(rotation(), undefined)).toBe(walls.at(-1)?.path);
-      expect(await backgroundSourceProviders[group].fetchRandom(rotation({ [group]: [] }), undefined)).toBe(walls.at(-1)?.path);
-    } finally { pick.mockRestore(); }
+  it.each(['theme', 'color', 'pattern'] as const)('%s is opt-in: absent or empty selection rotates nothing', async (group) => {
+    expect(starterBackgroundsIn(group).length).toBeGreaterThan(1);
+    expect(await backgroundSourceProviders[group].fetchRandom(rotation(), undefined)).toBeNull();
+    expect(await backgroundSourceProviders[group].fetchRandom(rotation({ [group]: [] }), undefined)).toBeNull();
+    expect(isSourceConfigured(group, rotation())).toBe(false);
+    expect(isSourceConfigured(group, rotation({ [group]: [starterBackgroundsIn(group)[0].id] }))).toBe(true);
   });
 
   it('respects a single ID, a multi-ID subset, and never escapes the chosen group', async () => {

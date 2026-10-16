@@ -2561,6 +2561,8 @@
       "pattern-paper": "Papel"
     },
     "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
+    "sourceNotSetUp": "Ainda não configurada. Adicione {source} em Configurações para usá-la.",
+    "pickToRotate": "Toque nos fundos que quer na rotação. Nenhum selecionado ainda.",
     "shadeGroup": "Escurecimento",
     "shadeEnable": "Escurecer o plano de fundo",
     "shadeStyleLabel": "Estilo",

@@ -2561,6 +2561,8 @@
       "pattern-paper": "Papel"
     },
     "sourceKeyMissing": "Esta fuente necesita una clave de API que no está puesta, así que la pantalla se queda con la última imagen. Añade la clave en Ajustes, o elige otra fuente.",
+    "sourceNotSetUp": "Aún no configurada. Añade {source} en Ajustes para usarla.",
+    "pickToRotate": "Toca los fondos que quieras en la rotación. Aún no hay ninguno seleccionado.",
     "shadeGroup": "Oscurecimiento",
     "shadeEnable": "Oscurecer el fondo",
     "shadeStyleLabel": "Estilo",

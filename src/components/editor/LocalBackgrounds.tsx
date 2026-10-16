@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useId } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
 import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
 import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
@@ -28,9 +28,9 @@ function readGroupOpen(id: string): boolean {
   }
 }
 
-/** Heading doubles as the source checkbox; the tile settings expand only when enabled. */
-function StarterGroup({ id, title, count, checked, onChange, children }: {
-  id: StarterBackgroundGroup; title: string; count: string; checked: boolean;
+/** Heading checkbox switches the group's tiles from "pick one" to "rotate through the selection". */
+function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
+  id: StarterBackgroundGroup; title: string; count: string; checked: boolean; hint?: string;
   onChange: (checked: boolean) => void; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
@@ -49,15 +49,18 @@ function StarterGroup({ id, title, count, checked, onChange, children }: {
           <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="rounded border-hs-border-strong" />
           <span>{title}</span>
         </label>
-        {checked && (
-          <button id={`starter-group-${id}`} type="button" onClick={toggle} aria-expanded={open}
-            aria-controls={panelId} data-testid={`starter-group-${id}`}
-            aria-label={`${title} ${count}`} className="flex items-center gap-1 rounded px-1 text-[10px] text-hs-text-muted hover:bg-hs-hover">
-            <span>{count}</span><Chevron size={11} aria-hidden="true" />
-          </button>
-        )}
+        <button id={`starter-group-${id}`} type="button" onClick={toggle} aria-expanded={open}
+          aria-controls={panelId} data-testid={`starter-group-${id}`}
+          aria-label={checked ? `${title} ${count}` : title} className="flex items-center gap-1 rounded px-1 text-[10px] text-hs-text-muted hover:bg-hs-hover">
+          <span>{checked ? count : ''}</span><Chevron size={11} aria-hidden="true" />
+        </button>
       </div>
-      {checked && open && <div id={panelId} className="ml-5 space-y-1.5">{children}</div>}
+      {open && (
+        <div id={panelId} className="space-y-1.5">
+          {checked && hint && <p className="text-[10px] leading-relaxed text-hs-text-faint" data-testid={`starter-hint-${id}`}>{hint}</p>}
+          {children}
+        </div>
+      )}
     </div>
   );
 }
@@ -81,25 +84,21 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
       sources, query: rotation?.query || 'nature landscape', intervalMinutes: rotation?.intervalMinutes || 60,
     });
   };
-  // An absent or empty list means the whole group, not an empty rotation.
+  // Walls are opt-in: nothing is in rotation until the user picks it.
   const selections = rotation?.starterBackgroundIds;
   const selectedIds = (group: StarterBackgroundGroup) => {
-    const catalog = starterBackgroundsIn(group);
-    const ids = selections?.[group];
-    return ids?.length ? catalog.filter((wall) => ids.includes(wall.id)).map((wall) => wall.id) : catalog.map((wall) => wall.id);
+    const ids = selections?.[group] ?? [];
+    return starterBackgroundsIn(group).filter((wall) => ids.includes(wall.id)).map((wall) => wall.id);
   };
   const setIncluded = (bg: StarterBackground, include: boolean) => {
     const group = bg.group;
     const ids = selectedIds(group);
     const next = include ? [...ids, bg.id] : ids.filter((id) => id !== bg.id);
-    // Excluding the last wall cannot persist as []: [] means all by contract.
-    if (!next.length) return;
-    const catalog = starterBackgroundsIn(group);
-    updateScreenRotation(selectedScreenId, {
-      starterBackgroundIds: { ...selections, [group]: next.length === catalog.length ? [] : next },
-    });
+    updateScreenRotation(selectedScreenId, { starterBackgroundIds: { ...selections, [group]: next } });
   };
   const selectionCount = (group: StarterBackgroundGroup) => `${selectedIds(group).length}/${starterBackgroundsIn(group).length}`;
+  const rotating = (group: StarterBackgroundGroup) => selectedSources.includes(group);
+  const groupHint = (group: StarterBackgroundGroup) => (selectedIds(group).length === 0 ? t('backgroundPicker.pickToRotate') : undefined);
 
   const pick = (backgroundImage: string) => pickScreenBackground(selectedScreenId, backgroundImage);
 
@@ -111,7 +110,12 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const tileGrid = landscape ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-4 gap-1.5';
   const isCurrent = (path: string) => currentScreen.backgroundImage === path;
   const isIncluded = (bg: StarterBackground) => selectedIds(bg.group).includes(bg.id);
-  const tileBorder = (path: string) => (isCurrent(path) && !isRotationActive(currentScreen.backgroundRotation) ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong');
+  // Group in rotation mode: a tile is highlighted when it is in the rotation. Otherwise it is highlighted when it is the fixed wall.
+  const isMarked = (bg: StarterBackground) =>
+    rotating(bg.group) ? isIncluded(bg) : isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation);
+  const onTile = (bg: StarterBackground) => (rotating(bg.group) ? setIncluded(bg, !isIncluded(bg)) : pick(bg.path));
+  const tileLabel = (bg: StarterBackground, name: string) =>
+    t(rotating(bg.group) ? 'backgroundPicker.includeInRotation' : 'backgroundPicker.useFixed', { name });
 
   // The theme the selected display paints its fullscreen modules with: its
   // own override first, then the shared default, then the shipped default.
@@ -126,77 +130,68 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   const wallTile = (bg: StarterBackground) => {
     const name = t(`backgroundPicker.starters.${bg.id}`);
+    const marked = isMarked(bg);
     return (
-      <div key={bg.id} className="relative">
-        <button
-          type="button"
-          aria-label={t('backgroundPicker.useFixed', { name })}
-          aria-pressed={isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation)}
-          onClick={() => pick(bg.path)}
-          title={name}
-          data-testid={`starter-background-${bg.id}`}
-          className={`block w-full overflow-hidden rounded border ${tileAspect} ${tileBorder(bg.path)}`}
-        >
-          {/* The thumbnail is the wall's own file, so it cannot drift from what the display paints. */}
-          <img src={bg.path} alt="" className="h-full w-full object-cover" />
-        </button>
-        <label className="mt-0.5 flex items-center justify-center gap-1 truncate text-[9px] leading-tight">
-          <input type="checkbox" aria-label={t('backgroundPicker.includeInRotation', { name })}
-            checked={isIncluded(bg)} disabled={selectedIds(bg.group).length === 1 && isIncluded(bg)}
-            onChange={(e) => setIncluded(bg, e.target.checked)} />
-          <span className={`truncate ${isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation) ? 'text-hs-accent-hover' : 'text-hs-text-muted'}`}>
-            {name}
+      <button
+        key={bg.id}
+        type="button"
+        aria-label={tileLabel(bg, name)}
+        aria-pressed={marked}
+        onClick={() => onTile(bg)}
+        title={name}
+        data-testid={`starter-background-${bg.id}`}
+        className={`relative block w-full overflow-hidden rounded border ${tileAspect} ${marked ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
+      >
+        {/* The thumbnail is the wall's own file, so it cannot drift from what the display paints. */}
+        <img src={bg.path} alt="" className="h-full w-full object-cover" />
+        {marked && rotating(bg.group) && (
+          <span className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-hs-accent text-white" aria-hidden="true">
+            <Check size={10} />
           </span>
-        </label>
-      </div>
+        )}
+      </button>
     );
   };
 
   return (
     <>
       <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count={selectionCount('theme')}
-        checked={selectedSources.includes('theme')} onChange={(checked) => selectSource('theme', checked)}>
+        hint={groupHint('theme')} checked={selectedSources.includes('theme')} onChange={(checked) => selectSource('theme', checked)}>
         <div className="grid grid-cols-2 gap-1.5">
           {orderedThemeWalls.map((bg) => {
             const theme = FULLSCREEN_THEMES.find((th) => th.id === bg.themeId);
             if (!theme) return null;
-            const selected = isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation);
+            const selected = isMarked(bg);
             const inUse = theme.id === themeInUse;
             const group = tOrFallback(t, `settings.defaultDisplayPage.themeGroups.${theme.group}`, theme.group);
             return (
-              <div key={bg.id} className="min-w-0">
-                <button
-                  type="button"
-                  aria-label={t('backgroundPicker.useFixed', { name: theme.name })}
-                  aria-pressed={selected}
-                  onClick={() => pick(bg.path)}
-                  data-testid={`starter-background-${bg.id}`}
-                  data-in-use={inUse ? 'true' : undefined}
-                  className={`flex items-center gap-1.5 rounded-lg border px-1.5 py-1.5 text-left transition-colors ${themeTileClass(selected)}`}
-                >
-                  <FullscreenThemePreview tokens={theme.tokens} size="sm" />
-                  <div className="min-w-0">
-                    <div className={`truncate text-[10px] font-semibold ${selected ? 'text-hs-accent-hover' : 'text-hs-text-body'}`}>{theme.name}</div>
-                    <div className="truncate text-[9px] text-hs-text-faint">
-                      <span className="capitalize">{group}</span>
-                      {inUse && <span> · {t('backgroundPicker.inUse')}</span>}
-                    </div>
+              <button
+                key={bg.id}
+                type="button"
+                aria-label={tileLabel(bg, theme.name)}
+                aria-pressed={selected}
+                onClick={() => onTile(bg)}
+                data-testid={`starter-background-${bg.id}`}
+                data-in-use={inUse ? 'true' : undefined}
+                className={`flex min-w-0 items-center gap-1.5 rounded-lg border px-1.5 py-1.5 text-left transition-colors ${themeTileClass(selected)}`}
+              >
+                <FullscreenThemePreview tokens={theme.tokens} size="sm" />
+                <div className="min-w-0 flex-1">
+                  <div className={`truncate text-[10px] font-semibold ${selected ? 'text-hs-accent-hover' : 'text-hs-text-body'}`}>{theme.name}</div>
+                  <div className="truncate text-[9px] text-hs-text-faint">
+                    <span className="capitalize">{group}</span>
+                    {inUse && <span> · {t('backgroundPicker.inUse')}</span>}
                   </div>
-                </button>
-                <label className="mt-0.5 flex items-center justify-center gap-1 text-[9px] text-hs-text-muted">
-                  <input type="checkbox" aria-label={t('backgroundPicker.includeInRotation', { name: theme.name })}
-                    checked={isIncluded(bg)} disabled={selectedIds('theme').length === 1 && isIncluded(bg)}
-                    onChange={(e) => setIncluded(bg, e.target.checked)} />
-                  {t('backgroundPicker.inRotation')}
-                </label>
-              </div>
+                </div>
+                {selected && rotating(bg.group) && <Check size={11} className="shrink-0 text-hs-accent-hover" aria-hidden="true" />}
+              </button>
             );
           })}
         </div>
       </StarterGroup>
 
       <StarterGroup id="color" title={t('backgroundPicker.groups.color')} count={selectionCount('color')}
-        checked={selectedSources.includes('color')} onChange={(checked) => selectSource('color', checked)}>
+        hint={groupHint('color')} checked={selectedSources.includes('color')} onChange={(checked) => selectSource('color', checked)}>
         <div className={tileGrid}>
           <div>
             <button
@@ -210,14 +205,13 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
             >
               {t('settings.localBackgrounds.none')}
             </button>
-            <div className="mt-0.5 text-[9px] leading-tight">&nbsp;</div>
           </div>
           {colorWalls.map(wallTile)}
         </div>
       </StarterGroup>
 
       <StarterGroup id="pattern" title={t('backgroundPicker.groups.pattern')} count={selectionCount('pattern')}
-        checked={selectedSources.includes('pattern')} onChange={(checked) => selectSource('pattern', checked)}>
+        hint={groupHint('pattern')} checked={selectedSources.includes('pattern')} onChange={(checked) => selectSource('pattern', checked)}>
         <div className={tileGrid}>{patternWalls.map(wallTile)}</div>
       </StarterGroup>
     </>
