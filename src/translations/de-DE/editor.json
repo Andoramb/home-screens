@@ -2470,6 +2470,7 @@
       "useSolid": "Einfarbig lassen"
     },
     "title": "Hintergrund",
+    "effectsTitle": "Hintergrundeffekte",
     "statusGroup": "Status",
     "autoRotate": "Automatisch wechseln",
     "sourcesGroup": "Quellen",

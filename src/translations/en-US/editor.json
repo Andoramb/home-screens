@@ -2470,6 +2470,7 @@
       "useSolid": "Use the solid color"
     },
     "title": "Background",
+    "effectsTitle": "Background effects",
     "statusGroup": "Status",
     "autoRotate": "Auto-rotate",
     "sourcesGroup": "Sources",

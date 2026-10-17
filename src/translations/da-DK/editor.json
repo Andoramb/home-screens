@@ -2470,6 +2470,7 @@
       "useSolid": "Brug den ensfarvede baggrund"
     },
     "title": "Baggrund",
+    "effectsTitle": "Baggrundseffekter",
     "statusGroup": "Status",
     "autoRotate": "Skift automatisk",
     "sourcesGroup": "Kilder",

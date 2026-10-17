@@ -2470,6 +2470,7 @@
       "useSolid": "Garder la couleur unie"
     },
     "title": "Arrière-plan",
+    "effectsTitle": "Effets d'arrière-plan",
     "statusGroup": "État",
     "autoRotate": "Rotation auto",
     "sourcesGroup": "Sources",
