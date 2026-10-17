@@ -2,7 +2,7 @@ import type { HourlyWeather, ForecastDay, WeatherProvider } from './types';
 import { fetchWithTimeout, createTTLCache } from '@/lib/api-utils';
 import type { WeatherIconName } from './icons';
 import { FALLBACK_ICON } from './icons';
-import { celsiusToUnit, kmhToWindUnit } from './units';
+import { celsiusToUnit, kmhToWindUnit, compassToDegrees } from './units';
 import { ECCC_STATIONS, type EcccStation } from './eccc-stations';
 
 // ── Environment and Climate Change Canada (citypage_weather) ─────────
@@ -311,6 +311,12 @@ export class EnvCanadaProvider implements WeatherProvider {
       const condStr = extractFirst(body, /<condition>([^<]+)<\/condition>/);
       const lopStr = extractFirst(body, /<lop[^>]*>(\d+(?:\.\d+)?)<\/lop>/);
       const windSpeedStr = extractFirst(body, /<speed[^>]*>(\d+(?:\.\d+)?)<\/speed>/);
+      // Each hourly <wind> also carries a compass <direction> ("NW") and a
+      // km/h <gust>. The gust element is self-closing in calm hours, so only
+      // a numeric body counts. Current conditions carry the same pair, but no
+      // entry is built from that block, so the hourly rows are where it lands.
+      const windDirStr = extractFirst(body, /<direction[^>]*>([^<]+)<\/direction>/);
+      const gustStr = extractFirst(body, /<gust[^>]*>(\d+(?:\.\d+)?)<\/gust>/);
       // The real ECCC <hourlyForecast> block has no <relativeHumidity> — it's
       // only published under <currentConditions> and the daily <forecast>
       // blocks. This extraction is defensive: if ECCC ever adds it, we'll
@@ -322,6 +328,7 @@ export class EnvCanadaProvider implements WeatherProvider {
       const iconCode = iconStr != null ? parseInt(iconStr, 10) : undefined;
       const lop = lopStr != null ? parseFloat(lopStr) : undefined;
       const windKmh = windSpeedStr != null ? parseFloat(windSpeedStr) : undefined;
+      const gustKmh = gustStr != null ? parseFloat(gustStr) : undefined;
       // A sample with no temperature is dropped, not shown as 0°: the hub
       // records the first sample as today's reading (see today-record.ts).
       if (tempC == null) continue;
@@ -334,6 +341,10 @@ export class EnvCanadaProvider implements WeatherProvider {
         description: condStr ?? '',
         windSpeed: windKmh != null
           ? Math.round(kmhToWindUnit(windKmh, isMetric))
+          : undefined,
+        windDirection: windDirStr != null ? compassToDegrees(windDirStr) : undefined,
+        windGust: gustKmh != null
+          ? Math.round(kmhToWindUnit(gustKmh, isMetric))
           : undefined,
         precipProbability: lop,
       });

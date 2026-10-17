@@ -70,8 +70,8 @@ describe('NOAAProvider', () => {
               probabilityOfPrecipitation: { unitCode: '', value: 30 },
               dewpoint: { unitCode: '', value: 5 }, // °C
               relativeHumidity: { unitCode: '', value: 65 },
-              windSpeed: '10 mph',
-              windDirection: 'N',
+              windSpeed: '10 mph, with gusts as high as 25 mph',
+              windDirection: 'NW',
               shortForecast: 'Sunny',
               detailedForecast: 'Sunny skies',
             },
@@ -90,10 +90,14 @@ describe('NOAAProvider', () => {
       humidity: 65,
       icon: 'sun', // "Sunny", daytime
       description: 'Sunny',
-      windSpeed: 16, // round(10 * 1.60934)
+      windSpeed: 16, // round(10 * 1.60934), gust clause ignored
+      windDirection: 315, // "NW" as degrees
       precipProbability: 30,
       dewPoint: 5,
     });
+    // NWS names no gust figure in its hourly feed, so none is invented from
+    // the prose, and a blank direction stays unsaid.
+    expect(out[0].windGust).toBeUndefined();
   });
 
   it('getHourly enriches the first entry with station observations', async () => {
@@ -131,6 +135,7 @@ describe('NOAAProvider', () => {
     const out = await new NOAAProvider().getHourly(44.71, -93.42, 'metric');
 
     expect(out[0].windSpeed).toBe(0); // "Calm"
+    expect(out[0].windDirection).toBeUndefined(); // blank direction text
     expect(out[0].pressure).toBe(1013); // 101300 Pa → hPa
     expect(out[0].visibility).toBe(16); // 16000 m → km
     expect(out[0].feelsLike).toBe(8); // wind chill in °C

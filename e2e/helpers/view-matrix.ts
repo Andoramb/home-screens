@@ -61,7 +61,7 @@ export const VIEW_MATRIX: ViewSpec[] = [
     'chores', 'rewards-store', 'reward-history', 'reward-totals', 'reward-spotlight'] },
   { type: 'meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'next-meal', 'compact', 'list'] },
   { type: 'fullscreen-meal-planner', key: 'view', kind: 'local-data', seed: 'meals', views: ['week', 'today', 'menu-board', 'next-meal'] },
-  { type: 'fullscreen-weather', key: 'view', kind: 'networked', stubKey: 'weather', views: ['panorama', 'strip', 'almanac', 'ambient', 'week', 'hourly'] },
+  { type: 'fullscreen-weather', key: 'view', kind: 'networked', stubKey: 'weather', views: ['panorama', 'strip', 'almanac', 'ambient', 'week', 'hourly', 'forecast', 'conditions'] },
   { type: 'timetable', key: 'view', kind: 'local-data', seed: 'timetables', config: { memberIds: E2E_TIMETABLE_SEED_MEMBER_IDS },
     views: ['week', 'day'] },
 ];

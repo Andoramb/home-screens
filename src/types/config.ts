@@ -4277,20 +4277,33 @@ export interface FullscreenMealPlannerConfig {
 
 // Fullscreen weather module config
 /**
- * panorama — the flagship stack; almanac — instrument bento; ambient — huge
- * read-from-across-the-room; week — the daily forecast as the whole screen;
- * hourly — the next 24 hours as a timeline (down the page in portrait, across
- * it in landscape).
+ * panorama: the flagship stack; strip: Panorama's parts side by side; almanac:
+ * instrument bento; ambient: huge read-from-across-the-room; week: the daily
+ * forecast as the whole screen; hourly: the next 24 hours as a timeline (down
+ * the page in portrait, across it in landscape); forecast: the phone weather
+ * app's page (hero, hour strip, day list, rain map, two instrument cards; the
+ * tablet arrangement in landscape); conditions: the rest of that page as a
+ * bento of instrument cards.
  */
-export type FullscreenWeatherView = 'panorama' | 'strip' | 'almanac' | 'ambient' | 'week' | 'hourly';
+export type FullscreenWeatherView = 'panorama' | 'strip' | 'almanac' | 'ambient' | 'week' | 'hourly' | 'forecast' | 'conditions';
 
-/** 'auto' tints the background by condition and sun elevation; 'off' falls
- *  back to the flat theme background. The sky is a wash *behind* the cards,
- *  so turning it off never changes any text contrast. */
-export type FullscreenWeatherSky = 'auto' | 'off';
+/**
+ * 'living' is an animated sky (drifting clouds, rain, snow, stars, fog) picked
+ * by the conditions and the sun's height; 'still' is a flat wash tinted the
+ * same way; 'off' is the plain theme background. The sky is painted behind
+ * the cards, so none of these changes any text contrast.
+ */
+export type FullscreenWeatherSky = 'living' | 'still' | 'off';
+
+/**
+ * Base map under the rain map card. `standard` is the OpenStreetMap tile as
+ * drawn, `dark` is the same tile inverted, and `light` fades it to near-white
+ * with grey labels so the radar is the only colour on it.
+ */
+export type FullscreenWeatherMapStyle = 'standard' | 'dark' | 'light';
 
 export interface FullscreenWeatherConfig {
-  /** `panorama`, `strip` (Wide strip), `almanac`, `ambient`, `week`, or `hourly` */
+  /** `panorama`, `strip` (Wide strip), `almanac`, `ambient`, `week`, `hourly`, `forecast`, or `conditions` */
   view: FullscreenWeatherView;
   /** `cozy` or `snug`. Controls padding, gaps, and chart heights */
   density: 'cozy' | 'snug';
@@ -4304,24 +4317,107 @@ export interface FullscreenWeatherConfig {
   /** Full-screen palette; unset inherits the display default */
   theme?: string;
   /**
-   * `auto` tints the background by conditions, `off` uses the plain theme background
+   * `living` animates the sky to match the weather, `still` tints it, `off` uses the plain theme
+   * background. Pick `still` if the display stutters on older hardware
    *
-   * Condition-reactive background wash. Default 'auto'.
+   * Default 'living'. The living sky is CSS layers moved by transform and
+   * opacity only, so the compositor does all of it; `still` is the flat wash
+   * for a Pi that cannot keep up.
    */
   skyLayer?: FullscreenWeatherSky;
   /**
-   * Falling rain and snow. Turn off if the display stutters on older hardware
+   * Next-hour rain strip (Panorama and Conditions, Pirate Weather only)
    *
-   * Falling rain/snow particles. Off is the cheap mode for slow Pis. Default true.
-   */
-  animateConditions?: boolean;
-  /**
-   * Next-hour rain strip (Panorama, Pirate Weather only)
-   *
-   * Panorama: the minute-by-minute strip. Renders only when the provider
-   *  returns minutely data (Pirate Weather today); hides itself otherwise.
+   * The minute-by-minute strip. Renders only when the provider returns
+   * minutely data (Pirate Weather today); hides itself otherwise.
    */
   showNowcast: boolean;
+  /**
+   * Rain map card (Forecast)
+   *
+   * Forecast: the radar card. Reads the same radar the Rain Map module does.
+   * Default true.
+   */
+  showMap?: boolean;
+  /**
+   * Zoom of the rain map card, 1 to 12 (Forecast)
+   *
+   * Default 6, the Rain Map module's default.
+   */
+  mapZoom?: number;
+  /**
+   * Base map of the rain map card: `light` (faded, radar is the only colour), `standard` (plain OpenStreetMap) or `dark` (Forecast)
+   *
+   * Default 'light': the faded map reads well inside a dark card on any sky and keeps the eye on the rain.
+   */
+  mapStyle?: FullscreenWeatherMapStyle;
+  /**
+   * Play the rain map's last two hours as a loop (Forecast)
+   *
+   * Default true. Off holds the newest frame.
+   */
+  mapAnimate?: boolean;
+  /**
+   * Wind card: compass, speed and gusts (Forecast and Conditions)
+   *
+   * Hides itself when the source sends no wind. Default true.
+   */
+  showWind?: boolean;
+  /**
+   * Sunrise and sunset card (Forecast and Conditions)
+   *
+   * Default true.
+   */
+  showSun?: boolean;
+  /**
+   * Moon card: tonight's phase and moonrise or moonset (Conditions)
+   *
+   * Default true.
+   */
+  showMoon?: boolean;
+  /**
+   * Air quality card (Conditions, and Forecast in landscape). Needs an OpenWeatherMap key under
+   * Settings, Weather, whichever weather source you use
+   *
+   * Hides itself without the key. Default true.
+   */
+  showAirQuality?: boolean;
+  /**
+   * UV index card (Conditions)
+   *
+   * Hides itself when the source sends no UV index. Default true.
+   */
+  showUV?: boolean;
+  /**
+   * Feels-like card (Conditions)
+   *
+   * Hides itself when the source sends no feels-like temperature. Default true.
+   */
+  showFeelsLike?: boolean;
+  /**
+   * Humidity and dew point card (Conditions)
+   *
+   * Hides itself when the source sends no humidity. Default true.
+   */
+  showHumidity?: boolean;
+  /**
+   * Rainfall card: today's total and the next wet day (Conditions)
+   *
+   * Hides itself when the source sends no daily amounts. Default true.
+   */
+  showPrecipitation?: boolean;
+  /**
+   * Visibility card (Conditions)
+   *
+   * Hides itself when the source sends no visibility. Default true.
+   */
+  showVisibility?: boolean;
+  /**
+   * Pressure gauge card (Conditions)
+   *
+   * Hides itself when the source sends no pressure. Default true.
+   */
+  showPressure?: boolean;
   /**
    * Severe-weather banner
    *

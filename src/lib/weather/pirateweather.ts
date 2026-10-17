@@ -106,6 +106,9 @@ export class PirateWeatherProvider implements WeatherProvider {
         icon: this.mapIcon(h.icon ?? ''),
         description: h.summary ?? '',
         windSpeed: h.windSpeed,
+        windDirection: h.windBearing,
+        // Already km/h (`units=ca`) or mph (`units=us`), like windSpeed.
+        windGust: h.windGust,
         precipProbability: h.precipProbability != null ? Math.round(h.precipProbability * 100) : 0,
         uvIndex: h.uvIndex != null ? Math.round(h.uvIndex) : undefined,
         pressure: h.pressure != null ? Math.round(h.pressure) : undefined,

@@ -135,6 +135,10 @@ interface HourlyFixture {
   condition?: string;
   lop?: number;
   windKmh?: number;
+  /** Compass text as ECCC writes it ("NW"). */
+  windDir?: string;
+  /** Omitted: the real feed still writes an empty `<gust .../>` element. */
+  gustKmh?: number;
   humidity?: number;
 }
 
@@ -187,7 +191,15 @@ function buildXml(opts: {
     .map((h) => {
       const iconLine = h.iconCode != null ? `<iconCode>${String(h.iconCode).padStart(2, '0')}</iconCode>` : '';
       const lopLine = h.lop != null ? `<lop units="%">${h.lop}</lop>` : '';
-      const windLine = h.windKmh != null ? `<wind><speed units="km/h">${h.windKmh}</speed></wind>` : '';
+      // Mirrors the live block: <speed>, then <direction windDirFull="...">,
+      // then a <gust> that is self-closing in calm hours.
+      const dirLine = h.windDir != null ? `<direction windDirFull="x">${h.windDir}</direction>` : '';
+      const gustLine = h.gustKmh != null
+        ? `<gust unitType="metric" units="km/h">${h.gustKmh}</gust>`
+        : '<gust unitType="metric" units="km/h"/>';
+      const windLine = h.windKmh != null
+        ? `<wind><speed unitType="metric" units="km/h">${h.windKmh}</speed>${dirLine}${gustLine}</wind>`
+        : '';
       const humidityLine = h.humidity != null
         ? `<relativeHumidity units="%">${h.humidity}</relativeHumidity>`
         : '';
@@ -252,6 +264,8 @@ describe('EnvCanadaProvider.getHourly (parsing)', () => {
           condition: 'Partly cloudy',
           lop: 20,
           windKmh: 18,
+          windDir: 'NW',
+          gustKmh: 40,
           humidity: 60,
         },
       ],
@@ -269,12 +283,29 @@ describe('EnvCanadaProvider.getHourly (parsing)', () => {
     expect(out[0].description).toBe('Partly cloudy');
     expect(out[0].precipProbability).toBe(20);
     expect(out[0].windSpeed).toBe(18); // km/h unchanged in metric
+    expect(out[0].windDirection).toBe(315); // "NW"
+    expect(out[0].windGust).toBe(40); // km/h unchanged in metric
+  });
+
+  it('leaves the gust unsaid when ECCC writes an empty <gust/> element', async () => {
+    const xml = buildXml({
+      hourly: [{ dateTimeUTC: '202604181700', tempC: 12, windKmh: 10, windDir: 'N' }],
+    });
+    fetchSpy = installFetchMock(xml);
+
+    const provider = new EnvCanadaProvider();
+    const out = await provider.getHourly(TORONTO_LAT, TORONTO_LON, 'metric');
+
+    expect(out[0].windSpeed).toBe(10);
+    expect(out[0].windDirection).toBe(0);
+    expect(out[0].windGust).toBeUndefined();
   });
 
   it('converts units to imperial (°F, mph)', async () => {
     const xml = buildXml({
       hourly: [
-        { dateTimeUTC: '202604181700', tempC: 0, windKmh: 100 }, // 0°C = 32°F, 100 km/h ≈ 62.1 mph
+        // 0°C = 32°F, 100 km/h ≈ 62.1 mph, 50 km/h ≈ 31.1 mph
+        { dateTimeUTC: '202604181700', tempC: 0, windKmh: 100, windDir: 'SW', gustKmh: 50 },
       ],
     });
     fetchSpy = installFetchMock(xml);
@@ -284,6 +315,8 @@ describe('EnvCanadaProvider.getHourly (parsing)', () => {
 
     expect(out[0].temp).toBe(32);
     expect(out[0].windSpeed).toBe(62);
+    expect(out[0].windDirection).toBe(225);
+    expect(out[0].windGust).toBe(31);
   });
 
   it('caps output at 48 entries', async () => {

@@ -1,6 +1,7 @@
 import type { HourlyWeather, ForecastDay, WeatherAlert, WeatherProvider } from './types';
 import { fetchWeatherJSON } from './fetch';
 import { inferIconFromText } from './icons';
+import { compassToDegrees } from './units';
 import { createTTLCache } from '../api-utils';
 
 // ── NOAA/NWS API response types ──────────────────────────────────────
@@ -155,6 +156,9 @@ export class NOAAProvider implements WeatherProvider {
           icon: this.mapForecast(p.shortForecast, p.isDaytime),
           description: p.shortForecast,
           windSpeed: this.parseWindSpeed(p.windSpeed, isMetric),
+          // NWS gives direction only as compass text ("NW"); the hourly
+          // feed carries no gust figure, so none is set here.
+          windDirection: compassToDegrees(p.windDirection ?? ''),
           precipProbability: p.probabilityOfPrecipitation?.value ?? 0,
           dewPoint: dewPoint != null ? Math.round(dewPoint) : undefined,
         };

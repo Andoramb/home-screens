@@ -17,6 +17,29 @@ export function kmhToWindUnit(kmh: number, isMetric: boolean): number {
   return isMetric ? kmh : kmh * 0.621371;
 }
 
+/** The 16 compass points, clockwise from north, 22.5 degrees apart. */
+const COMPASS_POINTS = [
+  'N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
+  'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW',
+] as const;
+
+/**
+ * Compass text ("NW", "nne") → degrees the wind blows from, 0 = north and
+ * 90 = east. For providers (NOAA, ECCC) that only give direction as text.
+ * Anything outside the 16-point rose, including blank and "VRB" (variable),
+ * is `undefined`.
+ */
+export function compassToDegrees(text: string): number | undefined {
+  const idx = (COMPASS_POINTS as readonly string[]).indexOf(text.trim().toUpperCase());
+  return idx === -1 ? undefined : idx * 22.5;
+}
+
+/** The nearest of the 16 compass points for a direction in degrees ("W" for 265). */
+export function compassLabel(deg: number): string {
+  const i = Math.round((((deg % 360) + 360) % 360) / 22.5) % 16;
+  return COMPASS_POINTS[i];
+}
+
 /** mm → mm (metric) or inches (imperial). */
 export function mmToPrecipUnit(mm: number, isMetric: boolean): number {
   return isMetric ? mm : mm * 0.0393701;

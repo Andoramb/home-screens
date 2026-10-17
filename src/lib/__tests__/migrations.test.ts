@@ -62,8 +62,8 @@ describe('migrations', () => {
     expect(JSON.stringify(config)).toBe(original);
   });
 
-  it('getLatestSchemaVersion returns 14', () => {
-    expect(getLatestSchemaVersion()).toBe(14);
+  it('getLatestSchemaVersion returns 15', () => {
+    expect(getLatestSchemaVersion()).toBe(15);
   });
 });
 
@@ -298,9 +298,9 @@ describe('migration edge cases: legacy + multi-display registry', () => {
     const { config: result, migrationsRun } = migrateUp(config);
 
     expect(result.version).toBe(getLatestSchemaVersion());
-    expect(result.version).toBe(14);
-    // v2 through v14 run (v1 is the starting point, not re-applied).
-    expect(migrationsRun).toHaveLength(13);
+    expect(result.version).toBe(15);
+    // v2 through v15 run (v1 is the starting point, not re-applied).
+    expect(migrationsRun).toHaveLength(14);
     // Legacy single-display shape is preserved untouched: v2 leaves non-flag
     // modules alone, v3/v4/v5 are pure version bumps, v6 only touches
     // next-view countdowns (this fixture has no modules at all), v7 only
@@ -328,9 +328,9 @@ describe('migration edge cases: legacy + multi-display registry', () => {
 
     const { config: result, migrationsRun } = migrateUp(config);
 
-    expect(result.version).toBe(14);
-    // Only v4 through v14 remain to run from a v3 config.
-    expect(migrationsRun).toHaveLength(11);
+    expect(result.version).toBe(15);
+    // Only v4 through v15 remain to run from a v3 config.
+    expect(migrationsRun).toHaveLength(12);
     // The registry is passed through verbatim. Seeding a sibling `main` is the
     // editor store's addDisplay job (see stores/__tests__/editor-store.test.ts),
     // never a migration's — so a registry without `main` must stay that way.
@@ -800,7 +800,7 @@ describe('migration v11: starter backgrounds moved to /starter-backgrounds/', ()
 
     const { config: result, migrationsRun } = migrateUp(config);
 
-    expect(result.version).toBe(14);
+    expect(result.version).toBe(15);
     expect(migrationsRun).toContainEqual(expect.stringMatching(/^v11: /));
     expect(result.screens[0].backgroundImage).toBe('/starter-backgrounds/plum.svg');
   });
@@ -841,9 +841,9 @@ describe('migration v12: retired dev update channel renamed to rc', () => {
 
     const { config: result, migrationsRun } = migrateUp(config);
 
-    expect(result.version).toBe(14);
+    expect(result.version).toBe(15);
     expect(migrationsRun).toContainEqual(expect.stringMatching(/^v12: /));
-    expect(migrationsRun.at(-1)).toMatch(/^v14: /);
+    expect(migrationsRun.at(-1)).toMatch(/^v15: /);
     expect(result.settings.updateChannel).toBe('rc');
   });
 });
@@ -857,7 +857,7 @@ describe('migration v13: preserve family inputs for the coordinated fold', () =>
     config.settings.calendar = { ...config.settings.calendar, people, personSources };
     const before = structuredClone(config);
     const { config: migrated } = migrateUp(config);
-    expect(migrated.version).toBe(14);
+    expect(migrated.version).toBe(15);
     expect(migrated.settings.calendar.people).toEqual(people);
     expect(migrated.settings.calendar.personSources).toEqual(personSources);
     expect(config).toEqual(before);
@@ -910,5 +910,49 @@ describe('migration v14: unset clock formats follow the language from here on', 
     const before = structuredClone(config);
     migrateUp(config, 14);
     expect(config).toEqual(before);
+  });
+});
+
+describe('migration v15: the full-screen weather sky absorbs the falling rain and snow toggle', () => {
+  function withWeather(config: ScreenConfiguration, cfg: Record<string, unknown>): ScreenConfiguration {
+    config.screens[0].modules = [{
+      id: 'fsw-1', type: 'fullscreen-weather', x: 0, y: 0, width: 1080, height: 1920,
+      config: { view: 'panorama', ...cfg }, style: {},
+    } as unknown as ScreenConfiguration['screens'][number]['modules'][number]];
+    return config;
+  }
+  const migrated = (cfg: Record<string, unknown>) =>
+    migrateUp(withWeather(makeConfig(14), cfg), 15).config.screens[0].modules[0].config as Record<string, unknown>;
+
+  it('keeps motion for a module that had it: auto becomes living', () => {
+    const result = migrated({ skyLayer: 'auto', animateConditions: true });
+    expect(result.skyLayer).toBe('living');
+    expect('animateConditions' in result).toBe(false);
+  });
+
+  it('keeps a module still whose household turned motion off', () => {
+    expect(migrated({ skyLayer: 'auto', animateConditions: false }).skyLayer).toBe('still');
+  });
+
+  it('treats an unset toggle as motion on, the old default', () => {
+    expect(migrated({ skyLayer: 'auto' }).skyLayer).toBe('living');
+    expect(migrated({ animateConditions: true }).skyLayer).toBe('living');
+  });
+
+  it('leaves off alone and drops the toggle', () => {
+    const result = migrated({ skyLayer: 'off', animateConditions: false });
+    expect(result.skyLayer).toBe('off');
+    expect('animateConditions' in result).toBe(false);
+  });
+
+  it('does not touch a module already on the new shape', () => {
+    expect(migrated({ skyLayer: 'still' })).toEqual({ view: 'panorama', skyLayer: 'still' });
+  });
+
+  it("reaches modules on a display's own screens", () => {
+    const config = withWeather(makeConfig(14), { skyLayer: 'auto', animateConditions: false });
+    config.displays = [{ id: 'main', name: 'Main', screens: structuredClone(config.screens) } as unknown as NonNullable<ScreenConfiguration['displays']>[number]];
+    const { config: result } = migrateUp(config, 15);
+    expect(result.displays?.[0].screens[0].modules[0].config.skyLayer).toBe('still');
   });
 });

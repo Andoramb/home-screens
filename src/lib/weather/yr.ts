@@ -14,6 +14,10 @@ interface YrInstantDetails {
   air_temperature?: number;
   relative_humidity?: number;
   wind_speed?: number;
+  /** Degrees the wind blows from. */
+  wind_from_direction?: number;
+  /** m/s. Only the `complete` endpoint carries it; `compact` does not. */
+  wind_speed_of_gust?: number;
   air_pressure_at_sea_level?: number;
   cloud_area_fraction?: number;
 }
@@ -151,8 +155,11 @@ export class YrProvider implements WeatherProvider {
     const cached = YrProvider.cache.get(key);
     if (cached) return cached;
 
+    // `complete` rather than `compact`: the compact feed stops at wind speed
+    // and direction, and only the complete one carries wind_speed_of_gust.
+    // Same structure, same terms, roughly twice the bytes per call.
     const data = await fetchWeatherJSON<YrResponse>(
-      `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${latStr}&lon=${lonStr}`,
+      `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${latStr}&lon=${lonStr}`,
       'Yr.no',
       { headers: { 'User-Agent': YrProvider.USER_AGENT } },
     );
@@ -185,6 +192,10 @@ export class YrProvider implements WeatherProvider {
           description: symbolDescription(symbol),
           windSpeed: inst.wind_speed != null
             ? Math.round(msToWindUnit(inst.wind_speed, isMetric))
+            : undefined,
+          windDirection: inst.wind_from_direction,
+          windGust: inst.wind_speed_of_gust != null
+            ? Math.round(msToWindUnit(inst.wind_speed_of_gust, isMetric))
             : undefined,
           precipProbability: next1?.details?.probability_of_precipitation ?? 0,
           pressure: inst.air_pressure_at_sea_level != null

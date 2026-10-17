@@ -16,6 +16,10 @@ interface SMHIDataPoint {
   air_temperature?: number;
   relative_humidity?: number;
   wind_speed?: number;
+  /** Degrees the wind blows from. */
+  wind_from_direction?: number;
+  /** m/s. */
+  wind_speed_of_gust?: number;
   air_pressure_at_mean_sea_level?: number;
   symbol_code?: number;
   precipitation_amount_mean?: number;
@@ -148,6 +152,8 @@ export class SMHIProvider implements WeatherProvider {
             ? (WSYMB2_DESCRIPTIONS[d.symbol_code] ?? 'Unknown')
             : 'Unknown',
           windSpeed: d.wind_speed != null ? Math.round(msToWindUnit(d.wind_speed, isMetric)) : undefined,
+          windDirection: d.wind_from_direction,
+          windGust: d.wind_speed_of_gust != null ? Math.round(msToWindUnit(d.wind_speed_of_gust, isMetric)) : undefined,
           precipProbability: d.probability_of_precipitation ?? 0,
           pressure: d.air_pressure_at_mean_sea_level != null
             ? Math.round(d.air_pressure_at_mean_sea_level)

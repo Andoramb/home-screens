@@ -75,7 +75,10 @@ describe('MetOfficeProvider', () => {
           screenDewPointTemperature: 5,
           screenRelativeHumidity: 60,
           windSpeed10m: 5, // m/s
+          windGustSpeed10m: 12, // m/s
+          windDirectionFrom10m: 230,
           mslp: 101200, // Pa
+          visibility: 12345, // m
           significantWeatherCode: 3, // partly cloudy day
           probOfPrecipitation: 20,
         },
@@ -93,21 +96,27 @@ describe('MetOfficeProvider', () => {
       icon: 'cloud-sun', // code 3
       description: 'Partly cloudy',
       windSpeed: 18, // round(5 * 3.6)
+      windDirection: 230,
+      windGust: 43, // round(12 * 3.6)
       precipProbability: 20,
       pressure: 1012, // 101200 Pa → hPa
+      visibility: 12.3, // 12345 m → km, one decimal
       dewPoint: 5,
     });
   });
 
-  it('getHourly converts temperature to °F and wind to mph in imperial', async () => {
+  it('getHourly converts temperature to °F, wind to mph and visibility to miles in imperial', async () => {
     spy = mockMet({
       hourly: [
-        { time: '2026-04-18T12:00:00Z', screenTemperature: 0, windSpeed10m: 10, significantWeatherCode: 1 },
+        { time: '2026-04-18T12:00:00Z', screenTemperature: 0, windSpeed10m: 10, windGustSpeed10m: 20, visibility: 16093.4, significantWeatherCode: 1 },
       ],
     });
     const out = await new MetOfficeProvider('key').getHourly(51.5, -0.12, 'imperial');
     expect(out[0].temp).toBe(32);
     expect(out[0].windSpeed).toBe(22); // round(10 * 2.23694)
+    expect(out[0].windGust).toBe(45); // round(20 * 2.23694)
+    expect(out[0].visibility).toBe(10); // 16093.4 m → miles
+    expect(out[0].windDirection).toBeUndefined();
   });
 
   it('getHourly returns [] when no features are present', async () => {

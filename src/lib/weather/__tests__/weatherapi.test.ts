@@ -27,6 +27,9 @@ function waHour(overrides: Record<string, unknown> = {}) {
     humidity: 60,
     wind_kph: 18,
     wind_mph: 11.2,
+    wind_degree: 225,
+    gust_kph: 30,
+    gust_mph: 18.6,
     condition: { text: 'Sunny', code: 1000 },
     chance_of_rain: 20,
     is_day: 1,
@@ -89,6 +92,8 @@ describe('WeatherAPIProvider', () => {
       feelsLike: 10,
       humidity: 60,
       windSpeed: 18, // kph in metric
+      windDirection: 225,
+      windGust: 30, // gust_kph in metric
       icon: 'sun', // code 1000, is_day=1
       description: 'Sunny',
       precipProbability: 20,
@@ -105,6 +110,8 @@ describe('WeatherAPIProvider', () => {
 
     expect(out[0].temp).toBe(53.6);
     expect(out[0].windSpeed).toBe(11.2);
+    expect(out[0].windDirection).toBe(225);
+    expect(out[0].windGust).toBe(18.6); // gust_mph in imperial
     expect(out[0].icon).toBe('moon'); // code 1000, is_day=0
   });
 

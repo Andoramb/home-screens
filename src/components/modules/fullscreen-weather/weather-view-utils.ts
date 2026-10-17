@@ -37,6 +37,13 @@ export interface WeatherScale {
    * not a rescaling of the portrait one — see `getOrientation`.
    */
   orientation: Orientation;
+  /**
+   * The fit loop's factor, 1 when the page fits at the requested size and
+   * lower as it shrinks (see `useFitScale`). Most views never read it: `s`
+   * and `u` already carry it. The Forecast hero reads it to ease its share
+   * of the canvas down when the loop is near its floor.
+   */
+  fit: number;
 }
 
 export type Orientation = 'portrait' | 'landscape';
@@ -143,6 +150,15 @@ export interface WeatherViewProps {
   sun: SunTimes;
   t: (key: string, vars?: Record<string, string | number>) => string;
   locale: string;
+  /** Coordinates, for the Forecast and Conditions views' rain map and moon times. Absent without a location. */
+  latitude?: number;
+  longitude?: number;
+  /**
+   * Today's air quality for the Forecast and Conditions views, on OpenWeatherMap's 1 (good) to
+   * 5 (very poor) scale. `null` while loading, when the key is missing, or
+   * when the view does not ask for it; the card hides itself then.
+   */
+  airQuality?: { aqi: number } | null;
 }
 
 /**
@@ -413,4 +429,16 @@ export function nowcastVerdict(
   if (outlook.kind === 'stopping') return { text: t('fullscreen-weather.nowcast.stopsIn', { minutes: outlook.minutes }), series };
   if (outlook.kind === 'starting') return { text: t('fullscreen-weather.nowcast.startsIn', { minutes: outlook.minutes }), series };
   return { text: t('fullscreen-weather.nowcast.dry'), series };
+}
+
+/**
+ * How much of a fixed floor to keep as the fit loop nears its lowest factor
+ * (`MIN_FACTOR` in useFitScale, 0.3). Floors sized off the type unit protect
+ * a map or a compass from collapsing beside large type, but at 4x-large with
+ * a seven-day list and an alert band their sum alone can exceed a portrait
+ * wall. Above a factor of .6 the floor is whole; at the loop's floor it is
+ * half, which is still a readable instrument and lets the page fit.
+ */
+export function floorEase(fit: number): number {
+  return Math.min(1, Math.max(.5, .5 + (fit - .3) / .6));
 }

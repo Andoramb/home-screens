@@ -50,6 +50,8 @@ describe('SMHIProvider', () => {
           air_temperature: 14,
           relative_humidity: 58,
           wind_speed: 5,
+          wind_from_direction: 190,
+          wind_speed_of_gust: 11,
           air_pressure_at_mean_sea_level: 1010.7,
           symbol_code: 1,
           precipitation_amount_mean: 0,
@@ -68,6 +70,8 @@ describe('SMHIProvider', () => {
       icon: 'sun', // symbol 1, daytime
       description: 'Clear sky',
       windSpeed: 18, // round(5 * 3.6)
+      windDirection: 190,
+      windGust: 40, // round(11 m/s * 3.6)
       precipProbability: 5,
       pressure: 1011, // rounded
     });
@@ -92,11 +96,13 @@ describe('SMHIProvider', () => {
 
   it('getHourly converts temperature to °F and wind to mph in imperial', async () => {
     spy = mockSmhi([
-      { time: '2026-04-18T12:00:00Z', data: { air_temperature: 0, wind_speed: 10, symbol_code: 5 } },
+      { time: '2026-04-18T12:00:00Z', data: { air_temperature: 0, wind_speed: 10, wind_speed_of_gust: 20, symbol_code: 5 } },
     ]);
     const out = await new SMHIProvider().getHourly(59.33, 18.06, 'imperial');
     expect(out[0].temp).toBe(32);
     expect(out[0].windSpeed).toBe(22); // round(10 * 2.23694)
+    expect(out[0].windGust).toBe(45); // round(20 * 2.23694)
+    expect(out[0].windDirection).toBeUndefined();
   });
 
   it('getForecast aggregates the timeseries into a daily high/low and dominant symbol', async () => {

@@ -1,7 +1,10 @@
 'use client';
 
 import { useMemo, useRef } from 'react';
+import SunCalc from 'suncalc';
 import { sunTimesFor } from '@/lib/weather/sun-times';
+import { useFetchData } from '@/hooks/useFetchData';
+import { airQualityUrl, FETCH_KEY_REGISTRY } from '@/lib/fetch-keys';
 import { useFullscreenDims } from '@/hooks/useFullscreenDims';
 import { useRealClock } from '@/hooks/useTZClock';
 import { useTranslate, useFormattingLocale } from '@/i18n';
@@ -15,19 +18,22 @@ import { ModuleSetupState } from '../ModuleStates';
 import { useLoadingStalled } from '@/hooks/useLoadingStalled';
 import type { FetchError } from '@/lib/fetch-error';
 import { resolveWeatherLocationLabel } from '../weather/location-label';
-import { resolveSkyCondition, skyBackground, SKY_ACCENT, particleKind } from './sky-layer';
+import { resolveSkyCondition, skyBackground, SKY_ACCENT, skyScene, sunPhase } from './sky-layer';
 import {
   getOrientation, timelineHours, hoursWithin, baseUnit,
   CANVAS_PAD_X_U, CANVAS_PAD_Y_U,
   type WeatherScale, type WeatherViewProps, type SunTimes,
 } from './weather-view-utils';
-import ConditionParticles from './ConditionParticles';
+import LivingSky from './LivingSky';
 import { useFitScale, FIT_FACTOR_ATTR, FIT_SETTLED_ATTR } from '@/hooks/useFitScale';
 import PanoramaView, { StripView } from './PanoramaView';
 import AlmanacView from './AlmanacView';
 import AmbientView from './AmbientView';
 import WeekView from './WeekView';
 import HourlyView from './HourlyView';
+import ForecastView from './ForecastView';
+import ConditionsView from './ConditionsView';
+import { availableCards, CARD_KEYS } from './cards';
 import { householdTimeFormat } from '@/lib/clock-time';
 
 interface FullscreenWeatherModuleProps {
@@ -51,9 +57,25 @@ interface FullscreenWeatherModuleProps {
   timeFormat?: TimeFormat;
 }
 
-/** Particle colours differ by theme group: pale blue drops vanish on Linen. */
-const DROP_LIGHT = 'rgba(71,85,105,.62)';
-const DROP_DARK = 'rgba(196,220,255,.88)';
+/**
+ * The living sky is the background, whatever the theme: white type and
+ * translucent dark cards over it, the way the phone app does it. The theme
+ * still owns the still and off skies. Snow and fog are the lightest scenes
+ * and the hero's text shadow is what keeps white type readable there.
+ */
+const LIVING_SKY_TOKENS = {
+  surface: 'rgba(20,22,48,.62)',
+  surfaceAlt: 'rgba(0,0,0,.28)',
+  text: '#ffffff',
+  textSecondary: 'rgba(255,255,255,.78)',
+  textMuted: 'rgba(255,255,255,.58)',
+  border: 'rgba(255,255,255,.10)',
+  borderSubtle: 'rgba(255,255,255,.10)',
+  cardShadow: '0 8px 30px rgba(0,0,0,.12)',
+} as const;
+const LIVING_TEXT_SHADOW = '0 2px 10px rgba(0,0,0,.35), 0 4px 30px rgba(0,0,0,.3)';
+
+const AIR_QUALITY_REFRESH_MS = FETCH_KEY_REGISTRY['air-quality']?.ttlMs ?? 300_000;
 
 /** How long to promise a forecast before admitting it is not arriving. */
 const WEATHER_STALL_MS = 20_000;
@@ -108,7 +130,16 @@ export default function FullscreenWeatherModule({
   const minutely = useMemo(() => rawMinutely ?? [], [rawMinutely]);
   const alerts = useMemo(() => rawAlerts ?? [], [rawAlerts]);
 
-  const theme = getThemeTokens(config.theme ?? fullscreenTheme);
+  const skyMode = config.skyLayer ?? 'living';
+  const baseTheme = getThemeTokens(config.theme ?? fullscreenTheme);
+  const theme = skyMode === 'living' ? { ...baseTheme, ...LIVING_SKY_TOKENS, isDark: true } : baseTheme;
+  const cardView = config.view === 'forecast' || config.view === 'conditions';
+
+  // The Forecast and Conditions views' air quality card. Only they ask, and only with a
+  // location (the route reads the household's). A missing OpenWeatherMap
+  // key answers with a setup error, which simply leaves the card hidden.
+  const wantAirQuality = cardView && config.showAirQuality !== false && latitude != null && longitude != null;
+  const [airQuality] = useFetchData<{ aqi: number }>(wantAirQuality ? airQualityUrl() : '', AIR_QUALITY_REFRESH_MS);
 
   // Counts, not array identities: a refetch that returns the same shape must
   // not restart the fit loop. And the count the *view draws*, not the raw
@@ -126,7 +157,9 @@ export default function FullscreenWeatherModule({
     ? timelineHours(hourly).length
     : config.view === 'almanac'
       ? hoursWithin(hourly, 12).length
-      : Math.min(48, hourly.length);
+      : cardView
+        ? Math.min(12, hoursWithin(hourly, 36).length)
+        : Math.min(48, hourly.length);
   const forecastCount = forecast.length;
   const minutelyCount = minutely.length;
   const alertCount = alerts.length;
@@ -135,12 +168,25 @@ export default function FullscreenWeatherModule({
   // can push them past the canvas. `useFitScale` measures the rendered stack
   // and returns the factor that brings it back inside; it is 1 whenever the
   // content already fits, which is every size up to extra-large.
+  // Sun times drive the sky layer, the ribbon's night shading, and the Almanac
+  // sun arc. Without coordinates there is no daylight model, so the module
+  // falls back to "always day" rather than guessing.
+  const sun: SunTimes = useMemo(() => sunTimesFor(now, latitude, longitude, timezone), [latitude, longitude, now, timezone]);
+
+  // The Forecast and Conditions views' card set, as the views decide it: a toggle and the data
+  // behind it. A refetch that brings pressure or visibility where the first
+  // answer had none adds cards, and the fit must run again for them, so the
+  // set itself is a dependency rather than the toggles alone.
+  const cardSet = cardView
+    ? availableCards({ config, hourly, forecast, minutely, units, sun, t, latitude, longitude, airQuality: wantAirQuality ? airQuality : null }, CARD_KEYS).join(',')
+    : '';
+
   const stackRef = useRef<HTMLDivElement>(null);
   const requestedTypoMul = getTypoMultiplier(config.typographySize ?? 'medium');
   const { factor: fit, settled: fitSettled } = useFitScale(stackRef, [
     config.view, config.typographySize, config.density, config.daysToShow,
     config.showNowcast, config.showAlerts, config.showRibbon, config.showStatRail,
-    config.showTime,
+    config.showTime, config.showMap, cardSet,
     dims.w, dims.h, hourlyCount, forecastCount, minutelyCount, alertCount,
   ]);
 
@@ -155,18 +201,20 @@ export default function FullscreenWeatherModule({
       height: dims.h,
       isDark: theme.isDark,
       orientation: getOrientation(dims.w, dims.h),
+      fit,
     };
   }, [dims, requestedTypoMul, fit, config.density, theme.isDark, strip]);
 
-  // Sun times drive the sky layer, the ribbon's night shading, and the Almanac
-  // sun arc. Without coordinates there is no daylight model, so the module
-  // falls back to "always day" rather than guessing.
-  const sun: SunTimes = useMemo(() => sunTimesFor(now, latitude, longitude, timezone), [latitude, longitude, now, timezone]);
-
   const skyCondition = resolveSkyCondition(hourly[0]?.icon, sun.isNight);
   const accent = config.accentColor || SKY_ACCENT[skyCondition];
-  const skyOn = (config.skyLayer ?? 'auto') !== 'off';
-  const motionOn = config.animateConditions !== false;
+
+  // The living sky follows the sun's height as well as the conditions, so a
+  // clear sky is blue at noon, warm at dusk and starry at night.
+  const sunAltitude = latitude != null && longitude != null
+    ? (SunCalc.getPosition(now, latitude, longitude).altitude * 180) / Math.PI
+    : null;
+  const scene = skyScene(hourly[0]?.icon, sunPhase(sunAltitude));
+  const moonPhase = SunCalc.getMoonIllumination(now).phase;
 
   // The fullscreen views always show a place name (unlike the standard weather
   // module, whose header is opt-in), so `showLocation` is pinned true and the
@@ -188,6 +236,7 @@ export default function FullscreenWeatherModule({
     config, scale, hourly, forecast, minutely, alerts, units, now, timezone,
     timeFormat: householdTimeFormat(timeFormat, locale),
     locationLabel, sky: skyCondition, accent, sun, t, locale,
+    latitude, longitude, airQuality: wantAirQuality ? airQuality : null,
   };
 
   const themeVars: React.CSSProperties = {
@@ -200,9 +249,7 @@ export default function FullscreenWeatherModule({
     ['--fsw-border' as string]: theme.border,
     ['--fsw-border-sub' as string]: theme.borderSubtle,
     ['--fsw-card-shadow' as string]: theme.cardShadow,
-    ['--fsw-drop' as string]: theme.isDark ? DROP_DARK : DROP_LIGHT,
-    ['--fsw-flake' as string]: theme.isDark ? '#fafafa' : '#ffffff',
-    ['--fsw-flake-ring' as string]: theme.isDark ? 'transparent' : 'rgba(100,116,139,.40)',
+    ['--fsw-text-shadow' as string]: skyMode === 'living' ? LIVING_TEXT_SHADOW : 'none',
   };
 
   const { s, u } = scale;
@@ -223,13 +270,15 @@ export default function FullscreenWeatherModule({
         ...themeVars,
       }}
     >
-      {skyOn && (
+      {skyMode === 'living' ? (
+        <LivingSky scene={scene} moonPhase={moonPhase} moonPlace={config.view === 'forecast' ? 'hero' : 'header'} />
+      ) : skyMode === 'still' ? (
         <div
           data-testid="fsw-sky"
+          data-scene="still"
           style={{ position: 'absolute', inset: 0, zIndex: 0, background: skyBackground(skyCondition, theme.isDark) }}
         />
-      )}
-      {motionOn && <ConditionParticles kind={particleKind(skyCondition)} height={dims.h} />}
+      ) : null}
 
       {/*
         Two boxes, not one. The outer carries the canvas padding; the inner is
@@ -241,7 +290,7 @@ export default function FullscreenWeatherModule({
         2x-large. With the padding outside, the measured box is exactly the
         content area, and overflow past it is what gets measured.
       */}
-      <div style={{ position: 'relative', zIndex: 2, height: '100%', padding: `${u * CANVAS_PAD_Y_U}px ${u * CANVAS_PAD_X_U}px` }}>
+      <div style={{ position: 'relative', zIndex: 2, height: '100%', padding: `${Math.max(u * CANVAS_PAD_Y_U, scale.s * 2)}px ${Math.max(u * CANVAS_PAD_X_U, scale.s * 2)}px`, textShadow: 'var(--fsw-text-shadow)' }}>
       <div
         ref={stackRef}
         data-testid="fsw-stack"
@@ -271,6 +320,10 @@ export default function FullscreenWeatherModule({
           <HourlyView {...viewProps} />
         ) : config.view === 'strip' ? (
           <StripView {...viewProps} />
+        ) : config.view === 'forecast' ? (
+          <ForecastView {...viewProps} />
+        ) : config.view === 'conditions' ? (
+          <ConditionsView {...viewProps} />
         ) : (
           <PanoramaView {...viewProps} />
         )}

@@ -48,6 +48,7 @@ function countWeatherProviderFiles(): number {
     'today-record.ts',
     'precipitation.ts',
     'sun-times.ts',
+    'condition-sentences.ts',
     'temp-ramp.ts',
     'moon-phase-name.ts',
   ]);

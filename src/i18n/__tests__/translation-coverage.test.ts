@@ -75,6 +75,7 @@ const SHARED_UNTRANSLATABLE: ReadonlySet<string> = new Set([
   'editor|configSections.fullscreen-photo.sourceImmich',
   'editor|configSections.fullscreen-photo.sourceOneDrive',
   'editor|configSections.fullscreen-photo.transitionZoom',
+  'editor|configSections.fullscreen-weather.mapStyleStandard',
   'editor|configSections.fullscreen-weather.viewPanorama',
   'editor|configSections.icon.animation',
   'editor|configSections.iframe.url',
@@ -492,6 +493,8 @@ const LOCALE_UNTRANSLATABLE: Readonly<Record<string, ReadonlySet<string>>> = {
     'remote|timers.minutesShort',
   ]),
   'fr-FR': new Set([
+    // "Conditions" is the same word in French (the Weather module's Conditions view).
+    'editor|configSections.fullscreen-weather.viewConditions',
     // "Bonus" is the same word in this language (bonus chores).
     'modules|chore-chart.bonus.heading',
     'modules|chore-chart.choreForm.kindBonus',

@@ -37,6 +37,8 @@ describe('OpenMeteoProvider', () => {
         relative_humidity_2m: [60, 58],
         weather_code: [0, 61],
         wind_speed_10m: [18, 20],
+        wind_direction_10m: [200, 215],
+        wind_gusts_10m: [31, 36],
         precipitation_probability: [10, 55],
         surface_pressure: [1012.4, 1011.6],
         dew_point_2m: [5.3, 5.8],
@@ -45,6 +47,12 @@ describe('OpenMeteoProvider', () => {
     });
 
     const out = await new OpenMeteoProvider().getHourly(44.71, -93.42, 'metric');
+    const requestUrl = new URL(String(spy.mock.calls[0][0]));
+
+    // Direction and gusts are asked for beside the speed; the one
+    // wind_speed_unit covers speed and gusts alike.
+    expect(requestUrl.searchParams.get('hourly')).toContain('wind_speed_10m,wind_direction_10m,wind_gusts_10m');
+    expect(requestUrl.searchParams.get('wind_speed_unit')).toBe('kmh');
 
     expect(out).toHaveLength(2);
     expect(out[0]).toMatchObject({
@@ -55,12 +63,30 @@ describe('OpenMeteoProvider', () => {
       icon: 'sun', // WMO 0, is_day=1
       description: 'Clear sky',
       windSpeed: 18,
+      windDirection: 200,
+      windGust: 31, // already km/h, like windSpeed
       precipProbability: 10,
       pressure: 1012, // rounded
       dewPoint: 5, // rounded
     });
     expect(out[1].icon).toBe('cloud-rain'); // WMO 61
     expect(out[1].description).toBe('Slight rain');
+    expect(out[1]).toMatchObject({ windDirection: 215, windGust: 36 });
+  });
+
+  it('getHourly asks for mph gusts in imperial and leaves absent wind arrays unsaid', async () => {
+    spy = mockOm({
+      hourly: {
+        time: [T0], temperature_2m: [54], apparent_temperature: [50], relative_humidity_2m: [60],
+        weather_code: [0], wind_speed_10m: [11], precipitation_probability: [0],
+        surface_pressure: [1015], dew_point_2m: [41], is_day: [1],
+      },
+    });
+    const out = await new OpenMeteoProvider().getHourly(44.71, -93.42, 'imperial');
+    const requestUrl = new URL(String(spy.mock.calls[0][0]));
+    expect(requestUrl.searchParams.get('wind_speed_unit')).toBe('mph');
+    expect(out[0].windDirection).toBeUndefined();
+    expect(out[0].windGust).toBeUndefined();
   });
 
   it('getHourly picks the night icon variant when is_day=0', async () => {

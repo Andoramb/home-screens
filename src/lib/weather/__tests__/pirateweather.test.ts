@@ -43,6 +43,8 @@ describe('PirateWeatherProvider', () => {
             apparentTemperature: 7,
             humidity: 0.82,
             windSpeed: 5.5,
+            windGust: 12.3,
+            windBearing: 240,
             precipProbability: 0.4,
           },
         ],
@@ -60,8 +62,19 @@ describe('PirateWeatherProvider', () => {
       icon: 'cloud-rain',
       description: 'Rain',
       windSpeed: 5.5,
+      // Pirate Weather already answers in km/h (ca) or mph (us), so both
+      // pass through untouched, as windSpeed does.
+      windGust: 12.3,
+      windDirection: 240,
       precipProbability: 40, // 0.4 * 100
     });
+  });
+
+  it('getHourly leaves direction and gust unsaid when the sample lacks them', async () => {
+    spy = mockPw({ hourly: { data: [{ time: NOW_EPOCH, temperature: 9, windSpeed: 5.5 }] } });
+    const out = await new PirateWeatherProvider('key').getHourly(44.71, -93.42, 'metric');
+    expect(out[0].windDirection).toBeUndefined();
+    expect(out[0].windGust).toBeUndefined();
   });
 
   it('getHourly returns [] when the hourly block is absent', async () => {

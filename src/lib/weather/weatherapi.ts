@@ -20,6 +20,10 @@ interface WAHour {
   humidity: number;
   wind_kph: number;
   wind_mph: number;
+  /** Degrees the wind blows from. */
+  wind_degree?: number;
+  gust_kph?: number;
+  gust_mph?: number;
   condition: WACondition;
   chance_of_rain: number;
   uv?: number;
@@ -84,6 +88,8 @@ export class WeatherAPIProvider implements WeatherProvider {
       icon: this.mapConditionToIcon(h.condition.code, h.is_day === 1),
       description: h.condition.text ?? '',
       windSpeed: isCelsius ? h.wind_kph : h.wind_mph,
+      windDirection: h.wind_degree,
+      windGust: isCelsius ? h.gust_kph : h.gust_mph,
       precipProbability: h.chance_of_rain ?? 0,
       uvIndex: h.uv != null ? Math.round(h.uv) : undefined,
     }));

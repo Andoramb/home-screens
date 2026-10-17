@@ -26,6 +26,8 @@ interface OWMMain {
 interface OWMWind {
   speed: number;
   deg: number;
+  /** Same unit as `speed`; absent in calm conditions. */
+  gust?: number;
 }
 
 interface OWMCurrentResponse {
@@ -152,6 +154,8 @@ export class OpenWeatherMapProvider implements WeatherProvider {
     // OWM's `units=metric` reports wind in m/s (imperial is already mph);
     // every other provider hands modules km/h, so match them here.
     const wind = (speed: number) => windToUnit(speed, units);
+    const gust = (w: OWMWind | undefined) => (w?.gust != null ? wind(w.gust) : undefined);
+    const pressure = (main: OWMMain) => (main.pressure != null ? Math.round(main.pressure) : undefined);
     const current: HourlyWeather = {
       time: new Date(currentData.dt * 1000).toISOString(),
       temp: currentData.main.temp,
@@ -160,7 +164,10 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       icon: this.mapIcon(currentData.weather[0]?.icon ?? ''),
       description: currentData.weather[0]?.description ?? '',
       windSpeed: wind(currentData.wind.speed),
+      windDirection: currentData.wind?.deg,
+      windGust: gust(currentData.wind),
       precipProbability: 0,
+      pressure: pressure(currentData.main),
     };
 
     const forecast = forecastData.list.map((h) => ({
@@ -171,7 +178,10 @@ export class OpenWeatherMapProvider implements WeatherProvider {
       icon: this.mapIcon(h.weather[0]?.icon ?? ''),
       description: h.weather[0]?.description ?? '',
       windSpeed: wind(h.wind.speed),
+      windDirection: h.wind?.deg,
+      windGust: gust(h.wind),
       precipProbability: (h.pop ?? 0) * 100,
+      pressure: pressure(h.main),
     }));
 
     return [current, ...forecast];

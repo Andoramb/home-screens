@@ -21,7 +21,7 @@ function owmEntry(overrides: Record<string, unknown> = {}) {
     dt: T0,
     main: { temp: 12, feels_like: 10, humidity: 60, temp_min: 8, temp_max: 14, pressure: 1012 },
     weather: [{ id: 800, main: 'Clear', description: 'clear sky', icon: '01d' }],
-    wind: { speed: 3.5, deg: 180 },
+    wind: { speed: 3.5, deg: 180, gust: 10 },
     pop: 0.2,
     ...overrides,
   };
@@ -57,7 +57,10 @@ describe('OpenWeatherMapProvider', () => {
       icon: 'sun', // 01d
       description: 'clear sky',
       windSpeed: 12.6, // 3.5 m/s -> km/h under metric
+      windDirection: 180,
+      windGust: 36, // 10 m/s -> km/h, same conversion as windSpeed
       precipProbability: 0, // current is always 0
+      pressure: 1012,
     });
     // Forecast (index 1) — pop scaled to a percentage
     expect(out[1]).toMatchObject({
@@ -65,7 +68,21 @@ describe('OpenWeatherMapProvider', () => {
       temp: 13,
       icon: 'cloud-sun', // 02d
       precipProbability: 50,
+      windDirection: 180,
+      windGust: 36,
+      pressure: 1011,
     });
+  });
+
+  it('getHourly keeps imperial wind and gust as mph and leaves a missing gust unsaid', async () => {
+    spy = mockOwm({
+      current: owmEntry({ wind: { speed: 8, deg: 270, gust: 15 } }),
+      forecast: { list: [owmEntry({ dt: T0 + 3600, wind: { speed: 5, deg: 90 } })] },
+    });
+    const out = await new OpenWeatherMapProvider('key').getHourly(44.71, -93.42, 'imperial');
+    expect(out[0]).toMatchObject({ windSpeed: 8, windDirection: 270, windGust: 15 });
+    expect(out[1].windDirection).toBe(90);
+    expect(out[1].windGust).toBeUndefined();
   });
 
   it('getHourly falls back to the thermometer icon and empty description when weather[] is empty', async () => {

@@ -23,19 +23,44 @@ const KEYED_PROVIDER_IDS: ReadonlySet<string> = new Set(
   WEATHER_PROVIDERS.filter((p) => p.secretKey !== null).map((p) => p.id),
 );
 
-// Provider capabilities — controls which toggles and views are visible
-const PROVIDER_CAPS: Record<string, { minutely?: boolean; alerts?: boolean; pressure?: boolean; visibility?: boolean; dewPoint?: boolean; uv?: boolean }> = {
-  openweathermap: {},
-  weatherapi: { uv: true },
-  pirateweather: { minutely: true, alerts: true, uv: true, pressure: true, visibility: true, dewPoint: true },
-  noaa: { alerts: true, pressure: true, visibility: true, dewPoint: true },
-  'open-meteo': { pressure: true, dewPoint: true, uv: true },
-  yr: { pressure: true },
-  smhi: { pressure: true },
+/**
+ * What a provider's payload can carry, so the editor offers a toggle or a
+ * view only where the wall could show something. Each flag is read off the
+ * provider file in `src/lib/weather/`: a flag set here for a field the
+ * provider never emits is a control that does nothing.
+ */
+export interface WeatherProviderCaps {
+  minutely?: boolean;
+  alerts?: boolean;
+  feelsLike?: boolean;
+  /** Daily precipitation total on the forecast days. */
+  precipAmount?: boolean;
+  windDirection?: boolean;
+  gust?: boolean;
+  pressure?: boolean;
+  visibility?: boolean;
+  dewPoint?: boolean;
+  uv?: boolean;
+}
+
+export const PROVIDER_CAPS: Record<string, WeatherProviderCaps> = {
+  openweathermap: { feelsLike: true, precipAmount: true, windDirection: true, gust: true, pressure: true },
+  weatherapi: { feelsLike: true, precipAmount: true, windDirection: true, gust: true, uv: true },
+  pirateweather: { minutely: true, alerts: true, feelsLike: true, precipAmount: true, windDirection: true, gust: true, uv: true, pressure: true, visibility: true, dewPoint: true },
+  // NOAA's hourly feed names the direction as compass text and gives no gust.
+  // Feels-like, pressure and visibility all come from the same station
+  // observation and only land on the current hour; feels-like further
+  // depends on the station reporting a wind chill or heat index.
+  noaa: { alerts: true, feelsLike: true, windDirection: true, pressure: true, visibility: true, dewPoint: true },
+  'open-meteo': { feelsLike: true, precipAmount: true, windDirection: true, gust: true, pressure: true, dewPoint: true, uv: true },
+  yr: { precipAmount: true, windDirection: true, gust: true, pressure: true },
+  smhi: { precipAmount: true, windDirection: true, gust: true, pressure: true },
   // Met Office was missing entirely, so the editor reported it as having no
   // optional fields even though the provider emits all of these.
-  metoffice: { pressure: true, dewPoint: true, uv: true },
-  envcanada: {},
+  metoffice: { feelsLike: true, precipAmount: true, windDirection: true, gust: true, pressure: true, visibility: true, dewPoint: true, uv: true },
+  // ECCC's hourly blocks carry a compass direction and a km/h gust, but no
+  // feels-like and no precipitation amount anywhere in the citypage feed.
+  envcanada: { windDirection: true, gust: true },
 };
 
 // Which provider capability a view requires (omit = available for all providers)

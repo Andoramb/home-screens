@@ -1174,12 +1174,12 @@ test('fullscreen-meal-planner: toggling Show Emoji persists', async ({ page, req
   expect((await moduleConfig(request, 'fullscreen-meal-planner')).showEmoji).toBe(false);
 });
 
-test('fullscreen-weather: switching Background tint persists', async ({ page, request }) => {
+test('fullscreen-weather: switching Sky persists', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('fullscreen-weather'));
 
-  // Default skyLayer is 'auto'; choosing the plain-theme option persists 'off'.
+  // Default skyLayer is 'living'; choosing the plain-theme option persists 'off'.
   await autosaved(page, async () => {
-    await page.getByLabel('Background tint').selectOption('off');
+    await page.getByLabel('Sky').selectOption('off');
   });
 
   expect((await moduleConfig(request, 'fullscreen-weather')).skyLayer).toBe('off');

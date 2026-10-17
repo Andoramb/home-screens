@@ -65,13 +65,16 @@ describe('YrProvider', () => {
       {
         time: '2026-04-18T12:00:00Z',
         data: {
-          instant: { details: { air_temperature: 11, relative_humidity: 62, wind_speed: 5, air_pressure_at_sea_level: 1012.6 } },
+          instant: { details: { air_temperature: 11, relative_humidity: 62, wind_speed: 5, wind_from_direction: 247.3, wind_speed_of_gust: 9, air_pressure_at_sea_level: 1012.6 } },
           next_1_hours: { summary: { symbol_code: 'partlycloudy_day' }, details: { probability_of_precipitation: 20 } },
         },
       },
     ]);
 
     const out = await new YrProvider().getHourly(44.71, -93.42, 'metric');
+
+    // Gusts only ship on the `complete` feed; `compact` stops at direction.
+    expect(String(spy.mock.calls[0][0])).toContain('/locationforecast/2.0/complete?');
 
     expect(out).toHaveLength(1);
     expect(out[0]).toMatchObject({
@@ -81,6 +84,8 @@ describe('YrProvider', () => {
       icon: 'cloud-sun',
       description: 'Partly cloudy',
       windSpeed: 18, // round(5 m/s * 3.6)
+      windDirection: 247.3,
+      windGust: 32, // round(9 m/s * 3.6)
       precipProbability: 20,
       pressure: 1013, // rounded
     });
@@ -91,7 +96,7 @@ describe('YrProvider', () => {
       {
         time: '2026-04-18T12:00:00Z',
         data: {
-          instant: { details: { air_temperature: 0, wind_speed: 10 } },
+          instant: { details: { air_temperature: 0, wind_speed: 10, wind_speed_of_gust: 20 } },
           next_1_hours: { summary: { symbol_code: 'clearsky_day' } },
         },
       },
@@ -99,6 +104,8 @@ describe('YrProvider', () => {
     const out = await new YrProvider().getHourly(44.71, -93.42, 'imperial');
     expect(out[0].temp).toBe(32); // 0°C
     expect(out[0].windSpeed).toBe(22); // round(10 m/s * 2.23694)
+    expect(out[0].windGust).toBe(45); // round(20 m/s * 2.23694)
+    expect(out[0].windDirection).toBeUndefined();
   });
 
   it('getHourly drops timeseries entries older than one hour', async () => {

@@ -14,6 +14,11 @@ export interface HourlyWeather {
   icon: string;
   description: string;
   windSpeed?: number;
+  /** Where the wind blows from, in degrees of the meteorological convention:
+   *  0 is north, 90 is east, 180 is south, 270 is west. */
+  windDirection?: number;
+  /** Gust speed in the same unit as `windSpeed` (km/h metric, mph imperial). */
+  windGust?: number;
   precipProbability?: number;
   pressure?: number;       // hPa (from station observations)
   visibility?: number;     // km or miles depending on units

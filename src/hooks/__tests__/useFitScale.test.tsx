@@ -174,7 +174,7 @@ describe('useFitScale', () => {
 
   it('converges on the largest factor that fits when every commit lands on time', () => {
     const converged = measureConverged(0);
-    // 7 bisection steps over [0.34, 1] resolve to about half a percent.
+    // 7 bisection steps over [0.3, 1] resolve to about half a percent.
     expect(converged).toBeGreaterThan(IDEAL - 0.01);
     expect(converged).toBeLessThanOrEqual(IDEAL + 0.01);
   });
@@ -216,10 +216,10 @@ describe('useFitScale', () => {
   /**
    * The regression.
    *
-   * Before the staleness check, a one-frame lag made the loop judge probe 0.67
+   * Before the staleness check, a one-frame lag made the loop judge probe 0.65
    * against the factor-1 layout, call it "does not fit", and bisect inside
-   * [0.34, 0.67] — every later probe compounding the same error until it
-   * bottomed out at the 0.34 floor. On screen that is type shrunk to a third of
+   * [0.3, 0.65], every later probe compounding the same error until it
+   * bottomed out at the 0.3 floor. On screen that is type shrunk to a third of
    * its size with the layout swimming in slack, and it stuck: nothing re-runs
    * the effect until the deps change, so only a page reload cleared it.
    */
@@ -260,20 +260,20 @@ describe('useFitScale', () => {
   describe('when a commit never arrives', () => {
     it('settles on the largest factor already measured to fit, loudly', () => {
       resetBrowser();
-      // Probe 1 (does not fit) and probe 0.67 (does not fit) commit; the
+      // Probe 1 (does not fit) and probe 0.65 (does not fit) commit; the
       // probe after that never does. Nothing has fitted yet at that point,
       // so fall through to a later stall: let three commits land, which
-      // includes the first fitting probe (0.5 fits: 2000 * 0.5 = 1000).
+      // includes the first fitting probe (0.475 fits: 2000 * 0.475 = 950).
       stallAfterCommits = 2;
       const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const restore = installFakeLayout();
       try {
         act(() => { mountHarness(); });
         runToSettle(0, 400);
-        // Committed layouts: 1 (start), 0.67 (fails), 0.505 (fits). The next
-        // probe never lands, so the loop settles on 0.505.
-        expect(dispatchedFactor).toBeCloseTo(0.505, 3);
-        expect(dispatchedFactor).toBeGreaterThan(0.34);
+        // Committed layouts: 1 (start), 0.65 (fails), 0.475 (fits). The next
+        // probe never lands, so the loop settles on 0.475.
+        expect(dispatchedFactor).toBeCloseTo(0.475, 3);
+        expect(dispatchedFactor).toBeGreaterThan(0.3);
         expect(warn).toHaveBeenCalledTimes(1);
         expect(String(warn.mock.calls[0][0])).toMatch(/never committed/);
       } finally {

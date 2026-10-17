@@ -264,9 +264,19 @@ export class MetOfficeProvider implements WeatherProvider {
         windSpeed: e.windSpeed10m != null
           ? Math.round(msToWindUnit(e.windSpeed10m, isMetric))
           : undefined,
+        windDirection: e.windDirectionFrom10m,
+        windGust: e.windGustSpeed10m != null
+          ? Math.round(msToWindUnit(e.windGustSpeed10m, isMetric))
+          : undefined,
         precipProbability: e.probOfPrecipitation,
         // mslp is in Pascals; divide by 100 for hPa to match the rest of the providers.
         pressure: e.mslp != null ? Math.round(e.mslp / 100) : undefined,
+        // Visibility arrives in metres; km or miles to one decimal, as NOAA does.
+        visibility: e.visibility != null
+          ? (isMetric
+            ? Math.round(e.visibility / 1000 * 10) / 10
+            : Math.round(e.visibility / 1609.34 * 10) / 10)
+          : undefined,
         dewPoint: e.screenDewPointTemperature != null
           ? celsiusToUnit(e.screenDewPointTemperature, isMetric)
           : undefined,

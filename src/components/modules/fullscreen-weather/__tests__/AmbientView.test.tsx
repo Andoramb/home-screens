@@ -12,7 +12,7 @@ function props(timezone: string): WeatherViewProps {
   return {
     config: {},
     timeFormat: '12h',
-    scale: { s: 10, u: 10, orientation: 'portrait' },
+    scale: { s: 10, u: 10, orientation: 'portrait', fit: 1 },
     hourly: [{ time: '2026-08-24T00:00:00.000Z', temp: 60, icon: 'sun', description: 'Sunny' }],
     forecast: ['2026-08-24', '2026-08-25', '2026-08-26'].map(day),
     minutely: [],

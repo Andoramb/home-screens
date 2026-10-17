@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 14,
+  "schemaVersion": 15,
   "categories": [
     "Full Screen",
     "Time & Date",
@@ -1081,10 +1081,12 @@
               "almanac",
               "ambient",
               "week",
-              "hourly"
+              "hourly",
+              "forecast",
+              "conditions"
             ]
           },
-          "description": "`panorama`, `strip` (Wide strip), `almanac`, `ambient`, `week`, or `hourly`",
+          "description": "`panorama`, `strip` (Wide strip), `almanac`, `ambient`, `week`, `hourly`, `forecast`, or `conditions`",
           "default": "panorama"
         },
         {
@@ -1146,22 +1148,13 @@
             "kind": "string",
             "text": "FullscreenWeatherSky",
             "values": [
-              "auto",
+              "living",
+              "still",
               "off"
             ]
           },
-          "description": "`auto` tints the background by conditions, `off` uses the plain theme background",
-          "default": "auto"
-        },
-        {
-          "name": "animateConditions",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Falling rain and snow. Turn off if the display stutters on older hardware",
-          "default": true
+          "description": "`living` animates the sky to match the weather, `still` tints it, `off` uses the plain theme background. Pick `still` if the display stutters on older hardware",
+          "default": "living"
         },
         {
           "name": "showNowcast",
@@ -1170,7 +1163,152 @@
             "kind": "boolean",
             "text": "boolean"
           },
-          "description": "Next-hour rain strip (Panorama, Pirate Weather only)",
+          "description": "Next-hour rain strip (Panorama and Conditions, Pirate Weather only)",
+          "default": true
+        },
+        {
+          "name": "showMap",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Rain map card (Forecast)",
+          "default": true
+        },
+        {
+          "name": "mapZoom",
+          "optional": true,
+          "type": {
+            "kind": "number",
+            "text": "number"
+          },
+          "description": "Zoom of the rain map card, 1 to 12 (Forecast)",
+          "default": 6
+        },
+        {
+          "name": "mapStyle",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "FullscreenWeatherMapStyle",
+            "values": [
+              "standard",
+              "dark",
+              "light"
+            ]
+          },
+          "description": "Base map of the rain map card: `light` (faded, radar is the only colour), `standard` (plain OpenStreetMap) or `dark` (Forecast)",
+          "default": "light"
+        },
+        {
+          "name": "mapAnimate",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Play the rain map's last two hours as a loop (Forecast)",
+          "default": true
+        },
+        {
+          "name": "showWind",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Wind card: compass, speed and gusts (Forecast and Conditions)",
+          "default": true
+        },
+        {
+          "name": "showSun",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Sunrise and sunset card (Forecast and Conditions)",
+          "default": true
+        },
+        {
+          "name": "showMoon",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Moon card: tonight's phase and moonrise or moonset (Conditions)",
+          "default": true
+        },
+        {
+          "name": "showAirQuality",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Air quality card (Conditions, and Forecast in landscape). Needs an OpenWeatherMap key under Settings, Weather, whichever weather source you use",
+          "default": true
+        },
+        {
+          "name": "showUV",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "UV index card (Conditions)",
+          "default": true
+        },
+        {
+          "name": "showFeelsLike",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Feels-like card (Conditions)",
+          "default": true
+        },
+        {
+          "name": "showHumidity",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Humidity and dew point card (Conditions)",
+          "default": true
+        },
+        {
+          "name": "showPrecipitation",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Rainfall card: today's total and the next wet day (Conditions)",
+          "default": true
+        },
+        {
+          "name": "showVisibility",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Visibility card (Conditions)",
+          "default": true
+        },
+        {
+          "name": "showPressure",
+          "optional": true,
+          "type": {
+            "kind": "boolean",
+            "text": "boolean"
+          },
+          "description": "Pressure gauge card (Conditions)",
           "default": true
         },
         {
@@ -1239,7 +1377,9 @@
         "almanac",
         "ambient",
         "week",
-        "hourly"
+        "hourly",
+        "forecast",
+        "conditions"
       ]
     },
     {
@@ -7094,7 +7234,7 @@
             "text": "number"
           },
           "description": "Config schema version. The app updates it when it upgrades an older file; never edit it by hand",
-          "default": 14
+          "default": 15
         },
         {
           "name": "settings",

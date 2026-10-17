@@ -2,9 +2,13 @@
 
 import { useLayoutEffect, useRef, useState, type RefObject } from 'react';
 
-/** Never shrink past this fraction of the requested size — below it the view is
- *  unreadable anyway, and a hard floor bounds the search. */
-const MIN_FACTOR = 0.34;
+/**
+ * Never shrink past this fraction of the requested size: below it the view is
+ * unreadable anyway, and a hard floor bounds the search. 0.3 is where the
+ * Forecast page at 4x-large with a seven-day list still fits a portrait wall
+ * (the type lands a little above medium there).
+ */
+const MIN_FACTOR = 0.3;
 /** Bisection steps. 7 gives ~0.5% precision over the [MIN_FACTOR, 1] range. */
 const STEPS = 7;
 

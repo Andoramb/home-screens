@@ -8,6 +8,7 @@ import { pressureForUnits, windUnitLabel } from '@/lib/weather/units';
 import { hourLabel, smoothPath, tzHour, hoursWithin, HOURLY_RAIN_SHOWN_PCT } from './weather-view-utils';
 import { tempColor } from '@/lib/weather/temp-ramp';
 import { moonPhaseKey } from '@/lib/weather/moon-phase-name';
+import { MoonImage } from './moon';
 import { Card, Label, TopBar, AlertBand, MiniHero } from './weather-parts';
 
 /** Every bento card takes its placement from the caller, not from itself. */
@@ -212,20 +213,6 @@ function MoonCard({ p, place }: CardProps) {
   const pct = Math.round(illum.fraction * 100);
   const phaseKey = moonPhaseKey(illum.phase);
 
-  // Terminator geometry. `c` runs +1 (new) -> 0 (quarter) -> -1 (full).
-  // Render = lit disc, then the unlit half covered by a rectangle (a circle
-  // shifted by one radius only meets the middle at the equator and left lit
-  // slivers at the poles), then an ellipse of width |c|*R that is dark for a
-  // crescent (c > 0) and lit for a gibbous (c < 0).
-  const c = Math.cos(2 * Math.PI * illum.phase);
-  const waxing = illum.phase < 0.5;
-  const uid = useId();
-  const clipId = `${uid}-moon-clip`;
-  const gradId = `${uid}-moon-grad`;
-  const R = 62;
-  const DARK = '#39404e';
-  const LIT = `url(#${gradId})`;
-
   return (
     <Card u={u} testId="fsw-card" style={{ ...place, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
       <Label s={s}>{p.t('fullscreen-weather.cards.moon')}</Label>
@@ -236,22 +223,7 @@ function MoonCard({ p, place }: CardProps) {
         <Note s={s} u={u}>{p.t('fullscreen-weather.moon.illuminated', { percent: pct })}</Note>
       </div>
       <div style={{ flex: 1, minHeight: 0, display: 'grid', placeItems: 'center', overflow: 'hidden' }}>
-        <svg viewBox="0 0 150 150" style={{ width: u * 23, maxWidth: '100%', maxHeight: '100%' }}>
-          <defs>
-            <clipPath id={clipId}><circle cx="75" cy="75" r="62" /></clipPath>
-            <radialGradient id={gradId} gradientUnits="userSpaceOnUse" cx="52" cy="48" r="96">
-              <stop offset="0%" stopColor="#ffffff" /><stop offset="100%" stopColor="#cbd5e1" />
-            </radialGradient>
-          </defs>
-          <circle cx="75" cy="75" r="72" fill={p.accent} opacity=".10" />
-          <circle cx="75" cy="75" r="62" fill={DARK} />
-          <g clipPath={`url(#${clipId})`}>
-            <circle cx="75" cy="75" r={R} fill={LIT} />
-            <rect x={waxing ? 75 - R : 75} y={75 - R} width={R} height={R * 2} fill={DARK} />
-            <ellipse cx="75" cy="75" rx={Math.abs(c) * R} ry={R} fill={c > 0 ? DARK : LIT} />
-          </g>
-          <circle cx="75" cy="75" r="62" fill="none" stroke="var(--fsw-border)" strokeWidth={1.5} />
-        </svg>
+        <MoonImage phase={illum.phase} size={u * 23} style={{ maxWidth: '100%', maxHeight: '100%' }} />
       </div>
     </Card>
   );
