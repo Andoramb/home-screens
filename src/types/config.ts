@@ -341,7 +341,7 @@ export interface ModuleInstance {
 }
 
 /** Every source rotation can currently draw photos from. */
-export type BackgroundRotationSourceId = 'unsplash' | 'nasa-apod' | 'immich' | 'icloud' | 'local' | 'theme' | 'color' | 'pattern';
+export type BackgroundRotationSourceId = 'unsplash' | 'nasa-apod' | 'immich' | 'icloud' | 'local' | 'color' | 'pattern';
 
 export interface BackgroundRotation {
   /** Legacy toggle, retained for config round-tripping. Rotation uses `sources`. */
@@ -373,7 +373,7 @@ export interface BackgroundRotation {
   /** Local media library folder to rotate through, relative to the library root */
   localFolder?: string;
   /** Starter wall IDs selected within each group. Missing or empty = no walls from that group are in rotation. Unknown IDs are ignored. */
-  starterBackgroundIds?: Partial<Record<'theme' | 'color' | 'pattern', string[]>>;
+  starterBackgroundIds?: Partial<Record<'color' | 'pattern', string[]>>;
 }
 
 /** Overlay dimming/vignette drawn over a screen's background, between the image and its modules */

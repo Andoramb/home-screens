@@ -74,7 +74,7 @@ function configuredSources(rotation: BackgroundRotation): BackgroundRotationSour
 
 /** Stable, catalog-filtered selections; omitted/empty means none selected. */
 function starterSelectionKey(rotation: BackgroundRotation): string | undefined {
-  const groups = (['theme', 'color', 'pattern'] as const).filter((group) => rotation.sources.includes(group));
+  const groups = (['color', 'pattern'] as const).filter((group) => rotation.sources.includes(group));
   if (!groups.length) return undefined;
   return JSON.stringify(groups.map((group) => {
     const ids = rotation.starterBackgroundIds?.[group];

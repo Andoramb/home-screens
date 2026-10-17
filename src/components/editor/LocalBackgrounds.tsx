@@ -6,8 +6,8 @@ import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/
 import { useTranslate } from '@/i18n';
 import {
   starterBackgroundsIn,
-  type StarterBackground,
-  type StarterBackgroundGroup,
+  type StarterRotationBackground,
+  type StarterRotationGroup,
 } from '@/lib/starter-backgrounds';
 import { isRotationActive } from '@/lib/screen-background';
 
@@ -27,7 +27,7 @@ function readGroupOpen(id: string): boolean {
 
 /** Heading checkbox switches the group's tiles from "pick one" to "rotate through the selection". */
 function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
-  id: StarterBackgroundGroup; title: string; count: string; checked: boolean; hint?: string;
+  id: StarterRotationGroup; title: string; count: string; checked: boolean; hint?: string;
   onChange: (checked: boolean) => void; children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(true);
@@ -73,7 +73,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   const rotation = currentScreen.backgroundRotation;
   const selectedSources = rotation?.sources ?? [];
-  const selectSource = (id: StarterBackgroundGroup, checked: boolean) => {
+  const selectSource = (id: StarterRotationGroup, checked: boolean) => {
     const sources = checked
       ? [...selectedSources.filter((source) => source !== id), id]
       : selectedSources.filter((source) => source !== id);
@@ -83,19 +83,19 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   };
   // Walls are opt-in: nothing is in rotation until the user picks it.
   const selections = rotation?.starterBackgroundIds;
-  const selectedIds = (group: StarterBackgroundGroup) => {
+  const selectedIds = (group: StarterRotationGroup) => {
     const ids = selections?.[group] ?? [];
     return starterBackgroundsIn(group).filter((wall) => ids.includes(wall.id)).map((wall) => wall.id);
   };
-  const setIncluded = (bg: StarterBackground, include: boolean) => {
+  const setIncluded = (bg: StarterRotationBackground, include: boolean) => {
     const group = bg.group;
     const ids = selectedIds(group);
     const next = include ? [...ids, bg.id] : ids.filter((id) => id !== bg.id);
     updateScreenRotation(selectedScreenId, { starterBackgroundIds: { ...selections, [group]: next } });
   };
-  const selectionCount = (group: StarterBackgroundGroup) => `${selectedIds(group).length}/${starterBackgroundsIn(group).length}`;
-  const rotating = (group: StarterBackgroundGroup) => selectedSources.includes(group);
-  const groupHint = (group: StarterBackgroundGroup) => (selectedIds(group).length === 0 ? t('backgroundPicker.pickToRotate') : undefined);
+  const selectionCount = (group: StarterRotationGroup) => `${selectedIds(group).length}/${starterBackgroundsIn(group).length}`;
+  const rotating = (group: StarterRotationGroup) => selectedSources.includes(group);
+  const groupHint = (group: StarterRotationGroup) => (selectedIds(group).length === 0 ? t('backgroundPicker.pickToRotate') : undefined);
 
   const pick = (backgroundImage: string) => pickScreenBackground(selectedScreenId, backgroundImage);
 
@@ -106,18 +106,18 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const tileAspect = landscape ? 'aspect-video' : 'aspect-[9/16]';
   const tileGrid = landscape ? 'grid grid-cols-3 gap-2' : 'grid grid-cols-4 gap-1.5';
   const isCurrent = (path: string) => currentScreen.backgroundImage === path;
-  const isIncluded = (bg: StarterBackground) => selectedIds(bg.group).includes(bg.id);
+  const isIncluded = (bg: StarterRotationBackground) => selectedIds(bg.group).includes(bg.id);
   // Group in rotation mode: a tile is highlighted when it is in the rotation. Otherwise it is highlighted when it is the fixed wall.
-  const isMarked = (bg: StarterBackground) =>
+  const isMarked = (bg: StarterRotationBackground) =>
     rotating(bg.group) ? isIncluded(bg) : isCurrent(bg.path) && !isRotationActive(currentScreen.backgroundRotation);
-  const onTile = (bg: StarterBackground) => (rotating(bg.group) ? setIncluded(bg, !isIncluded(bg)) : pick(bg.path));
-  const tileLabel = (bg: StarterBackground, name: string) =>
+  const onTile = (bg: StarterRotationBackground) => (rotating(bg.group) ? setIncluded(bg, !isIncluded(bg)) : pick(bg.path));
+  const tileLabel = (bg: StarterRotationBackground, name: string) =>
     t(rotating(bg.group) ? 'backgroundPicker.includeInRotation' : 'backgroundPicker.useFixed', { name });
 
   const colorWalls = starterBackgroundsIn('color');
   const patternWalls = starterBackgroundsIn('pattern');
 
-  const wallTile = (bg: StarterBackground) => {
+  const wallTile = (bg: StarterRotationBackground) => {
     const name = t(`backgroundPicker.starters.${bg.id}`);
     const marked = isMarked(bg);
     return (

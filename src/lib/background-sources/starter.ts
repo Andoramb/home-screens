@@ -1,9 +1,9 @@
-import { starterBackgroundsIn, type StarterBackgroundGroup } from '@/lib/starter-backgrounds';
+import { starterBackgroundsIn, type StarterRotationGroup } from '@/lib/starter-backgrounds';
 import type { BackgroundRotation } from '@/types/config';
 import type { BackgroundSourceProvider } from './types';
 
 /** Resolve selections against the catalog. No selection means nothing is in rotation: walls are opt-in. */
-export function starterCandidates(group: StarterBackgroundGroup, rotation: BackgroundRotation) {
+export function starterCandidates(group: StarterRotationGroup, rotation: BackgroundRotation) {
   const catalog = starterBackgroundsIn(group);
   const selected = rotation.starterBackgroundIds?.[group];
   if (!Array.isArray(selected) || selected.length === 0) return [];
@@ -11,7 +11,7 @@ export function starterCandidates(group: StarterBackgroundGroup, rotation: Backg
   return catalog.filter((wall) => ids.has(wall.id));
 }
 
-function starterProvider(group: StarterBackgroundGroup): BackgroundSourceProvider {
+function starterProvider(group: StarterRotationGroup): BackgroundSourceProvider {
   return {
     id: group,
     async fetchRandom(rotation) {
@@ -22,6 +22,5 @@ function starterProvider(group: StarterBackgroundGroup): BackgroundSourceProvide
   };
 }
 
-export const themeSourceProvider = starterProvider('theme');
 export const colorSourceProvider = starterProvider('color');
 export const patternSourceProvider = starterProvider('pattern');

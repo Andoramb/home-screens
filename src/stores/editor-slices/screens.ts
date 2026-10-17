@@ -9,8 +9,14 @@ import { pickedBackground } from '@/lib/screen-background';
 import { COALESCE_KEYS } from '@/stores/editor-save';
 import { syncEditorUrl } from '@/stores/editor-url';
 import type { EditorGet, MutateConfig, ScreenActions } from './types';
+import { activeRotationSources } from '@/lib/screen-background';
 
 /** Screen CRUD and ordering on the active display. */
+/** Saved entries for sources that no longer exist are dropped on the next edit. */
+function withLiveSources(rotation: NonNullable<Screen['backgroundRotation']>): NonNullable<Screen['backgroundRotation']> {
+  return { ...rotation, sources: activeRotationSources(rotation) };
+}
+
 export function createScreenSlice(
   get: EditorGet,
   mutateConfig: MutateConfig,
@@ -166,7 +172,7 @@ export function createScreenSlice(
           config,
           selectedDisplayId,
           getActiveScreens(config, selectedDisplayId).map((s) =>
-            s.id === id ? { ...s, backgroundRotation: { ...s.backgroundRotation, ...updates } as Screen['backgroundRotation'] } : s,
+            s.id === id ? { ...s, backgroundRotation: withLiveSources({ ...s.backgroundRotation, ...updates } as NonNullable<Screen['backgroundRotation']>) } : s,
           ),
         ),
       }), { coalesce: COALESCE_KEYS.screenRotation(id) });

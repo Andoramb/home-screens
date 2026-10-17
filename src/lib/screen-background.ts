@@ -1,4 +1,4 @@
-import type { Screen } from '@/types/config';
+import type { BackgroundRotationSourceId, Screen } from '@/types/config';
 import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
 
 /**
@@ -8,9 +8,20 @@ import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
  */
 export type RotationAnswer = string | null | undefined;
 
+const ROTATION_SOURCE_IDS: ReadonlySet<string> = new Set(['unsplash', 'nasa-apod', 'immich', 'icloud', 'local', 'color', 'pattern']);
+
+/**
+ * The sources rotation really uses. A saved entry for a source that no longer
+ * exists (the old `theme` source) is ignored: it has no checkbox, so nothing
+ * in the editor could switch it off, yet it kept winning refreshes.
+ */
+export function activeRotationSources(rotation: Screen['backgroundRotation'] | undefined): BackgroundRotationSourceId[] {
+  return (rotation?.sources ?? []).filter((source) => ROTATION_SOURCE_IDS.has(source));
+}
+
 /** A selected source activates rotation; the legacy `enabled` flag does not. */
 export function isRotationActive(rotation: Screen['backgroundRotation'] | undefined): boolean {
-  return (rotation?.sources?.length ?? 0) > 0;
+  return activeRotationSources(rotation).length > 0;
 }
 
 export function stopBackgroundRotation(rotation: Screen['backgroundRotation'] | undefined): Screen['backgroundRotation'] | undefined {

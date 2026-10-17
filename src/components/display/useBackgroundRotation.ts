@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { Screen } from '@/types/config';
 import { displayFetch } from '@/lib/display-fetch';
-import { isRotationActive } from '@/lib/screen-background';
+import { activeRotationSources, isRotationActive } from '@/lib/screen-background';
 
 /** How often the client polls the server-side rotation cache (ms) */
 const BG_POLL_MS = 60_000;
@@ -26,7 +26,7 @@ export function buildRotationKey(screens: Screen[]): string {
         const r = s.backgroundRotation!;
         return {
           id: s.id,
-          sources: r.sources,
+          sources: activeRotationSources(r),
           query: r.query,
           unsplashCollections: r.unsplashCollections ?? null,
           unsplashMode: r.unsplashMode ?? null,
