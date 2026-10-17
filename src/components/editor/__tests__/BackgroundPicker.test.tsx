@@ -284,14 +284,17 @@ describe('BackgroundPicker — unified Sources', () => {
   });
 
   it('themes are a single choice: no rotation checkbox, and a tile is always a fixed pick', () => {
-    seedStore({ sources: ['theme'], query: '', intervalMinutes: 60 }, '/starter-backgrounds/ocean.svg');
+    // A `theme` entry left over from when themes were a rotation source is ignored.
+    seedStore({ sources: ['theme' as never], query: '', intervalMinutes: 60 }, '/starter-backgrounds/ocean.svg');
     const { getByTestId, queryByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(queryByRole('checkbox', { name: enUSEditor.backgroundPicker.groups.theme })).toBeNull();
+    // The stale entry does not make the screen look like it rotates.
+    expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeFixed);
     const tile = getByTestId('starter-background-theme-linen');
     expect(tile.getAttribute('aria-label')).toBe('Use Linen as a fixed background');
     fireEvent.click(tile);
     expect(useEditorStore.getState().config!.screens[0].backgroundImage).toBe('/starter-backgrounds/theme-linen.svg');
-    expect(currentRotation()?.sources).toEqual([]);
+    expect(getByTestId('background-mode').textContent).toBe(enUSEditor.backgroundPicker.modeFixed);
   });
 
   it('shows a visible hint and a disabled checkbox for sources that are not set up', () => {

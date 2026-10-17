@@ -128,6 +128,22 @@ describe('GET /api/backgrounds/rotate — multi-source selection', () => {
     } finally { random.mockRestore(); }
   });
 
+  it('ignores a leftover theme source, so a forced refresh never lands on the theme wall', async () => {
+    mockFindScreen.mockReturnValue(screen({ backgroundImage: '/starter-backgrounds/theme-horizon.svg', backgroundRotation: {
+      sources: ['theme', 'local'], query: '', intervalMinutes: 60,
+      starterBackgroundIds: { theme: ['theme-horizon'] },
+    } as never }));
+    fsMock.readdir.mockResolvedValue([{ name: 'photo.jpg', isFile: () => true }]);
+    for (const roll of [0, 0.4, 0.6, 0.999]) {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(roll);
+      try {
+        expect(await (await GET(rotateReq('?screenId=s1&force=true'))).json()).toMatchObject({
+          path: '/api/backgrounds/serve?file=photo.jpg', fresh: true,
+        });
+      } finally { random.mockRestore(); }
+    }
+  });
+
   it('skips invalid starter subsets and still rotates from a valid legacy source', async () => {
     mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
       sources: ['pattern', 'local', 'bogus'], query: '', intervalMinutes: 60,

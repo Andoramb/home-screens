@@ -4,11 +4,11 @@ import type { BackgroundRotation } from '@/types/config';
 import { backgroundSourceProviders, isSourceConfigured } from '..';
 
 const rotation = (starterBackgroundIds?: BackgroundRotation['starterBackgroundIds']): BackgroundRotation => ({
-  sources: ['theme', 'color', 'pattern'], query: '', intervalMinutes: 60, starterBackgroundIds,
+  sources: ['color', 'pattern'], query: '', intervalMinutes: 60, starterBackgroundIds,
 });
 
 describe('built-in starter rotation providers', () => {
-  it.each(['theme', 'color', 'pattern'] as const)('%s is opt-in: absent or empty selection rotates nothing', async (group) => {
+  it.each(['color', 'pattern'] as const)('%s is opt-in: absent or empty selection rotates nothing', async (group) => {
     expect(starterBackgroundsIn(group).length).toBeGreaterThan(1);
     expect(await backgroundSourceProviders[group].fetchRandom(rotation(), undefined)).toBeNull();
     expect(await backgroundSourceProviders[group].fetchRandom(rotation({ [group]: [] }), undefined)).toBeNull();
@@ -29,9 +29,14 @@ describe('built-in starter rotation providers', () => {
   });
 
   it('skips invalid selections rather than accidentally falling back to all', async () => {
-    const invalid = rotation({ theme: ['missing', 'midnight', 42 as never] });
-    expect(isSourceConfigured('theme', invalid)).toBe(false);
-    expect(await backgroundSourceProviders.theme.fetchRandom(invalid, undefined)).toBeNull();
+    const invalid = rotation({ pattern: ['missing', 'midnight', 42 as never] });
+    expect(isSourceConfigured('pattern', invalid)).toBe(false);
+    expect(await backgroundSourceProviders.pattern.fetchRandom(invalid, undefined)).toBeNull();
     expect(isSourceConfigured('toString' as never, invalid)).toBe(false);
+  });
+
+  it('theme is not a rotation source: a leftover entry is never configured', () => {
+    expect(Object.hasOwn(backgroundSourceProviders, 'theme')).toBe(false);
+    expect(isSourceConfigured('theme' as never, rotation())).toBe(false);
   });
 });

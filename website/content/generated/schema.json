@@ -8230,7 +8230,7 @@
           "optional": true,
           "type": {
             "kind": "object",
-            "text": "Partial<Record<\"color\" | \"theme\" | \"pattern\", string[]>>"
+            "text": "Partial<Record<\"color\" | \"pattern\", string[]>>"
           },
           "description": "Starter wall IDs selected within each group. Missing or empty = no walls from that group are in rotation. Unknown IDs are ignored."
         }

@@ -12,7 +12,7 @@ import { useSecretStatus } from '@/hooks/useSecretStatus';
 import { useTranslate } from '@/i18n';
 import { eventBus } from '@/lib/event-bus';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
-import { stopBackgroundRotation } from '@/lib/screen-background';
+import { activeRotationSources, stopBackgroundRotation } from '@/lib/screen-background';
 import IntegrationSettingsLink, { type BackgroundIntegration } from './IntegrationSettingsLink';
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
 import BackgroundShadeFields from './BackgroundShadeFields';
@@ -29,7 +29,7 @@ export default function BackgroundPicker() {
 
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
-  const rotationSources = currentScreen?.backgroundRotation?.sources ?? [];
+  const rotationSources = activeRotationSources(currentScreen?.backgroundRotation);
   const unsplashCollectionsMode = currentScreen?.backgroundRotation
     ? isUnsplashCollectionsMode(currentScreen.backgroundRotation)
     : false;
