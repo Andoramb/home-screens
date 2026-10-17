@@ -2,8 +2,12 @@
 /**
  * Renders the sprites the full-screen weather module's living sky drifts
  * across the screen: public/sky/clouds-{far,mid,near}.png (cumulus),
- * public/sky/clouds-veil.png (the thin night stratus) and
- * public/sky/stars.png (the star field).
+ * public/sky/clouds-veil.png (the thin night stratus), public/sky/fog.png
+ * (mist bands), public/sky/stars.png (the star field), and the falling
+ * weather, public/sky/rain-{far,mid,near}.png and snow-{far,mid,near}.png.
+ * Everything falling or drifting is seeded random over a tile too tall or
+ * wide to read as a loop, with every mark that crosses a tile edge drawn
+ * again on the far side so the repeat is seamless.
  *
  *   node scripts/sky-sprites.mjs
  *
@@ -381,6 +385,179 @@ function renderStars() {
   return { grey, alpha };
 }
 
+// ── Fog ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Mist as horizontal bands over the whole height: five bands of stretched
+ * noise, thinning to nothing in stretches, softened with a blur, and clear
+ * at the tile's ends so the repeat never shows. Grey plus alpha like the
+ * clouds; the module tints it with the fog palette.
+ */
+const FOG_W = 2160;
+const FOG_H = 1080;
+function renderFog() {
+  const N = makeNoise(97);
+  const A = new Float32Array(FOG_W * FOG_H);
+  const G = new Float32Array(FOG_W * FOG_H);
+  const BANDS = [
+    // [centre, half thickness, seed, strength]
+    [0.12, 0.09, 1.1, 0.55], [0.32, 0.12, 3.7, 0.8], [0.52, 0.11, 6.3, 0.9], [0.74, 0.13, 8.9, 1.0], [0.94, 0.12, 11.3, 1.0],
+  ];
+  for (let y = 0; y < FOG_H; y++) {
+    const v = y / FOG_H;
+    for (let x = 0; x < FOG_W; x++) {
+      const u = x / FOG_W;
+      let a = 0;
+      let lit = 0.85;
+      for (const [cy, th, sp, strength] of BANDS) {
+        const wobble = (N.fbm(u * 1.8 + sp, v * 1.2 + sp * 2, 3) - 0.5) * 0.2;
+        const d = Math.abs(v - cy - wobble) / th;
+        if (d >= 1) continue;
+        const profile = Math.pow(1 - d * d, 1.3);
+        const fibre = N.fbm(u * 3.5 + sp * 5, v * 14 + sp, 3);
+        const presence = N.fbm(u * 1.3 + sp * 4, 0.21 + sp, 2);
+        const band = profile * sm(0.3, 0.75, fibre) * sm(0.32, 0.6, presence) * strength;
+        if (band > a) { a = band; lit = 0.72 + 0.28 * fibre; }
+      }
+      a *= sm(0, 0.07, u) * sm(1, 0.93, u);
+      const k = y * FOG_W + x;
+      A[k] = a; G[k] = lit;
+    }
+  }
+  const BA = blur(A, FOG_W, FOG_H, 9, 2);
+  const BG = blur(G, FOG_W, FOG_H, 7, 1);
+  const grey = new Uint8Array(FOG_W * FOG_H);
+  const alpha = new Uint8Array(FOG_W * FOG_H);
+  for (let k = 0; k < A.length; k++) {
+    const a = Math.min(0.6, BA[k] * 0.7);
+    if (a < 0.004) continue;
+    grey[k] = Math.round(Math.min(1, Math.max(0, BG[k])) * 255);
+    alpha[k] = Math.round(a * 255);
+  }
+  return { grey, alpha, w: FOG_W, h: FOG_H };
+}
+
+// ── Rain and snow ───────────────────────────────────────────────────────────
+
+/** A small seeded random source, so a sprite is the same on every run. */
+function rng(seed) {
+  let x = seed >>> 0 || 1;
+  return () => {
+    x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0;
+    return x / 4294967296;
+  };
+}
+
+/** Add a soft mark at (cx, cy) wrapping across both tile edges. */
+function wrapped(acc, W, H, cx, cy, reach, draw) {
+  for (const ox of [0, -W, W]) {
+    for (const oy of [0, -H, H]) {
+      const x0 = cx + ox, y0 = cy + oy;
+      if (x0 + reach < 0 || x0 - reach > W || y0 + reach < 0 || y0 - reach > H) continue;
+      draw(x0, y0);
+    }
+  }
+}
+
+/**
+ * `count` points over a W x H tile: one in each cell of a grid, placed at
+ * random inside its cell, in a random order. Plain random draws clump and
+ * leave holes hundreds of pixels tall, which on the wall read as rain or
+ * snow arriving in bursts; a jittered grid is as irregular up close and
+ * even at every larger scale.
+ */
+function scatter(r, W, H, count) {
+  const cols = Math.max(1, Math.round(Math.sqrt(count * W / H)));
+  const rows = Math.max(1, Math.round(count / cols));
+  const pts = [];
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) pts.push([(i + r()) * W / cols, (j + r()) * H / rows]);
+  for (let k = pts.length - 1; k > 0; k--) { const m = Math.floor(r() * (k + 1)); [pts[k], pts[m]] = [pts[m], pts[k]]; }
+  return pts;
+}
+
+/**
+ * Rain: thin vertical streaks, each its own length, weight and brightness,
+ * scattered evenly over a tall tile. The streak is soft across and fades
+ * at both ends, so it reads as a drop moving, not a ruled line. The module
+ * slants and speeds the layers; near drops are longer and brighter.
+ */
+function renderRain({ seed, W, H, count, len, thick, alpha, blurR }) {
+  const r = rng(seed);
+  const acc = new Float32Array(W * H);
+  const dot = (x0, y0, L, t, a) => {
+    const sig2 = 2 * (t * 0.55) * (t * 0.55);
+    for (let y = Math.max(0, Math.floor(y0)); y <= Math.min(H - 1, Math.ceil(y0 + L)); y++) {
+      const f = (y - y0) / L;
+      const end = Math.min(1, f * 6) * Math.min(1, (1 - f) * 3); // sharp head, soft tail
+      for (let x = Math.max(0, Math.floor(x0 - t * 2)); x <= Math.min(W - 1, Math.ceil(x0 + t * 2)); x++) {
+        const dx = x + 0.5 - x0;
+        const v = a * end * Math.exp(-(dx * dx) / sig2);
+        const k = y * W + x;
+        if (v > acc[k]) acc[k] = v;
+      }
+    }
+  };
+  for (const [cx, cy] of scatter(r, W, H, count)) {
+    const L = len[0] + r() * (len[1] - len[0]);
+    const t = thick[0] + r() * (thick[1] - thick[0]);
+    const a = alpha[0] + r() * (alpha[1] - alpha[0]);
+    wrapped(acc, W, H, cx, cy, L + 4, (x0, y0) => dot(x0, y0, L, t, a));
+  }
+  const soft = blurR ? blur(acc, W, H, blurR, 1) : acc;
+  const grey = new Uint8Array(W * H).fill(255);
+  const al = new Uint8Array(W * H);
+  for (let k = 0; k < al.length; k++) al[k] = Math.round(Math.min(1, soft[k]) * 255);
+  return { grey, alpha: al, w: W, h: H };
+}
+
+/**
+ * Snow: round flakes in a spread of sizes, the far ones small and soft, the
+ * near ones larger with a bright core, scattered evenly over a tall tile.
+ */
+function renderSnow({ seed, W, H, count, radius, alpha, blurR }) {
+  const r = rng(seed);
+  const acc = new Float32Array(W * H);
+  const dot = (x0, y0, R, a) => {
+    const sig2 = 2 * (R * 0.6) * (R * 0.6);
+    const reach = Math.ceil(R * 2.2);
+    for (let y = Math.max(0, Math.floor(y0 - reach)); y <= Math.min(H - 1, Math.ceil(y0 + reach)); y++) {
+      for (let x = Math.max(0, Math.floor(x0 - reach)); x <= Math.min(W - 1, Math.ceil(x0 + reach)); x++) {
+        const d2 = (x + 0.5 - x0) ** 2 + (y + 0.5 - y0) ** 2;
+        const v = a * Math.exp(-d2 / sig2);
+        const k = y * W + x;
+        if (v > acc[k]) acc[k] = v;
+      }
+    }
+  };
+  for (const [cx, cy] of scatter(r, W, H, count)) {
+    const R = radius[0] + r() * (radius[1] - radius[0]);
+    const a = alpha[0] + r() * (alpha[1] - alpha[0]);
+    wrapped(acc, W, H, cx, cy, R * 2.5, (x0, y0) => dot(x0, y0, R, a));
+  }
+  const soft = blurR ? blur(acc, W, H, blurR, 1) : acc;
+  const grey = new Uint8Array(W * H).fill(255);
+  const al = new Uint8Array(W * H);
+  for (let k = 0; k < al.length; k++) al[k] = Math.round(Math.min(1, soft[k]) * 255);
+  return { grey, alpha: al, w: W, h: H };
+}
+
+/**
+ * The falling layers. Tile heights differ per layer and share no small
+ * common multiple with each other or with the sway periods in LivingSky, so
+ * the composite never visibly repeats. These sizes are what the module's
+ * keyframes translate by; change them together.
+ */
+const RAIN_LAYERS = {
+  'rain-far': { seed: 101, W: 540, H: 1320, count: 300, len: [12, 26], thick: [0.9, 1.3], alpha: [0.25, 0.55], blurR: 1 },
+  'rain-mid': { seed: 211, W: 540, H: 1440, count: 190, len: [22, 44], thick: [1.1, 1.7], alpha: [0.35, 0.75], blurR: 0 },
+  'rain-near': { seed: 307, W: 540, H: 1560, count: 120, len: [36, 76], thick: [1.4, 2.4], alpha: [0.5, 1], blurR: 0 },
+};
+const SNOW_LAYERS = {
+  'snow-far': { seed: 401, W: 720, H: 1440, count: 300, radius: [1.1, 2], alpha: [0.35, 0.7], blurR: 1 },
+  'snow-mid': { seed: 503, W: 720, H: 1560, count: 170, radius: [2, 3.4], alpha: [0.5, 0.9], blurR: 0 },
+  'snow-near': { seed: 607, W: 720, H: 1680, count: 90, radius: [3.4, 6.5], alpha: [0.7, 1], blurR: 0 },
+};
+
 // ── PNG ─────────────────────────────────────────────────────────────────────
 
 const CRC_TABLE = new Uint32Array(256).map((_, n) => {
@@ -467,6 +644,13 @@ for (const layer of Object.keys(LAYOUTS)) {
   }
   const png = encodeGreyAlphaPng(TW, TH, grey, alpha);
   const file = join(OUT_DIR, 'clouds-veil.png');
+  writeFileSync(file, png);
+  console.log(`${file}  ${(png.length / 1024).toFixed(0)} KB  ${Date.now() - started} ms`);
+}
+for (const [name, spec] of [...Object.entries(RAIN_LAYERS).map(([n, sp]) => [n, renderRain(sp)]), ...Object.entries(SNOW_LAYERS).map(([n, sp]) => [n, renderSnow(sp)]), ['fog', renderFog()]]) {
+  const started = Date.now();
+  const png = encodeGreyAlphaPng(spec.w, spec.h, spec.grey, spec.alpha);
+  const file = join(OUT_DIR, `${name}.png`);
   writeFileSync(file, png);
   console.log(`${file}  ${(png.length / 1024).toFixed(0)} KB  ${Date.now() - started} ms`);
 }

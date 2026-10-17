@@ -1,6 +1,8 @@
 'use client';
 
+import { useRef } from 'react';
 import { floorEase, type WeatherViewProps } from './weather-view-utils';
+import { useBoxSize } from './useBoxSize';
 import { AlertBand } from './weather-parts';
 import {
   Hero, HourlyCard, DaysCard, MapCard, Instrument, availableCards, type CardKey,
@@ -32,6 +34,13 @@ function ForecastPortrait({ p }: { p: WeatherViewProps }) {
   const ease = floorEase(p.scale.fit);
   const showMap = p.config.showMap !== false && p.latitude != null && p.longitude != null;
   const cards = availableCards(p, PORTRAIT_ORDER).slice(0, 2);
+  // The bottom row takes whatever the cards above leave, so its cards learn
+  // their cell from the row's measured box and size their instruments to it,
+  // as the Conditions grid does; the row's height never follows its content.
+  const rowRef = useRef<HTMLDivElement>(null);
+  const row = useBoxSize(rowRef);
+  const gap = u * 2.2;
+  const cell = row ? { width: (row.w - gap * (cards.length - 1)) / cards.length, height: row.h } : {};
   return (
     <>
       <Hero p={p} />
@@ -45,9 +54,13 @@ function ForecastPortrait({ p }: { p: WeatherViewProps }) {
           and a map or a compass sized off `u` alone collapses to a sliver
           beside large type instead of making the loop shrink the type. */}
       {showMap && <MapCard p={p} style={{ flex: 'none', height: Math.max(u * 40, s * 26 * ease) }} />}
+      {/* The floor seats a label, an instrument of 14.5 s and the line under it
+          (see instrumentSize); the fit loop shrinks the type to make it so.
+          This floor does not ease toward the fit floor: the instruments size
+          to the row now, and a shorter row only starves them. */}
       {cards.length > 0 && (
-        <div style={{ flex: 1, minHeight: Math.max(u * 24, s * 24 * ease), display: 'grid', gridTemplateColumns: `repeat(${cards.length}, minmax(0, 1fr))`, gap: u * 2.2 }}>
-          {cards.map((card) => <Instrument key={card} p={p} card={card} ctx={{ land: false }} />)}
+        <div ref={rowRef} style={{ flex: 1, minHeight: Math.max(u * 24, s * 27), display: 'grid', gridTemplateColumns: `repeat(${cards.length}, minmax(0, 1fr))`, gap }}>
+          {cards.map((card) => <Instrument key={card} p={p} card={card} ctx={{ land: false, ...cell }} />)}
         </div>
       )}
     </>
@@ -64,12 +77,12 @@ function ForecastLandscape({ p }: { p: WeatherViewProps }) {
   // when there is no map) and four tall cells along the bottom. The middle
   // row takes the cards that are a number and a line; a compass or a sun arc
   // there would have no room to draw.
-  const middle: Array<{ col: string; row: string }> = aq
-    ? [{ col: '5 / 9', row: '2' }]
-    : [{ col: '5 / 7', row: '2' }, { col: '7 / 9', row: '2' }];
-  if (!showMap) middle.push({ col: '9 / 11', row: '2' }, { col: '11 / 13', row: '2' });
-  const bottom: Array<{ col: string; row: string }> = [
-    { col: '5 / 7', row: '3' }, { col: '7 / 9', row: '3' }, { col: '9 / 11', row: '3' }, { col: '11 / 13', row: '3' },
+  const middle: Cell[] = aq
+    ? [{ col: 5, span: 4, row: 2 }]
+    : [{ col: 5, span: 2, row: 2 }, { col: 7, span: 2, row: 2 }];
+  if (!showMap) middle.push({ col: 9, span: 2, row: 2 }, { col: 11, span: 2, row: 2 });
+  const bottom: Cell[] = [
+    { col: 5, span: 2, row: 3 }, { col: 7, span: 2, row: 3 }, { col: 9, span: 2, row: 3 }, { col: 11, span: 2, row: 3 },
   ];
   const middleCards: CardKey[] = aq ? ['airQuality'] : [];
   const rest = [...small];
@@ -83,22 +96,38 @@ function ForecastLandscape({ p }: { p: WeatherViewProps }) {
     ...bottomCards.map((card, i) => ({ card, cell: bottom[i] })),
   ];
   const gap = u * 2;
+  // The grid's rows and columns come from the box it gets, so each card's
+  // cell follows from the grid's measured size; the instruments size to it.
+  const gridRef = useRef<HTMLDivElement>(null);
+  const grid = useBoxSize(gridRef);
+  const cellSize = (cell: Cell) => {
+    if (!grid) return {};
+    const colW = (grid.w - gap * 11) / 12;
+    const rowsH = grid.h - gap * (LANDSCAPE_ROWS.length - 1);
+    const total = LANDSCAPE_ROWS.reduce((a, b) => a + b, 0);
+    return { width: colW * cell.span + gap * (cell.span - 1), height: rowsH * LANDSCAPE_ROWS[cell.row - 1] / total };
+  };
   return (
     <>
       <Hero p={p} land />
       <AlertBand p={p} />
-      <div style={{
+      <div ref={gridRef} style={{
         flex: 1, minHeight: 0, display: 'grid', gap,
         gridTemplateColumns: 'repeat(12, minmax(0, 1fr))',
-        gridTemplateRows: 'minmax(0, 212fr) minmax(0, 170fr) minmax(0, 308fr)',
+        gridTemplateRows: LANDSCAPE_ROWS.map((r) => `minmax(0, ${r}fr)`).join(' '),
       }}>
         <HourlyCard p={p} count={12} style={{ gridColumn: showMap ? '1 / 9' : '1 / 13', gridRow: '1', flex: 'none' }} />
         {showMap && <MapCard p={p} land style={{ gridColumn: '9 / 13', gridRow: '1 / 3' }} />}
         <DaysCard p={p} land style={{ gridColumn: '1 / 5', gridRow: '2 / 4', minHeight: 0 }} />
         {placed.map(({ card, cell }) => (
-          <Instrument key={card} p={p} card={card} ctx={{ land: true }} style={{ gridColumn: cell.col, gridRow: cell.row }} />
+          <Instrument key={card} p={p} card={card} ctx={{ land: true, ...cellSize(cell) }} style={{ gridColumn: `${cell.col} / ${cell.col + cell.span}`, gridRow: String(cell.row) }} />
         ))}
       </div>
     </>
   );
 }
+
+/** A card's place in the tablet grid: its first column, how many it spans, its row. */
+interface Cell { col: number; span: number; row: 1 | 2 | 3 }
+/** The tablet grid's row shares: the hour strip, the short middle row, the tall bottom row. */
+const LANDSCAPE_ROWS = [212, 170, 308] as const;

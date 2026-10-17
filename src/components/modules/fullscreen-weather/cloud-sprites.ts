@@ -13,8 +13,10 @@ import { CLOUD_PALETTES, type CloudPalette } from './sky-layer';
  * one pass of pixel math per palette on the Pi and then only compositing:
  * no filter, no canvas loop, no per-frame work.
  */
-export type CloudLayer = 'far' | 'mid' | 'near' | 'veil';
-export const CLOUD_LAYERS: readonly CloudLayer[] = ['far', 'mid', 'near', 'veil'];
+export type CloudLayer = 'far' | 'mid' | 'near' | 'veil' | 'fog';
+export const CLOUD_LAYERS: readonly CloudLayer[] = ['far', 'mid', 'near', 'veil', 'fog'];
+/** The sprites the sky drifts sideways as cloud layers; `fog` is the mist's own sheet, drawn by `Mist`. */
+export const DRIFT_LAYERS: readonly Exclude<CloudLayer, 'fog'>[] = ['far', 'mid', 'near', 'veil'];
 
 /** Sprite tile size in CSS px, matching the generator. */
 export const CLOUD_TILE_W = 2160;
@@ -40,7 +42,7 @@ function loadGrey(layer: CloudLayer): Promise<ImageData> {
         resolve(ctx.getImageData(0, 0, cv.width, cv.height));
       };
       img.onerror = () => reject(new Error(`cloud sprite ${layer} failed to load`));
-      img.src = `/sky/clouds-${layer}.png`;
+      img.src = layer === 'fog' ? '/sky/fog.png' : `/sky/clouds-${layer}.png`;
     });
     // A load that failed (the hub was unreachable for a moment) is forgotten,
     // so the next palette asks for the picture again instead of reusing the

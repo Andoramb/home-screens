@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SKY_BASES, type SkyScene } from './sky-layer';
-import { useCloudSprites, CLOUD_TILE_W, CLOUD_TILE_H, CLOUD_LAYERS } from './cloud-sprites';
+import { useCloudSprites, CLOUD_TILE_W, CLOUD_TILE_H, DRIFT_LAYERS } from './cloud-sprites';
 import { MoonImage } from './moon';
+import { useBoxSize, type BoxSize } from './useBoxSize';
 
 /**
  * The living sky: an animated background that matches the weather.
@@ -13,18 +14,28 @@ import { MoonImage } from './moon';
  * `filter`, no canvas loop, no JavaScript per frame. The rules that keep it
  * cheap and seamless:
  *
- * - Clouds: three tinted sprite layers (far, mid, near) repeated along x on
- *   a layer one tile wider than the canvas, slid by exactly one tile width,
- *   so the loop is seamless at any canvas width and parallax comes free.
- * - Fog: wide, low wisps on three layers sliding at three speeds, two one
- *   way and one the other; a wisp that crosses the tile seam has a twin one
- *   tile over.
- * - Rain and snow: a layer one tile taller than the canvas slid down by one
- *   tile height, at two depths, in a container that skews the rain.
+ * - Clouds: tinted sprite layers (far, mid, near, the night veil) repeated
+ *   along x on a layer one tile wider than the canvas, slid by exactly one
+ *   tile width, so the loop is seamless at any canvas width and parallax
+ *   comes free. The sprites keep clear of the tile's ends.
+ * - Fog: one generated mist sheet drawn three times at three speeds, two
+ *   one way and one the other, one mirrored; clear at its ends like the
+ *   clouds, so the slide carries no seam.
+ * - Rain and snow: generated sprites of random drops and flakes on tiles
+ *   too tall to read as a loop, one layer per depth, each one tile taller
+ *   than the canvas and slid down by its own tile height; the snow layers
+ *   sway on periods that share no multiple with their fall. The rain sits
+ *   in a container that skews it.
  * - Lightning: a glow from behind the cloud deck every 13 s, never a
  *   full-screen white.
  * - A faint scrim over the top of the sky so white type survives a white
  *   cloud behind the hero.
+ * - Every slid layer spans a whole number of tiles, never canvas plus one
+ *   tile: under CSS zoom (the display page fits a wall into a smaller
+ *   window with it) Firefox leaves the trailing partial copy of a repeated
+ *   background unpainted on a compositor-moved element, and that blank
+ *   strip crossed the screen once per cycle. The sky measures itself for
+ *   that; until it has, the layers fall back to canvas plus one tile.
  *
  * A scene change cross-fades: the old stack stays underneath while the new
  * one fades in over a few seconds, then unmounts.
@@ -48,46 +59,60 @@ export default function LivingSky({ scene, moonPhase, moonPlace = 'header' }: { 
   // (A timer set in the effect above was cleared by its own cleanup as soon
   // as the new stack landed, and the old stacks piled up for good.)
   const settled = useCallback((id: number) => setStacks((prev) => prev.filter((s) => s.id >= id)), []);
+  const root = useRef<HTMLDivElement>(null);
+  const size = useBoxSize(root);
 
   return (
-    <div data-testid="fsw-sky" className={`fsw-sky fsw-sky-moon-${moonPlace}`} data-scene={current.scene.key} aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', containerType: 'size' }}>
+    <div ref={root} data-testid="fsw-sky" className={`fsw-sky fsw-sky-moon-${moonPlace}`} data-scene={current.scene.key} aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 0, overflow: 'hidden', containerType: 'size' }}>
       <Keyframes />
       {stacks.map((s, i) => (
-        <Stack key={s.id} id={s.id} scene={s.scene} moonPhase={moonPhase} fadeIn={i > 0} onSettled={settled} />
+        <Stack key={s.id} id={s.id} scene={s.scene} moonPhase={moonPhase} fadeIn={i > 0} onSettled={settled} size={size} />
       ))}
     </div>
   );
 }
 
-function Stack({ id, scene, moonPhase, fadeIn, onSettled }: {
-  id: number; scene: SkyScene; moonPhase?: number; fadeIn: boolean; onSettled: (id: number) => void;
+/**
+ * The length a slid layer needs along its slide: whole tiles, at least one
+ * more than the canvas. The fallback is the canvas plus a tile for the
+ * first paint, before the sky has measured itself.
+ */
+function tileSpan(canvas: number | undefined, tile: number): string {
+  if (canvas == null) return `calc(100% + ${tile}px)`;
+  return `${Math.ceil((canvas + tile) / tile) * tile}px`;
+}
+
+function Stack({ id, scene, moonPhase, fadeIn, onSettled, size }: {
+  id: number; scene: SkyScene; moonPhase?: number; fadeIn: boolean; onSettled: (id: number) => void; size: BoxSize;
 }) {
-  const sprites = useCloudSprites(Object.keys(scene.clouds).length ? scene.palette : null);
-  const [shown, setShown] = useState(!fadeIn);
+  const sprites = useCloudSprites(Object.keys(scene.clouds).length || scene.mist ? scene.palette : null);
+  // The fade is a CSS animation, not a state flip after a frame: animation
+  // frames stop while a tab or the wall's screen is off, and a fade that
+  // waited on one was cancelled when the settle timer unmounted the stack
+  // beneath it, leaving the new sky at opacity 0 for good.
   useEffect(() => {
     if (!fadeIn) return;
-    const raf = requestAnimationFrame(() => setShown(true));
     const timer = setTimeout(() => onSettled(id), FADE_MS + 100);
-    return () => { cancelAnimationFrame(raf); clearTimeout(timer); };
+    return () => clearTimeout(timer);
   }, [fadeIn, id, onSettled]);
 
   return (
     <div style={{
       position: 'absolute', inset: 0, background: SKY_BASES[scene.base],
-      opacity: shown ? 1 : 0, transition: fadeIn ? `opacity ${FADE_MS}ms ease` : undefined,
+      animation: fadeIn ? `fsw-sky-fade-in ${FADE_MS}ms ease both` : undefined,
     }}>
       {scene.stars && <Stars />}
       {scene.sun && <Sun low={scene.sun === 'low'} />}
       {scene.moon && <Moon phase={moonPhase ?? 0} />}
       {scene.deck && <Deck base={scene.base} />}
       {scene.lightning && <Lightning />}
-      {CLOUD_LAYERS.map((layer) => {
+      {DRIFT_LAYERS.map((layer) => {
         const opacity = scene.clouds[layer];
         if (opacity == null) return null;
         return (
           <div key={layer} style={{
             position: 'absolute', left: 0, top: 0, height: CLOUD_TILE_H,
-            width: `calc(100% + ${CLOUD_TILE_W}px)`,
+            width: tileSpan(size?.w, CLOUD_TILE_W),
             backgroundImage: sprites ? `url(${sprites[layer]})` : undefined,
             backgroundRepeat: 'repeat-x', backgroundSize: `${CLOUD_TILE_W}px ${CLOUD_TILE_H}px`,
             // The sprites arrive a beat after the base paints: ease them in.
@@ -97,9 +122,9 @@ function Stack({ id, scene, moonPhase, fadeIn, onSettled }: {
           }} />
         );
       })}
-      {scene.mist && <Mist night={scene.base === 'fog-night'} />}
-      {scene.rain && <Rain />}
-      {scene.snow && <Snow />}
+      {scene.mist && <Mist night={scene.base === 'fog-night'} sheet={sprites?.fog ?? null} width={size?.w} />}
+      {scene.rain && <Rain height={size?.h} />}
+      {scene.snow && <Snow height={size?.h} />}
       <div style={{
         position: 'absolute', left: 0, top: 0, width: '100%', height: '40%',
         background: 'radial-gradient(55% 80% at 50% 30%, rgba(10,14,30,.26), rgba(10,14,30,0) 100%)',
@@ -112,27 +137,23 @@ function Stack({ id, scene, moonPhase, fadeIn, onSettled }: {
 // Seconds per tile. The tile is two screens wide, so a cloud crosses a
 // 1080 px wall in half of this.
 const CLOUD_SPEED_S = { far: 640, mid: 400, near: 250, veil: 520 } as const;
-/** The mist wisps are drawn in pixels on their own one-screen tile. */
-const MIST_TILE_W = 1080;
 
 function Keyframes() {
   return (
     <style>{`
       @keyframes fsw-sky-slide { from { transform: translate3d(0,0,0); } to { transform: translate3d(-${CLOUD_TILE_W}px,0,0); } }
       @keyframes fsw-sky-slide-back { from { transform: translate3d(-${CLOUD_TILE_W}px,0,0); } to { transform: translate3d(0,0,0); } }
-      @keyframes fsw-sky-slide-mist { from { transform: translate3d(0,0,0); } to { transform: translate3d(-${MIST_TILE_W}px,0,0); } }
+      @keyframes fsw-sky-fade-in { from { opacity: 0; } to { opacity: 1; } }
       .fsw-sky { --fsw-moon-size: min(11cqw, 8cqh); --fsw-moon-left: 70cqw; --fsw-moon-top: 1.5cqh; }
       .fsw-sky-moon-hero { --fsw-moon-size: min(15cqw, 17cqh); --fsw-moon-left: 67cqw; --fsw-moon-top: 12cqh; }
       @container (orientation: landscape) {
         .fsw-sky { --fsw-moon-size: min(10cqh, 7cqw); --fsw-moon-left: 80cqw; --fsw-moon-top: 2cqh; }
         .fsw-sky-moon-hero { --fsw-moon-size: min(13cqh, 9cqw); --fsw-moon-left: 78cqw; --fsw-moon-top: 9cqh; }
       }
-      @keyframes fsw-sky-slide-mist-back { from { transform: translate3d(-${MIST_TILE_W}px,0,0); } to { transform: translate3d(0,0,0); } }
       @keyframes fsw-sky-twinkle { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
       @keyframes fsw-sky-breathe { from { transform: scale(1); } to { transform: scale(1.07); } }
-      @keyframes fsw-sky-fall-480 { from { transform: translate3d(0,-480px,0); } to { transform: translate3d(0,0,0); } }
-      @keyframes fsw-sky-fall-600 { from { transform: translate3d(0,-600px,0); } to { transform: translate3d(0,0,0); } }
-      @keyframes fsw-sky-sway { from { transform: translate3d(-22px,0,0); } to { transform: translate3d(22px,0,0); } }
+      ${FALL_HEIGHTS.map((h) => `@keyframes fsw-sky-fall-${h} { from { transform: translate3d(0,-${h}px,0); } to { transform: translate3d(0,0,0); } }`).join('\n      ')}
+      ${SWAY_AMPS.map((a) => `@keyframes fsw-sky-sway-${a} { from { transform: translate3d(-${a}px,0,0); } to { transform: translate3d(${a}px,0,0); } }`).join('\n      ')}
       @keyframes fsw-sky-flash { 0%, 100% { opacity: 0; } 46% { opacity: 0; } 46.6% { opacity: .32; } 47.4% { opacity: .06; } 48.2% { opacity: .22; } 49.5% { opacity: 0; } }
     `}</style>
   );
@@ -210,41 +231,32 @@ function Lightning() {
   );
 }
 
-/** A wisp of fog: a wide, low ellipse at an x in the 1080px tile and a y as a share of the height. */
-function wisp(w: number, h: number, x: number, yPct: number, rgb: string, a: number): string {
-  return `radial-gradient(ellipse ${w}px ${h}px at ${x}px ${yPct}%, rgba(${rgb},${a}), rgba(${rgb},0) 100%)`;
-}
 /**
- * A wisp plus its twin one mist tile over when it crosses the seam. The
- * ellipse's `w` is its horizontal radius (CSS radial-gradient sizes are
- * radii), so a wisp reaches from x - w to x + w.
+ * Fog: the generated mist sheet (public/sky/fog.png, tinted with the fog
+ * palette) drawn three times, each at its own speed and offset, one of them
+ * mirrored, so the bands never line up with themselves. The sheet is clear
+ * at its ends, so the repeat along the slide carries no seam. The scrim
+ * underneath thickens the fog toward the ground.
  */
-function wisps(rgb: string, items: Array<[number, number, number, number, number]>): string {
-  const out: string[] = [];
-  for (const [w, h, x, y, a] of items) {
-    out.push(wisp(w, h, x, y, rgb, a));
-    if (x - w < 0) out.push(wisp(w, h, x + MIST_TILE_W, y, rgb, a));
-    if (x + w > MIST_TILE_W) out.push(wisp(w, h, x - MIST_TILE_W, y, rgb, a));
-  }
-  return out.join(',');
-}
-
 const MIST_LAYERS = [
-  { dur: 150, back: false, opacity: .85, image: wisps('238,241,247', [[620, 120, 300, 16, .5], [540, 100, 820, 33, .45], [600, 130, 440, 56, .45], [560, 120, 760, 79, .5]]) },
-  { dur: 230, back: true, opacity: .75, image: wisps('228,232,240', [[680, 150, 700, 7, .42], [580, 110, 260, 43, .4], [640, 140, 600, 68, .42], [600, 130, 900, 92, .4]]) },
-  { dur: 95, back: false, opacity: .5, image: wisps('255,255,255', [[420, 60, 420, 24, .5], [400, 56, 900, 52, .45], [440, 64, 360, 74, .45]]) },
+  { dur: 170, back: false, opacity: .85, offset: 0, mirror: false },
+  { dur: 260, back: true, opacity: .7, offset: 760, mirror: true },
+  { dur: 110, back: false, opacity: .5, offset: 1500, mirror: false },
 ];
 
-function Mist({ night }: { night: boolean }) {
+function Mist({ night, sheet, width }: { night: boolean; sheet: string | null; width?: number }) {
   return (
     <>
       {MIST_LAYERS.map((l, i) => (
-        <div key={i} style={{
-          position: 'absolute', left: 0, top: 0, height: '100%', width: `calc(100% + ${MIST_TILE_W}px)`,
-          backgroundImage: l.image, backgroundRepeat: 'repeat-x', backgroundSize: `${MIST_TILE_W}px 100%`,
-          opacity: night ? l.opacity * .45 : l.opacity, willChange: 'transform',
-          animation: `${l.back ? 'fsw-sky-slide-mist-back' : 'fsw-sky-slide-mist'} ${l.dur}s linear infinite`,
-        }} />
+        <div key={i} style={{ position: 'absolute', inset: 0, transform: l.mirror ? 'scale(-1, 1)' : undefined }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, height: '100%', width: tileSpan(width, CLOUD_TILE_W),
+            backgroundImage: sheet ? `url(${sheet})` : undefined, backgroundRepeat: 'repeat-x',
+            backgroundSize: `${CLOUD_TILE_W}px 100%`, backgroundPosition: `${l.offset}px 0`,
+            opacity: sheet ? (night ? l.opacity * .45 : l.opacity) : 0, transition: 'opacity 1.5s ease', willChange: 'transform',
+            animation: `${l.back ? 'fsw-sky-slide-back' : 'fsw-sky-slide'} ${l.dur}s linear infinite`,
+          }} />
+        </div>
       ))}
       <div style={{
         position: 'absolute', inset: 0,
@@ -256,43 +268,56 @@ function Mist({ night }: { night: boolean }) {
   );
 }
 
-const streak = (w: number, len: number, x: number, y: number, a: number) =>
-  `radial-gradient(${w}px ${len}px at ${x}px ${y}px, rgba(205,225,255,${a}) 0 92%, transparent 100%)`;
-const RAIN_NEAR = [streak(1.6, 30, 24, 60, .8), streak(1.6, 38, 96, 210, .75), streak(1.6, 26, 150, 400, .7), streak(1.6, 34, 208, 130, .8), streak(1.6, 28, 60, 330, .7), streak(1.6, 36, 176, 290, .75), streak(1.6, 24, 118, 20, .65)].join(',');
-const RAIN_FAR = [streak(1.1, 20, 40, 100, .7), streak(1.1, 18, 130, 260, .6), streak(1.1, 22, 200, 40, .65), streak(1.1, 16, 80, 420, .6), streak(1.1, 20, 170, 360, .6)].join(',');
+/**
+ * Rain and snow fall as generated sprites (scripts/sky-sprites.mjs): random
+ * drops and flakes over tiles too tall to read as a loop. Each layer has its
+ * own tile height and speed, and the snow layers their own sway periods, so
+ * no two ever line up and the composite never visibly repeats. A layer is
+ * the tile repeated down an element spanning whole tiles, at least one more
+ * than the sky, slid down by exactly one tile per cycle, which is seamless
+ * by construction.
+ */
+const RAIN_LAYERS = [
+  // The tile sizes are the generator's; the keyframes below translate by them.
+  // About 310, 510 and 820 px/s: steady rain on a wall, not a downpour.
+  { file: 'rain-far', w: 540, h: 1320, dur: 4.2, opacity: .5, x: 230 },
+  { file: 'rain-mid', w: 540, h: 1440, dur: 2.8, opacity: .8, x: 90 },
+  { file: 'rain-near', w: 540, h: 1560, dur: 1.9, opacity: 1, x: 0 },
+] as const;
+const SNOW_LAYERS = [
+  { file: 'snow-far', w: 720, h: 1440, dur: 27, opacity: .65, x: 310, sway: 11.7, amp: 10 },
+  { file: 'snow-mid', w: 720, h: 1560, dur: 17, opacity: .85, x: 120, sway: 9.1, amp: 18 },
+  { file: 'snow-near', w: 720, h: 1680, dur: 10.5, opacity: 1, x: 0, sway: 7.3, amp: 28 },
+] as const;
+const FALL_HEIGHTS = [...new Set([...RAIN_LAYERS, ...SNOW_LAYERS].map((l) => l.h))];
+const SWAY_AMPS = SNOW_LAYERS.map((l) => l.amp);
 
-function Rain() {
-  const layer = (image: string, dur: number, opacity: number, position?: string) => (
-    <div style={{
-      position: 'absolute', left: 0, top: 0, width: '100%', height: 'calc(100% + 480px)',
-      backgroundImage: image, backgroundRepeat: 'repeat', backgroundSize: '240px 480px', backgroundPosition: position,
-      opacity, willChange: 'transform', animation: `fsw-sky-fall-480 ${dur}s linear infinite`,
-    }} />
-  );
+function Rain({ height }: { height?: number }) {
   return (
     <div style={{ position: 'absolute', left: '-14%', top: 0, width: '128%', height: '100%', transform: 'skewX(-7deg)' }}>
-      {layer(RAIN_FAR, 1.35, .55, '70px 160px')}
-      {layer(RAIN_NEAR, .8, 1)}
+      {RAIN_LAYERS.map((l) => (
+        <div key={l.file} style={{
+          position: 'absolute', left: 0, top: 0, width: '100%', height: tileSpan(height, l.h),
+          backgroundImage: `url(/sky/${l.file}.png)`, backgroundRepeat: 'repeat', backgroundSize: `${l.w}px ${l.h}px`, backgroundPosition: `${l.x}px 0`,
+          opacity: l.opacity, willChange: 'transform', animation: `fsw-sky-fall-${l.h} ${l.dur}s linear infinite`,
+        }} />
+      ))}
     </div>
   );
 }
 
-const flake = (r: number, x: number, y: number) => `radial-gradient(circle ${r}px at ${x}px ${y}px, #fff 50%, rgba(255,255,255,0) 100%)`;
-const SNOW_NEAR = [flake(5, 40, 60), flake(4, 170, 150), flake(6, 290, 90), flake(4.5, 90, 300), flake(5.5, 240, 330), flake(4, 330, 470), flake(5, 140, 500), flake(6, 30, 420), flake(4.5, 210, 560)].join(',');
-const SNOW_FAR = [flake(3, 60, 40), flake(2.5, 200, 120), flake(3, 320, 260), flake(2.5, 110, 380), flake(3, 260, 520), flake(2, 20, 560)].join(',');
-
-function Snow() {
-  const layer = (image: string, dur: number, opacity: number, position?: string) => (
-    <div style={{
-      position: 'absolute', left: 0, top: 0, width: '100%', height: 'calc(100% + 600px)',
-      backgroundImage: image, backgroundRepeat: 'repeat', backgroundSize: '360px 600px', backgroundPosition: position,
-      opacity, willChange: 'transform', animation: `fsw-sky-fall-600 ${dur}s linear infinite`,
-    }} />
-  );
+function Snow({ height }: { height?: number }) {
   return (
-    <div style={{ position: 'absolute', inset: -30, animation: 'fsw-sky-sway 6s ease-in-out infinite alternate' }}>
-      {layer(SNOW_FAR, 8, .55, '120px 200px')}
-      {layer(SNOW_NEAR, 4.5, 1)}
-    </div>
+    <>
+      {SNOW_LAYERS.map((l) => (
+        <div key={l.file} style={{ position: 'absolute', inset: -l.amp, animation: `fsw-sky-sway-${l.amp} ${l.sway}s ease-in-out infinite alternate` }}>
+          <div style={{
+            position: 'absolute', left: 0, top: 0, width: '100%', height: tileSpan(height, l.h),
+            backgroundImage: `url(/sky/${l.file}.png)`, backgroundRepeat: 'repeat', backgroundSize: `${l.w}px ${l.h}px`, backgroundPosition: `${l.x}px 0`,
+            opacity: l.opacity, willChange: 'transform', animation: `fsw-sky-fall-${l.h} ${l.dur}s linear infinite`,
+          }} />
+        </div>
+      ))}
+    </>
   );
 }
