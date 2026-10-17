@@ -64,6 +64,12 @@ describe('buildRotationKey', () => {
     expect(a).not.toBe(b);
   });
 
+  it('changes when the selected starter walls change, so the wall re-asks at once', () => {
+    const a = buildRotationKey([screen('s1', { sources: ['color'], starterBackgroundIds: { color: ['blush'] } })]);
+    const b = buildRotationKey([screen('s1', { sources: ['color'], starterBackgroundIds: { color: ['blush', 'sage'] } })]);
+    expect(a).not.toBe(b);
+  });
+
   it('changes when icloudAlbumUrl changes', () => {
     const a = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#AAA111' })]);
     const b = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#BBB222' })]);

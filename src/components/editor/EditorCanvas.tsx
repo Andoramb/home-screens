@@ -25,6 +25,7 @@ import { useCanvasZoom } from '@/hooks/useCanvasZoom';
 import { useCanvasBaseScale, CANVAS_TOOLBAR_RESERVE_PX } from '@/hooks/useCanvasBaseScale';
 import { useCanvasDragState } from '@/hooks/useCanvasDragState';
 import { useActiveBackground } from '@/hooks/useActiveBackground';
+import { buildRotationKey } from '@/components/display/useBackgroundRotation';
 import { resolveScreenBackground, isRotationActive } from '@/lib/screen-background';
 import BackgroundMediaLayer from '@/components/BackgroundMediaLayer';
 import { displaySizedUrl, type PictureBox } from '@/lib/media-paths';
@@ -302,6 +303,7 @@ export default function EditorCanvas({ onScaleChange, canvasRef }: { onScaleChan
   const rotatingBackground = useActiveBackground(
     currentScreen?.id,
     isRotationActive(currentScreen?.backgroundRotation),
+    currentScreen ? buildRotationKey([currentScreen]) : undefined,
   );
 
   // Reset zoom when switching screens
