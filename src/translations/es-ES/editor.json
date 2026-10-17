@@ -2434,6 +2434,7 @@
       "useSolid": "Usar el color liso"
     },
     "title": "Fondo",
+    "effectsTitle": "Efectos de fondo",
     "statusGroup": "Estado",
     "autoRotate": "Rotar automáticamente",
     "sourcesGroup": "Fuentes",

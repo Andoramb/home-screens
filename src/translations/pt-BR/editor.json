@@ -2434,6 +2434,7 @@
       "useSolid": "Usar a cor sólida"
     },
     "title": "Plano de fundo",
+    "effectsTitle": "Efeitos de fundo",
     "statusGroup": "Status",
     "autoRotate": "Rotação automática",
     "sourcesGroup": "Fontes",

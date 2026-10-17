@@ -99,12 +99,13 @@ export default function BackgroundPicker() {
   const rotationFieldClass = 'mt-0.5 block w-full rounded bg-hs-card border border-hs-border-strong text-xs text-hs-text-body px-2 py-1 focus:outline-none focus:border-hs-accent';
 
   return (
-    <AccordionSection title={t('backgroundPicker.title')}>
-      <BackgroundShadeFields screenId={selectedScreenId} shade={currentScreen.shade} />
-      <BackgroundEffectsFields screenId={selectedScreenId} effects={currentScreen.effects} />
-
+    <>
+    {/* A full-screen theme wall is a single fixed pick, not a media source, so it sits outside Sources. */}
+    <AccordionSection title={t('backgroundPicker.groups.theme')}>
       <ThemeBackgrounds selectedScreenId={selectedScreenId} />
+    </AccordionSection>
 
+    <AccordionSection title={t('backgroundPicker.title')}>
       <PropertyGroup
         title={t('backgroundPicker.sourcesGroup')}
         accent={2}
@@ -327,5 +328,11 @@ export default function BackgroundPicker() {
         </div>
       )}
     </AccordionSection>
+
+    <AccordionSection title={t('backgroundPicker.effectsTitle')}>
+      <BackgroundShadeFields screenId={selectedScreenId} shade={currentScreen.shade} />
+      <BackgroundEffectsFields screenId={selectedScreenId} effects={currentScreen.effects} />
+    </AccordionSection>
+    </>
   );
 }

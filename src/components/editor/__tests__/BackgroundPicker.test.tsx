@@ -62,14 +62,20 @@ afterEach(() => {
 });
 
 describe('BackgroundPicker — sources group always visible (item 1/2)', () => {
-  it('shows Shade before Sources because it applies to every background, not one source', () => {
+  it('splits into three collapsible sections: theme, background sources, and background effects (shade + effects)', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
 
+    const titles = Array.from(container.querySelectorAll('button[class*="group"] > span.uppercase')).map((el) => el.textContent);
+    expect(titles).toEqual([
+      enUSEditor.backgroundPicker.groups.theme,
+      enUSEditor.backgroundPicker.title,
+      enUSEditor.backgroundPicker.effectsTitle,
+    ]);
     const text = container.textContent ?? '';
-    expect(text.indexOf(enUSEditor.backgroundPicker.shadeGroup)).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf(enUSEditor.backgroundPicker.sourcesGroup)).toBeGreaterThanOrEqual(0);
-    expect(text.indexOf(enUSEditor.backgroundPicker.shadeGroup)).toBeLessThan(text.indexOf(enUSEditor.backgroundPicker.sourcesGroup));
+    // Sources come before the effects section, which holds Shade and Effects.
+    expect(text.indexOf(enUSEditor.backgroundPicker.sourcesGroup)).toBeLessThan(text.indexOf(enUSEditor.backgroundPicker.shadeGroup));
+    expect(text.indexOf(enUSEditor.backgroundPicker.shadeGroup)).toBeLessThan(text.indexOf(enUSEditor.backgroundPicker.effectsGroup));
   });
 
   it('shows the Sources group and every source checkbox even with zero sources checked', () => {
@@ -216,17 +222,16 @@ describe('BackgroundPicker — shade color semantics', () => {
 
 
 describe('BackgroundPicker — unified Sources', () => {
-  it('keeps Shade, Effects, Theme and Sources cards: themes sit outside Sources, colors and patterns inside', () => {
+  it('keeps themes outside Sources, with colors and patterns inside', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
     const headings = Array.from(container.querySelectorAll('h4')).map((h) => h.textContent);
     expect(headings).toEqual([
+      enUSEditor.backgroundPicker.sourcesGroup,
       enUSEditor.backgroundPicker.shadeGroup,
       enUSEditor.backgroundPicker.effectsGroup,
-      enUSEditor.backgroundPicker.groups.theme,
-      enUSEditor.backgroundPicker.sourcesGroup,
     ]);
-    const sources = container.querySelectorAll('h4')[3].parentElement!.parentElement!;
+    const sources = container.querySelectorAll('h4')[0].parentElement!.parentElement!;
     expect(within(sources).queryByTestId('starter-source-theme')).toBeNull();
     expect(within(sources).queryByTestId('starter-background-theme-linen')).toBeNull();
     expect(container.querySelector('[data-testid="theme-backgrounds"] [data-testid="starter-background-theme-linen"]')).not.toBeNull();

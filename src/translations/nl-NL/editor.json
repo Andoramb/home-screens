@@ -2434,6 +2434,7 @@
       "useSolid": "Effen kleur gebruiken"
     },
     "title": "Achtergrond",
+    "effectsTitle": "Achtergrondeffecten",
     "statusGroup": "Status",
     "autoRotate": "Automatisch wisselen",
     "sourcesGroup": "Bronnen",
