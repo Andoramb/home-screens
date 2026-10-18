@@ -783,7 +783,11 @@
           "failed": "Fehlgeschlagen: {message}",
           "unknownError": "Unbekannter Fehler",
           "rejectedKey": "{provider} hat den gespeicherten Schlüssel abgelehnt. Entferne ihn und füge ihn erneut ein.",
-          "failedPlain": "Von {provider} konnte kein Wetter geladen werden."
+          "failedPlain": "Von {provider} konnte kein Wetter geladen werden.",
+          "successDays": {
+            "one": "Funktioniert! Aktuelle Temperatur: {temp}°, {count} Vorhersagetag.",
+            "other": "Funktioniert! Aktuelle Temperatur: {temp}°, {count} Vorhersagetage."
+          }
         },
         "status": {
           "defaultReady": "Standard · Bereit",
@@ -805,8 +809,8 @@
           "helperText": "Kein API-Schlüssel erforderlich. Open-Meteo ist kostenlos, Open Source und weltweit verfügbar."
         },
         "weatherApi": {
-          "tagline": "Kostenloses Kontingent · keine Kreditkarte",
-          "keyHint": "Kostenlos auf weatherapi.com; keine Kreditkarte erforderlich.",
+          "tagline": "Kostenloser Schlüssel · 3-Tage-Vorhersage · keine Kreditkarte",
+          "keyHint": "Kostenlos auf weatherapi.com; keine Kreditkarte erforderlich. Ein kostenloser Schlüssel liefert eine 3-Tage-Vorhersage; bezahlte Pläne liefern mehr.",
           "placeholder": "Füge deinen WeatherAPI-Schlüssel ein"
         },
         "openWeatherMap": {
@@ -4638,7 +4642,28 @@
         "envcanada": "Environment Canada (nur Kanada)"
       },
       "apiKeyMissing": "Dieser Wetterdienst braucht einen API-Schlüssel.",
-      "addApiKey": "API-Schlüssel hinzufügen"
+      "addApiKey": "API-Schlüssel hinzufügen",
+      "forecastDays": {
+        "sends": {
+          "one": "{source} liefert {count} Tag.",
+          "other": "{source} liefert {count} Tage."
+        },
+        "capped": {
+          "one": "{source} liefert nur {count} Tag, deshalb endet die Liste dort.",
+          "other": "{source} liefert nur {count} Tage, deshalb endet die Liste dort."
+        },
+        "weatherApiFree": "Ein kostenloser WeatherAPI-Schlüssel liefert 3 Tage. Bezahlte Pläne liefern mehr.",
+        "useOpenMeteo": "Open-Meteo für dieses Modul verwenden",
+        "changeHousehold": "Oder die Wetterquelle in den Einstellungen ändern"
+      },
+      "sections": {
+        "source": "Wetterdaten",
+        "look": "Aussehen",
+        "show": "Was angezeigt wird",
+        "map": "Regenkarte",
+        "cards": "Karten",
+        "accent": "Akzentfarbe"
+      }
     },
     "word-of-day": {
       "showDividers": "Trennlinien anzeigen"

@@ -11,11 +11,11 @@ export function previewWeatherProviders(
   const globalProvider = config.settings.weather.provider ?? 'open-meteo';
   const providers = new Set<string>([globalProvider]);
 
+  // Every weather-bound module may name its own source; the rest resolve to
+  // the household source, which is already in the set.
   for (const screen of getAllScreens(config)) {
     for (const mod of screen.modules) {
-      if (mod.type === 'weather') {
-        providers.add(resolveProvider(mod, globalProvider));
-      }
+      providers.add(resolveProvider(mod, globalProvider));
     }
   }
 

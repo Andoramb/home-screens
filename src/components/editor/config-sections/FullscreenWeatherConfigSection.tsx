@@ -4,12 +4,16 @@ import Toggle from '@/components/ui/Toggle';
 import ColorPicker from '@/components/ui/ColorPicker';
 import LabeledSelect from '@/components/ui/LabeledSelect';
 import LabeledInput from '@/components/ui/LabeledInput';
+import SectionHeading from '@/components/ui/SectionHeading';
 import FullscreenThemeSelect from './FullscreenThemeSelect';
 import { useTypographySizeOptions } from './useTypographySizeOptions';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
+import { useEditorStore } from '@/stores/editor-store';
 import { useTranslate } from '@/i18n';
 import type { ModuleInstance, FullscreenWeatherConfig } from '@/types/config';
 import { clampDaysToShow } from '@/components/modules/fullscreen-weather/weather-view-utils';
+import { WeatherSourceSelect, useConfiguredWeatherProviders } from './WeatherSourceSelect';
+import { ForecastDaysHint } from './ForecastDaysHint';
 
 type Config = Partial<FullscreenWeatherConfig>;
 
@@ -18,6 +22,15 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
   const { config: c, set } = useModuleConfig<Config>(mod, screenId);
   const typographySizeOptions = useTypographySizeOptions();
   const view = c.view ?? 'panorama';
+
+  // The same source picker as the Weather module. Absent or `global`
+  // follows the household source, which is what every module did before
+  // the picker existed.
+  const globalProvider = useEditorStore((s) => s.config?.settings?.weather?.provider);
+  const { providers: configuredProviders } = useConfiguredWeatherProviders();
+  const followsHousehold = !c.provider || c.provider === 'global';
+  const effectiveProvider = followsHousehold ? (globalProvider ?? 'open-meteo') : c.provider!;
+  const daysToShow = clampDaysToShow(c.daysToShow);
 
   const VIEWS = [
     { value: 'panorama', label: t('configSections.fullscreen-weather.viewPanorama') },
@@ -64,8 +77,52 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
     ['showSun', 'cardSun'],
   ] as const satisfies ReadonlyArray<readonly [keyof Config, string]>;
 
+  // The panel is long enough that a hint between two toggles reads as one
+  // more row, so the controls sit under named groups: the view first, since
+  // it decides which groups exist, then source, look, what shows, and the
+  // view's own parts.
   return (
     <>
+      <LabeledSelect
+        label={t('configSections.fullscreen-weather.view')}
+        value={view}
+        onChange={(v) => set({ view: v })}
+        options={VIEWS}
+      />
+
+      <SectionHeading>{t('configSections.weather.sections.source')}</SectionHeading>
+      <WeatherSourceSelect
+        value={c.provider ?? 'global'}
+        onChange={(provider) => set({ provider })}
+        providers={configuredProviders}
+      />
+      <LabeledInput
+        label={t('configSections.fullscreen-weather.locationLabel')}
+        value={c.locationLabel ?? ''}
+        onChange={(v) => set({ locationLabel: v })}
+      />
+      {/* The days field lives with the source, so the "only sends 3 days"
+          warning sits under the picker that fixes it. */}
+      {(view === 'panorama' || view === 'strip' || view === 'week' || view === 'forecast') && (
+        <>
+          <LabeledInput
+            label={t('configSections.fullscreen-weather.daysToShow')}
+            type="number"
+            min={3}
+            max={7}
+            value={c.daysToShow ?? 7}
+            onChange={(v) => set({ daysToShow: clampDaysToShow(Number(v) || undefined) })}
+          />
+          <ForecastDaysHint
+            provider={effectiveProvider}
+            requested={daysToShow}
+            followsHousehold={followsHousehold}
+            onPickOpenMeteo={() => set({ provider: 'open-meteo' })}
+          />
+        </>
+      )}
+
+      <SectionHeading>{t('configSections.weather.sections.look')}</SectionHeading>
       {/* The living sky paints its own colours over the theme (white text,
           translucent cards), so the theme picker only shows when a theme
           would be seen: Still and Off. */}
@@ -76,13 +133,6 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
           defaultOptionKey="configSections.fullscreen-weather.themeDefault"
         />
       )}
-
-      <LabeledSelect
-        label={t('configSections.fullscreen-weather.view')}
-        value={view}
-        onChange={(v) => set({ view: v })}
-        options={VIEWS}
-      />
 
       <LabeledSelect
         label={t('common.density')}
@@ -109,6 +159,7 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
         {t('configSections.fullscreen-weather.skyLayerHint')}
       </p>
 
+      <SectionHeading>{t('configSections.weather.sections.show')}</SectionHeading>
       <Toggle
         label={t('configSections.fullscreen-weather.showTime')}
         checked={c.showTime !== false}
@@ -151,6 +202,9 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
       {cardView && (
         <>
           {view === 'forecast' && (
+            <SectionHeading>{t('configSections.weather.sections.map')}</SectionHeading>
+          )}
+          {view === 'forecast' && (
             <Toggle
               label={t('configSections.fullscreen-weather.showMap')}
               checked={c.showMap !== false}
@@ -178,6 +232,7 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
               />
             </>
           )}
+          <SectionHeading>{t('configSections.weather.sections.cards')}</SectionHeading>
           <p className="text-[11px] text-hs-text-faint leading-relaxed">
             {t('configSections.fullscreen-weather.cardsHint')}
           </p>
@@ -192,21 +247,6 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
         </>
       )}
 
-      {(view === 'panorama' || view === 'strip' || view === 'week' || view === 'forecast') && (
-        <LabeledInput
-          label={t('configSections.fullscreen-weather.daysToShow')}
-          type="number"
-          value={c.daysToShow ?? 7}
-          onChange={(v) => set({ daysToShow: clampDaysToShow(Number(v) || undefined) })}
-        />
-      )}
-
-      <LabeledInput
-        label={t('configSections.fullscreen-weather.locationLabel')}
-        value={c.locationLabel ?? ''}
-        onChange={(v) => set({ locationLabel: v })}
-      />
-
       {/* An empty accentColor means "follow the weather": amber for clear,
           blue for rain, violet for storms. The picker can only ever write a
           colour, so the way back to empty has to be its own control. The
@@ -214,6 +254,7 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
           do not offer it. */}
       {!cardView && (
         <>
+          <SectionHeading>{t('configSections.weather.sections.accent')}</SectionHeading>
           <Toggle
             label={t('configSections.fullscreen-weather.accentAuto')}
             checked={!c.accentColor}

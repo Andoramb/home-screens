@@ -566,6 +566,7 @@ const FIELD_DECISIONS: Record<string, FieldDecision> = {
   'todoist.refreshIntervalMs': 'timing-only',
   'traffic.refreshIntervalMs': 'timing-only',
   'weather.provider': 'fetch-only',
+  'fullscreen-weather.provider': 'fetch-only',
 };
 
 test('every module config field has a variant row or an explicit decision', () => {

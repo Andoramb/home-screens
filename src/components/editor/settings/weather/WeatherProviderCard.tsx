@@ -134,18 +134,23 @@ export default function WeatherProviderCard({
       // health independently of the user's configured location.
       const testLat = provider.testCoords ? provider.testCoords.lat.toString() : lat;
       const testLon = provider.testCoords ? provider.testCoords.lon.toString() : lon;
+      // Both feeds, not only hourly: the forecast length is the one fact a
+      // household cannot see anywhere else before a module comes up short
+      // (a free WeatherAPI key sends three days).
       const res = await editorFetch(
-        `/api/weather?provider=${provider.id}&lat=${testLat}&lon=${testLon}&units=${units}&type=hourly`,
+        `/api/weather?provider=${provider.id}&lat=${testLat}&lon=${testLon}&units=${units}&type=both`,
       );
       if (res.ok) {
         const data = await res.json();
         const hourly = data.hourly ?? data;
+        const forecastDays = Array.isArray(data.forecast) ? data.forecast.length : 0;
         if (Array.isArray(hourly) && hourly.length > 0) {
+          const temp = Math.round(hourly[0].temp);
           setTestStatus({
             kind: 'success',
-            message: t('settings.weatherPage.providerCard.testStatus.success', {
-              temp: Math.round(hourly[0].temp),
-            }),
+            message: forecastDays > 0
+              ? t('settings.weatherPage.providerCard.testStatus.successDays', { temp, count: forecastDays })
+              : t('settings.weatherPage.providerCard.testStatus.success', { temp }),
           });
         } else {
           setTestStatus({

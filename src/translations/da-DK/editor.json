@@ -783,7 +783,11 @@
           "failed": "Mislykkedes: {message}",
           "unknownError": "Ukendt fejl",
           "rejectedKey": "{provider} afviste den gemte nøgle. Fjern den, og indsæt den igen.",
-          "failedPlain": "Kunne ikke hente vejret fra {provider}."
+          "failedPlain": "Kunne ikke hente vejret fra {provider}.",
+          "successDays": {
+            "one": "Virker! Aktuel temperatur: {temp}°, {count} dags udsigt.",
+            "other": "Virker! Aktuel temperatur: {temp}°, {count} dages udsigt."
+          }
         },
         "status": {
           "defaultReady": "Standard · Klar",
@@ -805,8 +809,8 @@
           "helperText": "Ingen API-nøgle nødvendig. Open-Meteo er gratis og open source med global dækning."
         },
         "weatherApi": {
-          "tagline": "Gratis niveau · intet betalingskort",
-          "keyHint": "Gratis på weatherapi.com; intet betalingskort nødvendigt.",
+          "tagline": "Gratis nøgle · 3-dages udsigt · intet betalingskort",
+          "keyHint": "Gratis på weatherapi.com; intet betalingskort nødvendigt. En gratis nøgle sender en 3-dages udsigt; betalte planer sender flere.",
           "placeholder": "Indsæt din WeatherAPI-nøgle"
         },
         "openWeatherMap": {
@@ -4638,7 +4642,28 @@
         "envcanada": "Environment Canada (kun Canada)"
       },
       "apiKeyMissing": "Denne vejrtjeneste har brug for en API-nøgle.",
-      "addApiKey": "Tilføj API-nøgle"
+      "addApiKey": "Tilføj API-nøgle",
+      "forecastDays": {
+        "sends": {
+          "one": "{source} sender {count} dag.",
+          "other": "{source} sender {count} dage."
+        },
+        "capped": {
+          "one": "{source} sender kun {count} dag, så listen stopper der.",
+          "other": "{source} sender kun {count} dage, så listen stopper der."
+        },
+        "weatherApiFree": "En gratis WeatherAPI-nøgle sender 3 dage. Betalte planer sender flere.",
+        "useOpenMeteo": "Brug Open-Meteo til dette modul",
+        "changeHousehold": "Eller skift vejrkilden i Indstillinger"
+      },
+      "sections": {
+        "source": "Vejrdata",
+        "look": "Udseende",
+        "show": "Hvad der vises",
+        "map": "Regnkort",
+        "cards": "Kort",
+        "accent": "Accentfarve"
+      }
     },
     "word-of-day": {
       "showDividers": "Vis skillelinjer"

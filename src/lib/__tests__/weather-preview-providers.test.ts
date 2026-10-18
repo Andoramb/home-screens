@@ -37,6 +37,13 @@ describe('previewWeatherProviders', () => {
     expect(previewWeatherProviders(value)).toEqual(['open-meteo', 'yr']);
   });
 
+  it('adds a Full-Screen Weather module\'s own source', () => {
+    const fullscreen = { type: 'fullscreen-weather', config: { provider: 'noaa' } } as unknown as ModuleInstance;
+    const value = config('weatherapi', [screen(fullscreen, weather('global'))]);
+
+    expect(previewWeatherProviders(value)).toEqual(['noaa', 'weatherapi']);
+  });
+
   it('reads display-owned screens instead of the frozen legacy screen pool', () => {
     const value = config(
       'open-meteo',

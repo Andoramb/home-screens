@@ -4305,6 +4305,12 @@ export type FullscreenWeatherMapStyle = 'standard' | 'dark' | 'light';
 export interface FullscreenWeatherConfig {
   /** `panorama`, `strip` (Wide strip), `almanac`, `ambient`, `week`, `hourly`, `forecast`, or `conditions` */
   view: FullscreenWeatherView;
+  /**
+   * Weather source for this module. Absent or `global` follows the household
+   * source in Settings; otherwise one of the provider ids, as on the Weather
+   * module.
+   */
+  provider?: WeatherProviderOption;
   /** `cozy` or `snug`. Controls padding, gaps, and chart heights */
   density: 'cozy' | 'snug';
   /** Text size. Scales type only, so the layout keeps its proportions */

@@ -3,6 +3,7 @@
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useEditorStore } from '@/stores/editor-store';
+import { usePreviewWeatherStore } from '@/stores/preview-weather-store';
 import type { ScreenConfiguration } from '@/types/config';
 import { usePreviewData } from '../usePreviewData';
 
@@ -63,6 +64,22 @@ describe('usePreviewData weather requests', () => {
       .filter((url) => url.startsWith('/api/weather'));
 
     expect(weatherUrls).toEqual(['/api/weather?provider=open-meteo']);
+  });
+
+  it('tells the property panel how many forecast days each source sent', async () => {
+    const forecast = [{ date: '2026-10-18' }, { date: '2026-10-19' }, { date: '2026-10-20' }];
+    mocks.editorFetch.mockImplementation(async () =>
+      new Response(JSON.stringify({ hourly: [], forecast }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }));
+    renderHook(() => usePreviewData());
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(500);
+    });
+
+    expect(usePreviewWeatherStore.getState().forecastDays).toEqual({ 'open-meteo': 3 });
   });
 
   it('does not report a missing key for an unused provider whose key is saved', async () => {

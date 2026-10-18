@@ -282,6 +282,12 @@ describe('resolveProvider', () => {
   it('honours a weather module override', () => {
     expect(resolveProvider({ type: 'weather', config: { provider: 'yr' } }, 'noaa')).toBe('yr');
   });
+
+  it('honours a Full-Screen Weather override and defers when it has none', () => {
+    expect(resolveProvider({ type: 'fullscreen-weather', config: { provider: 'open-meteo' } }, 'weatherapi')).toBe('open-meteo');
+    expect(resolveProvider({ type: 'fullscreen-weather', config: { provider: 'global' } }, 'weatherapi')).toBe('weatherapi');
+    expect(resolveProvider({ type: 'fullscreen-weather', config: {} }, 'weatherapi')).toBe('weatherapi');
+  });
 });
 
 describe('calendar family roster join', () => {

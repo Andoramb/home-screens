@@ -783,7 +783,11 @@
           "failed": "Échec : {message}",
           "unknownError": "Erreur inconnue",
           "rejectedKey": "{provider} a refusé la clé enregistrée. Supprime-la et colle-la à nouveau.",
-          "failedPlain": "Impossible de récupérer la météo depuis {provider}."
+          "failedPlain": "Impossible de récupérer la météo depuis {provider}.",
+          "successDays": {
+            "one": "Fonctionne ! Temp. actuelle : {temp}°, {count} jour de prévisions.",
+            "other": "Fonctionne ! Temp. actuelle : {temp}°, {count} jours de prévisions."
+          }
         },
         "status": {
           "defaultReady": "Par défaut · Prêt",
@@ -805,8 +809,8 @@
           "helperText": "Aucune clé API requise. Open-Meteo est gratuit et open source avec une couverture mondiale."
         },
         "weatherApi": {
-          "tagline": "Niveau gratuit · sans carte bancaire",
-          "keyHint": "Gratuit sur weatherapi.com, sans carte bancaire.",
+          "tagline": "Clé gratuite · prévisions sur 3 jours · sans carte bancaire",
+          "keyHint": "Gratuit sur weatherapi.com, sans carte bancaire. Une clé gratuite envoie des prévisions sur 3 jours ; les offres payantes en envoient plus.",
           "placeholder": "Colle ta clé WeatherAPI"
         },
         "openWeatherMap": {
@@ -4638,7 +4642,28 @@
         "envcanada": "Environment Canada (Canada uniquement)"
       },
       "apiKeyMissing": "Ce service météo a besoin d'une clé API.",
-      "addApiKey": "Ajouter une clé API"
+      "addApiKey": "Ajouter une clé API",
+      "forecastDays": {
+        "sends": {
+          "one": "{source} envoie {count} jour.",
+          "other": "{source} envoie {count} jours."
+        },
+        "capped": {
+          "one": "{source} n'envoie que {count} jour, la liste s'arrête donc là.",
+          "other": "{source} n'envoie que {count} jours, la liste s'arrête donc là."
+        },
+        "weatherApiFree": "Une clé WeatherAPI gratuite envoie 3 jours. Les offres payantes en envoient plus.",
+        "useOpenMeteo": "Utiliser Open-Meteo pour ce module",
+        "changeHousehold": "Ou changer la source météo dans les Paramètres"
+      },
+      "sections": {
+        "source": "Données météo",
+        "look": "Apparence",
+        "show": "Ce qui s'affiche",
+        "map": "Carte des pluies",
+        "cards": "Cartes",
+        "accent": "Couleur d'accent"
+      }
     },
     "word-of-day": {
       "showDividers": "Afficher les séparateurs"

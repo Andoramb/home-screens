@@ -155,12 +155,16 @@ export interface ModuleDataSource {
   screenId?: string;
 }
 
-/** Resolve a weather module's effective provider ('global' defers to settings). */
+/**
+ * Resolve a weather-bound module's effective provider. Any module that
+ * requires weather data may carry its own `provider`; absent or `global`
+ * defers to the household setting.
+ */
 export function resolveProvider(
   mod: { type: string; config: Record<string, unknown> },
   globalProvider: string,
 ): string {
-  if (mod.type === 'weather') {
+  if (getModuleDefinition(mod.type as ModuleType)?.dataRequirements?.includes('weather')) {
     const p = mod.config.provider as string | undefined;
     return (p && p !== 'global') ? p : globalProvider;
   }

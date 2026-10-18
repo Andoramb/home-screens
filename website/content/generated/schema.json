@@ -1090,6 +1090,27 @@
           "default": "panorama"
         },
         {
+          "name": "provider",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "WeatherProviderOption",
+            "values": [
+              "global",
+              "openweathermap",
+              "weatherapi",
+              "pirateweather",
+              "noaa",
+              "open-meteo",
+              "yr",
+              "smhi",
+              "metoffice",
+              "envcanada"
+            ]
+          },
+          "description": "Weather source for this module. Absent or `global` follows the household source in Settings; otherwise one of the provider ids, as on the Weather module."
+        },
+        {
           "name": "density",
           "optional": false,
           "type": {

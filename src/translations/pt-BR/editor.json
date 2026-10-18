@@ -783,7 +783,11 @@
           "failed": "Falhou: {message}",
           "unknownError": "Erro desconhecido",
           "rejectedKey": "{provider} recusou a chave salva. Remova-a e cole de novo.",
-          "failedPlain": "Não foi possível obter o tempo de {provider}."
+          "failedPlain": "Não foi possível obter o tempo de {provider}.",
+          "successDays": {
+            "one": "Funcionando! Temperatura atual: {temp}°, {count} dia de previsão.",
+            "other": "Funcionando! Temperatura atual: {temp}°, {count} dias de previsão."
+          }
         },
         "status": {
           "defaultReady": "Padrão · Pronto",
@@ -805,8 +809,8 @@
           "helperText": "Não requer chave de API. Open-Meteo é gratuito e de código aberto, com cobertura global."
         },
         "weatherApi": {
-          "tagline": "Camada gratuita · sem cartão de crédito",
-          "keyHint": "Gratuito em weatherapi.com; sem cartão de crédito.",
+          "tagline": "Chave gratuita · previsão de 3 dias · sem cartão de crédito",
+          "keyHint": "Gratuito em weatherapi.com; sem cartão de crédito. Uma chave gratuita envia uma previsão de 3 dias; planos pagos enviam mais.",
           "placeholder": "Cole sua chave da WeatherAPI"
         },
         "openWeatherMap": {
@@ -4638,7 +4642,28 @@
         "envcanada": "Environment Canada (apenas Canadá)"
       },
       "apiKeyMissing": "Este serviço de previsão do tempo precisa de uma chave de API.",
-      "addApiKey": "Adicionar chave de API"
+      "addApiKey": "Adicionar chave de API",
+      "forecastDays": {
+        "sends": {
+          "one": "{source} envia {count} dia.",
+          "other": "{source} envia {count} dias."
+        },
+        "capped": {
+          "one": "{source} só envia {count} dia, então a lista para aí.",
+          "other": "{source} só envia {count} dias, então a lista para aí."
+        },
+        "weatherApiFree": "Uma chave gratuita da WeatherAPI envia 3 dias. Planos pagos enviam mais.",
+        "useOpenMeteo": "Usar Open-Meteo neste módulo",
+        "changeHousehold": "Ou mudar a fonte do tempo nas Configurações"
+      },
+      "sections": {
+        "source": "Dados do tempo",
+        "look": "Aparência",
+        "show": "O que aparece",
+        "map": "Mapa de chuva",
+        "cards": "Cartões",
+        "accent": "Cor de destaque"
+      }
     },
     "word-of-day": {
       "showDividers": "Mostrar divisores"

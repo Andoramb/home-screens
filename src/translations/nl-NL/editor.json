@@ -783,7 +783,11 @@
           "failed": "Mislukt: {message}",
           "unknownError": "Onbekende fout",
           "rejectedKey": "{provider} heeft de opgeslagen sleutel geweigerd. Verwijder hem en plak hem opnieuw.",
-          "failedPlain": "Kon geen weer ophalen van {provider}."
+          "failedPlain": "Kon geen weer ophalen van {provider}.",
+          "successDays": {
+            "one": "Werkt! Huidige temp: {temp}°, {count} dag verwachting.",
+            "other": "Werkt! Huidige temp: {temp}°, {count} dagen verwachting."
+          }
         },
         "status": {
           "defaultReady": "Standaard · Klaar",
@@ -805,8 +809,8 @@
           "helperText": "Geen API-sleutel vereist. Open-Meteo is gratis en open source met wereldwijde dekking."
         },
         "weatherApi": {
-          "tagline": "Gratis tier · geen creditcard",
-          "keyHint": "Gratis op weatherapi.com; geen creditcard nodig.",
+          "tagline": "Gratis sleutel · 3-daagse verwachting · geen creditcard",
+          "keyHint": "Gratis op weatherapi.com; geen creditcard nodig. Een gratis sleutel stuurt een verwachting van 3 dagen; betaalde abonnementen sturen meer.",
           "placeholder": "Plak je WeatherAPI-sleutel"
         },
         "openWeatherMap": {
@@ -4638,7 +4642,28 @@
         "envcanada": "Environment Canada (alleen Canada)"
       },
       "apiKeyMissing": "Deze weerdienst heeft een API-sleutel nodig.",
-      "addApiKey": "API-sleutel toevoegen"
+      "addApiKey": "API-sleutel toevoegen",
+      "forecastDays": {
+        "sends": {
+          "one": "{source} stuurt {count} dag.",
+          "other": "{source} stuurt {count} dagen."
+        },
+        "capped": {
+          "one": "{source} stuurt maar {count} dag, dus daar stopt de lijst.",
+          "other": "{source} stuurt maar {count} dagen, dus daar stopt de lijst."
+        },
+        "weatherApiFree": "Een gratis WeatherAPI-sleutel stuurt 3 dagen. Betaalde abonnementen sturen meer.",
+        "useOpenMeteo": "Open-Meteo gebruiken voor deze module",
+        "changeHousehold": "Of de weerbron wijzigen in Instellingen"
+      },
+      "sections": {
+        "source": "Weergegevens",
+        "look": "Uiterlijk",
+        "show": "Wat er te zien is",
+        "map": "Regenkaart",
+        "cards": "Kaarten",
+        "accent": "Accentkleur"
+      }
     },
     "word-of-day": {
       "showDividers": "Scheidingslijnen tonen"

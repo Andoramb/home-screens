@@ -1,27 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import Toggle from '@/components/ui/Toggle';
-import LabeledField from '@/components/ui/LabeledField';
 import LabeledInput from '@/components/ui/LabeledInput';
 import LabeledSelect from '@/components/ui/LabeledSelect';
-import { INPUT_CLASS } from '@/components/ui/input-classes';
+import SectionHeading from '@/components/ui/SectionHeading';
 import ViewSelect from '@/components/editor/ViewSelect';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
-import { useSecretStatus } from '@/hooks/useSecretStatus';
 import { useEditorStore } from '@/stores/editor-store';
 import { getLocation } from '@/lib/location';
 import { formatCoords } from '@/components/modules/weather/location-label';
 import { useTranslate } from '@/i18n';
-import type { ModuleInstance, WeatherConfig, WeatherView, WeatherIconSet, WeatherProviderOption } from '@/types/config';
+import type { ModuleInstance, WeatherConfig, WeatherView, WeatherIconSet } from '@/types/config';
 import { settingsPath } from '@/lib/settings-route';
-import { WEATHER_PROVIDERS } from '@/components/editor/settings/weather/providers';
-
-/** Providers that cannot run without an API key, from the one provider table. */
-const KEYED_PROVIDER_IDS: ReadonlySet<string> = new Set(
-  WEATHER_PROVIDERS.filter((p) => p.secretKey !== null).map((p) => p.id),
-);
+import { KEYED_PROVIDER_IDS, WeatherSourceSelect, useConfiguredWeatherProviders } from './WeatherSourceSelect';
+import { ForecastDaysHint } from './ForecastDaysHint';
 
 /**
  * What a provider's payload can carry, so the editor offers a toggle or a
@@ -99,6 +93,8 @@ const VIEW_FIELDS: Record<WeatherView, readonly Field[]> = {
 
 /** Sources give up to a day and a half ahead; past this the field asks for hours no source has. */
 const MAX_HOURS = 36;
+/** No source sends more than a week of days; every provider trims to seven. */
+const MAX_DAYS = 7;
 
 export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; screenId: string }) {
   const t = useTranslate('editor');
@@ -136,30 +132,16 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
   const automaticLabel = settings?.locationName?.trim()
     || (location ? formatCoords(location.lat, location.lon) : '');
 
-  const { status: secrets, loading: secretsLoading, error: secretsError, hasStatus } = useSecretStatus();
-  const configuredProviders = useMemo<string[]>(() => {
-    // Until a good status has landed, return [] and keep the picker hidden:
-    // rendering the select without the saved keyed provider in its options
-    // would misreport it and let a change event overwrite the real value.
-    // A failed refetch after a good status keeps using that last snapshot.
-    if (secretsLoading || (secretsError && !hasStatus)) return [];
-    const providers: string[] = [];
-    if (secrets.openweathermap_key) providers.push('openweathermap');
-    if (secrets.weatherapi_key) providers.push('weatherapi');
-    if (secrets.pirateweather_key) providers.push('pirateweather');
-    if (secrets.metoffice_key) providers.push('metoffice');
-    // The rest need no API key and are always available.
-    providers.push('noaa', 'open-meteo', 'yr', 'smhi', 'envcanada');
-    return providers;
-  }, [secrets, secretsLoading, secretsError, hasStatus]);
+  const { providers: configuredProviders, known: providersKnown } = useConfiguredWeatherProviders();
 
-  const effectiveProvider = (c.provider && c.provider !== 'global') ? c.provider : (globalProvider ?? 'open-meteo');
+  const followsHousehold = !c.provider || c.provider === 'global';
+  const effectiveProvider = followsHousehold ? (globalProvider ?? 'open-meteo') : c.provider!;
   const caps = PROVIDER_CAPS[effectiveProvider] ?? {};
   // A keyed provider with no key renders nothing but "No weather data" on the
   // wall, and nothing in the editor says why. Surface it here, next to the
   // module, with a link to where the key goes. Only judged once a real
   // secret status has landed, so a slow first fetch never flashes a warning.
-  const apiKeyMissing = hasStatus && !secretsLoading
+  const apiKeyMissing = providersKnown
     && KEYED_PROVIDER_IDS.has(effectiveProvider)
     && !configuredProviders.includes(effectiveProvider);
 
@@ -185,6 +167,21 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
   const has = (field: Field) => VIEW_FIELDS[view].includes(field);
   // Icon style applies wherever a condition icon is drawn.
   const showsIcons = has('icons');
+  // The "What shows" group only draws its heading when the view has at
+  // least one toggle under it; the capability-gated ones count only when
+  // the source sends that field.
+  const CAP_GATED: Partial<Record<Field, keyof WeatherProviderCaps>> = {
+    pressure: 'pressure', visibility: 'visibility', dewPoint: 'dewPoint', uv: 'uv',
+  };
+  const SHOW_FIELDS: readonly Field[] = [
+    'featuredDay', 'relativeDays', 'feelsLike', 'highLow', 'precipitation', 'precipAmount',
+    'humidity', 'wind', 'pressure', 'visibility', 'dewPoint', 'uv', 'sunTimes',
+  ];
+  const showsAnyToggle = SHOW_FIELDS.some((f) => {
+    const cap = CAP_GATED[f];
+    return has(f) && (!cap || caps[cap]);
+  });
+  const hasSourceGroup = filteredProviders.length > 0 || has('hours') || has('days');
 
   return (
     <>
@@ -204,6 +201,47 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
         onChange={(v) => set({ view: v })}
         options={availableViews}
       />
+      {/* Named groups, because the panel is long enough that a hint between
+          two toggles reads as one more row: source, look, then what shows. */}
+      {hasSourceGroup && <SectionHeading>{t('configSections.weather.sections.source')}</SectionHeading>}
+      <WeatherSourceSelect
+        value={c.provider ?? 'global'}
+        onChange={(provider) => set({ provider })}
+        providers={filteredProviders}
+        allowGlobal={!viewRequirement}
+      />
+      {has('hours') && (
+        <>
+          <LabeledInput
+            label={t('configSections.weather.hoursToShow')}
+            type="number"
+            min={2}
+            max={MAX_HOURS}
+            value={c.hoursToShow ?? 8}
+            onChange={(v) => set({ hoursToShow: Math.min(MAX_HOURS, Number(v)) })}
+          />
+          <span className="text-xs text-hs-text-muted">{t('configSections.weather.hoursToShowHint')}</span>
+        </>
+      )}
+      {has('days') && (
+        <>
+          <LabeledInput
+            label={t('configSections.weather.daysToShow')}
+            type="number"
+            min={1}
+            max={MAX_DAYS}
+            value={c.daysToShow ?? 5}
+            onChange={(v) => set({ daysToShow: Math.min(MAX_DAYS, Number(v)) })}
+          />
+          <ForecastDaysHint
+            provider={effectiveProvider}
+            requested={c.daysToShow ?? 5}
+            followsHousehold={followsHousehold}
+            onPickOpenMeteo={() => set({ provider: 'open-meteo' })}
+          />
+        </>
+      )}
+      <SectionHeading>{t('configSections.weather.sections.look')}</SectionHeading>
       {/* Outside the showsStats guard on purpose: the alerts and precipitation
           views want the place name most ("which area is this alert for?"). */}
       <Toggle
@@ -230,65 +268,7 @@ export function WeatherConfigSection({ mod, screenId }: { mod: ModuleInstance; s
           options={ICON_SETS}
         />
       )}
-      {filteredProviders.length > 0 && (
-        <LabeledField label={t('configSections.weather.dataProvider')}>
-          <select
-            value={c.provider ?? 'global'}
-            onChange={(e) => set({ provider: e.target.value as WeatherProviderOption })}
-            className={INPUT_CLASS}
-          >
-            {!viewRequirement && <option value="global">{t('configSections.weather.providers.global')}</option>}
-            {filteredProviders.includes('openweathermap') && (
-              <option value="openweathermap">{t('configSections.weather.providers.openweathermap')}</option>
-            )}
-            {filteredProviders.includes('weatherapi') && (
-              <option value="weatherapi">{t('configSections.weather.providers.weatherapi')}</option>
-            )}
-            {filteredProviders.includes('pirateweather') && (
-              <option value="pirateweather">{t('configSections.weather.providers.pirateweather')}</option>
-            )}
-            {filteredProviders.includes('noaa') && (
-              <option value="noaa">{t('configSections.weather.providers.noaa')}</option>
-            )}
-            {filteredProviders.includes('open-meteo') && (
-              <option value="open-meteo">{t('configSections.weather.providers.openMeteo')}</option>
-            )}
-            {filteredProviders.includes('yr') && (
-              <option value="yr">{t('configSections.weather.providers.yr')}</option>
-            )}
-            {filteredProviders.includes('smhi') && (
-              <option value="smhi">{t('configSections.weather.providers.smhi')}</option>
-            )}
-            {filteredProviders.includes('metoffice') && (
-              <option value="metoffice">{t('configSections.weather.providers.metoffice')}</option>
-            )}
-            {filteredProviders.includes('envcanada') && (
-              <option value="envcanada">{t('configSections.weather.providers.envcanada')}</option>
-            )}
-          </select>
-        </LabeledField>
-      )}
-      {has('hours') && (
-        <>
-          <LabeledInput
-            label={t('configSections.weather.hoursToShow')}
-            type="number"
-            min={2}
-            max={MAX_HOURS}
-            value={c.hoursToShow ?? 8}
-            onChange={(v) => set({ hoursToShow: Math.min(MAX_HOURS, Number(v)) })}
-          />
-          <span className="text-xs text-hs-text-muted">{t('configSections.weather.hoursToShowHint')}</span>
-        </>
-      )}
-      {has('days') && (
-        <LabeledInput
-          label={t('configSections.weather.daysToShow')}
-          type="number"
-          value={c.daysToShow ?? 5}
-          onChange={(v) => set({ daysToShow: Number(v) })}
-        />
-      )}
+      {showsAnyToggle && <SectionHeading>{t('configSections.weather.sections.show')}</SectionHeading>}
       {has('featuredDay') && (
         <Toggle label={t('configSections.weather.showFeaturedDay')} checked={c.showFeaturedDay !== false} onChange={(v) => set({ showFeaturedDay: v })} />
       )}

@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useSecretStatus } from '@/hooks/useSecretStatus';
 import { useEditorStore } from '@/stores/editor-store';
+import { usePreviewWeatherStore } from '@/stores/preview-weather-store';
 import { useCalendarFetchQuery } from './useCalendarFetchQuery';
 import { hasAnyCalendarSource } from '@/lib/calendar-sources';
 import { eventBus } from '@/lib/event-bus';
@@ -113,6 +114,7 @@ export function usePreviewData(): PreviewData {
       if (signal.aborted) return;
 
       const byProvider: Record<string, ProviderWeatherData> = {};
+      const forecastDays: Record<string, number> = {};
       for (const result of results) {
         if (result.status === 'fulfilled' && result.value) {
           byProvider[result.value.provider] = {
@@ -121,9 +123,15 @@ export function usePreviewData(): PreviewData {
             minutely: result.value.minutely,
             alerts: result.value.alerts,
           };
+          if (Array.isArray(result.value.forecast)) {
+            forecastDays[result.value.provider] = result.value.forecast.length;
+          }
         }
       }
       setPreviewData((prev) => ({ ...prev, weatherByProvider: byProvider, weatherErrors: errors }));
+      // The property panel's days fields read this to say where each source
+      // stops. A failed source is left out, so its field says nothing.
+      usePreviewWeatherStore.getState().setForecastDays(forecastDays);
     }
 
     return () => {

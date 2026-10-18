@@ -783,7 +783,11 @@
           "failed": "Failed: {message}",
           "unknownError": "Unknown error",
           "rejectedKey": "{provider} rejected the saved key. Remove it and paste it again.",
-          "failedPlain": "Couldn't get weather from {provider}."
+          "failedPlain": "Couldn't get weather from {provider}.",
+          "successDays": {
+            "one": "Working! Current temp: {temp}°, {count} forecast day.",
+            "other": "Working! Current temp: {temp}°, {count} forecast days."
+          }
         },
         "status": {
           "defaultReady": "Default · Ready",
@@ -805,8 +809,8 @@
           "helperText": "No API key required. Open-Meteo is free and open-source with global coverage."
         },
         "weatherApi": {
-          "tagline": "Free tier · no credit card",
-          "keyHint": "Free at weatherapi.com; no credit card required.",
+          "tagline": "Free key · 3-day forecast · no credit card",
+          "keyHint": "Free at weatherapi.com; no credit card required. A free key sends a 3-day forecast; paid plans send more.",
           "placeholder": "Paste your WeatherAPI key"
         },
         "openWeatherMap": {
@@ -4638,7 +4642,28 @@
         "envcanada": "Environment Canada (Canada only)"
       },
       "apiKeyMissing": "This weather provider needs an API key.",
-      "addApiKey": "Add API key"
+      "addApiKey": "Add API key",
+      "forecastDays": {
+        "sends": {
+          "one": "{source} sends {count} day.",
+          "other": "{source} sends {count} days."
+        },
+        "capped": {
+          "one": "{source} only sends {count} day, so the list stops there.",
+          "other": "{source} only sends {count} days, so the list stops there."
+        },
+        "weatherApiFree": "A free WeatherAPI key sends 3 days. Paid plans send more.",
+        "useOpenMeteo": "Use Open-Meteo for this module",
+        "changeHousehold": "Or change the weather source in Settings"
+      },
+      "sections": {
+        "source": "Weather data",
+        "look": "Look",
+        "show": "What shows",
+        "map": "Rain map",
+        "cards": "Cards",
+        "accent": "Accent color"
+      }
     },
     "word-of-day": {
       "showDividers": "Show Dividers"
