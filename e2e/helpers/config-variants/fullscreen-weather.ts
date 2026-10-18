@@ -178,63 +178,69 @@ const FORECAST_BODY = {
   minutely: Array.from({ length: 60 }, (_, m) => ({ time: 4081276800 + m * 60, intensity: 0, probability: 0 })),
 };
 
-/** One row per card toggle: the card is there by default and gone when off. */
-function cardRow(name: string, field: string, testId: string, view: 'forecast' | 'conditions' = 'conditions'): ConfigVariant {
-  return {
-    type: 'fullscreen-weather', name, kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY,
-    extraStubs: { 'air-quality': { aqi: 2, pm25: 8.4, pm10: 12.1, o3: 48.2, no2: 15.6 } },
-    // The Forecast view's map card asks the OpenStreetMap tile server, which the
-    // external block answers; the Conditions view has no map.
-    allowsExternal: view === 'forecast',
-    config: { view, [field]: false },
-    expect: async (mod) => {
-      await expect(mod.locator('[data-testid="fsw-hero"]')).toBeVisible();
-      await expect(mod.locator(`[data-testid="${testId}"]`)).toHaveCount(0);
-    },
-  };
-}
+const AIR_QUALITY_STUB = { 'air-quality': { aqi: 2, pm25: 8.4, pm10: 12.1, o3: 48.2, no2: 15.6 } };
 
-/** The Conditions page's card order (ConditionsView.tsx): air quality on top, then these, every one that is on. */
-const CONDITIONS_ORDER = ['moon', 'uv', 'feelsLike', 'precipitation', 'visibility', 'humidity', 'pressure', 'nowcast', 'wind', 'sun'] as const;
-const CARD_TOGGLE: Record<(typeof CONDITIONS_ORDER)[number], string> = {
-  moon: 'showMoon', uv: 'showUV', feelsLike: 'showFeelsLike', humidity: 'showHumidity', precipitation: 'showPrecipitation',
-  pressure: 'showPressure', visibility: 'showVisibility', nowcast: 'showNowcast', wind: 'showWind', sun: 'showSun',
-};
+/** The default card list (`DEFAULT_FULLSCREEN_WEATHER_CARDS`): wind and sunrise first, every card on. */
+const DEFAULT_CARDS = ['wind', 'sun', 'airQuality', 'moon', 'uv', 'feelsLike', 'precipitation', 'visibility', 'humidity', 'pressure', 'nowcast'] as const;
+type CardKey = (typeof DEFAULT_CARDS)[number];
 
 /** The card keys on the page, top to bottom, left to right. */
 async function drawnCards(mod: Locator): Promise<string[]> {
   return mod.locator('[data-testid^="fsw-card-"]').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')!.slice('fsw-card-'.length)));
 }
 
-/** Turning one Conditions card off: it goes, every other card stays, the order holds. */
-function conditionsHideRow(key: (typeof CONDITIONS_ORDER)[number]): ConfigVariant {
+/** One card left off the list: it goes, every other card stays, the order holds. */
+function conditionsHideRow(key: CardKey): ConfigVariant {
+  const cards = DEFAULT_CARDS.filter((k) => k !== key);
   return {
     type: 'fullscreen-weather', name: `conditions-no-${key.toLowerCase()}`, kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY,
-    extraStubs: { 'air-quality': { aqi: 2, pm25: 8.4, pm10: 12.1, o3: 48.2, no2: 15.6 } },
-    config: { view: 'conditions', [CARD_TOGGLE[key]]: false },
+    extraStubs: AIR_QUALITY_STUB,
+    config: { view: 'conditions', cards },
     expect: async (mod) => {
-      await expect(mod.locator('[data-testid="fsw-card-airQuality"]')).toHaveCount(1);
+      await expect(mod.locator('[data-testid="fsw-hero"]')).toBeVisible();
       await expect(mod.locator(`[data-testid="fsw-card-${key}"]`)).toHaveCount(0);
-      const drawn = (await drawnCards(mod)).filter((k) => k !== 'airQuality');
-      expect(drawn).toEqual(CONDITIONS_ORDER.filter((k) => k !== key));
+      expect(await drawnCards(mod)).toEqual(cards);
     },
   };
 }
 
 export const FULLSCREEN_WEATHER_FORECAST_VARIANTS: ConfigVariant[] = [
   {
-    // The Conditions view with every card on: air quality, then all ten in
-    // the page's order, the compass and the gauge among them.
+    // The Conditions view with the card list unset: every card in the
+    // default order, the compass and the gauge among them.
     type: 'fullscreen-weather', name: 'conditions-all-cards', kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY,
-    extraStubs: { 'air-quality': { aqi: 2, pm25: 8.4, pm10: 12.1, o3: 48.2, no2: 15.6 } },
+    extraStubs: AIR_QUALITY_STUB,
     config: { view: 'conditions' },
     expect: async (mod) => {
       await expect(mod.locator('[data-testid="fsw-card-airQuality"]')).toHaveCount(1);
       await expect(mod.locator('[data-testid="fsw-compass"]')).toHaveCount(1);
       await expect(mod.locator('[data-testid="fsw-gauge"]')).toHaveCount(1);
       await expect(mod).toContainText('Gusts: 14 mph W');
-      const drawn = (await drawnCards(mod)).filter((k) => k !== 'airQuality');
-      expect(drawn).toEqual([...CONDITIONS_ORDER]);
+      expect(await drawnCards(mod)).toEqual([...DEFAULT_CARDS]);
+    },
+  },
+  {
+    // The list's order is the page's order, and air quality keeps its wide
+    // shape wherever it sits: the whole portrait row, so the card before it
+    // widens to fill its own row rather than leaving a hole.
+    type: 'fullscreen-weather', name: 'conditions-card-order', kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY,
+    extraStubs: AIR_QUALITY_STUB,
+    config: { view: 'conditions', cards: ['pressure', 'moon', 'uv', 'airQuality', 'wind'] },
+    expect: async (mod) => {
+      expect(await drawnCards(mod)).toEqual(['pressure', 'moon', 'uv', 'airQuality', 'wind']);
+      await expect(mod.locator('[data-testid="fsw-card-airQuality"]')).toHaveCSS('grid-column-start', 'span 2');
+      await expect(mod.locator('[data-testid="fsw-card-uv"]')).toHaveCSS('grid-column-start', 'span 2');
+      await expect(mod.locator('[data-testid="fsw-card-moon"]')).not.toHaveCSS('grid-column-start', 'span 2');
+    },
+  },
+  {
+    // An empty list is every card off: the page says so instead of drawing
+    // the default.
+    type: 'fullscreen-weather', name: 'conditions-no-cards', kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY,
+    config: { view: 'conditions', cards: [] },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-testid^="fsw-card-"]')).toHaveCount(0);
+      await expect(mod).toContainText('Your weather source does not send the details this view shows.');
     },
   },
   {
@@ -288,19 +294,37 @@ export const FULLSCREEN_WEATHER_FORECAST_VARIANTS: ConfigVariant[] = [
       await expect(mod.locator('[data-testid="rain-map-timeline"]')).toHaveCount(0);
     },
   },
-  cardRow('forecast-no-wind', 'showWind', 'fsw-card-wind', 'forecast'),
-  cardRow('forecast-no-sun', 'showSun', 'fsw-card-sun', 'forecast'),
   {
-    // The two instruments the Forecast page draws under the map, and the
-    // gauge, which leads the Conditions page once the cards ahead of it are off.
+    // The two instruments the Forecast page draws under the map by default:
+    // the compass and the sun arc, the first two cards on the default list.
     type: 'fullscreen-weather', name: 'forecast-instruments', kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY, allowsExternal: true,
     config: { view: 'forecast' },
     expect: async (mod) => {
       await expect(mod.locator('[data-testid="fsw-compass"]')).toHaveCount(1);
       await expect(mod.locator('[data-testid="fsw-sun-arc"]')).toHaveCount(1);
       await expect(mod).toContainText('Gusts: 14 mph W');
+      expect(await drawnCards(mod)).toEqual(['wind', 'sun']);
     },
   },
-  cardRow('conditions-no-air-quality', 'showAirQuality', 'fsw-card-airQuality'),
-  ...CONDITIONS_ORDER.map(conditionsHideRow),
+  {
+    // The first two cards on the list sit under the map, whichever they are;
+    // the gauge replaces the compass when pressure leads.
+    type: 'fullscreen-weather', name: 'forecast-first-two-cards', kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY, allowsExternal: true,
+    config: { view: 'forecast', cards: ['pressure', 'humidity', 'wind', 'sun'] },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-testid="fsw-gauge"]')).toHaveCount(1);
+      await expect(mod.locator('[data-testid="fsw-compass"]')).toHaveCount(0);
+      expect(await drawnCards(mod)).toEqual(['pressure', 'humidity']);
+    },
+  },
+  {
+    // A card off the list is skipped even at the top of the page's old order.
+    type: 'fullscreen-weather', name: 'forecast-no-wind', kind: 'networked', stubKey: 'weather', stubBody: FORECAST_BODY, allowsExternal: true,
+    config: { view: 'forecast', cards: DEFAULT_CARDS.filter((k) => k !== 'wind') },
+    expect: async (mod) => {
+      await expect(mod.locator('[data-testid="fsw-hero"]')).toBeVisible();
+      expect(await drawnCards(mod)).toEqual(['sun', 'airQuality']);
+    },
+  },
+  ...DEFAULT_CARDS.map(conditionsHideRow),
 ];

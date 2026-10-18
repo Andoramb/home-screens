@@ -14,6 +14,7 @@ import { FETCH_KEY_REGISTRY } from './fetch-keys';
 import { resolveLucideIcon } from './lucide-resolver';
 import { pluginStateKey } from '@/lib/plugin-state-keys';
 import { DEFAULT_CALENDAR_ACCENT } from '@/lib/calendar-color';
+import { DEFAULT_FULLSCREEN_WEATHER_CARDS } from '@/lib/fullscreen-weather-cards';
 import type { ProvidedStateKey } from '@/lib/shared-state-types';
 import type { TranslateFn } from '@/i18n/types';
 
@@ -526,16 +527,7 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
       mapZoom: 6,
       mapStyle: 'light',
       mapAnimate: true,
-      showWind: true,
-      showSun: true,
-      showMoon: true,
-      showAirQuality: true,
-      showUV: true,
-      showFeelsLike: true,
-      showHumidity: true,
-      showPrecipitation: true,
-      showVisibility: true,
-      showPressure: true,
+      cards: [...DEFAULT_FULLSCREEN_WEATHER_CARDS],
     },
     defaultSize: { w: 1080, h: 1920 },
     defaultStyle: FULLSCREEN_STYLE,

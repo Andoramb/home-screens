@@ -685,6 +685,7 @@ const DISCRIMINATOR_UNION_DECISIONS: Record<string, string> = {
   GarbageFrequency: 'weekly/biweekly cadence; the biweekly variant row covers the non-default member',
   IconFlip: 'mirror transform of the same glyph, not a distinct render path; field-level row suffices',
   RainMapStyle: 'two basemap tile sets; the standard variant row plus default dark covers both',
+  FullscreenWeatherCard: 'the members of one ordered list, not render modes; the conditions-all-cards row draws every card and the conditions-no-<card> rows prove each one leaves',
   FullscreenWeatherMapStyle: 'one basemap tile set on the Forecast view map card, filtered or not; the map-dark and map-light variant rows prove each filter lands on the base tiles, and standard is the same tile with no filter',
   RecipeTapAction: 'tap behavior exercised in interactive.spec.ts, not a static render mode',
   ShapeArrowDirection: 'rotation transform of one arrow renderer; field-level row suffices',

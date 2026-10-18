@@ -33,7 +33,8 @@ import WeekView from './WeekView';
 import HourlyView from './HourlyView';
 import ForecastView from './ForecastView';
 import ConditionsView from './ConditionsView';
-import { availableCards, CARD_KEYS } from './cards';
+import { availableCards } from './cards';
+import { resolveWeatherCards } from '@/lib/fullscreen-weather-cards';
 import { householdTimeFormat } from '@/lib/clock-time';
 
 interface FullscreenWeatherModuleProps {
@@ -138,7 +139,7 @@ export default function FullscreenWeatherModule({
   // The Forecast and Conditions views' air quality card. Only they ask, and only with a
   // location (the route reads the household's). A missing OpenWeatherMap
   // key answers with a setup error, which simply leaves the card hidden.
-  const wantAirQuality = cardView && config.showAirQuality !== false && latitude != null && longitude != null;
+  const wantAirQuality = cardView && resolveWeatherCards(config).includes('airQuality') && latitude != null && longitude != null;
   const [airQuality] = useFetchData<{ aqi: number }>(wantAirQuality ? airQualityUrl() : '', AIR_QUALITY_REFRESH_MS);
 
   // Counts, not array identities: a refetch that returns the same shape must
@@ -178,7 +179,7 @@ export default function FullscreenWeatherModule({
   // answer had none adds cards, and the fit must run again for them, so the
   // set itself is a dependency rather than the toggles alone.
   const cardSet = cardView
-    ? availableCards({ config, hourly, forecast, minutely, units, sun, t, latitude, longitude, airQuality: wantAirQuality ? airQuality : null }, CARD_KEYS).join(',')
+    ? availableCards({ config, hourly, forecast, minutely, units, sun, t, latitude, longitude, airQuality: wantAirQuality ? airQuality : null }).join(',')
     : '';
 
   const stackRef = useRef<HTMLDivElement>(null);

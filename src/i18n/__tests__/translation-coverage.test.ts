@@ -76,6 +76,8 @@ const SHARED_UNTRANSLATABLE: ReadonlySet<string> = new Set([
   'editor|configSections.fullscreen-photo.sourceOneDrive',
   'editor|configSections.fullscreen-photo.transitionZoom',
   'editor|configSections.fullscreen-weather.mapStyleStandard',
+  // The card is named by the one word for wind, which German and Dutch spell as English does.
+  'editor|configSections.fullscreen-weather.cardWind',
   'editor|configSections.fullscreen-weather.viewPanorama',
   'editor|configSections.icon.animation',
   'editor|configSections.iframe.url',

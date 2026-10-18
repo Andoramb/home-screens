@@ -5,8 +5,9 @@ import { floorEase, type WeatherViewProps } from './weather-view-utils';
 import { useBoxSize } from './useBoxSize';
 import { AlertBand } from './weather-parts';
 import {
-  Hero, HourlyCard, DaysCard, MapCard, Instrument, availableCards, type CardKey,
+  Hero, HourlyCard, DaysCard, MapCard, Instrument, availableCards,
 } from './cards';
+import { packCardRows } from './conditions-layout';
 
 /**
  * The phone weather app's page, as a wall.
@@ -15,25 +16,23 @@ import {
  * instrument cards. Landscape is the tablet arrangement: the hero across the
  * top, the hour strip beside the map, then the day list, air quality and
  * four instrument cards. The rest of the phone's page is the Conditions
- * view, which rotates in as a second screen.
+ * view, which rotates in as a second screen. The instrument cards come from
+ * the module's card list, in its order: portrait draws the first two, and
+ * landscape fills its six cells (eight without the map) from the top of the
+ * list, the short middle row first.
  */
 export default function ForecastView(p: WeatherViewProps) {
   return p.scale.orientation === 'landscape' ? <ForecastLandscape p={p} /> : <ForecastPortrait p={p} />;
 }
-
-/** The two cards under the map, in the phone's order, from whatever this wall can fill. */
-const PORTRAIT_ORDER: readonly CardKey[] = ['wind', 'sun', 'moon', 'uv', 'feelsLike', 'precipitation', 'visibility', 'humidity', 'pressure', 'airQuality'];
-/** The tablet's small cards, in its order. */
-const LANDSCAPE_ORDER: readonly CardKey[] = ['uv', 'sun', 'wind', 'precipitation', 'feelsLike', 'humidity', 'visibility', 'pressure', 'moon', 'nowcast'];
-/** Cards that are a number and a line, which fit the tablet's short middle row. */
-const SHORT_CARDS: ReadonlySet<CardKey> = new Set(['uv', 'feelsLike', 'humidity', 'visibility', 'precipitation']);
 
 function ForecastPortrait({ p }: { p: WeatherViewProps }) {
   const { s, u } = p.scale;
   // The type-unit floors give way near the fit loop's floor (see floorEase).
   const ease = floorEase(p.scale.fit);
   const showMap = p.config.showMap !== false && p.latitude != null && p.longitude != null;
-  const cards = availableCards(p, PORTRAIT_ORDER).slice(0, 2);
+  // The first two cards on the module's list that this wall can fill: the
+  // list's order is how the household picks what sits under the map.
+  const cards = availableCards(p).slice(0, 2);
   // The bottom row takes whatever the cards above leave, so its cards learn
   // their cell from the row's measured box and size their instruments to it,
   // as the Conditions grid does; the row's height never follows its content.
@@ -70,31 +69,26 @@ function ForecastPortrait({ p }: { p: WeatherViewProps }) {
 function ForecastLandscape({ p }: { p: WeatherViewProps }) {
   const { u } = p.scale;
   const showMap = p.config.showMap !== false && p.latitude != null && p.longitude != null;
-  const aq = availableCards(p, ['airQuality']).length > 0;
-  const small = availableCards(p, LANDSCAPE_ORDER);
-  // The cells to the right of the day list: a short middle row (air quality
-  // across it when there is data, else two cells, plus two more beside them
-  // when there is no map) and four tall cells along the bottom. The middle
-  // row takes the cards that are a number and a line; a compass or a sun arc
-  // there would have no room to draw.
-  const middle: Cell[] = aq
-    ? [{ col: 5, span: 4, row: 2 }]
-    : [{ col: 5, span: 2, row: 2 }, { col: 7, span: 2, row: 2 }];
-  if (!showMap) middle.push({ col: 9, span: 2, row: 2 }, { col: 11, span: 2, row: 2 });
-  const bottom: Cell[] = [
-    { col: 5, span: 2, row: 3 }, { col: 7, span: 2, row: 3 }, { col: 9, span: 2, row: 3 }, { col: 11, span: 2, row: 3 },
-  ];
-  const middleCards: CardKey[] = aq ? ['airQuality'] : [];
-  const rest = [...small];
-  for (let i = 0; middleCards.length < middle.length && i < rest.length;) {
-    if (SHORT_CARDS.has(rest[i])) middleCards.push(...rest.splice(i, 1));
-    else i++;
-  }
-  const bottomCards = rest.slice(0, bottom.length);
-  const placed = [
-    ...middleCards.map((card, i) => ({ card, cell: middle[i] })),
-    ...bottomCards.map((card, i) => ({ card, cell: bottom[i] })),
-  ];
+  // The cells to the right of the day list: a short middle row (two cells
+  // beside the map, four without it) and four tall cells along the bottom,
+  // filled from the top of the module's card list in reading order. Air
+  // quality takes two cells wherever it lands, and a card left short of a
+  // row widens, the same packing as the Conditions grid; cards past the last
+  // cell are not drawn.
+  const middleCells = showMap ? 2 : 4;
+  const rows = packCardRows(availableCards(p), [middleCells, 4], true);
+  // A list short enough to leave the bottom row empty lets the middle row's
+  // cards grow down into it, so two cards are two tall cards beside the day
+  // list rather than a short row over a blank.
+  const growDown = rows.length === 1;
+  const placed = rows.flatMap((row, r) => {
+    let col = 5;
+    return row.cards.map(({ card, span }) => {
+      const cell: Cell = { col, span: span * 2, row: r === 0 ? 2 : 3, rows: r === 0 && growDown ? 2 : 1 };
+      col += span * 2;
+      return { card, cell };
+    });
+  });
   const gap = u * 2;
   // The grid's rows and columns come from the box it gets, so each card's
   // cell follows from the grid's measured size; the instruments size to it.
@@ -105,7 +99,8 @@ function ForecastLandscape({ p }: { p: WeatherViewProps }) {
     const colW = (grid.w - gap * 11) / 12;
     const rowsH = grid.h - gap * (LANDSCAPE_ROWS.length - 1);
     const total = LANDSCAPE_ROWS.reduce((a, b) => a + b, 0);
-    return { width: colW * cell.span + gap * (cell.span - 1), height: rowsH * LANDSCAPE_ROWS[cell.row - 1] / total };
+    const share = LANDSCAPE_ROWS.slice(cell.row - 1, cell.row - 1 + cell.rows).reduce((a, b) => a + b, 0);
+    return { width: colW * cell.span + gap * (cell.span - 1), height: rowsH * share / total + gap * (cell.rows - 1) };
   };
   return (
     <>
@@ -120,14 +115,14 @@ function ForecastLandscape({ p }: { p: WeatherViewProps }) {
         {showMap && <MapCard p={p} land style={{ gridColumn: '9 / 13', gridRow: '1 / 3' }} />}
         <DaysCard p={p} land style={{ gridColumn: '1 / 5', gridRow: '2 / 4', minHeight: 0 }} />
         {placed.map(({ card, cell }) => (
-          <Instrument key={card} p={p} card={card} ctx={{ land: true, ...cellSize(cell) }} style={{ gridColumn: `${cell.col} / ${cell.col + cell.span}`, gridRow: String(cell.row) }} />
+          <Instrument key={card} p={p} card={card} ctx={{ land: true, ...cellSize(cell) }} style={{ gridColumn: `${cell.col} / ${cell.col + cell.span}`, gridRow: `${cell.row} / ${cell.row + cell.rows}` }} />
         ))}
       </div>
     </>
   );
 }
 
-/** A card's place in the tablet grid: its first column, how many it spans, its row. */
-interface Cell { col: number; span: number; row: 1 | 2 | 3 }
+/** A card's place in the tablet grid: its first column, how many it spans, its first row and how many rows. */
+interface Cell { col: number; span: number; row: 1 | 2 | 3; rows: 1 | 2 }
 /** The tablet grid's row shares: the hour strip, the short middle row, the tall bottom row. */
 const LANDSCAPE_ROWS = [212, 170, 308] as const;

@@ -10,6 +10,7 @@ import { v11ToV12 } from './v11-to-v12';
 import { v12ToV13 } from './v12-to-v13';
 import { v13ToV14 } from './v13-to-v14';
 import { v14ToV15 } from './v14-to-v15';
+import { v15ToV16 } from './v15-to-v16';
 
 interface Migration {
   version: number;
@@ -99,6 +100,8 @@ const migrations: Migration[] = [
   // Migration 015: the full-screen weather sky setting absorbs the old
   // falling rain and snow toggle.
   v14ToV15,
+  // Migration 016: the full-screen weather card toggles become one ordered list.
+  v15ToV16,
 ];
 
 /** @internal Get all migrations sorted by version */

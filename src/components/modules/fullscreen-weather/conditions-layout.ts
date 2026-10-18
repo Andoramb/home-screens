@@ -1,18 +1,22 @@
+import type { FullscreenWeatherCard } from '@/types/config';
 import { CANVAS_PAD_X_U, CANVAS_PAD_Y_U } from './weather-view-utils';
 
 /**
  * How the Conditions view lays out its instrument grid.
  *
- * Every card that is on and that the weather source can fill is drawn: the
- * toggles in the editor are the whole story of what shows, so the view
- * never withholds a card for room. Two columns in portrait, four in
- * landscape, and as many rows as the cards need.
+ * Every card that is on and that the weather source can fill is drawn, in
+ * the order the module's card list gives: the list in the editor is the
+ * whole story of what shows and where, so the view never withholds a card
+ * for room. Two columns in portrait, four in landscape, and as many rows as
+ * the cards need.
  *
  * Height: each row is at least `rowMin`, which is what the fit loop sees
  * when too many rows of large type do not fit (it shrinks the type), and at
  * most `cardCap`, the phone's near-square card, so a page with few cards
  * does not stretch them into towers. Between the two the rows share the
- * slack, since a wall has nothing to scroll into empty space.
+ * slack, since a wall has nothing to scroll into empty space. A portrait row
+ * that is only the air quality card is the phone's banner and keeps the
+ * banner's own height instead.
  *
  * Arithmetic over the scale, never a measurement: the fit loop measures the
  * stack after render.
@@ -24,6 +28,65 @@ export const LANDSCAPE_CARD_RATIO = 0.78;
 /** The least a card may be, in type units: padding, a label and a line (about 12.5) plus an instrument worth reading. */
 export const CARD_MIN_S = 20;
 
+/** A card's place in a row: how many columns it takes. */
+export interface PackedCard { card: FullscreenWeatherCard; span: number }
+export interface PackedRow {
+  cards: PackedCard[];
+  /** The portrait air quality banner: a row of its own at the banner's height, not a card row. */
+  banner: boolean;
+}
+
+/** The columns the air quality card takes: the phone's banner is the full portrait width, and half the tablet's. */
+const AIR_QUALITY_SPAN = 2;
+
+/**
+ * Lay the cards into rows of cells, in order. Air quality takes two cells,
+ * every other card one. A card that does not fit the cells left in a row
+ * starts the next one, and the cards before it widen to fill the row, from
+ * the left and never past two cells, so no row has a hole in it: in
+ * portrait a card left alone beside the air quality banner goes full width,
+ * and in landscape a row of three before it leads with a double. Cells past
+ * what two-wide cards can fill stay empty at the end of a row, which only
+ * happens when the list runs out, since a lone card stretched across four
+ * cells reads as a mistake rather than a layout.
+ *
+ * `columns` is the cells in every row (as many rows as the cards need), or
+ * one count per row when the grid has a fixed set of rows, as the Forecast
+ * page's tablet grid does: cards past the last row are not drawn.
+ */
+export function packCardRows(cards: readonly FullscreenWeatherCard[], columns: number | readonly number[], land: boolean): PackedRow[] {
+  const capacity = (rowIndex: number): number | undefined => (typeof columns === 'number' ? columns : columns[rowIndex]);
+  const rows: PackedRow[] = [];
+  let row: PackedCard[] = [];
+  let used = 0;
+  const close = () => {
+    if (row.length === 0) return;
+    let spare = capacity(rows.length)! - used;
+    for (const cell of row) {
+      const grow = Math.min(spare, AIR_QUALITY_SPAN - cell.span);
+      cell.span += grow;
+      spare -= grow;
+    }
+    rows.push({ cards: row, banner: !land && row.length === 1 && row[0].card === 'airQuality' });
+    row = [];
+    used = 0;
+  };
+  for (const card of cards) {
+    const cells = capacity(rows.length);
+    if (cells === undefined) break;
+    const span = card === 'airQuality' ? AIR_QUALITY_SPAN : 1;
+    if (used + span > cells) {
+      close();
+      if (capacity(rows.length) === undefined) break;
+    }
+    row.push({ card, span });
+    used += span;
+    if (used === capacity(rows.length)) close();
+  }
+  close();
+  return rows;
+}
+
 export interface ConditionsGridInput {
   /** The module's box, in px. */
   width: number;
@@ -34,23 +97,24 @@ export interface ConditionsGridInput {
   s: number;
   u: number;
   land: boolean;
-  /** Landscape puts the air quality card into the grid, across two cells of the first row. */
-  airQualityInGrid: boolean;
-  /** Instrument cards this wall can fill. */
-  cardCount: number;
+  /** Card rows, which share the slack. */
+  rows: number;
+  /** Portrait air quality banner rows, each at the banner's own height. */
+  bannerRows: number;
 }
 
 export interface ConditionsGrid {
   columns: number;
-  rows: number;
   gap: number;
   /** A cell's width in px, from the columns. */
   cardWidth: number;
-  /** The least and the most a row may be, in px. */
+  /** The least and the most a card row may be, in px. */
   rowMin: number;
   cardCap: number;
-  /** The height a row should come out at: the slack shared, clamped between the two. Cards size their instruments from it. */
+  /** The height a card row should come out at: the slack shared, clamped between the two. Cards size their instruments from it. */
   rowHeight: number;
+  /** The height of a banner row. */
+  bannerHeight: number;
 }
 
 export function conditionsGrid(i: ConditionsGridInput): ConditionsGrid {
@@ -60,12 +124,12 @@ export function conditionsGrid(i: ConditionsGridInput): ConditionsGrid {
   const cardWidth = Math.max(0, (contentWidth - gap * (columns - 1)) / columns);
   const cardCap = cardWidth * (i.land ? LANDSCAPE_CARD_RATIO : PORTRAIT_CARD_RATIO);
   const rowMin = Math.min(cardCap, i.s * CARD_MIN_S);
-  const cells = i.cardCount + (i.airQualityInGrid ? 2 : 0);
-  const rows = Math.ceil(cells / columns);
+  const bannerHeight = airQualityCardHeight(i.s, i.u);
+  const allRows = i.rows + i.bannerRows;
   const contentHeight = i.height - 2 * i.u * CANVAS_PAD_Y_U;
-  const room = contentHeight - i.aboveHeight - gap * Math.max(0, rows - 1);
-  const rowHeight = rows > 0 ? Math.min(cardCap, Math.max(rowMin, room / rows)) : 0;
-  return { columns, rows, gap, cardWidth, rowMin, cardCap, rowHeight };
+  const room = contentHeight - i.aboveHeight - i.bannerRows * bannerHeight - gap * Math.max(0, allRows - 1);
+  const rowHeight = i.rows > 0 ? Math.min(cardCap, Math.max(rowMin, room / i.rows)) : 0;
+  return { columns, gap, cardWidth, rowMin, cardCap, rowHeight, bannerHeight };
 }
 
 /**

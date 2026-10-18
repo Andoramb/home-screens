@@ -13,6 +13,8 @@ import {
   compassLabel, feelsLikeSentence, humiditySentence, visibilitySentence, formatPrecipAmount, precipitationReading,
   airQualityLevel, airQualityPosition, uvLevel, uvRestOfDay, pressureTrend, pressurePosition, type Sentence as SentenceKey,
 } from '@/lib/weather/condition-sentences';
+import type { FullscreenWeatherCard } from '@/types/config';
+import { resolveWeatherCards } from '@/lib/fullscreen-weather-cards';
 import { floorEase, type WeatherViewProps } from './weather-view-utils';
 import { hoursWithin, nowcastVerdict, tzHour, weekRange, cachedFormat, HOURLY_RAIN_SHOWN_PCT, DAILY_RAIN_SHOWN_PCT } from './weather-view-utils';
 import { RangeBar, dayName, weekdayShort } from './weather-parts';
@@ -29,12 +31,7 @@ import MapCard from './MapCard';
  * visibility simply has fewer cards and the grid closes up. Both views
  * draw from this one list.
  */
-export type CardKey =
-  | 'wind' | 'sun' | 'moon' | 'uv' | 'feelsLike' | 'humidity' | 'precipitation' | 'visibility' | 'pressure' | 'nowcast' | 'airQuality';
-/** Every card the Forecast and Conditions views can draw. */
-export const CARD_KEYS: readonly CardKey[] = [
-  'wind', 'sun', 'moon', 'uv', 'feelsLike', 'humidity', 'precipitation', 'visibility', 'pressure', 'nowcast', 'airQuality',
-];
+export type CardKey = FullscreenWeatherCard;
 
 /** What deciding a card's availability reads: the data and toggles, never the scale. */
 export type CardInputs = Pick<
@@ -71,6 +68,27 @@ function instrumentSize(ctx: CardCtx, s: number, fallback: number): number {
   return Math.max(s * 5, Math.min(ctx.width * .5, ctx.height - s * 12.5));
 }
 
+/**
+ * A cell too short to seat an instrument: the Forecast tablet grid's middle
+ * row, where a compass or a sun arc would come out the size of a coin and
+ * the sentence under it would run off the card. A card in a short cell draws
+ * its reading as a number and a line instead, the way the phone's short
+ * cards do. Fewer than eight type units left after the label and the line
+ * is the threshold.
+ */
+export function isShortCell(ctx: CardCtx, s: number): boolean {
+  return ctx.height != null && ctx.height - s * 12.5 < s * 8;
+}
+
+/**
+ * A landscape cell with more height than the tablet's low, wide air quality
+ * banner uses (about 22 type units), where the banner's bar-at-the-foot
+ * layout would leave a void between the sentence and the bar.
+ */
+function hasSlack(ctx: CardCtx, s: number): boolean {
+  return ctx.height != null && ctx.height > s * 22;
+}
+
 const t = (p: WeatherViewProps, key: string, vars?: Record<string, string | number>) => p.t(`fullscreen-weather.cards.${key}`, vars);
 const sentence = (p: WeatherViewProps, s: SentenceKey) => t(p, s.key, s.vars);
 
@@ -78,28 +96,27 @@ const hasCoords = (p: CardInputs) => p.latitude != null && p.longitude != null;
 /** A real instant, or null for the Invalid Date SunCalc returns when an event does not happen. */
 const validDate = (d: Date | null | undefined): Date | null => (d && !Number.isNaN(d.getTime()) ? d : null);
 
-/** Whether a card's toggle is on and its data is there. */
-export function cardAvailable(p: CardInputs, key: CardKey): boolean {
-  const c = p.config;
+/** Whether a card has the data it draws. Being on the list is the other half, which `availableCards` reads. */
+export function cardHasData(p: CardInputs, key: CardKey): boolean {
   const now = p.hourly[0];
   switch (key) {
-    case 'wind': return c.showWind !== false && now?.windSpeed != null;
-    case 'sun': return c.showSun !== false && p.sun.sunrise != null && p.sun.sunset != null;
-    case 'moon': return c.showMoon !== false && hasCoords(p);
-    case 'uv': return c.showUV !== false && now?.uvIndex != null;
-    case 'feelsLike': return c.showFeelsLike !== false && now?.feelsLike != null;
-    case 'humidity': return c.showHumidity !== false && now?.humidity != null;
-    case 'precipitation': return c.showPrecipitation !== false && precipitationReading(p.forecast, p.units) != null;
-    case 'visibility': return c.showVisibility !== false && now?.visibility != null;
-    case 'pressure': return c.showPressure !== false && now?.pressure != null;
-    case 'nowcast': return c.showNowcast !== false && nowcastVerdict(p.minutely, p.units, p.t) != null;
-    case 'airQuality': return c.showAirQuality !== false && p.airQuality != null;
+    case 'wind': return now?.windSpeed != null;
+    case 'sun': return p.sun.sunrise != null && p.sun.sunset != null;
+    case 'moon': return hasCoords(p);
+    case 'uv': return now?.uvIndex != null;
+    case 'feelsLike': return now?.feelsLike != null;
+    case 'humidity': return now?.humidity != null;
+    case 'precipitation': return precipitationReading(p.forecast, p.units) != null;
+    case 'visibility': return now?.visibility != null;
+    case 'pressure': return now?.pressure != null;
+    case 'nowcast': return nowcastVerdict(p.minutely, p.units, p.t) != null;
+    case 'airQuality': return p.airQuality != null;
   }
 }
 
-/** The cards in the order the phone page shows them, filtered to what this wall can fill. */
-export function availableCards(p: CardInputs, order: readonly CardKey[]): CardKey[] {
-  return order.filter((k) => cardAvailable(p, k));
+/** The cards that are on, in the module's order, filtered to what this wall can fill. */
+export function availableCards(p: CardInputs): CardKey[] {
+  return resolveWeatherCards(p.config).filter((k) => cardHasData(p, k));
 }
 
 export function Instrument({ p, card, ctx, style }: { p: WeatherViewProps; card: CardKey; ctx: CardCtx; style?: React.CSSProperties }) {
@@ -281,10 +298,17 @@ function WindCard({ p, ctx, style }: CardProps) {
   return (
     <Card u={u} testId="fsw-card-wind" style={style}>
       <CardLabel icon={Wind} s={s}>{t(p, 'wind')}</CardLabel>
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: u }}>
-        <Compass speed={now.windSpeed!} fromDeg={now.windDirection} unit={unit} size={instrumentSize(ctx, s, ctx.land ? s * 16 : s * 15)} s={s} />
-        {foot && <div style={{ fontSize: s * 2.4, textAlign: 'center', flex: 'none' }}>{foot}</div>}
-      </div>
+      {isShortCell(ctx, s) ? (
+        <>
+          <BigValue s={s}>{Math.round(now.windSpeed!)}<Unit>{unit}</Unit></BigValue>
+          {foot && <Sentence s={s} style={{ opacity: .85 }}>{foot}</Sentence>}
+        </>
+      ) : (
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: u }}>
+          <Compass speed={now.windSpeed!} fromDeg={now.windDirection} unit={unit} size={instrumentSize(ctx, s, ctx.land ? s * 16 : s * 15)} s={s} />
+          {foot && <div style={{ fontSize: s * 2.4, textAlign: 'center', flex: 'none' }}>{foot}</div>}
+        </div>
+      )}
     </Card>
   );
 }
@@ -308,10 +332,16 @@ function SunCard({ p, ctx, style }: CardProps) {
     <Card u={u} testId="fsw-card-sun" style={style}>
       <CardLabel icon={leadSunrise ? Sunrise : Sunset} s={s}>{t(p, leadSunrise ? 'sunrise' : 'sunset')}</CardLabel>
       <BigValue s={s} style={{ fontSize: ctx.land ? s * 5.2 : s * 6, marginTop: u }}>{clockTime(p, lead)}</BigValue>
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <SunArc sunriseFrac={sunriseHour / 24} sunsetFrac={sunsetHour / 24} nowFrac={nowHour / 24} height={ctx.land ? s * 8 : s * 6.6} />
-      </div>
-      <div style={{ fontSize: s * 2.5, flex: 'none' }}>{t(p, leadSunrise ? 'sunsetAt' : 'sunriseAt', { time: clockTime(p, other) })}</div>
+      {isShortCell(ctx, s) ? (
+        <Sentence s={s} style={{ opacity: .85 }}>{t(p, leadSunrise ? 'sunsetAt' : 'sunriseAt', { time: clockTime(p, other) })}</Sentence>
+      ) : (
+        <>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <SunArc sunriseFrac={sunriseHour / 24} sunsetFrac={sunsetHour / 24} nowFrac={nowHour / 24} height={ctx.land ? s * 8 : s * 6.6} />
+          </div>
+          <div style={{ fontSize: s * 2.5, flex: 'none' }}>{t(p, leadSunrise ? 'sunsetAt' : 'sunriseAt', { time: clockTime(p, other) })}</div>
+        </>
+      )}
     </Card>
   );
 }
@@ -329,10 +359,19 @@ function MoonCard({ p, ctx, style }: CardProps) {
   return (
     <Card u={u} testId="fsw-card-moon" style={style}>
       <CardLabel icon={Moon} s={s}>{p.t(`fullscreen-weather.moon.${moonPhaseKey(illum.phase)}`)}</CardLabel>
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: `${u * .5}px 0` }}>
-        <MoonImage phase={illum.phase} size={instrumentSize(ctx, s, ctx.land ? s * 10 : s * 11.5)} />
-      </div>
-      <div style={{ fontSize: s * 2.4, textAlign: 'center', flex: 'none' }}>{foot}</div>
+      {isShortCell(ctx, s) ? (
+        <>
+          <div style={{ fontSize: s * 3, fontWeight: 500, marginTop: u, lineHeight: 1.2 }}>{foot}</div>
+          <Sentence s={s} style={{ opacity: .85 }}>{p.t('fullscreen-weather.moon.illuminated', { percent: Math.round(illum.fraction * 100) })}</Sentence>
+        </>
+      ) : (
+        <>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: `${u * .5}px 0` }}>
+            <MoonImage phase={illum.phase} size={instrumentSize(ctx, s, ctx.land ? s * 10 : s * 11.5)} />
+          </div>
+          <div style={{ fontSize: s * 2.4, textAlign: 'center', flex: 'none' }}>{foot}</div>
+        </>
+      )}
     </Card>
   );
 }
@@ -347,7 +386,7 @@ function UVCard({ p, ctx, style }: CardProps) {
       <BigValue s={s}>{uv}</BigValue>
       <div style={{ fontSize: s * 2.75, fontWeight: 600, marginTop: u * .5 }}>{t(p, `uvWord.${uvLevel(uv)}`)}</div>
       <ScaleBar gradient={UV_GRADIENT} pct={(uv / 11) * 100} u={u} style={{ marginTop: ctx.land ? u * 1.4 : 'auto' }} />
-      {ctx.land && rest != null && <Sentence s={s} style={{ opacity: .8, fontSize: s * 2.4 }}>{t(p, 'uvRest', { level: t(p, `uvWord.${uvLevel(rest)}`) })}</Sentence>}
+      {ctx.land && !isShortCell(ctx, s) && rest != null && <Sentence s={s} style={{ opacity: .8, fontSize: s * 2.4 }}>{t(p, 'uvRest', { level: t(p, `uvWord.${uvLevel(rest)}`) })}</Sentence>}
     </Card>
   );
 }
@@ -376,7 +415,7 @@ function HumidityCard({ p, style }: CardProps) {
   );
 }
 
-function PrecipitationCard({ p, style }: CardProps) {
+function PrecipitationCard({ p, ctx, style }: CardProps) {
   const { s, u } = p.scale;
   const reading = precipitationReading(p.forecast, p.units)!;
   const next = reading.next.vars?.date
@@ -388,7 +427,8 @@ function PrecipitationCard({ p, style }: CardProps) {
       {/* Three lines, as the phone writes it: the amount, "Today" in bold, then what comes next. */}
       <BigValue s={s} style={{ fontSize: s * 5.6 }}>{formatPrecipAmount(reading.today, p.units)}</BigValue>
       <div style={{ fontSize: s * 2.75, fontWeight: 700, lineHeight: 1.25, marginTop: u * .5 }}>{p.t('fullscreen-weather.today')}</div>
-      <Sentence s={s} style={{ opacity: .85, marginTop: 0, paddingTop: u * .2 }}>{next}</Sentence>
+      {/* The third line needs a card of about 24 type units (label, amount, "Today", two lines, padding); a shorter cell keeps the amount and the day. */}
+      {(ctx.height == null || ctx.height >= s * 24) && <Sentence s={s} style={{ opacity: .85, marginTop: 0, paddingTop: u * .2 }}>{next}</Sentence>}
     </Card>
   );
 }
@@ -414,12 +454,21 @@ function PressureCard({ p, ctx, style }: CardProps) {
   return (
     <Card u={u} testId="fsw-card-pressure" style={style}>
       <CardLabel icon={GaugeIcon} s={s}>{t(p, 'pressure')}</CardLabel>
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <Gauge value={reading.value} unit={reading.unit} frac={pressurePosition(hPa)} trend={trend}
-          size={instrumentSize(ctx, s, ctx.land ? s * 15 : s * 16)}
-          lowLabel={t(p, 'pressureLow')} highLabel={t(p, 'pressureHigh')} />
-      </div>
-      <div style={{ fontSize: s * 2.4, textAlign: 'center', opacity: .85, flex: 'none' }}>{t(p, `pressureTrend.${trend}`)}</div>
+      {isShortCell(ctx, s) ? (
+        <>
+          <BigValue s={s} style={{ fontSize: s * 5.6 }}>{reading.value}<Unit>{reading.unit}</Unit></BigValue>
+          <Sentence s={s} style={{ opacity: .85 }}>{t(p, `pressureTrend.${trend}`)}</Sentence>
+        </>
+      ) : (
+        <>
+          <div style={{ flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Gauge value={reading.value} unit={reading.unit} frac={pressurePosition(hPa)} trend={trend}
+              size={instrumentSize(ctx, s, ctx.land ? s * 15 : s * 16)}
+              lowLabel={t(p, 'pressureLow')} highLabel={t(p, 'pressureHigh')} />
+          </div>
+          <div style={{ fontSize: s * 2.4, textAlign: 'center', opacity: .85, flex: 'none' }}>{t(p, `pressureTrend.${trend}`)}</div>
+        </>
+      )}
     </Card>
   );
 }
@@ -449,21 +498,29 @@ export function AirQualityCard({ p, ctx, style }: CardProps) {
   const { s, u } = p.scale;
   const aqi = p.airQuality!.aqi;
   const level = airQualityLevel(aqi);
+  // The tablet's low, wide banner puts the bar at the foot; in a cell with
+  // room to spare (the list put the card in the Forecast grid's bottom row,
+  // or a tall Conditions row) that leaves a void above it, so the card
+  // stacks like the phone's instead, its body centred in the slack.
+  const low = ctx.land && !hasSlack(ctx, s);
+  const centred = ctx.land && hasSlack(ctx, s);
   return (
     <Card u={u} testId="fsw-card-airQuality" style={style}>
       <CardLabel icon={Leaf} s={s}>{t(p, 'airQuality')}</CardLabel>
-      <div style={{ fontSize: ctx.land ? s * 3.7 : s * 5.2, fontWeight: 500, letterSpacing: '-.01em', lineHeight: 1, marginTop: ctx.land ? u : u * 1.6 }}>{p.t(`air-quality.labels.${level}`)}</div>
-      {ctx.land ? (
-        <>
-          <Sentence s={s} style={{ marginTop: u * .5, opacity: .8, fontSize: s * 2.2, paddingTop: 0 }}>{t(p, `aqSentence.${level}`)}</Sentence>
-          <ScaleBar gradient={AQ_GRADIENT} pct={airQualityPosition(aqi)} u={u} style={{ marginTop: 'auto' }} />
-        </>
-      ) : (
-        <>
-          <ScaleBar gradient={AQ_GRADIENT} pct={airQualityPosition(aqi)} u={u} style={{ marginTop: u * 1.6 }} />
-          <Sentence s={s} style={{ marginTop: u * 1.4, opacity: .8, fontSize: s * 2.4, paddingTop: 0 }}>{t(p, `aqSentence.${level}`)}</Sentence>
-        </>
-      )}
+      <div style={centred ? { flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' } : { display: 'contents' }}>
+        <div style={{ fontSize: low ? s * 3.7 : s * 5.2, fontWeight: 500, letterSpacing: '-.01em', lineHeight: 1, marginTop: low ? u : u * 1.6 }}>{p.t(`air-quality.labels.${level}`)}</div>
+        {low ? (
+          <>
+            <Sentence s={s} style={{ marginTop: u * .5, opacity: .8, fontSize: s * 2.2, paddingTop: 0 }}>{t(p, `aqSentence.${level}`)}</Sentence>
+            <ScaleBar gradient={AQ_GRADIENT} pct={airQualityPosition(aqi)} u={u} style={{ marginTop: 'auto' }} />
+          </>
+        ) : (
+          <>
+            <ScaleBar gradient={AQ_GRADIENT} pct={airQualityPosition(aqi)} u={u} style={{ marginTop: u * 1.6 }} />
+            <Sentence s={s} style={{ marginTop: u * 1.4, opacity: .8, fontSize: s * 2.4, paddingTop: 0, flex: 'none' }}>{t(p, `aqSentence.${level}`)}</Sentence>
+          </>
+        )}
+      </div>
     </Card>
   );
 }

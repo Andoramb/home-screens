@@ -1185,6 +1185,64 @@ test('fullscreen-weather: switching Sky persists', async ({ page, request }) => 
   expect((await moduleConfig(request, 'fullscreen-weather')).skyLayer).toBe('off');
 });
 
+test('fullscreen-weather: the card list persists a switch, a drag and a reset', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('fullscreen-weather', { view: 'conditions' }));
+  const list = page.locator('[data-field-id="cards"]');
+  await expect(list).toBeVisible();
+
+  // Every card is on and the list is in its default order, so there is
+  // nothing to reset and no Off group.
+  await expect(list.getByRole('button', { name: 'Reset order' })).toBeDisabled();
+  await expect(list.locator('li[data-on="false"]')).toHaveCount(0);
+
+  // Switching a card off drops it below the divider and writes the list
+  // without it.
+  await autosaved(page, async () => {
+    await list.getByRole('switch', { name: 'Moon' }).click();
+  });
+  let cards = (await moduleConfig(request, 'fullscreen-weather')).cards as string[];
+  expect(cards).not.toContain('moon');
+  expect(cards).toHaveLength(10);
+  await expect(list.locator('li[data-card="moon"]')).toHaveAttribute('data-on', 'false');
+  await expect(list.getByRole('button', { name: 'Reset order' })).toBeEnabled();
+
+  // Dragging the first row below the second swaps them: same choreography
+  // as profiles-settings.spec.ts (dnd-kit's PointerSensor wants >5px of
+  // travel, closestCenter needs to pass the second row's midpoint).
+  const first = list.locator('li[data-on="true"]').nth(0);
+  const second = list.locator('li[data-on="true"]').nth(1);
+  const firstCard = await first.getAttribute('data-card');
+  const secondCard = await second.getAttribute('data-card');
+  const handleBox = (await first.getByRole('button', { name: /Drag to move/ }).boundingBox())!;
+  const secondBox = (await second.boundingBox())!;
+  await autosaved(page, async () => {
+    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2 + 12, { steps: 5 });
+    await page.mouse.move(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height / 2 + 8, { steps: 10 });
+    await page.mouse.move(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height, { steps: 5 });
+    await page.mouse.up();
+  });
+  cards = (await moduleConfig(request, 'fullscreen-weather')).cards as string[];
+  expect(cards.slice(0, 2)).toEqual([secondCard, firstCard]);
+  await expect(list.locator('li[data-on="true"]').nth(0)).toHaveAttribute('data-card', secondCard!);
+
+  // Switching the card back on appends it to the end of the list.
+  await autosaved(page, async () => {
+    await list.getByRole('switch', { name: 'Moon' }).click();
+  });
+  cards = (await moduleConfig(request, 'fullscreen-weather')).cards as string[];
+  expect(cards.at(-1)).toBe('moon');
+
+  // Reset puts the default order back, every card on.
+  await autosaved(page, async () => {
+    await list.getByRole('button', { name: 'Reset order' }).click();
+  });
+  cards = (await moduleConfig(request, 'fullscreen-weather')).cards as string[];
+  expect(cards).toEqual(['wind', 'sun', 'airQuality', 'moon', 'uv', 'feelsLike', 'precipitation', 'visibility', 'humidity', 'pressure', 'nowcast']);
+  await expect(list.getByRole('button', { name: 'Reset order' })).toBeDisabled();
+});
+
 test('fullscreen-photo: switching Mode persists', async ({ page, request }) => {
   await selectModule(page, request, buildModuleInstance('fullscreen-photo'));
 

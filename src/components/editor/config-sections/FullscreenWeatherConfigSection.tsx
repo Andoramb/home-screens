@@ -12,6 +12,8 @@ import { useEditorStore } from '@/stores/editor-store';
 import { useTranslate } from '@/i18n';
 import type { ModuleInstance, FullscreenWeatherConfig } from '@/types/config';
 import { clampDaysToShow } from '@/components/modules/fullscreen-weather/weather-view-utils';
+import { resolveWeatherCards } from '@/lib/fullscreen-weather-cards';
+import { WeatherCardsList } from './WeatherCardsList';
 import { WeatherSourceSelect, useConfiguredWeatherProviders } from './WeatherSourceSelect';
 import { ForecastDaysHint } from './ForecastDaysHint';
 
@@ -60,22 +62,6 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
     { value: 'standard', label: t('configSections.fullscreen-weather.mapStyleStandard') },
     { value: 'dark', label: t('configSections.fullscreen-weather.mapStyleDark') },
   ] as const;
-
-  // The cards, in the order the Conditions page draws them (air quality is
-  // its banner). What is on is what shows; the hint below says how.
-  const CARD_TOGGLES = [
-    ['showAirQuality', 'cardAirQuality'],
-    ['showMoon', 'cardMoon'],
-    ['showUV', 'cardUV'],
-    ['showFeelsLike', 'cardFeelsLike'],
-    ['showPrecipitation', 'cardPrecipitation'],
-    ['showVisibility', 'cardVisibility'],
-    ['showHumidity', 'cardHumidity'],
-    ['showPressure', 'cardPressure'],
-    ['showNowcast', 'cardNowcast'],
-    ['showWind', 'cardWind'],
-    ['showSun', 'cardSun'],
-  ] as const satisfies ReadonlyArray<readonly [keyof Config, string]>;
 
   // The panel is long enough that a hint between two toggles reads as one
   // more row, so the controls sit under named groups: the view first, since
@@ -233,17 +219,7 @@ export function FullscreenWeatherConfigSection({ mod, screenId }: { mod: ModuleI
             </>
           )}
           <SectionHeading>{t('configSections.weather.sections.cards')}</SectionHeading>
-          <p className="text-[11px] text-hs-text-faint leading-relaxed">
-            {t('configSections.fullscreen-weather.cardsHint')}
-          </p>
-          {CARD_TOGGLES.map(([key, labelKey]) => (
-            <Toggle
-              key={key}
-              label={t(`configSections.fullscreen-weather.${labelKey}`)}
-              checked={c[key] !== false}
-              onChange={(v) => set({ [key]: v })}
-            />
-          ))}
+          <WeatherCardsList value={resolveWeatherCards(c)} onChange={(cards) => set({ cards })} view={view} />
         </>
       )}
 

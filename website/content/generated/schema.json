@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 15,
+  "schemaVersion": 16,
   "categories": [
     "Full Screen",
     "Time & Date",
@@ -1184,7 +1184,7 @@
             "kind": "boolean",
             "text": "boolean"
           },
-          "description": "Next-hour rain strip (Panorama and Conditions, Pirate Weather only)",
+          "description": "Next-hour rain strip (Panorama and Wide strip, Pirate Weather only)",
           "default": true
         },
         {
@@ -1233,104 +1233,26 @@
           "default": true
         },
         {
-          "name": "showWind",
+          "name": "cards",
           "optional": true,
           "type": {
-            "kind": "boolean",
-            "text": "boolean"
+            "kind": "array",
+            "text": "FullscreenWeatherCard[]"
           },
-          "description": "Wind card: compass, speed and gusts (Forecast and Conditions)",
-          "default": true
-        },
-        {
-          "name": "showSun",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Sunrise and sunset card (Forecast and Conditions)",
-          "default": true
-        },
-        {
-          "name": "showMoon",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Moon card: tonight's phase and moonrise or moonset (Conditions)",
-          "default": true
-        },
-        {
-          "name": "showAirQuality",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Air quality card (Conditions, and Forecast in landscape). Needs an OpenWeatherMap key under Settings, Weather, whichever weather source you use",
-          "default": true
-        },
-        {
-          "name": "showUV",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "UV index card (Conditions)",
-          "default": true
-        },
-        {
-          "name": "showFeelsLike",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Feels-like card (Conditions)",
-          "default": true
-        },
-        {
-          "name": "showHumidity",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Humidity and dew point card (Conditions)",
-          "default": true
-        },
-        {
-          "name": "showPrecipitation",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Rainfall card: today's total and the next wet day (Conditions)",
-          "default": true
-        },
-        {
-          "name": "showVisibility",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Visibility card (Conditions)",
-          "default": true
-        },
-        {
-          "name": "showPressure",
-          "optional": true,
-          "type": {
-            "kind": "boolean",
-            "text": "boolean"
-          },
-          "description": "Pressure gauge card (Conditions)",
-          "default": true
+          "description": "The cards that are on, in the order they show (Forecast and Conditions)",
+          "default": [
+            "wind",
+            "sun",
+            "airQuality",
+            "moon",
+            "uv",
+            "feelsLike",
+            "precipitation",
+            "visibility",
+            "humidity",
+            "pressure",
+            "nowcast"
+          ]
         },
         {
           "name": "showAlerts",
@@ -7255,7 +7177,7 @@
             "text": "number"
           },
           "description": "Config schema version. The app updates it when it upgrades an older file; never edit it by hand",
-          "default": 15
+          "default": 16
         },
         {
           "name": "settings",

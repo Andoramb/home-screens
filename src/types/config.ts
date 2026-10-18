@@ -4302,6 +4302,14 @@ export type FullscreenWeatherSky = 'living' | 'still' | 'off';
  */
 export type FullscreenWeatherMapStyle = 'standard' | 'dark' | 'light';
 
+/**
+ * The instrument cards of the Forecast and Conditions views: the phone
+ * weather page's cards. `nowcast` is the minute-by-minute strip as a card and
+ * `airQuality` needs an OpenWeatherMap key.
+ */
+export type FullscreenWeatherCard =
+  | 'wind' | 'sun' | 'moon' | 'uv' | 'feelsLike' | 'humidity' | 'precipitation' | 'visibility' | 'pressure' | 'nowcast' | 'airQuality';
+
 export interface FullscreenWeatherConfig {
   /** `panorama`, `strip` (Wide strip), `almanac`, `ambient`, `week`, `hourly`, `forecast`, or `conditions` */
   view: FullscreenWeatherView;
@@ -4332,10 +4340,12 @@ export interface FullscreenWeatherConfig {
    */
   skyLayer?: FullscreenWeatherSky;
   /**
-   * Next-hour rain strip (Panorama and Conditions, Pirate Weather only)
+   * Next-hour rain strip (Panorama and Wide strip, Pirate Weather only)
    *
    * The minute-by-minute strip. Renders only when the provider returns
-   * minutely data (Pirate Weather today); hides itself otherwise.
+   * minutely data (Pirate Weather today); hides itself otherwise. The
+   * Forecast and Conditions pages have a card for the same data, which is
+   * on the `cards` list instead.
    */
   showNowcast: boolean;
   /**
@@ -4364,66 +4374,18 @@ export interface FullscreenWeatherConfig {
    */
   mapAnimate?: boolean;
   /**
-   * Wind card: compass, speed and gusts (Forecast and Conditions)
+   * The cards that are on, in the order they show (Forecast and Conditions)
    *
-   * Hides itself when the source sends no wind. Default true.
+   * Conditions draws every card on the list, in this order, two across (four
+   * in landscape); the air quality card keeps its wide shape wherever it
+   * sits. Forecast draws the first two under its map in portrait; in
+   * landscape the order fills the tablet grid's cells. A card not on the
+   * list is off. A card on the list still hides itself when the weather
+   * source does not send what it shows (no UV index, no minutely rain, no
+   * OpenWeatherMap key for air quality). Unset means the default order with
+   * every card on.
    */
-  showWind?: boolean;
-  /**
-   * Sunrise and sunset card (Forecast and Conditions)
-   *
-   * Default true.
-   */
-  showSun?: boolean;
-  /**
-   * Moon card: tonight's phase and moonrise or moonset (Conditions)
-   *
-   * Default true.
-   */
-  showMoon?: boolean;
-  /**
-   * Air quality card (Conditions, and Forecast in landscape). Needs an OpenWeatherMap key under
-   * Settings, Weather, whichever weather source you use
-   *
-   * Hides itself without the key. Default true.
-   */
-  showAirQuality?: boolean;
-  /**
-   * UV index card (Conditions)
-   *
-   * Hides itself when the source sends no UV index. Default true.
-   */
-  showUV?: boolean;
-  /**
-   * Feels-like card (Conditions)
-   *
-   * Hides itself when the source sends no feels-like temperature. Default true.
-   */
-  showFeelsLike?: boolean;
-  /**
-   * Humidity and dew point card (Conditions)
-   *
-   * Hides itself when the source sends no humidity. Default true.
-   */
-  showHumidity?: boolean;
-  /**
-   * Rainfall card: today's total and the next wet day (Conditions)
-   *
-   * Hides itself when the source sends no daily amounts. Default true.
-   */
-  showPrecipitation?: boolean;
-  /**
-   * Visibility card (Conditions)
-   *
-   * Hides itself when the source sends no visibility. Default true.
-   */
-  showVisibility?: boolean;
-  /**
-   * Pressure gauge card (Conditions)
-   *
-   * Hides itself when the source sends no pressure. Default true.
-   */
-  showPressure?: boolean;
+  cards?: FullscreenWeatherCard[];
   /**
    * Severe-weather banner
    *

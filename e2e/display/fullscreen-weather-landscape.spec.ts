@@ -610,3 +610,57 @@ test.describe('the wide strip view', () => {
     await expect(bands.first().locator('[data-testid="fsw-now-ring"]')).toHaveCount(1);
   });
 });
+
+test.describe('forecast on a wall fills its cells from the card list', () => {
+  /** The card keys on the page in DOM order, with the grid row each one sits on. */
+  async function placedCards(page: Page): Promise<Array<{ card: string; row: string }>> {
+    return page.locator('[data-testid^="fsw-card-"]').evaluateAll((els) => els.map((el) => ({
+      card: el.getAttribute('data-testid')!.slice('fsw-card-'.length),
+      row: getComputedStyle(el).gridRowStart,
+    })));
+  }
+
+  test('the short middle row takes the first two cards and the bottom row the next four, in list order', async ({ page, request }) => {
+    const r = await render(page, request, LANDSCAPE, {
+      view: 'forecast', showMap: true,
+      cards: ['wind', 'sun', 'moon', 'uv', 'feelsLike', 'pressure', 'humidity'],
+    }, { payload: PAYLOADS.plain() });
+    const placed = await placedCards(page);
+    expect(placed.map((p) => p.card)).toEqual(['wind', 'sun', 'moon', 'uv', 'feelsLike', 'pressure']);
+    expect(placed.map((p) => p.row)).toEqual(['2', '2', '3', '3', '3', '3']);
+    // A compass in the short row would come out the size of a coin: the
+    // wind card reads as a number there, and draws its compass below.
+    await expect(page.locator('[data-testid="fsw-card-wind"] [data-testid="fsw-compass"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="fsw-card-sun"] [data-testid="fsw-sun-arc"]')).toHaveCount(0);
+    expectNoCollisions(r, 'forecast/list order');
+  });
+
+  test('air quality keeps two cells wherever the list puts it', async ({ page, request }) => {
+    const r = await render(page, request, LANDSCAPE, {
+      view: 'forecast', showMap: true, cards: ['uv', 'sun', 'airQuality', 'moon', 'wind', 'pressure'],
+    }, { payload: PAYLOADS.plain() });
+    // Third on the list, so first in the bottom row, on two of its four
+    // cells; moon and wind take the other two and pressure is past the grid.
+    const placed = await placedCards(page);
+    expect(placed.map((p) => p.card)).toEqual(['uv', 'sun', 'airQuality', 'moon', 'wind']);
+    expect(placed.map((p) => p.row)).toEqual(['2', '2', '3', '3', '3']);
+    const aq = (await page.locator('[data-testid="fsw-card-airQuality"]').boundingBox())!;
+    const moon = (await page.locator('[data-testid="fsw-card-moon"]').boundingBox())!;
+    expect(aq.width).toBeGreaterThan(moon.width * 1.8);
+    expectNoCollisions(r, 'forecast/air quality third');
+  });
+
+  test('two cards grow down into the empty bottom row instead of leaving it blank', async ({ page, request }) => {
+    const r = await render(page, request, LANDSCAPE, {
+      view: 'forecast', showMap: true, cards: ['pressure', 'humidity'],
+    }, { payload: PAYLOADS.plain() });
+    const placed = await placedCards(page);
+    expect(placed.map((p) => p.card)).toEqual(['pressure', 'humidity']);
+    const pressure = (await page.locator('[data-testid="fsw-card-pressure"]').boundingBox())!;
+    const days = (await page.locator('[data-testid="fsw-days"]').boundingBox())!;
+    expect(Math.abs(pressure.y + pressure.height - (days.y + days.height))).toBeLessThan(4);
+    // Tall again, so the gauge draws.
+    await expect(page.locator('[data-testid="fsw-card-pressure"] [data-testid="fsw-gauge"]')).toHaveCount(1);
+    expectNoCollisions(r, 'forecast/two cards');
+  });
+});
