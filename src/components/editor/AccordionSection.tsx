@@ -1,13 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
+import { usePanelSectionReveal } from './panel-section-reveal';
 
-export default function AccordionSection({ title, defaultOpen = true, badge, children }: { title: string; defaultOpen?: boolean; /** Optional right-aligned summary, so a collapsed section can't hide state. */ badge?: React.ReactNode; children: React.ReactNode }) {
+export default function AccordionSection({ title, defaultOpen = true, badge, id, children }: {
+  title: string;
+  defaultOpen?: boolean;
+  /** Optional right-aligned summary, so a collapsed section can't hide state. */
+  badge?: React.ReactNode;
+  /** Registers the section so `revealPanelSection(id)` can open it from elsewhere in the panel. */
+  id?: string;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(defaultOpen);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  // Open and bring the heading into view once the height animation has
+  // settled, so the scroll lands on the final layout rather than mid-slide.
+  const reveal = useCallback(() => {
+    setOpen(true);
+    setTimeout(() => rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 250);
+  }, []);
+  usePanelSectionReveal(id, reveal);
+
   return (
-    <div>
+    <div ref={rootRef} data-panel-section={id}>
       <button
         type="button"
         onClick={() => setOpen(!open)}

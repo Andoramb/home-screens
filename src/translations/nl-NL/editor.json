@@ -4221,6 +4221,14 @@
       "dataUrlOrTextPlaceholder": "https://example.com"
     },
     "rain-map": {
+      "rainLikely": {
+        "title": "Alleen als regen waarschijnlijk is",
+        "help": "Verbergt de kaart op droge dagen. Er komt een voorwaarde bij die de kaart alleen toont als de kans op regen of sneeuw vandaag {percent}% of meer is.",
+        "button": "Alleen tonen als regen waarschijnlijk is",
+        "active": "Deze kaart verschijnt alleen als regen vandaag waarschijnlijk is.",
+        "edit": "Wijzigen bij Voorwaarden",
+        "needsLocation": "Stel eerst je locatie in bij Instellingen, zodat het scherm de verwachting kent."
+      },
       "styleDark": "Donker",
       "styleStandard": "Standaard",
       "latitude": "Breedtegraad (0 = wereldwijd)",
@@ -5218,7 +5226,10 @@
       "temperature": "Temperatuur nu",
       "precipChanceNow": "Kans op regen of sneeuw nu",
       "precipChanceNext6h": "Kans op regen of sneeuw in de komende 6 uur",
-      "precipChanceToday": "Kans op regen of sneeuw vandaag"
+      "precipChanceToday": "Kans op regen of sneeuw vandaag",
+      "alertActive": "Er geldt een weerwaarschuwing",
+      "alertSeverity": "Hoe ernstig de weerwaarschuwing is",
+      "alertTitle": "Naam van de weerwaarschuwing"
     }
   },
   "phoneSurfaces": {

@@ -4221,6 +4221,14 @@
       "dataUrlOrTextPlaceholder": "https://example.com"
     },
     "rain-map": {
+      "rainLikely": {
+        "title": "Only when rain is likely",
+        "help": "Hide the map on dry days. This adds a condition that shows it only when the chance of rain or snow today is {percent}% or more.",
+        "button": "Only show when rain is likely",
+        "active": "This map only shows when rain is likely today.",
+        "edit": "Change this in Conditions",
+        "needsLocation": "Set your location first, under Settings, so the display knows the forecast."
+      },
       "styleDark": "Dark",
       "styleStandard": "Standard",
       "latitude": "Latitude (0 = global)",
@@ -5218,7 +5226,10 @@
       "temperature": "Temperature right now",
       "precipChanceNow": "Chance of rain or snow right now",
       "precipChanceNext6h": "Chance of rain or snow in the next 6 hours",
-      "precipChanceToday": "Chance of rain or snow today"
+      "precipChanceToday": "Chance of rain or snow today",
+      "alertActive": "A weather warning is in force",
+      "alertSeverity": "How serious the weather warning is",
+      "alertTitle": "Weather warning name"
     }
   },
   "phoneSurfaces": {

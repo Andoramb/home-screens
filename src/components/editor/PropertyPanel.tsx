@@ -33,6 +33,7 @@ import PluginSecretsSection from './PluginSecretsSection';
 import PluginAuthSection from './PluginAuthSection';
 import { MousePointerClick, ChevronLeft, HelpCircle, Monitor, PanelRight, PanelRightClose, Sliders } from 'lucide-react';
 import AccordionSection from './AccordionSection';
+import { PANEL_SECTION_CONDITIONS } from './panel-section-reveal';
 import FontFamilyPicker from '@/components/ui/FontFamilyPicker';
 import LabeledField from '@/components/ui/LabeledField';
 import { resolveTitleFontSize, displayTextPercent, moduleBaseFontSize, textSizeDefinitionFor, TEXT_SCALE_MIN, TEXT_SCALE_MAX } from '@/lib/module-style';
@@ -876,7 +877,7 @@ export default function PropertyPanel({
           <ScheduleSection mod={selectedModule} screenId={selectedScreenId} />
         </AccordionSection>
 
-        <AccordionSection title={t('propertyPanel.sections.conditions')} defaultOpen={false}>
+        <AccordionSection title={t('propertyPanel.sections.conditions')} defaultOpen={false} id={PANEL_SECTION_CONDITIONS}>
           <VisibilityConditionsSection mod={selectedModule} screenId={selectedScreenId} />
         </AccordionSection>
 

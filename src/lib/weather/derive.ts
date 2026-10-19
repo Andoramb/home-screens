@@ -107,13 +107,27 @@ export function deriveWeatherConditions(
   };
 }
 
-function mapSeverity(s: string): 'minor' | 'moderate' | 'severe' | 'extreme' {
+export type AlertSeverity = 'minor' | 'moderate' | 'severe' | 'extreme';
+
+/** Lowercase severity word, `Unknown` folded into `minor`. Shared with `weather-state.ts`. */
+export function mapSeverity(s: string): AlertSeverity {
   switch (s) {
     case 'Extreme': return 'extreme';
     case 'Severe': return 'severe';
     case 'Moderate': return 'moderate';
     default: return 'minor';
   }
+}
+
+/**
+ * When an alert expires, as a millisecond instant. Providers stamp `expires`
+ * in seconds since the epoch (Pirate Weather sends it that way, NOAA is
+ * floored to it), so reading it as milliseconds dated every alert to January
+ * 1970. A value that is already in milliseconds is left alone.
+ */
+export function alertExpiresMs(expires: number | undefined): number | undefined {
+  if (typeof expires !== 'number' || !Number.isFinite(expires) || expires <= 0) return undefined;
+  return expires < 1e12 ? expires * 1000 : expires;
 }
 
 /** Derive a WeatherAlertsEvent from raw provider alerts. */
@@ -123,11 +137,14 @@ export function deriveWeatherAlerts(
   if (!alerts || alerts.length === 0) return null;
 
   return {
-    alerts: alerts.map((a) => ({
-      headline: a.title,
-      severity: mapSeverity(a.severity),
-      event: a.title,
-      expires: a.expires ? new Date(a.expires).toISOString() : undefined,
-    })),
+    alerts: alerts.map((a) => {
+      const expires = alertExpiresMs(a.expires);
+      return {
+        headline: a.title,
+        severity: mapSeverity(a.severity),
+        event: a.title,
+        expires: expires ? new Date(expires).toISOString() : undefined,
+      };
+    }),
   };
 }

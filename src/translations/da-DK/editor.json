@@ -4221,6 +4221,14 @@
       "dataUrlOrTextPlaceholder": "https://example.com"
     },
     "rain-map": {
+      "rainLikely": {
+        "title": "Kun når regn er sandsynlig",
+        "help": "Skjuler kortet på tørre dage. Det tilføjer en betingelse, der kun viser kortet, når chancen for regn eller sne i dag er {percent}% eller mere.",
+        "button": "Vis kun, når regn er sandsynlig",
+        "active": "Dette kort vises kun, når regn er sandsynlig i dag.",
+        "edit": "Ret det under Betingelser",
+        "needsLocation": "Angiv først din placering under Indstillinger, så skærmen kender vejrudsigten."
+      },
       "styleDark": "Mørkt",
       "styleStandard": "Standard",
       "latitude": "Breddegrad (0 = global)",
@@ -5218,7 +5226,10 @@
       "temperature": "Temperatur lige nu",
       "precipChanceNow": "Chance for regn eller sne lige nu",
       "precipChanceNext6h": "Chance for regn eller sne de næste 6 timer",
-      "precipChanceToday": "Chance for regn eller sne i dag"
+      "precipChanceToday": "Chance for regn eller sne i dag",
+      "alertActive": "Et vejrvarsel gælder",
+      "alertSeverity": "Hvor alvorligt vejrvarslet er",
+      "alertTitle": "Navn på vejrvarslet"
     }
   },
   "phoneSurfaces": {

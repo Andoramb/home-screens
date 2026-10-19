@@ -171,8 +171,11 @@ Shows or hides a module based on values published to the shared state bus. Most 
 - `weather.precip_chance_now`: chance of rain or snow this hour, 0 to 100
 - `weather.precip_chance_next_6h`: the highest chance in the next six hours
 - `weather.precip_chance_today`: the highest chance for the rest of today, on the display's calendar day, including the forecast's own figure for the day
+- `weather.alert_active`: `true` while a weather warning that has not expired is in force, otherwise `false`
+- `weather.alert_severity`: `minor`, `moderate`, `severe` or `extreme` for the most serious active warning, blank when there is none
+- `weather.alert_title`: that warning's name, such as "Winter Storm Warning", blank when there is none
 
-A chance key is blank when the provider does not report one, which a numeric condition treats as not met. Conditions follow Home Assistant-style semantics.
+A chance key is blank when the provider does not report one, which a numeric condition treats as not met. Only Pirate Weather and NOAA send warnings; on every other provider `weather.alert_active` stays `false`. Conditions follow Home Assistant-style semantics.
 
 {% type-reference name="ModuleVisibility" /%}
 

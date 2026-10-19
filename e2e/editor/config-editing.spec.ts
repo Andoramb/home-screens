@@ -2603,3 +2603,30 @@ test.describe('PropertyPanel Style section', () => {
     await expect(styleSection(page)).toBeVisible();
   });
 });
+
+test('rain-map: the "only when rain is likely" shortcut adds the condition and opens Conditions', async ({ page, request }) => {
+  await selectModule(page, request, buildModuleInstance('rain-map'));
+
+  const card = page.getByTestId('rain-likely-shortcut');
+  await expect(card).toBeVisible();
+  await autosaved(page, async () => {
+    await card.getByRole('button', { name: 'Only show when rain is likely' }).click();
+  });
+
+  // The condition is ordinary module visibility, saved like any other edit.
+  const config = await getConfig(request);
+  const rainMap = config.screens[0].modules.find((m) => m.type === 'rain-map')!;
+  expect(rainMap.visibility).toEqual({
+    conditions: [{ kind: 'numeric', sourceKey: 'weather.precip_chance_today', above: 30, aboveInclusive: true }],
+  });
+
+  // The Conditions section opened on it, and the card now says it is in place.
+  const conditions = page.locator('[data-panel-section="conditions"]');
+  await expect(conditions.getByRole('combobox', { name: 'What to check' })).toHaveValue('weather.precip_chance_today');
+  await expect(conditions.getByRole('spinbutton', { name: 'Above' })).toHaveValue('30');
+  await expect(card).toContainText('This map only shows when rain is likely today.');
+
+  // A second visit is a shortcut to the section, not a second condition.
+  await card.getByRole('button', { name: 'Change this in Conditions' }).click();
+  await expect(conditions.getByRole('combobox', { name: 'What to check' })).toHaveCount(1);
+});

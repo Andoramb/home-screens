@@ -5,7 +5,7 @@ import {
   deriveWeatherState,
   weatherProvidedStateKeys,
 } from '../weather-state';
-import type { ForecastDay, HourlyWeather } from '@/lib/weather/types';
+import type { ForecastDay, HourlyWeather, WeatherAlert } from '@/lib/weather/types';
 
 const K = WEATHER_STATE_KEYS;
 
@@ -30,7 +30,8 @@ describe('deriveWeatherState', () => {
   it('publishes every key blank when there is nothing to read', () => {
     // Blank, never absent: the rule engine's cold-start guard would swallow
     // the first edge after a key vanished (see the lifecycle note).
-    const blank = Object.fromEntries(WEATHER_STATE_KEY_LIST.map((k) => [k, '']));
+    // `alert_active` is the one definite value: no data means no warning.
+    const blank = Object.fromEntries(WEATHER_STATE_KEY_LIST.map((k) => [k, k === K.alertActive ? 'false' : '']));
     expect(deriveWeatherState(null, now)).toEqual(blank);
     expect(deriveWeatherState({}, now)).toEqual(blank);
     expect(deriveWeatherState({ hourly: [], forecast: [] }, now)).toEqual(blank);
@@ -117,6 +118,48 @@ describe('deriveWeatherState', () => {
     }, now);
     expect(values[K.precipChanceNow]).toBe('33');
     expect(values[K.precipChanceNextHours]).toBe('33');
+  });
+});
+
+describe('deriveWeatherState alerts', () => {
+  const nowSeconds = Math.floor(now.getTime() / 1000);
+  const alert = (over: Partial<WeatherAlert> = {}): WeatherAlert => ({
+    title: 'Wind Advisory',
+    severity: 'Moderate',
+    description: '',
+    expires: nowSeconds + 3600,
+    ...over,
+  });
+
+  it('reports no warning as false, not blank, so "no warning" conditions hold on every provider', () => {
+    const none = deriveWeatherState({ hourly: [hour(0)] }, now);
+    expect(none[K.alertActive]).toBe('false');
+    expect(none[K.alertSeverity]).toBe('');
+    expect(none[K.alertTitle]).toBe('');
+    expect(deriveWeatherState({ hourly: [hour(0)], alerts: [] }, now)[K.alertActive]).toBe('false');
+  });
+
+  it('publishes the most serious warning still in force', () => {
+    const values = deriveWeatherState({
+      alerts: [alert(), alert({ title: 'Winter Storm Warning', severity: 'Severe' }), alert({ severity: 'Unknown', title: 'Fog' })],
+    }, now);
+    expect(values[K.alertActive]).toBe('true');
+    expect(values[K.alertSeverity]).toBe('severe');
+    expect(values[K.alertTitle]).toBe('Winter Storm Warning');
+  });
+
+  it('drops expired warnings, reading expiry in seconds like the providers send it', () => {
+    const values = deriveWeatherState({ alerts: [alert({ expires: nowSeconds - 60 })] }, now);
+    expect(values[K.alertActive]).toBe('false');
+    // A millisecond stamp is honoured too.
+    const ms = deriveWeatherState({ alerts: [alert({ expires: now.getTime() + 60_000 })] }, now);
+    expect(ms[K.alertActive]).toBe('true');
+  });
+
+  it('counts a warning with no expiry as active', () => {
+    const values = deriveWeatherState({ alerts: [alert({ expires: 0 })] }, now);
+    expect(values[K.alertActive]).toBe('true');
+    expect(values[K.alertSeverity]).toBe('moderate');
   });
 });
 

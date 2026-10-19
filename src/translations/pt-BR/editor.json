@@ -4221,6 +4221,14 @@
       "dataUrlOrTextPlaceholder": "https://example.com"
     },
     "rain-map": {
+      "rainLikely": {
+        "title": "Só quando a chuva for provável",
+        "help": "Esconde o mapa nos dias secos. Isso adiciona uma condição que só o mostra quando a chance de chuva ou neve hoje é de {percent}% ou mais.",
+        "button": "Mostrar só quando a chuva for provável",
+        "active": "Este mapa só aparece quando a chuva é provável hoje.",
+        "edit": "Alterar em Condições",
+        "needsLocation": "Defina primeiro a sua localização em Configurações, para que a tela conheça a previsão."
+      },
       "styleDark": "Escuro",
       "styleStandard": "Padrão",
       "latitude": "Latitude (0 = global)",
@@ -5218,7 +5226,10 @@
       "temperature": "Temperatura agora",
       "precipChanceNow": "Chance de chuva ou neve agora",
       "precipChanceNext6h": "Chance de chuva ou neve nas próximas 6 horas",
-      "precipChanceToday": "Chance de chuva ou neve hoje"
+      "precipChanceToday": "Chance de chuva ou neve hoje",
+      "alertActive": "Há um alerta de tempo em vigor",
+      "alertSeverity": "Gravidade do alerta de tempo",
+      "alertTitle": "Nome do alerta de tempo"
     }
   },
   "phoneSurfaces": {

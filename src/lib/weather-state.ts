@@ -24,8 +24,8 @@
  * so there is no payload at all.
  */
 
-import type { ForecastDay, HourlyWeather } from '@/lib/weather/types';
-import { mapDescriptionToCondition } from '@/lib/weather/derive';
+import type { ForecastDay, HourlyWeather, WeatherAlert } from '@/lib/weather/types';
+import { alertExpiresMs, mapDescriptionToCondition, mapSeverity, type AlertSeverity } from '@/lib/weather/derive';
 import type { ProvidedStateKey } from '@/lib/shared-state-types';
 import type { TranslateFn } from '@/i18n';
 import { isoDateInTZ } from '@/lib/timezone';
@@ -42,6 +42,12 @@ export const WEATHER_STATE_KEYS = {
   precipChanceNextHours: 'weather.precip_chance_next_6h',
   /** 0 to 100, the highest chance for the rest of today in the display zone. */
   precipChanceToday: 'weather.precip_chance_today',
+  /** `true` while a weather warning that has not expired is in force, else `false`. */
+  alertActive: 'weather.alert_active',
+  /** `minor`, `moderate`, `severe` or `extreme` for the most serious active warning; blank when none. */
+  alertSeverity: 'weather.alert_severity',
+  /** The most serious active warning's name ("Winter Storm Warning"); blank when none. */
+  alertTitle: 'weather.alert_title',
 } as const;
 
 /** Every key this producer owns, for the caller's clear path. */
@@ -60,6 +66,32 @@ const CURRENT_ROW_GRACE_MS = 3 * 60 * 60 * 1000;
 export interface WeatherStatePayload {
   hourly?: HourlyWeather[];
   forecast?: ForecastDay[];
+  /** Only providers with warnings send this (Pirate Weather, NOAA). */
+  alerts?: WeatherAlert[];
+}
+
+const SEVERITY_RANK: Record<AlertSeverity, number> = { minor: 1, moderate: 2, severe: 3, extreme: 4 };
+
+/**
+ * The most serious warning still in force. An alert with no usable expiry
+ * counts as active: a provider that sends one without a time means it, and
+ * dropping it would silence the one case the household most wants to know
+ * about. `alert_active` is `false` rather than blank when a provider sends
+ * no warnings at all, so "no warning" conditions hold on every provider.
+ */
+function activeAlert(alerts: WeatherAlert[] | undefined, nowMs: number): { severity: AlertSeverity; title: string } | null {
+  if (!Array.isArray(alerts)) return null;
+  let best: { severity: AlertSeverity; title: string } | null = null;
+  for (const alert of alerts) {
+    if (!alert || typeof alert !== 'object') continue;
+    const expires = alertExpiresMs(alert.expires);
+    if (expires !== undefined && expires <= nowMs) continue;
+    const severity = mapSeverity(alert.severity);
+    if (!best || SEVERITY_RANK[severity] > SEVERITY_RANK[best.severity]) {
+      best = { severity, title: typeof alert.title === 'string' ? alert.title : '' };
+    }
+  }
+  return best;
 }
 
 export interface WeatherStateOptions {
@@ -116,6 +148,7 @@ export function deriveWeatherState(
     if (isoDateInTZ(new Date(t), opts.timezone) === today) todayRows.push(row.precipProbability);
   }
   const todayForecast = forecast[0]?.date === today ? forecast[0].precipProbability : undefined;
+  const alert = activeAlert(payload?.alerts, nowMs);
 
   return {
     [WEATHER_STATE_KEYS.condition]: current ? mapDescriptionToCondition(current.description ?? '') : '',
@@ -123,6 +156,9 @@ export function deriveWeatherState(
     [WEATHER_STATE_KEYS.precipChanceNow]: maxPercent([current?.precipProbability]),
     [WEATHER_STATE_KEYS.precipChanceNextHours]: maxPercent(nextHours),
     [WEATHER_STATE_KEYS.precipChanceToday]: maxPercent([...todayRows, todayForecast]),
+    [WEATHER_STATE_KEYS.alertActive]: String(alert !== null),
+    [WEATHER_STATE_KEYS.alertSeverity]: alert?.severity ?? '',
+    [WEATHER_STATE_KEYS.alertTitle]: alert?.title ?? '',
   };
 }
 
@@ -147,5 +183,12 @@ export function weatherProvidedStateKeys(t: TranslateFn): ProvidedStateKey[] {
       sampleValues: ['0', '80'],
     },
     { key: WEATHER_STATE_KEYS.precipChanceToday, label: t('stateKeys.weather.precipChanceToday'), sampleValues: ['0', '80'] },
+    { key: WEATHER_STATE_KEYS.alertActive, label: t('stateKeys.weather.alertActive'), sampleValues: ['true', 'false'] },
+    {
+      key: WEATHER_STATE_KEYS.alertSeverity,
+      label: t('stateKeys.weather.alertSeverity'),
+      sampleValues: ['minor', 'severe'],
+    },
+    { key: WEATHER_STATE_KEYS.alertTitle, label: t('stateKeys.weather.alertTitle'), sampleValues: ['Winter Storm Warning'] },
   ];
 }

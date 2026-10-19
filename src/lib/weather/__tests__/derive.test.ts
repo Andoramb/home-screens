@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { deriveWeatherConditions, deriveWeatherAlerts, rebuildTodayRow, reconcileTodayRange } from '../derive';
+import { alertExpiresMs, deriveWeatherConditions, deriveWeatherAlerts, rebuildTodayRow, reconcileTodayRange } from '../derive';
 import type { HourlyWeather, WeatherAlert } from '../types';
 
 describe('deriveWeatherConditions', () => {
@@ -204,5 +204,23 @@ describe('rebuildTodayRow', () => {
 
   it('has nothing to build from without a reading or a kept row', () => {
     expect(rebuildTodayRow('2026-09-04', [])).toBeUndefined();
+  });
+});
+
+describe('alertExpiresMs', () => {
+  it('reads provider seconds as an instant and leaves milliseconds alone', () => {
+    expect(alertExpiresMs(1_792_371_600)).toBe(1_792_371_600_000);
+    expect(alertExpiresMs(1_792_371_600_000)).toBe(1_792_371_600_000);
+  });
+
+  it('treats a missing, zero or unreadable expiry as none', () => {
+    expect(alertExpiresMs(undefined)).toBeUndefined();
+    expect(alertExpiresMs(0)).toBeUndefined();
+    expect(alertExpiresMs(Number.NaN)).toBeUndefined();
+  });
+
+  it('dates the event-bus expiry from seconds, not 1970', () => {
+    const event = deriveWeatherAlerts([{ title: 'Wind Advisory', severity: 'Moderate', description: '', expires: 1_792_371_600 }]);
+    expect(event?.alerts[0].expires).toBe('2026-10-19T01:00:00.000Z');
   });
 });
