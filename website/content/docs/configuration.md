@@ -175,7 +175,7 @@ Shows or hides a module based on values published to the shared state bus. Most 
 - `weather.alert_severity`: `minor`, `moderate`, `severe` or `extreme` for the most serious active warning, blank when there is none
 - `weather.alert_title`: that warning's name, such as "Winter Storm Warning", blank when there is none
 
-A chance key is blank when the provider does not report one, which a numeric condition treats as not met. Only Pirate Weather and NOAA send warnings; on every other provider `weather.alert_active` stays `false`. Conditions follow Home Assistant-style semantics.
+A chance key is blank when the provider does not report one, which a numeric condition treats as not met. Only Pirate Weather and NOAA send warnings, so the three warning keys appear in the key picker only while the household's default weather provider is one of those; on every other provider they are still published, with `weather.alert_active` at `false`, so a condition saved earlier keeps evaluating. Conditions follow Home Assistant-style semantics.
 
 {% type-reference name="ModuleVisibility" /%}
 

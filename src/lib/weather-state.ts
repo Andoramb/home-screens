@@ -163,13 +163,29 @@ export function deriveWeatherState(
 }
 
 /**
+ * The providers whose payload can carry warnings (they implement
+ * `getAlerts`). The warning keys are published on every provider, `false`
+ * and blank elsewhere, but the editor only offers them when the household's
+ * default provider is one of these, so nobody builds a rule that can never
+ * fire. `weather-state.test.ts` checks this list against the provider
+ * classes, so adding `getAlerts` to a provider fails the test until it is
+ * named here.
+ */
+export const WEATHER_ALERT_PROVIDERS: readonly string[] = ['pirateweather', 'noaa'];
+
+export function providerSendsWeatherAlerts(provider: string | undefined): boolean {
+  return provider !== undefined && WEATHER_ALERT_PROVIDERS.includes(provider);
+}
+
+/**
  * The keys the editor's condition picker, rules editor and Text-token picker
  * offer for the weather. Labels are household wording and translated; the
  * sample values show the machine words `condition` carries, which are
- * English identifiers rather than text to put on a wall.
+ * English identifiers rather than text to put on a wall. The warning keys
+ * are listed only when `alerts` is true (see `WEATHER_ALERT_PROVIDERS`).
  */
-export function weatherProvidedStateKeys(t: TranslateFn): ProvidedStateKey[] {
-  return [
+export function weatherProvidedStateKeys(t: TranslateFn, opts: { alerts: boolean } = { alerts: true }): ProvidedStateKey[] {
+  const chance: ProvidedStateKey[] = [
     {
       key: WEATHER_STATE_KEYS.condition,
       label: t('stateKeys.weather.condition'),
@@ -183,6 +199,10 @@ export function weatherProvidedStateKeys(t: TranslateFn): ProvidedStateKey[] {
       sampleValues: ['0', '80'],
     },
     { key: WEATHER_STATE_KEYS.precipChanceToday, label: t('stateKeys.weather.precipChanceToday'), sampleValues: ['0', '80'] },
+  ];
+  if (!opts.alerts) return chance;
+  return [
+    ...chance,
     { key: WEATHER_STATE_KEYS.alertActive, label: t('stateKeys.weather.alertActive'), sampleValues: ['true', 'false'] },
     {
       key: WEATHER_STATE_KEYS.alertSeverity,

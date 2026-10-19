@@ -201,9 +201,31 @@ describe('collectProvidedStateKeys host keys', () => {
     expect(keys).toEqual([{ key: 'plugin:ha:door', label: 'Door' }]);
   });
 
-  it('offers the weather keys when a location is configured', () => {
-    const keys = collectProvidedStateKeys([], { t, settings: settings(located) });
-    expect(keys.map((k) => k.key)).toEqual(Object.values(WEATHER_STATE_KEYS));
+  const CHANCE_KEYS = [
+    WEATHER_STATE_KEYS.condition, WEATHER_STATE_KEYS.temperature, WEATHER_STATE_KEYS.precipChanceNow,
+    WEATHER_STATE_KEYS.precipChanceNextHours, WEATHER_STATE_KEYS.precipChanceToday,
+  ];
+  const ALERT_KEYS = [WEATHER_STATE_KEYS.alertActive, WEATHER_STATE_KEYS.alertSeverity, WEATHER_STATE_KEYS.alertTitle];
+  const weather = (provider: string) => ({ provider, latitude: 0, longitude: 0, units: 'imperial' } as GlobalSettings['weather']);
+
+  it('offers the weather chance keys when a location is configured', () => {
+    const keys = collectProvidedStateKeys([], { t, settings: settings({ ...located, weather: weather('open-meteo') }) });
+    expect(keys.map((k) => k.key)).toEqual(CHANCE_KEYS);
+  });
+
+  it('adds the warning keys only when the default provider sends warnings', () => {
+    for (const provider of ['pirateweather', 'noaa']) {
+      const keys = collectProvidedStateKeys([], { t, settings: settings({ ...located, weather: weather(provider) }) });
+      expect(keys.map((k) => k.key)).toEqual([...CHANCE_KEYS, ...ALERT_KEYS]);
+    }
+    for (const provider of ['openweathermap', 'weatherapi', 'yr', 'smhi', 'metoffice', 'envcanada']) {
+      const keys = collectProvidedStateKeys([], { t, settings: settings({ ...located, weather: weather(provider) }) });
+      expect(keys.map((k) => k.key)).toEqual(CHANCE_KEYS);
+    }
+  });
+
+  it('withholds the warning keys without a location even on a warning provider', () => {
+    expect(collectProvidedStateKeys([], { t, settings: settings({ weather: weather('noaa') }) })).toEqual([]);
   });
 
   it('reads the legacy weather location when the top-level fields are absent', () => {
@@ -214,13 +236,13 @@ describe('collectProvidedStateKeys host keys', () => {
         weather: { provider: 'open-meteo', latitude: 44.7, longitude: -93.4, units: 'metric' },
       } as GlobalSettings,
     });
-    expect(keys.map((k) => k.key)).toEqual(Object.values(WEATHER_STATE_KEYS));
+    expect(keys.map((k) => k.key)).toEqual(CHANCE_KEYS);
   });
 
   it('lists calendar keys, then weather keys, when both are configured', () => {
     const keys = collectProvidedStateKeys([], {
       t,
-      settings: settings({ ...located, calendar: calendar({ holidayCountry: 'US' }) }),
+      settings: settings({ ...located, weather: weather('pirateweather'), calendar: calendar({ holidayCountry: 'US' }) }),
     });
     expect(keys.map((k) => k.key)).toEqual([
       ...Object.values(CALENDAR_STATE_KEYS),

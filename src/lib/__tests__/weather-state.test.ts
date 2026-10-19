@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+  WEATHER_ALERT_PROVIDERS,
   WEATHER_STATE_KEYS,
   WEATHER_STATE_KEY_LIST,
   deriveWeatherState,
+  providerSendsWeatherAlerts,
   weatherProvidedStateKeys,
 } from '../weather-state';
 import type { ForecastDay, HourlyWeather, WeatherAlert } from '@/lib/weather/types';
@@ -171,5 +173,39 @@ describe('weatherProvidedStateKeys', () => {
       expect(row.label).toMatch(/^t:stateKeys\.weather\./);
       expect(row.sampleValues?.length).toBeGreaterThan(0);
     }
+  });
+
+  it('leaves the warning keys out when asked, keeping the chance keys in order', () => {
+    const rows = weatherProvidedStateKeys((key) => `t:${key}`, { alerts: false });
+    expect(rows.map((r) => r.key)).toEqual([
+      K.condition, K.temperature, K.precipChanceNow, K.precipChanceNextHours, K.precipChanceToday,
+    ]);
+  });
+});
+
+describe('WEATHER_ALERT_PROVIDERS', () => {
+  it('names exactly the providers that implement getAlerts', async () => {
+    // The list gates the editor's warning keys; a provider that gains
+    // warnings must be added here, and one that loses them removed.
+    const providers: Record<string, { prototype: object }> = {
+      openweathermap: (await import('@/lib/weather/openweathermap')).OpenWeatherMapProvider,
+      weatherapi: (await import('@/lib/weather/weatherapi')).WeatherAPIProvider,
+      pirateweather: (await import('@/lib/weather/pirateweather')).PirateWeatherProvider,
+      noaa: (await import('@/lib/weather/noaa')).NOAAProvider,
+      'open-meteo': (await import('@/lib/weather/open-meteo')).OpenMeteoProvider,
+      yr: (await import('@/lib/weather/yr')).YrProvider,
+      smhi: (await import('@/lib/weather/smhi')).SMHIProvider,
+      metoffice: (await import('@/lib/weather/metoffice')).MetOfficeProvider,
+      envcanada: (await import('@/lib/weather/envcanada')).EnvCanadaProvider,
+    };
+    const withAlerts = Object.entries(providers)
+      .filter(([, cls]) => typeof (cls.prototype as { getAlerts?: unknown }).getAlerts === 'function')
+      .map(([id]) => id)
+      .sort();
+    expect(withAlerts).toEqual([...WEATHER_ALERT_PROVIDERS].sort());
+    expect(providerSendsWeatherAlerts('noaa')).toBe(true);
+    expect(providerSendsWeatherAlerts('open-meteo')).toBe(false);
+    expect(providerSendsWeatherAlerts('global')).toBe(false);
+    expect(providerSendsWeatherAlerts(undefined)).toBe(false);
   });
 });

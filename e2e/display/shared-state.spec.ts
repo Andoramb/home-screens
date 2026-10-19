@@ -556,8 +556,11 @@ function weatherPayload(precipChance: number) {
     description: p > 50 ? 'Light rain' : 'Clear',
     precipProbability: p,
   });
+  // The chance rides on the current hour, which is today whatever the clock
+  // says; a row two hours out is tomorrow late in the evening, and "today"
+  // would then miss it.
   return {
-    hourly: [row(0, Math.min(precipChance, 20)), row(2, precipChance), row(4, Math.min(precipChance, 20))],
+    hourly: [row(0, precipChance), row(1, precipChance), row(2, Math.min(precipChance, 20))],
     forecast: [],
   };
 }

@@ -69,7 +69,7 @@ To tune it, or to build it yourself:
 
 While you edit, the badge next to the condition shows today's actual chance on that display and whether the module is currently shown. Prefer a tighter window? Pick **Chance of rain or snow in the next 6 hours** instead, or group both with **Any of…** so a late-evening shower counts too. The same values work in display rules and in Text modules as `{weather.precip_chance_today}`.
 
-Weather warnings are on the same list when your weather comes from Pirate Weather or NOAA: **A weather warning is in force**, how serious it is, and its name. A display rule on the first one can jump to a weather screen the moment a warning is issued, and a Text module can show `{weather.alert_title}`.
+Weather warnings join the list when your weather comes from Pirate Weather or NOAA, the two services that send them: **A weather warning is in force**, how serious it is, and its name. On any other service these three do not appear in the picker. A display rule on the first one can jump to a weather screen the moment a warning is issued, and a Text module can show `{weather.alert_title}`.
 
 ## Next steps
 
