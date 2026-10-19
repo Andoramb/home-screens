@@ -16,8 +16,9 @@ import { isModuleEnabled } from '@/lib/schedule';
 import { getCalendarFetchWindow } from '@/lib/calendar-window';
 import { buildCalendarUrl, googleCalendarIdList, hasCalendarFeedSources } from '@/lib/calendar-sources';
 import { CALENDAR_STATE_KEY_LIST, deriveCalendarState } from '@/lib/calendar-state';
+import { WEATHER_STATE_KEY_LIST, deriveWeatherState, type WeatherStatePayload } from '@/lib/weather-state';
 import { sharedStateStore } from '@/lib/shared-state-store';
-import { CALENDAR_STATE_REPUBLISH_MS } from '@/lib/constants';
+import { HOST_STATE_REPUBLISH_MS } from '@/lib/constants';
 import { createTZDate } from '@/lib/timezone';
 import { useFormattingLocale } from '@/i18n';
 import type { CalendarEvent } from '@/types/config';
@@ -147,6 +148,31 @@ export function useSharedDisplayData(
     if (alertsEvent) eventBus.publish('weather.alerts', alertsEvent);
   }, [globalWeatherData, settings.weather.units]);
 
+  // Publish weather facts to the shared-state bus (see weather-state.ts).
+  // Same home and same reasons as the calendar facts below: the values must
+  // survive screen rotation and exist on displays that show no weather
+  // module. The interval moves "today" and "the next 6 hours" along between
+  // five-minute fetches without touching React state.
+  const timezone = settings.timezone;
+  useEffect(() => {
+    // No payload means nothing is being fetched: no location configured, or
+    // the first fetch hasn't landed. Release the keys rather than freezing the
+    // last reading on the bus; a failing fetch keeps its last-good payload
+    // and never takes this path.
+    if (!globalWeatherData) {
+      for (const key of WEATHER_STATE_KEY_LIST) sharedStateStore.clearKey(key);
+      return;
+    }
+    const payload = globalWeatherData as WeatherStatePayload;
+    const tick = () => {
+      const values = deriveWeatherState(payload, new Date(), { timezone });
+      for (const [key, value] of Object.entries(values)) sharedStateStore.publish(key, value);
+    };
+    tick();
+    const timer = setInterval(tick, HOST_STATE_REPUBLISH_MS);
+    return () => clearInterval(timer);
+  }, [globalWeatherData, timezone]);
+
   const calendarIdList = googleCalendarIdList(settings.calendar);
   const hasFeedSources = hasCalendarFeedSources(settings.calendar);
   // Widen the fetch window when a month/week grid view is on some screen;
@@ -193,7 +219,6 @@ export function useSharedDisplayData(
   // and "busy now" go stale on the clock, not on new data, and a ticking
   // `useState` in this hook would re-render the whole rotator every minute
   // on a Pi. Only modules subscribed to these exact keys re-render.
-  const timezone = settings.timezone;
   const locale = useFormattingLocale();
   const timeFormat = householdTimeFormat(settings.timeFormat, locale);
   useEffect(() => {
@@ -214,7 +239,7 @@ export function useSharedDisplayData(
       for (const [key, value] of Object.entries(values)) sharedStateStore.publish(key, value);
     };
     tick();
-    const timer = setInterval(tick, CALENDAR_STATE_REPUBLISH_MS);
+    const timer = setInterval(tick, HOST_STATE_REPUBLISH_MS);
     return () => clearInterval(timer);
   }, [calendarData, timezone, timeFormat, locale]);
 

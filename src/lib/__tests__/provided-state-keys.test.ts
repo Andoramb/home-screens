@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { CalendarSettings, ModuleInstance, ModuleType, Screen } from '@/types/config';
+import type { CalendarSettings, GlobalSettings, ModuleInstance, ModuleType, Screen } from '@/types/config';
 import { collectProvidedStateKeys, isStateProducerType } from '../provided-state-keys';
 import { CALENDAR_STATE_KEYS } from '../calendar-state';
+import { WEATHER_STATE_KEYS } from '../weather-state';
 
 // Definitions are controlled per-test; malformed shapes must be testable
 // here even though registerPluginModule filters them on the real path
@@ -155,11 +156,19 @@ describe('collectProvidedStateKeys host keys', () => {
     daysAhead: 30,
     ...over,
   });
+  // No location by default, so a calendar-only case sees calendar keys alone.
+  const settings = (over: Partial<GlobalSettings> = {}): GlobalSettings => ({
+    latitude: 0,
+    longitude: 0,
+    calendar: calendar(),
+    ...over,
+  } as GlobalSettings);
+  const located = { latitude: 44.7, longitude: -93.4 };
 
   it('offers the calendar keys when a calendar source is configured', () => {
     const keys = collectProvidedStateKeys([], {
       t,
-      calendar: calendar({ googleCalendarIds: ['family@example.com'] }),
+      settings: settings({ calendar: calendar({ googleCalendarIds: ['family@example.com'] }) }),
     });
     expect(keys.map((k) => k.key)).toEqual(Object.values(CALENDAR_STATE_KEYS));
   });
@@ -172,17 +181,17 @@ describe('collectProvidedStateKeys host keys', () => {
       { holidayCountry: 'US' },
     ];
     for (const over of feeds) {
-      expect(collectProvidedStateKeys([], { t, calendar: calendar(over) })).not.toEqual([]);
+      expect(collectProvidedStateKeys([], { t, settings: settings({ calendar: calendar(over) }) })).not.toEqual([]);
     }
   });
 
   it('withholds them when nothing would ever be fetched', () => {
-    expect(collectProvidedStateKeys([], { t, calendar: calendar() })).toEqual([]);
+    expect(collectProvidedStateKeys([], { t, settings: settings() })).toEqual([]);
     expect(collectProvidedStateKeys([], { t })).toEqual([]);
     // A disabled feed is not a source.
     expect(collectProvidedStateKeys([], {
       t,
-      calendar: calendar({ icalSources: [{ id: 'i1', type: 'ical', name: 'School', url: 'https://x/y.ics', color: '#fff', enabled: false }] }),
+      settings: settings({ calendar: calendar({ icalSources: [{ id: 'i1', type: 'ical', name: 'School', url: 'https://x/y.ics', color: '#fff', enabled: false }] }) }),
     })).toEqual([]);
   });
 
@@ -192,11 +201,38 @@ describe('collectProvidedStateKeys host keys', () => {
     expect(keys).toEqual([{ key: 'plugin:ha:door', label: 'Door' }]);
   });
 
+  it('offers the weather keys when a location is configured', () => {
+    const keys = collectProvidedStateKeys([], { t, settings: settings(located) });
+    expect(keys.map((k) => k.key)).toEqual(Object.values(WEATHER_STATE_KEYS));
+  });
+
+  it('reads the legacy weather location when the top-level fields are absent', () => {
+    const keys = collectProvidedStateKeys([], {
+      t,
+      settings: {
+        calendar: calendar(),
+        weather: { provider: 'open-meteo', latitude: 44.7, longitude: -93.4, units: 'metric' },
+      } as GlobalSettings,
+    });
+    expect(keys.map((k) => k.key)).toEqual(Object.values(WEATHER_STATE_KEYS));
+  });
+
+  it('lists calendar keys, then weather keys, when both are configured', () => {
+    const keys = collectProvidedStateKeys([], {
+      t,
+      settings: settings({ ...located, calendar: calendar({ holidayCountry: 'US' }) }),
+    });
+    expect(keys.map((k) => k.key)).toEqual([
+      ...Object.values(CALENDAR_STATE_KEYS),
+      ...Object.values(WEATHER_STATE_KEYS),
+    ]);
+  });
+
   it('lists host keys ahead of plugin keys', () => {
     defs.set('plugin:ha', { providesState: [{ key: 'plugin:ha:door', label: 'Door' }] });
     const keys = collectProvidedStateKeys(screensWith(makeModule({ type: 'plugin:ha' })), {
       t,
-      calendar: calendar({ holidayCountry: 'US' }),
+      settings: settings({ calendar: calendar({ holidayCountry: 'US' }) }),
     });
     expect(keys[0].key).toBe(CALENDAR_STATE_KEYS.nextEventTitle);
     expect(keys.at(-1)).toEqual({ key: 'plugin:ha:door', label: 'Door' });

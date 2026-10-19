@@ -4,6 +4,7 @@ import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
 import { renderOnDisplay } from '../helpers/display';
 import { putConfig } from '../helpers/api';
 import { writeSandboxFile } from '../helpers/sandbox';
+import { stubModuleData } from '../helpers/stubs';
 import {
   seedFixturePlugin,
   FIXTURE_PLUGIN_ID,
@@ -536,4 +537,80 @@ test('an editor watching a display arms fast shared-state re-reporting; an unwat
   await expect
     .poll(() => readHubSharedState(request, DISPLAY, WATCH_KEY), { timeout: 15_000, intervals: [1000] })
     .toBe('watched-2');
+});
+
+/**
+ * Host-published weather facts (`weather-state.ts`). The display derives them
+ * from the default provider's payload, which the browser fetches from
+ * `/api/weather` and the stub answers, so a spec can hand the display a rainy
+ * or a dry forecast and watch a gated module follow it. Rows are stamped
+ * relative to the real clock because "today" and "the next 6 hours" are
+ * measured from now.
+ */
+function weatherPayload(precipChance: number) {
+  const now = Date.now();
+  const row = (offsetHours: number, p: number) => ({
+    time: new Date(now + offsetHours * 3_600_000).toISOString(),
+    temp: 64,
+    icon: p > 50 ? 'rain' : 'clear-day',
+    description: p > 50 ? 'Light rain' : 'Clear',
+    precipProbability: p,
+  });
+  return {
+    hourly: [row(0, Math.min(precipChance, 20)), row(2, precipChance), row(4, Math.min(precipChance, 20))],
+    forecast: [],
+  };
+}
+
+const RAIN_GATE: ModuleVisibility = {
+  conditions: [{ kind: 'numeric', sourceKey: 'weather.precip_chance_today', above: 30, aboveInclusive: true }],
+  whenUnknown: 'hide',
+};
+
+test('a module gated on the host weather keys shows on a rainy forecast and hides on a dry one', async ({ page, request }) => {
+  await stubModuleData(page, { overrides: { weather: weatherPayload(80) } });
+
+  const config = baseConfig({
+    settings: { latitude: 44.7, longitude: -93.4 },
+    screens: [makeScreen('s1', 'S1', [
+      textModule('ANCHOR', { id: 'anchor' }),
+      conditioned('rain-gated', 'RAIN LIKELY', RAIN_GATE),
+      tokenText('rain-token', 'Chance {weather.precip_chance_today}', false),
+    ])],
+  });
+  await renderOnDisplay(page, request, config);
+  await expect(page.getByText('ANCHOR')).toBeVisible();
+  // No weather module is placed; the display-level fetch alone feeds the bus.
+  await expect(page.getByText('RAIN LIKELY')).toBeVisible();
+  await expect(page.getByText('Chance 80')).toBeVisible();
+
+  // A dry day. The newer route wins, and a reload is the cheapest way to
+  // refetch (the live poll is five minutes apart).
+  await page.route('**/api/weather*', (route) => route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(weatherPayload(5)),
+  }));
+  await page.reload();
+  await expect(page.getByText('ANCHOR')).toBeVisible();
+  await expect(page.getByText('Chance 5')).toBeVisible();
+  await expect(page.getByText('RAIN LIKELY')).toHaveCount(0);
+});
+
+test('the weather keys stay off the bus without a location', async ({ page, request }) => {
+  await stubModuleData(page, { overrides: { weather: weatherPayload(80) } });
+
+  await renderOnDisplay(page, request, baseConfig({
+    screens: [makeScreen('s1', 'S1', [
+      textModule('ANCHOR', { id: 'anchor' }),
+      conditioned('rain-gated', 'RAIN LIKELY', RAIN_GATE),
+      tokenText('rain-token', `Chance {weather.precip_chance_today}`, false),
+    ])],
+  }));
+  await expect(page.getByText('ANCHOR')).toBeVisible();
+  // Nothing is fetched, so the key is unknown: the gate hides, the token
+  // shows the unknown placeholder, and it stays that way.
+  await expect(page.getByText(`Chance ${UNKNOWN_VALUE_PLACEHOLDER}`)).toBeVisible();
+  await page.waitForTimeout(1_500);
+  await expect(page.getByText('RAIN LIKELY')).toHaveCount(0);
 });

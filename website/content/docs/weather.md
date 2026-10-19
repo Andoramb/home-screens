@@ -56,6 +56,17 @@ The **Rain Map** module gets its radar pictures from [LibreWXR](https://github.c
 
 If you run your own LibreWXR at home, enter its address under **Settings > Weather > Rain radar** and every display reads from it instead. Leave the field blank to use the community server.
 
+### Show the rain map only when rain is likely
+
+An empty radar is wasted space on a dry day. Every display with a location publishes its chance of rain or snow as values that a module's conditions can read, so the Rain Map can hide itself until rain is in the forecast:
+
+1. Select the Rain Map module in the editor and open its **Conditions** section.
+2. Turn on **Show only when conditions match** and add a **Number is in range** condition.
+3. Pick **Chance of rain or snow today** as the value, set it to **above 30**, and tick **Or equal to** if you want exactly 30 to count.
+4. Leave **Before data arrives** on **Hide the module**, so the map stays out of the way until the first forecast lands.
+
+While you edit, the badge next to the condition shows today's actual chance on that display and whether the module is currently shown. Prefer a tighter window? Pick **Chance of rain or snow in the next 6 hours** instead, or group both with **Any of…** so a late-evening shower counts too. The same values work in display rules and in Text modules as `{weather.precip_chance_today}`.
+
 ## Next steps
 
 - [Modules](/docs/modules#weather-and-environment): the weather module's fourteen views and the full-screen weather wall

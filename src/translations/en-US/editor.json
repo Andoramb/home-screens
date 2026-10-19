@@ -5212,6 +5212,13 @@
       "eventsToday": "Events today",
       "busyNow": "An event is happening now",
       "allDayToday": "An all-day event is on today"
+    },
+    "weather": {
+      "condition": "Weather right now",
+      "temperature": "Temperature right now",
+      "precipChanceNow": "Chance of rain or snow right now",
+      "precipChanceNext6h": "Chance of rain or snow in the next 6 hours",
+      "precipChanceToday": "Chance of rain or snow today"
     }
   },
   "phoneSurfaces": {

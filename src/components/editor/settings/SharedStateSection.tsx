@@ -116,7 +116,7 @@ function WatchingTab({ selectedDisplayId }: { selectedDisplayId: string | null }
     if (!config) return new Map<string, string>();
     const provided = collectProvidedStateKeys(
       getActiveScreens(config, selectedDisplayId),
-      { t, calendar: config.settings.calendar },
+      { t, settings: config.settings },
     );
     return new Map(provided.map((entry) => [entry.key, entry.label]));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- plugins triggers the recompute; collectProvidedStateKeys reads the registry, not the map.
@@ -317,7 +317,7 @@ function AvailableTab({ selectedDisplayId }: { selectedDisplayId: string | null 
 
   const options = useMemo(
     () => (config
-      ? collectProvidedStateKeys(getActiveScreens(config, selectedDisplayId), { t, calendar: config.settings.calendar })
+      ? collectProvidedStateKeys(getActiveScreens(config, selectedDisplayId), { t, settings: config.settings })
       : []),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- plugins triggers the recompute; collectProvidedStateKeys reads the registry, not the map.
     [config, selectedDisplayId, plugins, t],

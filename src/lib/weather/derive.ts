@@ -4,9 +4,10 @@ import type { WeatherConditionsEvent, WeatherAlertsEvent, WeatherCondition } fro
 /**
  * Extract a semantic weather condition from a description string.
  * Checks in priority order — "thunderstorm" beats "rain" since
- * thunderstorms also involve rain.
+ * thunderstorms also involve rain. Shared with `weather-state.ts`, so the
+ * event bus and the shared-state bus never disagree about the sky.
  */
-function mapDescriptionToCondition(description: string): WeatherCondition {
+export function mapDescriptionToCondition(description: string): WeatherCondition {
   const d = description.toLowerCase();
   if (d.includes('thunder')) return 'thunderstorm';
   if (d.includes('drizzle')) return 'drizzle';

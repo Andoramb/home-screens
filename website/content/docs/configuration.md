@@ -164,7 +164,15 @@ Controls when a module (or profile) is active based on day of week and time wind
 
 ### ModuleVisibility
 
-Shows or hides a module based on values published to the shared state bus. Most values come from plugins, via the SDK's `publishState`. Marking a plugin instance `backgroundProvider` keeps it publishing across screen rotation; the flag has no state-publishing effect on built-in modules, which do not publish anything of their own. Home Screens itself publishes a small set of built-in `calendar.*` values from the display's shared calendar fetch (next event, how many events today, whether something is on right now) whenever a calendar source is configured, those need no module on screen and survive rotation. Conditions follow Home Assistant-style semantics.
+Shows or hides a module based on values published to the shared state bus. Most values come from plugins, via the SDK's `publishState`. Marking a plugin instance `backgroundProvider` keeps it publishing across screen rotation; the flag has no state-publishing effect on built-in modules, which do not publish anything of their own. Home Screens itself publishes two small sets of built-in values that need no module on screen and survive rotation. `calendar.*` comes from the display's shared calendar fetch (next event, how many events today, whether something is on right now) whenever a calendar source is configured. `weather.*` comes from the default weather provider whenever a location is set:
+
+- `weather.condition`: `clear`, `clouds`, `rain`, `drizzle`, `snow`, `thunderstorm`, `fog` or `wind`, read from the current hour
+- `weather.temperature`: the current reading in the household's unit, whole degrees
+- `weather.precip_chance_now`: chance of rain or snow this hour, 0 to 100
+- `weather.precip_chance_next_6h`: the highest chance in the next six hours
+- `weather.precip_chance_today`: the highest chance for the rest of today, on the display's calendar day, including the forecast's own figure for the day
+
+A chance key is blank when the provider does not report one, which a numeric condition treats as not met. Conditions follow Home Assistant-style semantics.
 
 {% type-reference name="ModuleVisibility" /%}
 

@@ -5212,6 +5212,13 @@
       "eventsToday": "Afspraken vandaag",
       "busyNow": "Er is nu een afspraak bezig",
       "allDayToday": "Vandaag is er een afspraak van de hele dag"
+    },
+    "weather": {
+      "condition": "Het weer nu",
+      "temperature": "Temperatuur nu",
+      "precipChanceNow": "Kans op regen of sneeuw nu",
+      "precipChanceNext6h": "Kans op regen of sneeuw in de komende 6 uur",
+      "precipChanceToday": "Kans op regen of sneeuw vandaag"
     }
   },
   "phoneSurfaces": {

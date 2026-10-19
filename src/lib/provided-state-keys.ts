@@ -1,7 +1,9 @@
-import type { CalendarSettings, ModuleType, Screen } from '@/types/config';
+import type { GlobalSettings, ModuleType, Screen } from '@/types/config';
 import { getAllModuleDefinitions, getModuleDefinition, type ProvidedStateKey } from '@/lib/module-registry';
 import { calendarProvidedStateKeys } from '@/lib/calendar-state';
+import { weatherProvidedStateKeys } from '@/lib/weather-state';
 import { hasAnyCalendarSource } from '@/lib/calendar-sources';
+import { getLocation } from '@/lib/location';
 import type { TranslateFn } from '@/i18n';
 import { logger } from '@/lib/logger';
 
@@ -34,19 +36,22 @@ function collectStateProviderKeys(): ProvidedStateKey[] {
  * alone, so the values exist whether or not a calendar module is placed.
  *
  * `t` supplies the household-facing labels (plugin manifests carry their own
- * untranslated strings; built-ins should not). Passing the calendar settings
- * gates the calendar keys on a source actually being configured — without one
- * nothing is ever fetched, nothing is ever published, and a condition built on
- * these keys would silently hide its module forever.
+ * untranslated strings; built-ins should not). The settings gate each group
+ * on its fetch actually running: the calendar keys need a calendar source,
+ * the weather keys need a location. Without those nothing is ever fetched,
+ * nothing is ever published, and a condition built on these keys would
+ * silently hide its module forever.
  */
 export interface HostStateKeyContext {
   t: TranslateFn;
-  calendar?: CalendarSettings;
+  settings?: GlobalSettings;
 }
 
 function collectHostStateKeys(host: HostStateKeyContext): ProvidedStateKey[] {
-  if (!hasAnyCalendarSource(host.calendar)) return [];
-  return calendarProvidedStateKeys(host.t);
+  const out: ProvidedStateKey[] = [];
+  if (hasAnyCalendarSource(host.settings?.calendar)) out.push(...calendarProvidedStateKeys(host.t));
+  if (getLocation(host.settings)) out.push(...weatherProvidedStateKeys(host.t));
+  return out;
 }
 
 /**

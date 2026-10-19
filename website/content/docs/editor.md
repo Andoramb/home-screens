@@ -427,7 +427,7 @@ Beyond scheduling, the Property Panel has two separate sections that control whe
 
 ### Conditions
 
-Conditions show a module only when live values match rules you define. Values come from plugins that share state, for example the Home Assistant plugin publishing sensor readings.
+Conditions show a module only when live values match rules you define. Values come from plugins that share state, for example the Home Assistant plugin publishing sensor readings, and from Home Screens itself: the display's own calendar (the next event, how many events are on today) and its weather (the weather right now, the temperature, and the chance of rain or snow now, in the next six hours and today). The built-in values appear in the key picker as soon as a calendar source or a location is set up; see [Weather](/docs/weather#show-the-rain-map-only-when-rain-is-likely) for a worked example.
 
 - **Show only when conditions match**: the master switch for this section. Leave it off and the module ignores conditions entirely. Turn it on with no conditions added and the module always shows.
 - **Conditions**: add one or more rules. There are six kinds:

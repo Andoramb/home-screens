@@ -116,7 +116,7 @@ export default function SortableRuleCard({ rule, index, isExpanded, onToggleExpa
     [config, selectedDisplayId],
   );
   const providedKeys = useMemo(
-    () => collectProvidedStateKeys(screens, { t, calendar: config?.settings.calendar }),
+    () => collectProvidedStateKeys(screens, { t, settings: config?.settings }),
     [screens, config, t],
   );
 

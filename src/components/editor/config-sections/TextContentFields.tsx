@@ -20,7 +20,7 @@ export function TextContentFields({ config: c, set }: ConfigControlsProps<TextCo
   const selectedDisplayId = useEditorStore((s) => s.selectedDisplayId);
   const providedKeys = useMemo(
     () => (editorConfig
-      ? collectProvidedStateKeys(getActiveScreens(editorConfig, selectedDisplayId), { t, calendar: editorConfig.settings.calendar })
+      ? collectProvidedStateKeys(getActiveScreens(editorConfig, selectedDisplayId), { t, settings: editorConfig.settings })
       : []),
     [editorConfig, selectedDisplayId, t],
   );

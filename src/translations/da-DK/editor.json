@@ -5212,6 +5212,13 @@
       "eventsToday": "Begivenheder i dag",
       "busyNow": "Der er en begivenhed i gang nu",
       "allDayToday": "Der er en heldagsbegivenhed i dag"
+    },
+    "weather": {
+      "condition": "Vejret lige nu",
+      "temperature": "Temperatur lige nu",
+      "precipChanceNow": "Chance for regn eller sne lige nu",
+      "precipChanceNext6h": "Chance for regn eller sne de næste 6 timer",
+      "precipChanceToday": "Chance for regn eller sne i dag"
     }
   },
   "phoneSurfaces": {
