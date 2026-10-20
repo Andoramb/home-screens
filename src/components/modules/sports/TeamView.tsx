@@ -32,9 +32,9 @@ function TeamRow({ logo, abbr, record, score, bright, rank }: {
   );
 }
 
-export function TeamView({ cards, kickoff }: { cards: TeamCard[]; kickoff: KickoffFn }) {
+export function TeamView({ cards, kickoff, rotateIntervalMs }: { cards: TeamCard[]; kickoff: KickoffFn; rotateIntervalMs: number }) {
   const t = useTranslate('modules');
-  const index = useRotatingIndex(cards.length, 10000);
+  const index = useRotatingIndex(cards.length, rotateIntervalMs);
   const card = cards[index];
   if (!card) return null;
 

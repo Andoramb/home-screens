@@ -4330,7 +4330,8 @@
       "favoriteTeamsRemove": "{team} verwijderen",
       "favoriteTeamsDrag": "{team} verplaatsen",
       "favoritesOnly": "Alleen wedstrijden van mijn teams tonen",
-      "tickerSpeed": "Tickersnelheid (sec/wedstrijd)"
+      "tickerSpeed": "Tickersnelheid (sec/wedstrijd)",
+      "rotateSeconds": "Volgende pagina elke (seconden)"
     },
     "standings": {
       "viewTable": "Tabel",

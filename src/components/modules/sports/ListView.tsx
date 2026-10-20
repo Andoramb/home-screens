@@ -1,26 +1,50 @@
+'use client';
+
 import type { Game } from '@/lib/espn';
 import { leagueWallCode } from '@/lib/espn';
 import { favoriteSide } from '@/lib/sports-order';
-import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, FAVORITE_GUTTER, type KickoffFn } from './shared';
+import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, FAVORITE_GUTTER, GamePagesFooter, gamePagesKey, type KickoffFn } from './shared';
+import { usePagedFit } from '../shared/usePagedFit';
+import { usePagedRotation } from '@/hooks/usePagedRotation';
 
-export function ListView({ games, kickoff, favorites = [] }: { games: Game[]; kickoff: KickoffFn; favorites?: string[] }) {
+/**
+ * One row per game. Rows that do not fit are not clipped: the list is
+ * measured once per game list / box / type size, cut into pages of whole
+ * rows, and pages turn on the rotate interval. The favorites sorted first
+ * are on page one. Everything fits -> one page, no rotation.
+ */
+export function ListView({ games, kickoff, favorites = [], rotateIntervalMs, fontSize }: {
+  games: Game[]; kickoff: KickoffFn; favorites?: string[]; rotateIntervalMs: number; fontSize: number;
+}) {
   const gutter = favorites.length > 0;
-  // `safe center`: centered when the games fit, pinned to the top when they
-  // overflow, so the favorites that were sorted first stay on screen on a
-  // 60-game Saturday instead of the middle of the list. Cards does the same.
+  const { ref, pages } = usePagedFit('[data-game-row]', gamePagesKey(games, favorites, fontSize));
+  const pageCount = pages?.length ?? 1;
+  const { index } = usePagedRotation(pageCount, rotateIntervalMs);
+  const visible = pages ? new Set(pages[index] ?? []) : null;
+
+  // `safe center`: centered when the games fit, pinned to the top while the
+  // measuring pass has every row rendered.
   return (
-    <div className="flex flex-col h-full w-full gap-0.5 px-2 overflow-hidden" style={{ justifyContent: 'safe center' }}>
-      {games.map((game) => {
+    <div className="flex flex-col h-full w-full px-2 gap-1">
+      <div
+        ref={ref}
+        data-game-pages={pageCount}
+        className="flex flex-col flex-1 min-h-0 gap-0.5 overflow-hidden"
+        style={{ justifyContent: 'safe center' }}
+      >
+      {games.map((game, i) => {
         const awayWins = isWinner(game, 'away');
         const homeWins = isWinner(game, 'home');
         const side = favoriteSide(game, favorites);
         const barColor = side === 'away' ? game.awayTeamColor : side === 'home' ? game.homeTeamColor : null;
+        const hidden = visible !== null && !visible.has(i);
 
         return (
           <div
             key={game.id}
+            data-game-row
             className="relative flex items-center gap-2 py-1 border-b border-white/5 last:border-0"
-            style={gutter ? { paddingLeft: FAVORITE_GUTTER } : undefined}
+            style={{ display: hidden ? 'none' : undefined, paddingLeft: gutter ? FAVORITE_GUTTER : undefined }}
           >
             <FavoriteBar color={barColor} inset="18%" />
             <span
@@ -82,6 +106,8 @@ export function ListView({ games, kickoff, favorites = [] }: { games: Game[]; ki
           </div>
         );
       })}
+      </div>
+      <GamePagesFooter pages={pages} index={index} />
     </div>
   );
 }

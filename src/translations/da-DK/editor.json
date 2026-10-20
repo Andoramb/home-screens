@@ -4330,7 +4330,8 @@
       "favoriteTeamsRemove": "Fjern {team}",
       "favoriteTeamsDrag": "Flyt {team}",
       "favoritesOnly": "Vis kun mine holds kampe",
-      "tickerSpeed": "Båndhastighed (sek./kamp)"
+      "tickerSpeed": "Båndhastighed (sek./kamp)",
+      "rotateSeconds": "Næste side hver (sekunder)"
     },
     "standings": {
       "viewTable": "Tabel",

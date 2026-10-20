@@ -1,4 +1,5 @@
 export { TeamLogo } from '../shared/TeamLogo';
+import { PaginationDots } from '../shared/PaginationDots';
 
 /**
  * The favorite marker: a thin strip in the favorite team's own color along
@@ -87,6 +88,30 @@ export function GameStatus({
       >
         {(state === 'pre' && kickoff) || status}
       </span>
+    </div>
+  );
+}
+
+/**
+ * The measure key for a paged games view: what changes a row's height or the
+ * set of rows. Scores and clocks are left out on purpose, since a refresh
+ * that only moved a score must not send the view back to page one.
+ */
+export function gamePagesKey(games: { id: string }[], favorites: string[], fontSize: number): string {
+  return `${games.map((g) => g.id).join(',')}|${favorites.length > 0}|${fontSize}`;
+}
+
+/**
+ * The page counter under a paged games view. Reserved (empty) during the
+ * measuring pass so the rows are measured against the box they will get,
+ * and gone when everything fits on one page.
+ */
+export function GamePagesFooter({ pages, index }: { pages: number[][] | null; index: number }) {
+  const count = pages?.length ?? 0;
+  if (pages !== null && count <= 1) return null;
+  return (
+    <div className="flex justify-end shrink-0" style={{ minHeight: '0.6em' }} data-game-pages-footer>
+      <PaginationDots total={count} current={index} threshold={8} />
     </div>
   );
 }

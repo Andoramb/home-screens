@@ -4330,7 +4330,8 @@
       "favoriteTeamsRemove": "Retirer {team}",
       "favoriteTeamsDrag": "Déplacer {team}",
       "favoritesOnly": "Afficher seulement les matchs de mes équipes",
-      "tickerSpeed": "Vitesse du téléscripteur (s/match)"
+      "tickerSpeed": "Vitesse du téléscripteur (s/match)",
+      "rotateSeconds": "Page suivante toutes les (secondes)"
     },
     "standings": {
       "viewTable": "Tableau",

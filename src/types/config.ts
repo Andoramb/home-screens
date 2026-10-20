@@ -3213,6 +3213,13 @@ export interface SportsConfig {
    * @default 5
    */
   tickerSpeed?: number;
+  /**
+   * How long each game, team or page of games stays up before the next
+   * (scoreboard, team, cards and list views), in milliseconds
+   *
+   * @default 10000
+   */
+  rotateIntervalMs?: number;
 }
 
 // Todoist module config

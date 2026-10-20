@@ -19,6 +19,7 @@ export function SportsConfigSection({ mod, screenId }: { mod: ModuleInstance; sc
     favoritesOnly?: boolean;
     refreshIntervalMs?: number;
     tickerSpeed?: number;
+    rotateIntervalMs?: number;
   }>(mod, screenId);
 
   const SPORTS_VIEWS: { value: SportsView; label: string }[] = [
@@ -89,6 +90,16 @@ export function SportsConfigSection({ mod, screenId }: { mod: ModuleInstance; sc
           max={10}
           step={1}
           onChange={(v) => set({ tickerSpeed: v })}
+        />
+      )}
+      {view !== 'ticker' && (
+        <Slider
+          label={t('configSections.sports.rotateSeconds')}
+          value={(c.rotateIntervalMs ?? 10000) / 1000}
+          min={5}
+          max={60}
+          step={5}
+          onChange={(v) => set({ rotateIntervalMs: v * 1000 })}
         />
       )}
       <RefreshIntervalSlider

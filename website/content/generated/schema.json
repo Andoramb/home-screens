@@ -4106,6 +4106,17 @@
           },
           "description": "Scroll speed for ticker view",
           "defaultText": "5"
+        },
+        {
+          "name": "rotateIntervalMs",
+          "optional": true,
+          "type": {
+            "kind": "number",
+            "text": "number"
+          },
+          "description": "How long each game, team or page of games stays up before the next (scoreboard, team, cards and list views), in milliseconds",
+          "defaultText": "10000",
+          "default": 10000
         }
       ],
       "views": [

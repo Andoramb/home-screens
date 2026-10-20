@@ -908,6 +908,7 @@ const MODULE_DEFINITIONS: ModuleDefinition[] = [
       favoriteTeams: [],
       favoritesOnly: false,
       refreshIntervalMs: FETCH_KEY_REGISTRY['sports']?.ttlMs ?? 60_000,
+      rotateIntervalMs: 10000,
     },
     defaultSize: { w: 480, h: 340 },
   },

@@ -41,6 +41,14 @@ const SPORTS_TWO = {
   ],
 };
 
+/** A college Saturday in miniature: fourteen final games, more than a small box can show at once. */
+const SPORTS_MANY = {
+  games: Array.from({ length: 14 }, (_, i) => ({
+    ...SPORTS_GAME, id: `5${String(i).padStart(2, '0')}`, league: 'NCAAF',
+    awayTeamAbbr: `AW${i + 1}`, homeTeamAbbr: `HM${i + 1}`,
+  })),
+};
+
 /** One card with its game in progress. */
 const SPORTS_TEAM_LIVE = {
   cards: [{
@@ -659,6 +667,34 @@ export const NEWS_FINANCE_VARIANTS: ConfigVariant[] = [
     stubBody: { cards: [{ ...SPORTS_TEAM_LIVE.cards[0], featured: { ...SPORTS_TEAM_LIVE.cards[0].featured, homeScore: null, awayScore: null } }] },
     config: { view: 'team', favoriteTeams: ['nfl:MIN'] },
     expect: async (mod) => { await has('Q3 4:12')(mod); await count('.tabular-nums.leading-none', 0)(mod); },
+  },
+
+  {
+    // Fourteen cards in a box that holds a few: the grid is paged (whole rows
+    // only), never clipped, with the first game on page one and the page
+    // counter under the grid.
+    type: 'sports', name: 'cards-paged', kind: 'networked', stubKey: 'sports', stubBody: SPORTS_MANY,
+    config: { view: 'cards', rotateIntervalMs: 60_000 },
+    size: { w: 480, h: 260 },
+    expect: async (mod) => {
+      await has('AW1')(mod);
+      await expect.poll(async () => Number(await mod.locator('[data-game-pages]').getAttribute('data-game-pages'))).toBeGreaterThan(1);
+      await expect(mod.locator('[data-game-card]:visible').first()).toContainText('AW1');
+      await expect(mod.locator('[data-game-card]:visible')).not.toHaveCount(14);
+      await expect(mod.locator('[data-game-pages-footer]')).toBeVisible();
+    },
+  },
+  {
+    // The same list as rows, with the page interval turned down: the last
+    // game, hidden on page one, comes up on its own when the page turns.
+    type: 'sports', name: 'list-paged-rotate', kind: 'networked', stubKey: 'sports', stubBody: SPORTS_MANY,
+    config: { view: 'list', rotateIntervalMs: 400 },
+    size: { w: 480, h: 200 },
+    expect: async (mod) => {
+      await has('AW1')(mod);
+      await expect.poll(async () => Number(await mod.locator('[data-game-pages]').getAttribute('data-game-pages'))).toBeGreaterThan(1);
+      await expect(mod.locator('[data-game-row]:visible').last()).toContainText('AW14', { timeout: 15_000 });
+    },
   },
 
   // -- standings --

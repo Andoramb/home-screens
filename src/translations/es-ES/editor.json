@@ -4330,7 +4330,8 @@
       "favoriteTeamsRemove": "Quitar {team}",
       "favoriteTeamsDrag": "Mover {team}",
       "favoritesOnly": "Mostrar solo los partidos de mis equipos",
-      "tickerSpeed": "Velocidad del ticker (s/partido)"
+      "tickerSpeed": "Velocidad del ticker (s/partido)",
+      "rotateSeconds": "Siguiente página cada (segundos)"
     },
     "standings": {
       "viewTable": "Tabla",

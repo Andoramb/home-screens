@@ -28,6 +28,8 @@ interface SportsModuleProps {
 }
 
 const DEFAULT_REFRESH_MS = FETCH_KEY_REGISTRY['sports']?.ttlMs ?? 60_000;
+/** Seconds a game, team or page stays up (see SportsConfig.rotateIntervalMs). */
+const DEFAULT_ROTATE_MS = 10_000;
 const NO_GAMES: Game[] = [];
 
 export default function SportsModule({ config, style, timezone, timeFormat }: SportsModuleProps) {
@@ -46,6 +48,7 @@ export default function SportsModule({ config, style, timezone, timeFormat }: Sp
   const view = config.view ?? 'scoreboard';
   const favorites = useMemo(() => config.favoriteTeams ?? [], [config.favoriteTeams]);
   const refreshMs = config.refreshIntervalMs ?? DEFAULT_REFRESH_MS;
+  const rotateMs = config.rotateIntervalMs ?? DEFAULT_ROTATE_MS;
 
   // The team view reads its own route; the other views read the scoreboard.
   // An empty URL means "do not fetch", so only the active source is polled.
@@ -78,7 +81,7 @@ export default function SportsModule({ config, style, timezone, timeFormat }: Sp
     if (gate) return gate;
     return (
       <ModuleWrapper style={style}>
-        <TeamView cards={cards} kickoff={kickoff} />
+        <TeamView cards={cards} kickoff={kickoff} rotateIntervalMs={rotateMs} />
       </ModuleWrapper>
     );
   }
@@ -92,9 +95,9 @@ export default function SportsModule({ config, style, timezone, timeFormat }: Sp
 
   return (
     <ModuleWrapper style={style}>
-      {view === 'scoreboard' && <ScoreboardView games={games} kickoff={kickoff} favorites={favorites} />}
-      {view === 'cards' && <CardsView games={games} kickoff={kickoff} favorites={favorites} />}
-      {view === 'list' && <ListView games={games} kickoff={kickoff} favorites={favorites} />}
+      {view === 'scoreboard' && <ScoreboardView games={games} kickoff={kickoff} favorites={favorites} rotateIntervalMs={rotateMs} />}
+      {view === 'cards' && <CardsView games={games} kickoff={kickoff} favorites={favorites} rotateIntervalMs={rotateMs} fontSize={style.fontSize} />}
+      {view === 'list' && <ListView games={games} kickoff={kickoff} favorites={favorites} rotateIntervalMs={rotateMs} fontSize={style.fontSize} />}
       {view === 'ticker' && <TickerView games={games} speed={config.tickerSpeed ?? 4} />}
     </ModuleWrapper>
   );

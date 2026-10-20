@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { TEXT_OPACITY, ink } from '@/lib/constants';
 import { SectionHeader } from '../shared/SectionHeader';
 import { usePagedRotation } from '@/hooks/usePagedRotation';
-import { useFontsReady } from '@/hooks/useFontsReady';
+import { usePagedFit } from '../shared/usePagedFit';
 import { newsItemKey } from '@/hooks/useNewsFeeds';
 import { clampLines, formatNewsAge, isBreaking, metaParts } from './news-shared';
 import { useViewCommand } from './news-hooks';
@@ -24,83 +23,11 @@ export default function ListView({ items, config, t, locale, timezone, newKeys, 
   // re-measure on its identity would re-page (and so reset to page 1) even
   // when the rendered rows are byte-identical. Key on what the rows say.
   const rowsKey = items.map((i) => `${newsItemKey(i)}|${i.title}|${i.description}|${i.imageUrl ?? ''}|${i.source}`).join('\u0001');
-  const listRef = useRef<HTMLDivElement>(null);
-  // The box the ResizeObserver last reported, as part of the measure key: a
-  // module that is resized, or whose font arrives a render after it mounts,
-  // must page again against the new box.
-  const [boxKey, setBoxKey] = useState('');
-  // Row heights are measured text, so the web font swapping in changes them
-  // all. The box does not change with it, so nothing else here would notice.
-  const fontsReady = useFontsReady();
 
   // Everything that changes a row's height. The measurement belongs to exactly
   // one of these keys.
-  const measureKey = [rowsKey, config.showDescription, config.descriptionLines, config.showImages, config.showTimestamp, config.showSource, config.singleLineTitles, fontScaleKey, boxKey, fontsReady].join('|');
-
-  // The key is stored WITH the pages, and a stale key reads as null — the
-  // measuring pass in which every row is rendered so its height can be read.
-  // Deriving the reset rather than firing it from an effect is what makes this
-  // safe: on the render where the key changes, the rows are already all on
-  // screen for the layout effect below to measure. Resetting from a passive
-  // effect instead put a paint between the two, and the reset could land after
-  // a measurement it was meant to invalidate — which left the list stuck in
-  // its measuring pass, every row rendered and clipped at the box edge.
-  const [fit, setFit] = useState<{ key: string; pages: number[][] }>({ key: '', pages: [] });
-  const pages = fit.key === measureKey ? fit.pages : null;
-
-  // Size the last measurement saw; a ResizeObserver callback reporting
-  // anything else (including the first real layout after a hidden mount)
-  // triggers a re-measure.
-  const measuredRef = useRef<{ w: number; h: number } | null>(null);
-
-  // No dependency array on purpose: the effect runs after every render and
-  // returns immediately unless the pages are stale, so it can never miss a key
-  // change. A dependency list is what made the old version stall — the reset and
-  // the measurement batched into one commit, the listed deps came out unchanged,
-  // and the effect never ran again.
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- see above; a dep list reintroduces the stall
-  useLayoutEffect(() => {
-    if (pages !== null) return;
-    const el = listRef.current;
-    if (!el) return;
-    const rows = Array.from(el.querySelectorAll<HTMLElement>('[data-news-row]'));
-    const available = el.clientHeight;
-    // Not laid out yet (hidden screen, zero-height box): leave the measuring
-    // pass in place and let the ResizeObserver below call us back.
-    if (available <= 0 || rows.some((r) => r.offsetHeight === 0)) return;
-    measuredRef.current = { w: el.clientWidth, h: el.clientHeight };
-    const gap = parseFloat(getComputedStyle(el).rowGap || '0') || 0;
-    const result: number[][] = [];
-    let page: number[] = [];
-    let used = 0;
-    rows.forEach((row, i) => {
-      const h = row.offsetHeight;
-      const needed = page.length === 0 ? h : used + gap + h;
-      if (page.length > 0 && needed > available) {
-        result.push(page);
-        page = [i];
-        used = h;
-      } else {
-        page.push(i);
-        used = needed;
-      }
-    });
-    if (page.length > 0) result.push(page);
-    setFit({ key: measureKey, pages: result.length > 0 ? result : [[]] });
-  });
-
-  // Re-measure when the box itself changes size (font scaling, editor resize).
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(() => {
-      const m = measuredRef.current;
-      if (m && Math.abs(m.h - el.clientHeight) < 1 && Math.abs(m.w - el.clientWidth) < 1) return;
-      setBoxKey(`${Math.round(el.clientWidth)}x${Math.round(el.clientHeight)}`);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
+  const measureKey = [rowsKey, config.showDescription, config.descriptionLines, config.showImages, config.showTimestamp, config.showSource, config.singleLineTitles, fontScaleKey].join('|');
+  const { ref: listRef, pages } = usePagedFit('[data-news-row]', measureKey);
 
   const pageCount = pages?.length ?? 1;
   const { index: pageIndex, next, prev } = usePagedRotation(pageCount, config.rotateIntervalMs);

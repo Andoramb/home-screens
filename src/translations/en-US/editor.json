@@ -4330,7 +4330,8 @@
       "favoriteTeamsRemove": "Remove {team}",
       "favoriteTeamsDrag": "Drag to move {team}",
       "favoritesOnly": "Only show my teams' games",
-      "tickerSpeed": "Ticker Speed (sec/game)"
+      "tickerSpeed": "Ticker Speed (sec/game)",
+      "rotateSeconds": "Next page every (seconds)"
     },
     "standings": {
       "viewTable": "Table",

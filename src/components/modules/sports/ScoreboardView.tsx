@@ -53,8 +53,8 @@ function TeamRow({
   );
 }
 
-export function ScoreboardView({ games, kickoff, favorites = [] }: { games: Game[]; kickoff: KickoffFn; favorites?: string[] }) {
-  const index = useRotatingIndex(games.length, 10000);
+export function ScoreboardView({ games, kickoff, favorites = [], rotateIntervalMs }: { games: Game[]; kickoff: KickoffFn; favorites?: string[]; rotateIntervalMs: number }) {
+  const index = useRotatingIndex(games.length, rotateIntervalMs);
   const game = games[index];
 
   if (!game) return null;

@@ -1,9 +1,13 @@
+'use client';
+
 import type { Game } from '@/lib/espn';
 import { leagueWallCode } from '@/lib/espn';
 import { favoriteSide } from '@/lib/sports-order';
-import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, FAVORITE_GUTTER, type KickoffFn } from './shared';
+import { TeamLogo, isWinner, formatScore, GameStatus, FavoriteBar, RankTag, FAVORITE_GUTTER, GamePagesFooter, gamePagesKey, type KickoffFn } from './shared';
+import { usePagedFit } from '../shared/usePagedFit';
+import { usePagedRotation } from '@/hooks/usePagedRotation';
 
-function GameCard({ game, kickoff, favorites }: { game: Game; kickoff: KickoffFn; favorites: string[] }) {
+function GameCard({ game, kickoff, favorites, hidden }: { game: Game; kickoff: KickoffFn; favorites: string[]; hidden: boolean }) {
   const awayWins = isWinner(game, 'away');
   const homeWins = isWinner(game, 'home');
   const side = favoriteSide(game, favorites);
@@ -11,8 +15,12 @@ function GameCard({ game, kickoff, favorites }: { game: Game; kickoff: KickoffFn
 
   return (
     <div
+      data-game-card
       className="relative bg-white/5 rounded-lg p-2.5 flex flex-col gap-1.5"
-      style={favorites.length > 0 ? { paddingLeft: `calc(0.625rem + ${FAVORITE_GUTTER})` } : undefined}
+      style={{
+        display: hidden ? 'none' : undefined,
+        paddingLeft: favorites.length > 0 ? `calc(0.625rem + ${FAVORITE_GUTTER})` : undefined,
+      }}
     >
       <FavoriteBar color={barColor} inset="14%" />
       <div className="flex items-center justify-between" style={{ fontSize: '0.6em' }}>
@@ -66,12 +74,34 @@ function GameCard({ game, kickoff, favorites }: { game: Game; kickoff: KickoffFn
   );
 }
 
-export function CardsView({ games, kickoff, favorites = [] }: { games: Game[]; kickoff: KickoffFn; favorites?: string[] }) {
+/**
+ * Two cards to a row. Cards that do not fit are not clipped: the grid is
+ * measured once per game list / box / type size, cut into pages of whole
+ * rows, and pages turn on the rotate interval. A college Saturday is sixty
+ * games, which is thirty rows, which is many pages. Everything fits -> one
+ * page, no rotation.
+ */
+export function CardsView({ games, kickoff, favorites = [], rotateIntervalMs, fontSize }: {
+  games: Game[]; kickoff: KickoffFn; favorites?: string[]; rotateIntervalMs: number; fontSize: number;
+}) {
+  const { ref, pages } = usePagedFit('[data-game-card]', gamePagesKey(games, favorites, fontSize), 2);
+  const pageCount = pages?.length ?? 1;
+  const { index } = usePagedRotation(pageCount, rotateIntervalMs);
+  const visible = pages ? new Set(pages[index] ?? []) : null;
+
   return (
-    <div className="grid grid-cols-2 gap-2 h-full w-full p-2 overflow-hidden" style={{ alignContent: 'safe center' }}>
-      {games.map((game) => (
-        <GameCard key={game.id} game={game} kickoff={kickoff} favorites={favorites} />
-      ))}
+    <div className="flex flex-col h-full w-full p-2 gap-1.5">
+      <div
+        ref={ref}
+        data-game-pages={pageCount}
+        className="grid grid-cols-2 gap-2 flex-1 min-h-0 overflow-hidden"
+        style={{ alignContent: 'safe center' }}
+      >
+        {games.map((game, i) => (
+          <GameCard key={game.id} game={game} kickoff={kickoff} favorites={favorites} hidden={visible !== null && !visible.has(i)} />
+        ))}
+      </div>
+      <GamePagesFooter pages={pages} index={index} />
     </div>
   );
 }
