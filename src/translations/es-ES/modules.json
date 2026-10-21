@@ -268,7 +268,6 @@
     "alertSeverityExpires": "{severity} · Caduca {expires}",
     "noWeatherData": "Sin datos meteorológicos",
     "noForecastData": "Sin datos de previsión",
-    "locationNotSet": "Ubicación no establecida",
     "setLocationInSettings": "Configura tu ubicación en Ajustes",
     "next60Minutes": "Próximos 60 minutos",
     "noPrecipitationExpected": "No se esperan precipitaciones",
@@ -1193,7 +1192,7 @@
     "currentTime": "Hora actual: {time}"
   },
   "common": {
-    "locationNotConfigured": "Ubicación no configurada",
+    "locationNotSet": "Ubicación no establecida",
     "pluginNotAvailable": "Complemento no disponible: {name}",
     "moduleFailed": "No se pudo mostrar este elemento.",
     "setLocationLink": "Indicar tu ubicación",

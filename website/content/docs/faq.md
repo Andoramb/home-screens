@@ -36,6 +36,8 @@ The report itself carries no location and no network address, and it never conta
 
 Disable it at any time in **Settings > Status > Anonymous Telemetry**, which shows the same list, so you can always check it against this page. Everything else (your config, meals, chores, photos, calendars) stays on your Pi.
 
+If you sign in with Google using Home Screens' own app, the sign-in, and each renewal of its keys (at most about once an hour), pass through Home Screens' sign-in helper at auth.homescreens.dev, which keeps nothing; your events and photos come straight from Google to your Pi. The [privacy policy](/privacy) has the details.
+
 ### How do I give my kids access to check off chores?
 
 Home Screens has a separate kid-friendly view at `/chores`. It is **not password-protected**, even when you have set a password for the editor: anyone on your home network who opens that address can use it. That is deliberate, so a kid never has to log in, and it is worth knowing before you open your network up to guests.
@@ -120,7 +122,7 @@ Each choice also sees everything above it in that list, so someone on Early acce
 
 ### Can Home Screens install updates by itself?
 
-Yes. Turn on **Show advanced options** at the bottom of **Settings > System & updates**, then switch on **Install updates automatically** and pick a **Time of day** when nobody is looking at the screen. Once a day at that time it installs any new version of the updates you picked under **Which updates to get**, and the screen restarts for about a minute. If an update needs the whole device restarted to finish, it leaves that to you: **Settings > System & updates** and the remote's Settings sheet say **Restart to finish the update** until someone does.
+Yes. Turn on **Show advanced options** at the bottom of **Settings > System & updates**, then switch on **Install updates automatically** and pick a **Time of day** when nobody is looking at the screen. Once a day at that time it installs any new version of the updates you picked under **Which updates to get**, and the screen restarts for about a minute. If an update changed something the screen only picks up after a restart, it restarts the screen for you once the new version is up, so there is nothing left to finish. The device itself is never restarted.
 
 It is careful about what it installs:
 
@@ -159,7 +161,7 @@ Most users don't need to. Home Screens runs on port 3000 and is accessed at `htt
 
 ### How many modules can I add to a screen?
 
-There is no hard limit. In practice, performance depends on your hardware. A Raspberry Pi 4 with 2 GB RAM handles 10--15 modules per screen comfortably. More powerful hardware can handle more. If you notice sluggishness, try reducing the number of modules that make frequent API calls (weather, stocks, news).
+There is no hard limit. In practice, performance depends on your hardware. A Raspberry Pi 4 with 2 GB RAM handles 10 to 15 modules per screen comfortably. More powerful hardware can handle more. If you notice sluggishness, try reducing the number of modules that make frequent API calls (weather, stocks, news).
 
 ### Does it work with Home Assistant?
 
@@ -194,9 +196,9 @@ Whichever provider you pick, set your location first at **Settings > Location & 
 
 Home Screens supports four photo sources for the **Photo Slideshow** and **Full-Screen Photo Viewer** modules:
 
-- **Your library**: photos and videos you upload from the editor or the phone, or import from Google Photos or an iCloud link; manage them under **Settings > Pictures & videos**
+- **Local Photos** (your library): photos and videos you upload from the editor or the phone, or import from Google Photos or an iCloud link; manage them under **Settings > Pictures & videos**
 - **[Immich](https://immich.app)**: a self-hosted Google Photos alternative; browse and display photos from your Immich library with album, person (face recognition), and favorites filtering
-- **iCloud shared album**: paste a public shared album link from Apple Photos; no account or API key needed
+- **iCloud Shared Album**: paste a public shared album link from Apple Photos; no account or API key needed
 - **OneDrive**: photos straight from a folder and its subfolders in your personal OneDrive, after a one-time Microsoft sign-in (see [OneDrive photos](/docs/modules#one-drive-photos))
 
 For **background rotation**, four sources are available: **Unsplash** (HD stock photos), **NASA APOD** (Astronomy Picture of the Day), **Immich**, and **iCloud shared albums**.
@@ -234,7 +236,7 @@ Profiles let you show different sets of screens based on a schedule:
 1. Go to **Settings > Automation > Profiles** and click **Add a profile**
 2. Give it a name (e.g., "Morning", "Work Hours", "Evening")
 3. Select which screens to include
-4. Set the days of the week and a time window (e.g., Monday--Friday, 6:00--9:00)
+4. Set the days of the week and a time window (e.g., Monday to Friday, 6:00 to 9:00)
 
 The display will automatically switch to the matching profile at the scheduled time. You can also activate profiles manually from the settings or via the API. See the [Editor Guide](/docs/editor#profiles) for more details.
 

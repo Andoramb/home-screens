@@ -268,7 +268,6 @@
     "alertSeverityExpires": "{severity} · Verloopt {expires}",
     "noWeatherData": "Geen weergegevens",
     "noForecastData": "Geen verwachtingsgegevens",
-    "locationNotSet": "Locatie niet ingesteld",
     "setLocationInSettings": "Stel je locatie in via Instellingen",
     "next60Minutes": "Komende 60 minuten",
     "noPrecipitationExpected": "Geen neerslag verwacht",
@@ -1188,7 +1187,7 @@
     "currentTime": "Nu: {time}"
   },
   "common": {
-    "locationNotConfigured": "Locatie niet ingesteld",
+    "locationNotSet": "Locatie niet ingesteld",
     "pluginNotAvailable": "Plug-in niet beschikbaar: {name}",
     "moduleFailed": "Dit onderdeel kon niet worden getoond.",
     "setLocationLink": "Locatie instellen",

@@ -30,7 +30,7 @@ The install command is on the [Install](/docs/getting-started#install-script) pa
 | `--version v1.2.0` | Install a specific release instead of the latest |
 | `--port 8080` | Run the server on a custom port instead of the default 3000 |
 | `--non-interactive` | Skip all prompts and use defaults (portrait 90° rotation, auto-detected resolution) |
-| `--display-only` | Install as a display-only Pi that points at an existing Home Screens hub. Skips Node.js, the app, and the server service. Installs Chromium, labwc and the kiosk launcher, the boot splash, autologin, and the hardware reporter. Requires `--backend`. |
+| `--display-only` | Install as a display-only Pi that points at an existing Home Screens hub. Skips Node.js, the app, and the server service. Installs Chromium, labwc and the programs the kiosk uses with them (kanshi, wlopm, wlr-randr, wtype), the kiosk launcher and its hourly self-update, the boot splash, autologin, and the hardware reporter. Requires `--backend`. |
 | `--backend <url>` | Hub URL the display-only Pi should point at (for example `--backend http://192.168.1.100:3000`). Required with `--display-only`. |
 | `--display-id <id>` | Optional display ID this Pi registers under. Lowercase letters, digits, and hyphens, max 64 characters. If omitted, the installer generates one from the hostname plus a 4-character random suffix (for example `home-screens-hysd`) so two Pis with the same hostname do not collide. |
 
@@ -66,13 +66,13 @@ Once added, a display-only Pi keeps its own software up to date on its own: it c
 
 1. **Node.js**: installs the runtime needed to run the server (full install only)
 2. **Latest release**: downloads the pre-built app from GitHub (full install only)
-3. **Browser**: installs Chromium and the labwc Wayland compositor for fullscreen kiosk display with proper cursor hiding on touchscreens
+3. **Browser**: installs Chromium, the labwc Wayland compositor and its helpers (kanshi for rotation, wlopm for screen power, wlr-randr, wtype) for fullscreen kiosk display with proper cursor hiding on touchscreens
 4. **Background service**: sets up `home-screens.service` to start automatically on boot (full install only)
 5. **Autologin**: configures the Pi to log in and launch the display without interaction
 6. **Plymouth boot splash**: installs the Home Screens-branded theme so the Pi boots through a clean splash instead of the rainbow, black screen, kiosk sequence. Display-only installs get the splash too
 7. **WiFi hardening** (full install only): applies reliability fixes for headless displays (infinite reconnect retries, connectivity watchdog, disabled suspend; see [Networking > WiFi reliability](/docs/networking#wi-fi-reliability))
 8. **systemd-journal group** (full install only): adds the service user to `systemd-journal` so `journalctl -u home-screens` works without sudo and the diagnostics bundle can capture logs
-9. **Hardware reporter** (display-only Pis only): installs `/usr/local/bin/home-screens-reporter.sh`, the `home-screens-reporter.service` unit, and a 30-second timer that POSTs CPU load, temperature, throttling state, memory and disk usage to the hub's `/api/display/hw-stats` endpoint. No token; the hub authorizes by checking the display ID against `config.displays`
+9. **Hardware reporter** (display-only Pis only): installs `/usr/local/bin/home-screens-reporter.sh`, the `home-screens-reporter.service` unit, and a 30-second timer that POSTs CPU load, temperature, throttling state, memory and disk usage, the display software version, and the installed versions of Chromium, labwc, kanshi and wlopm to the hub's `/api/display/hw-stats` endpoint. No token; the hub authorizes by checking the display ID against `config.displays`
 10. **SD card wear reduction** (full install only): keeps the system journal in memory instead of writing it to the card, removes the swap file and tunes the kernel instead, and disables background services a kiosk does not need
 
 Steps marked "full install only" are skipped on display-only Pis, which finish their setup earlier and never reach the system-tuning stage.
@@ -155,8 +155,8 @@ Home Screens draws the wall with programs from Raspberry Pi OS: Chromium, labwc,
 - On a hub this happens in the same step that checks the Pi's setup (`scripts/upgrade.sh setup-system`), after the update itself is in place. It never holds up or fails an update: an archive that cannot be reached, or a disk with no room to unpack Chromium, means the programs stay as they are until the next time. The Update window shows what it did.
 - Those programs are all running in the kiosk session, so a change needs a restart to take effect. After an update you started, **Settings > System & updates** says **Restart to finish the update**. An automatic update restarts the screen itself once the new version is up; it never restarts the whole device.
 - A display-only Pi does the same from its hourly check, but only while the hub says it may restart (the display's own sleep window, or the small hours for a display that never sleeps), and it restarts its screen right after. So a replaced Chromium never runs for hours under a page made for the old one.
-- **Settings > Stats** shows the versions installed and when they were last checked, for the hub and for every display that reports in.
-- Should a version in the archive turn out bad, a release can hold a program back (`SYSTEM_PACKAGE_HOLDS` in `scripts/lib/common.sh`); the next release that drops it from the list releases the hold. Holds you set yourself with `apt-mark` are left alone.
+- **Settings > Status** shows, under **CPU & Thermal**, the installed versions of Chromium, labwc, kanshi and wlopm (**Display programs**) and when they were last checked for newer ones (**Programs checked**). With more than one display it shows the one picked at the top of the page; a display with no reporter of its own, such as the hub's own screen, shows the hub's values, marked **Hub (local)**.
+- Should a version in the archive turn out bad, a release can hold a program back (`SYSTEM_PACKAGE_HOLDS` in `scripts/lib/common.sh`, with a copy in `scripts/kiosk-update-privileged.sh` for display-only Pis); the next release that drops it from the list releases the hold. Holds you set yourself with `apt-mark` are left alone.
 
 ## Changing orientation from the command line
 

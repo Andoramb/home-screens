@@ -179,7 +179,7 @@ test.describe('location-dependent modules', () => {
     await expect(page.getByTestId('location-settings-link')).toBeVisible();
 
     await page.goto('/display');
-    await expect(page.getByText('Location not configured')).toBeVisible();
+    await expect(page.getByText('Location not set')).toBeVisible();
     await expect(page.getByTestId('location-settings-link')).toHaveCount(0);
   });
 

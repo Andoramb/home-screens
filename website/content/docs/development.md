@@ -16,7 +16,9 @@ src/
     (display)/display/       # Fullscreen kiosk view
     (editor)/editor/         # Configuration editor
     (auth)/login/            # Login page
-    (remote)/remote/         # Remote control + chore tracking
+    (connect)/editor/connect/google/  # Where a Google Photos sign-in returns to the hub
+    (remote)/remote/         # Phone remote
+    (remote)/chores/         # The kids' chore page
     api/                     # API routes (see API Routes section below)
   components/
     modules/                 # All 45 module components + ModuleWrapper
@@ -46,10 +48,11 @@ data/                        # All runtime state; never committed
   plugin-secrets/            # Per-plugin secret stores
   plugin-tokens/             # Per-plugin auth tokens
 public/
-  backgrounds/               # Uploaded background images
+  backgrounds/               # The picture and video library (uploads, imports, starter backgrounds)
 e2e/                         # Playwright suite + fixture registries
 scripts/                     # Install, deploy, and management scripts
 website/                     # Marketing site + these docs (separate Next.js app)
+infrastructure/              # Cloudflare workers: Google sign-in helper, telemetry, version check
 ```
 
 The `@/` import prefix resolves to `src/` (tsconfig `paths`, mirrored in `vitest.config.ts`), so `@/lib/config` means `src/lib/config`.
@@ -63,7 +66,8 @@ The app uses Next.js route groups to separate concerns:
 - `(display)`: no layout chrome, just the fullscreen display
 - `(editor)`: includes toolbar, sidebars, and editor controls
 - `(auth)`: login and authentication pages
-- `(remote)`: mobile remote control and chore tracking
+- `(connect)`: the page a Google Photos sign-in comes back to, behind the editor login but outside the editor layout
+- `(remote)`: mobile remote control and the kid-facing `/chores` page
 
 ### Module System
 
@@ -71,12 +75,12 @@ There are currently **{% $stats.moduleCount %} modules** organized into {% $stat
 
 | Category | Modules |
 |---|---|
-| **Full Screen** | fullscreen-calendar, fullscreen-chore-chart, fullscreen-meal-planner, fullscreen-photo |
+| **Full Screen** | fullscreen-calendar, fullscreen-chore-chart, fullscreen-meal-planner, fullscreen-weather, fullscreen-photo, fullscreen-news |
 | **Time & Date** | clock, calendar, countdown, year-progress, multi-month, date |
 | **Weather & Environment** | weather, moon-phase, sunrise-sunset, air-quality, rain-map |
 | **News & Finance** | news, stock-ticker, crypto, sports, standings |
 | **Knowledge & Fun** | dad-joke, quote, word-of-day, history |
-| **Personal** | todo, sticky-note, greeting, todoist, garbage-day, affirmations, meal-planner, chore-chart |
+| **Personal** | todo, sticky-note, greeting, todoist, garbage-day, affirmations, meal-planner, chore-chart, timetable |
 | **Health & Fitness** | *(no built-ins; reserved for plugins such as Strava and Garmin. The palette hides the category while it is empty.)* |
 | **Media & Display** | text, image, video, photo-slideshow, qr-code, iframe, icon, shape, display-control |
 | **Travel** | traffic |
@@ -192,11 +196,11 @@ API routes live in `src/app/api/*/route.ts` and serve as server-side proxies for
 | Category | Routes | Purpose |
 |---|---|---|
 | **Auth** | `auth/login`, `auth/logout`, `auth/status`, `auth/password`, `auth/display-token`, `auth/revoke-sessions`, `auth/google`, `auth/ip-allowlist` | Authentication, session management, display token, IP allowlist |
-| **System** | `system/status`, `system/version`, `system/build-id`, `system/changelog`, `system/power`, `system/upgrade`, `system/rollback`, `system/backups`, `system/update-notification`, `system/timezone`, `system/sudo-grant`, `system/stats`, `system/diagnostics`, `system/address` | Server management and deployment, the device clock's time zone, the passwordless-sudo repair, status and diagnostics, and the hub's LAN address for a kiosk running on the hub |
+| **System** | `system/status`, `system/version`, `system/build-id`, `system/changelog`, `system/power`, `system/upgrade`, `system/rollback`, `system/backups`, `system/update-notification`, `system/timezone`, `system/sudo-grant`, `system/stats`, `system/diagnostics`, `system/address`, `health` | Server management and deployment, the device clock's time zone, the passwordless-sudo repair, status and diagnostics, the hub's LAN address for a kiosk running on the hub, and a public is-it-up check |
 | **Config** | `config`, `secrets`, `backup`, `backup/credentials`, `backup/reminder` | Read/write config, manage API keys, config backups |
 | **Weather** | `weather`, `rain-map` | Weather data ({% $stats.weatherProviderCount %} providers) and rain radar tiles |
 | **Calendar** | `calendar`, `calendar/status`, `calendars`, `icloud/accounts`, `icloud/calendars`, `holidays` | Google Calendar events and per-source health, iCloud CalDAV accounts and calendars, holiday feeds |
-| **Data** | `jokes`, `quote`, `news`, `history`, `stocks`, `crypto`, `sports`, `standings`, `todoist`, `air-quality`, `traffic`, `nasa` | External data proxies |
+| **Data** | `jokes`, `quote`, `news`, `history`, `stocks`, `crypto`, `sports`, `sports/team`, `sports/teams`, `standings`, `todoist`, `air-quality`, `traffic`, `nasa` | External data proxies |
 | **Family data** | `family`, `family/groups`, `chores`, `chores/grab`, `chores/skip`, `chores/put-back`, `chores/settings`, `rewards`, `meals`, `timers/routines`, `timers/session`, `todo/lists`, `timetables/*` | The family roster and groups, and local chore, reward, meal-plan, timer-routine, to-do list and school timetable state |
 | **Displays** | `displays`, `display/[action]`, `display/hw-stats`, `display/console-log`, `display/kiosk-bundle`, `display/kiosk-bootstrap`, `display/power-state` | Display registry and heartbeats, remote control, hardware telemetry, log capture, kiosk self-update bundle for display-only Pis, screen power for the kiosk's power helper |
 | **Plugins** | `plugins/registry`, `plugins/installed`, `plugins/install`, `plugins/install-external`, `plugins/manifest/*`, `plugins/bundle/*`, `plugins/asset/*`, `plugins/dev`, `plugins/migrate-config`, `plugins/proxy/*`, `plugins/secrets/*`, `plugins/settings/*`, `plugins/auth/*` | Plugin registry, install lifecycle, asset serving, API proxy, secrets, settings, server-side auth |
@@ -214,7 +218,7 @@ Remote control uses a command queue pattern where the editor (or any HTTP client
 
 **Status reporting:** The display periodically sends `POST /api/display/status` with its current state (screen index, screen name, display state, etc.). The editor can then read the display status via `GET /api/display/status`.
 
-**Display targeting:** Every action resolves a target from `?display=<id>`, so the full form is `/api/display/<action>?display=<id>`. Command-enqueue actions accept `all` to broadcast to every display; `__default__` is the queue used by legacy single-display callers that omit the parameter. `status` and `profile` are per-display only and reject the broadcast keyword. Command queues are keyed by display id in `src/lib/display-commands.ts`, and heartbeats live in an in-memory `statusMap` rather than `config.json`, so status posts never contend with editor saves. See [Multi-Display](/docs/multi-display) for the rest.
+**Display targeting:** Every action resolves a target from `?display=<id>`, so the full form is `/api/display/<action>?display=<id>`. Command-enqueue actions accept `all` to broadcast to every display that has checked in; `status`, `profile`, `module-enabled`, `goto-screen` and the reads reject it. A call that names no display goes to the main display (`findMainDisplay`) once `config.displays` exists, and to the legacy `__default__` queue on a single-display install. A wall's own command drain and status report are never resolved this way: they always name the display they come from. Command queues are keyed by display id in `src/lib/display-commands.ts`, and heartbeats live in an in-memory `statusMap` rather than `config.json`, so status posts never contend with editor saves. See [Multi-Display](/docs/multi-display) for the rest.
 
 ### Auth System
 
@@ -223,6 +227,8 @@ An authentication layer (`src/lib/auth.ts`) protects the editor and API routes. 
 **Password auth:** The browser sends `POST /api/auth/login` with a password, and the API responds with a session cookie.
 
 **Google OAuth device flow:** The browser requests a device code via `POST /api/auth/google/device`, which returns a `user_code` and `verification_url`. The user enters the code at `google.com/device`. The browser polls `PUT /api/auth/google/device` until the authorization is complete, at which point tokens are stored on disk.
+
+**Which Google app signs in:** out of the box the hub uses Home Screens' own Google apps (`src/lib/google-hosted.ts`). The client ids are public; the secrets live only in the sign-in helper in `infrastructure/google-oauth-worker/`, which the hub sends its token requests to and which adds the secret on the way to Google. A household that saved its own client under `google_client_id` / `google_web_client_id` uses that instead, unless it flipped the switch on the API keys card (`settings.googleApp: "hosted"`); `chooseGoogleApp` in `src/lib/google-app-choice.ts` is the one rule for both the token stores and the card. `HS_GOOGLE_HOSTED=0` turns the hosted apps off. To develop against a local helper, run `wrangler dev` in `infrastructure/google-oauth-worker` and set `HS_GOOGLE_CALENDAR_TOKEN_URL` and `HS_GOOGLE_PHOTOS_TOKEN_URL` to its token URLs.
 
 ### Profile & Schedule System
 
@@ -380,6 +386,11 @@ The registries it polices:
 | `EXTRA_DISCRIMINATORS` | `e2e/meta/coverage.spec.ts` | a member of a mode-like string union goes untested |
 | `EMPTY_STATE_FIXTURES` | `e2e/helpers/empty-state-fixtures.ts` | a component using `ModuleEmptyState` or `LocationRequired` has no row |
 | `ROUTE_DECISIONS` | `e2e/meta/coverage.spec.ts` | a new API route is neither E2E-exercised, nor unit-tested, nor given a written reason |
+| Field-edit case | `e2e/editor/config-editing.spec.ts` | a built-in module type has no `buildModuleInstance('<type>')` edit test |
+| `VIEW_MATRIX` / `SINGLE_VIEW_TESTED_MODULES` | `e2e/helpers/view-matrix.ts`, `e2e/meta/coverage.spec.ts` | a module with a `*View` union does not render every view |
+| `AUTOSIZED_MODULES` | `e2e/helpers/autosized-modules.ts` | a component reaches `useScaledFontSize` or `useFitFontSize` without `autoSizesText` on its registry entry |
+| `DEFAULT_FALLBACK_EXEMPTIONS` | `e2e/meta/coverage.spec.ts` | a registry `defaultConfig` differs from the value the component falls back to |
+| `PUBLIC_ROUTES` | `e2e/meta/coverage.spec.ts` | a new route has no guard, no `cachedProxyRoute` auth, and no written reason to be public |
 
 If your module fetches data, also add a JSON fixture under `e2e/fixtures/module-data/` and a `stubKey` on your fixture row so `stubModuleData` serves it. Module data is fetched client-side, so the stub intercepts at the browser boundary and the suite makes zero real upstream calls. Modules backed by local data (chore-chart, meal-planner, todo) seed through their real APIs instead of stubbing.
 
@@ -405,22 +416,26 @@ A new route needs test coverage of its own, or the `ROUTE_DECISIONS` ratchet fro
 
 | Hook | Purpose |
 |---|---|
-| `useFetchData(url, interval)` | Fetches an API endpoint at a set interval; the reads `src/lib/display-heartbeat.ts` lists fetch when the heartbeat reports a new revision instead |
+| `useFetchData(url, refreshMs, options?)` | Fetches an API endpoint every `refreshMs` and returns `[data, error, updatedAt]`, keeping the last good data through a failed fetch; the reads `src/lib/display-heartbeat.ts` lists fetch when the heartbeat reports a new revision instead. Every request is cut off after 15 seconds (`DISPLAY_FETCH_TIMEOUT_MS` in `src/lib/display-fetch.ts`) so a network blip cannot leave the wall waiting |
 | `useModuleConfig(mod, screenId)` | Returns `{ config, set }` for one module instance; reads *and* writes config through the editor store |
 | `useRotatingIndex(length, interval)` | Cycles through an array index on a timer |
-| `useScaledFontSize(base, ratio)` | Calculates responsive font sizes |
+| `useScaledFontSize(style, scaleFactor)` | Fits a module's text to its box, with `style.fontSize` as the floor and `style.textScale` as the Text size multiplier. Set `autoSizesText` on the registry entry when you use it |
+| `useFitFontSize(desired, resetKey, minFontSize?)` | Shrinks text from `desired` until the content fits its box, never below `minFontSize` (6 px by default). Same `autoSizesText` rule |
+| `usePagedFit(rowSelector, measureKey, columns?)` | Measures rendered rows and splits them into pages of whole rows that fit the box (news, Sports Cards and List). Lives in `src/components/modules/shared/` |
 | `useSleepManager(sleep, timezone)` | Manages display sleep/dim state. The second argument is the display timezone, used to evaluate sleep schedule windows against the same zone as screen and module schedules |
 | `useDisplayCommands(handlers, displayId?, drain?)` | Runs the 3-second heartbeat: drains remote commands (or, with `drain` false, as in the editor's preview, only reads the revisions) and hands the `revisions` to their readers. Passing `displayId` targets that display's queue and registers it with the hub |
 | `useStatusReporter(...)` | Posts the display's status (screen, profile, display state, brightness) every 30 seconds and on any change |
 | `useTZClock(timezone)` | Provides a live-updating `Date` for a given timezone |
+| `useWallClock(timezone)` | Like `useTZClock`, but returns `{ dayOfWeek, minuteOfDay, isoDate }` for that zone, changing only when the minute does; use it for schedule and condition checks |
+| `useRevisionRefresh(field, isRead)` | Re-reads cached library or calendar answers once the heartbeat's `library` or `calendar` revision moves |
 | `useIdleCursor(seconds)` | Hides cursor after idle period, restores on mousemove |
-| `useLiveConfig(screens, settings, profiles)` | Fetches the display's config again when the heartbeat reports a new config ETag |
+| `useLiveConfig(initialScreens, initialSettings, hubTimezone, ...)` | Fetches the display's config again when the heartbeat reports a new config ETag |
 | `useCanvasZoom()` | Manages editor canvas zoom/pan state with trackpad and keyboard support |
 | `useUndoRedoShortcuts()` | Keyboard shortcuts for undo/redo (Cmd+Z, Cmd+Shift+Z) |
 | `useAuthImage(src)` | Converts API-served image URLs to authenticated blob URLs |
-| `useFocusTrap(ref)` | Traps keyboard focus within a modal or dialog |
+| `useFocusTrap(options?)` | Returns a ref that traps keyboard focus inside a modal or dialog |
 
-`useLiveConfig` and `useAuthImage` live under `src/components/display/` rather than `src/hooks/`; everything else in the table is in `src/hooks/`.
+`useLiveConfig` and `useAuthImage` live under `src/components/display/` and `usePagedFit` under `src/components/modules/shared/`; everything else in the table is in `src/hooks/`.
 
 ## Setup
 
@@ -461,6 +476,7 @@ npm run lint           # ESLint (flat config)
 npm test               # all unit tests (Vitest)
 npm run test:watch     # watch mode
 npx vitest run src/lib/__tests__/config.test.ts   # a single test file
+npm run test:shell     # bash tests for scripts/*.sh, run after editing any shell script
 
 npm run build && npm run test:e2e     # full Playwright suite (needs a production build)
 npx playwright test --project=meta    # coverage ratchets only, run this first
@@ -487,6 +503,8 @@ The `--webpack` flag is **required**, not optional: the docs search index is bui
 - Docs pages are Markdoc files at `website/content/docs/<slug>.md`, rendered by the `/docs/[slug]` route
 - Blog posts live alongside them at `website/content/blog/<slug>.md`
 - The sidebar order lives in `website/src/lib/docs-navigation.ts`
+- The plugin directory (`/plugins`, one page per plugin, and `/plugins/submit`) lives in `website/src/app/(marketing)/plugins/` and is built from the live registry in `home-screens/home-screens-plugins`, so a build needs network access, and a missing or broken `plugins.json` fails it.
+- The docs' image download link asks GitHub at build time for the newest release with an image attached, and falls back to the releases page when GitHub cannot be reached.
 - Product counts (module count, category count, weather-provider count, locale count) come from `website/src/lib/stats.ts` and are written into pages as Markdoc variables, for example `$stats.moduleCount` in a Markdoc interpolation. Never hard-code these numbers in prose; a Vitest test in the main repo asserts the values against the live module registry, so a stale literal fails `npm test`.
 
 ## Scripts

@@ -139,29 +139,29 @@ export const EMPTY_STATE_FIXTURES: EmptyStateFixture[] = [
   },
   {
     type: 'moon-phase', name: 'missing-location', kind: 'network-free', noLocation: true,
-    expect: showsCopy('Location not configured'),
+    expect: showsCopy('Location not set'),
   },
   {
     // The route needs the household location; without one the module says so
     // instead of surfacing the route's error string.
     type: 'air-quality', name: 'missing-location', kind: 'network-free', noLocation: true,
-    expect: showsCopy('Location not configured'),
+    expect: showsCopy('Location not set'),
   },
   {
     // No module coordinates and no household location: nothing to centre on.
     type: 'rain-map', name: 'missing-location', kind: 'network-free', noLocation: true,
     config: { latitude: 0, longitude: 0 },
-    expect: showsCopy('Location not configured'),
+    expect: showsCopy('Location not set'),
   },
   {
     type: 'sunrise-sunset', name: 'missing-location', kind: 'network-free', noLocation: true,
-    expect: showsCopy('Location not configured'),
+    expect: showsCopy('Location not set'),
   },
   {
     // Without coordinates the shared weather fetch never runs, so the module
     // has to say so itself rather than sit on its loading copy.
     type: 'fullscreen-weather', name: 'missing-location', kind: 'network-free', noLocation: true,
-    expect: showsCopy('Location not configured'),
+    expect: showsCopy('Location not set'),
   },
   {
     // Unseeded sandbox → no members → the setup empty state, which points at

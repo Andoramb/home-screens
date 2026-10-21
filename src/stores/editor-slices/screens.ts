@@ -4,6 +4,7 @@ import type { Screen } from '@/types/config';
 import { pruneDanglingScreenRefs } from '@/lib/display-filter';
 import { getActiveDimensions, getActiveScreens, withActiveScreens } from '@/lib/editor-multi-display';
 import { fitModuleToDisplay } from '@/lib/module-utils';
+import { pickedBackground } from '@/lib/screen-background';
 import { COALESCE_KEYS } from '@/stores/editor-save';
 import { syncEditorUrl } from '@/stores/editor-url';
 import type { EditorGet, MutateConfig, ScreenActions } from './types';
@@ -139,6 +140,19 @@ export function createScreenSlice(
           selectedDisplayId,
           getActiveScreens(config, selectedDisplayId).map((s) =>
             s.id === id ? { ...s, ...updates } : s,
+          ),
+        ),
+      }), { coalesce: COALESCE_KEYS.updateScreen(id) });
+    },
+
+    pickScreenBackground: (id, backgroundImage) => {
+      const { selectedDisplayId } = get();
+      mutateConfig((config) => ({
+        config: withActiveScreens(
+          config,
+          selectedDisplayId,
+          getActiveScreens(config, selectedDisplayId).map((s) =>
+            s.id === id ? { ...s, ...pickedBackground(s, backgroundImage) } : s,
           ),
         ),
       }), { coalesce: COALESCE_KEYS.updateScreen(id) });

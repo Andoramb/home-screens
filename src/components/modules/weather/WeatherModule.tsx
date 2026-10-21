@@ -137,7 +137,7 @@ export default function WeatherModule({ config, style, hourly, forecast, minutel
     return (
       <ModuleWrapper style={style}>
         <div ref={containerRef} className="w-full h-full flex flex-col items-center justify-center gap-1">
-          <p style={{ fontSize: `${scaledFontSize}px`, opacity: TEXT_OPACITY.secondary }}>{t('weather.locationNotSet')}</p>
+          <p style={{ fontSize: `${scaledFontSize}px`, opacity: TEXT_OPACITY.secondary }}>{t('common.locationNotSet')}</p>
           {locationSettingsHref ? (
             // Editor preview: the hint is the link.
             <EditorSettingsLink

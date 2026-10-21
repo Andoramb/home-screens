@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveScreenBackground } from '@/lib/screen-background';
+import { pickedBackground, resolveScreenBackground } from '@/lib/screen-background';
 
 const OWN = '/starter-backgrounds/ocean.svg';
 const PHOTO = '/api/backgrounds/serve?file=rotation-unsplash-a.jpg';
@@ -28,5 +28,20 @@ describe('resolveScreenBackground', () => {
   it('paints nothing when there is no picture at all', () => {
     expect(resolveScreenBackground({ backgroundImage: '' }, undefined)).toBeUndefined();
     expect(resolveScreenBackground({ ...rotating, backgroundImage: '' }, null)).toBeUndefined();
+  });
+});
+
+describe('pickedBackground', () => {
+  it('turns rotation off and keeps its settings for next time', () => {
+    expect(pickedBackground(rotating, PHOTO)).toEqual({
+      backgroundImage: PHOTO,
+      backgroundRotation: { ...ROTATION, enabled: false },
+    });
+  });
+
+  it('only sets the picture when rotation is off or was never set up', () => {
+    expect(pickedBackground({ backgroundRotation: { ...ROTATION, enabled: false } }, PHOTO)).toEqual({ backgroundImage: PHOTO });
+    expect(pickedBackground({}, PHOTO)).toEqual({ backgroundImage: PHOTO });
+    expect(pickedBackground(undefined, PHOTO)).toEqual({ backgroundImage: PHOTO });
   });
 });

@@ -29,7 +29,7 @@ interface Props {
 
 export default function UnsplashBrowser({ selectedScreenId, hasUnsplashKey }: Props) {
   const t = useTranslate('editor');
-  const { updateScreen } = useEditorStore();
+  const { pickScreenBackground } = useEditorStore();
 
   const CATEGORIES: CategoryDef[] = useMemo(() => [
     { label: t('imageBrowsers.unsplash.categories.nature'), query: 'nature landscape' },
@@ -83,9 +83,9 @@ export default function UnsplashBrowser({ selectedScreenId, hasUnsplashKey }: Pr
     });
     const data = await res.json();
     if (data.path) {
-      updateScreen(selectedScreenId, { backgroundImage: data.path });
+      pickScreenBackground(selectedScreenId, data.path);
     }
-  }, [selectedScreenId, updateScreen]);
+  }, [selectedScreenId, pickScreenBackground]);
 
   if (!hasUnsplashKey) {
     return (

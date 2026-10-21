@@ -24,17 +24,17 @@ There are three levels of protection:
 
 Endpoints below that say "requires a valid session" are the first level. Endpoints that say "display access" are the second, and a browser session works for those too.
 
-A few endpoints are open at every level on purpose, and each one says so where it appears: `GET`/`POST /api/chores`, `POST /api/chores/grab` and `GET`/`POST /api/rewards` (so the kid-facing `/chores` page keeps working when a password is set), `GET /api/plugins/registry`, `GET /api/system/build-id`, `GET /api/health`, and `GET /api/plugins/auth/callback`.
+A few endpoints are open at every level on purpose, and each one says so where it appears: `GET`/`POST /api/chores`, `POST /api/chores/grab` and `GET`/`POST /api/rewards` (so the kid-facing `/chores` page keeps working when a password is set), `GET /api/plugins/registry`, `GET /api/system/build-id`, `GET /api/health`, `GET /api/i18n/<locale>` (the UI's words, needed before anyone signs in), and `GET /api/plugins/auth/callback`.
 
 ### Is the hub up?
 
-`GET /api/health` answers from any device on your network, with or without a password, and it is the one endpoint that ignores the [IP allowlist](/docs/networking). It says which version is running and nothing else:
+`GET /api/health` answers from any device on your network, with or without a password, and the [IP allowlist](/docs/networking#restrict-access-by-ip) never blocks it (the only other endpoint it always lets through is `GET /api/auth/status`, which the login page needs). It says which version is running and nothing else:
 
 ```json
-{"ok":true,"version":"1.13.0","build":"a1b2c3d4","schema":5,"uptime":864}
+{"ok":true,"version":"1.13.0","build":"Xb2kQ7pL0sR4","schema":16,"uptime":864}
 ```
 
-`uptime` is seconds since the hub started. Home Screens uses this route itself: an update is only kept once the new version answers here, and a display-only Pi checks it before showing the connecting screen. It is also the first thing to try when a display is blank, see [Troubleshooting](/docs/troubleshooting#is-the-hub-running).
+`uptime` is seconds since the hub started, and `schema` is the newest settings format this release can read. Home Screens uses this route itself: an update is only kept once the new version answers here, and a display-only Pi checks it before showing the connecting screen. It is also the first thing to try when a display is blank, see [Troubleshooting](/docs/troubleshooting#is-the-hub-running).
 
 ### Using the display token
 
@@ -46,7 +46,7 @@ Authorization: Bearer hs_abc123...
 
 For bookmarkable links, the `/api/display/*` routes also accept the token as a `?token=` query parameter, for example `/api/display/wake?display=kitchen&token=hs_abc123...`. That shortcut is scoped to `/api/display/*` and nowhere else; every other endpoint needs the header or the session cookie. Query tokens end up in browser history and server logs, so use the header wherever you can send one.
 
-If you have an IP allowlist configured with **Bypass authentication for trusted IPs** turned on, requests from those addresses clear display access with no token at all.
+If you have listed networks under **Settings > Security > Allowed networks** with **Let displays on these networks in without the key** turned on, `GET` requests from those addresses clear display access with no token at all, bookmarked commands such as `/api/display/wake` included. A `POST` from those addresses still needs the token or a session cookie.
 
 ### Cross-origin writes
 
@@ -60,7 +60,7 @@ If you call the API from a page served somewhere else on purpose (a dashboard on
 
 Remote control endpoints for the kiosk display. The display polls for pending commands; the editor or any HTTP client can enqueue commands.
 
-If you're scripting a display, a Home Assistant automation, a bookmark on your phone, the endpoints you want are [`/api/display/:command`](#get-api-display-command) (wake, sleep, next-screen, prev-screen), [goto-screen](#post-api-display-goto-screen), [brightness](#post-api-display-brightness), [sleep-override](#post-api-display-sleep-override), [profile](#post-api-display-profile), [module-enabled](#post-api-display-module-enabled) (show or hide one module), [alert](#post-api-display-alert), and [module-command](#post-api-display-module-command) (next story on a news module). For a ready-made Home Assistant package built on them, voice sentences included, see the [Voice Control guide](/docs/voice-control). The rest of this section documents the protocol the kiosk itself speaks and is marked **Client protocol** where it applies; you only need it if you're writing your own display client.
+If you're scripting a display, a Home Assistant automation, a bookmark on your phone, the endpoints you want are [`/api/display/:command`](#get-api-display-command) (wake, sleep, next-screen, prev-screen), [goto-screen](#post-api-display-goto-screen), [brightness](#post-api-display-brightness), [sleep-override](#post-api-display-sleep-override), [profile](#post-api-display-profile), [module-enabled](#post-api-display-module-enabled) (show or hide one module), [alert](#post-api-display-alert), [module-command](#post-api-display-module-command) (next story on a news module), and [show-photo](#post-api-display-show-photo) (put a picture or video from the library on the screen). For a ready-made Home Assistant package built on them, voice sentences included, see the [Voice Control guide](/docs/voice-control). The rest of this section documents the protocol the kiosk itself speaks and is marked **Client protocol** where it applies; you only need it if you're writing your own display client.
 
 ### Targeting a display (multi-display)
 
@@ -69,7 +69,7 @@ When the hub has more than one display registered, every display-control endpoin
 - **Query string**: append `?display=<id>` (works on GET and POST). Useful for bookmarkable simple commands like `/api/display/wake?display=kitchen`.
 - **JSON body field**: `{ "displayId": "<id>", … }` (POST only).
 
-Use the reserved word `all` as the display target to broadcast to every registered display plus the legacy default queue. Broadcast is allowed for command-enqueue actions (simple commands, brightness, sleep-override, alert, module-command) and rejected for read-only or mutate-config actions (status, profile, module-enabled). It is also rejected for goto-screen, even though that enqueues a command, because screen sets differ per display and a broadcast jump would be meaningless on most of them.
+Use the reserved word `all` as the display target to broadcast to every display that has checked in since the hub started, plus the legacy default queue. Broadcast is allowed for command-enqueue actions (simple commands, brightness, sleep-override, alert, module-command, show-photo) and rejected for read-only or mutate-config actions (status, profile, module-enabled). It is also rejected for goto-screen, even though that enqueues a command, because screen sets differ per display and a broadcast jump would be meaningless on most of them.
 
 A command or a status read with no display target goes to the main display (the display with ID `main`, or the first one listed if none has that ID). On a single-display install, with no displays registered, it goes to that one display, so bookmarks and scripts written before you added a second display keep reaching the first one. The display's own calls (its command poll and its status report) are the exception: a display always names itself. See the [Multi-display guide](/docs/multi-display) for the full multi-display setup.
 
@@ -160,7 +160,7 @@ This endpoint is read-only, all writes go through `PUT /api/config` so undo/redo
 
 `revisions` says whether anything else on the screen changed: the running build (a new one reloads the page), the installed plugin list including plugin settings (`GET /api/plugins/installed`), the config (`config` is exactly the `ETag` that `GET /api/config?display=<id>` would answer with), the timer session (`GET /api/timers/session`), and the chore history and rewards (`chores` and `rewards` are exactly the `ETag`s that `GET /api/chores` and `GET /api/rewards` would answer with). The display fetches each of those only when its value differs from the one it last applied.
 
-`library` and `calendar` speed up reads that keep their own polling. `library` moves when a picture or video is uploaded, imported, replaced, moved, renamed or deleted; `calendar` moves when a Google Calendar sign-in or disconnect changes what the hub can read. Once a new value has held for a whole beat, the display re-reads its slideshow lists or its calendar at once instead of waiting for their next 10-minute or 5-minute poll, so a burst of uploads from a phone causes one re-read. Both are counters the hub keeps in memory, so a hub restart changes them once and every display re-reads. A value the hub could not work out is left out, and the display keeps what it has for it.
+`library` and `calendar` speed up reads that keep their own polling. `library` moves when a picture or video is uploaded, imported, replaced, moved, renamed or deleted; `calendar` moves when a Google Calendar sign-in or disconnect changes what the hub can read, or when the household switches between its own Google app and Home Screens' app on the API keys page. Once a new value has held for a whole beat, the display re-reads its slideshow lists or its calendar at once instead of waiting for their next 10-minute or 5-minute poll, so a burst of uploads from a phone causes one re-read. Both are counters the hub keeps in memory, so a hub restart changes them once and every display re-reads. A value the hub could not work out is left out, and the display keeps what it has for it.
 
 `sharedStateWatched` tells the screen whether anyone is currently watching its shared values in the editor. While it is `true`, the screen reports changes as they happen instead of waiting for its next 30-second heartbeat, so the editor sees live values; while it is `false`, it stays on the slower schedule. A display client that ignores this flag still works, it just never speeds up.
 
@@ -183,7 +183,7 @@ Returns the last-known display status as reported by the display client. Accepts
   "timestamp": 1709913600000,
   "lastSeen": 1709913600000,
   "reportedViewport": { "width": 1080, "height": 1920 },
-  "hwStats": { "cpuUsagePercent": 14.2, "cpuTemperatureC": 52.1, "memoryUsagePercent": 46.0, "uptimeSeconds": 86400, "model": "..." },
+  "hwStats": { "piModel": "Raspberry Pi 5 Model B Rev 1.0", "cpuTempC": 52.1, "load1": 0.4, "memoryTotal": 4045000704, "memoryFree": 2100000000, "packages": { "chromium": "1:141.0.7390.54-1~deb12u1" }, "...": "see below" },
   "browserStats": { "viewportWidth": 1080, "viewportHeight": 1920, "userAgent": "...", "timezone": "America/Chicago" }
 }
 ```
@@ -254,6 +254,16 @@ Pokes every module of one type on the display. The hub just relays it; the modul
 `module` and `action` must be short lowercase names (letters, digits, `-`, `_`, `:`); anything else returns `400`.
 
 **Response:** `{ "ok": true, "command": "module-command", "module": "news", "action": "next" }`
+
+### POST /api/display/show-photo
+
+Puts one picture or video from the library over the screen until its time is up or someone taps it, the same as **Show on the wall** in the phone's **Photos**. Broadcast with `?display=all` is allowed.
+
+**Body:** `{ "file": "family/beach.jpg", "duration": 60, "displayId": "kitchen" }` (`duration` in seconds, optional, 60 by default, kept between 5 and 600; `displayId` optional)
+
+`file` is the path inside the library, for example `family/beach.jpg`: the `file=` value in each link `GET /api/backgrounds` returns, not the link itself. Anything that is not a picture or video in the library returns `400`, and a file that is not there returns `404`. The hub works out the link itself, so a request can only ever show a file that is already in the library.
+
+**Response:** `{ "ok": true, "command": "show-photo", "durationMs": 60000 }`
 
 ### POST /api/display/sleep-override
 
@@ -347,7 +357,33 @@ Required fields: `currentScreen` (object with `id` string), `displayState` (one 
 
 **Client protocol.** Accepts a hardware-stats snapshot from a display Pi's bash reporter (`scripts/reporter.sh`, on a systemd timer). Adoption IS authorization: the endpoint is **not** wrapped in `withDisplayAuth` because the reporter runs on a separate Pi that can't reasonably carry a display bearer token. Instead, the `displayId` must appear in `config.displays` (or be the literal `main` in legacy single-display mode). The LAN is the trust boundary.
 
-**Body:** `{ "displayId": "kitchen", "hwStats": { "cpuUsagePercent": 14.2, "cpuTemperatureC": 52.1, "memoryUsagePercent": 46.0, "uptimeSeconds": 86400, "model": "Raspberry Pi 5 Model B Rev 1.0" } }`
+**Body:**
+```json
+{
+  "displayId": "kitchen",
+  "hwStats": {
+    "piModel": "Raspberry Pi 5 Model B Rev 1.0",
+    "cpuModel": "Cortex-A76",
+    "cpuCores": 4,
+    "cpuTempC": 52.1,
+    "load1": 0.4,
+    "load5": 0.3,
+    "load15": 0.25,
+    "throttled": { "raw": "0x0", "active": false, "underVoltage": false, "previouslyThrottled": false },
+    "memoryTotal": 4045000704,
+    "memoryFree": 2100000000,
+    "diskTotal": 31000000000,
+    "diskFree": 24000000000,
+    "kioskUpdater": true,
+    "kioskVersion": "1.13.0",
+    "packages": { "chromium": "1:141.0.7390.54-1~deb12u1", "labwc": "0.8.4-1", "kanshi": "1.7.0-1", "wlopm": "0.1.0-1" },
+    "packagesCheckedAt": "2026-10-10T03:12:00Z",
+    "reportedAt": "2026-10-10T18:00:00.000Z"
+  }
+}
+```
+
+`packages` holds the installed versions of Chromium, labwc, kanshi and wlopm, and `packagesCheckedAt` when the Pi last looked for newer ones; both are `null` from a reporter that predates them. An unrecognized shape is refused with `400`.
 
 **Response:** `{ "ok": true }`. Returns `403` with `Display '<id>' is not adopted` when the displayId isn't in the registry.
 
@@ -554,7 +590,8 @@ Returns saved meals, weekly plan, grocery checked state, and shared meal-planner
     "defaultSlotTimes": { "breakfast": "07:30", "lunch": "12:00", "dinner": "18:00" },
     "timeFormat": "12h"
   },
-  "globalTimeFormat": "12h"
+  "globalTimeFormat": "12h",
+  "revision": "..."
 }
 ```
 
@@ -573,6 +610,7 @@ The entire read-modify-write cycle runs inside the meal-data store queue, so cro
   "plan": [ ... ],
   "groceryChecked": { "2026-03-30": [ ... ] },
   "settings": { "enabledSlots": ["breakfast", "lunch", "dinner"], "weekStartDay": "monday", "defaultSlotTimes": { "dinner": "18:00" }, "timeFormat": "12h" },
+  "revision": "...",
   "force": false
 }
 ```
@@ -581,7 +619,9 @@ When `settings` is present it replaces the stored settings object: include `"tim
 
 When present, `savedMeals` and `plan` must be arrays, and `groceryChecked` must map the date each week starts on (`YYYY-MM-DD`) to that week's ticked item names; weeks with nothing planned are dropped, and a `plan` write drops the stored ticks of any week it leaves with nothing planned, so a cleared week starts its list over. When `settings` changes the week start day, the stored ticks move to the matching new weeks. An empty-overwrite guard fires when every `savedMeals` / `plan` field present in the body is `[]` and the existing data is not empty; the write is refused with `409` and you can resend with `force: true` to override. If the body sends both fields and only one of them is empty, that is a normal write and the guard stays out of the way. Settings-only and grocery-only writes skip the guard entirely.
 
-**Response:** The full `{ savedMeals, plan, groceryChecked, settings }` object after the write.
+A write that sends `savedMeals` or `plan` replaces that whole list, so it must also send the `revision` from the copy it was built from (from `GET` or the previous save); without one the answer is `400`. If the meals or the plan changed since that copy, the answer is `409` with `"reason": "revision"` and the meals as they are now, so make the change again on top of them and send the new `revision`. Settings-only and grocery-only writes need no revision and never move it.
+
+**Response:** the same shape as GET, including the `revision` to quote on the next save.
 
 ### GET /api/meals/grocery
 

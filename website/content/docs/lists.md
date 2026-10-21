@@ -12,7 +12,7 @@ Groceries, a packing list, a before-school checklist. Type it on your phone, see
 
 ## How the pieces fit
 
-- **The wall** shows a **To-Do List** module. Pick which list it shows and how it looks. On a touchscreen, tap an item to tick it off right there.
+- **The wall** shows a **To-Do List** module. Pick which list it shows and how it looks. On a touchscreen, tap an item to tick it off right there (in the List and Board views).
 - **The family remote** at `/remote` has a **Lists** tab. That is where things get added, ticked, edited, moved and removed, and where lists themselves are made.
 - **The editor** picks the list for each module and can type a first list in from the laptop, so you do not need a phone to get started.
 
@@ -46,16 +46,14 @@ Tap a row to tick it. Done things collect in a **Done** group at the bottom that
 
 The gear next to the count opens the list: rename it, give it a colour, or tidy up with **Uncheck all**, **Remove done items** and **Share** (sends the open items to any app on your phone, or copies them).
 
-**Start fresh** unchecks everything on a schedule: **Every day** at midnight, or **Every week** on the day you pick. Good for a before-school list or a packing list you reuse; leave it on **Never** for groceries. Nothing is ever deleted by the schedule.
+**Start fresh** unchecks everything on a schedule: **Every day** at midnight, or **Every week** on the day you pick. Good for a before-school list or a packing list you reuse; leave it on **Never** for groceries. Nothing is ever deleted by the schedule, but anything ticked more than 30 days ago is cleared off the list for you, so a grocery list left on **Never** does not grow forever.
 
 **Delete list** removes the list and everything on it, after asking.
 
 ## 4. Ticking off on the wall
 
-**Tap to check off** is on for new To-Do modules. On a touchscreen a tap ticks the item, on any other display the list just shows. Turn it off in the module's settings if you would rather the wall be read-only.
+**Tap to complete (touchscreen)** is on for new To-Do modules. On a touchscreen a tap ticks the item in the **List** and **Board** views; the other views and any display without touch just show the list. Turn it off in the module's settings if you would rather the wall be read-only.
 
 ## Where the data lives
 
-Lists are kept in `data/todos.json` on the hub, next to chores and meals, and are included in backups. They are not part of the layout, so editing a screen in the editor never touches a list, and the same list can sit on as many screens as you like.
-
-If you had To-Do modules before lists were shared, their items were moved into lists automatically the first time the new version started, one list per module, named after the module's title. Anything ticked on a touchscreen kept its tick.
+Lists are kept on the hub, next to chores and meals, and are included in backups. They are not part of the layout, so editing a screen in the editor never touches a list, and the same list can sit on as many screens as you like.

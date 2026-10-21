@@ -37,3 +37,17 @@ export function screenBackgroundSrc(
 ): string | undefined {
   return displaySizedUrl(resolveScreenBackground(screen, rotation), canvas);
 }
+
+/**
+ * What picking a background by hand does to a screen, from any tab of the
+ * background picker or an upload: the picture becomes the screen's own, and
+ * rotation stops. A rotating screen would paint over the choice within the
+ * hour, which reads as "it didn't save".
+ */
+export function pickedBackground(
+  screen: Pick<Screen, 'backgroundRotation'> | undefined,
+  backgroundImage: string,
+): Pick<Screen, 'backgroundImage' | 'backgroundRotation'> {
+  if (!screen?.backgroundRotation?.enabled) return { backgroundImage };
+  return { backgroundImage, backgroundRotation: { ...screen.backgroundRotation, enabled: false } };
+}

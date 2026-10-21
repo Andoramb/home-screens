@@ -3,12 +3,12 @@ title: Family
 nextjs:
   metadata:
     title: Manage your family
-    description: Add the people in your household once for chores, rewards and calendars.
+    description: Add the people in your household once for chores, rewards, calendars, school timetables and to-do lists.
     alternates:
       canonical: /docs/family
 ---
 
-Add your household once. Each person's name, colour and optional icon or emoji follow them across chores, rewards and calendars. You can manage your family even if you do not use a chore chart. {% .lead %}
+Add your household once. Each person's name, colour and optional icon or emoji follow them across chores, rewards, calendars, school timetables and to-do lists. You can manage your family even if you do not use a chore chart. {% .lead %}
 
 ## Add or edit someone
 

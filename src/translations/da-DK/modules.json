@@ -268,7 +268,6 @@
     "alertSeverityExpires": "{severity} · Udløber {expires}",
     "noWeatherData": "Ingen vejrdata",
     "noForecastData": "Ingen prognosedata",
-    "locationNotSet": "Placering ikke angivet",
     "setLocationInSettings": "Angiv din placering under Indstillinger",
     "next60Minutes": "De næste 60 minutter",
     "noPrecipitationExpected": "Ingen nedbør forventet",
@@ -1188,7 +1187,7 @@
     "currentTime": "Klokken nu: {time}"
   },
   "common": {
-    "locationNotConfigured": "Placering ikke angivet",
+    "locationNotSet": "Placering ikke angivet",
     "pluginNotAvailable": "Plugin ikke tilgængeligt: {name}",
     "moduleFailed": "Dette element kunne ikke vises.",
     "setLocationLink": "Angiv din placering",

@@ -193,6 +193,8 @@ export interface ScreenActions {
   copyScreensFromDisplay: (sourceDisplayId: string) => void;
   reorderScreens: (fromIndex: number, toIndex: number) => void;
   updateScreen: (id: string, updates: Partial<Screen>) => void;
+  /** Set a picture picked by hand as the screen's background, turning its rotation off (`pickedBackground`). */
+  pickScreenBackground: (id: string, backgroundImage: string) => void;
 }
 
 export interface SettingsActions {

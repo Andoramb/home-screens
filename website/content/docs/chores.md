@@ -16,7 +16,7 @@ A chore chart on the wall, a page where kids check things off, and tickets they 
 - **The kids' page** at `/chores` is the same list on a phone or tablet. Pick your name, check off today's chores, spend your tickets. Nothing else can be changed from it, and it never asks for a password.
 - **The family remote** at `/remote` is where grown-ups add people and chores, set up rewards, and fix mistakes. It asks for the password once you have set one.
 
-All three read the same list, so a chore checked off on a phone disappears from the wall a few seconds later.
+All three read the same list, so a chore checked off on a phone shows as done on the wall a few seconds later.
 
 ## 1. Put a chore chart on a screen
 
@@ -24,7 +24,7 @@ In the editor, drag **Chore Chart** from the **Personal** group onto a screen. I
 
 {% screenshot name="display-chores" caption="The chore board on the wall, with the week's dinners underneath." /%}
 
-The chart is empty until you add people and chores, which happens on a phone.
+The chart is empty until you add people and chores, from a phone or from the editor.
 
 ## 2. Add your family
 
@@ -34,14 +34,14 @@ You can add up to 64 people. Existing larger families are preserved. With five o
 
 ## 3. Add chores
 
-The quickest start is the ready-made list. While the chore list is empty, **Manage** shows **Pick from the list**: 27 everyday chores sorted into Morning, After school, Evening and Once a week, each with an icon and a ticket value. Tick the ones your house does, say who they go to (a group such as "Kids" is picked for you when the family has one), choose the day the once-a-week ones land on (Saturday unless you change it), and add them in one go. They become ordinary chores you can change one by one afterwards. The list stays reachable later through **Add from the starter list** under the Add Chore button, and the editor's chore window offers the same list; anything already on your list is marked so it cannot be added twice.
+The quickest start is the ready-made list. While the chore list is empty, **Manage** shows **Pick from the list**: 27 everyday chores sorted into Morning, After school, Evening and Once a week, each with an icon and a ticket value. Tick the ones your house does, say who they go to (your biggest group, such as "Kids", is picked for you, or everyone when you have no groups), choose the day the once-a-week ones land on (Saturday unless you change it), and add them in one go. They become ordinary chores you can change one by one afterwards. The list stays reachable later through **Add from the starter list** under the Add Chore button. In the editor, **Edit Chore Chart** in the Chore Chart's settings offers the same list: **Pick from the starter list** while you have no chores yet, and **Starter list** next to **Add Chore** after that. Anything already on your list is marked so it cannot be added twice.
 
 To write a chore yourself, still under **Manage**, add it with a name, an emoji, and how many **tickets** it is worth. Then decide when and who:
 
-- **When:** every day, certain days of the week, or once on a date. Each chore also has a time of day (morning, afternoon, evening, or anytime), which is how the wall groups the list and highlights what is due now.
+- **When:** every day, certain days of the week, every other week, or once on a date. Each chore also has a time of day (morning, afternoon, evening, or anytime), which is how the wall groups the list and highlights what is due now.
 - **Who:** one person, several, or a [group](/docs/family#groups) such as "Kids". Give a chore to a group and everyone in it gets it, each with their own tick. Add somebody to the group later and they get it too. With several people you choose how it is shared:
-  - **Fixed**: everyone listed does it every time.
-  - **Rotate daily** or **rotate weekly**: it passes from one person to the next.
+  - **Fixed (all do it)**: everyone listed does it every time.
+  - **Rotate Daily** or **Rotate Weekly**: it passes from one person to the next.
   - **Schedule**: a small grid, one row per person and seven day columns. Tap a cell to give that person that day. A note underneath says which days still have nobody. A schedule is for people you pick one by one, so it is not offered while a group is ticked.
 
 {% screenshot name="remote-chores" phone=true caption="The family remote's Chores tab. Today, Manage, and Rewards." /%}
@@ -82,7 +82,7 @@ Sometimes a chore cannot be done: a kid is home sick, or there is no school so n
 
 Under **Chores > Rewards** on the family remote:
 
-- **Rewards** is where you invent things to buy: a name, an emoji, a ticket price, and optionally who it is for. Movie night, pick the dinner, 30 minutes of screen time.
+- **Edit list** is where you invent things to buy: a name, an emoji, a ticket price, and optionally who it is for. Movie night, pick the dinner, 30 minutes of screen time.
 - **Redeem** is what kids see on their page too: pick a reward and spend the tickets. It only works when the balance covers the price.
 - **Balances** shows everyone's tickets and lets a grown-up adjust them by hand.
 - **History** lists every reward that has been redeemed.
@@ -91,7 +91,7 @@ Tickets are earned automatically as chores are checked off, using each chore's t
 
 ## What kids can and cannot do
 
-The kids' page and the wall let anyone check off today's chores, grab and let go of bonus chores, look at yesterday, and spend tickets. Adding or changing people, chores or rewards, adjusting balances, and checking off earlier days all live on the family remote, behind the password once you set one. The kids' page stays open even then, so a shared tablet never needs a login. That is worth knowing before you give a guest your WiFi password.
+The kids' page and the wall let anyone check off today's chores, grab and let go of bonus chores, look at yesterday, and spend tickets. Adding or changing people, chores or rewards, adjusting balances, and checking off earlier days all live on the family remote (people and chores can also be changed in the editor), behind the password once you set one. The kids' page stays open even then, so a shared tablet never needs a login. That is worth knowing before you give a guest your WiFi password.
 
 ## Next steps
 

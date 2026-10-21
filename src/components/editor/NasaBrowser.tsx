@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
-import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
+import { useEditorStore } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import ImageSearchBrowser, { type BrowsePhoto, type CategoryDef, type SearchResult } from './ImageSearchBrowser';
@@ -46,7 +46,7 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
   const t = useTranslate('editor');
   const [mode, setMode] = useState<'library' | 'apod'>(hasNasaKey ? 'apod' : 'library');
   const [apodRefreshKey, setApodRefreshKey] = useState(0);
-  const { config, selectedDisplayId, updateScreen } = useEditorStore();
+  const { pickScreenBackground } = useEditorStore();
 
   const CATEGORIES: CategoryDef[] = useMemo(() => [
     { label: t('imageBrowsers.nasa.categories.nebula'), query: 'nebula' },
@@ -121,15 +121,9 @@ export default function NasaBrowser({ selectedScreenId, hasNasaKey }: Props) {
       throw new Error(data.error || t('imageBrowsers.errors.saveImage'));
     }
     if (data.path) {
-      const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
-      const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
-      const updates: Record<string, unknown> = { backgroundImage: data.path };
-      if (currentScreen?.backgroundRotation?.enabled) {
-        updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
-      }
-      updateScreen(selectedScreenId, updates);
+      pickScreenBackground(selectedScreenId, data.path);
     }
-  }, [selectedScreenId, config, selectedDisplayId, updateScreen, t]);
+  }, [selectedScreenId, pickScreenBackground, t]);
 
   const modeToggle = (
     <div className="flex gap-1 bg-hs-card rounded-md p-0.5">

@@ -37,7 +37,7 @@ To set a background in the editor:
 1. Select the screen you want to customize using the **Screen Tabs** at the top
 2. Click an empty part of the canvas to deselect any module
 3. Open the **Background** section in the right sidebar
-4. Switch to the **Local** tab to see your uploaded images
+4. Switch to the **Backgrounds** tab to see your uploaded images
 5. Click a thumbnail to apply it, or click **None** to remove the background
 
 The picture fills the whole screen without being stretched; a landscape photo on a portrait wall is cropped at the sides.
@@ -60,7 +60,7 @@ Each screen has its own shade, and the editor shows it exactly as the wall will.
 
 1. Click an empty part of the canvas to deselect any module
 2. Open the **Background** section in the right sidebar
-3. Switch to the **Local** tab
+3. Switch to the **Backgrounds** tab
 4. Click **Upload Background**
 5. Select an image file from your computer
 
@@ -78,7 +78,7 @@ The Upload Background button opens a file chooser; there is no drop zone to drag
 
 ## Folders
 
-The background picker's Local tab shows the top level of your library only. Photos filed into a folder (an iCloud or Google Photos import, or a folder you made from the phone) are for the photo modules, which can point at any folder and everything inside it.
+The background picker's Backgrounds tab shows the top level of your library only. Photos filed into a folder (an iCloud or Google Photos import, or a folder you made from the phone) are for the photo modules, which can point at any folder and everything inside it.
 
 ---
 
@@ -108,12 +108,12 @@ Unsplash provides access to a library of high-quality, freely usable photographs
 
 1. Create a free account at [unsplash.com/developers](https://unsplash.com/developers)
 2. Create a new application to get an **Access Key**
-3. In the editor, go to **Settings > API keys** and enter the key as **Unsplash Access Key**
+3. In the editor, go to **Settings > API keys** and paste the key into **Access Key** on the Unsplash card
 
 ### Browsing and selecting
 
 1. Click an empty part of the canvas to deselect any module, then open the **Background** section in the right sidebar
-2. The **Unsplash** tab is shown by default
+2. Switch to the **Unsplash** tab
 3. Use the search bar or click a preset category (Nature, Mountains, Ocean, Forest, Sky, Space, City, Abstract, Flowers, Seasons)
 4. Click a photo to download it and set it as the screen background
 
@@ -130,7 +130,7 @@ NASA offers two image sources, both accessible from the **NASA** tab in the back
 ### Setup
 
 1. Get a free API key at [api.nasa.gov](https://api.nasa.gov)
-2. In the editor, go to **Settings > API keys** and enter it as **NASA API Key**
+2. In the editor, go to **Settings > API keys** and paste it into **API Key** on the NASA card
 
 The NASA Image Library (search) works without an API key. The Astronomy Picture of the Day (APOD) feature requires one.
 
@@ -158,7 +158,7 @@ Some NASA images include embedded timestamps, watermarks, or overlay text that c
 
 1. Install and configure an Immich server on your network
 2. In Immich, go to **Account Settings → API Keys** and generate a new key
-3. In the editor, go to **Settings > API keys** and enter the **Immich Server URL** (e.g. `http://192.168.1.50:2283`) and the **Immich API Key**
+3. In the editor, go to **Settings > API keys** and fill in **Server URL** (e.g. `http://192.168.1.50:2283`) and **API Key** on the Immich card
 
 ### Browsing and selecting
 
@@ -187,7 +187,7 @@ iCloud shared albums work without an Apple account or API key, all you need is t
 ### Using it
 
 - **As a rotation source**: deselect any module, open the **Background** section, enable auto-rotation, choose **iCloud Shared Album** as the source, and paste the link. The display loads photos straight from Apple's servers. Only still photos are used; any videos in the album are skipped.
-- **Importing into your library**: use **Import from an iCloud link** to download everything a link contains into the selected folder. That button lives in the media library browser, which opens from the settings of an Image, Video, Photo slideshow, or Full-screen photo module, not from the Background section. This also works with one-off "Copy iCloud Link" photo links, which expire after about 30 days; importing keeps the photos even after the link dies.
+- **Importing into your library**: use **Import from an iCloud link** to download everything a link contains into the selected folder. That button lives in the media library browser, which opens from the settings of an Image, Video, Photo Slideshow, or Full-Screen Photo Viewer module, not from the Background section. This also works with one-off "Copy iCloud Link" photo links, which expire after about 30 days; importing keeps the photos even after the link dies.
 
 ---
 
@@ -199,8 +199,8 @@ Google no longer lets apps read your photo library directly, but it does let you
 
 Nothing to set up first: Home Screens brings its own Google app.
 
-1. Select a Photo slideshow or Full-screen photo module. Under the folder picker, click **Sign in with Google**
-2. A Google tab opens. Pick your account and approve; the tab comes straight back to your hub, says Google Photos is connected, and the editor moves on by itself. If your hub lives on a public web address, the Google page shows a code to paste into the editor instead
+1. Select a Photo Slideshow, or a Full-Screen Photo Viewer in slideshow mode, with its source set to **Local Photos**. Under the folder picker, click **Sign in with Google**
+2. A Google tab opens. Pick your account and approve; the tab comes straight back to your hub, says Google Photos is connected, and the editor moves on by itself. If your hub lives on a public web address, you land on a Home Screens page with a code instead: click **Didn't come back? Paste a code** in the editor, paste it, and click **Finish sign-in**
 3. Click **Choose photos**: Google Photos opens with its own photo picker
 4. Pick the photos you want and confirm; the import starts on its own and shows progress as it saves
 
@@ -217,11 +217,12 @@ If you would rather run your own Google Cloud project, open **Settings > API key
 1. In [Google Cloud console](https://console.cloud.google.com/apis/credentials) (the same project you may already use for Google Calendar), go to **APIs & Services > Credentials** and create an **OAuth client ID** with the type **Web application**
 2. Under **Authorized redirect URIs**, add exactly `https://homescreens.dev/connect/google` (leave **Authorized JavaScript origins** empty)
 3. In the **API Library**, search for **Google Photos Picker API** and enable it
-4. Paste the new client ID and secret into those fields
+4. If you have not done so for the calendar, open **Google Auth Platform > Audience** and click **Publish app**. Until you do, only accounts you list there as test users can sign in, and Google ends every sign-in after 7 days. When you sign in afterwards, Google may say it hasn't verified the app. It is your own app, so choose **Advanced** and carry on.
+5. Paste the new client ID and secret into those fields
 
-With your own app, the sign-in ends on a page at homescreens.dev that shows a code to copy back into the editor. That page is just a message board: it never sees your password, your secret, or your photos.
+With your own app the steps are the same, except that you click **Import from Google Photos** first and then **Sign in with Google**. After you approve, Google sends you to a page at homescreens.dev, which passes you straight back to your hub, or shows a code to paste if your hub lives on a public web address. That page is just a message board: it never sees your password, your secret, or your photos.
 
-To go back to Home Screens' app later, flip the switch next to **Use your own Google app** off on the API keys page. Your details stay saved, and the next import signs in with Google again.
+To go back to Home Screens' app later, flip the switch next to **Use your own Google app** off on the API keys page. Your details stay saved, and the next import signs in with Google again. The switch covers Google Calendar too, so sign in again on **Settings > Calendar** if your calendar used your own app.
 
 ---
 
@@ -233,7 +234,7 @@ Auto-rotation periodically replaces the screen background with a new image from 
 
 1. Click an empty part of the canvas to deselect any module
 2. Open the **Background** section in the right sidebar
-3. Toggle **Auto-rotate background** on
+3. Toggle **Auto-rotate** on
 4. Choose a **Source**: Unsplash, NASA Picture of the Day, Immich, or iCloud Shared Album
 5. For Unsplash, enter a **Search query** (default: "nature landscape")
 6. For Immich, optionally filter by **Album**, **Person**, or **Favorites only**
@@ -270,7 +271,7 @@ Rotated images are tidied up on their own: only the ones screens are currently u
 
 ### Rotation and manual backgrounds
 
-While rotation is on it replaces whatever fixed background the screen had. Picking a new background by hand (from Local, Unsplash or NASA) switches rotation off for that screen so your choice stays.
+While rotation is on it replaces whatever fixed background the screen had. Picking a new background by hand (from Backgrounds, Unsplash, NASA or Immich) switches rotation off for that screen so your choice stays.
 
 ---
 

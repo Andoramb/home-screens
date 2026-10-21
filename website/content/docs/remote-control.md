@@ -34,7 +34,7 @@ Do this once per phone. A kid's tablet gets the chores page; a parent's phone ge
 
 ## Ask for a password
 
-Until you set one, anyone on your WiFi can open the family remote and the editor. **Settings > On your phone** has **Ask for a password on the family remote**; it sets the same password the editor uses. After that the family remote and the editor ask for it, the wall keeps working, and the kids' page stays open. Sessions last 30 days, or 90 with **Remember me**, so nobody is typing it every day.
+Until you set one, anyone on your WiFi can open the family remote and the editor. **Settings > On your phone** has **Ask for a password on the family remote**; it sets the same password the editor uses. After that the family remote and the editor ask for it, the wall keeps working, and the kids' page stays open. Sessions last 30 days, or 90 if you tick **Remember me for 90 days** when you sign in, so nobody is typing it every day.
 
 ---
 
@@ -46,23 +46,23 @@ Six tabs along the bottom: **Control**, **Timers**, **Chores**, **Lists**, **Mea
 
 {% screenshot name="remote-control" phone=true caption="The Control tab: which screen is up, next and previous, sleep, alerts and brightness." /%}
 
-- The card at the top says which screen the wall is showing and whether the display is **Active**, **Dimmed** or **Asleep**. It refreshes every few seconds, faster right after you tap something.
+- The card at the top says which screen the wall is showing and whether the display is **Active**, **Dimmed**, **Asleep** or **Offline**. It refreshes every few seconds, faster right after you tap something.
 - **Arrows** move to the previous or next screen.
 - **Sleep Display** blacks the wall out (and cuts the screen's power, if that display has **Switch the screen's power off too** turned on); the same button wakes it again.
 - **Send Alert** puts a message on the wall: an info, warning or urgent banner, with a title and how long it stays. **Persistent** keeps it up until someone dismisses it.
 - **Brightness** dims the wall from full down to off. The wall keeps that level until someone picks another: after dimming, sleeping or an alert it comes back to it, and tapping the wall never turns it up.
 - **Slideshow** appears while the screen on show has a photo slideshow: go back a photo, pause on one, or skip ahead. A screen that rotates away and back starts playing again.
-- With more than one display, a **Send to** row at the top picks which display these controls talk to, or **All** of them at once. Screen navigation works one display at a time.
+- With more than one display, a **Send to** row at the top picks which display these controls talk to, or **All displays** at once. Screen navigation works one display at a time.
 
 ### Timers
 
 The **Timers** tab starts a big countdown that takes over the whole wall, made for kids. Tap a preset (30 seconds to 15 minutes) or type a length up to 4 hours, pick a look (**Glow ring**, **Timer face**, **Color fall** or **Star path**), and start. A soft chime can play at the end.
 
-A **routine** is a saved list of timed steps, each with its own emoji and length: get dressed, brush teeth, shoes on. Steps run one after another; a step can instead be set to **Wait for a Done tap** on the wall before the next one starts. While a timer runs, the tab shows pause, skip, add a minute, and stop. One timer runs at a time for the whole house; starting another asks first. With more than one display, **Show on** picks which walls the timer takes over.
+A **routine** is a saved list of timed steps, each with its own emoji and length: get dressed, brush teeth, shoes on. Steps run one after another; a step can instead be set to **Wait for a Done tap** on the wall before the next one starts. While a timer runs, the tab shows pause, skip, add a minute, and stop. One timer runs at a time for the whole house; starting another asks first. With more than one display, **Send to** picks which walls the timer takes over (it reads **Next timer shows on** while one is running).
 
 ### Chores, Lists, Meals, Photos
 
-- **Chores** is where grown-ups add people, chores and rewards, and fix a missed day. See [Chores and rewards](/docs/chores).
+- **Chores** is where grown-ups add people, chores (from scratch or from a ready-made list) and rewards, and fix a missed day. See [Chores and rewards](/docs/chores).
 - **Lists** holds the family's to-do lists: add, tick, reorder, give things a due day or a person, and make new lists. See [Lists](/docs/lists).
 - **Meals** holds the meal library, the weekly plan and the grocery list. See [Meals](/docs/meals).
 - **Photos** appears when a photo slideshow is on a screen, and opens on the folder the wall shows. Folders a wall shows come first and say which wall. Add photos and videos from the phone (big photos are made smaller before they are sent), from an iCloud link, or from Google Photos once the hub is signed in to Google from a computer. Tap a photo to see it full size, delete it, move it to another folder, or put it on the wall for a minute; **Select** picks several at once. Folders can be made, renamed and deleted here too. It is the same library **Settings > Pictures & videos** manages. A slideshow always keeps its last picture, and a photo a screen uses on its own (a background) stays put.
@@ -77,7 +77,7 @@ The gear in the top corner opens a sheet with:
 - **Your icons**, the pictures your family added as icons, to add, rename or remove
 - **Backup All Data** (with an **Include your icons** switch) and **Restore Backup**
 - a light, dark or system theme for the remote, separate from the editor's
-- **Restart Home Screens** and **Reboot Device**, each of which asks for a second tap within three seconds
+- **Restart Home Screens** and **Reboot Device**, each of which asks you to confirm first
 
 After an update that needs the Pi restarted to finish, **Restart to finish the update** sits above those two, and its **Restart now** asks the same question as **Reboot Device**. Everything on this sheet needs you signed in once a password is set.
 
@@ -105,10 +105,11 @@ It stays open even when a password is set, so a bookmark on a tablet just works.
 | Chores: adding or editing people, chores, rewards, balances, earlier days | Signed in |
 | Lists: ticking an item | Signed in, or the wall itself |
 | Lists: adding, editing, moving or removing, and making or deleting lists | Signed in |
-| Meals: changing anything | Signed in |
+| Meals: ticking a grocery item | Signed in, or with the display key, as [Voice Control](/docs/voice-control) does |
+| Meals: the plan, the library and meal settings | Signed in |
 | Photos | Signed in |
 
-Sending you to the login page and back is automatic. Sessions last 30 days, or 90 with **Remember me**.
+Sending you to the login page and back is automatic. Sessions last 30 days, or 90 if you tick **Remember me for 90 days**.
 
 ### Bookmarks that work without signing in
 

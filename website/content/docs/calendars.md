@@ -32,7 +32,7 @@ Three ways to get events onto the wall. Pasting a calendar link is the quickest 
    - **Apple iCloud:** in the Calendar app, right-click the calendar, choose **Share Calendar**, and turn on **Public Calendar**.
    - **Outlook / Microsoft 365:** open Settings, then **Shared calendars**, then **Publish a calendar**, and copy the ICS link.
    - **Schools, sports teams, holidays:** look for "subscribe", "iCal" or "ICS" on their calendar page.
-2. In the editor, open **Settings > Calendar** and click **Add Feed** under **iCal / ICS feeds**.
+2. In the editor, open **Settings > Calendar** and click **Add Feed** under **iCal / ICS Feeds**.
 3. Paste the link, give it a name and a colour, and save.
 
 Repeat for each calendar. Every calendar module shows all of them together, and each feed can be switched off with its tick box without deleting it.
@@ -57,10 +57,11 @@ If you would rather run your own Google Cloud project, you can. Open **Settings 
 2. Click **Create Credentials > OAuth Client ID**. For the application type, pick **TVs and Limited Input devices**, and name it anything, such as "Home Screens".
 3. Copy the **Client ID** and **Client Secret** into those fields.
 4. Still in the Cloud console, open **APIs & Services > Library** and enable the **Google Calendar API**.
+5. Then open **Google Auth Platform > Audience** and click **Publish app**. Until you do, only accounts you list there as test users can sign in, and Google ends every sign-in after 7 days. When you sign in afterwards, Google may say it hasn't verified the app. It is your own app, so choose **Advanced** and carry on.
 
 Then sign in on the Calendar page as above. A sign-in only works with the app it came from, so anyone already signed in with Google on this hub signs in again after you save your own app.
 
-To go back to Home Screens' app later, flip the switch next to **Use your own Google app** off. Your details stay saved for whenever you want them again; sign in with Google once more and the Calendar page carries on.
+To go back to Home Screens' app later, flip the switch next to **Use your own Google app** off. Your details stay saved for whenever you want them again. The switch covers Google Photos too, so sign in with Google once more on the Calendar page, and in a photo module if your photo import used your own app.
 
 ## Sign in with iCloud {% #icloud-sign-in %}
 
@@ -109,6 +110,6 @@ Most of Home Screens needs no key at all. Keys that are needed live on **Setting
 
 ## Next steps
 
-- [Modules](/docs/modules#time-and-date): the calendar module's five views and the full-screen calendar's eight
+- [Modules](/docs/modules#time-and-date): the calendar module's six views, and [the full-screen calendar's nine](/docs/modules#full-screen)
 - [Calendar not syncing](/docs/troubleshooting#calendar-not-syncing) if events stop arriving
 - [Chores and rewards](/docs/chores) to set up the family next

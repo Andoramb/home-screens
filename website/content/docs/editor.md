@@ -97,7 +97,7 @@ Select a module to open its settings in the **Property Panel** on the right. Rel
 
 The panel has two operating states:
 
-- **Module selected**: collapsible sections in this order: **Position & Size**, **Style**, **Config** (the module's own options), then for plugins **Connection** and **Secrets**, and finally **Visibility**, **Schedule**, and **Conditions**. A **Delete Module** button sits at the bottom. The Background picker is hidden while a module is selected, so the panel stays focused on the module's own fields.
+- **Module selected**: collapsible sections in this order: **Position & Size**, **Style**, **Module settings** (the module's own options), then for plugins **Connection** and **Secrets**, and finally **Visibility**, **Schedule**, and **Conditions**. A **Delete Module** button sits at the bottom. The Background picker is hidden while a module is selected, so the panel stays focused on the module's own fields.
 - **No module selected**: the panel shows **Screen settings** (the screen's name and module count, a rotation-duration override, and a schedule for the screen itself), followed by the Background picker for the current screen. You can set rotation, screen schedules, and backgrounds without first dropping a module on the canvas.
 
 The six full-screen modules (full-screen calendar, weather, news, chore chart, meal planner, and photo) always fill the whole screen, so they have no Position & Size or Style sections at all. They sit in their own palette group, **Full-Screen Views**, and are framed on the canvas with a tinted border and their name.
@@ -141,7 +141,7 @@ The sticky note has no Background or Text Color here: its paper colour is the no
 
 **Text**
 
-- **Text size**: a percent of the size the module shows on its own, from 10% to 450%. The clock, date, countdown, greeting, weather, news, quote, dad joke, word of the day, this day in history, affirmations, sticky note, to-do list and multi-month calendar fit their text to their box, so 100% is that fitted size and the slider makes it smaller or larger from there. Every other module's 100% is its base size. A module that was given a pixel size in an older version shows that size as a percent of what it shows on its own, so nothing changes until you move the slider
+- **Text size**: a percent of the size the module shows on its own, from 10% to 450%. The clock, date, countdown, greeting, weather, news, quote, dad joke, word of the day, this day in history, affirmations, sticky note, to-do list, school timetable and multi-month calendar fit their text to their box, so 100% is that fitted size and the slider makes it smaller or larger from there. Every other module's 100% is its base size. A module that was given a pixel size in an older version shows that size as a percent of what it shows on its own, so nothing changes until you move the slider
 - **Text thickness**: make all of the module's text lighter or bolder (100–900). Leave it on Default to keep the module's built-in look, and use Reset to default to go back. The title always stays at its normal weight
 - **Font Family**: choose from available fonts
 
@@ -159,11 +159,11 @@ Click the **+** button in the Screen Tabs and choose **Blank Screen** to start f
 
 ### Enabling and Disabling a Screen
 
-Right-click a screen tab to open the context menu and choose **Disable** or **Enable**. Disabled screens remain fully configurable in the editor but are excluded from display rotation -- the display skips them entirely.
+Right-click a screen tab to open the context menu and choose **Disable** or **Enable**. Disabled screens remain fully configurable in the editor but are excluded from display rotation: the display skips them entirely.
 
 - Disabled tabs appear dimmed with a **⊘** icon next to the name
 - Profile screen lists show an amber "(disabled)" label for disabled screens
-- Setting a screen to disabled is non-destructive -- all modules and settings are preserved and the screen can be re-enabled at any time
+- Setting a screen to disabled is non-destructive: all modules and settings are preserved and the screen can be re-enabled at any time
 
 This is useful for temporarily hiding a screen (e.g., a seasonal or holiday screen) without deleting it.
 
@@ -203,16 +203,16 @@ Setting a screen's time to **0** makes it **sticky**: the wall stays on that scr
 
 ### Screen Transitions
 
-Screen transitions control the visual effect when cycling between screens. There are 8 transition effects available:
+Screen transitions control the visual effect when cycling between screens. There are seven transition effects, plus None:
 
-- **fade**: smooth opacity crossfade (default)
-- **slide**: horizontal slide left/right
-- **slide-up**: vertical slide upward
-- **zoom**: scale in/out
-- **flip**: 3D card flip
-- **blur**: blur out and in
-- **crossfade**: overlapping crossfade
-- **none**: instant switch with no animation
+- **Fade**: smooth opacity crossfade (default)
+- **Slide**: horizontal slide left/right
+- **Slide Up**: vertical slide upward
+- **Zoom**: scale in/out
+- **3D Flip**: 3D card flip
+- **Blur**: blur out and in
+- **Crossfade (overlap)**: overlapping crossfade
+- **None (instant)**: instant switch with no animation
 
 The transition effect and duration are configurable in **Settings > Screen**. The default duration is 0.6 seconds.
 
@@ -222,15 +222,15 @@ Click an empty area of the canvas to deselect any module; the **Background** sec
 
 ### Upload a Background
 
-1. Switch to the **Local** tab and click **Upload Background**
+1. Switch to the **Backgrounds** tab and click **Upload Background**
 2. Pick an image file from your computer
-3. Images are stored in `public/backgrounds/`
+3. It is saved into the hub's picture library, the same one **Settings > Pictures & videos** shows
 4. Maximum file size: 10 MB per image
-5. Supported image formats: JPEG, PNG, WebP, GIF, AVIF
+5. Supported image formats: JPEG, PNG, WebP, GIF, AVIF, SVG
 
 Backgrounds are still images only. Videos live in the same library but are picked from a photo or video module's settings, not from here.
 
-You can also fill your library from Apple Photos, using **Import from an iCloud link** to download everything a shared album link (or a "Copy iCloud Link" photo link) contains. That button lives in the media library browser, which opens from the settings of an Image, Video, Photo slideshow, or Full-screen photo module. Anything you import there lands in the same library the background picker's Local tab reads from. See the [Backgrounds guide](/docs/backgrounds#i-cloud-shared-albums) for details.
+You can also fill your library from Apple Photos, using **Import from an iCloud link** to download everything a shared album link (or a "Copy iCloud Link" photo link) contains. That button lives in the media library browser, which opens from the settings of an Image, Video, Photo Slideshow, or Full-Screen Photo Viewer module. Anything you import there lands in the same library the background picker's Backgrounds tab reads from. See the [Backgrounds guide](/docs/backgrounds#i-cloud-shared-albums) for details.
 
 ### Unsplash Integration
 
@@ -272,7 +272,7 @@ Multi-display features (the sidebar split, the Displays page, the Display Switch
 Three tabs: **Rotation & appearance**, **Sleep & dimming**, and **Alerts**. Most controls are self-explanatory sliders and dropdowns; these are the ones that aren't:
 
 - **Touch alignment** (on the Rotation & appearance tab, next to the rotation), for a touchscreen plugged into this display. Taps follow the screen rotation by default; pick **Leave touch as it is** if they already land in the right place, or enter six numbers of your own if they land mirrored or a little off. See [Taps land in the wrong place](/docs/troubleshooting#taps-land-in-the-wrong-place).
-- **Sleep & dimming** is grouped into three sections, inactivity dimming ("Dim after a few quiet minutes"), the daily schedules ("Dim in the evening" and "Turn off overnight"), and the dimmed appearance, with a 24-hour preview bar showing when the display will be bright, dimmed, or off. Turn the inactivity toggle off to keep full brightness all day while a schedule handles the night.
+- **Sleep & dimming** is grouped into four sections, inactivity dimming ("Dim after a few quiet minutes"), the daily schedules ("Dim in the evening" and "Turn off overnight"), the dimmed appearance, and what happens while the screen is turned off, with a 24-hour preview bar showing when the display will be bright, dimmed, or off. Turn the inactivity toggle off to keep full brightness all day while a schedule handles the night.
 - **Dim and sleep schedules** support overnight spans, `23:00–06:00` works and wraps past midnight as you'd expect.
 - **After a wake-up, stay on for** (shown when a schedule is on), how long the display stays awake when someone touches it or wakes it from the remote during a scheduled dim or sleep window, before the schedule takes over again. Defaults to 5 minutes; set it to the minimum for the old behavior of going right back to sleep.
 - **Screensaver** picks what shows during the *dimmed* state, before full sleep: a drifting clock, blank, or off (no clock, the display still dims).
@@ -299,12 +299,14 @@ Which provider to pick, and which need a key, is covered on the [Weather](/docs/
 
 ### Calendar
 
-Two areas. **What to show** has **Days Ahead**, the furthest any calendar module looks, and **Hide events you declined** (Google only). **Where events come from** lists the ways in:
+Three areas. **What to show** has **Days Ahead**, the furthest any calendar module looks, and **Hide events you declined** (Google only). **Where events come from** lists the ways in, and every calendar and feed in use shows **Updated** or **Not updating** beside it, so a source that quietly broke is visible here:
 
-- **Google Calendar**: **Sign in with Google** once your Google login is on the API keys page, then **Select calendars to display**.
+- **Google Calendar**: **Sign in with Google**, type the short code at google.com/device on your phone or computer, then tick the calendars you want. Nothing has to be set up on the API keys page first.
 - **iCloud Calendar**: **Add iCloud account** with an app-specific password, pick calendars, and optionally **Birthdays** from your contacts.
-- **iCal / ICS feeds**: **Add Feed**, paste the link, name it, pick a colour. Each row says **Updated** a moment ago or **Not updating**, so a feed that quietly broke is visible here.
-- **Public Holidays** for a country, **People** (name, colour, and which calendars are theirs, used by the full-screen calendar's family grid and free time views), and **Source status** for every source at once.
+- **iCal / ICS Feeds**: **Add Feed**, paste the link, name it, pick a colour.
+- **Public Holidays** for a country.
+
+**Whose calendars?** says which calendars belong to each person in your family list. The full-screen calendar's family grid and free time views use it, and so do the calendar modules' **Name tags**, their colour key when it lists people or groups, and **Show only these people**.
 
 The walkthroughs for all three ways in, and how to choose, are on the [Calendars](/docs/calendars) page.
 
@@ -324,6 +326,8 @@ The two phone addresses (the kids' chores page and the family remote) with QR co
 
 Keys and logins that unlock extra content, one card per service, each showing whether it is set up. They are stored on the Pi and never sent anywhere else. Weather keys are the exception and live on their provider's card under **Settings > Weather**.
 
+The Google card needs nothing for Google Calendar or Google Photos: both sign in with Home Screens' own Google app. It holds the Maps key for traffic and, folded under **Use your own Google app**, the fields for running your own Google Cloud project instead (see [for the calendar](/docs/calendars#own-google-app) and [for Google Photos](/docs/backgrounds#use-your-own-google-app)).
+
 Which service needs which key is listed under [API keys](/docs/calendars#api-keys). One gotcha worth repeating: for **TomTom**, the Geocoding, Reverse Geocoding, and Routing APIs must be enabled **on the key itself**, not just on your account, or the traffic module shows "The TomTom key isn't working".
 
 ### Pictures & videos
@@ -339,7 +343,7 @@ Pictures your family added to use as icons for meals, chores, rewards, people, r
 The editor has no password until you set one. Once set, it covers the editor and the family remote; the display signs in on its own with a display key, and the kids' chores page deliberately stays open.
 
 - **No password yet** and a **Set a password** button is the starting state. With a password on, the page offers **Change password**, **Turn the password off**, **Sign out**, and **Sign everyone out**, which ends every session on every device.
-- **Remember me** on the login page gives a 90-day session instead of 30.
+- Ticking **Remember me for 90 days** on the login page keeps you signed in for 90 days instead of 30.
 - **Display key** is the long string displays and bookmarked commands use instead of the password. **Reveal**, **Copy**, or **Make a new key**; each display reloads once to pick up a new one.
 - **Forgot the password?** Run `home-screens-reset-password` on the Pi and set a new one. The login page says the same.
 
@@ -359,7 +363,7 @@ Two things to know: addresses with colons (IPv6) never match, so add the IPv4 ra
 
 ### Status
 
-A live page: the display's state, current screen and last check-in; **Storage** and **Memory**; **CPU & Thermal** (Pi model, load, throttling and temperature, from the hub itself or a display's reporter); **Home Screens Data**; **Configuration** counts with a **Module breakdown**; **Integrations**; and **Saved data**, the display's cache, behind **Show details**. **CPU & Thermal** is the first place to look if the display feels sluggish; it says whether the Pi is throttled by heat or a weak power supply.
+A live page: the display's state, current screen and last check-in; **Storage** and **Memory**; **CPU & Thermal** (Pi model, load, throttling and temperature, from the hub itself or a display's reporter); **Home Screens Data**; **Configuration** counts with a **Module breakdown**; **Integrations**; and **Saved data**, the display's cache, behind **Show details**. **CPU & Thermal** is the first place to look if the display feels sluggish; it says whether the Pi is throttled by heat or a weak power supply. It also lists **Display programs**, the versions of the programs the wall runs, and under **Programs checked**, when Home Screens last looked for newer ones.
 
 **Diagnostics bundle** exports a redacted archive for bug reports. **Anonymous Telemetry** holds the **Send anonymous usage data** switch and **What we collect**, the list of exactly what is sent.
 
@@ -411,8 +415,8 @@ Individual modules can be shown or hidden based on a schedule:
 
 1. Select a module on the canvas
 2. In the Property Panel, expand **Schedule**
-3. Set the days of week and time window
-4. Optionally toggle **Invert** to hide the module during the window instead of showing it
+3. Turn on **Only show at certain times**, then set the days and time window
+4. Optionally turn on **Hide during these hours instead** to hide the module during those times rather than show it
 
 This is useful for showing a commute module only on weekday mornings or a sports scores module only on game days.
 
@@ -427,7 +431,7 @@ Beyond scheduling, the Property Panel has two separate sections that control whe
 
 ### Conditions
 
-Conditions show a module only when live values match rules you define. Values come from plugins that share state, for example the Home Assistant plugin publishing sensor readings, and from Home Screens itself: the display's own calendar (the next event, how many events are on today) and its weather (the weather right now, the temperature, and the chance of rain or snow now, in the next six hours and today). The built-in values appear in the key picker as soon as a calendar source or a location is set up; see [Weather](/docs/weather#show-the-rain-map-only-when-rain-is-likely) for a worked example.
+Conditions show a module only when live values match rules you define. Values come from plugins that share state, for example the Home Assistant plugin publishing sensor readings, and from Home Screens itself: the display's own calendar (the next event, how many events are on today) and its weather (the weather right now, the temperature, the chance of rain or snow now, in the next six hours and today, and, when your weather comes from NOAA or Pirate Weather, whether a weather warning is in force). The built-in values appear in the key picker as soon as a calendar source or a location is set up; see [Weather](/docs/weather#show-the-rain-map-only-when-rain-is-likely) for a worked example.
 
 - **Show only when conditions match**: the master switch for this section. Leave it off and the module ignores conditions entirely. Turn it on with no conditions added and the module always shows.
 - **Conditions**: add one or more rules. There are six kinds:

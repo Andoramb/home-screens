@@ -18,6 +18,7 @@ import {
  */
 
 const CONFIGURATION_PAGE = path.resolve(__dirname, '../../../website/content/docs/configuration.md');
+const API_PAGE = path.resolve(__dirname, '../../../website/content/docs/api.md');
 
 let schema: DocsSchema;
 
@@ -85,5 +86,11 @@ describe('docs schema', () => {
     // A fenced code block cannot use the {% $schemaVersion %} variable.
     const page = fs.readFileSync(CONFIGURATION_PAGE, 'utf8');
     expect(page).toContain(`"version": ${schema.schemaVersion},`);
+  });
+
+  it('shows the current schema version in the /api/health example', () => {
+    // Same reason: the example answer sits in a fenced code block.
+    const page = fs.readFileSync(API_PAGE, 'utf8');
+    expect(page).toContain(`"schema":${schema.schemaVersion},`);
   });
 });

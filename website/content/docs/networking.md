@@ -18,14 +18,14 @@ Home Screens runs a Next.js server on **port 3000** by default. Once installed, 
 
 | URL | Purpose |
 |---|---|
-| `http://<ip>:3000/` | Redirects to `/editor` |
+| `http://<ip>:3000/` | The editor on a laptop or tablet; a short page of links on a phone (see below) |
 | `http://<ip>:3000/display` | Fullscreen kiosk view (what the display shows) |
 | `http://<ip>:3000/display/<display-id>` | A specific display in a multi-display setup |
 | `http://<ip>:3000/editor` | Configuration editor |
 | `http://<ip>:3000/remote` | Mobile remote control |
 | `http://<ip>:3000/chores` | Kid-facing chore view, never asks for a password |
 
-Any device on the same LAN can reach these URLs. The display view is designed for the connected screen; the editor is designed for phones, tablets, and laptops. Visiting the root URL (`/`) redirects to the editor since users navigating to the bare hostname are typically in a setup/configuration context. Pi displays are unaffected, the kiosk launches Chromium directly at `/display`.
+Any device on the same LAN can reach these URLs. The display view is designed for the connected screen; the editor is designed for laptops and tablets, and the family remote for phones. Visiting the root URL (`/`) on a laptop or tablet opens the editor. On a phone-sized screen it shows a short page of links instead (the remote, the display, and `/chores` once a chore chart is on a screen) plus the editor's address to open on a laptop, because the editor needs a wider screen. Pi displays are unaffected, the kiosk launches Chromium directly at `/display`.
 
 ---
 
@@ -111,7 +111,7 @@ Every network change that touches the **management interface**: the one your bro
 
 ### IP address
 
-Each interface can be toggled between **DHCP (auto)** and **static (manual)**. Manual mode requires `address`, `prefix` (CIDR bits), `gateway`, and optional `dns` array. Changes go through the same management-interface confirmation + 60 s rollback as WiFi.
+Each interface can be toggled between **DHCP (auto)** and **Static (manual)**. Manual mode requires `address`, `prefix` (CIDR bits), `gateway`, and optional `dns` array. Changes go through the same management-interface confirmation + 60 s rollback as WiFi.
 
 ### Hostname
 
@@ -296,7 +296,7 @@ The display reports its status to the server every 30 seconds and on any state c
 curl 'http://<ip>:3000/api/display/status?display=kitchen'
 ```
 
-Leave off `?display=` only on a single-display install. As soon as you have more than one display set up, each one reports under its own ID, and the bare URL has nothing to answer with, so it returns `404 {"error": "No status reported yet"}`.
+Without `?display=`, the answer is the main display's status (the display with ID `main`, or the first one), or the one display's on a single-display install. A display that has not reported yet answers `null` rather than an error.
 
 Response:
 
@@ -305,6 +305,7 @@ Response:
   "currentScreen": { "index": 0, "id": "abc123", "name": "Main" },
   "screenCount": 3,
   "activeProfile": null,
+  "profileScheduled": false,
   "displayState": "active",
   "timestamp": 1711300000000,
   "reportedViewport": { "width": 1080, "height": 1920 },
@@ -319,12 +320,16 @@ Response:
     "memoryFree": 2100000000,
     "diskTotal": 31000000000,
     "diskFree": 24000000000,
-    "reportedAt": "2026-07-25T18:00:00.000Z"
+    "kioskUpdater": true,
+    "kioskVersion": "1.13.0",
+    "packages": { "chromium": "1:141.0.7390.54-1~deb12u1", "labwc": "0.8.4-1", "kanshi": "1.7.0-1", "wlopm": "0.1.0-1" },
+    "packagesCheckedAt": "2026-10-10T03:12:00Z",
+    "reportedAt": "2026-10-10T18:00:00.000Z"
   }
 }
 ```
 
-The `displayState` field is one of: `active`, `dimmed`, or `asleep`. `hwStats` is present only when a per-Pi reporter is posting to the hub. Memory and disk figures are raw byte counts, and CPU load is reported as 1/5/15-minute load averages rather than a percentage. Display-only Pis run `scripts/reporter.sh` on a 30-second systemd timer and POST to `/api/display/hw-stats` (adoption-gated, no bearer token, the display-only Pi just has to appear in the hub's displays registry).
+The `displayState` field is one of: `active`, `dimmed`, or `asleep`. `hwStats` is present only when a per-Pi reporter is posting to the hub. Memory and disk figures are raw byte counts, and CPU load is reported as 1/5/15-minute load averages rather than a percentage. `packages` lists the installed versions of the programs the kiosk runs, and `packagesCheckedAt` when the Pi last looked for newer ones. Display-only Pis run `scripts/reporter.sh` on a 30-second systemd timer and POST to `/api/display/hw-stats` (adoption-gated, no bearer token, the display-only Pi just has to appear in the hub's displays registry).
 
 ### Home Assistant integration
 
@@ -441,7 +446,7 @@ Password protection is **off by default**. Until you set one, anyone on your net
 Set a password in the editor under **Settings > Security**. When enabled:
 
 - The editor (`/editor`) requires login
-- All write API endpoints (`PUT`, `POST`, `DELETE`) require a session cookie, **except** the chore-toggle endpoint (`POST /api/chores`) and the reward-redeem endpoint (`POST /api/rewards`), which are intentionally public on the LAN so the kid-facing `/chores` view keeps working without a password
+- All write API endpoints (`PUT`, `POST`, `DELETE`) require a session cookie, **except** the chore-toggle endpoint (`POST /api/chores`), the bonus-chore grab endpoint (`POST /api/chores/grab`) and the reward-redeem endpoint (`POST /api/rewards`), which are intentionally public on the LAN so the kid-facing `/chores` view keeps working without a password
 - Sensitive GET endpoints (secrets, system settings, backups) require authentication
 - Every display-control endpoint (`/api/display/*`) requires either a login or the display token, described under [Remote display control](#if-you-have-set-a-password)
 - The display view (`/display`) remains accessible without login
@@ -454,9 +459,9 @@ Password protection is the right default for most LANs. If you want to lock thin
 
 In addition to (or instead of) a password, Home Screens can gate every route on the server by the caller's IP address. The editor surfaces this under **Settings > Security > Allowed networks** and it has two independent toggles, both opt-in and both off by default.
 
-**Bypass authentication for trusted IPs.** Add your LAN subnets (for example `192.168.1.0/24`) and check the first toggle. Any request coming from an allowlisted IP skips the password prompt and the session-cookie check, so family members on the couch don't have to type a password every time they open the editor, while a phone on cellular data still gets the login form. Display-auth routes (the ~14 cached proxy endpoints the kiosk polls, plus `requireDisplayAuth`-wrapped routes) also accept the bypass, so a trusted LAN can drive the display without a display token.
+**Let displays on these networks in without the key.** Add your LAN subnets (for example `192.168.1.0/24`) and turn on the first toggle. Requests from an allowlisted address then read display data with no display token: the kiosk's polls, the cached data endpoints and every `requireDisplayAuth` route, plus the `GET` form of the simple commands such as `/api/display/wake`. A `POST` still needs the display token or a session, because the password check in front of every write runs first. The editor and the family remote still ask for the password; this toggle never skips the login.
 
-**Restrict access to allowlisted IPs only.** The second toggle is the harder wall. When enabled, Home Screens blocks every non-allowlisted IP from every route except `/login`, `/api/auth/status` and `/api/health` (which says only which version is running, see the [API reference](/docs/api#is-the-hub-up)); API callers receive `403 JSON`, browsers are redirected to a dedicated "Access is restricted by IP" banner on the login page. The check runs before the password gate, so an attacker who somehow knows the password still can't get in. Enabling the toggle from a client whose own IP is not in the allowlist returns `409 Conflict` without saving, the UI then shows a lockout warning and a **Save anyway** button for the rare case where you really want to lock yourself out immediately.
+**Only allow these networks.** The second toggle is the harder wall. When enabled, Home Screens blocks every non-allowlisted IP from every route except `/login`, `/api/auth/status` and `/api/health` (which says only which version is running, see the [API reference](/docs/api#is-the-hub-up)); API callers receive `403 JSON`, browsers are redirected to the login page, which shows an "Access restricted" note. The check runs before the password gate, so an attacker who somehow knows the password still can't get in. Enabling the toggle from a client whose own IP is not in the allowlist returns `409 Conflict` without saving, the UI then shows a lockout warning and a **Save anyway** button for the rare case where you really want to lock yourself out immediately.
 
 **CIDR entries.** Every entry is CIDR-validated: `a.b.c.d/prefix`, prefix between `0` and `32`, no leading-zero octets (so `01.168.1.0/24` is rejected, matching Node's `net.isIPv4()` behavior). Garbage entries in a hand-edited `data/auth.json` are skipped rather than matched, bad data fails safe instead of silently matching `0.0.0.0/24`.
 
@@ -502,7 +507,7 @@ produce one.
 `X-Forwarded-Host`, requests from your own address may be refused with
 `{"error": "Access denied", "reason": "cross_origin"}`. Set `HS_ALLOWED_ORIGINS` to the
 address you actually visit, comma-separated for more than one, using the same systemd
-override shown below:
+override shown above:
 
 ```
 Environment=HS_ALLOWED_ORIGINS=https://home.example.com
@@ -534,23 +539,29 @@ tar -czf home-screens-backup.tar.gz -C /opt/home-screens/current data
 If you would rather pick files individually, these are the ones that matter:
 
 ```bash
-data/config.json              # Screen configuration
-data/secrets.json             # API keys
-data/auth.json                # Password hash and session secret
-data/google-tokens.json       # Google OAuth tokens
-data/icloud-accounts.json     # iCloud calendar sign-ins (app-specific passwords)
-data/plugins/                 # Installed plugins themselves
-data/plugin-tokens/           # Plugin account connection tokens
-data/plugin-secrets/          # Plugin credentials
-data/port.conf                # Custom port (if set)
-data/meals.json               # Meal planner data (saved meals, weekly plan, grocery list)
-data/chores.json              # Chore chart members and chore definitions
-data/chore-completions.json   # Chore history: who did what, and when
-data/rewards.json             # Chore rewards data (definitions, balances, redemptions)
-data/todos.json               # Shared to-do lists
-data/backup-state.json        # Backup reminder tracking
+data/config.json                 # Screen configuration
+data/secrets.json                # API keys
+data/auth.json                   # Password hash and session secret
+data/google-tokens.json          # Google OAuth tokens
+data/google-picker-tokens.json   # Google Photos sign-in
+data/onedrive-tokens.json        # OneDrive photo sign-in
+data/icloud-accounts.json        # iCloud calendar sign-ins (app-specific passwords)
+data/plugins/                    # Installed plugins themselves
+data/plugin-tokens/              # Plugin account connection tokens
+data/plugin-secrets/             # Plugin credentials
+data/port.conf                   # Custom port (if set)
+data/family.json                 # Family members and groups
+data/meals.json                  # Meal planner data (saved meals, weekly plan, grocery list)
+data/chores.json                 # Chore definitions
+data/chore-completions.json      # Chore history: who did what, and when
+data/rewards.json                # Chore rewards data (definitions, balances, redemptions)
+data/todos.json                  # Shared to-do lists
+data/timetables.json             # School timetables
+data/routines.json               # Saved timer routines
+data/custom-icons/               # The family's own icons
+data/backup-state.json           # Backup reminder tracking
 ```
 
 Two of these are easy to miss and painful to lose. Chore history lives in `data/chore-completions.json`, **not** in `chores.json`, and reward balances are calculated from it, so skipping it wipes everyone's earned rewards. And `data/plugins/` holds the installed plugins themselves; without it, every plugin module on your screens comes back empty after a restore.
 
-The editor also supports config backups under **Settings > Backups & data**.
+The editor also supports full household backups under **Settings > Backups & data**.

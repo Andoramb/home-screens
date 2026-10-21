@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorData } from '@/hooks/useEditorData';
-import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
+import { useEditorStore } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import type { ImmichAlbumSummary } from '@/lib/immich';
@@ -16,11 +16,7 @@ interface Props {
 export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props) {
   const t = useTranslate('editor');
   const tCore = useTranslate('core');
-  const { updateScreen } = useEditorStore();
-  const currentScreen = useEditorStore((s) => {
-    if (!s.config) return undefined;
-    return getActiveScreens(s.config, s.selectedDisplayId).find((sc) => sc.id === selectedScreenId);
-  });
+  const { pickScreenBackground } = useEditorStore();
   const { data: albumsData } = useEditorData<ImmichAlbumSummary[]>(hasImmichKey ? '/api/immich/albums' : null);
   const albums = albumsData ?? [];
   const [selectedAlbum, setSelectedAlbum] = useState('');
@@ -69,11 +65,7 @@ export default function ImmichBrowser({ selectedScreenId, hasImmichKey }: Props)
       const uploadRes = await editorFetch('/api/backgrounds', { method: 'POST', body: formData });
       const data = await uploadRes.json();
       if (data.path) {
-        const updates: Record<string, unknown> = { backgroundImage: data.path };
-        if (currentScreen?.backgroundRotation?.enabled) {
-          updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
-        }
-        updateScreen(selectedScreenId, updates);
+        pickScreenBackground(selectedScreenId, data.path);
       }
     } catch {
       setError(t('imageBrowsers.errors.saveImage'));

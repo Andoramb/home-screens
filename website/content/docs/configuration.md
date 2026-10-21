@@ -22,7 +22,7 @@ Home Screens stores all configuration as JSON files on disk. The main config fil
 | `data/secrets.json` | API keys for external integrations (weather, calendar, photos, etc.) | `/api/secrets` |
 | `data/auth.json` | Password hash and session secret for editor authentication | (internal) |
 | `data/meals.json` | Meal library, weekly plan, checked-off grocery items, household meal settings | `/api/meals/data` |
-| `data/family.json` | Shared family members and legacy identity aliases | `/api/family` |
+| `data/family.json` | Shared family members, family groups, and legacy identity aliases | `/api/family` |
 | `data/chores.json` | Chore definitions | `/api/chores/data` |
 | `data/chore-completions.json` | Chore completion history (last 90 days) | `/api/chores` |
 | `data/rewards.json` | Reward definitions, point balances, redemption history | `/api/rewards/data` |
@@ -34,6 +34,7 @@ Home Screens stores all configuration as JSON files on disk. The main config fil
 | `data/routines.json` | Saved timer routines (the steps, not a running timer) | `/api/timers/routines` |
 | `data/timer-session.json` | The one timer running right now, as a snapshot plus timestamps so displays can count down on their own | `/api/timers/session` |
 | `data/google-picker-tokens.json` | Google Photos Picker tokens, kept separate from the Calendar tokens above | (internal) |
+| `data/onedrive-tokens.json` | OneDrive photo sign-in tokens | (internal) |
 | `data/backup-state.json` | Last-backup and last-dismissed timestamps behind the backup reminder | `/api/backup` |
 | `data/port.conf` | Custom server port (preserved across upgrades) | (internal) |
 | `data/plugins/` | Installed plugin bundles and manifests | `/api/plugins/*` |
@@ -43,7 +44,7 @@ Home Screens stores all configuration as JSON files on disk. The main config fil
 
 Chore definitions and chore completions are **two separate files**. Copying only `data/chores.json` leaves every completion (and therefore every earned point) behind.
 
-Other files under `data/` (`backups/`, `thumbnails/`, `kiosk.conf`, `telemetry.json`, `background-cache.json`) are written and managed by the app; they are not meant to be edited by hand.
+Other files under `data/` are written and managed by the app and are not meant to be edited by hand: `backups/`, `thumbnails/`, `kiosk.conf`, `telemetry.json`, `background-cache.json`, `weather-today.json`, `audit.log`, the update records (`auto-update-setting.json`, `auto-update-state.json`, `update-notification-state.json`, `upgrade-failed.json`, `restart-needed.json`), the Pi program records (`system-packages.json`, `system-package-holds`), the change journal behind family and restore writes (`family-transaction.json`), and the records of the one-time move to a shared family list (`family-migration.json`, `family-migrations/`).
 
 The main config is read via `GET /api/config` and written via `PUT /api/config`. If you have set an editor password, both endpoints require an `hs-session` cookie: `PUT` accepts nothing else, and `GET` also accepts a display bearer token. With no password set, authentication is off and both are open on your local network.
 
@@ -71,9 +72,24 @@ Supported secret keys:
 | `google_client_secret` | Google Calendar, only with your own Google app |
 | `google_web_client_id` | Google Photos import, only with your own Google app (web application client) |
 | `google_web_client_secret` | Google Photos import, only with your own Google app |
+| `microsoft_client_id` | OneDrive photos in the Photo Slideshow and Full-Screen Photo Viewer (the Application ID of your own Microsoft app) |
 | `nasa_api_key` | Background rotation (NASA APOD) |
 | `immich_url` | Immich server URL (e.g. `http://192.168.1.50:2283`) |
 | `immich_api_key` | Immich API key (Account Settings → API Keys) |
+
+## Environment variables
+
+A few behaviors are set in the Home Screens service's environment rather than in the editor. Add them with `sudo systemctl edit home-screens` and then restart the service (see [Networking](/docs/networking#restrict-access-by-ip)), because upgrades rewrite the service file itself. `PORT` is the exception.
+
+| Variable | Effect |
+|---|---|
+| `PORT` | The port the server listens on. Set it in `data/port.conf`, not with an override: `setup-system` writes it into the service file from there and the kiosk browser reads the same file, so an override alone leaves the screen on the old port. See [Networking](/docs/networking#custom-port-configuration) |
+| `HS_GOOGLE_HOSTED=0` | Turns off Home Screens' own Google apps, so Google Calendar and Google Photos only sign in with a Google app you saved under **Settings > API keys** |
+| `HS_DISABLE_AUTO_UPDATE=1` | Never installs updates on a schedule, whatever **Install updates automatically** says |
+| `HS_DISABLE_TELEMETRY=1` | Never sends the anonymous usage report, whatever the setting says |
+| `HS_TRUSTED_PROXIES` | Comma-separated proxy addresses whose forwarded client address is believed; see [Restrict access by IP](/docs/networking#restrict-access-by-ip) |
+| `HS_ALLOWED_ORIGINS` | Other sites allowed to send changes to the API; see [Requests from other websites](/docs/networking#requests-from-other-websites) |
+| `HOME_SCREENS_DIR` | Where an install that is not under `/opt/home-screens/current` lives, so updates and the data folder are found |
 
 ## Schema
 
@@ -185,7 +201,7 @@ Each condition is one of these shapes, told apart by its `kind`:
 
 {% type-reference name="VisibilityCondition" /%}
 
-`sourceKey` references a published state key (plugin keys are prefixed `plugin:<id>:`, built-in ones are not). Conditions are edited visually in the editor's module Visibility panel; the key picker lists the built-in values first, under **Built-in**, followed by the keys plugins declare in their manifest's `providesState` field or compute from their config via a `deriveProvidedKeys` export. Check the **Or equal to** box next to a numeric bound to make it inclusive. See the [Plugins guide](/docs/plugin-development#shared-state-and-visibility-conditions) for the publishing side.
+`sourceKey` references a published state key (plugin keys are prefixed `plugin:<id>:`, built-in ones are not). Conditions are edited visually in the module's **Conditions** section in the editor; the key picker lists the built-in values first, under **Built-in**, followed by the keys plugins declare in their manifest's `providesState` field or compute from their config via a `deriveProvidedKeys` export. Check the **Or equal to** box next to a numeric bound to make it inclusive. See the [Plugins guide](/docs/plugin-development#shared-state-and-visibility-conditions) for the publishing side.
 
 Save-time limits: at most 32 conditions per module (leaves and groups combined) and 5 levels of `and` / `or` / `not` nesting, and a group condition must have at least one child. Exceeding any of these makes `PUT /api/config` fail with a 400 rather than saving.
 
@@ -233,17 +249,14 @@ Per-display dimension fields (top-level on the DisplayNode) override the equival
 |---|---|
 | Display ID format | URL-safe slug, lowercase letters, digits, hyphens; must start with a letter or digit |
 | Display ID length | ≤ 64 characters |
+| Reserved IDs | `all` is refused, because the command endpoints use it to mean every display |
 | IDs must be unique | Yes |
 | Maximum displays | 64 per config |
 | Maximum screens per display | 256 |
-| Dimensions | Positive integers, ≤ 16384 |
+| Dimensions | Whole numbers from 320 to 16384 |
 | Owned profile IDs | Must be unique within the display's `profiles` list |
 | Owned profile `screenIds` | Must reference the display's own `screens` (not the global pool) |
 | `activeProfile` references | When owned profiles are present, must be a member of `profiles`; otherwise must reference the global profile list |
-
-{% callout type="warning" %}
-**Do not name a display `all`.** The command endpoints treat `all` as the keyword meaning "every display", so a display with that id never receives anything sent to it. This is not currently rejected when the config is saved, so the name has to be avoided by hand.
-{% /callout %}
 
 ### ModuleType
 
@@ -265,7 +278,7 @@ Each `ModuleInstance.config` object holds the fields for its module type. Those 
 
 ## Shared data files
 
-Three features deliberately keep their data **outside** `config.json`. The per-module config holds display options only; the data itself lives in a shared file so every module instance stays in sync, and so a save from the editor can never clobber something changed from `/remote` or tapped on a display.
+Several features deliberately keep their data **outside** `config.json`: the four below, and the timetables, routines and running timer listed in [Data files](#data-files). The per-module config holds display options only; the data itself lives in a shared file so every module instance stays in sync, and so a save from the editor can never clobber something changed from `/remote` or tapped on a display.
 
 ### data/meals.json
 
@@ -297,7 +310,7 @@ Old configs that used `day: number` (day-of-week index) are automatically migrat
 
 ### data/family.json
 
-The shared household roster, edited under **Settings > Family** or `/remote` > Settings > Family. `/api/family` returns its members and a revision required for writes.
+The shared household roster, edited under **Settings > Family** or `/remote` > Settings > Family. `/api/family` returns its members and groups and a revision required for writes; groups are edited through `/api/family/groups`.
 
 {% type-reference name="FamilyData" /%}
 
@@ -362,7 +375,7 @@ A clean config exits with status `0` and a "Config is valid" summary. Any errors
 
 ## Backup & Restore
 
-- **Export** from the editor's Data section or the remote's Settings sheet downloads a backup as JSON. The bundle contains your config, family, chores, chore completions, rewards, meals, routines, to-do lists and school timetables, plus your icons when **Include your icons** is on.
+- **Save a backup** (under **Save a copy** in **Settings > Backups & data**) in the editor, or **Backup All Data** in the remote's Settings sheet, downloads a backup as JSON. The bundle contains your config, family, chores, chore completions, rewards, meals, routines, to-do lists and school timetables, plus your icons when **Include your icons** is on.
 - **Import** replaces everything the uploaded file carries (available in both the editor and the remote); a section the file leaves out, such as the icons, is kept as it is
 - A configurable **backup reminder** shows a toast in the editor and a banner on the remote when you haven't backed up recently (Settings > Backups & data)
 

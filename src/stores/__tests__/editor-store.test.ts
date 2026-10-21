@@ -841,6 +841,29 @@ describe('editor store', () => {
     });
   });
 
+  describe('pickScreenBackground', () => {
+    const rotation = { enabled: true, source: 'unsplash' as const, query: 'nature', intervalMinutes: 60 };
+
+    it('sets the picture and turns that screen\'s rotation off', () => {
+      const store = useEditorStore;
+      const config = makeConfig({
+        screens: [
+          { id: 's1', name: 'A', backgroundImage: '', modules: [], backgroundRotation: rotation },
+          { id: 's2', name: 'B', backgroundImage: '', modules: [], backgroundRotation: rotation },
+        ],
+      });
+      store.setState({ config, isDirty: false });
+
+      store.getState().pickScreenBackground('s1', '/api/backgrounds/serve?file=unsplash-a.jpg');
+
+      const [s1, s2] = store.getState().config!.screens;
+      expect(s1.backgroundImage).toBe('/api/backgrounds/serve?file=unsplash-a.jpg');
+      expect(s1.backgroundRotation).toEqual({ ...rotation, enabled: false });
+      expect(s2.backgroundRotation).toEqual(rotation);
+      expect(store.getState().isDirty).toBe(true);
+    });
+  });
+
   describe('reorderProfiles', () => {
     it('moves a profile from one index to another', () => {
       const store = useEditorStore;

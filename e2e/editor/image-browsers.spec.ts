@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures';
 import type { APIRequestContext, Page } from '@playwright/test';
+import type { Screen } from '@/types/config';
 import { getConfig, putConfig } from '../helpers/api';
 import { baseConfig, makeScreen, textModule } from '../helpers/config-fixtures';
 import { buildModuleInstance } from '../helpers/module-fixtures';
@@ -41,10 +42,31 @@ async function seedImageSecrets(request: APIRequestContext) {
   }
 }
 
+/** Stub the Unsplash proxy: GET answers one search result, POST (download to the library) answers `saved`. */
+async function stubUnsplash(page: Page, saved: string) {
+  await page.route('**/api/unsplash*', async (route) => {
+    if (route.request().method() === 'POST') {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ path: saved }) });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        photos: [{
+          id: 'u1', description: 'Sunset Peak', thumb: TINY_PNG, small: TINY_PNG,
+          regular: TINY_PNG, full: TINY_PNG, raw: TINY_PNG,
+          authorName: 'Ansel', authorUrl: '', downloadUrl: '',
+        }],
+        totalPages: 1,
+      }),
+    });
+  });
+}
+
 /** Open the editor in its empty (no-module) state so the Background accordion shows. */
-async function openBackgroundPicker(page: Page, request: APIRequestContext) {
+async function openBackgroundPicker(page: Page, request: APIRequestContext, screen: Partial<Screen> = {}) {
   await putConfig(request, baseConfig({
-    screens: [makeScreen('screen-1', 'Screen 1', [textModule('BG')])],
+    screens: [makeScreen('screen-1', 'Screen 1', [textModule('BG')], screen)],
   }));
   await page.goto('/editor');
   await expect(page.getByTestId('editor-canvas')).toBeVisible();
@@ -61,24 +83,7 @@ test.describe('Background source browsers (PropertyPanel Background picker)', ()
   test('Unsplash: searching renders results and picking persists backgroundImage', async ({ page, request }) => {
     const handle = await stubModuleData(page, { blockExternal: true });
     const SAVED = '/api/backgrounds/serve?file=unsplash-u1.jpg';
-    // GET = search results; POST = download-to-local, returns the served path.
-    await page.route('**/api/unsplash*', async (route) => {
-      if (route.request().method() === 'POST') {
-        return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ path: SAVED }) });
-      }
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          photos: [{
-            id: 'u1', description: 'Sunset Peak', thumb: TINY_PNG, small: TINY_PNG,
-            regular: TINY_PNG, full: TINY_PNG, raw: TINY_PNG,
-            authorName: 'Ansel', authorUrl: '', downloadUrl: '',
-          }],
-          totalPages: 1,
-        }),
-      });
-    });
+    await stubUnsplash(page, SAVED);
 
     await openBackgroundPicker(page, request);
     // The picker opens on the backgrounds that ship with Home Screens; the
@@ -92,6 +97,27 @@ test.describe('Background source browsers (PropertyPanel Background picker)', ()
     await expect
       .poll(async () => (await getConfig(request)).screens[0].backgroundImage)
       .toBe(SAVED);
+    expect(handle.externalHits).toEqual([]);
+  });
+
+  test('Unsplash: picking on a rotating screen turns its rotation off, like every other tab', async ({ page, request }) => {
+    const handle = await stubModuleData(page, { blockExternal: true });
+    const SAVED = '/api/backgrounds/serve?file=unsplash-u1.jpg';
+    await stubUnsplash(page, SAVED);
+    // With rotation on, the canvas asks the hub for the rotated photo; answer it here so the hub never calls Unsplash.
+    await page.route('**/api/backgrounds/rotate*', (route) =>
+      route.fulfill({ json: { path: '/starter-backgrounds/dusk.svg', fresh: false } }));
+    const rotation = { enabled: true, source: 'unsplash' as const, query: 'nature landscape', intervalMinutes: 60 };
+
+    await openBackgroundPicker(page, request, { backgroundRotation: rotation });
+    await page.getByTestId('background-tab-unsplash').click();
+    const photo = page.getByRole('img', { name: 'Sunset Peak' });
+    await expect(photo).toBeVisible();
+    await autosaved(page, async () => { await photo.click(); });
+
+    await expect
+      .poll(async () => (await getConfig(request)).screens[0])
+      .toMatchObject({ backgroundImage: SAVED, backgroundRotation: { ...rotation, enabled: false } });
     expect(handle.externalHits).toEqual([]);
   });
 

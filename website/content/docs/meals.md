@@ -14,17 +14,17 @@ Plan the week's dinners on your phone, see them on the wall, and take the grocer
 
 In the editor, drag **Meal Planner** from the **Personal** group onto a screen. Its views are in the module's settings: the whole **week**, **today**, the **next meal**, a **compact** strip, and a **list**. The **Full-Screen Meal Planner** fills the screen with a week, a day, a **menu board**, or the next meal.
 
-The planner is empty until you add meals, which happens on a phone.
+The planner is empty until you add meals, which you do on a phone or in the editor with **Edit Meal Plan** in the module's settings (**Edit Meal Planner** on the Full-Screen Meal Planner).
 
 {% screenshot name="display-meals" caption="The Full-Screen Meal Planner on the wall." /%}
 
 ## 2. Build a meal library
 
-Open the family remote (Settings > On your phone shows the address), tap **Meals**, then **Library**. Add the meals your family actually eats: a name and an emoji are enough. Prep time, difficulty, servings, a recipe link, notes and tags (quick, healthy, vegetarian) are all optional, and ingredients are what feed the grocery list later.
+Open the family remote (Settings > On your phone shows the address), tap **Meals**, then **Library**. Add the meals your family actually eats: a name and an emoji are enough. Prep and cook time, difficulty, servings, a recipe link, notes, a star rating, a favorite heart and tags (quick, healthy, vegetarian and more) are all optional, and ingredients are what feed the grocery list later.
 
 ## 3. Plan the week
 
-Under **Plan**, tap a day and a slot and pick a meal from the library. Three shortcuts fill a week fast: **Copy Last Week**, **Suggest** (random picks from the library), and **Clear**.
+Under **Plan**, tap a day and a slot and pick a meal from the library, or type one in ("Tacos") for a night that does not need a saved meal. Three shortcuts fill a week fast: **Copy Last Week**, **Suggest** (random picks from the library), and **Clear**.
 
 **This Week** shows the result, and arrows move to other weeks. The wall updates a few seconds after you save.
 

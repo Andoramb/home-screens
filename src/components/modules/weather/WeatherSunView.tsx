@@ -47,7 +47,7 @@ export default function WeatherSunView({ config, timezone, timeFormat, scaledFon
   if (latitude == null || longitude == null) {
     return (
       <div className="w-full h-full flex items-center justify-center" style={{ fontSize: `${scaledFontSize}px` }}>
-        <WeatherEmptyState message={t('weather.locationNotSet')} />
+        <WeatherEmptyState message={t('common.locationNotSet')} />
       </div>
     );
   }

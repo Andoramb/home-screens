@@ -69,7 +69,7 @@ Each display has its own [profiles](/docs/profiles). Switching a profile from th
 
 ## The family remote
 
-Once there is more than one display, the family remote's Control tab gets a **Send to** row: pick a display, or **All** to send brightness, sleep, wake and alerts to every display at once. Changing screens and switching profiles work on one display at a time. Timers get a **Show on** row for the same reason.
+Once there is more than one display, the family remote's Control tab gets a **Send to** row: pick a display, or **All displays** to send brightness, sleep, wake and alerts to every display at once. Changing screens and switching profiles work on one display at a time. Timers get their own **Send to** row for the same reason.
 
 A **Display Control** module on a touchscreen can do the same from the wall, aimed at itself, another display by name, or all of them. See [Display Control](/docs/module-reference#display-control).
 
@@ -81,7 +81,7 @@ A **Display Control** module on a touchscreen can do the same from the wall, aim
 
 **Two displays show the same thing.** Two Pis were installed with the same display ID. Reinstall one with a different `--display-id` and add it as its own display.
 
-**A display says Offline in Settings > Displays.** Heartbeats live only in the hub's memory, so every display shows offline for a few seconds after the hub restarts or updates. If one stays offline, it is off, disconnected from the network, or pointed at the wrong hub address.
+**A display says Offline under Settings > Per display > All displays** (the page that was **Settings > Displays** before your first extra display). Heartbeats live only in the hub's memory, so every display shows offline for a few seconds after the hub restarts or updates. If one stays offline, it is off, disconnected from the network, or pointed at the wrong hub address.
 
 **The Display Switcher is missing.** It only appears once a second display exists.
 

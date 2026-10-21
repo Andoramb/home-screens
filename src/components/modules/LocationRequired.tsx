@@ -18,7 +18,7 @@ export function LocationRequired({ style, locationSettingsHref }: { style: Modul
   return (
     <ModuleWrapper style={style}>
       <div className="flex flex-col items-center justify-center gap-1 h-full text-center" style={{ fontSize: '0.85em', opacity: TEXT_OPACITY.dim }}>
-        <span>{t('common.locationNotConfigured')}</span>
+        <span>{t('common.locationNotSet')}</span>
         {locationSettingsHref && (
           <EditorSettingsLink href={locationSettingsHref} style={{ fontSize: '0.8em' }}>
             {t('common.setLocationLink')}

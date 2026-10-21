@@ -268,7 +268,6 @@
     "alertSeverityExpires": "{severity} · Expires {expires}",
     "noWeatherData": "No weather data",
     "noForecastData": "No forecast data",
-    "locationNotSet": "Location not set",
     "setLocationInSettings": "Set your location in Settings",
     "next60Minutes": "Next 60 Minutes",
     "noPrecipitationExpected": "No precipitation expected",
@@ -1188,7 +1187,7 @@
     "currentTime": "Current time: {time}"
   },
   "common": {
-    "locationNotConfigured": "Location not configured",
+    "locationNotSet": "Location not set",
     "pluginNotAvailable": "Plugin not available: {name}",
     "moduleFailed": "This item could not be shown.",
     "setLocationLink": "Set your location",

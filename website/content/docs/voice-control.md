@@ -19,7 +19,7 @@ Everything on this page is two YAML files you copy into your Home Assistant conf
 - A Home Screens hub reachable from Home Assistant (you'll need its address, e.g. `192.168.1.100:3000`)
 - Home Assistant with the ability to edit `configuration.yaml` (this guide was written and tested against Home Assistant 2026.7)
 - Something to talk to: a Voice PE speaker, the phone app's Assist button, or the Assist text box, the text box is enough to set everything up before a speaker ever arrives
-- If you've set a Home Screens password: your **display token**, from **Settings > Security** in the editor
+- If you've set a Home Screens password: your **Display key**, from **Settings > Security** in the editor (under **Advanced network access**)
 - For the [house modes](#house-modes-change-what-the-displays-show) section only: the Home Screens **Home Assistant plugin** installed on your displays
 
 ---
@@ -48,13 +48,13 @@ The package below gives you both, and they're good at different things:
 
 4. In the package file, type your hub's address into the `homescreens_host` box at the top, it's the only place the address lives; every command and sensor builds its URL from it.
 
-5. Add your display token to `secrets.yaml`, including the word `Bearer`:
+5. Add your display key to `secrets.yaml`, including the word `Bearer`:
 
    ```yaml
    homescreens_auth: "Bearer your-display-token-here"
    ```
 
-   The token is in the Home Screens editor under **Settings > Security**. If you haven't set a Home Screens password, put any placeholder text there, the hub ignores the header until a password exists, and your setup keeps working the day you add one.
+   The key is in the Home Screens editor under **Settings > Security**: open **Advanced network access**, then **Reveal** and **Copy** it under **Display key**. If you haven't set a Home Screens password, put any placeholder text there, the hub ignores the header until a password exists, and your setup keeps working the day you add one.
 
 6. Reload: **Developer Tools > YAML > All**. (Later edits to the sentences file are picked up by running the `conversation.reload` action, no restart needed.)
 
@@ -110,15 +110,13 @@ What each mode actually changes on screen is up to you, see [house modes](#house
 | "what's for dinner [tonight]" / "what's for lunch tomorrow" / "what's for dinner on friday" | Reads the meal plan ("supper" works too) |
 | "what's for dinner this week" | The week ahead, one meal per day |
 | "what do we need for dinner [tomorrow]" | The planned meal's ingredient list, with amounts |
-| "did Alice finish her chores" | An honest yes or no, "Yes! Alice finished all 4 chores today" or "Not yet, 2 of 4 done" |
+| "did Alice finish her chores" | An honest yes or no, "Yes! Alice finished all 4 chores today" or "Not yet. Alice has done 2 of 4, with 2 left." |
 | "what chores does Alice have [left] [tomorrow]" / "what's left for Alice" | The actual chore names still to do, with points |
 | "who hasn't done their chores [today]" | Names anyone with nothing checked off yet |
-| "how many points does Alice have" | Their reward-point balance |
-| "what can Alice get with her points" | Rewards they can afford right now, or how far the closest one is |
+| "how many tickets does Alice have" | Their reward-point balance |
+| "what can Alice get with her tickets" | Rewards they can afford right now, or how far the closest one is |
 | "what's on the grocery list" | Everything still to buy from this week's planned meals |
 | "what's showing on the kitchen display" | The current screen's name, or that it's asleep |
-
-The chore-list, chores-tomorrow, honest yes/no, and grocery answers need a hub with `/api/chores/today` and `/api/meals/grocery/list` (newer than 1.8.0). On an older hub those sentences answer "I can't check … right now", the chore yes/no falls back to a completion count, and everything else works unchanged.
 
 ### Checking things off
 
@@ -147,9 +145,10 @@ Download **[homescreens-package.yaml](/files/homescreens-package.yaml)** and sav
 #   homescreens_auth: "Bearer <display token>"
 #
 # Targets: every command takes an optional `display` (a display ID from the
-# editor, e.g. `kitchen`). Omitted → `all` (every display). Single-display
-# installs without a displays registry need no changes: `all` broadcasts
-# also reach the legacy default queue that an ID-less display polls.
+# editor, e.g. `kitchen`). Omitted, it goes to `all` (every display), except
+# going to a screen, which goes to the main display. Single-display installs
+# without a displays registry need no changes: `all` broadcasts also reach
+# the legacy default queue that an ID-less display polls.
 
 # ── Hub address ─────────────────────────────────────────────────────────
 # Every command and sensor below builds its URL from this helper, so the
@@ -239,24 +238,24 @@ Commands are fine for "wake up" and "next screen", but for "cooking mode" you do
 It takes the [Home Assistant plugin](/docs/plugins) running on your displays, plus a little setup in the editor:
 
 1. Install the Home Screens **Home Assistant plugin** and connect it to your Home Assistant (if you haven't already).
-2. In the editor, select a module and open **Visibility > Conditions**.
+2. In the editor, select a module, open its **Conditions** section, and turn on **Show only when conditions match**.
 3. Add a condition on the key `plugin:home-assistant:input_select.display_mode` and pick what each mode should show or hide.
 
-You don't need to configure the plugin to publish the mode, the moment a condition anywhere references that key, the plugin starts sending it along, and the editor's **Live values** panel shows what it currently is.
+You don't need to configure the plugin to publish the mode. The moment a condition anywhere references that key, the plugin starts sending it along, and the condition shows what the display sees right now next to **On the display now**. **Settings > Automation > Shared state** lists every value.
 
 Some starting recipes:
 
-| What you want | Condition | Before data arrives |
+| What you want | Condition (**Value matches**) | Before data arrives |
 |---|---|---|
-| A meal-planner overlay only while cooking | value **equals** `cooking` | Hide the module |
-| A chore-chart takeover at bedtime | value **equals** `bedtime` | Hide the module |
-| Hide busy modules during a movie | value **does not equal** `movie` | Show the module |
-| Hide personal touches for guests | `…input_boolean.guest_mode` value **does not equal** `on` | Show the module |
+| A meal-planner overlay only while cooking | **Is** `cooking` | Hide the module |
+| A chore-chart takeover at bedtime | **Is** `bedtime` | Hide the module |
+| Hide busy modules during a movie | **Is not** `movie` | Show the module |
+| Hide personal touches for guests | `…input_boolean.guest_mode` **Is not** `on` | Show the module |
 
 The third column is the condition's **Before data arrives** setting, and it's worth getting right: for modules you *add* in a mode, choose "Hide the module" so they only appear on a definite match; for modules you *remove* in a mode, choose "Show the module" so your normal dashboard stays intact even if Home Assistant is briefly unreachable. Overlays for different modes can share the same spot on the canvas, only one mode is active at a time.
 
 {% callout type="warning" title="Mode names are case-sensitive" %}
-The dropdown's option strings are the exact values conditions compare against, so keep them lowercase and make your conditions match exactly. If a condition never seems to trigger, open the editor's Live values panel next to the condition, it shows the value the display currently sees and warns about case mismatches.
+The dropdown's option strings are the exact values conditions compare against, so keep them lowercase and make your conditions match exactly. If a condition never seems to trigger, look at the condition itself: **On the display now** shows the value the display currently sees, and a warning under **Value** says when only upper and lower case differ.
 {% /callout %}
 
 Then "cooking mode on the displays", "switch the house to bedtime", and "turn on movie mode" just work, and because the mode is a normal Home Assistant dropdown, your automations and dashboards can set it too, no voice required.
@@ -345,7 +344,7 @@ script:
 
 **Assist answers, but nothing happens on the display.** Check the hub address in the `homescreens_host` helper, remember that after the first reload, changing it in the file does nothing; set it from the HA UI instead (Settings > Devices & services > Helpers). Then watch the Home Assistant logs for the `rest_command` result. A `401` means the hub has a password and the `homescreens_auth` secret is missing or doesn't start with `Bearer `. Displays pick commands up on a short poll, so an effect can lag a couple of seconds, that's normal.
 
-**"Show the calendar" does nothing.** The spoken name must match a screen name on the *target* display (upper/lower case doesn't matter). Screens hidden by the active profile are ignored on purpose. On a multi-display install, name the display in the sentence or set a default display in the `HomeScreensGotoScreen` handler, this is the one command that never broadcasts to all displays.
+**"Show the calendar" does nothing.** The spoken name must match a screen name on the *target* display (upper/lower case doesn't matter). Screens hidden by the active profile are ignored on purpose. On a multi-display install, a sentence that names no display goes to the main display, so name the display in the sentence or set a default in the `HomeScreensGotoScreen` handler. This is the one command that never goes to every display.
 
 **Answers feel out of date.** The meal and chore sensors poll every few minutes, and the chore intents refresh before answering; the worst case after checking something off elsewhere is a brief window where the spoken count lags. The check-off command itself always verifies against the hub live, so repeating yourself can't un-do a chore.
 

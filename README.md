@@ -22,21 +22,21 @@ An open-source smart display system built with Next.js. Runs on a Raspberry Pi i
 
 ## Features
 
-- **45 built-in modules**: clock (18 views), calendar (6 views), weather (14 views), countdown, dad jokes, text (rich with gradient/marquee), image, video (library file, direct URL, or YouTube link), quote, to-do list (5 views), sticky note, greeting, news, stock ticker, crypto, word of the day, this day in history, moon phase, sunrise/sunset, photo slideshow (photos, videos, or both), QR code (custom + WiFi), year progress, traffic/commute, sports scores (15 leagues, your teams first), air quality, todoist, rain map, multi-month calendar, garbage day, standings (15 leagues), affirmations (4 views), date (5 views), display control (touch widget for wake/sleep/brightness/navigation), meal planner (5 views), chore chart (7 views), school timetable (2 views), iframe, icon (Font Awesome picker), shape & divider (15 views), and 6 fullscreen modules: fullscreen calendar (9 views), fullscreen weather (6 views), fullscreen news (2 views), fullscreen chore chart (5 views), fullscreen meal planner (4 views), and fullscreen photo viewer
+- **45 built-in modules**: clock (18 views), calendar (6 views), weather (14 views), countdown, dad jokes, text (rich with gradient/marquee), image, video (library file, direct URL, or YouTube link), quote, to-do list (5 views), sticky note, greeting, news, stock ticker, crypto, word of the day, this day in history, moon phase, sunrise/sunset, photo slideshow (photos, videos, or both), QR code (custom + WiFi), year progress, traffic/commute, sports scores (15 leagues, your teams first), air quality, todoist, rain map, multi-month calendar, garbage day, standings (15 leagues), affirmations (4 views), date (5 views), display control (touch widget for wake/sleep/brightness/navigation), meal planner (5 views), chore chart (7 views), school timetable (2 views), iframe, icon (Font Awesome picker), shape & divider (15 views), and 6 fullscreen modules: fullscreen calendar (9 views), fullscreen weather (8 views), fullscreen news (2 views), fullscreen chore chart (5 views), fullscreen meal planner (4 views), and fullscreen photo viewer
 - **Drag-and-drop editor**: visually arrange modules on a configurable canvas
-- **Multi-screen rotation**: cycle through screens with 8 transition effects
+- **Multi-screen rotation**: cycle through screens with 7 transition effects, or none
 - **Multi-display hub-and-spoke**: one hub Pi can drive several physical displays, each with its own screens, dimensions, rotation, and active profile; spoke Pis are adopted from the editor and can be targeted individually from `/remote`
 - **9 weather providers**: OpenWeatherMap, WeatherAPI, Pirate Weather, NOAA (free, US), Open-Meteo (free, global), Yr.no (free, global), SMHI (free, Nordic), Met Office (free, UK), Environment Canada (free, Canada)
-- **Plugin system**: extend with custom modules via runtime-loaded plugins, installable from a URL or uploaded bundle ([template](https://github.com/home-screens/home-screens-plugin-template), [example](https://github.com/home-screens/home-screens-plugin-standings))
+- **Plugin system**: add new modules from the **Plugins** panel in the editor, or from a link with **Install from URL**; browse them in the [plugin directory](https://homescreens.dev/plugins) or build your own from the [template](https://github.com/home-screens/home-screens-plugin-template)
 - **Profile system**: named screen groups with schedule-based auto-activation
 - **Remote display control**: wake, sleep, brightness, navigation, and alerts via HTTP
 - **Visual timers & routines**: start a quick timer or a saved routine (get dressed, brush teeth, shoes on) from your phone and it takes over the display with one of 4 kid-friendly countdown views, step-by-step, with an optional chime and a celebration at the end
-- **Family organizer**: chores and rewards (bonus chores kids can grab, a rewards store), the meal planner and grocery list, and shared to-do lists, all run from the family remote on your phone, plus school timetables; one family list names everyone across chores, calendars, lists and timetables, and you can add your own pictures as icons
+- **Family organizer**: chores and rewards (start from a list of ready-made chores, bonus chores kids can grab, a rewards store), the meal planner and grocery list, and shared to-do lists, all run from the family remote on your phone, plus school timetables; one family list names everyone across chores, calendars, lists and timetables, and you can add your own pictures as icons
 - **Touch-friendly display**: swipe left or right to change screens, tap a calendar event for its details, tap chores done, all on the display itself
 - **Per-module scheduling**: show or hide modules by day of week and time window
-- **Conditional module visibility**: show or hide any module based on live values published by plugins (e.g. a Home Assistant sensor), with and/or/not condition logic in the editor
-- **Google Calendar, iCloud + iCal**: display events from Google Calendar (OAuth device flow), your iCloud calendars (sign in with an app-specific password, contact birthdays included), or any iCal/ICS feed
-- **Background management**: upload images and videos, browse Unsplash or NASA APOD, pull from an Immich library or iCloud shared album, or import hand-picked photos from Google Photos, with auto-rotation
+- **Conditional module visibility**: show or hide any module based on live values such as the weather (hide the rain map on dry days), your calendar (busy now, events today), or anything a plugin publishes (e.g. a Home Assistant sensor), with and/or/not condition logic in the editor
+- **Google Calendar, iCloud + iCal**: display events from Google Calendar (sign in with a short code, no Google setup needed), your iCloud calendars (sign in with an app-specific password, contact birthdays included), or any iCal/ICS feed
+- **Background management**: upload images and videos, browse Unsplash or NASA APOD, pull from an Immich library, an iCloud shared album or a OneDrive folder, or import hand-picked photos from Google Photos, with auto-rotation
 - **Per-module styling**: opacity, blur, colors, fonts, border radius, padding
 - **System management**: upgrade, rollback, backup/restore, power control, and network settings (WiFi scan/connect, IP/hostname, diagnostics) from the UI
 - **Raspberry Pi kiosk**: one-command setup with boot splash, auto-login, and display orientation
@@ -141,16 +141,16 @@ Then visit:
 
 ## Configuration
 
-All API keys and credentials are managed through the editor UI at **Settings > API keys**. No `.env.local` file needed. Configuration is stored as a single JSON file (`data/config.json`), with no database.
+API keys are managed in the editor at **Settings > API keys** (iCloud sign-ins live under **Settings > Calendar**). No `.env.local` file needed. Configuration is stored as a single JSON file (`data/config.json`), with no database.
 
 ### Google Calendar and Google Photos
 
 No Google Cloud project needed: Home Screens brings its own Google app.
 
 - **Calendar:** **Settings > Calendar > Sign in with Google**, enter the short code at `google.com/device` on any phone or computer, then tick the calendars to show.
-- **Photos:** in a Photo slideshow or Full-screen photo module, click **Sign in with Google**, approve, and the browser comes straight back to your hub. Then **Choose photos** opens Google's own picker.
+- **Photos:** in a Photo Slideshow or Full-Screen Photo Viewer module, click **Sign in with Google**, approve, and the browser comes straight back to your hub. Then **Choose photos** opens Google's own picker.
 
-Prefer your own Google app? Expand **Use your own Google app** on the Google card under **Settings > API keys**. Calendar takes a **TVs and Limited Input devices** OAuth client with the Google Calendar API enabled; Photos takes a **Web application** client with `https://homescreens.dev/connect/google` as its redirect URI and the Google Photos Picker API enabled.
+Prefer your own Google app? Expand **Use your own Google app** on the Google card under **Settings > API keys**. Calendar takes a **TVs and Limited Input devices** OAuth client with the Google Calendar API enabled; Photos takes a **Web application** client with `https://homescreens.dev/connect/google` as its redirect URI and the Google Photos Picker API enabled. Then publish the app in the Google Cloud console (**Google Auth Platform > Audience > Publish app**): until you do, only the test users you list there can sign in, and Google ends every sign-in after 7 days. Google may then warn that it hasn't verified the app; it is your own, so choose **Advanced** and carry on. Once your own app is saved, a switch on the **Use your own Google app** row lets you go back to Home Screens' app without losing your details. Saving or switching apps signs Google out, so sign in again afterwards on the Calendar page or in the photo module.
 
 ### iCloud Calendar
 
@@ -273,15 +273,20 @@ rm /opt/home-screens/current/data/auth.json
 Full documentation at **[homescreens.dev/docs](https://homescreens.dev/docs)**
 
 - [Getting Started](https://homescreens.dev/docs/getting-started): installation and setup
+- [What to Buy](https://homescreens.dev/docs/what-to-buy): the Pi, power supply, memory card and cable, about $90 plus a screen you may already own
+- [Your First Screen](https://homescreens.dev/docs/first-screen): a template, your location, a calendar and a chore chart in about ten minutes
 - [Editor Guide](https://homescreens.dev/docs/editor): visual editor walkthrough
 - [Modules](https://homescreens.dev/docs/modules): overview of the 45 built-in modules
 - [Module Reference](https://homescreens.dev/docs/module-reference): every setting, default value, and allowed option for each module
+- [Weather](https://homescreens.dev/docs/weather): nine weather services, five free with no account, one location for every module
+- [Calendars](https://homescreens.dev/docs/calendars): Google, iCloud, Outlook and any calendar link, with the right colors
 - [Family](https://homescreens.dev/docs/family): the people in your home, and groups of them, shared by chores, calendars, lists and timetables
 - [Chores and Rewards](https://homescreens.dev/docs/chores): chore charts kids tick off on the wall or a phone, bonus chores, and tickets to spend on rewards
 - [Meals](https://homescreens.dev/docs/meals): the meal library, the weekly plan and the grocery list
 - [Lists](https://homescreens.dev/docs/lists): shared to-do lists, added on your phone and ticked off anywhere
 - [School Timetable](https://homescreens.dev/docs/school-timetable): each child's school week, typed in or imported from a spreadsheet
 - [Backgrounds](https://homescreens.dev/docs/backgrounds): uploads, the picture library, Unsplash, NASA APOD, Immich, iCloud, Google Photos, rotation
+- [News](https://homescreens.dev/docs/news): headlines from any site, blog, YouTube channel or subreddit, plus a full-screen front page
 - [Profiles & Scheduling](https://homescreens.dev/docs/profiles): automation and time-based layouts
 - [Remote Control](https://homescreens.dev/docs/remote-control): the phone remote for display control, chores, meals, lists, timers and photos
 - [Multi-Display](https://homescreens.dev/docs/multi-display): hub-and-spoke setup for driving several displays from one Pi
@@ -326,7 +331,7 @@ graph TB
     subgraph "External Services"
         Weather["Weather Providers<br/>(OWM, WeatherAPI, Pirate Weather,<br/>NOAA, Open-Meteo, Yr.no, SMHI,<br/>Met Office, Environment Canada)"]
         ESPN["ESPN<br/>(scores, standings)"]
-        Google["Google<br/>(Calendar, Routes)"]
+        Google["Google<br/>(Calendar, Photos Picker, Routes)<br/>sign-in via auth.homescreens.dev"]
         Other["RSS, CoinGecko,<br/>Yahoo Finance, etc."]
     end
 
@@ -361,7 +366,7 @@ graph TB
 
 ## API Routes
 
-Every API route is a server-side proxy, so credentials never reach the browser. See the [API Reference](https://homescreens.dev/docs/api) for the full endpoint list.
+External services are reached through server-side API routes, so credentials never reach the browser. See the [API Reference](https://homescreens.dev/docs/api) for the full endpoint list.
 
 ## Adding a Module
 

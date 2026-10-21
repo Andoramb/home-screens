@@ -18,14 +18,14 @@ Drop a **News Headlines** module on the canvas and it starts with one well-known
 
 Under **Add a feed** you can:
 
-- **Pick a preset.** A curated list of publishers and sections (top stories, world, business, technology, science, sports, health, entertainment) for the display's language. Switch on *All languages* to browse every preset.
-- **Paste any feed link.** RSS, Atom, and JSON feeds all work, so that means almost every news site, blog, podcast, and newsletter. If a site has a feed link on its page, it will work here.
+- **Pick from a list.** A curated list of publishers and sections (top stories, world, business, technology, science, sports, health, entertainment) for the display's language. Switch on *Show feeds in every language* to browse every preset.
+- **Custom feed link.** RSS, Atom, and JSON feeds all work, so that means almost every news site, blog, podcast, and newsletter. If a site has a feed link on its page, it will work here.
 - **Local news.** Adds a feed of stories about the place you set under **Settings > Location & language**. Change the location and the feed follows.
 - **Follow a topic.** Type a few words (your school district, a sports team, a company) and get a feed of stories that mention them.
 - **YouTube channel.** Paste a channel link and the module shows the channel's latest uploads, thumbnails included.
 - **Subreddit.** Type a subreddit name to follow its newest posts.
 
-Every feed row has a **label** (shown as the story's source; leave it empty to use the feed's own name), an optional **colour** for the little source dot, a **Max stories** cap so one chatty feed doesn't crowd out the rest, and a **Check** button that fetches the feed right away and tells you how many stories it found or, in plain words, why it didn't work.
+Every feed row has a **Name on the display** (shown as the story's source; leave it empty to use the feed's own name), an optional **Color** for the little source dot, a **Max stories from this feed** cap so one chatty feed doesn't crowd out the rest, and a **Check** button that fetches the feed right away and tells you how many stories it found or, in plain words, why it didn't work.
 
 {% callout type="note" title="Feeds on your home network" %}
 If you run your own reader (FreshRSS, Miniflux, Tiny Tiny RSS), turn on **Home network** for that feed. Without it the hub refuses to fetch from private addresses, which is what keeps this feature from being used to poke around inside your network.
@@ -54,7 +54,7 @@ Filters live in every news module's settings and apply after the feeds are merge
 - **Hide stories older than** drops anything older than a few hours or days, so a weekly blog never looks like today's news.
 - **Keep feed order** shows each feed's stories in the order the publisher chose instead of sorting everything newest first.
 
-The **Just in** option marks stories under an hour old, and **Mark new stories** dots the ones that arrived since the display last refreshed, so a glance tells you something changed.
+Turn on **Highlight stories that just came in** to tag stories under an hour old with *Just in*, and **Mark new stories** to dot the ones that arrived since the display last refreshed, so a glance tells you something changed.
 
 ---
 

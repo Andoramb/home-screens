@@ -8,9 +8,10 @@
 #   homescreens_auth: "Bearer <display token>"
 #
 # Targets: every command takes an optional `display` (a display ID from the
-# editor, e.g. `kitchen`). Omitted → `all` (every display). Single-display
-# installs without a displays registry need no changes: `all` broadcasts
-# also reach the legacy default queue that an ID-less display polls.
+# editor, e.g. `kitchen`). Omitted, it goes to `all` (every display), except
+# going to a screen, which goes to the main display. Single-display installs
+# without a displays registry need no changes: `all` broadcasts also reach
+# the legacy default queue that an ID-less display polls.
 
 # ── Hub address ─────────────────────────────────────────────────────────
 # Every command and sensor below builds its URL from this helper, so the

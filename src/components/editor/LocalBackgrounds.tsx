@@ -67,7 +67,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { config, selectedDisplayId, updateScreen } = useEditorStore();
+  const { config, selectedDisplayId, updateScreen, pickScreenBackground } = useEditorStore();
 
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
@@ -101,11 +101,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
         );
       } else if (data.path) {
         setLocalBackgrounds((prev) => prev.includes(data.path) ? prev : [...prev, data.path]);
-        const updates: Record<string, unknown> = { backgroundImage: data.path };
-        if (currentScreen?.backgroundRotation?.enabled) {
-          updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
-        }
-        updateScreen(selectedScreenId, updates);
+        pickScreenBackground(selectedScreenId, data.path);
       }
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : t('settings.localBackgrounds.uploadFailed'));
@@ -116,15 +112,7 @@ export default function LocalBackgrounds({ selectedScreenId }: Props) {
 
   if (!currentScreen || !config) return null;
 
-  // Picking any background turns rotation off: a rotating screen would paint
-  // over the choice within the hour, which reads as "it didn't save".
-  const pick = (backgroundImage: string) => {
-    const updates: Record<string, unknown> = { backgroundImage };
-    if (currentScreen?.backgroundRotation?.enabled) {
-      updates.backgroundRotation = { ...currentScreen.backgroundRotation, enabled: false };
-    }
-    updateScreen(selectedScreenId, updates);
-  };
+  const pick = (backgroundImage: string) => pickScreenBackground(selectedScreenId, backgroundImage);
 
   // Tiles follow the selected display's orientation, so a landscape wall's
   // thumbnails are landscape too.

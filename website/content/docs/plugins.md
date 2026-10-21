@@ -3,19 +3,19 @@ title: Plugins
 nextjs:
   metadata:
     title: Plugins
-    description: Add Home Assistant, Garmin, Strava and more to your Home Screens display. Install a plugin in two clicks, sign in, and drag its modules onto a screen.
+    description: Add Home Assistant, Garmin, Strava and more to your Home Screens display. Install a plugin in a few clicks, sign in, and drag its modules onto a screen.
     alternates:
       canonical: /docs/plugins
 ---
 
-Plugins are extra modules made for Home Screens: Home Assistant, Garmin, Strava, and whatever comes next. Installing one takes two clicks in the editor, and from then on its modules sit in the same list as the built-in ones. {% .lead %}
+Plugins are extra modules made for Home Screens: Home Assistant, Garmin, Strava, and whatever comes next. Installing one takes a few clicks in the editor, and from then on its modules sit in the same list as the built-in ones. {% .lead %}
 
 Browse every plugin, with pictures and version notes, at [homescreens.dev/plugins](/plugins).
 
 ## Install a plugin
 
 1. In the editor, click **Plugins** in the top right.
-2. The **Browse** tab lists every plugin. Click **Install** on the one you want.
+2. The **Browse** tab lists every plugin. Click **Install** on the one you want, check what it can do, and click **Install** again.
 3. Close the panel. The plugin's modules are now in the module list on the left, with a small **Plugin** badge, under whichever group the plugin chose. Drag one onto a screen like anything else.
 
 {% screenshot name="editor-plugins" caption="The Plugins panel. Browse, Installed and Updates." /%}

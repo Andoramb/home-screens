@@ -38,7 +38,7 @@ Colour, background and font come from the **Style** section above. One thing to 
 
 ## 2. Open the timetables window
 
-**Edit timetables** in the same panel opens the timetables window. There is no Save button: changes save as you make them, and **Done** closes the window. It has three tabs.
+**Edit timetables** in the same panel opens the timetables window. There is no Save button: changes save as you make them, and **Done** closes the window. It has four tabs: **Timetables**, **Schools & times**, **Subjects** and **Dates**.
 
 ### Schools and bell times
 
@@ -117,11 +117,11 @@ A week that came from a link gets a **From a spreadsheet** button above the grid
 
 Some schools run two different timetables and alternate between them, so the lessons in one week are not the lessons in the next. The two are usually called the A week and the B week. If your school gives every week the same timetable, you can skip this section entirely: leave the setting **Off** and nothing changes.
 
-In **Schools & times**, under **A and B weeks**, say which weeks are the A week, or leave it **Off**. The choice is between **odd week numbers** and **even week numbers**, counted from the start of the year, which is how schools that do this usually publish it. The window then tells you which letter this week is and which one next week is, so you can check that against the school's own calendar before you paint anything.
+In **Schools & times**, under **A and B weeks**, say which weeks are the A week, or leave it **Off**. The choice is between **Odd week numbers are A** and **Even week numbers are A**, counted from the start of the year, which is how schools that do this usually publish it. The window then tells you which letter this week is and which one next week is, so you can check that against the school's own calendar before you paint anything.
 
 This setting belongs to the school, not to one child, so turning it on changes the rule for every brother and sister at that school.
 
-In **Timetables**, set **Weeks** to **A and B** for a child whose two weeks really differ, and use **Showing** to switch between them while you paint. A child whose week is the same every time stays on **Same each week**.
+In **Timetables**, set **Weeks** to **A and B** for a child whose two weeks really differ, and use **Editing week** to switch between them while you paint. A child whose week is the same every time stays on **Same each week**.
 
 On the wall the week letter shows at the More detail level, and the card names the lessons that differ between the two weeks underneath the grid.
 
@@ -177,6 +177,6 @@ On the wall, a test puts a pencil on that lesson and a pill on the packing card.
 
 ## Where the data lives
 
-Timetables are kept in `data/timetables.json` on the hub, next to chores and meals, and are included in backups. A timetable belongs to one person, so removing somebody under **Settings > Family** deletes their timetable along with the rest of their records. The confirmation says so before anything happens.
+Timetables are kept on the hub, next to chores and meals, and are included in backups. A timetable belongs to one person, so removing somebody under **Settings > Family** deletes their timetable along with the rest of their records. The confirmation says so before anything happens.
 
-Holiday dates that have been looked up are saved in `data/school-holidays.json`. A display with no internet keeps showing the dates it already has.
+Holiday dates that have been looked up are saved on the hub too, so if the internet or the holiday service is down, the wall keeps showing the dates it already has.

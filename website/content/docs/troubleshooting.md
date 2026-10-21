@@ -72,6 +72,10 @@ If neither name opens (a few routers do not support these names), open your rout
 
 With **Switch the screen's power off too** turned on, the Pi cuts the screen's signal while the display sleeps and restores it on wake. Most monitors resync within a few seconds. A few never do: some TVs drop into standby and need their own remote or an HDMI-CEC command, and one known compositor bug (labwc issue 3352) left a Pi 5 with a Philips monitor dark until the kiosk restarted. If your screen stays black after a wake, turn the setting off in **Settings > Screen > Sleep & dimming** and the display goes back to painting black over the picture. A display's page under **Per display** shows whether screen power control is working at all; a display that has never checked in needs the latest display software and the `wlopm` package.
 
+**Screen flashes on while asleep**
+
+If a sleeping screen lights up for a moment every few seconds, your monitor is reconnecting while it looks for a signal. Update Home Screens, and when **Settings > System & updates** shows **Restart to finish the update**, restart; the screen then stays dark until the display wakes.
+
 **Check on the Pi**
 
 4. The panel's own power light, the HDMI cable at both ends, and the Pi's power light. A blinking red light on the Pi means a weak power supply.
@@ -147,9 +151,9 @@ Open **Settings > Calendar**. Every connected calendar shows when it last brough
 
 ### Google sign-in
 
-1. Click **Sign in with Google** again on the Calendar page; the sign-in can lapse after a long time unused.
+1. Click **Sign in with Google** again on the Calendar page. A sign-in can lapse after a long time unused, and switching between Home Screens' Google app and your own on **Settings > API keys** always needs a fresh one.
 2. Check that the calendars you want are ticked. Only ticked calendars appear.
-3. If you use your own Google app, make sure the Google Calendar API is still enabled for your project in the [Google Cloud console](https://console.cloud.google.com/). With the built-in sign-in there is nothing to check there.
+3. If you use your own Google app, make sure the Google Calendar API is still enabled for your project in the [Google Cloud console](https://console.cloud.google.com/). If the sign-in ends every 7 days, the app is still in Testing on Google's side: open **Google Auth Platform > Audience**, click **Publish app**, and sign in once more. With the built-in sign-in there is nothing to check there.
 
 ### iCloud sign-in
 
@@ -218,7 +222,7 @@ The Pi brings the browser and the screen manager back on their own a second late
 
 ## Taps land in the wrong place
 
-When you turn the screen in Settings, touch turns with it, so a rotated touchscreen should simply work. If taps still land somewhere else, look at **Touch alignment**. It sits with the screen rotation: under **Settings > Screen > Rotation & appearance**, or on the display's own page if you have more than one display.
+When you turn the screen in Settings, touch turns with it, so a rotated touchscreen should simply work. If taps still land somewhere else, look at **Touch alignment**. It sits with the screen rotation: under **Settings > Screen > Rotation & appearance**, or on the main display's page under **Per display** if you have more than one display.
 
 - **Follow the screen rotation** is the normal choice.
 - **Leave touch as it is** is for a touchscreen that already handles being turned on its own. Pick it if taps were right before and went wrong after an update.

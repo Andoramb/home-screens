@@ -470,7 +470,7 @@ The section is wrapped in an error boundary keyed on the module id, so a throw s
 
 ### Shared State and Visibility Conditions
 
-Plugins can publish named string values to a per-tab shared-state bus, and users can then show or hide any module based on those values (Conditions in the editor's module Visibility panel). A typical use is a Home Assistant plugin publishing sensor states that gate an alert widget.
+Plugins can publish named string values to a per-tab shared-state bus, and users can then show or hide any module based on those values (the module's **Conditions** section in the editor). A typical use is a Home Assistant plugin publishing sensor states that gate an alert widget.
 
 ```js
 const { publishState, clearState } = window.__HS_SDK__;
@@ -495,6 +495,7 @@ Clear a key only when its value genuinely no longer exists, such as an entity be
 How keys work:
 
 - Every key is force-prefixed with your plugin's namespace: publishing `binary_sensor.door` from plugin `my-plugin` stores `plugin:my-plugin:binary_sensor.door`. Plugin ids are lowercased in the prefix. This prevents accidental collisions between producers; it is not a security boundary.
+- Home Screens publishes a few values of its own on the same bus, `calendar.*` and `weather.*` (listed under [ModuleVisibility](/docs/configuration#module-visibility)). They have no `plugin:` prefix, so your keys never collide with them, and you cannot publish under those names.
 - Keys use lowercase letters, digits, and `_ : . -`, up to 128 characters after prefixing. Values are strings; anything over 1&nbsp;KB is truncated to 1&nbsp;KB and published, with a console warning. An invalid key is dropped, and so is a new key that would push the store past its 256-key cap.
 - Values live in the display's browser tab only. They are not persisted and not shared across displays; each kiosk tab sees only what its own plugin instances publish.
 - A **reload** (a config change, a dev hot-reload) deliberately keeps your published keys, so modules conditioned on them don't blink out while your producer remounts. Only plugins missing from the new installed set get purged. The exception is a failed reload: if the installed-plugins fetch itself errors, every preserved key is purged, because nothing is going to remount and republish.
@@ -662,7 +663,7 @@ For example, if a plugin declares a secret with key `api_key` and the user has c
 - **Rate limiting**: 60 requests per minute per plugin (240 for plugins with the `localNetwork` permission, since self-hosted LAN services like Home Assistant tolerate frequent polling). Returns HTTP 429 when exceeded.
 - **Request body**: `payload` is capped at 1 MB; anything larger comes back as HTTP 413.
 - **Response size**: maximum 5 MB per response.
-- **Timeout**: upstream requests time out after 15 seconds.
+- **Timeout**: upstream requests time out after 15 seconds on the hub. On the display, `pluginFetch` gives up after 60 seconds and the SDK's `useFetchData` after 15, so a request can never hang a module after a network drop. A timed-out `pluginFetch` rejects like any other network error; `useFetchData` reports it as its error and keeps the last data.
 - **Redirects**: followed manually, up to 5 hops. Every hop is re-checked against `allowedDomains` and the SSRF rules, so an upstream that redirects to a host you did not declare fails rather than being followed. Exceeding the hop limit returns HTTP 502.
 - **Caching**: GET responses with text/JSON/XML content types are cached per URL + headers hash, with the TTL specified by `cacheTtlMs`. The cache holds at most 50 entries across all plugins, so a plugin fetching many distinct URLs will evict its own earlier entries.
 
@@ -712,13 +713,13 @@ Plugins that need API keys or credentials declare them in the manifest's `secret
 | `/api/plugins/secrets/<pluginId>` | PUT | Set a secret (`{ key, value }`) |
 | `/api/plugins/secrets/<pluginId>` | DELETE | Remove a secret (`{ key }`) |
 
-The GET endpoint only returns whether each declared secret has a value configured -- it never exposes the raw secret values. Setting a secret validates the key against the manifest's declarations; you cannot store arbitrary keys that aren't declared.
+The GET endpoint only returns whether each declared secret has a value configured; it never exposes the raw secret values. Setting a secret validates the key against the manifest's declarations; you cannot store arbitrary keys that aren't declared.
 
 ---
 
 ## Server-Side Auth
 
-Some APIs need more than a static key: OAuth2 sign-in, token refresh, or a proprietary login flow. Plugins never run server-side code, so the manifest's optional `auth` field declares an adapter and the **host** runs the entire flow -- sign-in UI, token exchange, storage, and refresh. The plugin's client code just calls `pluginFetch` as usual and the proxy injects a valid token.
+Some APIs need more than a static key: OAuth2 sign-in, token refresh, or a proprietary login flow. Plugins never run server-side code, so the manifest's optional `auth` field declares an adapter and the **host** runs the entire flow: sign-in UI, token exchange, storage, and refresh. The plugin's client code just calls `pluginFetch` as usual and the proxy injects a valid token.
 
 Tokens are stored at `data/plugin-tokens/<pluginId>.json` (owner-only file permissions), outside the plugin's installation directory so plugin upgrades can't wipe a user's connection. Uninstalling a plugin deletes its tokens.
 
@@ -1041,12 +1042,13 @@ The plugin registry is a JSON file hosted on GitHub. It lists all available plug
       "verified": true,
       "permissions": ["network", "secrets"],
       "channel": "stable",
+      "screenshots": [{ "src": "https://raw.githubusercontent.com/author/my-plugin/main/screenshots/wall.png", "caption": "On a portrait wall" }],
       "versions": [
         {
           "version": "1.0.0",
           "minAppVersion": "0.18.0",
           "releaseDate": "2026-03-15",
-          "downloadUrl": "https://github.com/author/my-plugin/releases/download/v1.0.0/my-plugin-1.0.0.tar.gz",
+          "downloadUrl": "https://github.com/author/my-plugin/releases/download/v1.0.0/plugin.tar.gz",
           "sha256": "abc123...",
           "changelog": "Initial release."
         }
@@ -1069,6 +1071,12 @@ The plugin registry is a JSON file hosted on GitHub. It lists all available plug
 | `channel` | string | no | `"stable"` (default) or `"beta"`. Lets a stable plugin ship one beta build (e.g. `1.2.0-beta.1`) without changing the plugin's own channel. |
 
 The `verified` flag on a registry plugin indicates it has been reviewed. A `channel` on the plugin entry itself (not just a version) marks the whole plugin as beta, it's hidden from Browse unless the user opts in, regardless of which version is newest. The registry is cached server-side for 5 minutes.
+
+`screenshots` is optional and only used by the plugin's page on [homescreens.dev/plugins](https://homescreens.dev/plugins), which also shows your repository's README. The app itself ignores it.
+
+### Getting listed
+
+Open [homescreens.dev/plugins/submit](https://homescreens.dev/plugins/submit) and paste your GitHub repository. It checks, in your browser, that the repository is public, has a valid `manifest.json` at its root, and has a latest release with `plugin.tar.gz` attached. GitHub does not let a web page read release files, so paste the file's SHA-256 as well (`shasum -a 256 plugin.tar.gz` on a Mac, `sha256sum plugin.tar.gz` on Linux). **Open the request on GitHub** then opens an issue on `home-screens/home-screens-plugins`, sent from your own account, with the registry entry filled in for review.
 
 ---
 

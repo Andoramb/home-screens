@@ -28,7 +28,7 @@ The editor has five areas, and you will use all of them today:
 
 ## 2. Pick a template
 
-Click **Choose a template** on the empty screen. A template is a finished screen: modules already placed, sized, and styled for a portrait wall. Pick **Family Dashboard** for a family (clock, greeting, weather, calendar, countdown), **Weather Station** for a weather wall, or **Minimal Clock** for a photo frame. Each one has a landscape twin for a screen on its side.
+Click **Choose a template** on the empty screen. A template is a finished screen: modules already placed, sized, and styled for a portrait wall. Pick **Family Dashboard** for a family (clock, greeting, weather, calendar, today's chores, countdown), **Weather Station** for a weather wall, or **Minimal Clock** for a photo frame. Each one has a landscape twin for a screen on its side.
 
 {% screenshot name="editor-template-picker" caption="Templates replace the empty screen. You can change anything afterwards." /%}
 
@@ -46,17 +46,17 @@ Go back to the editor with **Editor** in the top left. The weather module fills 
 
 ## 4. Add a calendar
 
-Open **Settings > Calendar**. Under **iCal / ICS feeds**, click **Add Feed** and paste a calendar link. Google Calendar, Apple, Outlook and most others hand out one of these links from their sharing settings; the [Calendars](/docs/calendars) page shows where to find it for each, and covers signing in with Google or iCloud instead.
+Open **Settings > Calendar**. Under **iCal / ICS Feeds**, click **Add Feed** and paste a calendar link. Google Calendar, Apple, Outlook and most others hand out one of these links from their sharing settings; the [Calendars](/docs/calendars) page shows where to find it for each, and covers signing in with Google or iCloud instead.
 
 Give the feed a name and a colour. The calendar module on your screen shows the next few days of events as soon as the feed loads.
 
 ## 5. Add a chore chart
 
-Back in the editor, find **Chore Chart** under **Personal** in the module list and drag it onto the screen. Drop it anywhere; you can drag it into place and resize it from its bottom-right corner afterwards.
+The Family Dashboard already has one. With another template, find **Chore Chart** under **Personal** in the module list and drag it onto the screen. Drop it anywhere; you can drag it into place and resize it from its bottom-right corner afterwards.
 
 The chart is empty until it knows your family. That part is done from a phone, in the family remote's **Chores** tab: add each person, then add chores and who does them. The [Chores and rewards](/docs/chores) page walks through it. Once chores exist, the wall shows today's list and kids can check things off there or on their phones.
 
-{% screenshot name="editor-module-selected" caption="Click a module and its options appear on the right. Every module has a view dropdown; the chore chart has five." /%}
+{% screenshot name="editor-module-selected" caption="Click a module and its options appear on the right. Every module has a view dropdown; the chore chart has seven." /%}
 
 ## 6. Hand it to the family
 

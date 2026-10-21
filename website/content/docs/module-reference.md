@@ -21,9 +21,9 @@ Where a module has a `refreshIntervalMs` option, its default comes from that mod
 {% category name="Full Screen" %}
 These modules are designed to fill the entire display as ambient, always-on screens. They use the `fillsCanvas` flag, position, size, and style controls are hidden in the editor since the module always occupies the full display area.
 
-**Themes:** all five full-screen modules share one `theme` field with twelve color palettes: `linen`, `paper`, `mist`, `sandstone`, `vellum`, and `bloom` (light), `charcoal`, `midnight`, `slate`, `aurora`, `obsidian`, and `horizon` (dark). Leave `theme` unset to inherit the display-wide default from **Settings > Screen** (`fullscreenTheme`). Anything that isn't one of the twelve ids falls back to Linen.
+**Themes:** all six full-screen modules share one `theme` field with twelve color palettes: `linen`, `paper`, `mist`, `sandstone`, `vellum`, and `bloom` (light), `charcoal`, `midnight`, `slate`, `aurora`, `obsidian`, and `horizon` (dark). Leave `theme` unset to inherit the display-wide default from **Settings > Screen** (`fullscreenTheme`); with neither set, the photo viewer paints Midnight and the others Linen. Anything that isn't one of the twelve ids falls back to Linen.
 
-The six newer themes (`sandstone`, `vellum`, `bloom`, `aurora`, `obsidian`, `horizon`) additionally carry their own accent color and, on the Full-Screen Calendar only, an event style deciding how event blocks are painted: a faint tint (`linen` and the other original themes), a translucent card, a solid color fill, or a plain surface with a colored edge. All but `vellum` also paint a static gradient behind the module. On the calendar, chore chart, and meal planner, setting `accentColor` overrides the theme's own accent and leaving it empty follows the theme; the weather module's accent follows the sky instead, and the photo viewer has none.
+The six newer themes (`sandstone`, `vellum`, `bloom`, `aurora`, `obsidian`, `horizon`) additionally carry their own accent color and, on the Full-Screen Calendar only, an event style deciding how event blocks are painted: a faint tint (`linen` and the other original themes), a translucent card, a solid color fill, or a plain surface with a colored edge. All but `vellum` also paint a static gradient behind the module. On the calendar, chore chart, meal planner, and news, setting `accentColor` overrides the theme's own accent and leaving it empty follows the theme. On Full-Screen Weather an empty `accentColor` follows the weather (amber for clear, blue for rain, violet for storms), the Forecast and Conditions views draw no accent, and the theme only shows when `skyLayer` is `still` or `off`, since the living sky paints its own colors. The photo viewer has no accent.
 
 The older `darkMode` boolean on Full-Screen Calendar and Full-Screen Chore Chart has been superseded by `theme` and is no longer shown in the editor. It still works as a fallback so older configurations keep rendering: `darkMode: true` maps to `charcoal` and `false` maps to `linen`. It is ignored entirely whenever `theme` is set.
 {% /category %}
@@ -92,21 +92,20 @@ Enabled slots, week start day, default slot times, and 12/24h formatting are **h
 {% /module %}
 
 {% module type="fullscreen-weather" %}
-A fullscreen weather dashboard with eight views. **Panorama** stacks the current conditions, an optional next-hour rain strip, a temperature curve, a 7-day outlook with range bars, and a row of stats. **Wide strip** is Panorama's parts side by side, for a module that spans the width of a landscape screen but not its height: the current conditions, then the temperature curve over the stats, then the outlook, with the text sized to the module's area rather than its height. In a portrait box the three columns stay, each in a tall form: the hours run down the middle column as rows and each forecast day gets a band of its own. **Almanac** is a grid of instrument cards: sun arc, moon phase, wind, humidity, pressure, UV, and visibility, plus the next 12 hours. **Ambient** is a large, plain read for across the room. **Week ahead** gives each forecast day its own band (or, on a landscape display, its own column) with the day's icon, description, rain chance, wind (when the weather source reports a daily figure), and a high/low bar on a shared scale. **Hour by hour** draws the next 24 hours as a timeline (48 on sources that report every three hours): a temperature curve through every hour, with rain chance and wind beside it. It runs down the page on a portrait display and across it on a landscape one. **Forecast** is the whole forecast on one page, laid out like a phone weather app: the temperature over the sky, an hour strip, the day list with range bars, the rain radar in a card (its **Map style** is Light by default, a faded map with grey names so the rain is the only colour; Standard and Dark are the plain and the night-time maps), and two instrument cards; on a landscape display it takes the tablet arrangement with air quality and four cards. **Conditions** is the rest of that page: air quality, wind compass, sunrise and sunset, the moon, UV, feels like, humidity, rainfall, visibility, pressure and the next hour's rain, two across. Every card is a toggle, and a card hides itself when the weather source does not send what it shows. The air quality card needs an OpenWeatherMap key whichever weather source you use.
+A fullscreen weather dashboard with eight views. **Panorama** stacks the current conditions, an optional next-hour rain strip, a temperature curve, a 7-day outlook with range bars, and a row of stats. **Wide strip** is Panorama's parts side by side, for a module that spans the width of a landscape screen but not its height: the current conditions, then the temperature curve over the stats, then the outlook, with the text sized to the module's area rather than its height. In a portrait box the three columns stay, each in a tall form: the hours run down the middle column as rows and each forecast day gets a band of its own. **Almanac** is a grid of instrument cards: sun arc, moon phase, wind, humidity, pressure, UV, and visibility, plus the next 12 hours. **Ambient** is a large, plain read for across the room. **Week ahead** gives each forecast day its own band (or, on a landscape display, its own column) with the day's icon, description, rain chance, wind (when the weather source reports a daily figure), and a high/low bar on a shared scale. **Hour by hour** draws the next 24 hours as a timeline (48 on sources that report every three hours): a temperature curve through every hour, with rain chance and wind beside it. It runs down the page on a portrait display and across it on a landscape one. **Forecast** is the whole forecast on one page, laid out like a phone weather app: the temperature over the sky, an hour strip, the day list with range bars, the rain radar in a card (its **Map style** is Light by default, a faded map with grey names so the rain is the only colour; Standard and Dark are the plain and the night-time maps), and the first two cards on the module's card list. On a landscape display it takes the tablet arrangement: the hour strip beside the map, the day list, and up to six cards (eight with the map off) filled from the top of the card list, the short middle row first. **Conditions** is the rest of that page: air quality, wind compass, sunrise and sunset, the moon, UV, feels like, humidity, rainfall, visibility, pressure and the next hour's rain, two across (four on a landscape display), in the card list's order. The cards are one list, `cards`: the cards that are on, in the order they show, edited as a list with a switch per card, drag handles and **Reset order**; air quality keeps its wide shape wherever it sits. A card on the list still hides itself when the weather source does not send what it shows, and the air quality card needs an OpenWeatherMap key whichever weather source you use.
 
 The **Sky** setting picks the background: **Living** paints an animated sky that follows the weather and the time of day (clear, golden hour, night, partly cloudy, overcast, fog, rain, thunderstorm, snow), **Still** tints the theme background by the conditions, and **Off** leaves the plain theme. Living uses white text over translucent cards; Still and Off keep the theme's colours.
 
 Every view has a portrait and a landscape layout, picked automatically from the display's shape.
 
-The background tint follows the current conditions and the position of the sun, layered behind the cards so it never affects how readable anything is. Set **Background tint** to Off for a plain themed background.
-
 Some panels depend on what your weather source provides, and hide themselves when it has nothing to show:
 
 - **Next-hour rain** needs minute-by-minute data, which only Pirate Weather offers today.
 - **Weather warnings** need alerts, available from Pirate Weather and NOAA.
-- **Pressure** and **dew point** come from NOAA, Open-Meteo, and the Met Office.
+- **Pressure** comes from every source except WeatherAPI and Environment Canada.
+- **Dew point** comes from Pirate Weather, NOAA, Open-Meteo, and the Met Office.
 - **UV index** comes from Pirate Weather, the Met Office, WeatherAPI, and Open-Meteo.
-- **Visibility** comes from NOAA.
+- **Visibility** comes from Pirate Weather, NOAA, and the Met Office.
 
 The temperature curve draws however many hours your source returns, and its heading says how many. Most sources give 48 hours; OpenWeatherMap gives 5 days in 3-hour steps; NOAA gives about 6 days hourly.
 {% /module %}
@@ -178,7 +177,7 @@ Displays multiple months in a vertical or horizontal layout with today highlight
 Unified weather module with {% $stats.weatherViewCount %} views and {% $stats.weatherProviderCount %} provider options.
 
 {% callout type="note" title="Set your location first" %}
-Every weather view needs a latitude and longitude. Set them once in **Settings > Weather**. Without a location the module shows an error rather than a forecast.
+Every weather view needs a location. Set it once in **Settings > Location & language**. Without one the module says **Location not set** instead of showing a forecast.
 
 Five providers work with no API key at all: **Open-Meteo**, **NOAA** (US only), **Yr.no**, **SMHI**, and **Environment Canada**. Four need a free key added on the provider's own card under **Settings > Weather**: **OpenWeatherMap**, **WeatherAPI**, **Pirate Weather**, and **Met Office**.
 {% /callout %}
@@ -193,8 +192,14 @@ Five providers work with no API key at all: **Open-Meteo**, **NOAA** (US only), 
 - **combined**: Current conditions with hourly and daily sections in one view.
 - **compact**: Minimal current temperature and icon, fits small spaces.
 - **table**: Tabular hourly data with columns for each stat.
-- **precipitation**: Minute-by-minute precipitation chart for the next 60 minutes. Requires Pirate Weather provider for minutely data.
-- **alerts**: Active weather alerts with severity levels. Needs a provider that publishes alerts: **Pirate Weather** or **NOAA** (US only, no API key needed). Other providers return no alerts.
+- **precipitation**: Minute-by-minute precipitation chart for the next 60 minutes. Requires Pirate Weather provider for minutely data. The editor offers this view only while the module's weather source is Pirate Weather.
+- **alerts**: Active weather alerts with severity levels. Needs a provider that publishes alerts: **Pirate Weather** or **NOAA** (US only, no API key needed). Other providers return no alerts. The editor offers it only while the module's weather source is one of those two.
+- **ribbon**: The Panorama temperature curve on its own: the next `hoursToShow` hours as a line colored by temperature, night hours shaded, sunrise and sunset marked, the warmest and coldest hours labelled, and rain chance as bars under it.
+- **week**: Full-Screen Weather's Week ahead in a tile: each day's icon, description, details and a high/low bar on the week's shared scale, with today's bar marked at the current temperature. Days stand as columns in a box wider than tall and lie as bands in a taller one; a wide box too short for columns gets the Panorama day list instead.
+- **timeline**: Full-Screen Weather's Hour by hour in a tile: each hour's icon, the temperature curve with a dot per hour, rain chance and wind. Time runs across a box wider than tall and down a taller one; a tall box under 480 px wide drops the icon and wind columns.
+- **stats**: The Panorama stats row: wind, humidity, UV, pressure, sunrise and sunset, each cell dropping out when the weather source has no figure. A squarish box adds a note under each number (dew point, UV advice, pressure trend, day length), a wide shallow box gets one row, and a narrow one a list.
+- **sun**: The Almanac's sun and moon cards in one: day length with the sun's place on today's arc and the sunrise and sunset times, beside the moon's phase name, lit share and disc. Stacked in a box taller than wide; a small box drops the moon.
+- **narrative**: One row per day with its icon, name and high/low. On **NOAA** each row carries the forecast the US National Weather Service writes for that day; every other source shows the day's conditions, rain chance and wind instead.
 {% /module %}
 
 {% module type="moon-phase" %}
@@ -218,11 +223,13 @@ Air quality index and pollutant levels.
 
 {% fields /%}
 
-Requires an **OpenWeatherMap** API key (on its card under Settings > Weather) and a location set in **Settings > Weather**. The location is checked first, so a missing location shows an error even when the key is in place.
+Requires an **OpenWeatherMap** API key (on its card under Settings > Weather) and a location set in **Settings > Location & language**. The location is checked first, so a missing location shows **Location not set** even when the key is in place.
 {% /module %}
 
 {% module type="rain-map" %}
 Animated precipitation radar map over an OpenStreetMap base map. Shows the past two hours of radar and the next hour of nowcast frames. Radar comes from [LibreWXR](https://github.com/JoshuaKimsey/LibreWXR), a free community server; a household running its own LibreWXR points the hub at it under **Settings > Weather > Rain radar**.
+
+The editor's **Only show when rain is likely** button appends `{ "kind": "numeric", "sourceKey": "weather.precip_chance_today", "above": 30, "aboveInclusive": true }` to the module's `visibility.conditions` (once; any numeric condition on that key counts as already there) and opens the Conditions section. It is offered only once a household location is set, because the weather keys are published only then. See [Weather](/docs/weather#show-the-rain-map-only-when-rain-is-likely).
 {% /module %}
 
 {% module type="news" %}
@@ -254,11 +261,11 @@ Live and recent scores from ESPN for the leagues you turn on. College teams in t
 
 **View details:**
 
-- **scoreboard**: One game at a time with logos, records and the score or kickoff, rotating every 10 seconds.
-- **cards**: A two-column grid of compact game cards.
-- **list**: One line per game, league code first, for many games at once.
+- **scoreboard**: One game at a time with logos, records and the score or kickoff, moving on every `rotateIntervalMs` (10 seconds by default; **Next page every** in the editor).
+- **cards**: A two-column grid of compact game cards. When the games do not all fit, the grid is cut into pages of whole rows that turn every `rotateIntervalMs`, with page dots underneath (a count such as 3 / 12 past eight pages), so no game is clipped.
+- **list**: One line per game, league code first, for many games at once. It pages the same way as **cards** when the games do not fit.
 - **ticker**: A scrolling marquee of scores; `tickerSpeed` sets seconds per game.
-- **team**: One card per favorite team showing its record, standing line, the live or next game with broadcast and venue, and the last result. Several favorites take turns every 10 seconds. A team whose league is switched off in **Leagues** gets no card.
+- **team**: One card per favorite team showing its record, standing line, the live or next game with broadcast and venue, and the last result. Several favorites take turns every `rotateIntervalMs`. A team whose league is switched off in **Leagues** gets no card.
 {% /module %}
 
 {% module type="standings" %}
@@ -365,7 +372,7 @@ A chore tracking module for families or housemates. Assign chores to members wit
 
 {% fields /%}
 
-**Members and chores are shared household data**, not module options. Members live in `data/family.json` and chores in `data/chores.json`. The family roster is available under **Settings > Family** even without a chore chart. Both are also edited from the editor's **Edit chore chart** button or from `/remote` > Chores, so every chore module on every display shows the same people and the same list. Each member has an `id`, `name`, `emoji`, and `color`. Each chore has an `id`, `name`, `emoji`, `points`, `frequency` (`daily`, `weekly`, `biweekly`, or `once`), `daysOfWeek`, `timeOfDay`, `specificDate` (YYYY-MM-DD, required when `frequency` is `once`), `assigneeIds`, an optional `assigneeGroupIds`, `rotation`, and, when `rotation` is `schedule`, a `schedule` map of member ID to days-of-week plus an optional `groupSchedule` map of group ID to days-of-week.
+**Members and chores are shared household data**, not module options. Members live in `data/family.json` and chores in `data/chores.json`. The family roster is available under **Settings > Family** even without a chore chart. Both are also edited from the editor's **Edit Chore Chart** button or from `/remote` > Chores, so every chore module on every display shows the same people and the same list. Each member has an `id`, `name`, `emoji`, and `color`. Each chore has an `id`, `name`, `emoji`, `points`, `frequency` (`daily`, `weekly`, `biweekly`, or `once`), `daysOfWeek`, `timeOfDay`, `specificDate` (YYYY-MM-DD, required when `frequency` is `once`), `assigneeIds`, an optional `assigneeGroupIds`, `rotation`, and, when `rotation` is `schedule`, a `schedule` map of member ID to days-of-week plus an optional `groupSchedule` map of group ID to days-of-week.
 
 **View details:**
 
@@ -457,9 +464,9 @@ Rich text block with multiple display modes, effects, and styling options.
 - **shake**: Letters jitter in place
 - **color-cycle**: Letters cycle through `colorCyclePalette`
 
-**Template variables:** When enabled, seven placeholders are replaced with live data: `{{time}}` (24-hour), `{{time12}}` (12-hour), `{{date}}`, `{{day}}` (weekday name), `{{month}}`, `{{year}}`, and `{{greeting}}`. Anything else stays on screen exactly as typed, so watch the spelling: it is `{{day}}`, not `{{dayOfWeek}}`. The greeting words are currently English only.
+**Template Variables:** When enabled, seven placeholders are replaced with live data: `{{time}}` (24-hour), `{{time12}}` (12-hour), `{{date}}`, `{{day}}` (weekday name), `{{month}}`, `{{year}}`, and `{{greeting}}`. Anything else stays on screen exactly as typed, so watch the spelling: it is `{{day}}`, not `{{dayOfWeek}}`. The greeting words are currently English only.
 
-**Shared-state tokens:** Single-brace `{<key>}` (separate from the double-brace template variables above) inserts a live value published by an add-on, e.g. `{plugin:ha:sensor.temp}`. Add a filter after a `|` to format it: `|round:1` rounds a numeric value to a set number of decimal places, and `|default:TEXT` supplies placeholder text for a key that hasn't published a value yet, e.g. `{plugin:ha:sensor.temp|round:1|default:n/a}`. Unknown keys render as an en dash with no filter.
+**Shared-state tokens:** Single-brace `{<key>}` (separate from the double-brace template variables above) inserts a live value from the shared state bus: one Home Screens publishes itself, such as `{weather.temperature}` or `{calendar.next_event_title}`, or one an add-on publishes, e.g. `{plugin:ha:sensor.temp}`. Add a filter after a `|` to format it: `|round:1` rounds a numeric value to a set number of decimal places, and `|default:TEXT` supplies placeholder text for a key that hasn't published a value yet, e.g. `{plugin:ha:sensor.temp|round:1|default:n/a}`. Unknown keys render as an en dash with no filter.
 
 **Content rotation:** Split content by a separator (default `---`) and rotate through the chunks at a set interval, useful for rotating quotes, tips, or announcements.
 {% /module %}
@@ -642,8 +649,8 @@ Every module supports these style properties, configurable in the Property Panel
 
 The **Sticky Note** paints its own paper and ink: its background is the module's `noteColor` setting and its text is always dark, so the editor does not offer `backgroundColor` or `textColor` for it.
 
-These are the values a newly added module starts with. A few modules override some of them on add: the four full-screen modules plus **Shape & Divider** and **Icon** start transparent with no padding, blur, border, or shadow; **Video** and **Web Embed** start with no padding; and **Multi-Month Calendar** and **Chore Chart** start at a larger base font size.
+These are the values a newly added module starts with. A few modules override some of them on add: the six full-screen modules and **Shape & Divider** start transparent with no padding, blur, border, or shadow; **Icon** does the same but starts with 12 px of padding; **Video** and **Web Embed** start with no padding or blur; **Image**, **Photo Slideshow** and **Rain Map** start with no blur; and **Multi-Month Calendar** and **Chore Chart** start at a larger base font size.
 
 ## Settings every module shares
 
-Alongside the options above, every module on a screen carries four instance settings that decide *whether* it renders: an on/off switch, a day-and-time schedule, conditional visibility driven by live values published by add-ons, and a background-provider flag that keeps a module's data loop running while other screens are showing. See the [Configuration reference](/docs/configuration#module-instance) for their exact shape, and the [Editor guide](/docs/editor) for how to set them.
+Alongside the options above, every module on a screen carries four instance settings that decide *whether* it renders: an on/off switch, a day-and-time schedule, conditional visibility driven by live values that Home Screens itself (weather and calendar facts) or add-ons publish, and a background-provider flag that keeps a module's data loop running while other screens are showing. See the [Configuration reference](/docs/configuration#module-instance) for their exact shape, and the [Editor guide](/docs/editor) for how to set them.
