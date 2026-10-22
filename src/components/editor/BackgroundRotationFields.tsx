@@ -118,28 +118,6 @@ function LocalFolderFields({ folder, onChange }: {
 }) {
   const t = useTranslate('editor');
   const [showBrowser, setShowBrowser] = useState(false);
-  const [previewImages, setPreviewImages] = useState<string[]>([]);
-  const [photoCount, setPhotoCount] = useState(0);
-
-  const fetchPreviews = useCallback(async (dir: string) => {
-    try {
-      const url = dir
-        ? `/api/backgrounds?directory=${encodeURIComponent(dir)}`
-        : '/api/backgrounds';
-      const res = await editorFetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        const images = Array.isArray(data) ? data : [];
-        setPhotoCount(images.length);
-        setPreviewImages(images.slice(0, 4));
-      }
-    } catch {
-      setPreviewImages([]);
-      setPhotoCount(0);
-    }
-  }, []);
-
-  useEffect(() => { fetchPreviews(folder); }, [folder, fetchPreviews]);
 
   return (
     <div>
@@ -152,37 +130,11 @@ function LocalFolderFields({ folder, onChange }: {
           {t('backgroundPicker.local.browse')}
         </Button>
       </div>
-      {photoCount > 0 && (
-        <div className="mt-1.5">
-          <span className="text-[10px] text-hs-text-faint">
-            {photoCount === 1
-              ? t('backgroundPicker.local.photoCountOne', { count: photoCount })
-              : t('backgroundPicker.local.photoCountOther', { count: photoCount })}
-          </span>
-          <div className="flex gap-1 mt-1 overflow-x-auto">
-            {previewImages.map((img) => (
-              <img
-                key={img}
-                src={img}
-                alt=""
-                loading="lazy"
-                className="w-12 h-12 rounded object-cover flex-shrink-0 border border-hs-border-strong"
-              />
-            ))}
-          </div>
-        </div>
-      )}
-      {photoCount === 0 && (
-        <p className="text-[10px] text-hs-text-faint mt-1">{t('backgroundPicker.local.noPhotosInFolder')}</p>
-      )}
       {showBrowser && (
         <ImageBrowserModal
           mode="manage-directory"
           initialDirectory={folder}
-          onSelectDirectory={(dir) => {
-            onChange(dir);
-            fetchPreviews(dir);
-          }}
+          onSelectDirectory={onChange}
           onClose={() => setShowBrowser(false)}
         />
       )}

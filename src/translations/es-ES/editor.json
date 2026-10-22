@@ -2449,7 +2449,7 @@
       "icloud": "Álbum compartido de iCloud",
       "unsplash": "Unsplash",
       "immich": "Immich",
-      "local": "Carpeta de la biblioteca local"
+      "local": "Biblioteca local"
     },
     "local": {
       "folderLabel": "Carpeta",
@@ -2460,7 +2460,7 @@
       "noPhotosInFolder": "Todavía no hay fotos en esta carpeta.",
       "modeFolder": "Carpeta",
       "modePictures": "Imágenes",
-      "picturesHint": "Toca las imágenes que quieras mostrar. Una se muestra como fondo fijo; varias rotan. Aún no hay ninguna seleccionada.",
+      "picturesHint": "Toca las imágenes que quieras mostrar. Una se muestra como fondo fijo; varias rotan.",
       "upload": "Subir imágenes",
       "uploading": "Subiendo…",
       "noPictures": "Aún no hay imágenes en tu biblioteca. Sube una para empezar.",
@@ -2488,7 +2488,7 @@
     "icloud": {
       "albumLabel": "Enlace del álbum",
       "albumHelp": "En tu iPhone, abre el álbum, activa \"Sitio web público\" y pega el enlace aquí.",
-      "needsLink": "No está activa hasta que pegues un enlace válido de álbum compartido."
+      "needsLink": "Bloqueada hasta que pegues un enlace válido de álbum compartido."
     },
     "unsplash": {
       "modeQuery": "Búsqueda",

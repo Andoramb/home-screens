@@ -84,7 +84,7 @@ export default function BackgroundPicker() {
     { id: 'unsplash', label: t('backgroundPicker.sources.unsplash'), locked: !hasUnsplashKey, integration: 'unsplash' },
     { id: 'nasa-apod', label: t('backgroundPicker.sources.nasaApod'), locked: !hasNasaKey, integration: 'nasa' },
     { id: 'immich', label: t('backgroundPicker.sources.immich'), locked: !hasImmichKey, integration: 'immich' },
-    { id: 'icloud', label: t('backgroundPicker.sources.icloud'), locked: false },
+    { id: 'icloud', label: t('backgroundPicker.sources.icloud'), locked: !isICloudLinkValid(currentScreen.backgroundRotation?.icloudAlbumUrl) },
     { id: 'local', label: t('backgroundPicker.sources.local'), locked: false },
   ];
 
@@ -152,7 +152,7 @@ export default function BackgroundPicker() {
                             {entry.label}
                           </span>
                         </label>
-                        {entry.locked && (
+                        {entry.locked && entry.id !== 'icloud' && (
                           checked ? (
                             <span
                               className="mt-1 block text-[10px] leading-relaxed text-hs-warning"
@@ -174,7 +174,7 @@ export default function BackgroundPicker() {
                             </span>
                           )
                         )}
-                        {checked && (
+                        {(checked || (entry.id === 'icloud' && entry.locked)) && (
                           <div className="mt-1.5 ml-5 space-y-2">
                             {entry.id === 'unsplash' && (
                               <>
@@ -237,10 +237,15 @@ export default function BackgroundPicker() {
                                 <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.icloud.albumLabel')}</span>
                                 <input
                                   type="url"
-                                  value={currentScreen.backgroundRotation!.icloudAlbumUrl || ''}
+                                  value={currentScreen.backgroundRotation?.icloudAlbumUrl || ''}
                                   onChange={(e) => {
                                     if (!selectedScreenId) return;
-                                    updateScreenRotation(selectedScreenId, { icloudAlbumUrl: e.target.value || undefined });
+                                    updateScreenRotation(selectedScreenId, {
+                                      icloudAlbumUrl: e.target.value || undefined,
+                                      sources: rotationSources,
+                                      query: currentScreen.backgroundRotation?.query || 'nature landscape',
+                                      intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
+                                    });
                                   }}
                                   placeholder="https://www.icloud.com/sharedalbum/#..."
                                   className={rotationFieldClass}
@@ -248,8 +253,8 @@ export default function BackgroundPicker() {
                                 <span className="block mt-1 text-[10px] text-hs-text-faint leading-relaxed">
                                   {t('backgroundPicker.icloud.albumHelp')}
                                 </span>
-                                {!isICloudLinkValid(currentScreen.backgroundRotation!.icloudAlbumUrl) && (
-                                  <span className="block mt-1 text-[10px] leading-relaxed text-hs-warning" data-testid="icloud-needs-link">
+                                {entry.locked && (
+                                  <span className="block mt-1 text-[10px] leading-relaxed text-hs-text-faint" data-testid="icloud-needs-link">
                                     {t('backgroundPicker.icloud.needsLink')}
                                   </span>
                                 )}

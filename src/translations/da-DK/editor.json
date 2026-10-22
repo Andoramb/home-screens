@@ -2449,7 +2449,7 @@
       "icloud": "Delt iCloud-album",
       "unsplash": "Unsplash",
       "immich": "Immich",
-      "local": "Lokal biblioteksmappe"
+      "local": "Lokalt bibliotek"
     },
     "local": {
       "folderLabel": "Mappe",
@@ -2460,7 +2460,7 @@
       "noPhotosInFolder": "Ingen fotos i denne mappe endnu.",
       "modeFolder": "Mappe",
       "modePictures": "Billeder",
-      "picturesHint": "Tryk på de billeder, der skal vises. Ét vises som fast baggrund; flere roterer. Ingen valgt endnu.",
+      "picturesHint": "Tryk på de billeder, der skal vises. Ét vises som fast baggrund; flere roterer.",
       "upload": "Upload billeder",
       "uploading": "Uploader…",
       "noPictures": "Ingen billeder i dit bibliotek endnu. Upload et for at komme i gang.",
@@ -2488,7 +2488,7 @@
     "icloud": {
       "albumLabel": "Albumlink",
       "albumHelp": "Åbn albummet på din iPhone, slå 'Offentligt websted' til, og indsæt linket her.",
-      "needsLink": "Ikke aktiv, før du indsætter et gyldigt link til et delt album."
+      "needsLink": "Låst, indtil du indsætter et gyldigt link til et delt album."
     },
     "unsplash": {
       "modeQuery": "Søgeord",

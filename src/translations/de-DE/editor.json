@@ -2449,7 +2449,7 @@
       "icloud": "Geteiltes iCloud-Album",
       "unsplash": "Unsplash",
       "immich": "Immich",
-      "local": "Lokaler Bibliotheksordner"
+      "local": "Lokale Bibliothek"
     },
     "local": {
       "folderLabel": "Ordner",
@@ -2460,7 +2460,7 @@
       "noPhotosInFolder": "Noch keine Fotos in diesem Ordner.",
       "modeFolder": "Ordner",
       "modePictures": "Bilder",
-      "picturesHint": "Tippe auf die Bilder, die angezeigt werden sollen. Eines wird als fester Hintergrund gezeigt, mehrere wechseln sich ab. Noch keines ausgewählt.",
+      "picturesHint": "Tippe auf die Bilder, die angezeigt werden sollen. Eines wird als fester Hintergrund gezeigt, mehrere wechseln sich ab.",
       "upload": "Bilder hochladen",
       "uploading": "Wird hochgeladen…",
       "noPictures": "Noch keine Bilder in deiner Bibliothek. Lade eines hoch, um zu starten.",
@@ -2488,7 +2488,7 @@
     "icloud": {
       "albumLabel": "Album-Link",
       "albumHelp": "Öffne das Album auf deinem iPhone, aktiviere „Öffentliche Website“ und füge den Link hier ein.",
-      "needsLink": "Nicht aktiv, bis du einen gültigen Link zu einem geteilten Album einfügst."
+      "needsLink": "Gesperrt, bis du einen gültigen Link zu einem geteilten Album einfügst."
     },
     "unsplash": {
       "modeQuery": "Suchbegriff",
