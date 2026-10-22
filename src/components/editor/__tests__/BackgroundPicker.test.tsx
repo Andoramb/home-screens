@@ -396,6 +396,38 @@ describe('BackgroundPicker — Local library', () => {
     expect((await findAllByTestId('local-picture'))).toHaveLength(3);
   });
 
+  it('iCloud is locked up front like NASA, with its link field already visible to unlock it', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByRole, container, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const box = getByRole('checkbox', { name: new RegExp(enUSEditor.backgroundPicker.sources.icloud) }) as HTMLInputElement;
+    expect(box.disabled).toBe(true);
+    expect(queryByTestId('icloud-needs-link')).not.toBeNull();
+    const input = container.querySelector('input[type="url"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'https://www.icloud.com/sharedalbum/#B0aGdXWuDG1PYBr' } });
+    expect((getByRole('checkbox', { name: new RegExp(enUSEditor.backgroundPicker.sources.icloud) }) as HTMLInputElement).disabled).toBe(false);
+    expect(queryByTestId('icloud-needs-link')).toBeNull();
+    // Unlocking does not turn the source on by itself.
+    expect(currentRotation()?.sources).toEqual([]);
+  });
+
+  it('folder mode shows just the folder: no image gallery', () => {
+    stubLibrary();
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60 });
+    const { getByText, container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByText(enUSEditor.backgroundPicker.local.allPhotosRoot)).not.toBeNull();
+    expect(container.querySelector('[data-testid="local-pictures"]')).toBeNull();
+    const localBlock = getByText(enUSEditor.backgroundPicker.local.allPhotosRoot).closest('div')!.parentElement!;
+    expect(localBlock.querySelectorAll('img')).toHaveLength(0);
+  });
+
+  it('pictures mode has no "None selected yet." line', () => {
+    stubLibrary();
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(container.textContent).not.toContain('None selected yet');
+    expect(container.textContent).toContain(enUSEditor.backgroundPicker.local.picturesHint);
+  });
+
   it('iCloud says it is not active until a valid album link is pasted', () => {
     seedStore({ sources: ['icloud'], query: '', intervalMinutes: 60 });
     const { queryByTestId, container } = render(<BackgroundPicker />, { wrapper: Wrapper });

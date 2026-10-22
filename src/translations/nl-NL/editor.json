@@ -2485,7 +2485,7 @@
       "icloud": "Gedeeld iCloud-album",
       "unsplash": "Unsplash",
       "immich": "Immich",
-      "local": "Lokale bibliotheekmap"
+      "local": "Lokale bibliotheek"
     },
     "local": {
       "folderLabel": "Map",
@@ -2496,7 +2496,7 @@
       "noPhotosInFolder": "Nog geen foto's in deze map.",
       "modeFolder": "Map",
       "modePictures": "Afbeeldingen",
-      "picturesHint": "Tik op de afbeeldingen die je wilt tonen. Eén geeft een vaste achtergrond; meerdere wisselen af. Nog geen geselecteerd.",
+      "picturesHint": "Tik op de afbeeldingen die je wilt tonen. Eén geeft een vaste achtergrond; meerdere wisselen af.",
       "upload": "Afbeeldingen uploaden",
       "uploading": "Uploaden…",
       "noPictures": "Nog geen afbeeldingen in je bibliotheek. Upload er een om te beginnen.",
@@ -2524,7 +2524,7 @@
     "icloud": {
       "albumLabel": "Albumlink",
       "albumHelp": "Open het album op je iPhone, zet 'Openbare website' aan en plak de link hier.",
-      "needsLink": "Niet actief totdat je een geldige link naar een gedeeld album plakt."
+      "needsLink": "Vergrendeld totdat je een geldige link naar een gedeeld album plakt."
     },
     "unsplash": {
       "modeQuery": "Zoekopdracht",
