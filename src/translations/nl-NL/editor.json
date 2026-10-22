@@ -2457,7 +2457,14 @@
       "allPhotosRoot": "Alle achtergronden (hoofdmap)",
       "photoCountOne": "{count} foto",
       "photoCountOther": "{count} foto's",
-      "noPhotosInFolder": "Nog geen foto's in deze map."
+      "noPhotosInFolder": "Nog geen foto's in deze map.",
+      "modeFolder": "Map",
+      "modePictures": "Afbeeldingen",
+      "picturesHint": "Tik op de afbeeldingen die je wilt tonen. Eén geeft een vaste achtergrond; meerdere wisselen af. Nog geen geselecteerd.",
+      "upload": "Afbeeldingen uploaden",
+      "uploading": "Uploaden…",
+      "noPictures": "Nog geen afbeeldingen in je bibliotheek. Upload er een om te beginnen.",
+      "picturePick": "{name} tonen"
     },
     "intervals": {
       "minutes": "{count} minuten",
@@ -2480,7 +2487,8 @@
     },
     "icloud": {
       "albumLabel": "Albumlink",
-      "albumHelp": "Open het album op je iPhone, zet 'Openbare website' aan en plak de link hier."
+      "albumHelp": "Open het album op je iPhone, zet 'Openbare website' aan en plak de link hier.",
+      "needsLink": "Niet actief totdat je een geldige link naar een gedeeld album plakt."
     },
     "unsplash": {
       "modeQuery": "Zoekopdracht",

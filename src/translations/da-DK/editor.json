@@ -2457,7 +2457,14 @@
       "allPhotosRoot": "Alle baggrunde (rodmappe)",
       "photoCountOne": "{count} foto",
       "photoCountOther": "{count} fotos",
-      "noPhotosInFolder": "Ingen fotos i denne mappe endnu."
+      "noPhotosInFolder": "Ingen fotos i denne mappe endnu.",
+      "modeFolder": "Mappe",
+      "modePictures": "Billeder",
+      "picturesHint": "Tryk på de billeder, der skal vises. Ét vises som fast baggrund; flere roterer. Ingen valgt endnu.",
+      "upload": "Upload billeder",
+      "uploading": "Uploader…",
+      "noPictures": "Ingen billeder i dit bibliotek endnu. Upload et for at komme i gang.",
+      "picturePick": "Vis {name}"
     },
     "intervals": {
       "minutes": "{count} minutter",
@@ -2480,7 +2487,8 @@
     },
     "icloud": {
       "albumLabel": "Albumlink",
-      "albumHelp": "Åbn albummet på din iPhone, slå 'Offentligt websted' til, og indsæt linket her."
+      "albumHelp": "Åbn albummet på din iPhone, slå 'Offentligt websted' til, og indsæt linket her.",
+      "needsLink": "Ikke aktiv, før du indsætter et gyldigt link til et delt album."
     },
     "unsplash": {
       "modeQuery": "Søgeord",

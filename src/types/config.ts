@@ -372,6 +372,10 @@ export interface BackgroundRotation {
   icloudAlbumUrl?: string;
   /** Local media library folder to rotate through, relative to the library root */
   localFolder?: string;
+  /** Local library source: rotate a folder (default) or show chosen pictures. */
+  localMode?: 'folder' | 'images';
+  /** Serve URLs of the library pictures chosen in `images` mode. None chosen means nothing to show. */
+  localImages?: string[];
   /** Starter wall IDs selected within each group. Missing or empty = no walls from that group are in rotation. Unknown IDs are ignored. */
   starterBackgroundIds?: Partial<Record<'color' | 'pattern', string[]>>;
 }

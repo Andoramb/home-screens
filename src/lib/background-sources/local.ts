@@ -6,7 +6,41 @@ import { IMAGE_FILE_RE } from '@/lib/media-formats';
 import type { BackgroundRotation } from '@/types/config';
 import type { BackgroundSourceProvider } from './types';
 
+/** Library-relative path a chosen picture's serve URL points at, or null. */
+export function localImageFile(servePath: unknown): string | null {
+  if (typeof servePath !== 'string') return null;
+  try {
+    const file = new URL(servePath, 'http://local').searchParams.get('file');
+    return file && IMAGE_FILE_RE.test(file) ? file : null;
+  } catch {
+    return null;
+  }
+}
+
+/** The chosen pictures that still exist in the library. */
+async function chosenImages(rotation: BackgroundRotation): Promise<string[]> {
+  const files = [...new Set((rotation.localImages ?? []).map(localImageFile).filter((f): f is string => !!f))];
+  const present: string[] = [];
+  for (const file of files) {
+    const resolved = safeLibraryPath(file);
+    if (!resolved) continue;
+    try {
+      if ((await fs.stat(resolved)).isFile()) present.push(file);
+    } catch {
+      // Deleted since it was chosen: skip it.
+    }
+  }
+  return present;
+}
+
 async function pickLocalPhoto(rotation: BackgroundRotation): Promise<string | null> {
+  if (rotation.localMode === 'images') {
+    const present = await chosenImages(rotation);
+    if (present.length === 0) return null;
+    const file = present[Math.floor(Math.random() * present.length)];
+    return `/api/backgrounds/serve?file=${encodeURIComponent(file)}`;
+  }
+
   const dir = rotation.localFolder ? safeLibraryPath(rotation.localFolder) : path.join(process.cwd(), BACKGROUNDS_DIR);
   if (!dir) return null;
 

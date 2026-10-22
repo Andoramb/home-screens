@@ -2457,7 +2457,14 @@
       "allPhotosRoot": "Alle Hintergründe (Stammordner)",
       "photoCountOne": "{count} Foto",
       "photoCountOther": "{count} Fotos",
-      "noPhotosInFolder": "Noch keine Fotos in diesem Ordner."
+      "noPhotosInFolder": "Noch keine Fotos in diesem Ordner.",
+      "modeFolder": "Ordner",
+      "modePictures": "Bilder",
+      "picturesHint": "Tippe auf die Bilder, die angezeigt werden sollen. Eines wird als fester Hintergrund gezeigt, mehrere wechseln sich ab. Noch keines ausgewählt.",
+      "upload": "Bilder hochladen",
+      "uploading": "Wird hochgeladen…",
+      "noPictures": "Noch keine Bilder in deiner Bibliothek. Lade eines hoch, um zu starten.",
+      "picturePick": "{name} anzeigen"
     },
     "intervals": {
       "minutes": "{count} Minuten",
@@ -2480,7 +2487,8 @@
     },
     "icloud": {
       "albumLabel": "Album-Link",
-      "albumHelp": "Öffne das Album auf deinem iPhone, aktiviere „Öffentliche Website“ und füge den Link hier ein."
+      "albumHelp": "Öffne das Album auf deinem iPhone, aktiviere „Öffentliche Website“ und füge den Link hier ein.",
+      "needsLink": "Nicht aktiv, bis du einen gültigen Link zu einem geteilten Album einfügst."
     },
     "unsplash": {
       "modeQuery": "Suchbegriff",

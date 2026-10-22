@@ -70,6 +70,15 @@ describe('buildRotationKey', () => {
     expect(a).not.toBe(b);
   });
 
+  it('changes when the local pictures or mode change', () => {
+    const base = { sources: ['local'] as never };
+    const a = buildRotationKey([screen('s1', { ...base, localMode: 'images', localImages: ['/api/backgrounds/serve?file=a.jpg'] })]);
+    const b = buildRotationKey([screen('s1', { ...base, localMode: 'images', localImages: ['/api/backgrounds/serve?file=b.jpg'] })]);
+    const c = buildRotationKey([screen('s1', { ...base, localMode: 'folder', localImages: ['/api/backgrounds/serve?file=a.jpg'] })]);
+    expect(a).not.toBe(b);
+    expect(a).not.toBe(c);
+  });
+
   it('changes when icloudAlbumUrl changes', () => {
     const a = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#AAA111' })]);
     const b = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#BBB222' })]);

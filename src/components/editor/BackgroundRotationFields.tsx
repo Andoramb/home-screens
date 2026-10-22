@@ -1,11 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import type { BackgroundRotation } from '@/types/config';
 import Button from '@/components/ui/Button';
 import ImageBrowserModal from './ImageBrowserModal';
-import { Plus, X } from 'lucide-react';
+import { Check, Plus, X } from 'lucide-react';
+import { tileThumbnailUrl } from '@/lib/media-paths';
+import { localImageFileOf } from '@/lib/local-images';
 import AccordionSection from './AccordionSection';
 import { useTranslate } from '@/i18n';
 
@@ -110,7 +112,7 @@ export function ImmichRotationFields({ rotation, onChange }: {
   );
 }
 
-export function LocalRotationFields({ folder, onChange }: {
+function LocalFolderFields({ folder, onChange }: {
   folder: string;
   onChange: (folder: string) => void;
 }) {
@@ -182,6 +184,142 @@ export function LocalRotationFields({ folder, onChange }: {
             fetchPreviews(dir);
           }}
           onClose={() => setShowBrowser(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Library pictures as a tile grid: tap to include, like the color walls. Nothing is chosen until the user taps. */
+function LocalPicturesFields({ chosen, onChange }: {
+  chosen: string[];
+  onChange: (images: string[]) => void;
+}) {
+  const t = useTranslate('editor');
+  const [library, setLibrary] = useState<string[] | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    editorFetch('/api/backgrounds')
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => { if (!cancelled) setLibrary(Array.isArray(data) ? data : []); })
+      .catch(() => { if (!cancelled) setLibrary([]); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const chosenFiles = new Set(chosen.map(localImageFileOf));
+  const toggle = (url: string) => {
+    const file = localImageFileOf(url);
+    onChange(chosenFiles.has(file) ? chosen.filter((c) => localImageFileOf(c) !== file) : [...chosen, url]);
+  };
+
+  const upload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    setUploading(true);
+    setError(null);
+    const added: string[] = [];
+    for (const file of files) {
+      const body = new FormData();
+      body.append('file', file);
+      try {
+        const res = await editorFetch('/api/backgrounds', { method: 'POST', body });
+        const data = await res.json();
+        if (!res.ok) setError(data.error ?? t('settings.localBackgrounds.uploadFailedWithStatus', { status: res.status }));
+        else if (data.path) added.push(data.path);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t('settings.localBackgrounds.uploadFailed'));
+      }
+    }
+    if (added.length) {
+      setLibrary((prev) => [...(prev ?? []), ...added.filter((a) => !(prev ?? []).includes(a))]);
+      // A picture you just uploaded is one you want to see.
+      onChange([...chosen, ...added.filter((a) => !chosenFiles.has(localImageFileOf(a)))]);
+    }
+    setUploading(false);
+    if (fileInput.current) fileInput.current.value = '';
+  };
+
+  return (
+    <div className="space-y-1.5" data-testid="local-pictures">
+      <p className="text-[10px] leading-relaxed text-hs-text-faint">{t('backgroundPicker.local.picturesHint')}</p>
+      {library && library.length === 0 && (
+        <p className="text-[10px] text-hs-text-faint">{t('backgroundPicker.local.noPictures')}</p>
+      )}
+      {library && library.length > 0 && (
+        <div className="grid grid-cols-3 gap-1.5 max-h-72 overflow-y-auto">
+          {library.map((url) => {
+            const marked = chosenFiles.has(localImageFileOf(url));
+            return (
+              <button
+                key={url}
+                type="button"
+                aria-pressed={marked}
+                aria-label={t('backgroundPicker.local.picturePick', { name: decodeURIComponent(localImageFileOf(url)) })}
+                data-testid="local-picture"
+                onClick={() => toggle(url)}
+                className={`relative aspect-square overflow-hidden rounded border ${marked ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
+              >
+                <img src={tileThumbnailUrl(url)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                {marked && (
+                  <span className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-hs-accent text-white" aria-hidden="true">
+                    <Check size={10} />
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      )}
+      {error && <p className="text-[10px] text-hs-danger">{error}</p>}
+      <input ref={fileInput} type="file" accept="image/*" multiple onChange={upload} data-file-input="" className="hidden" />
+      <Button size="sm" onClick={() => fileInput.current?.click()} disabled={uploading} className="w-full">
+        {uploading ? t('backgroundPicker.local.uploading') : t('backgroundPicker.local.upload')}
+      </Button>
+    </div>
+  );
+}
+
+/** Local library: rotate a folder, or show pictures picked from the library grid. */
+export function LocalRotationFields({ rotation, onChange }: {
+  rotation: BackgroundRotation;
+  onChange: (updates: Partial<BackgroundRotation>) => void;
+}) {
+  const t = useTranslate('editor');
+  const mode = rotation.localMode === 'images' ? 'images' : 'folder';
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
+        {([
+          { id: 'folder' as const, label: t('backgroundPicker.local.modeFolder') },
+          { id: 'images' as const, label: t('backgroundPicker.local.modePictures') },
+        ]).map((entry) => (
+          <button
+            key={entry.id}
+            type="button"
+            aria-pressed={mode === entry.id}
+            data-testid={`local-mode-${entry.id}`}
+            onClick={() => onChange({ localMode: entry.id })}
+            className={`truncate rounded px-2 py-1 text-[11px] ${
+              mode === entry.id ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'
+            }`}
+          >
+            {entry.label}
+          </button>
+        ))}
+      </div>
+      {mode === 'folder' ? (
+        <LocalFolderFields
+          folder={rotation.localFolder || ''}
+          onChange={(folder) => onChange({ localFolder: folder || undefined })}
+        />
+      ) : (
+        <LocalPicturesFields
+          chosen={rotation.localImages ?? []}
+          onChange={(images) => onChange({ localImages: images })}
         />
       )}
     </div>

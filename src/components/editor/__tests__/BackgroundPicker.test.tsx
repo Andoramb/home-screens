@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, cleanup, fireEvent, within } from '@testing-library/react';
+import { render, cleanup, fireEvent, within, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { ScreenConfiguration } from '@/types/config';
 import { I18nProvider } from '@/i18n/provider';
@@ -342,6 +342,67 @@ describe('BackgroundPicker — unified Sources', () => {
     expect(getByTestId('starter-background-none').getAttribute('aria-pressed')).toBe('false');
     fireEvent.click(getByTestId('starter-background-none'));
     expect(useEditorStore.getState().config!.screens[0].backgroundRotation?.sources).toEqual([]);
+  });
+});
+
+describe('BackgroundPicker — Local library', () => {
+  const LIBRARY = ['/api/backgrounds/serve?file=a.jpg', '/api/backgrounds/serve?file=b.jpg'];
+
+  function stubLibrary(onUpload?: () => Response) {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') return onUpload ? onUpload() : new Response('{}');
+      if (init?.method === 'HEAD') return new Response(null, { status: 200 });
+      return new Response(JSON.stringify(url.startsWith('/api/backgrounds') ? LIBRARY : []));
+    }));
+  }
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('offers a folder or pictures; pictures start with nothing chosen', async () => {
+    stubLibrary();
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60 });
+    const { getByTestId, findAllByTestId, getByText } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('local-mode-folder').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(getByTestId('local-mode-images'));
+    expect(currentRotation()?.localMode).toBe('images');
+    const tiles = await findAllByTestId('local-picture');
+    expect(tiles).toHaveLength(2);
+    expect(tiles.every((tile) => tile.getAttribute('aria-pressed') === 'false')).toBe(true);
+    expect(getByText(enUSEditor.backgroundPicker.local.upload)).not.toBeNull();
+  });
+
+  it('tapping pictures adds and removes them, like the color walls', async () => {
+    stubLibrary();
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });
+    const { findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const tiles = await findAllByTestId('local-picture');
+    fireEvent.click(tiles[0]);
+    expect(currentRotation()?.localImages).toEqual([LIBRARY[0]]);
+    fireEvent.click(tiles[1]);
+    expect(currentRotation()?.localImages).toEqual(LIBRARY);
+    fireEvent.click(tiles[0]);
+    expect(currentRotation()?.localImages).toEqual([LIBRARY[1]]);
+    // The folder setting is kept for when the user switches back.
+    expect(currentRotation()?.localMode).toBe('images');
+  });
+
+  it('an uploaded picture joins the library and is chosen', async () => {
+    stubLibrary(() => new Response(JSON.stringify({ path: '/api/backgrounds/serve?file=new.jpg' })));
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });
+    const { container, findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    await findAllByTestId('local-picture');
+    const input = container.querySelector('[data-testid="local-pictures"] input[type="file"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { files: [new File(['x'], 'new.jpg', { type: 'image/jpeg' })] } });
+    await waitFor(() => expect(currentRotation()?.localImages).toEqual(['/api/backgrounds/serve?file=new.jpg']));
+    expect((await findAllByTestId('local-picture'))).toHaveLength(3);
+  });
+
+  it('iCloud says it is not active until a valid album link is pasted', () => {
+    seedStore({ sources: ['icloud'], query: '', intervalMinutes: 60 });
+    const { queryByTestId, container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(queryByTestId('icloud-needs-link')).not.toBeNull();
+    const input = container.querySelector('input[type="url"]') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: 'https://www.icloud.com/sharedalbum/#B0aGdXWuDG1PYBr' } });
+    expect(queryByTestId('icloud-needs-link')).toBeNull();
   });
 });
 

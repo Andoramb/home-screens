@@ -14,10 +14,13 @@ import { eventBus } from '@/lib/event-bus';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
 import { activeRotationSources, stopBackgroundRotation } from '@/lib/screen-background';
 import IntegrationSettingsLink, { type BackgroundIntegration } from './IntegrationSettingsLink';
+import { parseICloudAlbumToken, parseICloudSharedAlbumUrl } from '@/lib/icloud-parse';
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
 import BackgroundShadeFields from './BackgroundShadeFields';
 import BackgroundEffectsFields from './BackgroundEffectsFields';
 import ThemeBackgrounds from './ThemeBackgrounds';
+
+const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link)));
 
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
@@ -245,6 +248,11 @@ export default function BackgroundPicker() {
                                 <span className="block mt-1 text-[10px] text-hs-text-faint leading-relaxed">
                                   {t('backgroundPicker.icloud.albumHelp')}
                                 </span>
+                                {!isICloudLinkValid(currentScreen.backgroundRotation!.icloudAlbumUrl) && (
+                                  <span className="block mt-1 text-[10px] leading-relaxed text-hs-warning" data-testid="icloud-needs-link">
+                                    {t('backgroundPicker.icloud.needsLink')}
+                                  </span>
+                                )}
                               </label>
                             )}
                             {entry.id === 'immich' && (
@@ -263,10 +271,10 @@ export default function BackgroundPicker() {
                             )}
                             {entry.id === 'local' && (
                               <LocalRotationFields
-                                folder={currentScreen.backgroundRotation!.localFolder || ''}
-                                onChange={(folder) => {
+                                rotation={currentScreen.backgroundRotation!}
+                                onChange={(updates) => {
                                   if (!selectedScreenId) return;
-                                  updateScreenRotation(selectedScreenId, { localFolder: folder || undefined });
+                                  updateScreenRotation(selectedScreenId, updates);
                                 }}
                               />
                             )}
