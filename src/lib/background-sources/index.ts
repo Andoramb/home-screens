@@ -15,6 +15,8 @@ import { colorSourceProvider, patternSourceProvider, starterCandidates } from '.
 import type { BackgroundSourceProvider } from './types';
 import type { BackgroundRotation, BackgroundRotationSourceId } from '@/types/config';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
+import { parseICloudAlbumToken, parseICloudSharedAlbumUrl } from '@/lib/icloud-parse';
+import { localImageFile } from './local';
 
 export const backgroundSourceProviders: Record<BackgroundRotationSourceId, BackgroundSourceProvider> = {
   unsplash: unsplashSourceProvider,
@@ -32,6 +34,14 @@ export function isSourceConfigured(source: BackgroundRotationSourceId, rotation:
   }
   if (source === 'unsplash') {
     return isUnsplashCollectionsMode(rotation) ? !!rotation.unsplashCollections?.length : !!rotation.query;
+  }
+  // A source that cannot produce a photo yet must not take a turn: it would win a share of the picks and return nothing.
+  if (source === 'icloud') {
+    const link = rotation.icloudAlbumUrl || '';
+    return !!(parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link));
+  }
+  if (source === 'local' && rotation.localMode === 'images') {
+    return (rotation.localImages ?? []).some((url) => localImageFile(url));
   }
   return Object.hasOwn(backgroundSourceProviders, source);
 }

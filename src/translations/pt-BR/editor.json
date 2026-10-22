@@ -2493,7 +2493,14 @@
       "allPhotosRoot": "Todos os fundos (pasta raiz)",
       "photoCountOne": "{count} foto",
       "photoCountOther": "{count} fotos",
-      "noPhotosInFolder": "Ainda não há fotos nesta pasta."
+      "noPhotosInFolder": "Ainda não há fotos nesta pasta.",
+      "modeFolder": "Pasta",
+      "modePictures": "Imagens",
+      "picturesHint": "Toque nas imagens que quer mostrar. Uma aparece como fundo fixo; várias alternam. Nenhuma selecionada ainda.",
+      "upload": "Enviar imagens",
+      "uploading": "Enviando…",
+      "noPictures": "Ainda não há imagens na sua biblioteca. Envie uma para começar.",
+      "picturePick": "Mostrar {name}"
     },
     "intervals": {
       "minutes": "{count} minutos",
@@ -2516,7 +2523,8 @@
     },
     "icloud": {
       "albumLabel": "Link do álbum",
-      "albumHelp": "No seu iPhone, abra o álbum, ative \"Site público\" e cole o link aqui."
+      "albumHelp": "No seu iPhone, abra o álbum, ative \"Site público\" e cole o link aqui.",
+      "needsLink": "Inativa até você colar um link válido de álbum compartilhado."
     },
     "unsplash": {
       "modeQuery": "Busca",

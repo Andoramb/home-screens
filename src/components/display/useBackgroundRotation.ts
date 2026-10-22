@@ -37,6 +37,8 @@ export function buildRotationKey(screens: Screen[]): string {
           immichFavoritesOnly: r.immichFavoritesOnly ?? false,
           icloudAlbumUrl: r.icloudAlbumUrl ?? null,
           localFolder: r.localFolder ?? null,
+          localMode: r.localMode ?? null,
+          localImages: r.localImages ?? null,
           starterBackgroundIds: r.starterBackgroundIds ?? null,
         };
       }),

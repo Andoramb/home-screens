@@ -144,6 +144,46 @@ describe('GET /api/backgrounds/rotate — multi-source selection', () => {
     }
   });
 
+  it('an iCloud source with no album link never takes a turn, whatever the roll', async () => {
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
+      sources: ['icloud', 'local'], query: '', intervalMinutes: 60,
+    } as never }));
+    fsMock.readdir.mockResolvedValue([{ name: 'photo.jpg', isFile: () => true }]);
+    for (const roll of [0, 0.4, 0.6, 0.999]) {
+      const random = vi.spyOn(Math, 'random').mockReturnValue(roll);
+      try {
+        expect(await (await GET(rotateReq('?screenId=s1&force=true'))).json()).toMatchObject({
+          path: '/api/backgrounds/serve?file=photo.jpg', fresh: true,
+        });
+      } finally { random.mockRestore(); }
+    }
+  });
+
+  it('local pictures mode shows only the chosen pictures that still exist, and re-picks when the choice changes', async () => {
+    const a = '/api/backgrounds/serve?file=a.jpg';
+    const b = '/api/backgrounds/serve?file=b.jpg';
+    const gone = '/api/backgrounds/serve?file=gone.jpg';
+    fsMock.stat.mockImplementation(async (p: string) => {
+      if (String(p).endsWith('gone.jpg')) throw new Error('ENOENT');
+      return { isFile: () => true };
+    });
+    const base = { sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' } as const;
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...base, localImages: [gone, a] } as never }));
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: a, fresh: true });
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: a, fresh: false });
+
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...base, localImages: [b] } as never }));
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: b, fresh: true });
+  });
+
+  it('local pictures mode with nothing chosen is inactive: another source carries the rotation', async () => {
+    mockFindScreen.mockReturnValue(screen({ backgroundImage: '/starter-backgrounds/ocean.svg', backgroundRotation: {
+      sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images', localImages: [],
+    } as never }));
+    // Nothing eligible, so the screen's own picture stands.
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: '/starter-backgrounds/ocean.svg' });
+  });
+
   it('skips invalid starter subsets and still rotates from a valid legacy source', async () => {
     mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
       sources: ['pattern', 'local', 'bogus'], query: '', intervalMinutes: 60,

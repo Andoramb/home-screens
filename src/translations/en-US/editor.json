@@ -2504,7 +2504,14 @@
       "allPhotosRoot": "All backgrounds (root folder)",
       "photoCountOne": "{count} photo",
       "photoCountOther": "{count} photos",
-      "noPhotosInFolder": "No photos in this folder yet."
+      "noPhotosInFolder": "No photos in this folder yet.",
+      "modeFolder": "Folder",
+      "modePictures": "Pictures",
+      "picturesHint": "Tap the pictures to show. One shows as a fixed background; several rotate. None selected yet.",
+      "upload": "Upload pictures",
+      "uploading": "Uploading…",
+      "noPictures": "No pictures in your library yet. Upload one to start.",
+      "picturePick": "Show {name}"
     },
     "intervals": {
       "minutes": "{count} minutes",
@@ -2527,7 +2534,8 @@
     },
     "icloud": {
       "albumLabel": "Album link",
-      "albumHelp": "On your iPhone, open the album, turn on Public Website, then paste the link here."
+      "albumHelp": "On your iPhone, open the album, turn on Public Website, then paste the link here.",
+      "needsLink": "Not active until you paste a valid shared album link."
     },
     "unsplash": {
       "modeQuery": "Search query",

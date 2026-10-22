@@ -40,3 +40,20 @@ describe('built-in starter rotation providers', () => {
     expect(isSourceConfigured('theme' as never, rotation())).toBe(false);
   });
 });
+
+describe('source readiness', () => {
+  const base: BackgroundRotation = { sources: [], query: '', intervalMinutes: 60 };
+
+  it('iCloud is ready only with a link that parses', () => {
+    expect(isSourceConfigured('icloud', base)).toBe(false);
+    expect(isSourceConfigured('icloud', { ...base, icloudAlbumUrl: 'not a link' })).toBe(false);
+    expect(isSourceConfigured('icloud', { ...base, icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#B0aGdXWuDG1PYBr' })).toBe(true);
+  });
+
+  it('local is ready as a folder by default and in pictures mode only once pictures are chosen', () => {
+    expect(isSourceConfigured('local', base)).toBe(true);
+    expect(isSourceConfigured('local', { ...base, localMode: 'images' })).toBe(false);
+    expect(isSourceConfigured('local', { ...base, localMode: 'images', localImages: ['nonsense'] })).toBe(false);
+    expect(isSourceConfigured('local', { ...base, localMode: 'images', localImages: ['/api/backgrounds/serve?file=a.jpg'] })).toBe(true);
+  });
+});

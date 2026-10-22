@@ -116,7 +116,11 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     })
     : undefined;
   const icloudAlbum = rotation.sources.includes('icloud') ? (rotation.icloudAlbumUrl || '') : undefined;
-  const localFolder = rotation.sources.includes('local') ? (rotation.localFolder || '') : undefined;
+  const localFolder = rotation.sources.includes('local')
+    ? (rotation.localMode === 'images'
+      ? `images:${JSON.stringify([...new Set(rotation.localImages ?? [])].sort())}`
+      : (rotation.localFolder || ''))
+    : undefined;
   const canvas = rotation.sources.includes('unsplash') ? JSON.stringify(canvasOf(config, screenId)) : undefined;
   const unsplashCollectionsKey = rotation.sources.includes('unsplash') && rotation.unsplashCollections?.length
     ? JSON.stringify(rotation.unsplashCollections)

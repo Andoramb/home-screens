@@ -2493,7 +2493,14 @@
       "allPhotosRoot": "Tous les arrière-plans (dossier racine)",
       "photoCountOne": "{count} photo",
       "photoCountOther": "{count} photos",
-      "noPhotosInFolder": "Aucune photo dans ce dossier pour le moment."
+      "noPhotosInFolder": "Aucune photo dans ce dossier pour le moment.",
+      "modeFolder": "Dossier",
+      "modePictures": "Images",
+      "picturesHint": "Touchez les images à afficher. Une seule donne un fond fixe ; plusieurs tournent. Aucune sélectionnée pour l'instant.",
+      "upload": "Importer des images",
+      "uploading": "Import en cours…",
+      "noPictures": "Aucune image dans votre bibliothèque pour l'instant. Importez-en une pour commencer.",
+      "picturePick": "Afficher {name}"
     },
     "intervals": {
       "minutes": "{count} minutes",
@@ -2516,7 +2523,8 @@
     },
     "icloud": {
       "albumLabel": "Lien de l'album",
-      "albumHelp": "Sur votre iPhone, ouvrez l'album, activez « Site web public », puis collez le lien ici."
+      "albumHelp": "Sur votre iPhone, ouvrez l'album, activez « Site web public », puis collez le lien ici.",
+      "needsLink": "Inactive tant que vous n'avez pas collé un lien d'album partagé valide."
     },
     "unsplash": {
       "modeQuery": "Recherche",
