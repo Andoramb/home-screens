@@ -1505,6 +1505,54 @@ test('text: the token live preview resolves values (with filters) from the displ
   await expect(page.getByTestId('text-token-preview')).toContainText('72.5 · n/a', { timeout: 10_000 });
 });
 
+test('text: adding a look through the panel persists its conditions and colors', async ({ page, request }) => {
+  // The look reads a key the display has reported, so its card carries a
+  // live verdict pill and the status chip names it.
+  const DISPLAY = 'ce-text-looks';
+  const mod = buildModuleInstance('text', { content: '{plugin:foo:temp}' });
+  const config = baseConfig({ screens: [] });
+  config.displays = [{ id: DISPLAY, name: 'Looks', screens: [makeScreen('s1', 'S1', [mod])] }];
+  await putConfig(request, config);
+  await seedDisplaySharedState(request, { 'plugin:foo:temp': '25' }, DISPLAY);
+
+  await page.goto(`/editor?display=${DISPLAY}`);
+  await expect(page.getByTestId('editor-canvas')).toBeVisible();
+  await page.locator(`[data-module-id="${mod.id}"]`).click();
+
+  await autosaved(page, async () => {
+    await page.getByRole('button', { name: 'Add a look' }).click();
+  });
+  const card = page.locator('[data-text-looks] [data-rule-card]').first();
+  await expect(card.locator('[data-look-sets-nothing]')).toBeVisible();
+  await expect(card.locator('[data-look-verdict="always"]')).toBeVisible();
+
+  await autosaved(page, async () => {
+    await card.getByRole('switch', { name: 'Border color' }).click();
+  });
+  await expect(card.locator('[data-look-sets-nothing]')).toHaveCount(0);
+
+  await autosaved(page, async () => {
+    await card.getByRole('button', { name: 'Add condition' }).click();
+  });
+  await card.getByLabel('Condition type').selectOption('numeric');
+  await autosaved(page, async () => {
+    await card.getByLabel('What to check').fill('plugin:foo:temp');
+  });
+  await autosaved(page, async () => {
+    await card.getByLabel('Above').fill('24');
+    await card.getByLabel('Above').blur();
+  });
+
+  await expect(card.locator('[data-look-verdict="showing"]')).toBeVisible({ timeout: 10_000 });
+  await expect(card.locator('[data-rule-summary]')).toContainText('above 24');
+
+  const screens = (await getConfig(request)).displays![0].screens;
+  const looks = (screens[0].modules[0].config as { looks: Array<Record<string, unknown>> }).looks;
+  expect(looks).toHaveLength(1);
+  expect(looks[0].borderColor).toBe('#3b82f6');
+  expect(looks[0].when).toEqual([{ kind: 'numeric', sourceKey: 'plugin:foo:temp', above: 24 }]);
+});
+
 // ---- chore-chart ----
 
 test('chore-chart: switching Week Starts On persists', async ({ page, request }) => {

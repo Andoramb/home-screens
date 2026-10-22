@@ -143,8 +143,16 @@
       "conditionNoKey": "Venter på en live-værdi",
       "conditionTimeMet": "Vises på dette tidspunkt",
       "conditionTimeUnmet": "Skjult på dette tidspunkt",
-      "background": "Kører i baggrunden"
-    }
+      "background": "Kører i baggrunden",
+      "lookShowing": "Udseende: {name}",
+      "lookNone": "Intet udseende passer",
+      "lookWaiting": "Udseende venter på {key}",
+      "lookWaitingNoKey": "Udseende venter på en live-værdi",
+      "lookUnnamed": "Udseende {n}"
+    },
+    "lookShowingTitle": "Udseendet \"{name}\" ændrer dette modul lige nu.",
+    "lookNoneTitle": "Dette modul har udseende-regler, men ingen af dem passer lige nu.",
+    "lookWaitingTitle": "Et udseende venter på en værdi, der ikke er udgivet endnu."
   },
   "displaySwitcher": {
     "title": "Hvilket display redigerer du? (Tilsidesatte indstillinger findes under Indstillinger → Pr. display.)",
@@ -4426,7 +4434,8 @@
         "gradient": "Farveforløb",
         "layout": "Layout",
         "marquee": "Rullende tekst",
-        "decorative": "Udsmykning"
+        "decorative": "Udsmykning",
+        "looks": "Udseende"
       },
       "orientationOptions": {
         "horizontal": "Vandret",
@@ -4684,18 +4693,20 @@
       "showDay": "Vis dag",
       "showPercentage": "Vis procent"
     },
-    "calendarRules": {
-      "eventLooks": "Udseende af begivenheder",
-      "eventLooksHint": "Giv matchende begivenheder et andet udseende, eller skjul dem. Ved konflikt vinder den øverste regel.",
-      "dayLooks": "Udseende af dage",
-      "dayLooksHint": "Farv, indram eller mærk hele dage. Mærker fra alle matchende regler stables.",
+    "ruleList": {
       "ruleTitle": "Regel {n}",
       "moveUp": "Flyt op",
       "moveDown": "Flyt ned",
       "remove": "Fjern regel",
       "renameRule": "Omdøb regel",
       "ruleNamePlaceholder": "Regelnavn (valgfrit)",
-      "ruleNameTaken": "Det navn bruges allerede af en anden regel",
+      "ruleNameTaken": "Det navn bruges allerede af en anden regel"
+    },
+    "calendarRules": {
+      "eventLooks": "Udseende af begivenheder",
+      "eventLooksHint": "Giv matchende begivenheder et andet udseende, eller skjul dem. Ved konflikt vinder den øverste regel.",
+      "dayLooks": "Udseende af dage",
+      "dayLooksHint": "Farv, indram eller mærk hele dage. Mærker fra alle matchende regler stables.",
       "addEventRule": "Tilføj begivenhedsregel",
       "addDayRule": "Tilføj dagsregel",
       "when": "Når",
@@ -4925,6 +4936,42 @@
       "peopleFilterStaleMember": "En, der ikke længere er på familielisten",
       "peopleFilterStaleGroup": "En gruppe, der er fjernet",
       "peopleFilterClear": "Vis alle"
+    },
+    "textLooks": {
+      "hint": "Skift farve, ikon eller ord, når en live-værdi passer. Den øverste regel vinder, når to ændrer det samme. Passer ingen, beholder teksten sin egen stil.",
+      "empty": "Intet udseende endnu. Teksten beholder sin egen stil, indtil du tilføjer et.",
+      "addLook": "Tilføj et udseende",
+      "when": "Når",
+      "then": "Så",
+      "noConditionsHint": "Ingen betingelser endnu. Dette udseende gælder hele tiden, indtil du tilføjer en.",
+      "allMustMatchHint": "Alle betingelser skal passe, for at dette udseende gælder.",
+      "textColor": "Tekstfarve",
+      "borderColor": "Kantfarve",
+      "background": "Baggrund",
+      "color": "Farve",
+      "icon": "Ikon",
+      "iconLabel": "Vises før teksten",
+      "showTextAs": "Vis teksten som",
+      "words": "Ord",
+      "wordsPlaceholder": "Behold indholdet ovenfor",
+      "wordsHint": "Live-værdier virker også her, skrevet på samme måde som i indholdet ovenfor.",
+      "fade": "Nedton",
+      "fadeAmount": "Hvor dækkende",
+      "nothingSetHint": "Slå noget til under Så, ellers ændrer dette udseende ingenting.",
+      "verdicts": {
+        "showing": "Vises nu",
+        "unmet": "Passer ikke",
+        "unknown": "Venter",
+        "overruled": "Passer, men overtrumfet",
+        "always": "Altid"
+      },
+      "verdictTitles": {
+        "showing": "Dette udseende passer lige nu, så det ændrer modulet.",
+        "unmet": "Betingelserne for dette udseende passer ikke lige nu.",
+        "unknown": "En værdi, som dette udseende tjekker, er ikke udgivet endnu.",
+        "overruled": "Dette udseende passer, men et udseende ovenover sætter allerede alt det, det sætter. Flyt det op, så det vinder.",
+        "always": "Ingen betingelser, så dette udseende gælder hele tiden."
+      }
     }
   },
   "imageBrowsers": {
@@ -5308,5 +5355,18 @@
     "cancelledBody": "Det gør ikke noget. Du kan starte forfra i editoren, når du har lyst.",
     "failedTitle": "Login kunne ikke afsluttes",
     "backToEditor": "Tilbage til editoren"
+  },
+  "conditionSummary": {
+    "always": "altid",
+    "above": "over {n}",
+    "below": "under {n}",
+    "between": "{a} til {b}",
+    "anyNumber": "ethvert tal",
+    "is": "{key} er {value}",
+    "isNot": "{key} er ikke {value}",
+    "noKey": "ingen værdi valgt",
+    "allOf": "alle af {n}",
+    "anyOf": "enhver af {n}",
+    "noneOf": "ingen af {n}"
   }
 }

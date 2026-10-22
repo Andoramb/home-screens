@@ -1,15 +1,16 @@
-import { Clock, Eye, EyeOff, PowerOff, type LucideIcon } from 'lucide-react';
+import { Clock, Eye, EyeOff, Palette, PowerOff, type LucideIcon } from 'lucide-react';
 import { evaluateVisibility, isModuleEnabled, isModuleVisible, type ScheduleClock } from '@/lib/schedule';
 import { describeSchedule } from '@/lib/schedule-summary';
 import { referencesStateKeys, verdictStatesFor } from '@/lib/condition-verdicts';
 import type { SharedStateEntry } from '@/lib/shared-state-types';
-import type { ModuleInstance, TimeFormat } from '@/types/config';
+import type { ModuleInstance, TextLook, TimeFormat } from '@/types/config';
+import { resolveTextLooks } from '@/lib/text-looks';
 import type { TranslateFn } from '@/i18n/types';
 
 export type ModuleStatusTone = 'off' | 'waiting' | 'active' | 'background';
 
 export interface ModuleStatus {
-  key: 'disabled' | 'schedule' | 'condition' | 'backgroundProvider';
+  key: 'disabled' | 'schedule' | 'condition' | 'looks' | 'backgroundProvider';
   tone: ModuleStatusTone;
   /** Short enough for a chip on the canvas: "Hidden", "Mon to Fri, 7:00 AM to 9:00 AM". */
   label: string;
@@ -45,6 +46,21 @@ export const STATUS_CHIP_CLASS: Record<ModuleStatusTone, string> = {
   active: 'bg-hs-accent-soft text-hs-accent-hover border-hs-accent/35',
   background: 'bg-slate-800/80 text-slate-200 border-slate-600/60',
 };
+
+/**
+ * True when the editor needs live values to describe this module: it is
+ * gated by visibility conditions, or it is a Text module with looks. The
+ * canvas and the property panel poll the display only while some module
+ * answers true, since the poll also arms the display's fast re-reporting.
+ */
+export function moduleReadsLiveValues(mod: ModuleInstance): boolean {
+  if ((mod.visibility?.conditions?.length ?? 0) > 0) return true;
+  if (mod.type === 'text') {
+    const looks = (mod.config as { looks?: TextLook[] } | undefined)?.looks;
+    return Array.isArray(looks) && looks.length > 0;
+  }
+  return false;
+}
 
 /** The first state key a condition tree mentions, for "waiting for <key>". */
 function firstSourceKey(node: unknown): string | undefined {
@@ -132,6 +148,39 @@ export function describeModuleStatus(mod: ModuleInstance, ctx: ModuleStatusConte
         icon: verdict === 'unmet' ? EyeOff : Eye,
       });
     }
+  }
+
+  const looks = mod.type === 'text' ? (mod.config as { looks?: TextLook[] }).looks : undefined;
+  if (isModuleEnabled(mod) && looks && looks.length > 0) {
+    // Same evaluator the wall runs, over the same snapshot the condition
+    // badge uses. Without a fresh report the evaluator leaves every look that
+    // reads a key, and everything below it, undecided; looks above that point
+    // (unconditional, or reading only the clock) are still judged, so a
+    // top rule that is changing the module is named rather than "waiting".
+    const conditions = looks.flatMap((look) => look.when);
+    const result = resolveTextLooks(looks, verdictStates ?? null, now);
+    const showing = result.showing;
+    const names = showing.map((id) => {
+      const i = looks.findIndex((look) => look.id === id);
+      return looks[i]?.name?.trim() || t('draggableModule.status.lookUnnamed', { n: i + 1 });
+    });
+    const waiting = showing.length === 0 && Array.from(result.verdicts.values()).some((v) => v === 'unknown');
+    const key = waiting ? firstSourceKey({ conditions }) : undefined;
+    out.push({
+      key: 'looks',
+      tone: names.length > 0 ? 'active' : waiting ? 'background' : 'waiting',
+      label: names.length > 0
+        ? t('draggableModule.status.lookShowing', { name: names.join(', ') })
+        : waiting
+          ? (key ? t('draggableModule.status.lookWaiting', { key }) : t('draggableModule.status.lookWaitingNoKey'))
+          : t('draggableModule.status.lookNone'),
+      detail: names.length > 0
+        ? t('draggableModule.lookShowingTitle', { name: names.join(', ') })
+        : waiting
+          ? t('draggableModule.lookWaitingTitle')
+          : t('draggableModule.lookNoneTitle'),
+      icon: Palette,
+    });
   }
 
   if (mod.backgroundProvider) {

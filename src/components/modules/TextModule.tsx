@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useMemo, useId } from 'react';
+import { useState, useEffect, useRef, useMemo, useId, useCallback } from 'react';
 import type { TextConfig, ModuleStyle } from '@/types/config';
 import ModuleWrapper from './ModuleWrapper';
 import { useRotatingIndex } from '@/hooks/useRotatingIndex';
@@ -8,7 +8,8 @@ import { useTypewriter } from '@/hooks/useTypewriter';
 import { resolveTemplateVariables, parseMarkdown, splitRotationContent } from '@/lib/text-utils';
 import { extractSharedStateKeys, resolveSharedStateTokens } from '@/lib/shared-state-template';
 import { useSharedStateKeys } from '@/hooks/useSharedStateKeys';
-import { useRealClock } from '@/hooks/useTZClock';
+import { useRealClock, useWallClock } from '@/hooks/useTZClock';
+import { applyTextLook, collectTextLookKeys, lookContentOpacity, resolveTextLooks, textLooksNeedClock } from '@/lib/text-looks';
 import { useFormattingLocale } from '@/i18n';
 import { resolveFontStack } from '@/lib/font-registry';
 import { useAutoFit } from './text/useAutoFit';
@@ -44,7 +45,7 @@ function resolveRevealAnimation(rotationEnabled: boolean | undefined, reveal: st
   return undefined;
 }
 
-export default function TextModule({ config, style, timezone }: TextModuleProps) {
+export default function TextModule({ config, style: ownStyle, timezone }: TextModuleProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const measureRef = useRef<HTMLDivElement>(null);
   const cycleId = useId().replace(/[^a-zA-Z0-9]/g, '');
@@ -75,12 +76,45 @@ export default function TextModule({ config, style, timezone }: TextModuleProps)
   }, [config.content, config.rotationEnabled, separator]);
 
   const rotationIndex = useRotatingIndex(contentItems.length, config.rotationIntervalMs ?? 5000);
-  const rawContent = contentItems[rotationIndex] ?? contentItems[0] ?? '';
+  const ownContent = contentItems[rotationIndex] ?? contentItems[0] ?? '';
 
   // --- 2. Resolve template variables against the shared ticking clock ---
   // It hydrates from the server's render instant, so a variable that changed
   // between the server render and hydration is patched on the mount tick.
   const now = useRealClock(60_000, !!config.templateVariables);
+  const expandTemplate = useCallback(
+    (text: string) => (config.templateVariables ? resolveTemplateVariables(text, timezone, undefined, now) : text),
+    [config.templateVariables, timezone, now],
+  );
+  const ownExpanded = useMemo(() => expandTemplate(ownContent), [expandTemplate, ownContent]);
+
+  // --- 2a. Looks: colors, icon and words that follow a live value ---
+  // One subscription covers the content's tokens, every look's condition keys
+  // and the tokens in a look's replacement text, so a look can never wait on
+  // a key the module is not listening to. Tokens are read from the expanded
+  // text, as the content's always were: a token may wrap a template variable
+  // ({key|default:{{greeting}}}) and the token grammar has no nesting.
+  // Push-based and cheap: useSharedStateKeys only re-renders when a
+  // referenced key's entry changes, and zero keys means no subscription. The
+  // clock ticks only while a look reads it.
+  const looks = config.looks;
+  const stateKeys = useMemo(() => {
+    const keys = new Set(extractSharedStateKeys(ownExpanded));
+    collectTextLookKeys(looks, keys, expandTemplate);
+    keys.delete('');
+    return Array.from(keys).sort();
+  }, [ownExpanded, looks, expandTemplate]);
+  const sharedStates = useSharedStateKeys(stateKeys);
+  const lookClock = useWallClock(timezone, 30_000, textLooksNeedClock(looks));
+  const look = useMemo(() => resolveTextLooks(looks, sharedStates, lookClock), [looks, sharedStates, lookClock]);
+  const style = applyTextLook(ownStyle, look.overrides);
+  const contentOpacity = lookContentOpacity(ownStyle, look.overrides);
+  const icon = look.overrides.icon ?? config.icon;
+  const rawContent = look.overrides.text ?? ownContent;
+  const templateResolved = useMemo(
+    () => (look.overrides.text !== undefined ? expandTemplate(look.overrides.text) : ownExpanded),
+    [look.overrides.text, expandTemplate, ownExpanded],
+  );
 
   // A per-character effect wraps every glyph in its own span, so a template
   // variable that resolves to a DIFFERENT LENGTH on the client than it did on
@@ -93,16 +127,7 @@ export default function TextModule({ config, style, timezone }: TextModuleProps)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  const templateResolved = useMemo(
-    () => (config.templateVariables ? resolveTemplateVariables(rawContent, timezone, undefined, now) : rawContent),
-    [rawContent, config.templateVariables, timezone, now],
-  );
-
   // --- 2b. Substitute shared-state tokens ({plugin:ha:sensor.temp}) ---
-  // Push-based and cheap: useSharedStateKeys only re-renders when a
-  // referenced key's entry changes, and zero tokens means no subscription.
-  const stateKeys = useMemo(() => extractSharedStateKeys(templateResolved), [templateResolved]);
-  const sharedStates = useSharedStateKeys(stateKeys);
   const formattingLocale = useFormattingLocale();
   const resolvedContent = useMemo(
     () =>
@@ -124,7 +149,7 @@ export default function TextModule({ config, style, timezone }: TextModuleProps)
   const fontStack = resolveFontStack(config.fontFamily) ?? resolveFontStack(style.fontFamily) ?? style.fontFamily;
   const { scale: autoFitScale, measuredWidth, measuredHeight } = useAutoFit(containerRef, measureRef, autoFit, [
     resolvedContent,
-    config.icon,
+    icon,
     letterSpacing,
     textTransform,
     isVerticalLayout,
@@ -217,9 +242,9 @@ export default function TextModule({ config, style, timezone }: TextModuleProps)
     return <span {...gradientAttr} style={textStyle} suppressHydrationWarning>{text}</span>;
   };
 
-  const iconEl = config.icon ? (
+  const iconEl = icon ? (
     <span style={{ flexShrink: 0, marginRight: isVerticalLayout ? 0 : '0.4em', marginBottom: isVerticalLayout ? '0.4em' : 0 }}>
-      <Glyph value={config.icon} />
+      <Glyph value={icon} />
     </span>
   ) : null;
 
@@ -271,6 +296,7 @@ export default function TextModule({ config, style, timezone }: TextModuleProps)
     return (
       <MarqueeLayout
         style={style}
+        contentOpacity={contentOpacity}
         css={needsCSS.join('\n')}
         rotationIndex={rotationIndex}
         direction={config.marqueeDirection ?? 'left'}
@@ -368,6 +394,7 @@ export default function TextModule({ config, style, timezone }: TextModuleProps)
           flexDirection: 'column',
           justifyContent: alignV,
           alignItems: justifyH,
+          opacity: contentOpacity,
         }}
       >
         {animatedContent}

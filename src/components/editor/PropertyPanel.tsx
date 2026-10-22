@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import { useEditorHouseholdTimezone } from '@/components/editor/useEditorHouseholdClock';
 import { useEditorSharedState } from '@/hooks/useEditorSharedState';
+import { moduleReadsLiveValues } from '@/lib/module-status';
 import { useWallClock } from '@/hooks/useTZClock';
 import ModuleStatusChips from './ModuleStatusChips';
 import { useConfirmStore } from '@/stores/confirm-store';
@@ -541,7 +542,7 @@ export default function PropertyPanel({
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);
   const selectedModule = currentScreen?.modules.find((m) => m.id === selectedModuleId);
-  const conditioned = (selectedModule?.visibility?.conditions?.length ?? 0) > 0;
+  const conditioned = selectedModule ? moduleReadsLiveValues(selectedModule) : false;
   // Only ticks the panel's clock while the selected module actually has
   // something time-dependent to show — an idle panel shouldn't re-render
   // every 60s for a module with no schedule or conditions.

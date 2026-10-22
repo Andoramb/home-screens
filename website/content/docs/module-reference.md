@@ -469,6 +469,8 @@ Rich text block with multiple display modes, effects, and styling options.
 **Shared-state tokens:** Single-brace `{<key>}` (separate from the double-brace template variables above) inserts a live value from the shared state bus: one Home Screens publishes itself, such as `{weather.temperature}` or `{calendar.next_event_title}`, or one an add-on publishes, e.g. `{plugin:ha:sensor.temp}`. Add a filter after a `|` to format it: `|round:1` rounds a numeric value to a set number of decimal places, and `|default:TEXT` supplies placeholder text for a key that hasn't published a value yet, e.g. `{plugin:ha:sensor.temp|round:1|default:n/a}`. Unknown keys render as an en dash with no filter.
 
 **Content rotation:** Split content by a separator (default `---`) and rotate through the chunks at a set interval, useful for rotating quotes, tips, or announcements.
+
+**Looks:** rules that change the text's color, border, background, icon or words while a live value matches, so one module can print a temperature in green, amber or red. See [Text looks](#text-looks) below.
 {% /module %}
 
 {% module type="image" %}
@@ -625,6 +627,27 @@ A day rule's background can also be a **picture**: pick from the art that ships 
 | `eventMatch` | object | An event match, used when `withEvents` is `matching` |
 
 Rules run from the top of the list down, and **the first rule to set a property wins for that property**: so list order is priority, and a later rule can still fill in something an earlier one left alone.
+
+
+## Text looks
+
+The **Text** module has a small rules engine of its own, under **Looks** in its settings. A look is a set of conditions over the shared state bus, the same conditions a module's Visibility panel offers, plus the changes to make while they hold. The classic use is a thermometer that turns red above 24, amber between 22 and 24, and green between 20 and 22, in one module instead of three stacked ones.
+
+| Field | Type | Description |
+|---|---|---|
+| `id` | string | Stable identifier for the rule |
+| `name` | string | Shown in the editor only |
+| `when` | array | Conditions that must all hold, in the same shape as a module's `visibility.conditions` (`state`, `numeric`, `time`, `and`, `or`, `not`). Empty means always |
+| `textColor` | string | Text color while the look holds |
+| `borderColor` | string | Border color. A card with no border gets a thin one so the color shows |
+| `backgroundColor` | string | Card background |
+| `icon` | string | An emoji, a Font Awesome token or a custom icon shown before the text, in place of the module's own |
+| `text` | string | Words shown in place of the content. Shared-state tokens and template variables still work |
+| `opacity` | number | 0.1 to 1, how solid the whole module looks, words and card together; the card part multiplies the card's own setting |
+
+Looks follow the calendar rules' order: they run from the top of the list down and **the first look to set a property wins for that property**. A look whose conditions are unknown, because a key it reads has not been published yet, changes nothing, and with no match the module keeps its own style, so there is no default row to write. The keys a look reads are demanded from add-ons the same way a `{token}` in the content is, so a Home Assistant entity used only in a look is published without checking it in any widget.
+
+In the editor each look's card shows the conditions in a few words, the colors it sets and whether it is showing right now, judged on the display's last-reported values. The module's status chip on the canvas names the look in effect.
 
 
 ## Module Styling

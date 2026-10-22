@@ -5,6 +5,8 @@ import LabeledTextarea from '@/components/ui/LabeledTextarea';
 import { useTranslate, useFormattingLocale } from '@/i18n';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import { collectProvidedStateKeys } from '@/lib/provided-state-keys';
+import { pluginPublishesOnDemand } from '@/lib/state-key-search';
+import { usePluginStore } from '@/stores/plugin-store';
 import { extractSharedStateKeys, resolveSharedStateTokens } from '@/lib/shared-state-template';
 import { useEditorSharedState } from '@/hooks/useEditorSharedState';
 import type { ConfigControlsProps } from './config-controls';
@@ -26,10 +28,6 @@ export function TextContentFields({ config: c, set }: ConfigControlsProps<TextCo
   );
   const content = (c.content as string) || '';
   const referencedKeys = useMemo(() => extractSharedStateKeys(content), [content]);
-  const unknownKeys = useMemo(() => {
-    const known = new Set(providedKeys.map((k) => k.key));
-    return referencedKeys.filter((k) => !known.has(k));
-  }, [providedKeys, referencedKeys]);
 
   // Live token preview: the display's reported bus snapshot run through the
   // same resolver the Text module uses, so the editor shows real values
@@ -37,6 +35,16 @@ export function TextContentFields({ config: c, set }: ConfigControlsProps<TextCo
   // content actually referencing tokens; `states` is null while the display
   // is offline or the snapshot is stale, and the preview hides with it.
   const liveState = useEditorSharedState(selectedDisplayId, referencedKeys.length > 0);
+
+  // A key is known when a module advertises it, the bus already carries it,
+  // or its plugin publishes on demand: a Home Assistant entity typed into a
+  // token is published because the token asks for it, with nothing checked
+  // in any widget, so it must not be called unpublished.
+  const plugins = usePluginStore((s) => s.plugins);
+  const unknownKeys = useMemo(() => {
+    const known = new Set(providedKeys.map((k) => k.key));
+    return referencedKeys.filter((k) => !known.has(k) && liveState.entries[k] === undefined && !pluginPublishesOnDemand(k, plugins));
+  }, [providedKeys, referencedKeys, liveState.entries, plugins]);
   const formattingLocale = useFormattingLocale();
   const livePreview = useMemo(() => {
     if (referencedKeys.length === 0 || !liveState.states) return null;

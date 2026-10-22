@@ -96,6 +96,51 @@ describe('describeModuleStatus', () => {
     expect(status.tone).toBe('active');
   });
 
+  describe('a Text module with looks', () => {
+    const looks = [
+      { id: 'hot', name: 'Too warm', when: [{ kind: 'numeric' as const, sourceKey: 'plugin:ha:temp', above: 24 }], textColor: '#f00' },
+      { id: 'ok', when: [{ kind: 'numeric' as const, sourceKey: 'plugin:ha:temp', below: 22 }], textColor: '#0f0' },
+    ];
+    const text = mod({ type: 'text', config: { content: 'x', looks } });
+    const at = (value: string) => new Map<string, SharedStateEntry>([
+      ['plugin:ha:temp', { value, updatedAt: Date.now() } as SharedStateEntry],
+    ]);
+
+    it('waits, naming the key, while no display has reported', () => {
+      const [status] = describeModuleStatus(text, ctx);
+      expect(status.key).toBe('looks');
+      expect(status.tone).toBe('background');
+      expect(status.label).toBe('Looks waiting for plugin:ha:temp');
+    });
+
+    it('names an unconditional top look before any display has reported, and only that one', () => {
+      const base = { id: 'base', name: 'Base', when: [], textColor: '#fff' };
+      const below = { id: 'below', name: 'Below', when: [], borderColor: '#fff' };
+      const [status] = describeModuleStatus(mod({ type: 'text', config: { content: 'x', looks: [base, ...looks, below] } }), ctx);
+      expect(status.tone).toBe('active');
+      expect(status.label).toBe('Look: Base');
+    });
+
+    it('names the look in effect, falling back to its number', () => {
+      const [hot] = describeModuleStatus(text, { ...ctx, verdictStates: at('25') });
+      expect(hot.tone).toBe('active');
+      expect(hot.label).toBe('Look: Too warm');
+      const [ok] = describeModuleStatus(text, { ...ctx, verdictStates: at('20') });
+      expect(ok.label).toBe('Look: Look 2');
+    });
+
+    it('says when no look matches', () => {
+      const [none] = describeModuleStatus(text, { ...ctx, verdictStates: at('23') });
+      expect(none.tone).toBe('waiting');
+      expect(none.label).toBe('No look matches');
+    });
+
+    it('says nothing for a disabled module or an empty list', () => {
+      expect(describeModuleStatus(mod({ type: 'text', config: { looks: [] } }), ctx)).toEqual([]);
+      expect(describeModuleStatus({ ...text, enabled: false }, ctx).map((s) => s.key)).toEqual(['disabled']);
+    });
+  });
+
   describe('a condition that only reads the clock', () => {
     // ctx.now is 08:00.
     const morning = mod({ visibility: { conditions: [{ kind: 'time', startTime: '07:00', endTime: '09:00' }] } });

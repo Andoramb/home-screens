@@ -143,8 +143,16 @@
       "conditionNoKey": "En attente d'une valeur en direct",
       "conditionTimeMet": "Affiché à cette heure-ci",
       "conditionTimeUnmet": "Masqué à cette heure-ci",
-      "background": "Tourne en arrière-plan"
-    }
+      "background": "Tourne en arrière-plan",
+      "lookShowing": "Apparence : {name}",
+      "lookNone": "Aucune apparence ne correspond",
+      "lookWaiting": "Apparences en attente de {key}",
+      "lookWaitingNoKey": "Apparences en attente d'une valeur en direct",
+      "lookUnnamed": "Apparence {n}"
+    },
+    "lookShowingTitle": "L'apparence « {name} » modifie ce module en ce moment.",
+    "lookNoneTitle": "Ce module a des apparences, mais aucune ne correspond en ce moment.",
+    "lookWaitingTitle": "Une apparence attend une valeur qui n'a pas encore été publiée."
   },
   "displaySwitcher": {
     "title": "Quel affichage modifies-tu ? (Les surcharges des paramètres sont dans Paramètres → Par affichage.)",
@@ -4426,7 +4434,8 @@
         "gradient": "Dégradé",
         "layout": "Disposition",
         "marquee": "Marquise",
-        "decorative": "Décoratif"
+        "decorative": "Décoratif",
+        "looks": "Apparences"
       },
       "orientationOptions": {
         "horizontal": "Horizontal",
@@ -4684,18 +4693,20 @@
       "showDay": "Afficher le jour",
       "showPercentage": "Afficher le pourcentage"
     },
-    "calendarRules": {
-      "eventLooks": "Apparence des événements",
-      "eventLooksHint": "Changer l'apparence des événements correspondants ou les masquer. En cas de conflit, la règle du haut gagne.",
-      "dayLooks": "Apparence des jours",
-      "dayLooksHint": "Teinter, encadrer ou marquer des journées entières. Les badges de toutes les règles correspondantes s'empilent.",
+    "ruleList": {
       "ruleTitle": "Règle {n}",
       "moveUp": "Monter",
       "moveDown": "Descendre",
       "remove": "Supprimer la règle",
       "renameRule": "Renommer la règle",
       "ruleNamePlaceholder": "Nom de la règle (facultatif)",
-      "ruleNameTaken": "Ce nom est déjà utilisé par une autre règle",
+      "ruleNameTaken": "Ce nom est déjà utilisé par une autre règle"
+    },
+    "calendarRules": {
+      "eventLooks": "Apparence des événements",
+      "eventLooksHint": "Changer l'apparence des événements correspondants ou les masquer. En cas de conflit, la règle du haut gagne.",
+      "dayLooks": "Apparence des jours",
+      "dayLooksHint": "Teinter, encadrer ou marquer des journées entières. Les badges de toutes les règles correspondantes s'empilent.",
       "addEventRule": "Ajouter une règle d'événement",
       "addDayRule": "Ajouter une règle de jour",
       "when": "Quand",
@@ -4925,6 +4936,42 @@
       "peopleFilterStaleMember": "Quelqu'un qui n'est plus dans la famille",
       "peopleFilterStaleGroup": "Un groupe supprimé",
       "peopleFilterClear": "Afficher tout le monde"
+    },
+    "textLooks": {
+      "hint": "Changez la couleur, l'icône ou les mots quand une valeur en direct correspond. La règle du haut gagne quand deux règles changent la même chose. Sans correspondance, le texte garde son propre style.",
+      "empty": "Aucune apparence pour l'instant. Le texte garde son propre style tant que vous n'en ajoutez pas.",
+      "addLook": "Ajouter une apparence",
+      "when": "Quand",
+      "then": "Alors",
+      "noConditionsHint": "Aucune condition pour l'instant. Cette apparence s'applique tout le temps tant que vous n'en ajoutez pas.",
+      "allMustMatchHint": "Toutes les conditions doivent correspondre pour que cette apparence s'applique.",
+      "textColor": "Couleur du texte",
+      "borderColor": "Couleur de la bordure",
+      "background": "Fond",
+      "color": "Couleur",
+      "icon": "Icône",
+      "iconLabel": "Affichée avant le texte",
+      "showTextAs": "Afficher le texte comme",
+      "words": "Mots",
+      "wordsPlaceholder": "Garder le contenu ci-dessus",
+      "wordsHint": "Les valeurs en direct marchent ici aussi, écrites comme dans le contenu ci-dessus.",
+      "fade": "Estomper",
+      "fadeAmount": "Opacité",
+      "nothingSetHint": "Activez quelque chose sous « Alors », sinon cette apparence ne change rien.",
+      "verdicts": {
+        "showing": "Affichée",
+        "unmet": "Ne correspond pas",
+        "unknown": "En attente",
+        "overruled": "Correspond, mais dépassée",
+        "always": "Toujours"
+      },
+      "verdictTitles": {
+        "showing": "Cette apparence correspond en ce moment, elle modifie donc le module.",
+        "unmet": "Les conditions de cette apparence ne correspondent pas en ce moment.",
+        "unknown": "Une valeur que cette apparence vérifie n'a pas encore été publiée.",
+        "overruled": "Cette apparence correspond, mais une apparence au-dessus règle déjà tout ce qu'elle règle. Montez-la pour la faire gagner.",
+        "always": "Aucune condition, cette apparence s'applique donc tout le temps."
+      }
     }
   },
   "imageBrowsers": {
@@ -5308,5 +5355,18 @@
     "cancelledBody": "Pas de souci. Recommencez depuis l'éditeur quand vous voulez.",
     "failedTitle": "Impossible de terminer la connexion",
     "backToEditor": "Retour à l'éditeur"
+  },
+  "conditionSummary": {
+    "always": "toujours",
+    "above": "au-dessus de {n}",
+    "below": "en dessous de {n}",
+    "between": "{a} à {b}",
+    "anyNumber": "tout nombre",
+    "is": "{key} est {value}",
+    "isNot": "{key} n'est pas {value}",
+    "noKey": "aucune valeur choisie",
+    "allOf": "toutes parmi {n}",
+    "anyOf": "n'importe laquelle parmi {n}",
+    "noneOf": "aucune parmi {n}"
   }
 }

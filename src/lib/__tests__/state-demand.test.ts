@@ -62,6 +62,27 @@ describe('collectDemandedKeys', () => {
     expect(collectDemandedKeys(screens)).toEqual(new Set(['plugin:ha:sensor.kitchen']));
   });
 
+  it('collects Text-module look conditions and look text tokens', () => {
+    const screens = [
+      makeScreen('a', [
+        makeModule({
+          type: 'text' as ModuleInstance['type'],
+          config: {
+            content: 'Bedroom {plugin:ha:sensor.bedroom}',
+            looks: [
+              { id: 'l1', when: [{ kind: 'numeric', sourceKey: 'plugin:ha:sensor.bedroom', above: 24 }], textColor: '#f00' },
+              { id: 'l2', when: [{ kind: 'state', sourceKey: 'plugin:ha:door', equals: 'open' }], text: 'Door {plugin:ha:door_name}' },
+              { id: 'l3', when: [{ kind: 'state', sourceKey: '', equals: '' }] },
+            ],
+          },
+        }),
+      ]),
+    ];
+    expect(collectDemandedKeys(screens)).toEqual(
+      new Set(['plugin:ha:sensor.bedroom', 'plugin:ha:door', 'plugin:ha:door_name']),
+    );
+  });
+
   it('ignores non-text modules with token-shaped content and non-string content', () => {
     const screens = [
       makeScreen('a', [

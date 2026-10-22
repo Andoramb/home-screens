@@ -143,8 +143,16 @@
       "conditionNoKey": "Wartet auf einen Live-Wert",
       "conditionTimeMet": "Zu dieser Zeit sichtbar",
       "conditionTimeUnmet": "Zu dieser Zeit ausgeblendet",
-      "background": "Läuft im Hintergrund"
-    }
+      "background": "Läuft im Hintergrund",
+      "lookShowing": "Aussehen: {name}",
+      "lookNone": "Kein Aussehen passt",
+      "lookWaiting": "Aussehen wartet auf {key}",
+      "lookWaitingNoKey": "Aussehen wartet auf einen Live-Wert",
+      "lookUnnamed": "Aussehen {n}"
+    },
+    "lookShowingTitle": "Das Aussehen „{name}“ ändert dieses Modul gerade.",
+    "lookNoneTitle": "Dieses Modul hat Aussehen-Regeln, aber gerade passt keine.",
+    "lookWaitingTitle": "Ein Aussehen wartet auf einen Wert, der noch nicht veröffentlicht wurde."
   },
   "displaySwitcher": {
     "title": "Welches Display bearbeitest du gerade? (Einstellungs-Überschreibungen liegen unter Einstellungen → Pro Display.)",
@@ -4426,7 +4434,8 @@
         "gradient": "Verlauf",
         "layout": "Layout",
         "marquee": "Laufschrift",
-        "decorative": "Dekorativ"
+        "decorative": "Dekorativ",
+        "looks": "Aussehen"
       },
       "orientationOptions": {
         "horizontal": "Horizontal",
@@ -4684,18 +4693,20 @@
       "showDay": "Tag anzeigen",
       "showPercentage": "Prozentsatz anzeigen"
     },
-    "calendarRules": {
-      "eventLooks": "Aussehen von Terminen",
-      "eventLooksHint": "Passende Termine anders darstellen oder ausblenden. Bei Konflikten gewinnt die oberste Regel.",
-      "dayLooks": "Aussehen von Tagen",
-      "dayLooksHint": "Ganze Tage einfärben, umranden oder mit Abzeichen versehen. Abzeichen aller passenden Regeln werden gestapelt.",
+    "ruleList": {
       "ruleTitle": "Regel {n}",
       "moveUp": "Nach oben",
       "moveDown": "Nach unten",
       "remove": "Regel entfernen",
       "renameRule": "Regel umbenennen",
       "ruleNamePlaceholder": "Regelname (optional)",
-      "ruleNameTaken": "Dieser Name wird bereits von einer anderen Regel verwendet",
+      "ruleNameTaken": "Dieser Name wird bereits von einer anderen Regel verwendet"
+    },
+    "calendarRules": {
+      "eventLooks": "Aussehen von Terminen",
+      "eventLooksHint": "Passende Termine anders darstellen oder ausblenden. Bei Konflikten gewinnt die oberste Regel.",
+      "dayLooks": "Aussehen von Tagen",
+      "dayLooksHint": "Ganze Tage einfärben, umranden oder mit Abzeichen versehen. Abzeichen aller passenden Regeln werden gestapelt.",
       "addEventRule": "Terminregel hinzufügen",
       "addDayRule": "Tagesregel hinzufügen",
       "when": "Wenn",
@@ -4925,6 +4936,42 @@
       "peopleFilterStaleMember": "Jemand, der nicht mehr auf der Familienliste steht",
       "peopleFilterStaleGroup": "Eine entfernte Gruppe",
       "peopleFilterClear": "Alle anzeigen"
+    },
+    "textLooks": {
+      "hint": "Farbe, Symbol oder Wörter ändern, wenn ein Live-Wert passt. Die oberste Regel gewinnt, wenn zwei dasselbe setzen. Passt keine, behält der Text seinen eigenen Stil.",
+      "empty": "Noch kein Aussehen festgelegt. Der Text behält seinen eigenen Stil, bis du eins hinzufügst.",
+      "addLook": "Aussehen hinzufügen",
+      "when": "Wenn",
+      "then": "Dann",
+      "noConditionsHint": "Noch keine Bedingungen. Dieses Aussehen gilt die ganze Zeit, bis du eine hinzufügst.",
+      "allMustMatchHint": "Alle Bedingungen müssen zutreffen, damit dieses Aussehen gilt.",
+      "textColor": "Textfarbe",
+      "borderColor": "Rahmenfarbe",
+      "background": "Hintergrund",
+      "color": "Farbe",
+      "icon": "Symbol",
+      "iconLabel": "Vor dem Text angezeigt",
+      "showTextAs": "Text anzeigen als",
+      "words": "Wörter",
+      "wordsPlaceholder": "Den Inhalt oben behalten",
+      "wordsHint": "Live-Werte funktionieren auch hier, genauso geschrieben wie im Inhalt oben.",
+      "fade": "Abblenden",
+      "fadeAmount": "Wie deckend",
+      "nothingSetHint": "Schalte unter „Dann“ etwas ein, sonst ändert dieses Aussehen nichts.",
+      "verdicts": {
+        "showing": "Jetzt zu sehen",
+        "unmet": "Passt nicht",
+        "unknown": "Wartet",
+        "overruled": "Passt, überstimmt",
+        "always": "Immer"
+      },
+      "verdictTitles": {
+        "showing": "Dieses Aussehen passt gerade und ändert das Modul.",
+        "unmet": "Die Bedingungen dieses Aussehens treffen gerade nicht zu.",
+        "unknown": "Ein Wert, den dieses Aussehen prüft, wurde noch nicht veröffentlicht.",
+        "overruled": "Dieses Aussehen passt, aber eins darüber setzt bereits alles, was es setzt. Schiebe es nach oben, damit es gewinnt.",
+        "always": "Keine Bedingungen, dieses Aussehen gilt also die ganze Zeit."
+      }
     }
   },
   "imageBrowsers": {
@@ -5308,5 +5355,18 @@
     "cancelledBody": "Kein Problem. Du kannst es im Editor jederzeit noch einmal versuchen.",
     "failedTitle": "Anmeldung konnte nicht abgeschlossen werden",
     "backToEditor": "Zurück zum Editor"
+  },
+  "conditionSummary": {
+    "always": "immer",
+    "above": "über {n}",
+    "below": "unter {n}",
+    "between": "{a} bis {b}",
+    "anyNumber": "jede Zahl",
+    "is": "{key} ist {value}",
+    "isNot": "{key} ist nicht {value}",
+    "noKey": "kein Wert gewählt",
+    "allOf": "alle von {n}",
+    "anyOf": "beliebige von {n}",
+    "noneOf": "keine von {n}"
   }
 }

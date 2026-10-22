@@ -10,9 +10,10 @@
  * `backgroundProvider` flag, no entity-list sync.
  */
 
-import type { DisplayRule, ModuleInstance, Screen } from '@/types/config';
+import type { DisplayRule, ModuleInstance, Screen, TextLook } from '@/types/config';
 import { collectSourceKeys } from '@/lib/schedule';
 import { extractSharedStateKeys } from '@/lib/shared-state-template';
+import { collectTextLookKeys } from '@/lib/text-looks';
 
 /**
  * Rules join the demand set through their condition tree only, so demand
@@ -48,8 +49,13 @@ function walkReferencedKeys<R extends RuleConditions>(
       if (mod.enabled === false) continue;
       const keys = new Set<string>();
       if (mod.visibility?.conditions) collectSourceKeys(mod.visibility.conditions, keys);
-      if (mod.type === 'text' && typeof mod.config?.content === 'string') {
-        for (const key of extractSharedStateKeys(mod.config.content)) keys.add(key);
+      if (mod.type === 'text') {
+        if (typeof mod.config?.content === 'string') {
+          for (const key of extractSharedStateKeys(mod.config.content)) keys.add(key);
+        }
+        // A look's conditions and replacement text read the bus too; a look
+        // that nothing publishes for would sit on "unknown" forever.
+        if (Array.isArray(mod.config?.looks)) collectTextLookKeys(mod.config.looks as TextLook[], keys);
       }
       keys.delete('');
       for (const key of keys) onModuleKey(key, screen, mod);

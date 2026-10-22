@@ -20,8 +20,10 @@ import type {
   DisplayNode,
   DisplayNodeSettings,
   VisibilityCondition,
+  TextLook,
 } from '@/types/config';
 import { SHARED_STATE_KEY_RE } from '@/lib/shared-state-types';
+import { TEXT_LOOK_OPACITY_MAX, TEXT_LOOK_OPACITY_MIN } from '@/lib/text-looks';
 import { DISPLAY_NODE_SETTINGS_KEYS } from '@/lib/display-override-fields';
 
 interface FilteredDisplayConfig {
@@ -744,6 +746,51 @@ export function validateModuleVisibility(
   return null;
 }
 
+/** Max looks on one Text module, to bound per-publish evaluation cost. */
+export const MAX_TEXT_LOOKS = 32;
+
+const TEXT_LOOK_COLOR_FIELDS = ['textColor', 'borderColor', 'backgroundColor', 'icon', 'text'] as const;
+
+/**
+ * Validate a Text module's `looks` list at the config-write boundary. The
+ * renderer degrades quietly on bad input (a broken look just never applies),
+ * so, as with visibility conditions, a malformed rule is refused on save
+ * instead of leaving a border that mysteriously never turns red.
+ *
+ * Returns the first error, or `null` when OK (including `undefined`).
+ */
+export function validateTextLooks(looks: unknown, context: string): string | null {
+  if (looks === undefined) return null;
+  if (!Array.isArray(looks)) return `${context}: looks must be an array`;
+  if (looks.length > MAX_TEXT_LOOKS) {
+    return `${context}: too many looks (max ${MAX_TEXT_LOOKS} per module)`;
+  }
+  const seen = new Set<string>();
+  for (const [i, raw] of looks.entries()) {
+    const where = `${context} look ${i + 1}`;
+    if (!raw || typeof raw !== 'object') return `${where}: must be an object`;
+    const look = raw as Partial<TextLook>;
+    if (typeof look.id !== 'string' || look.id === '') return `${where}: id must be a non-empty string`;
+    if (seen.has(look.id)) return `${where}: duplicate id ${JSON.stringify(look.id)}`;
+    seen.add(look.id);
+    if (look.name !== undefined && typeof look.name !== 'string') return `${where}: name must be a string`;
+    if (!Array.isArray(look.when)) return `${where}: when must be an array`;
+    const conditionError = validateModuleVisibility({ conditions: look.when }, where);
+    if (conditionError) return conditionError;
+    for (const field of TEXT_LOOK_COLOR_FIELDS) {
+      const value = look[field];
+      if (value !== undefined && typeof value !== 'string') return `${where}: ${field} must be a string`;
+    }
+    if (look.opacity !== undefined) {
+      const o = look.opacity;
+      if (typeof o !== 'number' || !Number.isFinite(o) || o < TEXT_LOOK_OPACITY_MIN || o > TEXT_LOOK_OPACITY_MAX) {
+        return `${where}: opacity must be a number from ${TEXT_LOOK_OPACITY_MIN} to ${TEXT_LOOK_OPACITY_MAX}`;
+      }
+    }
+  }
+  return null;
+}
+
 /** Hard upper bound on rules per display — bounds per-tick evaluation cost. */
 export const MAX_RULES_PER_DISPLAY = 64;
 
@@ -846,6 +893,10 @@ export function validateAllSchedules(config: ScreenConfiguration): string | null
       if (modError) return modError;
       const visibilityError = validateModuleVisibility((mod as ModuleInstance).visibility, modContext);
       if (visibilityError) return visibilityError;
+      if (mod.type === 'text') {
+        const looksError = validateTextLooks((mod.config as { looks?: unknown } | undefined)?.looks, modContext);
+        if (looksError) return looksError;
+      }
     }
     return null;
   };

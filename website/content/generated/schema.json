@@ -5994,6 +5994,15 @@
           },
           "description": "Color for the dividers and the typewriter cursor",
           "defaultText": "\"#ffffff\""
+        },
+        {
+          "name": "looks",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "TextLook[]"
+          },
+          "description": "Change the colors, icon or words when live values match. See [Text looks](#text-looks) below"
         }
       ]
     },

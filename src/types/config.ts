@@ -2503,6 +2503,46 @@ export interface TextConfig {
    * @default "#ffffff"
    */
   accentColor?: string;
+  // Looks: conditional colors, icon and words. Unset = off.
+  /**
+   * Change the colors, icon or words when live values match. See [Text looks](#text-looks) below
+   *
+   * Rules run top to bottom and the first rule that sets a property wins for
+   * that property, as `CalendarEventRule` does. The module's own style is the
+   * fallback, so there is no default row.
+   */
+  looks?: TextLook[];
+}
+
+/**
+ * One rule on a Text module: conditions over the shared state bus, and the
+ * changes to make while they hold. Evaluated by `src/lib/text-looks.ts`.
+ */
+export interface TextLook {
+  /** Stable identifier for the rule */
+  id: string;
+  /** Name shown in the editor, never on the display */
+  name?: string;
+  /**
+   * Conditions that must all hold for the look to apply (see VisibilityCondition). Empty means
+   * always
+   *
+   * Same tree and evaluator as `ModuleVisibility.conditions`. A look whose
+   * key has not been published yet is unknown and changes nothing.
+   */
+  when: VisibilityCondition[];
+  /** Text color while the look holds */
+  textColor?: string;
+  /** Border color while the look holds */
+  borderColor?: string;
+  /** Card background color while the look holds */
+  backgroundColor?: string;
+  /** Icon shown before the text while the look holds, in place of the module's own */
+  icon?: string;
+  /** Words shown in place of the content while the look holds. Tokens and template variables still work */
+  text?: string;
+  /** 0.1 to 1, how solid the whole module looks while the look holds, words and card together; the card part multiplies the card's own setting */
+  opacity?: number;
 }
 
 // Image module config

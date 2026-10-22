@@ -143,8 +143,16 @@
       "conditionNoKey": "Wacht op een live-waarde",
       "conditionTimeMet": "Zichtbaar op dit tijdstip",
       "conditionTimeUnmet": "Verborgen op dit tijdstip",
-      "background": "Draait op de achtergrond"
-    }
+      "background": "Draait op de achtergrond",
+      "lookShowing": "Uiterlijk: {name}",
+      "lookNone": "Geen uiterlijk past",
+      "lookWaiting": "Uiterlijk wacht op {key}",
+      "lookWaitingNoKey": "Uiterlijk wacht op een live-waarde",
+      "lookUnnamed": "Uiterlijk {n}"
+    },
+    "lookShowingTitle": "Het uiterlijk \"{name}\" verandert deze module nu.",
+    "lookNoneTitle": "Deze module heeft uiterlijk-regels, maar er past er nu geen.",
+    "lookWaitingTitle": "Een uiterlijk wacht op een waarde die nog niet is gepubliceerd."
   },
   "displaySwitcher": {
     "title": "Welk display bewerk je nu? (Instellingen-overrides staan onder Instellingen → Per display.)",
@@ -4426,7 +4434,8 @@
         "gradient": "Gradiënt",
         "layout": "Indeling",
         "marquee": "Marquee",
-        "decorative": "Decoratief"
+        "decorative": "Decoratief",
+        "looks": "Uiterlijk"
       },
       "orientationOptions": {
         "horizontal": "Horizontaal",
@@ -4684,18 +4693,20 @@
       "showDay": "Dag tonen",
       "showPercentage": "Percentage tonen"
     },
-    "calendarRules": {
-      "eventLooks": "Uiterlijk van afspraken",
-      "eventLooksHint": "Laat passende afspraken er anders uitzien of verberg ze. Bij een conflict wint de bovenste regel.",
-      "dayLooks": "Uiterlijk van dagen",
-      "dayLooksHint": "Kleur, omlijn of markeer hele dagen. Badges van alle passende regels stapelen zich op.",
+    "ruleList": {
       "ruleTitle": "Regel {n}",
       "moveUp": "Omhoog",
       "moveDown": "Omlaag",
       "remove": "Regel verwijderen",
       "renameRule": "Regel hernoemen",
       "ruleNamePlaceholder": "Regelnaam (optioneel)",
-      "ruleNameTaken": "Die naam wordt al door een andere regel gebruikt",
+      "ruleNameTaken": "Die naam wordt al door een andere regel gebruikt"
+    },
+    "calendarRules": {
+      "eventLooks": "Uiterlijk van afspraken",
+      "eventLooksHint": "Laat passende afspraken er anders uitzien of verberg ze. Bij een conflict wint de bovenste regel.",
+      "dayLooks": "Uiterlijk van dagen",
+      "dayLooksHint": "Kleur, omlijn of markeer hele dagen. Badges van alle passende regels stapelen zich op.",
       "addEventRule": "Afspraakregel toevoegen",
       "addDayRule": "Dagregel toevoegen",
       "when": "Als",
@@ -4925,6 +4936,42 @@
       "peopleFilterStaleMember": "Iemand die niet meer op de gezinslijst staat",
       "peopleFilterStaleGroup": "Een verwijderde groep",
       "peopleFilterClear": "Iedereen tonen"
+    },
+    "textLooks": {
+      "hint": "Verander de kleur, het icoon of de woorden als een live-waarde past. De bovenste regel wint als twee hetzelfde instellen. Past er niets, dan houdt de tekst zijn eigen stijl.",
+      "empty": "Nog geen uiterlijk ingesteld. De tekst houdt zijn eigen stijl totdat je er een toevoegt.",
+      "addLook": "Uiterlijk toevoegen",
+      "when": "Als",
+      "then": "Dan",
+      "noConditionsHint": "Nog geen voorwaarden. Dit uiterlijk geldt altijd totdat je er een toevoegt.",
+      "allMustMatchHint": "Alle voorwaarden moeten kloppen voordat dit uiterlijk geldt.",
+      "textColor": "Tekstkleur",
+      "borderColor": "Randkleur",
+      "background": "Achtergrond",
+      "color": "Kleur",
+      "icon": "Icoon",
+      "iconLabel": "Vóór de tekst getoond",
+      "showTextAs": "Tekst tonen als",
+      "words": "Woorden",
+      "wordsPlaceholder": "De inhoud hierboven houden",
+      "wordsHint": "Live-waarden werken hier ook, net zo geschreven als in de inhoud hierboven.",
+      "fade": "Vervagen",
+      "fadeAmount": "Hoe dekkend",
+      "nothingSetHint": "Zet iets aan onder Dan, anders verandert dit uiterlijk niets.",
+      "verdicts": {
+        "showing": "Nu te zien",
+        "unmet": "Past niet",
+        "unknown": "Wacht",
+        "overruled": "Past, maar overstemd",
+        "always": "Altijd"
+      },
+      "verdictTitles": {
+        "showing": "Dit uiterlijk past nu en verandert de module.",
+        "unmet": "De voorwaarden van dit uiterlijk kloppen nu niet.",
+        "unknown": "Een waarde die dit uiterlijk controleert is nog niet gepubliceerd.",
+        "overruled": "Dit uiterlijk past, maar een uiterlijk erboven stelt al alles in wat dit instelt. Zet het hoger om het te laten winnen.",
+        "always": "Geen voorwaarden, dus dit uiterlijk geldt altijd."
+      }
     }
   },
   "imageBrowsers": {
@@ -5308,5 +5355,18 @@
     "cancelledBody": "Geen probleem. Begin opnieuw vanuit de editor wanneer je wilt.",
     "failedTitle": "Aanmelden kon niet worden afgerond",
     "backToEditor": "Terug naar de editor"
+  },
+  "conditionSummary": {
+    "always": "altijd",
+    "above": "boven {n}",
+    "below": "onder {n}",
+    "between": "{a} tot {b}",
+    "anyNumber": "elk getal",
+    "is": "{key} staat op {value}",
+    "isNot": "{key} staat niet op {value}",
+    "noKey": "geen waarde gekozen",
+    "allOf": "alle van {n}",
+    "anyOf": "een van {n}",
+    "noneOf": "geen van {n}"
   }
 }

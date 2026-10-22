@@ -25,6 +25,7 @@ import { useFormattingLocale, formatRelativeTime, type TranslateFn } from '@/i18
 import type { EditorSharedState, SharedStateSource } from '@/hooks/useEditorSharedState';
 import { useStateKeySearch, useStateKeyDescriptor } from '@/hooks/useStateKeySearch';
 import { buildSuggestions, producerLabel } from '@/lib/state-key-suggestions';
+import { pluginPublishesOnDemand } from '@/lib/state-key-search';
 import { conditionVerdict, verdictStatesFor, type ConditionVerdict } from '@/lib/condition-verdicts';
 import type { ScheduleClock } from '@/lib/schedule';
 import { unhealthyNoteForKeys } from '@/lib/provider-health-hint';
@@ -216,16 +217,22 @@ export function SourceKeyInput({
   // Empty is not invalid — it's an incomplete condition still being authored
   // (evaluates as unknown; whenUnknown governs until a key is picked).
   const invalid = draft !== '' && !SHARED_STATE_KEY_RE.test(draft);
-  const known = options.some((o) => o.key === draft) || searched.some((d) => d.key === draft);
-  // Charset-valid but not advertised by any provider on this display —
-  // either the publishing module isn't configured yet (condition authored
-  // first) or the key is a typo (e.g. missing the plugin: namespace). Both
-  // leave the condition permanently "unknown", which default-hides the
-  // module with no other feedback, so surface it here as a soft warning.
-  const unknown = !invalid && draft !== '' && !known;
   // Live value straight from the display's last heartbeat — kills the
   // "which exact string do I match against?" guessing game.
   const liveEntry = liveState?.entries[draft];
+  // A key is known when a module advertises it, search returns it, the bus
+  // already carries it, or its plugin publishes on demand (referencing the
+  // key is what makes it publish, so no module needs to advertise it).
+  const known = options.some((o) => o.key === draft)
+    || searched.some((d) => d.key === draft)
+    || liveEntry !== undefined
+    || pluginPublishesOnDemand(draft, plugins ?? EMPTY_PLUGINS);
+  // Charset-valid but not known to anything on this display — either the
+  // publishing module isn't configured yet (condition authored first) or the
+  // key is a typo (e.g. missing the plugin: namespace). Both leave the
+  // condition permanently "unknown", which default-hides the module with no
+  // other feedback, so surface it here as a soft warning.
+  const unknown = !invalid && draft !== '' && !known;
   // Suppress the unknown warning briefly after a deliberate pick (the publish
   // hasn't had time to round-trip yet). Reappears once the grace elapses.
   const pickedAt = pickedAtRef.current.get(draft);

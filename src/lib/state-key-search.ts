@@ -37,6 +37,23 @@ export interface SearchedStateKey extends StateKeyDescriptor {
   pluginName: string;
 }
 
+/**
+ * True when `key` lives in the namespace of a loaded plugin that publishes
+ * on demand (one exporting `stateProvider`): referencing such a key is what
+ * makes it publish, so "nothing on this display publishes it" would be wrong
+ * even though no module advertises it. Plugin ids match lowercased, the
+ * canonical namespace form.
+ */
+export function pluginPublishesOnDemand(key: string, plugins: ReadonlyMap<string, LoadedPlugin>): boolean {
+  if (!key.startsWith('plugin:')) return false;
+  const id = key.split(':')[1]?.toLowerCase();
+  if (!id) return false;
+  for (const entry of plugins.values()) {
+    if (entry.stateProvider && entry.manifest.id.toLowerCase() === id) return true;
+  }
+  return false;
+}
+
 const VALUE_TYPES = new Set(['enum', 'numeric', 'string']);
 const MAX_VALUE_OPTIONS = 50;
 const MAX_LABEL_LENGTH = 200;

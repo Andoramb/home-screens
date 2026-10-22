@@ -7,6 +7,7 @@ import LabeledSelect from '@/components/ui/LabeledSelect';
 import { useModuleConfig } from '@/hooks/useModuleConfig';
 import { useTranslate } from '@/i18n';
 import { TextContentFields } from './TextContentFields';
+import { TextLooksEditor } from './TextLooksEditor';
 import { TextTypographyControls } from './TextTypographyControls';
 import { TextFeatureControls } from './TextFeatureControls';
 import { TextEffectControls } from './TextEffectControls';
@@ -42,6 +43,10 @@ export function TextConfigSection({ mod, screenId }: { mod: ModuleInstance; scre
     <div className="space-y-2">
       {/* ── Content ── */}
       <TextContentFields config={c} set={set} />
+
+      {/* ── Looks: colors, icon and words that follow a live value ── */}
+      <SectionHeading>{t('configSections.text.sections.looks')}</SectionHeading>
+      <TextLooksEditor looks={c.looks} onChange={(looks) => set({ looks })} />
 
       {/* ── Layout ── */}
       <LabeledSelect

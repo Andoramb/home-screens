@@ -143,8 +143,16 @@
       "conditionNoKey": "Esperando um valor ao vivo",
       "conditionTimeMet": "Aparece neste horário",
       "conditionTimeUnmet": "Escondido neste horário",
-      "background": "Roda em segundo plano"
-    }
+      "background": "Roda em segundo plano",
+      "lookShowing": "Visual: {name}",
+      "lookNone": "Nenhum visual combina",
+      "lookWaiting": "Visuais esperando {key}",
+      "lookWaitingNoKey": "Visuais esperando um valor ao vivo",
+      "lookUnnamed": "Visual {n}"
+    },
+    "lookShowingTitle": "O visual \"{name}\" está mudando este módulo agora.",
+    "lookNoneTitle": "Este módulo tem visuais, mas nenhum combina agora.",
+    "lookWaitingTitle": "Um visual espera um valor que ainda não foi publicado."
   },
   "displaySwitcher": {
     "title": "Qual display você está editando? (Substituições de configurações ficam em Configurações → Por tela.)",
@@ -4426,7 +4434,8 @@
         "gradient": "Gradiente",
         "layout": "Layout",
         "marquee": "Marquee",
-        "decorative": "Decorativo"
+        "decorative": "Decorativo",
+        "looks": "Visuais"
       },
       "orientationOptions": {
         "horizontal": "Horizontal",
@@ -4684,18 +4693,20 @@
       "showDay": "Mostrar dia",
       "showPercentage": "Mostrar porcentagem"
     },
-    "calendarRules": {
-      "eventLooks": "Aparência dos eventos",
-      "eventLooksHint": "Mude a aparência dos eventos que combinam ou esconda-os. Se duas regras conflitarem, a de cima vence.",
-      "dayLooks": "Aparência dos dias",
-      "dayLooksHint": "Pinte, contorne ou marque dias inteiros. Os selos de todas as regras que combinam se acumulam.",
+    "ruleList": {
       "ruleTitle": "Regra {n}",
       "moveUp": "Mover para cima",
       "moveDown": "Mover para baixo",
       "remove": "Remover regra",
       "renameRule": "Renomear regra",
       "ruleNamePlaceholder": "Nome da regra (opcional)",
-      "ruleNameTaken": "Esse nome já é usado por outra regra",
+      "ruleNameTaken": "Esse nome já é usado por outra regra"
+    },
+    "calendarRules": {
+      "eventLooks": "Aparência dos eventos",
+      "eventLooksHint": "Mude a aparência dos eventos que combinam ou esconda-os. Se duas regras conflitarem, a de cima vence.",
+      "dayLooks": "Aparência dos dias",
+      "dayLooksHint": "Pinte, contorne ou marque dias inteiros. Os selos de todas as regras que combinam se acumulam.",
       "addEventRule": "Adicionar regra de evento",
       "addDayRule": "Adicionar regra de dia",
       "when": "Quando",
@@ -4925,6 +4936,42 @@
       "peopleFilterStaleMember": "Alguém que não está mais na família",
       "peopleFilterStaleGroup": "Um grupo que foi removido",
       "peopleFilterClear": "Mostrar todo mundo"
+    },
+    "textLooks": {
+      "hint": "Mude a cor, o ícone ou as palavras quando um valor ao vivo combinar. A regra de cima vence quando duas mudam a mesma coisa. Sem combinação, o texto mantém o próprio estilo.",
+      "empty": "Nenhum visual ainda. O texto mantém o próprio estilo até você adicionar um.",
+      "addLook": "Adicionar um visual",
+      "when": "Quando",
+      "then": "Então",
+      "noConditionsHint": "Nenhuma condição ainda. Este visual vale o tempo todo até você adicionar uma.",
+      "allMustMatchHint": "Todas as condições precisam combinar para este visual valer.",
+      "textColor": "Cor do texto",
+      "borderColor": "Cor da borda",
+      "background": "Fundo",
+      "color": "Cor",
+      "icon": "Ícone",
+      "iconLabel": "Mostrado antes do texto",
+      "showTextAs": "Mostrar o texto como",
+      "words": "Palavras",
+      "wordsPlaceholder": "Manter o conteúdo acima",
+      "wordsHint": "Valores ao vivo funcionam aqui também, escritos do mesmo jeito que no conteúdo acima.",
+      "fade": "Esmaecer",
+      "fadeAmount": "Quanto aparece",
+      "nothingSetHint": "Ligue algo em Então, ou este visual não muda nada.",
+      "verdicts": {
+        "showing": "Aparecendo agora",
+        "unmet": "Não combina",
+        "unknown": "Esperando",
+        "overruled": "Combina, mas perde",
+        "always": "Sempre"
+      },
+      "verdictTitles": {
+        "showing": "Este visual combina agora, então está mudando o módulo.",
+        "unmet": "As condições deste visual não combinam agora.",
+        "unknown": "Um valor que este visual confere ainda não foi publicado.",
+        "overruled": "Este visual combina, mas um visual acima já muda tudo o que ele muda. Suba-o para ele vencer.",
+        "always": "Sem condições, então este visual vale o tempo todo."
+      }
     }
   },
   "imageBrowsers": {
@@ -5308,5 +5355,18 @@
     "cancelledBody": "Sem problemas. Comece de novo pelo editor quando quiser.",
     "failedTitle": "Não foi possível concluir o login",
     "backToEditor": "Voltar ao editor"
+  },
+  "conditionSummary": {
+    "always": "sempre",
+    "above": "acima de {n}",
+    "below": "abaixo de {n}",
+    "between": "{a} a {b}",
+    "anyNumber": "qualquer número",
+    "is": "{key} é {value}",
+    "isNot": "{key} não é {value}",
+    "noKey": "nenhum valor escolhido",
+    "allOf": "todas de {n}",
+    "anyOf": "qualquer de {n}",
+    "noneOf": "nenhuma de {n}"
   }
 }

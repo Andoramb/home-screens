@@ -5,6 +5,7 @@ import {
   validateAllSchedules,
   validateModuleSchedule,
   validateModuleVisibility,
+  validateTextLooks,
   MAX_CONDITION_DEPTH,
   findScreenById,
   getDisplayScreens,
@@ -1526,5 +1527,57 @@ describe('getAllProfiles', () => {
       ],
     });
     expect(getAllProfiles(config).map((p) => p.id)).toEqual(['dup']);
+  });
+});
+
+/* ─── validateTextLooks ───────────────────────── */
+
+describe('validateTextLooks', () => {
+  const good = { id: 'a', when: [{ kind: 'numeric', sourceKey: 'plugin:ha:temp', above: 24 }], borderColor: '#f00' };
+
+  it('accepts an absent list, an empty list and a well-formed look', () => {
+    expect(validateTextLooks(undefined, 'ctx')).toBeNull();
+    expect(validateTextLooks([], 'ctx')).toBeNull();
+    expect(validateTextLooks([good, { id: 'b', when: [], opacity: 0.5, icon: 'x', text: 'y', name: 'n' }], 'ctx')).toBeNull();
+  });
+
+  it('refuses a non-array, a missing id, a duplicate id and a missing when', () => {
+    expect(validateTextLooks({}, 'ctx')).toMatch(/must be an array/);
+    expect(validateTextLooks([{ when: [] }], 'ctx')).toMatch(/look 1: id/);
+    expect(validateTextLooks([good, { ...good }], 'ctx')).toMatch(/look 2: duplicate id/);
+    expect(validateTextLooks([{ id: 'a' }], 'ctx')).toMatch(/when must be an array/);
+  });
+
+  it('runs the condition tree through the visibility validator', () => {
+    const bad = { id: 'a', when: [{ kind: 'numeric', sourceKey: 'BAD KEY', above: 1 }] };
+    expect(validateTextLooks([bad], 'ctx')).toMatch(/sourceKey/);
+  });
+
+  it('checks property types and the fade range', () => {
+    expect(validateTextLooks([{ id: 'a', when: [], textColor: 5 }], 'ctx')).toMatch(/textColor must be a string/);
+    expect(validateTextLooks([{ id: 'a', when: [], opacity: 0 }], 'ctx')).toMatch(/opacity/);
+    expect(validateTextLooks([{ id: 'a', when: [], opacity: 1.5 }], 'ctx')).toMatch(/opacity/);
+    expect(validateTextLooks([{ id: 'a', when: [], opacity: '0.5' }], 'ctx')).toMatch(/opacity/);
+  });
+
+  it('caps the list', () => {
+    const many = Array.from({ length: 33 }, (_, i) => ({ id: `l${i}`, when: [] }));
+    expect(validateTextLooks(many, 'ctx')).toMatch(/too many looks/);
+  });
+
+  it('is walked by validateAllSchedules for text modules only', () => {
+    const screen = makeScreen('s1');
+    screen.modules = [{
+      id: 'mod1', type: 'text', position: { x: 0, y: 0 }, size: { w: 1, h: 1 }, zIndex: 0,
+      config: { content: '', looks: [{ id: 'a' }] },
+      style: {
+        opacity: 1, borderRadius: 0, padding: 0, backgroundColor: '',
+        textColor: '', fontFamily: '', fontSize: 12, backdropBlur: 0,
+        borderWidth: 0, borderColor: '', shadowSize: 0,
+      },
+    }];
+    expect(validateAllSchedules(makeConfig({ screens: [screen] }))).toMatch(/module "mod1" look 1: when/);
+    screen.modules[0].type = 'icon';
+    expect(validateAllSchedules(makeConfig({ screens: [screen] }))).toBeNull();
   });
 });

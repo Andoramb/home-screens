@@ -69,6 +69,29 @@ export const TEXT_VARIANTS: ConfigVariant[] = [
     expect: has('🔥'),
   },
 
+  // -- looks: a rule with no conditions always holds, so its colors, icon and
+  //    words land on the wrapper and the span without any bus traffic --
+  {
+    type: 'text', name: 'looks-always', kind: 'network-free',
+    config: {
+      content: 'E2E LOOK BASE',
+      looks: [{ id: 'l1', when: [], textColor: '#ff0000', borderColor: '#00ff00', backgroundColor: '#0000ff', icon: '🌡', text: 'E2E LOOK WORDS', opacity: 0.5 }],
+    },
+    expect: async (mod) => {
+      await expect(mod).toContainText('E2E LOOK WORDS');
+      await expect(mod).not.toContainText('E2E LOOK BASE');
+      await expect(mod).toContainText('🌡');
+      const span = mod.locator('span', { hasText: 'E2E LOOK WORDS' }).first();
+      await expect(span).toHaveCSS('color', 'rgb(255, 0, 0)');
+      const wrapper = mod.locator('div[style*="border"]').first();
+      await expect(wrapper).toHaveCSS('border-color', 'rgb(0, 255, 0)');
+      // The card is blurred by default, so its fade is baked into the
+      // background alpha and the words fade on their own.
+      await expect(wrapper).toHaveCSS('background-color', 'rgba(0, 0, 255, 0.5)');
+      await expect(mod.locator('div[style*="opacity"]', { hasText: 'E2E LOOK WORDS' }).first()).toHaveCSS('opacity', '0.5');
+    },
+  },
+
   // -- maxWidth: clamps the inline-flex content block --
   {
     type: 'text', name: 'max-width', kind: 'network-free',
@@ -282,6 +305,17 @@ export const TEXT_VARIANTS: ConfigVariant[] = [
     expect: async (mod) => {
       await matches(/Now:\s*\d{1,2}:\d{2}/)(mod); // substituted clock
       await notMatches(/\{\{time\}\}/)(mod);       // literal token gone
+    },
+  },
+  {
+    // A token's default may be a template variable. The variable expands
+    // first, then the token is read from the expanded text, so the module
+    // still subscribes to the key and the default shows for an unknown one.
+    type: 'text', name: 'shared-state-default-template', kind: 'network-free',
+    config: { content: 'At {plugin:ha:unknown|default:{{time}}}', templateVariables: true },
+    expect: async (mod) => {
+      await matches(/At\s*\d{1,2}:\d{2}/)(mod);
+      await notMatches(/[{}]/)(mod);
     },
   },
   {

@@ -10,19 +10,21 @@ interface MarqueeLayoutProps {
   rotationIndex: number;
   direction: 'left' | 'right' | 'up' | 'down';
   speed: number;
+  /** A look's fade on the scrolling content; see `lookContentOpacity`. */
+  contentOpacity?: number;
   children: ReactNode;
 }
 
 /** Scrolling-text layout. Horizontal directions scroll a nowrap row; vertical
  *  directions scroll a column. */
-export default function MarqueeLayout({ style, css, rotationIndex, direction, speed, children }: MarqueeLayoutProps) {
+export default function MarqueeLayout({ style, css, rotationIndex, direction, speed, contentOpacity, children }: MarqueeLayoutProps) {
   const isH = direction === 'left' || direction === 'right';
   const animName = `_marquee${direction.charAt(0).toUpperCase() + direction.slice(1)}`;
 
   return (
     <ModuleWrapper style={style}>
       <style>{css}</style>
-      <div className="h-full w-full overflow-hidden flex items-center">
+      <div className="h-full w-full overflow-hidden flex items-center" style={{ opacity: contentOpacity }}>
         <div
           key={rotationIndex}
           style={{

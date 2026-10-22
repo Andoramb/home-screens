@@ -143,8 +143,16 @@
       "conditionNoKey": "Esperando un valor en vivo",
       "conditionTimeMet": "Visible a esta hora",
       "conditionTimeUnmet": "Oculto a esta hora",
-      "background": "Funciona en segundo plano"
-    }
+      "background": "Funciona en segundo plano",
+      "lookShowing": "Aspecto: {name}",
+      "lookNone": "Ningún aspecto coincide",
+      "lookWaiting": "Aspectos esperando {key}",
+      "lookWaitingNoKey": "Aspectos esperando un valor en vivo",
+      "lookUnnamed": "Aspecto {n}"
+    },
+    "lookShowingTitle": "El aspecto «{name}» está cambiando este módulo ahora mismo.",
+    "lookNoneTitle": "Este módulo tiene aspectos, pero ninguno coincide ahora mismo.",
+    "lookWaitingTitle": "Un aspecto espera un valor que aún no se ha publicado."
   },
   "displaySwitcher": {
     "title": "¿Qué display estás editando? (Las anulaciones de ajustes están en Ajustes → Por display.)",
@@ -4426,7 +4434,8 @@
         "gradient": "Degradado",
         "layout": "Disposición",
         "marquee": "Marquesina",
-        "decorative": "Decorativo"
+        "decorative": "Decorativo",
+        "looks": "Aspectos"
       },
       "orientationOptions": {
         "horizontal": "Horizontal",
@@ -4684,18 +4693,20 @@
       "showDay": "Mostrar día",
       "showPercentage": "Mostrar porcentaje"
     },
-    "calendarRules": {
-      "eventLooks": "Aspecto de los eventos",
-      "eventLooksHint": "Cambia el aspecto de los eventos que coincidan u ocúltalos. Si dos reglas chocan, gana la de arriba.",
-      "dayLooks": "Aspecto de los días",
-      "dayLooksHint": "Colorea, enmarca o marca días enteros. Las insignias de todas las reglas que coincidan se acumulan.",
+    "ruleList": {
       "ruleTitle": "Regla {n}",
       "moveUp": "Subir",
       "moveDown": "Bajar",
       "remove": "Quitar regla",
       "renameRule": "Renombrar la regla",
       "ruleNamePlaceholder": "Nombre de la regla (opcional)",
-      "ruleNameTaken": "Ese nombre ya lo usa otra regla",
+      "ruleNameTaken": "Ese nombre ya lo usa otra regla"
+    },
+    "calendarRules": {
+      "eventLooks": "Aspecto de los eventos",
+      "eventLooksHint": "Cambia el aspecto de los eventos que coincidan u ocúltalos. Si dos reglas chocan, gana la de arriba.",
+      "dayLooks": "Aspecto de los días",
+      "dayLooksHint": "Colorea, enmarca o marca días enteros. Las insignias de todas las reglas que coincidan se acumulan.",
       "addEventRule": "Añadir regla de evento",
       "addDayRule": "Añadir regla de día",
       "when": "Cuando",
@@ -4925,6 +4936,42 @@
       "peopleFilterStaleMember": "Alguien que ya no está en la familia",
       "peopleFilterStaleGroup": "Un grupo que se quitó",
       "peopleFilterClear": "Mostrar a todos"
+    },
+    "textLooks": {
+      "hint": "Cambia el color, el icono o las palabras cuando un valor en vivo coincide. La regla de arriba gana cuando dos cambian lo mismo. Si ninguna coincide, el texto conserva su propio estilo.",
+      "empty": "Aún no hay aspectos. El texto conserva su propio estilo hasta que añadas uno.",
+      "addLook": "Añadir un aspecto",
+      "when": "Cuando",
+      "then": "Entonces",
+      "noConditionsHint": "Aún no hay condiciones. Este aspecto se aplica todo el tiempo hasta que añadas una.",
+      "allMustMatchHint": "Todas las condiciones deben coincidir para que este aspecto se aplique.",
+      "textColor": "Color del texto",
+      "borderColor": "Color del borde",
+      "background": "Fondo",
+      "color": "Color elegido",
+      "icon": "Icono",
+      "iconLabel": "Se muestra antes del texto",
+      "showTextAs": "Mostrar el texto como",
+      "words": "Palabras",
+      "wordsPlaceholder": "Mantener el contenido de arriba",
+      "wordsHint": "Los valores en vivo también funcionan aquí, escritos igual que en el contenido de arriba.",
+      "fade": "Atenuar",
+      "fadeAmount": "Cuánto se ve",
+      "nothingSetHint": "Activa algo en «Entonces» o este aspecto no cambiará nada.",
+      "verdicts": {
+        "showing": "Se ve ahora",
+        "unmet": "No coincide",
+        "unknown": "Esperando",
+        "overruled": "Coincide, pero otro manda",
+        "always": "Siempre"
+      },
+      "verdictTitles": {
+        "showing": "Este aspecto coincide ahora mismo, así que está cambiando el módulo.",
+        "unmet": "Las condiciones de este aspecto no coinciden ahora mismo.",
+        "unknown": "Un valor que comprueba este aspecto aún no se ha publicado.",
+        "overruled": "Este aspecto coincide, pero uno de más arriba ya cambia todo lo que cambia este. Súbelo para que gane.",
+        "always": "Sin condiciones, así que este aspecto se aplica todo el tiempo."
+      }
     }
   },
   "imageBrowsers": {
@@ -5308,5 +5355,18 @@
     "cancelledBody": "No pasa nada. Vuelve a empezar desde el editor cuando quieras.",
     "failedTitle": "No se pudo terminar de iniciar sesión",
     "backToEditor": "Volver al editor"
+  },
+  "conditionSummary": {
+    "always": "siempre",
+    "above": "más de {n}",
+    "below": "menos de {n}",
+    "between": "de {a} a {b}",
+    "anyNumber": "cualquier número",
+    "is": "{key} es {value}",
+    "isNot": "{key} no es {value}",
+    "noKey": "sin valor elegido",
+    "allOf": "todas de {n}",
+    "anyOf": "cualquiera de {n}",
+    "noneOf": "ninguna de {n}"
   }
 }
