@@ -46,6 +46,27 @@ const ALL_STEPS = [...new Set([...TARBALL_STEPS, ...GIT_STEPS])];
 /** Steps during which the cancel button must be disabled */
 const UNCANCELLABLE_STEPS = new Set(['deploy']);
 
+/**
+ * How long the console may hear nothing before it says so. The pulsing dot
+ * and the shimmer on the bar are animations, so they keep moving whether or
+ * not the install does; a line that counts the silence is the one thing on
+ * the window that could not be there if the page had stopped hearing from
+ * the server.
+ */
+const QUIET_AFTER_MS = 30_000;
+
+/** The current time, refreshed once a second while `running`. */
+function useNow(running: boolean): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) return;
+    setNow(Date.now());
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+  return now;
+}
+
 /** Rail row styling per step state */
 const RAIL_STYLES: Record<StepState, { row: string; connector: string }> = {
   done: {
@@ -136,8 +157,19 @@ function UpgradeAttempt({
   // Start with no steps; auto-detect tarball vs git from SSE events
   const [detectedSteps, setDetectedSteps] = useState<readonly string[]>([]);
 
-  const { progress, done, failed, activeStep, visitedSteps, stepLogs, stepDurations } =
-    useUpgradeStream(ALL_STEPS, targetTag, isRollback);
+  const {
+    progress,
+    done,
+    failed,
+    activeStep,
+    visitedSteps,
+    stepLogs,
+    stepDurations,
+    activeStepStartedAt,
+    lastEventAt,
+  } = useUpgradeStream(ALL_STEPS, targetTag, isRollback);
+  const running = !done && !failed;
+  const now = useNow(running);
 
   // Auto-detect tarball vs git based on which steps appear
   useEffect(() => {
@@ -188,12 +220,21 @@ function UpgradeAttempt({
 
   const consoleLog = stepLogs[consoleStep] || '';
 
+  // Nothing heard for a while: say so under the log, and keep counting.
+  const quietMs = now - lastEventAt;
+  const quietLine =
+    isLive && quietMs >= QUIET_AFTER_MS
+      ? t('upgradeModal.console.stillWorking', { duration: formatDuration(quietMs) ?? '' })
+      : null;
+  const activeElapsed =
+    running && activeStepStartedAt != null ? formatDuration(now - activeStepStartedAt) : null;
+
   // Auto-scroll the console while it follows the live step
   useEffect(() => {
     if (isLive && consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
-  }, [consoleLog, isLive]);
+  }, [consoleLog, isLive, quietLine]);
 
   const headerTitle = useMemo(
     () =>
@@ -298,7 +339,7 @@ function UpgradeAttempt({
         {/* Step rail + console */}
         <div className="flex flex-1 min-h-0 h-[min(420px,55vh)]">
           {/* Step rail */}
-          <div className="w-[300px] flex-shrink-0 border-r border-hs-border overflow-y-auto py-4 pl-4 pr-3">
+          <div className="w-[320px] flex-shrink-0 border-r border-hs-border overflow-y-auto py-4 pl-4 pr-3">
             {steps.map((step, idx) => {
               const state = getStepState(step, steps, activeStep, done, failed, visitedSteps);
               const styles = RAIL_STYLES[state] ?? RAIL_STYLES.pending;
@@ -326,6 +367,14 @@ function UpgradeAttempt({
                   {duration && state === 'done' && (
                     <span className="text-[11px] font-mono text-hs-text-faint flex-shrink-0">
                       {duration}
+                    </span>
+                  )}
+                  {activeElapsed && state === 'active' && (
+                    <span
+                      data-testid="upgrade-step-elapsed"
+                      className="text-[11px] font-mono font-normal text-hs-text-faint flex-shrink-0 tabular-nums"
+                    >
+                      {activeElapsed}
                     </span>
                   )}
                 </button>
@@ -357,6 +406,15 @@ function UpgradeAttempt({
               ) : (
                 <p className="px-4 py-3 text-[11.5px] font-mono text-neutral-600">
                   {t('upgradeModal.console.waiting')}
+                </p>
+              )}
+              {quietLine && (
+                <p
+                  data-testid="upgrade-console-quiet"
+                  className="px-4 pb-3 -mt-2 text-[11.5px] leading-[1.7] font-mono text-neutral-400 flex items-center gap-2"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-hs-accent-hover animate-pulse flex-shrink-0" aria-hidden />
+                  {quietLine}
                 </p>
               )}
             </div>

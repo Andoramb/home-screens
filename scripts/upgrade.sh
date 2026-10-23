@@ -201,13 +201,14 @@ hs_write_system_packages_record() {
 #
 # The budget: the server runs setup-system with a ten-minute limit, the one
 # that installs this release included, so the whole pass has to fit well
-# inside it with room for the rest of setup-system. Update 60 s, download
-# 240 s, install 180 s. The download is a step of its own so a slow night on
-# WiFi ends with files in apt's cache and nothing half installed; the next
-# install picks the download up where it stopped.
+# inside it with room for the rest of setup-system. Update 60 s, dry run
+# 30 s, download 240 s, install 180 s. The download is a step of its own so a
+# slow night on WiFi ends with files in apt's cache and nothing half
+# installed; the next install picks the download up where it stopped.
 #
 # Test seams (never set on a device): HS_APT_UPDATE_TIMEOUT,
-# HS_APT_DOWNLOAD_TIMEOUT and HS_APT_UPGRADE_TIMEOUT (seconds), HS_MIN_FREE_KB.
+# HS_APT_PLAN_TIMEOUT, HS_APT_DOWNLOAD_TIMEOUT and HS_APT_UPGRADE_TIMEOUT
+# (seconds), HS_MIN_FREE_KB.
 hs_upgrade_system_packages() {
   HS_UPGRADED_PACKAGES=""
   local packages="${SYSTEM_PACKAGES:-}" holds="${SYSTEM_PACKAGE_HOLDS:-}"
@@ -271,6 +272,43 @@ hs_upgrade_system_packages() {
     return 0
   fi
 
+  # Say what is coming before the long quiet part. A Chromium update is well
+  # over 100 MB and the download below prints nothing while it runs, so the
+  # update window would otherwise sit on the line above for minutes. The dry
+  # run is the same request as the install, so what it lists is what the
+  # install will do; when it lists nothing the download and install are
+  # skipped as the no-ops they would be.
+  local plan="" plan_ok="false" newer="" size=""
+  # shellcheck disable=SC2086
+  if plan="$(sudo env LC_ALL=C timeout "${HS_APT_PLAN_TIMEOUT:-30}" \
+        apt-get install --only-upgrade -y --print-uris -o DPkg::Lock::Timeout=60 \
+        ${wanted} 2>/dev/null)"; then
+    plan_ok="true"
+    newer="$(printf '%s\n' "${plan}" \
+      | awk '/^The following packages will be upgraded:/ { grab = 1; next } grab && /^  / { print; next } { grab = 0 }' \
+      | tr -s ' \n' '  ')"
+    newer="${newer# }"
+    newer="${newer% }"
+    # "Need to get 118 MB of archives." or "Need to get 0 B/118 MB of
+    # archives." when part of it is already in apt's cache; the total is
+    # what the wait is for.
+    size="$(printf '%s\n' "${plan}" | sed -n 's/^Need to get \(.*\) of archives\..*/\1/p' | head -n 1)"
+    size="${size##*/}"
+  fi
+  if [ "${plan_ok}" = "true" ] && [ -z "${newer}" ]; then
+    echo "The display's programs are already up to date"
+    hs_write_system_packages_record "${installed}"
+    return 0
+  fi
+  if [ -n "${newer}" ]; then
+    if [ -n "${size}" ]; then
+      echo "Newer versions found: ${newer// /, } (${size})"
+    else
+      echo "Newer versions found: ${newer// /, }"
+    fi
+  fi
+  echo "Downloading, this can take a few minutes on a slow connection..."
+
   local before after
   # shellcheck disable=SC2086
   before="$(hs_package_versions ${installed})"
@@ -282,6 +320,7 @@ hs_upgrade_system_packages() {
     hs_write_system_packages_record "${installed}"
     return 0
   fi
+  echo "Installing the new versions..."
   # shellcheck disable=SC2086
   if ! sudo env DEBIAN_FRONTEND=noninteractive timeout "${HS_APT_UPGRADE_TIMEOUT:-180}" \
         apt-get install --only-upgrade -y -qq -o DPkg::Lock::Timeout=60 \

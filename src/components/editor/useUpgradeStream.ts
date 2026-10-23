@@ -33,6 +33,16 @@ export interface UpgradeStreamState {
   visitedSteps: Set<string>;
   stepLogs: Record<string, string>;
   stepDurations: Record<string, number>;
+  /** When the active step began, for the clock that ticks beside it while it runs. */
+  activeStepStartedAt: number | null;
+  /**
+   * When the last progress or output event arrived. The console says how
+   * long it has heard nothing once this falls far enough behind the clock:
+   * the long quiet stretches (a Chromium download) print nothing, and a
+   * window that only pulses looks the same whether the install is alive
+   * or not.
+   */
+  lastEventAt: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,6 +115,8 @@ interface StreamContext {
   setActiveStep: (s: string) => void;
   setDone: (b: boolean) => void;
   setFailed: (b: boolean) => void;
+  /** Every event from the server moves the quiet-spell clock. */
+  markEvent: () => void;
 }
 
 /** Progress events — step transitions. */
@@ -115,6 +127,7 @@ function handleProgressEvent(ctx: StreamContext, event: MessageEvent): void {
     // Ignore the server's idle state — no upgrade is running yet.
     // This arrives from subscribeToEvents() before our POST triggers the upgrade.
     if (data.step === 'idle') return;
+    ctx.markEvent();
 
     // Track whether we've seen any real pipeline step (not a terminal state).
     // This prevents a stale 'complete' from subscribeToEvents closing the SSE
@@ -158,10 +171,12 @@ function handleProgressEvent(ctx: StreamContext, event: MessageEvent): void {
 /** Output events — streaming log lines accumulated per step. */
 function handleOutputEvent(
   setStepLogs: Dispatch<SetStateAction<Record<string, string>>>,
+  markEvent: () => void,
   event: MessageEvent,
 ): void {
   try {
     const data = JSON.parse(event.data) as { step: string; line: string };
+    markEvent();
     setStepLogs((prev) => ({
       ...prev,
       [data.step]: (prev[data.step] || '') + data.line + '\n',
@@ -288,6 +303,8 @@ export function useUpgradeStream(
   const [stepDurations, setStepDurations] = useState<Record<string, number>>({});
   const stepStartRef = useRef<Record<string, number>>({});
   const prevDurationStepRef = useRef(firstStep);
+  const [activeStepStartedAt, setActiveStepStartedAt] = useState<number | null>(null);
+  const [lastEventAt, setLastEventAt] = useState(() => Date.now());
 
   // Track visited steps whenever activeStep changes
   useEffect(() => {
@@ -309,6 +326,7 @@ export function useUpgradeStream(
     }
     stepStartRef.current[activeStep] ??= now;
     prevDurationStepRef.current = activeStep;
+    setActiveStepStartedAt(stepStartRef.current[activeStep]);
   }, [activeStep]);
 
   // Finalize the last active step's timer when the upgrade completes
@@ -328,7 +346,10 @@ export function useUpgradeStream(
     if (started) return;
     setStarted(true);
 
-    stepStartRef.current[firstStep] = Date.now();
+    const startedAt = Date.now();
+    stepStartRef.current[firstStep] = startedAt;
+    setActiveStepStartedAt(startedAt);
+    setLastEventAt(startedAt);
 
     const es = new EventSource('/api/system/status');
     const ctx: StreamContext = {
@@ -351,6 +372,7 @@ export function useUpgradeStream(
       },
       setDone,
       setFailed,
+      markEvent: () => setLastEventAt(Date.now()),
     };
 
     es.addEventListener(
@@ -359,7 +381,7 @@ export function useUpgradeStream(
     );
     es.addEventListener(
       'output',
-      ((event: MessageEvent) => handleOutputEvent(setStepLogs, event)) as EventListener,
+      ((event: MessageEvent) => handleOutputEvent(setStepLogs, ctx.markEvent, event)) as EventListener,
     );
     es.onerror = () => handleStreamError(ctx);
 
@@ -371,7 +393,18 @@ export function useUpgradeStream(
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-time SSE connection on mount; deps are stable refs
   }, []);
 
-  return { progress, started, done, failed, activeStep, visitedSteps, stepLogs, stepDurations };
+  return {
+    progress,
+    started,
+    done,
+    failed,
+    activeStep,
+    visitedSteps,
+    stepLogs,
+    stepDurations,
+    activeStepStartedAt,
+    lastEventAt,
+  };
 }
 
 // ---------------------------------------------------------------------------

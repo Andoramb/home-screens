@@ -3241,7 +3241,8 @@
     },
     "console": {
       "live": "Live",
-      "waiting": "Wachten op uitvoer..."
+      "waiting": "Wachten op uitvoer...",
+      "stillWorking": "Nog bezig, al {duration} niets nieuws"
     }
   },
   "holidayPickerModal": {

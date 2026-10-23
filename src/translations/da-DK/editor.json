@@ -3241,7 +3241,8 @@
     },
     "console": {
       "live": "Live",
-      "waiting": "Venter på output..."
+      "waiting": "Venter på output...",
+      "stillWorking": "Arbejder stadig, intet nyt i {duration}"
     }
   },
   "holidayPickerModal": {

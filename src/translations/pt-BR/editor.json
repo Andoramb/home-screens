@@ -3241,7 +3241,8 @@
     },
     "console": {
       "live": "Ao vivo",
-      "waiting": "Aguardando saída..."
+      "waiting": "Aguardando saída...",
+      "stillWorking": "Ainda em andamento, nada de novo há {duration}"
     }
   },
   "holidayPickerModal": {

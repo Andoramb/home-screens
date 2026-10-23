@@ -62,12 +62,33 @@ beforeEach(() => {
   stub('apt-mark', 'if [ "$1" = "showhold" ]; then cat "$HS_HELD" 2>/dev/null; exit 0; fi; echo "apt-mark $*" >> "$HS_CALLS"');
   stub('df', 'printf "Avail\\n%s\\n" "${HS_FREE_KB:-8000000}"');
   // apt-get update fails while the archive-down file exists; install
-  // --only-upgrade moves every named package to the archive's version.
+  // --print-uris answers like apt's dry run for the packages the archive
+  // has newer; install --only-upgrade moves every named package to the
+  // archive's version.
   stub('apt-get', [
     'echo "apt-get $*" >> "$HS_CALLS"',
     'case "$1" in',
     '  update) [ ! -e "$HS_ARCHIVE_DOWN" ] ;;',
     '  install)',
+    '    case " $* " in *" --print-uris "*)',
+    '      [ -e "$HS_PLAN_FAILS" ] && exit 100',
+    '      newer=""',
+    '      for a in "$@"; do',
+    '        case "$a" in -*|install) continue ;; esac',
+    '        [ "$(grep "^$a=" "$HS_ARCHIVE" | cut -d= -f2-)" != "$(grep "^$a=" "$HS_DB" | cut -d= -f2-)" ] && newer="$newer $a"',
+    '      done',
+    '      echo "Reading package lists..."',
+    '      if [ -n "$newer" ]; then',
+    '        echo "The following packages will be upgraded:"',
+    '        echo " $newer"',
+    '        echo "2 upgraded, 0 newly installed, 0 to remove and 3 not upgraded."',
+    '        echo "Need to get ${HS_PLAN_SIZE:-118 MB} of archives."',
+    '        echo "After this operation, 12.3 MB of additional disk space will be used."',
+    '      else',
+    '        echo "0 upgraded, 0 newly installed, 0 to remove and 3 not upgraded."',
+    '      fi',
+    '      exit 0 ;;',
+    '    esac',
     '    case " $* " in *" --download-only "*) [ -e "$HS_DOWNLOAD_FAILS" ] && exit 124; exit 0 ;; esac',
     '    [ -e "$HS_INSTALL_FAILS" ] && exit 100',
     '    for a in "$@"; do',
@@ -106,6 +127,7 @@ function run(snippet: string, env: Record<string, string> = {}) {
       HS_ARCHIVE_DOWN: path.join(root, 'archive-down'),
       HS_INSTALL_FAILS: path.join(root, 'install-fails'),
       HS_DOWNLOAD_FAILS: path.join(root, 'download-fails'),
+      HS_PLAN_FAILS: path.join(root, 'plan-fails'),
       HS_HELD: path.join(root, 'held'),
       ...env,
     },
@@ -122,21 +144,49 @@ describe('hs_upgrade_system_packages', () => {
     expect(readFileSync(db(), 'utf-8')).toContain('labwc=0.20.2-1~bpo13+1');
     const apt = calls().filter((c) => c.startsWith('apt-get'));
     expect(apt[0]).toMatch(/^apt-get update -qq -o DPkg::Lock::Timeout=60 -o Acquire::Retries=2$/);
-    // The download is its own bounded step, then the install from the cache.
-    expect(apt[1]).toMatch(/^apt-get install --only-upgrade --download-only -y -qq .* chromium labwc kanshi wlopm wlr-randr wtype$/);
-    expect(apt[2]).toMatch(/^apt-get install --only-upgrade -y -qq .* chromium labwc kanshi wlopm wlr-randr wtype$/);
-    expect(apt).toHaveLength(3);
+    // The dry run says what is coming, then the download is its own bounded
+    // step, then the install from the cache.
+    expect(apt[1]).toMatch(/^apt-get install --only-upgrade -y --print-uris .* chromium labwc kanshi wlopm wlr-randr wtype$/);
+    expect(apt[2]).toMatch(/^apt-get install --only-upgrade --download-only -y -qq .* chromium labwc kanshi wlopm wlr-randr wtype$/);
+    expect(apt[3]).toMatch(/^apt-get install --only-upgrade -y -qq .* chromium labwc kanshi wlopm wlr-randr wtype$/);
+    expect(apt).toHaveLength(4);
     // Never a package that is not installed, never vim.
-    expect(apt[2]).not.toContain('vim');
+    expect(apt[3]).not.toContain('vim');
+    // The update window reads these while apt is silent.
+    expect(out.trim().split('\n')).toEqual([
+      "Checking for newer versions of the display's programs...",
+      'Newer versions found: chromium, labwc (118 MB)',
+      'Downloading, this can take a few minutes on a slow connection...',
+      'Installing the new versions...',
+      "Updated the display's programs: chromium labwc",
+      'upgraded=chromium labwc',
+    ]);
     expect(record()).toMatchObject({ versions: { chromium: '154.0.8037.92-1~deb13u1', labwc: '0.20.2-1~bpo13+1', kanshi: '1.5.1-1' } });
     expect(new Date(record().checkedAt).getTime()).not.toBeNaN();
   });
 
-  it('reports nothing when everything is already current', () => {
+  it('says so and asks apt for nothing more when everything is already current', () => {
     writeFileSync(db(), readFileSync(archive(), 'utf-8'));
     const out = run('hs_upgrade_system_packages; echo "upgraded=${HS_UPGRADED_PACKAGES}"');
     expect(upgraded(out)).toBe('upgraded=');
+    expect(out).toContain("The display's programs are already up to date");
+    expect(out).not.toContain('Downloading');
+    expect(calls().filter((c) => c.startsWith('apt-get'))).toHaveLength(2);
     expect(existsSync(path.join(app, 'data', 'system-packages.json'))).toBe(true);
+  });
+
+  it('names the whole download when part of it is already in the cache', () => {
+    const out = run('hs_upgrade_system_packages', { HS_PLAN_SIZE: '0 B/118 MB' });
+    expect(out).toContain('Newer versions found: chromium, labwc (118 MB)');
+  });
+
+  it('still downloads and installs when the dry run itself fails', () => {
+    writeFileSync(path.join(root, 'plan-fails'), '');
+    const out = run('hs_upgrade_system_packages; echo "upgraded=${HS_UPGRADED_PACKAGES}"');
+    expect(out).not.toContain('Newer versions found');
+    expect(out).not.toContain('already up to date');
+    expect(out).toContain('Downloading');
+    expect(upgraded(out)).toBe('upgraded=chromium labwc');
   });
 
   it('skips the archive entirely in the image build', () => {
@@ -189,14 +239,14 @@ describe('hs_upgrade_system_packages', () => {
     const out = run('hs_upgrade_system_packages; echo "upgraded=${HS_UPGRADED_PACKAGES}"');
     expect(out).toContain('Still downloading');
     expect(upgraded(out)).toBe('upgraded=');
-    expect(calls().some((c) => /--only-upgrade -y/.test(c))).toBe(false);
+    expect(calls().some((c) => /--only-upgrade -y -qq/.test(c))).toBe(false);
     expect(readFileSync(db(), 'utf-8')).toContain('chromium=150.0.1-1');
   });
 
   it('keeps every apt call inside the ten minutes the server allows setup-system', () => {
     const fn = definition('hs_upgrade_system_packages');
     const budgets = [...fn.matchAll(/HS_APT_[A-Z]+_TIMEOUT:-(\d+)/g)].map((m) => Number(m[1]));
-    expect(budgets).toEqual([60, 240, 180]);
+    expect(budgets).toEqual([60, 30, 240, 180]);
     expect(budgets.reduce((a, b) => a + b, 0)).toBeLessThan(540);
   });
 
