@@ -37,5 +37,8 @@
     "@types/react-highlight-words": "^0.20.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss-selector-parser": "^7.1.7"
   }
 }
