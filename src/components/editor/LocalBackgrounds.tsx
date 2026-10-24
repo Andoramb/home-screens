@@ -64,7 +64,7 @@ function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
 
 export default function LocalBackgrounds({ selectedScreenId }: Props) {
   const t = useTranslate('editor');
-  const { config, selectedDisplayId, updateScreen, pickScreenBackground, updateScreenRotation } = useEditorStore();
+  const { config, selectedDisplayId, pickScreenBackground, updateScreenRotation } = useEditorStore();
 
   const activeScreens = config ? getActiveScreens(config, selectedDisplayId) : [];
   const currentScreen = activeScreens.find((s) => s.id === selectedScreenId);

@@ -5,7 +5,10 @@ import { __resetAuthImageCacheForTests } from '../useAuthImage';
 import { displayFetch } from '@/lib/display-fetch';
 import CrossfadeBackground, { CROSSFADE_MS } from '../CrossfadeBackground';
 
-vi.mock('@/lib/display-fetch', () => ({ displayFetch: vi.fn() }));
+vi.mock('@/lib/display-fetch', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/display-fetch')>()),
+  displayFetch: vi.fn(),
+}));
 
 afterEach(() => {
   cleanup();

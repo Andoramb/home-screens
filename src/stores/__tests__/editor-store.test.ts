@@ -907,7 +907,7 @@ describe('editor store', () => {
   });
 
   describe('pickScreenBackground', () => {
-    const rotation = { enabled: true, source: 'unsplash' as const, query: 'nature', intervalMinutes: 60 };
+    const rotation = { sources: ['unsplash' as const], query: 'nature', intervalMinutes: 60 };
 
     it('sets the picture and turns that screen\'s rotation off', () => {
       const store = useEditorStore;
@@ -923,7 +923,7 @@ describe('editor store', () => {
 
       const [s1, s2] = store.getState().config!.screens;
       expect(s1.backgroundImage).toBe('/api/backgrounds/serve?file=unsplash-a.jpg');
-      expect(s1.backgroundRotation).toEqual({ ...rotation, enabled: false });
+      expect(s1.backgroundRotation).toEqual({ ...rotation, sources: [] });
       expect(s2.backgroundRotation).toEqual(rotation);
       expect(store.getState().isDirty).toBe(true);
     });

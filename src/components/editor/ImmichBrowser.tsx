@@ -7,7 +7,6 @@ import { useEditorStore } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
 import type { ImmichAlbumSummary } from '@/lib/immich';
-import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 import IntegrationSettingsLink from './IntegrationSettingsLink';
 
 interface Props {

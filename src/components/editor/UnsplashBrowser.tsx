@@ -2,8 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
-import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
-import { isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
+import { useEditorStore } from '@/stores/editor-store';
 import { useTranslate } from '@/i18n';
 import ImageSearchBrowser, { type BrowsePhoto, type CategoryDef, type SearchResult } from './ImageSearchBrowser';
 import IntegrationSettingsLink from './IntegrationSettingsLink';

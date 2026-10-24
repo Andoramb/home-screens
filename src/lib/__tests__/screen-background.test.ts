@@ -41,12 +41,13 @@ describe('pickedBackground', () => {
   it('turns rotation off and keeps its settings for next time', () => {
     expect(pickedBackground(rotating, PHOTO)).toEqual({
       backgroundImage: PHOTO,
-      backgroundRotation: { ...ROTATION, enabled: false },
+      // Stopping drops the legacy flag and empties `sources`; every other setting stays.
+      backgroundRotation: { query: 'nature landscape', intervalMinutes: 60, sources: [] },
     });
   });
 
   it('only sets the picture when rotation is off or was never set up', () => {
-    expect(pickedBackground({ backgroundRotation: { ...ROTATION, enabled: false } }, PHOTO)).toEqual({ backgroundImage: PHOTO });
+    expect(pickedBackground({ backgroundRotation: { ...ROTATION, sources: [] } }, PHOTO)).toEqual({ backgroundImage: PHOTO });
     expect(pickedBackground({}, PHOTO)).toEqual({ backgroundImage: PHOTO });
     expect(pickedBackground(undefined, PHOTO)).toEqual({ backgroundImage: PHOTO });
   });
