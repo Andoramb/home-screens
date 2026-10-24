@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useId } from 'react';
+import { useId } from 'react';
 import { Check, ChevronDown, ChevronRight } from 'lucide-react';
 import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
 import { useTranslate } from '@/i18n';
@@ -9,20 +9,11 @@ import {
   type StarterRotationBackground,
   type StarterRotationGroup,
 } from '@/lib/starter-backgrounds';
+import { useGroupOpen } from './useGroupOpen';
 import { isRotationActive } from '@/lib/screen-background';
 
 interface Props {
   selectedScreenId: string;
-}
-
-const GROUP_STORAGE_PREFIX = 'hs-background-group-';
-
-function readGroupOpen(id: string): boolean {
-  try {
-    return localStorage.getItem(GROUP_STORAGE_PREFIX + id) !== 'closed';
-  } catch {
-    return true;
-  }
 }
 
 /** Heading checkbox switches the group's tiles from "pick one" to "rotate through the selection". */
@@ -30,14 +21,9 @@ function StarterGroup({ id, title, count, checked, hint, onChange, children }: {
   id: StarterRotationGroup; title: string; count: string; checked: boolean; hint?: string;
   onChange: (checked: boolean) => void; children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useGroupOpen(id);
   const panelId = useId();
-  useEffect(() => { setOpen(readGroupOpen(id)); }, [id]);
-  const toggle = () => {
-    const next = !open;
-    setOpen(next);
-    try { localStorage.setItem(GROUP_STORAGE_PREFIX + id, next ? 'open' : 'closed'); } catch { /* private mode */ }
-  };
+  const toggle = () => setOpen(!open);
   const Chevron = open ? ChevronDown : ChevronRight;
   return (
     <div data-testid={`starter-source-${id}`} className="space-y-1.5">

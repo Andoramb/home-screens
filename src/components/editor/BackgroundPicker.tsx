@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useId, useRef } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
 import type { BackgroundRotationSourceId } from '@/types/config';
 import LocalBackgrounds from './LocalBackgrounds';
-import { Lock, RefreshCw } from 'lucide-react';
+import { ChevronDown, ChevronRight, Lock, RefreshCw } from 'lucide-react';
+import { useGroupOpen } from './useGroupOpen';
 import AccordionSection from './AccordionSection';
 import PropertyGroup from './PropertyGroup';
 import { useSecretStatus } from '@/hooks/useSecretStatus';
@@ -22,6 +23,42 @@ import ThemeBackgrounds from './ThemeBackgrounds';
 import UnsplashSearchPicker from './UnsplashSearchPicker';
 
 const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link)));
+
+/**
+ * One rotation source row: label + chevron header, then its inline settings.
+ * Collapse mirrors the Colors/Patterns groups (chevron button, aria-expanded,
+ * remembered per source in localStorage). Collapsing only hides the settings;
+ * it never touches the enabled state or saved config. Ticking a source
+ * re-expands it.
+ */
+function CollapsibleSource({ id, label, checked, hasBody, header, notes, children }: {
+  id: string; label: string; checked: boolean; hasBody: boolean;
+  header: (toggle: React.ReactNode) => React.ReactNode;
+  notes: React.ReactNode; children: React.ReactNode;
+}) {
+  const [open, setOpen] = useGroupOpen(id);
+  const panelId = useId();
+  const wasChecked = useRef(checked);
+  useEffect(() => {
+    if (checked && !wasChecked.current) setOpen(true);
+    wasChecked.current = checked;
+  }, [checked, setOpen]);
+  const Chevron = open ? ChevronDown : ChevronRight;
+  const toggle = hasBody ? (
+    <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={panelId}
+      data-testid={`source-group-${id}`} aria-label={label}
+      className="flex items-center rounded px-1 text-[10px] text-hs-text-muted hover:bg-hs-hover">
+      <Chevron size={11} aria-hidden="true" />
+    </button>
+  ) : null;
+  return (
+    <div data-testid={`source-row-${id}`}>
+      <div className="flex items-center gap-2">{header(toggle)}</div>
+      {notes}
+      {hasBody && open && <div id={panelId}>{children}</div>}
+    </div>
+  );
+}
 
 export default function BackgroundPicker() {
   const t = useTranslate('editor');
@@ -136,9 +173,11 @@ export default function BackgroundPicker() {
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
                     return (
-                      <div key={entry.id}>
+                      <CollapsibleSource key={entry.id} id={entry.id} hasBody={checked || (entry.id === 'icloud' && entry.locked)} checked={checked}
+                        label={entry.label}
+                        header={(toggle) => (<>
                         <label
-                          className={`flex items-center gap-2 ${entry.locked && !checked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                          className={`flex min-w-0 flex-1 items-center gap-2 ${entry.locked && !checked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
                           title={entry.locked ? t('backgroundPicker.sourceSetUpLink', { source: entry.label }) : undefined}
                         >
                           <input
@@ -153,6 +192,9 @@ export default function BackgroundPicker() {
                             {entry.label}
                           </span>
                         </label>
+                        {toggle}
+                        </>)}
+                        notes={<>
                         {entry.locked && entry.id !== 'icloud' && (
                           checked ? (
                             <span
@@ -175,7 +217,8 @@ export default function BackgroundPicker() {
                             </span>
                           )
                         )}
-                        {(checked || (entry.id === 'icloud' && entry.locked)) && (
+                        </>}
+                      >
                           <div className="mt-1.5 ml-5 space-y-2">
                             {entry.id === 'unsplash' && (
                               <>
@@ -279,8 +322,7 @@ export default function BackgroundPicker() {
                               />
                             )}
                           </div>
-                        )}
-                      </div>
+                      </CollapsibleSource>
                     );
                   })}
                 </div>

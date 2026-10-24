@@ -575,3 +575,41 @@ describe('BackgroundPicker — effects', () => {
     });
   });
 });
+
+describe('BackgroundPicker — per-source collapse', () => {
+  afterEach(() => { try { localStorage.clear(); } catch { /* ignore */ } });
+
+  it('collapses and expands every checked source without changing config', () => {
+    seedStore({ sources: ['unsplash', 'nasa-apod', 'local', 'icloud'], query: 'x', intervalMinutes: 60 } as never);
+    const { getByTestId, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const before = JSON.stringify(currentRotation());
+
+    for (const id of ['unsplash', 'nasa-apod', 'local', 'icloud']) {
+      const btn = getByTestId(`source-group-${id}`);
+      expect(btn.getAttribute('aria-expanded')).toBe('true');
+      const panel = document.getElementById(btn.getAttribute('aria-controls')!);
+      expect(panel).not.toBeNull();
+      fireEvent.click(btn);
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+      expect(document.getElementById(btn.getAttribute('aria-controls')!)).toBeNull();
+      const checkbox = within(getByTestId(`source-row-${id}`)).getAllByRole('checkbox')[0] as HTMLInputElement;
+      expect(checkbox.checked).toBe(true);
+    }
+    expect(JSON.stringify(currentRotation())).toBe(before);
+    fireEvent.click(getByTestId('source-group-nasa-apod'));
+    expect(getByTestId('source-group-nasa-apod').getAttribute('aria-expanded')).toBe('true');
+    expect(queryByTestId('source-group-immich')).toBeNull();
+  });
+
+  it('re-expands a collapsed source when it is ticked again', () => {
+    seedStore({ sources: ['nasa-apod'], query: 'x', intervalMinutes: 60 } as never);
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByTestId('source-group-nasa-apod'));
+    const checkbox = within(getByTestId('source-row-nasa-apod')).getAllByRole('checkbox')[0];
+    fireEvent.click(checkbox);
+    expect(currentRotation()?.sources).not.toContain('nasa-apod');
+    fireEvent.click(within(getByTestId('source-row-nasa-apod')).getAllByRole('checkbox')[0]);
+    expect(currentRotation()?.sources).toContain('nasa-apod');
+    expect(getByTestId('source-group-nasa-apod').getAttribute('aria-expanded')).toBe('true');
+  });
+});
