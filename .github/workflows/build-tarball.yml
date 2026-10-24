@@ -79,7 +79,12 @@ jobs:
           "
           node -p "'package.json version: ' + require('./package.json').version"
 
+      # HS_STANDALONE is what makes next.config.mjs emit .next/standalone;
+      # every other build of this tree (release.sh, a Pi, a laptop) serves
+      # with `next start` and never needs the copy.
       - run: npm run build
+        env:
+          HS_STANDALONE: '1'
 
       # Assemble standalone tarball
       - name: Assemble tarball
@@ -87,11 +92,6 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           BUILD_SHA: ${{ inputs.ref || github.sha }}
         run: |
-          cp -r public .next/standalone/public
-          cp -r .next/static .next/standalone/.next/static
-          cp -r scripts .next/standalone/scripts
-          cp .node-version .next/standalone/.node-version
-
           # Drop the trees the file tracer swept in but the server never
           # reads. Next decides what lands in .next/standalone by statically
           # analysing fs calls, and this app resolves data/, public/, scripts/
@@ -99,11 +99,14 @@ jobs:
           # tracer cannot fold at build time becomes a wildcard under the
           # project root, so whole trees ride along: on 2026-09-10 that was
           # website/, docs/, e2e/ and all of src/, 20MB compressed, and the
-          # nightly died on the size gate below. next.config.mjs's
-          # outputFileTracingExcludes cannot do this job because Next skips
-          # collect-build-traces entirely for Turbopack builds. Everything
-          # removed here is either dev-only or copied in explicitly above.
-          rm -rf .next/standalone/{website,docs,e2e,RELEASE_NOTES,infrastructure,image-creation}
+          # nightly died on the size gate below; on 2026-10-23 the checkout's
+          # .git and data/ were in the nightly, and public/ and scripts/ were
+          # in it twice because the copies below had landed inside the swept
+          # copies. next.config.mjs's outputFileTracingExcludes cannot do this
+          # job because Next skips collect-build-traces entirely for Turbopack
+          # builds. Everything removed here is dev-only, state the device
+          # owns, or copied in explicitly right after.
+          rm -rf .next/standalone/{.git,data,mockups,public,scripts,website,docs,e2e,RELEASE_NOTES,infrastructure,image-creation}
           if [ -d .next/standalone/src ]; then
             find .next/standalone/src -mindepth 1 -maxdepth 1 ! -name translations -exec rm -rf {} +
           fi
@@ -113,6 +116,11 @@ jobs:
             echo "::error::Pruned too much: src/translations is missing from the standalone output"
             exit 1
           fi
+
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+          cp -r scripts .next/standalone/scripts
+          cp .node-version .next/standalone/.node-version
 
           # Bundle the config-check CLI so `npm run config:check` works on
           # installs with no dev dependencies or src/ tree. The launcher
@@ -179,6 +187,15 @@ jobs:
           cat .next/standalone/build-info.json
 
           tar -czf "home-screens-${VERSION}.tar.gz" -C .next/standalone .
+
+          # The prune above is a list, and the tracer's sweep is not, so
+          # check the result rather than trust the list: nothing from the
+          # checkout's history or state, and no tree shipped twice.
+          if tar -tzf "home-screens-${VERSION}.tar.gz" | grep -Eq '^\./(\.git|mockups)/|^\./data/.|^\./public/public/|^\./scripts/scripts/'; then
+            echo "::error::Tarball carries a swept tree or a nested copy:"
+            tar -tzf "home-screens-${VERSION}.tar.gz" | grep -E '^\./(\.git|mockups)/|^\./data/.|^\./public/public/|^\./scripts/scripts/' | head -20
+            exit 1
+          fi
 
       # Generate SHA-256 sidecar for artifact integrity verification.
       # install.sh and upgrade.sh download this alongside the tarball and

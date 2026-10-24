@@ -7,7 +7,15 @@ const projectRoot = dirname(fileURLToPath(import.meta.url));
 
 /** @type {import("next").NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // Standalone output only where something ships it: the tarball workflow
+  // and the Dockerfile set HS_STANDALONE=1. Everywhere else (release.sh,
+  // deploy.sh, the git-path upgrade and start-display.sh on a Pi, a plain
+  // `npm run build`) the tree is served with `next start`, and the
+  // standalone copy was pure cost: Turbopack's tracer cannot fold the
+  // cwd-derived data and public roots, so it swept the whole project root
+  // into .next/standalone, the live data/ with secrets.json and OAuth
+  // tokens and every family photo included.
+  output: process.env.HS_STANDALONE === '1' ? 'standalone' : undefined,
   // `next dev` otherwise appends a block of AI-agent rules to CLAUDE.md on
   // every start, dirtying the file that carries this project's own guidance.
   agentRules: false,

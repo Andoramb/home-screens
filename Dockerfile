@@ -11,6 +11,9 @@ ARG NODE_VERSION=22
 FROM node:${NODE_VERSION}-bookworm-slim AS build
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# next.config.mjs emits the standalone runtime only when asked, so that a
+# build on a Pi or a laptop never copies the live data/ into .next/standalone.
+ENV HS_STANDALONE=1
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends ca-certificates \
