@@ -598,7 +598,29 @@ describe('BackgroundPicker — per-source collapse', () => {
     expect(JSON.stringify(currentRotation())).toBe(before);
     fireEvent.click(getByTestId('source-group-nasa-apod'));
     expect(getByTestId('source-group-nasa-apod').getAttribute('aria-expanded')).toBe('true');
-    expect(queryByTestId('source-group-immich')).toBeNull();
+    expect(queryByTestId('source-group-immich')).not.toBeNull();
+  });
+
+  it('keeps a working chevron on unselected and unconfigured sources, with the setup hint inside the panel and a tooltip', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never);
+    const { getByTestId, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const before = JSON.stringify(currentRotation());
+    for (const id of ['unsplash', 'nasa-apod', 'immich', 'icloud', 'local']) {
+      const btn = getByTestId(`source-group-${id}`);
+      expect(btn.getAttribute('aria-expanded')).toBe('true');
+      fireEvent.click(btn);
+      expect(btn.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.click(btn);
+      expect(btn.getAttribute('aria-expanded')).toBe('true');
+    }
+    expect(getByTestId('source-group-nasa-apod').getAttribute('title')).toContain(enUSEditor.backgroundPicker.sourceNotSetUp);
+    expect(getByTestId('source-group-icloud').getAttribute('title')).toBe(enUSEditor.backgroundPicker.icloud.needsLink);
+    expect(getByTestId('source-group-local').getAttribute('title')).toBeNull();
+    fireEvent.click(getByTestId('source-group-nasa-apod'));
+    expect(queryByTestId('background-source-not-set-up-nasa-apod')).toBeNull();
+    fireEvent.click(getByTestId('source-group-nasa-apod'));
+    expect(getByTestId('background-source-not-set-up-nasa-apod')).not.toBeNull();
+    expect(JSON.stringify(currentRotation())).toBe(before);
   });
 
   it('re-expands a collapsed source when it is ticked again', () => {

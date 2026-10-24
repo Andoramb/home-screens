@@ -28,11 +28,12 @@ const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumU
  * One rotation source row: label + chevron header, then its inline settings.
  * Collapse mirrors the Colors/Patterns groups (chevron button, aria-expanded,
  * remembered per source in localStorage). Collapsing only hides the settings;
- * it never touches the enabled state or saved config. Ticking a source
- * re-expands it.
+ * it never touches the enabled state or saved config. The chevron is always
+ * shown, even for unselected or unconfigured sources (notes, such as the
+ * setup hint, live inside the collapsible panel). Ticking a source re-expands it.
  */
-function CollapsibleSource({ id, label, checked, hasBody, header, notes, children }: {
-  id: string; label: string; checked: boolean; hasBody: boolean;
+function CollapsibleSource({ id, label, checked, tooltip, header, notes, children }: {
+  id: string; label: string; checked: boolean; tooltip?: string;
   header: (toggle: React.ReactNode) => React.ReactNode;
   notes: React.ReactNode; children: React.ReactNode;
 }) {
@@ -44,18 +45,17 @@ function CollapsibleSource({ id, label, checked, hasBody, header, notes, childre
     wasChecked.current = checked;
   }, [checked, setOpen]);
   const Chevron = open ? ChevronDown : ChevronRight;
-  const toggle = hasBody ? (
+  const toggle = (
     <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls={panelId}
-      data-testid={`source-group-${id}`} aria-label={label}
+      data-testid={`source-group-${id}`} aria-label={label} title={tooltip}
       className="flex items-center rounded px-1 text-[10px] text-hs-text-muted hover:bg-hs-hover">
       <Chevron size={11} aria-hidden="true" />
     </button>
-  ) : null;
+  );
   return (
     <div data-testid={`source-row-${id}`}>
       <div className="flex items-center gap-2">{header(toggle)}</div>
-      {notes}
-      {hasBody && open && <div id={panelId}>{children}</div>}
+      {open && <div id={panelId}>{notes}{children}</div>}
     </div>
   );
 }
@@ -173,7 +173,8 @@ export default function BackgroundPicker() {
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
                     return (
-                      <CollapsibleSource key={entry.id} id={entry.id} hasBody={checked || (entry.id === 'icloud' && entry.locked)} checked={checked}
+                      <CollapsibleSource key={entry.id} id={entry.id} checked={checked}
+                        tooltip={entry.locked ? (entry.id === 'icloud' ? t('backgroundPicker.icloud.needsLink') : `${t('backgroundPicker.sourceNotSetUp')} ${t('backgroundPicker.sourceSetUpLink', { source: entry.label })}`) : undefined}
                         label={entry.label}
                         header={(toggle) => (<>
                         <label
@@ -219,7 +220,7 @@ export default function BackgroundPicker() {
                         )}
                         </>}
                       >
-                          <div className="mt-1.5 ml-5 space-y-2">
+                          {(checked || (entry.id === 'icloud' && entry.locked)) && <div className="mt-1.5 ml-5 space-y-2">
                             {entry.id === 'unsplash' && (
                               <>
                                 <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
@@ -321,7 +322,7 @@ export default function BackgroundPicker() {
                                 }}
                               />
                             )}
-                          </div>
+                          </div>}
                       </CollapsibleSource>
                     );
                   })}
