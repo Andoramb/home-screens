@@ -86,9 +86,7 @@ export default function UnsplashSearchPicker({ rotation, onChange }: {
         onSearchSubmit={(query) => onChange({ query })}
         onSearch={search}
         onUsePhoto={toggle}
-        attribution={t('imageBrowsers.unsplash.attribution')}
         searchPlaceholder={t('imageBrowsers.unsplash.searchPlaceholder')}
-        beforeGrid={<p className="text-[10px] leading-relaxed text-hs-text-faint">{t('backgroundPicker.unsplash.pickHint')}</p>}
       />
     </div>
   );

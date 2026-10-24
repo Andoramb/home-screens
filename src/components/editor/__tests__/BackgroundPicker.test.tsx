@@ -452,6 +452,33 @@ describe('BackgroundPicker — Local library', () => {
     expect(getByText(enUSEditor.backgroundPicker.local.upload)).not.toBeNull();
   });
 
+  it('lists Pictures before Folder, with 2-column portrait tiles on a portrait display', async () => {
+    stubLibrary();
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });
+    const portraitCfg = useEditorStore.getState().config!;
+    useEditorStore.setState({ config: { ...portraitCfg, settings: { ...portraitCfg.settings, displayTransform: '90' } } });
+    const { getByTestId, findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const pictures = getByTestId('local-mode-images');
+    const folder = getByTestId('local-mode-folder');
+    expect(pictures.compareDocumentPosition(folder) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const tiles = await findAllByTestId('local-picture');
+    const grid = tiles[0].parentElement!;
+    expect(grid.className).toContain('grid-cols-2');
+    expect(grid.className).toContain('gap-2');
+    expect(grid.className).toContain('max-h-[400px]');
+    expect(tiles[0].className).toContain('aspect-[9/16]');
+  });
+
+  it('uses landscape tiles on a landscape display', async () => {
+    stubLibrary();
+    seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });
+    const cfg = useEditorStore.getState().config!;
+    useEditorStore.setState({ config: { ...cfg, settings: { ...cfg.settings, displayWidth: 1920, displayHeight: 1080, displayTransform: 'normal' } } });
+    const { findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const tiles = await findAllByTestId('local-picture');
+    expect(tiles[0].className).toContain('aspect-video');
+  });
+
   it('tapping pictures adds and removes them, like the color walls', async () => {
     stubLibrary();
     seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });

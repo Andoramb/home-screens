@@ -29,7 +29,7 @@ interface ImageSearchBrowserProps {
   categories: CategoryDef[];
   onSearch: (query: string, page: number) => Promise<SearchResult>;
   onUsePhoto: (photo: BrowsePhoto) => Promise<void>;
-  attribution: string;
+  attribution?: string;
   searchPlaceholder?: string;
   /** Content rendered before the category pills (e.g. mode toggle) */
   headerSlot?: React.ReactNode;
@@ -248,9 +248,11 @@ export default function ImageSearchBrowser({
 
       {!pagerAbove && pager}
 
-      <p className="text-[9px] text-hs-text-faint text-center">
-        {attribution}
-      </p>
+      {attribution && (
+        <p className="text-[9px] text-hs-text-faint text-center">
+          {attribution}
+        </p>
+      )}
     </div>
   );
 }

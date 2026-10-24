@@ -10,6 +10,7 @@ import { tileThumbnailUrl } from '@/lib/media-paths';
 import { localImageFileOf } from '@/lib/local-images';
 import AccordionSection from './AccordionSection';
 import { useTranslate } from '@/i18n';
+import { useEditorStore, getActiveDimensions } from '@/stores/editor-store';
 
 interface ImmichAlbumOption { id: string; name: string; assetCount: number }
 interface ImmichPersonOption { id: string; name: string }
@@ -152,6 +153,9 @@ function LocalPicturesFields({ chosen, onChange }: {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const { config, selectedDisplayId } = useEditorStore();
+  const dims = config ? getActiveDimensions(config, selectedDisplayId) : null;
+  const tileAspect = dims && dims.width > dims.height ? 'aspect-video' : 'aspect-[9/16]';
 
   useEffect(() => {
     let cancelled = false;
@@ -202,7 +206,7 @@ function LocalPicturesFields({ chosen, onChange }: {
         <p className="text-[10px] text-hs-text-faint">{t('backgroundPicker.local.noPictures')}</p>
       )}
       {library && library.length > 0 && (
-        <div className="grid grid-cols-3 gap-1.5 max-h-72 overflow-y-auto">
+        <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
           {library.map((url) => {
             const marked = chosenFiles.has(localImageFileOf(url));
             return (
@@ -213,7 +217,7 @@ function LocalPicturesFields({ chosen, onChange }: {
                 aria-label={t('backgroundPicker.local.picturePick', { name: decodeURIComponent(localImageFileOf(url)) })}
                 data-testid="local-picture"
                 onClick={() => toggle(url)}
-                className={`relative aspect-square overflow-hidden rounded border ${marked ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
+                className={`relative ${tileAspect} overflow-hidden rounded border ${marked ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
               >
                 <img src={tileThumbnailUrl(url)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
                 {marked && (
@@ -246,8 +250,8 @@ export function LocalRotationFields({ rotation, onChange }: {
     <div className="space-y-2">
       <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
         {([
-          { id: 'folder' as const, label: t('backgroundPicker.local.modeFolder') },
           { id: 'images' as const, label: t('backgroundPicker.local.modePictures') },
+          { id: 'folder' as const, label: t('backgroundPicker.local.modeFolder') },
         ]).map((entry) => (
           <button
             key={entry.id}

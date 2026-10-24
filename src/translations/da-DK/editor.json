@@ -2527,7 +2527,6 @@
     "unsplash": {
       "modeQuery": "Søg",
       "modeCollections": "Samlinger",
-      "pickHint": "Vælg ét eller flere fotos. Ét vises som fast baggrund; flere roterer. Uden valgte fotos viser rotationen tilfældige fotos til denne søgning.",
       "collectionPlaceholder": "Samlings-ID eller unsplash.com/collections/... link",
       "addCollection": "Tilføj samling",
       "removeCollection": "Fjern samling",

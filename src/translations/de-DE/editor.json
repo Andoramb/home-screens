@@ -2527,7 +2527,6 @@
     "unsplash": {
       "modeQuery": "Suche",
       "modeCollections": "Sammlungen",
-      "pickHint": "Wähle ein oder mehrere Fotos. Eines wird als fester Hintergrund gezeigt, mehrere wechseln sich ab. Ohne Auswahl zeigt die Rotation zufällige Fotos zu dieser Suche.",
       "collectionPlaceholder": "Sammlungs-ID oder unsplash.com/collections/...-Link",
       "addCollection": "Sammlung hinzufügen",
       "removeCollection": "Sammlung entfernen",

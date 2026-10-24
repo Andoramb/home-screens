@@ -2527,7 +2527,6 @@
     "unsplash": {
       "modeQuery": "Zoeken",
       "modeCollections": "Collecties",
-      "pickHint": "Kies één of meer foto's. Eén geeft een vaste achtergrond; meerdere wisselen af. Zonder keuze toont de rotatie willekeurige foto's voor deze zoekopdracht.",
       "collectionPlaceholder": "Collectie-ID of unsplash.com/collections/...-link",
       "addCollection": "Collectie toevoegen",
       "removeCollection": "Collectie verwijderen",
