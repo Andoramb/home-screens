@@ -345,6 +345,88 @@ describe('BackgroundPicker — unified Sources', () => {
   });
 });
 
+describe('BackgroundPicker — Unsplash search picker', () => {
+  const PHOTOS = Array.from({ length: 8 }, (_, i) => ({
+    id: `p${i}`, description: `Photo ${i}`, thumb: `/t${i}.jpg`, regular: `https://images.example/p${i}.jpg`,
+    authorName: `Author ${i}`, downloadUrl: `https://api.unsplash.com/photos/p${i}/download`,
+  }));
+  let calls: Array<{ url: string; init?: RequestInit }> = [];
+
+  function stubUnsplash() {
+    calls = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      if (init?.method === 'HEAD') return new Response(null, { status: 200 });
+      if (url.startsWith('/api/unsplash') && init?.method === 'POST') {
+        const { filename } = JSON.parse(String(init.body));
+        return new Response(JSON.stringify({ path: `/api/backgrounds/serve?file=${filename}.jpg` }), { status: 201 });
+      }
+      if (url.startsWith('/api/unsplash')) return new Response(JSON.stringify({ photos: PHOTOS, totalPages: 3, total: 24 }));
+      return new Response('[]');
+    }));
+  }
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  const seed = (extra: object = {}) => seedStore({ sources: ['unsplash'], query: 'mountains', intervalMinutes: 60, unsplashMode: 'query', ...extra } as never);
+
+  it('calls the mode Search, searches the saved term, and shows eight results with the pager above them', async () => {
+    stubUnsplash();
+    seed();
+    const { findAllByTestId, getAllByText, container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(enUSEditor.backgroundPicker.unsplash.modeQuery).toBe('Search');
+    expect(getAllByText('Search')[0].closest('.grid-cols-2')?.textContent).toContain(enUSEditor.backgroundPicker.unsplash.modeCollections);
+    const tiles = await findAllByTestId('search-photo');
+    expect(tiles).toHaveLength(8);
+    const search = calls.find((c) => c.url.startsWith('/api/unsplash?'))!;
+    expect(search.url).toContain('query=mountains');
+    expect(search.url).toContain('per_page=8');
+    const picker = container.querySelector('[data-testid="unsplash-search-picker"]')!;
+    const pager = within(picker as HTMLElement).getByText(/Page 1 of 3/);
+    expect(pager.compareDocumentPosition(tiles[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(picker as HTMLElement).queryByRole('button', { name: 'Nature' })).toBeNull();
+  });
+
+  it('picks save a hidden copy once and add it to the screen; tapping again just unchooses it', async () => {
+    stubUnsplash();
+    seed();
+    const { findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const tiles = await findAllByTestId('search-photo');
+    fireEvent.click(tiles[2]);
+    await waitFor(() => expect(currentRotation()?.unsplashImages).toEqual(['/api/backgrounds/serve?file=rotation-unsplash-pick-p2.jpg']));
+    const post = calls.find((c) => c.init?.method === 'POST')!;
+    expect(JSON.parse(String(post.init!.body))).toMatchObject({ filename: 'rotation-unsplash-pick-p2', imageUrl: PHOTOS[2].regular });
+    await waitFor(async () => expect((await findAllByTestId('search-photo'))[2].getAttribute('aria-pressed')).toBe('true'));
+
+    fireEvent.click(tiles[5]);
+    await waitFor(() => expect(currentRotation()?.unsplashImages).toHaveLength(2));
+
+    const postsBefore = calls.filter((c) => c.init?.method === 'POST').length;
+    fireEvent.click(tiles[2]);
+    await waitFor(() => expect(currentRotation()?.unsplashImages).toEqual(['/api/backgrounds/serve?file=rotation-unsplash-pick-p5.jpg']));
+    expect(calls.filter((c) => c.init?.method === 'POST')).toHaveLength(postsBefore);
+  });
+
+  it('a submitted search is remembered as the rotation term', async () => {
+    stubUnsplash();
+    seed();
+    const { findAllByTestId, getByPlaceholderText, container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    await findAllByTestId('search-photo');
+    const input = getByPlaceholderText(enUSEditor.imageBrowsers.unsplash.searchPlaceholder);
+    fireEvent.change(input, { target: { value: 'ocean waves' } });
+    fireEvent.click(within(container.querySelector('[data-testid="unsplash-search-picker"]') as HTMLElement).getByRole('button', { name: enUSEditor.imageBrowsers.search.searchButton }));
+    expect(currentRotation()?.query).toBe('ocean waves');
+    await waitFor(() => expect(calls.some((c) => c.url.includes('query=ocean%20waves'))).toBe(true));
+  });
+
+  it('Collections mode keeps its own fields and shows no search grid', () => {
+    stubUnsplash();
+    seed({ unsplashMode: 'collections', unsplashCollections: [''] });
+    const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(container.querySelector('[data-testid="unsplash-search-picker"]')).toBeNull();
+    expect(container.querySelector('input[placeholder*="ollection"]')).not.toBeNull();
+  });
+});
+
 describe('BackgroundPicker — Local library', () => {
   const LIBRARY = ['/api/backgrounds/serve?file=a.jpg', '/api/backgrounds/serve?file=b.jpg'];
 

@@ -2,6 +2,7 @@ import { getUnsplashAccessKey, trackDownload } from '@/lib/unsplash';
 import { fetchWithTimeout } from '@/lib/api-utils';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
 import { saveRotationFile } from './save';
+import { existingChosenFiles } from './local';
 import type { BackgroundRotation } from '@/types/config';
 import type { BackgroundSourceProvider, Canvas } from './types';
 
@@ -47,7 +48,16 @@ async function fetchAndSavePhoto(rotation: BackgroundRotation, canvas: Canvas | 
   return saveRotationFile(`rotation-unsplash-${photoId}.jpg`, buffer);
 }
 
+/** A photo picked by hand wins; with none picked, Search mode keeps drawing random photos for its query. */
+async function pickOrFetch(rotation: BackgroundRotation, canvas: Canvas | undefined): Promise<string | null> {
+  if (!isUnsplashCollectionsMode(rotation)) {
+    const picked = await existingChosenFiles(rotation.unsplashImages);
+    if (picked.length) return `/api/backgrounds/serve?file=${encodeURIComponent(picked[Math.floor(Math.random() * picked.length)])}`;
+  }
+  return fetchAndSavePhoto(rotation, canvas);
+}
+
 export const unsplashSourceProvider: BackgroundSourceProvider = {
   id: 'unsplash',
-  fetchRandom: fetchAndSavePhoto,
+  fetchRandom: pickOrFetch,
 };

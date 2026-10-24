@@ -184,6 +184,31 @@ describe('GET /api/backgrounds/rotate — multi-source selection', () => {
     expect(await (await GET(rotateReq())).json()).toEqual({ path: '/starter-backgrounds/ocean.svg' });
   });
 
+  it('Unsplash Search mode shows only the photos picked by hand, and re-picks when the choice changes', async () => {
+    const a = '/api/backgrounds/serve?file=rotation-unsplash-pick-a.jpg';
+    const b = '/api/backgrounds/serve?file=rotation-unsplash-pick-b.jpg';
+    fsMock.stat.mockResolvedValue({ isFile: () => true });
+    const base = { sources: ['unsplash'], query: 'mountains', intervalMinutes: 60, unsplashMode: 'query' } as const;
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...base, unsplashImages: [a] } as never }));
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: a, fresh: true });
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: a, fresh: false });
+
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...base, unsplashImages: [b] } as never }));
+    expect(await (await GET(rotateReq())).json()).toEqual({ path: b, fresh: true });
+  });
+
+  it('Unsplash Collections mode ignores any leftover Search picks', async () => {
+    fsMock.stat.mockResolvedValue({ isFile: () => true });
+    mockUnsplashKey.mockResolvedValue('key');
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
+      sources: ['unsplash'], query: '', intervalMinutes: 60, unsplashMode: 'collections', unsplashCollections: ['c1'],
+      unsplashImages: ['/api/backgrounds/serve?file=rotation-unsplash-pick-a.jpg'],
+    } as never }));
+    vi.mocked(fetchWithTimeout).mockResolvedValue({ ok: false } as never);
+    const body = await (await GET(rotateReq())).json();
+    expect(body.path ?? null).not.toBe('/api/backgrounds/serve?file=rotation-unsplash-pick-a.jpg');
+  });
+
   it('skips invalid starter subsets and still rotates from a valid legacy source', async () => {
     mockFindScreen.mockReturnValue(screen({ backgroundRotation: {
       sources: ['pattern', 'local', 'bogus'], query: '', intervalMinutes: 60,

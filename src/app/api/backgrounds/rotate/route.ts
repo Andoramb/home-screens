@@ -1,57 +1,19 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { promises as fs } from 'fs';
-import path from 'path';
 import { readConfig } from '@/lib/config';
-import { BACKGROUNDS_DIR, DEFAULT_DISPLAY_HEIGHT, DEFAULT_DISPLAY_WIDTH } from '@/lib/constants';
-import { removeThumbnails } from '@/lib/thumbnails';
+import { DEFAULT_DISPLAY_HEIGHT, DEFAULT_DISPLAY_WIDTH } from '@/lib/constants';
+import { pruneRotationFiles } from '@/lib/background-rotation-prune';
 import { withDisplayAuth } from '@/lib/api-utils';
 import { findScreenById, findDisplayForScreen } from '@/lib/display-filter';
 import { backgroundSourceProviders, isSourceConfigured } from '@/lib/background-sources';
 import {
-  ROTATION_FILE_RE,
-  referencedRotationFiles,
   rotationCacheStore as cacheStore,
-  type BackgroundCache,
   type RotationCacheEntry,
 } from '@/lib/background-rotation-cache';
 import type { BackgroundRotation, BackgroundRotationSourceId, ScreenConfiguration } from '@/types/config';
 import { isRotationActive } from '@/lib/screen-background';
 
 export const dynamic = 'force-dynamic';
-
-const BGS = path.join(process.cwd(), BACKGROUNDS_DIR);
-
-/** Unreferenced rotation files kept as a grace buffer, newest first, so a
- *  display still showing the previous background doesn't lose it mid-swap. */
-const PRUNE_KEEP_RECENT = 8;
-
-/** Prune unreferenced rotation files, retaining a small grace buffer. */
-async function pruneRotationFiles(cache: BackgroundCache): Promise<void> {
-  const referenced = referencedRotationFiles(cache);
-
-  let entries;
-  try {
-    entries = await fs.readdir(BGS, { withFileTypes: true });
-  } catch {
-    return;
-  }
-
-  const candidates: Array<{ name: string; mtimeMs: number }> = [];
-  for (const dirent of entries) {
-    if (!dirent.isFile() || !ROTATION_FILE_RE.test(dirent.name) || referenced.has(dirent.name)) continue;
-    try {
-      candidates.push({ name: dirent.name, mtimeMs: (await fs.stat(path.join(BGS, dirent.name))).mtimeMs });
-    } catch { /* raced deletion */ }
-  }
-
-  candidates.sort((a, b) => b.mtimeMs - a.mtimeMs);
-  for (const { name } of candidates.slice(PRUNE_KEEP_RECENT)) {
-    await fs.unlink(path.join(BGS, name)).catch(() => { /* best effort */ });
-    // The wall asked for a copy sized to its screen; it goes with the file.
-    await removeThumbnails(name);
-  }
-}
 
 /** Preserve declared dimensions; orientation normalization would flip portrait canvases. */
 function canvasOf(config: ScreenConfiguration, screenId: string): { w: number; h: number } {
@@ -127,6 +89,9 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     : undefined;
   const unsplashModeKey = rotation.sources.includes('unsplash') ? (rotation.unsplashMode || '') : undefined;
   const starterSelections = starterSelectionKey(rotation);
+  const unsplashPicks = rotation.sources.includes('unsplash') && !unsplashCollectionsKey
+    ? JSON.stringify([...new Set(rotation.unsplashImages ?? [])].sort())
+    : undefined;
 
   // A source/config change invalidates the cached result before its interval ends.
   if (
@@ -142,6 +107,7 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
     entry.unsplashCollections === unsplashCollectionsKey &&
     entry.unsplashMode === unsplashModeKey &&
     entry.starterSelections === starterSelections &&
+    entry.unsplashPicks === unsplashPicks &&
     now - entry.fetchedAt < intervalMs
   ) {
     return NextResponse.json({ path: entry.path, fresh: false });
@@ -166,9 +132,10 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
         unsplashCollections: unsplashCollectionsKey,
         unsplashMode: unsplashModeKey,
         starterSelections,
+        unsplashPicks,
       };
       const merged = await cacheStore.updateAtomic((current) => ({ ...current, [screenId]: newEntry }));
-      await pruneRotationFiles(merged);
+      await pruneRotationFiles(merged, config);
       return NextResponse.json({ path: newPath, fresh: true });
     }
   } catch {

@@ -19,6 +19,7 @@ import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } 
 import BackgroundShadeFields from './BackgroundShadeFields';
 import BackgroundEffectsFields from './BackgroundEffectsFields';
 import ThemeBackgrounds from './ThemeBackgrounds';
+import UnsplashSearchPicker from './UnsplashSearchPicker';
 
 const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link)));
 
@@ -216,19 +217,13 @@ export default function BackgroundPicker() {
                                     }}
                                   />
                                 ) : (
-                                  <label className="block">
-                                    <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.searchQueryLabel')}</span>
-                                    <input
-                                      type="text"
-                                      value={currentScreen.backgroundRotation!.query}
-                                      onChange={(e) => {
-                                        if (!selectedScreenId) return;
-                                        updateScreenRotation(selectedScreenId, { query: e.target.value });
-                                      }}
-                                      placeholder={t('backgroundPicker.searchQueryPlaceholder')}
-                                      className={rotationFieldClass}
-                                    />
-                                  </label>
+                                  <UnsplashSearchPicker
+                                    rotation={currentScreen.backgroundRotation!}
+                                    onChange={(updates) => {
+                                      if (!selectedScreenId) return;
+                                      updateScreenRotation(selectedScreenId, updates);
+                                    }}
+                                  />
                                 )}
                               </>
                             )}

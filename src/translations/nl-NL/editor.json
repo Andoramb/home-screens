@@ -2476,8 +2476,6 @@
     "sourcesGroup": "Bronnen",
     "refreshNow": "Nu vernieuwen",
     "sourceLabel": "Bron",
-    "searchQueryLabel": "Zoekopdracht",
-    "searchQueryPlaceholder": "natuurlandschap",
     "rotateEveryLabel": "Wisselen elke",
     "nasaInfo": "NASA publiceert elke dag één nieuw astronomiebeeld. Het display controleert op het gekozen interval op updates.",
     "sources": {
@@ -2527,8 +2525,9 @@
       "needsLink": "Vergrendeld totdat je een geldige link naar een gedeeld album plakt."
     },
     "unsplash": {
-      "modeQuery": "Zoekopdracht",
+      "modeQuery": "Zoeken",
       "modeCollections": "Collecties",
+      "pickHint": "Kies één of meer foto's. Eén geeft een vaste achtergrond; meerdere wisselen af. Zonder keuze toont de rotatie willekeurige foto's voor deze zoekopdracht.",
       "collectionPlaceholder": "Collectie-ID of unsplash.com/collections/...-link",
       "addCollection": "Collectie toevoegen",
       "removeCollection": "Collectie verwijderen",

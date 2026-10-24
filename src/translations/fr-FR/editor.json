@@ -2476,8 +2476,6 @@
     "sourcesGroup": "Sources",
     "refreshNow": "Actualiser maintenant",
     "sourceLabel": "Source",
-    "searchQueryLabel": "Requête de recherche",
-    "searchQueryPlaceholder": "paysage nature",
     "rotateEveryLabel": "Tourner toutes les",
     "nasaInfo": "La NASA publie une nouvelle image astronomique par jour. L'affichage vérifiera les mises à jour à l'intervalle choisi.",
     "sources": {
@@ -2529,6 +2527,7 @@
     "unsplash": {
       "modeQuery": "Recherche",
       "modeCollections": "Collections",
+      "pickHint": "Choisissez une ou plusieurs photos. Une seule donne un fond fixe ; plusieurs tournent. Sans choix, la rotation affiche des photos au hasard pour cette recherche.",
       "collectionPlaceholder": "ID de collection ou lien unsplash.com/collections/...",
       "addCollection": "Ajouter une collection",
       "removeCollection": "Retirer la collection",

@@ -372,6 +372,8 @@ export interface BackgroundRotation {
   icloudAlbumUrl?: string;
   /** Local media library folder to rotate through, relative to the library root */
   localFolder?: string;
+  /** Serve URLs of Unsplash photos picked in Search mode; saved as hidden rotation files that live only while chosen. */
+  unsplashImages?: string[];
   /** Local library source: rotate a folder (default) or show chosen pictures. */
   localMode?: 'folder' | 'images';
   /** Serve URLs of the library pictures chosen in `images` mode. None chosen means nothing to show. */

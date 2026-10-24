@@ -79,6 +79,12 @@ describe('buildRotationKey', () => {
     expect(a).not.toBe(c);
   });
 
+  it('changes when the picked Unsplash photos change', () => {
+    const a = buildRotationKey([screen('s1', { sources: ['unsplash'], unsplashImages: ['/api/backgrounds/serve?file=rotation-unsplash-pick-a.jpg'] })]);
+    const b = buildRotationKey([screen('s1', { sources: ['unsplash'], unsplashImages: ['/api/backgrounds/serve?file=rotation-unsplash-pick-b.jpg'] })]);
+    expect(a).not.toBe(b);
+  });
+
   it('changes when icloudAlbumUrl changes', () => {
     const a = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#AAA111' })]);
     const b = buildRotationKey([screen('s1', { sources: ['icloud'], icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#BBB222' })]);

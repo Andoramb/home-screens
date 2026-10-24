@@ -2476,8 +2476,6 @@
     "sourcesGroup": "Kilder",
     "refreshNow": "Opdater nu",
     "sourceLabel": "Kilde",
-    "searchQueryLabel": "Søgeord",
-    "searchQueryPlaceholder": "natur landskab",
     "rotateEveryLabel": "Skift hver",
     "nasaInfo": "NASA udgiver ét nyt astronomibillede om dagen. Skærmen tjekker for nye billeder med det valgte interval.",
     "sources": {
@@ -2527,8 +2525,9 @@
       "needsLink": "Låst, indtil du indsætter et gyldigt link til et delt album."
     },
     "unsplash": {
-      "modeQuery": "Søgeord",
+      "modeQuery": "Søg",
       "modeCollections": "Samlinger",
+      "pickHint": "Vælg ét eller flere fotos. Ét vises som fast baggrund; flere roterer. Uden valgte fotos viser rotationen tilfældige fotos til denne søgning.",
       "collectionPlaceholder": "Samlings-ID eller unsplash.com/collections/... link",
       "addCollection": "Tilføj samling",
       "removeCollection": "Fjern samling",

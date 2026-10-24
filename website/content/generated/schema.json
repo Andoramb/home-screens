@@ -8410,6 +8410,15 @@
           "description": "Local media library folder to rotate through, relative to the library root"
         },
         {
+          "name": "unsplashImages",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Serve URLs of Unsplash photos picked in Search mode; saved as hidden rotation files that live only while chosen."
+        },
+        {
           "name": "localMode",
           "optional": true,
           "type": {

@@ -50,6 +50,14 @@ describe('source readiness', () => {
     expect(isSourceConfigured('icloud', { ...base, icloudAlbumUrl: 'https://www.icloud.com/sharedalbum/#B0aGdXWuDG1PYBr' })).toBe(true);
   });
 
+  it('Unsplash Search mode is ready with a query or with picked photos, Collections mode only with collections', () => {
+    expect(isSourceConfigured('unsplash', base)).toBe(false);
+    expect(isSourceConfigured('unsplash', { ...base, query: 'space' })).toBe(true);
+    expect(isSourceConfigured('unsplash', { ...base, unsplashImages: ['/api/backgrounds/serve?file=rotation-unsplash-pick-a.jpg'] })).toBe(true);
+    expect(isSourceConfigured('unsplash', { ...base, unsplashMode: 'collections', query: 'space' })).toBe(false);
+    expect(isSourceConfigured('unsplash', { ...base, unsplashMode: 'collections', unsplashCollections: ['c1'] })).toBe(true);
+  });
+
   it('local is ready as a folder by default and in pictures mode only once pictures are chosen', () => {
     expect(isSourceConfigured('local', base)).toBe(true);
     expect(isSourceConfigured('local', { ...base, localMode: 'images' })).toBe(false);

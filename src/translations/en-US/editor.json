@@ -2487,8 +2487,6 @@
       "both": "Both"
     },
     "sourceLabel": "Source",
-    "searchQueryLabel": "Search query",
-    "searchQueryPlaceholder": "nature landscape",
     "rotateEveryLabel": "Rotate every",
     "nasaInfo": "NASA publishes one new astronomy image per day. The display will check for updates at the chosen interval.",
     "sources": {
@@ -2538,8 +2536,9 @@
       "needsLink": "Locked until you paste a valid shared album link."
     },
     "unsplash": {
-      "modeQuery": "Search query",
+      "modeQuery": "Search",
       "modeCollections": "Collections",
+      "pickHint": "Pick one or more photos. One shows as a fixed background; several rotate. With none picked, rotation shows random photos for this search.",
       "collectionPlaceholder": "Collection ID or unsplash.com/collections/... link",
       "addCollection": "Add collection",
       "removeCollection": "Remove collection",

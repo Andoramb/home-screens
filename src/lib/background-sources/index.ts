@@ -33,7 +33,9 @@ export function isSourceConfigured(source: BackgroundRotationSourceId, rotation:
     return starterCandidates(source, rotation).length > 0;
   }
   if (source === 'unsplash') {
-    return isUnsplashCollectionsMode(rotation) ? !!rotation.unsplashCollections?.length : !!rotation.query;
+    return isUnsplashCollectionsMode(rotation)
+      ? !!rotation.unsplashCollections?.length
+      : !!rotation.query || (rotation.unsplashImages ?? []).some((url) => localImageFile(url));
   }
   // A source that cannot produce a photo yet must not take a turn: it would win a share of the picks and return nothing.
   if (source === 'icloud') {

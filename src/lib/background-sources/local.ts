@@ -17,9 +17,9 @@ export function localImageFile(servePath: unknown): string | null {
   }
 }
 
-/** The chosen pictures that still exist in the library. */
-async function chosenImages(rotation: BackgroundRotation): Promise<string[]> {
-  const files = [...new Set((rotation.localImages ?? []).map(localImageFile).filter((f): f is string => !!f))];
+/** The library files behind a list of chosen serve URLs that still exist. */
+export async function existingChosenFiles(servePaths: string[] | undefined): Promise<string[]> {
+  const files = [...new Set((servePaths ?? []).map(localImageFile).filter((f): f is string => !!f))];
   const present: string[] = [];
   for (const file of files) {
     const resolved = safeLibraryPath(file);
@@ -35,7 +35,7 @@ async function chosenImages(rotation: BackgroundRotation): Promise<string[]> {
 
 async function pickLocalPhoto(rotation: BackgroundRotation): Promise<string | null> {
   if (rotation.localMode === 'images') {
-    const present = await chosenImages(rotation);
+    const present = await existingChosenFiles(rotation.localImages);
     if (present.length === 0) return null;
     const file = present[Math.floor(Math.random() * present.length)];
     return `/api/backgrounds/serve?file=${encodeURIComponent(file)}`;

@@ -1,4 +1,5 @@
 import { createJsonStore } from '@/lib/json-store';
+import type { ScreenConfiguration } from '@/types/config';
 
 
 export interface RotationCacheEntry {
@@ -16,6 +17,8 @@ export interface RotationCacheEntry {
   unsplashMode?: string;
   /** Stable selections for enabled starter source groups. */
   starterSelections?: string;
+  /** Stable list of the Unsplash photos picked by hand. */
+  unsplashPicks?: string;
 }
 
 export type BackgroundCache = Record<string, RotationCacheEntry>;
@@ -54,4 +57,20 @@ export function referencedRotationFiles(cache: BackgroundCache): Set<string> {
 /** True for a library-relative path the rotation feature owns. */
 export function isRotationFile(libraryPath: string): boolean {
   return !libraryPath.includes('/') && ROTATION_FILE_RE.test(libraryPath);
+}
+
+/** Photos picked by hand in Unsplash Search mode live under this name, so they stay out of every library list. */
+export const UNSPLASH_PICK_PREFIX = 'rotation-unsplash-pick-';
+
+/** Top-level rotation files some screen's settings still name as a hand-picked photo. */
+export function referencedPickFiles(config: Pick<ScreenConfiguration, 'screens' | 'displays'>): Set<string> {
+  const referenced = new Set<string>();
+  const screens = [...(config.screens ?? []), ...(config.displays ?? []).flatMap((display) => display.screens ?? [])];
+  for (const screen of screens) {
+    for (const url of screen.backgroundRotation?.unsplashImages ?? []) {
+      const name = rotationCacheFileName(url);
+      if (name) referenced.add(name);
+    }
+  }
+  return referenced;
 }
