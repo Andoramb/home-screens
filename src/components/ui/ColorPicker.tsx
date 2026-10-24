@@ -65,8 +65,11 @@ export default function ColorPicker({
     setDraft(updated);
   };
   const setSwatch = (hex: string) => {
-    // Picking a colour keeps however see-through the card already was.
-    const updated = withCssColorAlpha(hex, alpha) ?? hex;
+    // Picking a colour keeps however see-through the card already was, unless
+    // it was fully see-through: `transparent` (the Icon, Text and QR Code
+    // background default) would otherwise turn every pick into an invisible
+    // colour, so the first pick from there lands solid.
+    const updated = alpha > 0 ? (withCssColorAlpha(hex, alpha) ?? hex) : hex;
     onChange(updated);
     setDraft(updated);
   };
