@@ -2581,6 +2581,10 @@
       "pattern-paper": "Paper"
     },
     "sourceKeyMissing": "This source needs an API key that is not set up, so the screen keeps its last picture. Add the key in Settings, or pick another source.",
+    "sourcesMode": {
+      "single": "Single",
+      "multiple": "Multiple"
+    },
     "sourceNotSetUp": "Not set up yet.",
     "sourceSetUpLink": "Set up {source} in Settings",
     "pickToRotate": "Tap the walls you want in the rotation. None selected yet.",

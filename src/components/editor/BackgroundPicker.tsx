@@ -24,6 +24,7 @@ import UnsplashSearchPicker from './UnsplashSearchPicker';
 import ImmichPickPicker from './ImmichPickPicker';
 import SourceModeToggle, { SourceHint } from './SourceModeToggle';
 import { effectiveImmichMode } from '@/lib/immich-mode';
+import { effectiveSourcesMode, sourcesForMode, type SourcesMode } from '@/lib/sources-mode';
 
 const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link)));
 
@@ -134,9 +135,31 @@ export default function BackgroundPicker() {
     const current = currentScreen.backgroundRotation?.sources ?? [];
     const sources = checked ? [...current, id] : current.filter((s) => s !== id);
     updateScreenRotation(selectedScreenId, {
+      sourcesMode: 'multiple',
       sources,
       // Pin the mode on first enable so a fresh Immich config that showed Pictures does not flip to filters.
       ...(checked && id === 'immich' ? { immichMode: effectiveImmichMode(currentScreen.backgroundRotation) } : {}),
+      query: currentScreen.backgroundRotation?.query || 'nature landscape',
+      intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
+    });
+  };
+
+  const sourcesMode = effectiveSourcesMode(currentScreen.backgroundRotation);
+  const setSourcesMode = (mode: SourcesMode) => {
+    if (!selectedScreenId || mode === sourcesMode) return;
+    updateScreenRotation(selectedScreenId, {
+      sourcesMode: mode,
+      sources: sourcesForMode(rotationSources, mode),
+      query: currentScreen.backgroundRotation?.query || 'nature landscape',
+      intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
+    });
+  };
+  const selectSingleSource = (id: BackgroundRotationSourceId) => {
+    if (!selectedScreenId) return;
+    updateScreenRotation(selectedScreenId, {
+      sourcesMode: 'single',
+      sources: [id],
+      ...(id === 'immich' ? { immichMode: effectiveImmichMode(currentScreen.backgroundRotation) } : {}),
       query: currentScreen.backgroundRotation?.query || 'nature landscape',
       intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
     });
@@ -255,7 +278,57 @@ export default function BackgroundPicker() {
                 <p className="text-xs font-medium text-hs-text-secondary" data-testid="background-mode" title={t('backgroundPicker.modeHelp')}>
                   {rotationSources.length > 0 ? t('backgroundPicker.modeRotating') : t('backgroundPicker.modeFixed')}
                 </p>
+                <SourceModeToggle
+                  testIdPrefix="sources-mode"
+                  value={sourcesMode}
+                  onChange={setSourcesMode}
+                  options={[
+                    { id: 'single', label: t('backgroundPicker.sourcesMode.single') },
+                    { id: 'multiple', label: t('backgroundPicker.sourcesMode.multiple') },
+                  ]}
+                />
                 <LocalBackgrounds selectedScreenId={selectedScreenId} />
+                {sourcesMode === 'single' ? (
+                  <div className="space-y-2" role="radiogroup" aria-label={t('backgroundPicker.sourcesGroup')}>
+                    {ROTATION_SOURCES.map((entry) => {
+                      const checked = rotationSources[0] === entry.id;
+                      return (
+                        <div key={entry.id} data-testid={`source-row-${entry.id}`}>
+                          <label
+                            className={`flex items-center gap-2 ${entry.locked && !checked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                            title={entry.locked ? t('backgroundPicker.sourceSetUpLink', { source: entry.label }) : undefined}
+                          >
+                            <input
+                              type="radio"
+                              name="background-source-single"
+                              checked={checked}
+                              disabled={entry.locked && !checked}
+                              onChange={() => selectSingleSource(entry.id)}
+                              data-testid={`source-radio-${entry.id}`}
+                            />
+                            <span className={`text-xs flex items-center gap-1 ${entry.locked ? 'text-hs-text-faint' : 'text-hs-text-body'}`}>
+                              {entry.locked && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
+                              {entry.label}
+                            </span>
+                          </label>
+                          {entry.locked && entry.id !== 'icloud' && !checked && (
+                            <span className="mt-0.5 block pl-5 text-[10px] leading-relaxed text-hs-text-faint">
+                              {t('backgroundPicker.sourceNotSetUp')}{' '}
+                              {entry.integration && (
+                                <IntegrationSettingsLink integration={entry.integration}>
+                                  {t('backgroundPicker.sourceSetUpLink', { source: entry.label })}
+                                </IntegrationSettingsLink>
+                              )}
+                            </span>
+                          )}
+                          {checked && (entry.locked && entry.id !== 'icloud' && entry.id !== 'nasa-apod' && entry.id !== 'local'
+                            ? <span className="mt-1 block text-[10px] leading-relaxed text-hs-warning">{t('backgroundPicker.sourceKeyMissing')}</span>
+                            : checked && sourceControls(entry))}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
                 <div className="space-y-2">
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
@@ -312,6 +385,7 @@ export default function BackgroundPicker() {
                     );
                   })}
                 </div>
+                )}
                 <label className="block">
                   <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.rotateEveryLabel')}</span>
                   <select

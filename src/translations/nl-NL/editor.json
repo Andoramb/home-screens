@@ -2570,6 +2570,10 @@
       "pattern-paper": "Papier"
     },
     "sourceKeyMissing": "Deze bron heeft een sleutel nodig die nog niet is ingesteld, dus het scherm houdt de laatste foto. Voeg de sleutel toe bij Instellingen, of kies een andere bron.",
+    "sourcesMode": {
+      "single": "Enkele",
+      "multiple": "Meerdere"
+    },
     "sourceNotSetUp": "Nog niet ingesteld.",
     "sourceSetUpLink": "{source} instellen in Instellingen",
     "pickToRotate": "Tik op de achtergronden voor de rotatie. Nog geen geselecteerd.",

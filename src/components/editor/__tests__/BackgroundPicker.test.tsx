@@ -31,7 +31,8 @@ function Wrapper({ children }: { children: ReactNode }) {
   );
 }
 
-function seedStore(backgroundRotation: ScreenConfiguration['screens'][number]['backgroundRotation'], backgroundImage = ''): void {
+function seedStore(rotationIn: ScreenConfiguration['screens'][number]['backgroundRotation'], backgroundImage = '', sourcesMode: 'single' | 'multiple' | undefined = 'multiple'): void {
+  const backgroundRotation = rotationIn && sourcesMode ? { ...rotationIn, sourcesMode } : rotationIn;
   const config: ScreenConfiguration = {
     version: 14,
     settings: {
@@ -759,7 +760,7 @@ describe('BackgroundPicker — unchecked sources keep their controls', () => {
 
   it('edits made while unchecked are saved with defaults and leave the source out of rotation', () => {
     stubAll();
-    seedStore(undefined);
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
     const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
     fireEvent.click(getByTestId('local-mode-images'));
     expect(currentRotation()).toMatchObject({ sources: [], localMode: 'images', intervalMinutes: 60 });
@@ -799,5 +800,28 @@ describe('BackgroundPicker — unchecked sources keep their controls', () => {
     seedStore({ sources: [], query: '', intervalMinutes: 60, immichFavoritesOnly: true });
     const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(getByTestId('immich-mode-filters').getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('BackgroundPicker — Single / Multiple sources', () => {
+  it('Single shows radios and only the selected source controls; picking one replaces the others', () => {
+    seedStore({ sources: ['local', 'immich'], query: '', intervalMinutes: 60 } as never, '', 'single');
+    const { getByTestId, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('sources-mode-single').getAttribute('aria-pressed')).toBe('true');
+    expect((getByTestId('source-radio-local') as HTMLInputElement).checked).toBe(true);
+    expect(queryByTestId('source-group-local')).toBeNull();
+    fireEvent.click(getByTestId('source-radio-nasa-apod'));
+    expect(currentRotation()?.sources).toEqual(['nasa-apod']);
+    expect(currentRotation()?.sourcesMode).toBe('single');
+  });
+
+  it('switching modes keeps the first source going to Single and all going to Multiple', () => {
+    seedStore({ sources: ['local', 'nasa-apod'], query: '', intervalMinutes: 60 } as never, '', 'multiple');
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByTestId('sources-mode-single'));
+    expect(currentRotation()?.sources).toEqual(['local']);
+    fireEvent.click(getByTestId('sources-mode-multiple'));
+    expect(currentRotation()?.sources).toEqual(['local']);
+    expect(currentRotation()?.sourcesMode).toBe('multiple');
   });
 });

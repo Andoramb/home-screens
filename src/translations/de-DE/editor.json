@@ -2570,6 +2570,10 @@
       "pattern-paper": "Papier"
     },
     "sourceKeyMissing": "Für diese Quelle fehlt ein API-Schlüssel, deshalb behält der Bildschirm sein letztes Bild. Trage den Schlüssel in den Einstellungen ein oder wähle eine andere Quelle.",
+    "sourcesMode": {
+      "single": "Einzeln",
+      "multiple": "Mehrere"
+    },
     "sourceNotSetUp": "Noch nicht eingerichtet.",
     "sourceSetUpLink": "{source} in den Einstellungen einrichten",
     "pickToRotate": "Tippe auf die Hintergründe für die Rotation. Noch keiner ausgewählt.",

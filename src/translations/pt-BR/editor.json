@@ -2570,6 +2570,10 @@
       "pattern-paper": "Papel"
     },
     "sourceKeyMissing": "Esta fonte precisa de uma chave de API que ainda não foi configurada, então a tela continua com a última imagem. Adicione a chave em Configurações ou escolha outra fonte.",
+    "sourcesMode": {
+      "single": "Única",
+      "multiple": "Várias"
+    },
     "sourceNotSetUp": "Ainda não configurada.",
     "sourceSetUpLink": "Configurar {source} em Configurações",
     "pickToRotate": "Toque nos fundos que quer na rotação. Nenhum selecionado ainda.",

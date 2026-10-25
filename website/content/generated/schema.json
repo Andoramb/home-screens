@@ -8316,6 +8316,19 @@
           "description": "Selected sources; an empty list disables rotation."
         },
         {
+          "name": "sourcesMode",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "\"single\" | \"multiple\"",
+            "values": [
+              "single",
+              "multiple"
+            ]
+          },
+          "description": "Sources area layout: `single` picks exactly one source, `multiple` allows several. Unset = multiple when more than one source is on, else single."
+        },
+        {
           "name": "query",
           "optional": false,
           "type": {
