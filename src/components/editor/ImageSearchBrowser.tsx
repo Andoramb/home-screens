@@ -22,7 +22,10 @@ export interface CategoryDef {
 
 export interface SearchResult {
   photos: BrowsePhoto[];
-  totalPages: number;
+  /** Omit when the source cannot report a reliable page count; the pager then shows only Prev/Next. */
+  totalPages?: number;
+  /** With no `totalPages`: whether a further page exists (Next is disabled otherwise). */
+  hasNext?: boolean;
 }
 
 interface ImageSearchBrowserProps {
@@ -43,6 +46,8 @@ interface ImageSearchBrowserProps {
   columns?: 2 | 3 | 4;
   /** Drop the category pills and keep only the search box. */
   hideCategories?: boolean;
+  /** Hide the whole search box and its button (the pager and header slot stay). */
+  hideSearchBox?: boolean;
   /** Put the previous/next row above the grid instead of below it. */
   pagerAbove?: boolean;
   /** Photos that are already chosen: shown highlighted, and the grid grows to fit instead of scrolling. */
@@ -65,6 +70,7 @@ export default function ImageSearchBrowser({
   refreshKey = 0,
   columns = 2,
   hideCategories = false,
+  hideSearchBox = false,
   pagerAbove = false,
   selectedIds,
   initialQuery,
@@ -80,7 +86,8 @@ export default function ImageSearchBrowser({
   const [selectedCategory, setSelectedCategory] = useState(initialQuery ?? categories[0]?.query ?? '');
   const [customSearch, setCustomSearch] = useState(hideCategories ? initialQuery ?? '' : '');
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [totalPages, setTotalPages] = useState<number | null>(1);
+  const [hasNext, setHasNext] = useState(false);
 
   const runSearch = useCallback(async (query: string, pageNum: number) => {
     setIsLoading(true);
@@ -88,7 +95,8 @@ export default function ImageSearchBrowser({
     try {
       const result = await onSearch(query, pageNum);
       setPhotos(result.photos);
-      setTotalPages(result.totalPages);
+      setTotalPages(result.totalPages ?? null);
+      setHasNext(result.totalPages != null ? pageNum < result.totalPages : !!result.hasNext);
     } catch {
       setError(t('imageBrowsers.search.errors.load'));
       setPhotos([]);
@@ -126,7 +134,7 @@ export default function ImageSearchBrowser({
   };
 
   const pager = (
-    !hideSearch && totalPages > 1 && (
+    !hideSearch && (totalPages != null ? totalPages > 1 : page > 1 || hasNext) && (
         <div className="flex items-center justify-between">
           <Button
             size="sm"
@@ -135,12 +143,14 @@ export default function ImageSearchBrowser({
           >
             {t('imageBrowsers.search.prev')}
           </Button>
-          <span className="text-[10px] text-hs-text-faint">
-            {t('imageBrowsers.search.pageOf', { page, total: totalPages })}
-          </span>
+          {totalPages != null ? (
+            <span className="text-[10px] text-hs-text-faint">
+              {t('imageBrowsers.search.pageOf', { page, total: totalPages })}
+            </span>
+          ) : <span />}
           <Button
             size="sm"
-            disabled={page >= totalPages}
+            disabled={totalPages != null ? page >= totalPages : !hasNext}
             onClick={() => setPage((p) => p + 1)}
           >
             {t('imageBrowsers.search.next')}
@@ -175,7 +185,7 @@ export default function ImageSearchBrowser({
           </div>
           )}
 
-          <div className="flex gap-1.5">
+          {!hideSearchBox && <div className="flex gap-1.5">
             <input
               type="text"
               value={customSearch}
@@ -187,7 +197,7 @@ export default function ImageSearchBrowser({
             <Button size="sm" onClick={handleCustomSearch}>
               {t('imageBrowsers.search.searchButton')}
             </Button>
-          </div>
+          </div>}
         </>
       )}
 

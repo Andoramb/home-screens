@@ -364,6 +364,10 @@ export interface BackgroundRotation {
   immichPersonIdsExclude?: string[];
   /** Only use Immich favorites */
   immichFavoritesOnly?: boolean;
+  /** Immich source mode: random photos by filters (default, also for legacy configs) or photos picked by hand. */
+  immichMode?: 'filters' | 'pick';
+  /** Serve URLs of Immich photos picked in `pick` mode; saved as hidden rotation files that live only while chosen. With none picked the filters apply. */
+  immichImages?: string[];
   /**
    * Public iCloud shared album link, or just its token
    *

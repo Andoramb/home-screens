@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useId, useRef } from 'react';
 import { editorFetch } from '@/lib/editor-fetch';
 import { useEditorStore, getActiveScreens } from '@/stores/editor-store';
-import type { BackgroundRotationSourceId } from '@/types/config';
+import type { BackgroundRotation, BackgroundRotationSourceId } from '@/types/config';
 import LocalBackgrounds from './LocalBackgrounds';
 import { ChevronDown, ChevronRight, Lock, RefreshCw } from 'lucide-react';
 import { useGroupOpen } from './useGroupOpen';
@@ -21,6 +21,7 @@ import BackgroundShadeFields from './BackgroundShadeFields';
 import BackgroundEffectsFields from './BackgroundEffectsFields';
 import ThemeBackgrounds from './ThemeBackgrounds';
 import UnsplashSearchPicker from './UnsplashSearchPicker';
+import ImmichPickPicker from './ImmichPickPicker';
 
 const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link)));
 
@@ -299,15 +300,41 @@ export default function BackgroundPicker() {
                                 )}
                               </label>
                             )}
-                            {entry.id === 'immich' && (
-                              <ImmichRotationFields
-                                rotation={currentScreen.backgroundRotation!}
-                                onChange={(updates) => {
-                                  if (!selectedScreenId) return;
-                                  updateScreenRotation(selectedScreenId, updates);
-                                }}
-                              />
-                            )}
+                            {entry.id === 'immich' && (() => {
+                              const immichPick = currentScreen.backgroundRotation!.immichMode === 'pick';
+                              const onImmichChange = (updates: Partial<BackgroundRotation>) => {
+                                if (!selectedScreenId) return;
+                                updateScreenRotation(selectedScreenId, updates);
+                              };
+                              return (
+                                <>
+                                  <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
+                                    {([
+                                      { id: 'filters' as const, label: t('backgroundPicker.immich.modeFilters') },
+                                      { id: 'pick' as const, label: t('backgroundPicker.immich.modePick') },
+                                    ]).map((mode) => (
+                                      <button
+                                        key={mode.id}
+                                        type="button"
+                                        aria-pressed={mode.id === (immichPick ? 'pick' : 'filters')}
+                                        data-testid={`immich-mode-${mode.id}`}
+                                        onClick={() => onImmichChange({ immichMode: mode.id })}
+                                        className={`truncate rounded px-2 py-1 text-[11px] ${
+                                          mode.id === (immichPick ? 'pick' : 'filters') ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'
+                                        }`}
+                                      >
+                                        {mode.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                  {immichPick ? (
+                                    <ImmichPickPicker rotation={currentScreen.backgroundRotation!} onChange={onImmichChange} />
+                                  ) : (
+                                    <ImmichRotationFields rotation={currentScreen.backgroundRotation!} onChange={onImmichChange} />
+                                  )}
+                                </>
+                              );
+                            })()}
                             {entry.id === 'nasa-apod' && (
                               <p className="text-[10px] text-hs-text-faint">
                                 {t('backgroundPicker.nasaInfo')}

@@ -4,7 +4,7 @@ import { BACKGROUNDS_DIR } from '@/lib/constants';
 import { removeThumbnails } from '@/lib/thumbnails';
 import {
   ROTATION_FILE_RE,
-  UNSPLASH_PICK_PREFIX,
+  isPickFile,
   referencedPickFiles,
   referencedRotationFiles,
   type BackgroundCache,
@@ -22,7 +22,7 @@ const PICK_GRACE_MS = 10 * 60 * 1000;
 
 /**
  * Prune rotation files nothing names any more: neither a screen's cached
- * photo nor a hand-picked Unsplash photo in its settings.
+ * photo nor a hand-picked Unsplash or Immich photo in its settings.
  */
 export async function pruneRotationFiles(
   cache: BackgroundCache,
@@ -44,7 +44,7 @@ export async function pruneRotationFiles(
     if (!dirent.isFile() || !ROTATION_FILE_RE.test(dirent.name) || referenced.has(dirent.name)) continue;
     try {
       const { mtimeMs } = await fs.stat(path.join(BGS, dirent.name));
-      if (dirent.name.startsWith(UNSPLASH_PICK_PREFIX)) {
+      if (isPickFile(dirent.name)) {
         // No wall needs a photo the user unchose, so there is no swap buffer for these.
         if (now - mtimeMs >= PICK_GRACE_MS) unchosenPicks.push(dirent.name);
       } else {

@@ -2517,7 +2517,9 @@
       "personPlusLabel": "Medtag personer",
       "personMinusLabel": "Udeluk personer",
       "personPlusHint": "Matcher medier med en vilkårlig valgt person.",
-      "personMinusHint": "Afviser medier med en vilkårlig valgt person."
+      "personMinusHint": "Afviser medier med en vilkårlig valgt person.",
+      "modeFilters": "Filtre",
+      "modePick": "Vælg fotos"
     },
     "icloud": {
       "albumLabel": "Albumlink",

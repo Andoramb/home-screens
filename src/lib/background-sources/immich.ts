@@ -1,5 +1,6 @@
 import { immichFetch } from '@/lib/immich';
 import { saveRotationFile, extFromContentType } from './save';
+import { existingChosenFiles } from './local';
 import type { BackgroundRotation } from '@/types/config';
 import type { BackgroundSourceProvider } from './types';
 
@@ -69,7 +70,16 @@ async function fetchAndSaveImmichPhoto(rotation: BackgroundRotation): Promise<st
   return saveRotationFile(`rotation-immich-${assetId}${ext}`, buffer);
 }
 
+/** A photo picked by hand wins; with none picked (or Filters mode) the filters draw a random photo. */
+async function pickOrFetch(rotation: BackgroundRotation): Promise<string | null> {
+  if (rotation.immichMode === 'pick') {
+    const picked = await existingChosenFiles(rotation.immichImages);
+    if (picked.length) return `/api/backgrounds/serve?file=${encodeURIComponent(picked[Math.floor(Math.random() * picked.length)])}`;
+  }
+  return fetchAndSaveImmichPhoto(rotation);
+}
+
 export const immichSourceProvider: BackgroundSourceProvider = {
   id: 'immich',
-  fetchRandom: fetchAndSaveImmichPhoto,
+  fetchRandom: pickOrFetch,
 };

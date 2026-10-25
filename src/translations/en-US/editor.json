@@ -2528,7 +2528,9 @@
       "personPlusLabel": "Person +",
       "personMinusLabel": "Person -",
       "personPlusHint": "Matches media containing any selected person.",
-      "personMinusHint": "Rejects media containing any selected person."
+      "personMinusHint": "Rejects media containing any selected person.",
+      "modeFilters": "Filters",
+      "modePick": "Pick photos"
     },
     "icloud": {
       "albumLabel": "Album link",

@@ -62,12 +62,21 @@ export function isRotationFile(libraryPath: string): boolean {
 /** Photos picked by hand in Unsplash Search mode live under this name, so they stay out of every library list. */
 export const UNSPLASH_PICK_PREFIX = 'rotation-unsplash-pick-';
 
+/** Photos picked by hand in Immich Pick mode live under this name, so they stay out of every library list. */
+export const IMMICH_PICK_PREFIX = 'rotation-immich-pick-';
+
+/** True for a rotation file that holds a hand-picked photo (Unsplash or Immich). */
+export function isPickFile(name: string): boolean {
+  return name.startsWith(UNSPLASH_PICK_PREFIX) || name.startsWith(IMMICH_PICK_PREFIX);
+}
+
 /** Top-level rotation files some screen's settings still name as a hand-picked photo. */
 export function referencedPickFiles(config: Pick<ScreenConfiguration, 'screens' | 'displays'>): Set<string> {
   const referenced = new Set<string>();
   const screens = [...(config.screens ?? []), ...(config.displays ?? []).flatMap((display) => display.screens ?? [])];
   for (const screen of screens) {
-    for (const url of screen.backgroundRotation?.unsplashImages ?? []) {
+    const rotation = screen.backgroundRotation;
+    for (const url of [...(rotation?.unsplashImages ?? []), ...(rotation?.immichImages ?? [])]) {
       const name = rotationCacheFileName(url);
       if (name) referenced.add(name);
     }

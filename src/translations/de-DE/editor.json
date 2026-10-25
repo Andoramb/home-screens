@@ -2517,7 +2517,9 @@
       "personPlusLabel": "Personen einschließen",
       "personMinusLabel": "Personen ausschließen",
       "personPlusHint": "Trifft Medien mit einer beliebigen ausgewählten Person.",
-      "personMinusHint": "Schließt Medien mit einer beliebigen ausgewählten Person aus."
+      "personMinusHint": "Schließt Medien mit einer beliebigen ausgewählten Person aus.",
+      "modeFilters": "Filter",
+      "modePick": "Fotos auswählen"
     },
     "icloud": {
       "albumLabel": "Album-Link",

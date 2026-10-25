@@ -8392,6 +8392,28 @@
           "description": "Only use Immich favorites"
         },
         {
+          "name": "immichMode",
+          "optional": true,
+          "type": {
+            "kind": "string",
+            "text": "\"filters\" | \"pick\"",
+            "values": [
+              "filters",
+              "pick"
+            ]
+          },
+          "description": "Immich source mode: random photos by filters (default, also for legacy configs) or photos picked by hand."
+        },
+        {
+          "name": "immichImages",
+          "optional": true,
+          "type": {
+            "kind": "array",
+            "text": "string[]"
+          },
+          "description": "Serve URLs of Immich photos picked in `pick` mode; saved as hidden rotation files that live only while chosen. With none picked the filters apply."
+        },
+        {
           "name": "icloudAlbumUrl",
           "optional": true,
           "type": {
@@ -10984,6 +11006,24 @@
         {
           "method": "GET",
           "access": "display"
+        }
+      ]
+    },
+    {
+      "path": "/api/immich/pick",
+      "methods": [
+        {
+          "method": "POST",
+          "access": "session"
+        }
+      ]
+    },
+    {
+      "path": "/api/immich/search",
+      "methods": [
+        {
+          "method": "GET",
+          "access": "session"
         }
       ]
     },

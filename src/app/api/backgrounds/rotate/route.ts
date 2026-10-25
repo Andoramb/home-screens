@@ -75,6 +75,10 @@ export const GET = withDisplayAuth(async (request: NextRequest) => {
       p: rotation.immichPersonIds ?? [],
       px: rotation.immichPersonIdsExclude ?? [],
       f: rotation.immichFavoritesOnly,
+      // Only in pick mode, so legacy and filters-mode keys stay byte-identical.
+      ...(rotation.immichMode === 'pick'
+        ? { m: 'pick', i: [...new Set(rotation.immichImages ?? [])].sort() }
+        : {}),
     })
     : undefined;
   const icloudAlbum = rotation.sources.includes('icloud') ? (rotation.icloudAlbumUrl || '') : undefined;

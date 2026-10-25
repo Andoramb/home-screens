@@ -2517,7 +2517,9 @@
       "personPlusLabel": "Pessoa +",
       "personMinusLabel": "Pessoa -",
       "personPlusHint": "Corresponde a mídias com qualquer pessoa selecionada.",
-      "personMinusHint": "Rejeita mídias com qualquer pessoa selecionada."
+      "personMinusHint": "Rejeita mídias com qualquer pessoa selecionada.",
+      "modeFilters": "Filtros",
+      "modePick": "Escolher fotos"
     },
     "icloud": {
       "albumLabel": "Link do álbum",

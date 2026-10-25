@@ -242,4 +242,39 @@ describe('GET /api/backgrounds/rotate — Immich rotation', () => {
     expect(mockImmichFetch).toHaveBeenCalledTimes(2);
   });
 
+
+  it('keeps legacy cache keys unchanged but invalidates when pick mode and its picks change', async () => {
+    const legacy = JSON.stringify({ a: [], p: [], px: [], f: undefined });
+    const entryFor = (immichFilters: string) => ({
+      s1: {
+        path: '/api/backgrounds/serve?file=rotation-immich-old.jpg',
+        sources: JSON.stringify(['immich']),
+        query: undefined,
+        fetchedAt: Date.now(),
+        intervalMinutes: 60,
+        immichFilters,
+      },
+    });
+    // Filters mode (explicit or legacy) hits the old key.
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...(immichRotation as object), immichMode: 'filters' } as never }));
+    seedCache(entryFor(legacy));
+    expect((await (await GET(rotateReq())).json()).fresh).toBe(false);
+
+    // Switching to pick mode misses the cache (no picks: falls back to filters, a random fetch).
+    mockFindScreen.mockReturnValue(screen({ backgroundRotation: { ...(immichRotation as object), immichMode: 'pick', immichImages: [] } as never }));
+    mockImmichFetch.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
+    seedCache(entryFor(legacy));
+    await GET(rotateReq());
+    expect(mockImmichFetch).toHaveBeenCalled();
+  });
+
+  it('pick mode serves one of the chosen files that still exist, without calling Immich', async () => {
+    mockFindScreen.mockReturnValue(screen({
+      backgroundRotation: { ...(immichRotation as object), immichMode: 'pick', immichImages: ['/api/backgrounds/serve?file=rotation-immich-pick-abc.jpg'] } as never,
+    }));
+    fsMock.stat.mockResolvedValue({ mtimeMs: 0, isFile: () => true });
+    const json = await (await GET(rotateReq())).json();
+    expect(json).toEqual({ path: '/api/backgrounds/serve?file=rotation-immich-pick-abc.jpg', fresh: true });
+    expect(mockImmichFetch).not.toHaveBeenCalled();
+  });
 });

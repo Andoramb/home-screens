@@ -635,3 +635,90 @@ describe('BackgroundPicker — per-source collapse', () => {
     expect(getByTestId('source-group-nasa-apod').getAttribute('aria-expanded')).toBe('true');
   });
 });
+
+describe('BackgroundPicker — Immich pick mode', () => {
+  const photos = (n: number, from = 0) => Array.from({ length: n }, (_, i) => ({
+    id: `a${from + i}`, thumb: `/api/immich/serve?assetId=a${from + i}&size=thumbnail`, alt: `IMG_${from + i}.jpg`, date: '2024-01-01',
+  }));
+  let calls: Array<{ url: string; init?: RequestInit }> = [];
+
+  function stubImmich() {
+    calls = [];
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      if (init?.method === 'HEAD') return new Response(null, { status: 200 });
+      if (url === '/api/immich/albums') return new Response(JSON.stringify([{ id: 'alb1', name: 'Trips', assetCount: 20 }]));
+      if (url === '/api/immich/pick') {
+        const { assetId } = JSON.parse(String(init!.body));
+        return new Response(JSON.stringify({ path: `/api/backgrounds/serve?file=rotation-immich-pick-${assetId}.jpg` }), { status: 201 });
+      }
+      if (url.startsWith('/api/immich/search')) {
+        const page = Number(new URL(url, 'http://x').searchParams.get('page'));
+        return new Response(JSON.stringify({ photos: photos(9, (page - 1) * 9), page, hasNext: page < 2 }));
+      }
+      return new Response('[]');
+    }));
+  }
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('defaults to Filters for legacy configs and switches to Pick', async () => {
+    stubImmich();
+    seedStore({ sources: ['immich'], query: '', intervalMinutes: 60 } as never);
+    const { getByTestId, queryByTestId, findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('immich-mode-filters').getAttribute('aria-pressed')).toBe('true');
+    expect(queryByTestId('immich-pick-picker')).toBeNull();
+    fireEvent.click(getByTestId('immich-mode-pick'));
+    expect(currentRotation()?.immichMode).toBe('pick');
+    expect(await findAllByTestId('search-photo')).toHaveLength(9);
+    fireEvent.click(getByTestId('immich-mode-filters'));
+    expect(currentRotation()?.immichMode).toBe('filters');
+  });
+
+  it('shows a 3x3 page with no search box, an album dropdown, and prev/next without totals', async () => {
+    stubImmich();
+    seedStore({ sources: ['immich'], query: '', intervalMinutes: 60, immichMode: 'pick' } as never);
+    const { findAllByTestId, getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const tiles = await findAllByTestId('search-photo');
+    expect(tiles).toHaveLength(9);
+    const picker = getByTestId('immich-pick-picker');
+    expect(picker.querySelector('input[type="text"]')).toBeNull();
+    expect(picker.querySelector('.grid-cols-3')).not.toBeNull();
+    expect(within(picker).queryByText(/Page \d+ of/)).toBeNull();
+    const prev = within(picker).getByRole('button', { name: enUSEditor.imageBrowsers.search.prev }) as HTMLButtonElement;
+    const next = within(picker).getByRole('button', { name: enUSEditor.imageBrowsers.search.next }) as HTMLButtonElement;
+    expect(prev.disabled).toBe(true);
+    expect(next.disabled).toBe(false);
+    expect(calls.find((c) => c.url.startsWith('/api/immich/search'))!.url).toBe('/api/immich/search?page=1');
+
+    fireEvent.click(next);
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/immich/search?page=2')).toBe(true));
+    await waitFor(() => expect((within(picker).getByRole('button', { name: enUSEditor.imageBrowsers.search.next }) as HTMLButtonElement).disabled).toBe(true));
+  });
+
+  it('choosing an album searches within it from page 1; All photos clears it', async () => {
+    stubImmich();
+    seedStore({ sources: ['immich'], query: '', intervalMinutes: 60, immichMode: 'pick' } as never);
+    const { findAllByTestId, getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    await findAllByTestId('search-photo');
+    await waitFor(() => expect(getByTestId('immich-pick-album').querySelectorAll('option')).toHaveLength(2));
+    expect(getByTestId('immich-pick-album').querySelector('option')!.textContent).toBe(enUSEditor.imageBrowsers.immich.allPhotos);
+    fireEvent.change(getByTestId('immich-pick-album'), { target: { value: 'alb1' } });
+    await waitFor(() => expect(calls.some((c) => c.url === '/api/immich/search?page=1&albumId=alb1')).toBe(true));
+  });
+
+  it('picks save once and rotate when several; tapping again unchooses', async () => {
+    stubImmich();
+    seedStore({ sources: ['immich'], query: '', intervalMinutes: 60, immichMode: 'pick' } as never);
+    const { findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    const tiles = await findAllByTestId('search-photo');
+    fireEvent.click(tiles[2]);
+    await waitFor(() => expect(currentRotation()?.immichImages).toEqual(['/api/backgrounds/serve?file=rotation-immich-pick-a2.jpg']));
+    await waitFor(async () => expect((await findAllByTestId('search-photo'))[2].getAttribute('aria-pressed')).toBe('true'));
+    fireEvent.click(tiles[5]);
+    await waitFor(() => expect(currentRotation()?.immichImages).toHaveLength(2));
+    const posts = calls.filter((c) => c.url === '/api/immich/pick').length;
+    fireEvent.click(tiles[2]);
+    await waitFor(() => expect(currentRotation()?.immichImages).toEqual(['/api/backgrounds/serve?file=rotation-immich-pick-a5.jpg']));
+    expect(calls.filter((c) => c.url === '/api/immich/pick')).toHaveLength(posts);
+  });
+});

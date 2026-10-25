@@ -65,4 +65,12 @@ describe('pruneRotationFiles', () => {
     await pruneRotationFiles(cache, configWith([]));
     expect(fsMock.unlink).not.toHaveBeenCalled();
   });
+
+  it('keeps Immich picks a screen names and drops unchosen ones past the grace period', async () => {
+    library({ 'rotation-immich-pick-keep.jpg': 40 * HOUR, 'rotation-immich-pick-gone.jpg': 40 * HOUR, 'rotation-immich-pick-fresh.jpg': 60 * 1000 });
+    const screen = { id: 's1', name: 'S', backgroundImage: '', modules: [], backgroundRotation: { sources: ['immich'], query: '', intervalMinutes: 60, immichMode: 'pick', immichImages: ['/api/backgrounds/serve?file=rotation-immich-pick-keep.jpg'] } };
+    await pruneRotationFiles({}, { screens: [screen as never], displays: [] });
+    expect(fsMock.unlink).toHaveBeenCalledTimes(1);
+    expect(fsMock.unlink.mock.calls[0][0]).toContain('rotation-immich-pick-gone.jpg');
+  });
 });
