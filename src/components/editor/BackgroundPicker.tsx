@@ -244,12 +244,10 @@ export default function BackgroundPicker() {
   return (
     <>
     {/* A full-screen theme wall is a single fixed pick, not a media source, so it sits outside Sources. */}
-    {/* In Single the theme walls sit inside the Backgrounds tab, as in the original picker. */}
-    {sourcesMode === 'multiple' && (
-      <AccordionSection title={t('backgroundPicker.groups.theme')}>
-        <ThemeBackgrounds selectedScreenId={selectedScreenId} />
-      </AccordionSection>
-    )}
+    {/* Always present, in Single and Multiple alike. */}
+    <AccordionSection title={t('backgroundPicker.groups.theme')}>
+      <ThemeBackgrounds selectedScreenId={selectedScreenId} />
+    </AccordionSection>
 
     <AccordionSection title={t('backgroundPicker.title')}>
       <PropertyGroup

@@ -814,6 +814,17 @@ describe('BackgroundPicker — Single / Multiple sources', () => {
     expect(getByTestId('background-mode').textContent).toBe('Fixed background');
   });
 
+  it('Single keeps the separate Theme section; the Backgrounds tab has no theme walls', () => {
+    seedStore({ sources: [], query: '', intervalMinutes: 60 } as never, '/starter-backgrounds/ocean.svg', 'single');
+    const { container, getByTestId, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(container.querySelector('[data-testid="theme-backgrounds"]')).toBeTruthy();
+    expect(queryByTestId('starter-group-theme')).toBeNull();
+    expect(container.querySelectorAll('[data-testid="theme-backgrounds"] [data-testid^="starter-background-theme-"]').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('[data-testid^="starter-background-theme-"]').length)
+      .toBe(container.querySelectorAll('[data-testid="theme-backgrounds"] [data-testid^="starter-background-theme-"]').length);
+    expect(getByTestId('starter-group-color')).toBeTruthy();
+  });
+
   it('switching modes never edits the saved sources', () => {
     seedStore({ sources: ['local', 'nasa-apod'], query: '', intervalMinutes: 60 } as never, '', 'multiple');
     const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });

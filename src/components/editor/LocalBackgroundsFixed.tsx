@@ -3,12 +3,9 @@
 import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { editorFetch } from '@/lib/editor-fetch';
-import { useEditorStore, getActiveScreens, getActiveDimensions, getActiveFullscreenTheme } from '@/stores/editor-store';
+import { useEditorStore, getActiveScreens, getActiveDimensions } from '@/stores/editor-store';
 import Button from '@/components/ui/Button';
-import FullscreenThemePreview from '@/components/ui/FullscreenThemePreview';
-import { themeTileClass } from '@/components/editor/settings/shared/FullscreenThemeTile';
-import { useTranslate, tOrFallback } from '@/i18n';
-import { FULLSCREEN_THEMES } from '@/lib/fullscreen-themes';
+import { useTranslate } from '@/i18n';
 import {
   starterBackgroundsIn,
   type StarterBackground,
@@ -123,14 +120,6 @@ export default function LocalBackgroundsFixed({ selectedScreenId }: Props) {
   const isCurrent = (path: string) => currentScreen.backgroundImage === path;
   const tileBorder = (path: string) => (isCurrent(path) ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong');
 
-  // The theme the selected display paints its fullscreen modules with: its
-  // own override first, then the shared default, then the shipped default.
-  const themeInUse = getActiveFullscreenTheme(config, selectedDisplayId) ?? 'linen';
-  const themeWalls = starterBackgroundsIn('theme');
-  const orderedThemeWalls = [
-    ...themeWalls.filter((bg) => bg.themeId === themeInUse),
-    ...themeWalls.filter((bg) => bg.themeId !== themeInUse),
-  ];
   const colorWalls = starterBackgroundsIn('color');
   const patternWalls = starterBackgroundsIn('pattern');
 
@@ -157,38 +146,6 @@ export default function LocalBackgroundsFixed({ selectedScreenId }: Props) {
   return (
     <>
       <p className="text-[10px] text-hs-text-faint">{t('backgroundPicker.starterHeading')}</p>
-
-      <StarterGroup id="theme" title={t('backgroundPicker.groups.theme')} count={themeWalls.length}>
-        <div className="grid grid-cols-2 gap-1.5">
-          {orderedThemeWalls.map((bg) => {
-            const theme = FULLSCREEN_THEMES.find((th) => th.id === bg.themeId);
-            if (!theme) return null;
-            const selected = isCurrent(bg.path);
-            const inUse = theme.id === themeInUse;
-            const group = tOrFallback(t, `settings.defaultDisplayPage.themeGroups.${theme.group}`, theme.group);
-            return (
-              <button
-                key={bg.id}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => pick(bg.path)}
-                data-testid={`starter-background-${bg.id}`}
-                data-in-use={inUse ? 'true' : undefined}
-                className={`flex items-center gap-1.5 rounded-lg border px-1.5 py-1.5 text-left transition-colors ${themeTileClass(selected)}`}
-              >
-                <FullscreenThemePreview tokens={theme.tokens} size="sm" />
-                <div className="min-w-0">
-                  <div className={`truncate text-[10px] font-semibold ${selected ? 'text-hs-accent-hover' : 'text-hs-text-body'}`}>{theme.name}</div>
-                  <div className="truncate text-[9px] text-hs-text-faint">
-                    <span className="capitalize">{group}</span>
-                    {inUse && <span> · {t('backgroundPicker.inUse')}</span>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </StarterGroup>
 
       <StarterGroup id="color" title={t('backgroundPicker.groups.color')} count={colorWalls.length}>
         <div className={tileGrid}>
