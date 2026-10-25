@@ -5,12 +5,13 @@ import { editorFetch } from '@/lib/editor-fetch';
 import type { BackgroundRotation } from '@/types/config';
 import Button from '@/components/ui/Button';
 import ImageBrowserModal from './ImageBrowserModal';
-import { Check, Plus, X } from 'lucide-react';
+import { Plus, X } from 'lucide-react';
 import { tileThumbnailUrl } from '@/lib/media-paths';
 import { localImageFileOf } from '@/lib/local-images';
 import AccordionSection from './AccordionSection';
 import { useTranslate } from '@/i18n';
-import { useEditorStore, getActiveDimensions } from '@/stores/editor-store';
+import { PickGrid, PickTile } from './PickTile';
+import SourceModeToggle, { SourceHint } from './SourceModeToggle';
 
 interface ImmichAlbumOption { id: string; name: string; assetCount: number }
 interface ImmichPersonOption { id: string; name: string }
@@ -153,9 +154,6 @@ function LocalPicturesFields({ chosen, onChange }: {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
-  const { config, selectedDisplayId } = useEditorStore();
-  const dims = config ? getActiveDimensions(config, selectedDisplayId) : null;
-  const tileAspect = dims && dims.width > dims.height ? 'aspect-video' : 'aspect-[9/16]';
 
   useEffect(() => {
     let cancelled = false;
@@ -200,35 +198,25 @@ function LocalPicturesFields({ chosen, onChange }: {
   };
 
   return (
-    <div className="space-y-1.5" data-testid="local-pictures">
-      <p className="text-[10px] leading-relaxed text-hs-text-faint">{t('backgroundPicker.local.picturesHint')}</p>
+    <div className="space-y-2" data-testid="local-pictures">
+      <SourceHint>{t('backgroundPicker.picturesHint')}</SourceHint>
       {library && library.length === 0 && (
         <p className="text-[10px] text-hs-text-faint">{t('backgroundPicker.local.noPictures')}</p>
       )}
       {library && library.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 max-h-[400px] overflow-y-auto">
-          {library.map((url) => {
-            const marked = chosenFiles.has(localImageFileOf(url));
-            return (
-              <button
-                key={url}
-                type="button"
-                aria-pressed={marked}
-                aria-label={t('backgroundPicker.local.picturePick', { name: decodeURIComponent(localImageFileOf(url)) })}
-                data-testid="local-picture"
-                onClick={() => toggle(url)}
-                className={`relative ${tileAspect} overflow-hidden rounded border ${marked ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong'}`}
-              >
-                <img src={tileThumbnailUrl(url)} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
-                {marked && (
-                  <span className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-hs-accent text-white" aria-hidden="true">
-                    <Check size={10} />
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <PickGrid scroll>
+          {library.map((url) => (
+            <PickTile
+              key={url}
+              testId="local-picture"
+              thumb={tileThumbnailUrl(url)}
+              alt=""
+              ariaLabel={t('backgroundPicker.local.picturePick', { name: decodeURIComponent(localImageFileOf(url)) })}
+              chosen={chosenFiles.has(localImageFileOf(url))}
+              onClick={() => toggle(url)}
+            />
+          ))}
+        </PickGrid>
       )}
       {error && <p className="text-[10px] text-hs-danger">{error}</p>}
       <input ref={fileInput} type="file" accept="image/*" multiple onChange={upload} data-file-input="" className="hidden" />
@@ -248,25 +236,15 @@ export function LocalRotationFields({ rotation, onChange }: {
   const mode = rotation.localMode === 'images' ? 'images' : 'folder';
   return (
     <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-1 rounded-md bg-hs-card p-0.5">
-        {([
-          { id: 'images' as const, label: t('backgroundPicker.local.modePictures') },
-          { id: 'folder' as const, label: t('backgroundPicker.local.modeFolder') },
-        ]).map((entry) => (
-          <button
-            key={entry.id}
-            type="button"
-            aria-pressed={mode === entry.id}
-            data-testid={`local-mode-${entry.id}`}
-            onClick={() => onChange({ localMode: entry.id })}
-            className={`truncate rounded px-2 py-1 text-[11px] ${
-              mode === entry.id ? 'bg-hs-hover text-hs-text-primary' : 'text-hs-text-muted hover:text-hs-text-secondary'
-            }`}
-          >
-            {entry.label}
-          </button>
-        ))}
-      </div>
+      <SourceModeToggle
+        testIdPrefix="local-mode"
+        value={mode}
+        onChange={(id) => onChange({ localMode: id })}
+        options={[
+          { id: 'images', label: t('backgroundPicker.local.modePictures') },
+          { id: 'folder', label: t('backgroundPicker.local.modeFolder') },
+        ]}
+      />
       {mode === 'folder' ? (
         <LocalFolderFields
           folder={rotation.localFolder || ''}

@@ -2478,6 +2478,7 @@
     "sourceLabel": "Bron",
     "rotateEveryLabel": "Wisselen elke",
     "nasaInfo": "NASA publiceert elke dag één nieuw astronomiebeeld. Het display controleert op het gekozen interval op updates.",
+    "picturesHint": "Tik op de afbeeldingen die je wilt tonen. Eén geeft een vaste achtergrond; meerdere wisselen af.",
     "sources": {
       "nasaApod": "NASA-foto van de dag",
       "icloud": "Gedeeld iCloud-album",
@@ -2494,7 +2495,6 @@
       "noPhotosInFolder": "Nog geen foto's in deze map.",
       "modeFolder": "Map",
       "modePictures": "Afbeeldingen",
-      "picturesHint": "Tik op de afbeeldingen die je wilt tonen. Eén geeft een vaste achtergrond; meerdere wisselen af.",
       "upload": "Afbeeldingen uploaden",
       "uploading": "Uploaden…",
       "noPictures": "Nog geen afbeeldingen in je bibliotheek. Upload er een om te beginnen.",
@@ -2518,8 +2518,8 @@
       "personMinusLabel": "Persoon -",
       "personPlusHint": "Matcht media met een van de geselecteerde personen.",
       "personMinusHint": "Weigert media met een van de geselecteerde personen.",
-      "modeFilters": "Filters",
-      "modePick": "Foto's kiezen"
+      "modePictures": "Afbeeldingen",
+      "modeFilters": "Filters"
     },
     "icloud": {
       "albumLabel": "Albumlink",

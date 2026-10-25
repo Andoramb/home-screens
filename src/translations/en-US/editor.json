@@ -2489,6 +2489,7 @@
     "sourceLabel": "Source",
     "rotateEveryLabel": "Rotate every",
     "nasaInfo": "NASA publishes one new astronomy image per day. The display will check for updates at the chosen interval.",
+    "picturesHint": "Tap the pictures to show. One shows as a fixed background; several rotate.",
     "sources": {
       "nasaApod": "NASA Picture of the Day",
       "icloud": "iCloud Shared Album",
@@ -2505,7 +2506,6 @@
       "noPhotosInFolder": "No photos in this folder yet.",
       "modeFolder": "Folder",
       "modePictures": "Pictures",
-      "picturesHint": "Tap the pictures to show. One shows as a fixed background; several rotate.",
       "upload": "Upload pictures",
       "uploading": "Uploading…",
       "noPictures": "No pictures in your library yet. Upload one to start.",
@@ -2529,8 +2529,8 @@
       "personMinusLabel": "Person -",
       "personPlusHint": "Matches media containing any selected person.",
       "personMinusHint": "Rejects media containing any selected person.",
-      "modeFilters": "Filters",
-      "modePick": "Pick photos"
+      "modePictures": "Pictures",
+      "modeFilters": "Filters"
     },
     "icloud": {
       "albumLabel": "Album link",

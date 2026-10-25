@@ -2478,6 +2478,7 @@
     "sourceLabel": "Kilde",
     "rotateEveryLabel": "Skift hver",
     "nasaInfo": "NASA udgiver ét nyt astronomibillede om dagen. Skærmen tjekker for nye billeder med det valgte interval.",
+    "picturesHint": "Tryk på de billeder, der skal vises. Ét vises som fast baggrund; flere roterer.",
     "sources": {
       "nasaApod": "NASA's dagens billede",
       "icloud": "Delt iCloud-album",
@@ -2494,7 +2495,6 @@
       "noPhotosInFolder": "Ingen fotos i denne mappe endnu.",
       "modeFolder": "Mappe",
       "modePictures": "Billeder",
-      "picturesHint": "Tryk på de billeder, der skal vises. Ét vises som fast baggrund; flere roterer.",
       "upload": "Upload billeder",
       "uploading": "Uploader…",
       "noPictures": "Ingen billeder i dit bibliotek endnu. Upload et for at komme i gang.",
@@ -2518,8 +2518,8 @@
       "personMinusLabel": "Udeluk personer",
       "personPlusHint": "Matcher medier med en vilkårlig valgt person.",
       "personMinusHint": "Afviser medier med en vilkårlig valgt person.",
-      "modeFilters": "Filtre",
-      "modePick": "Vælg fotos"
+      "modePictures": "Billeder",
+      "modeFilters": "Filtre"
     },
     "icloud": {
       "albumLabel": "Albumlink",

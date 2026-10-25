@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect, afterEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { render, cleanup, fireEvent, within, waitFor } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import type { ScreenConfiguration } from '@/types/config';
@@ -12,9 +12,10 @@ import BackgroundPicker from '../BackgroundPicker';
 // The checklist needs every source's key status; stub it so `icloud` and
 // `local` (no key required) sit alongside a `false` for the keyed ones —
 // exercising the checklist without pulling in a real /api/secrets round trip.
+const secrets = vi.hoisted(() => ({ immich: false }));
 vi.mock('@/hooks/useSecretStatus', () => ({
   useSecretStatus: () => ({
-    status: { unsplash_access_key: true, nasa_api_key: false, immich_api_key: false, immich_url: false },
+    status: { unsplash_access_key: true, nasa_api_key: false, immich_api_key: secrets.immich, immich_url: secrets.immich },
     loading: false,
     error: false,
     hasStatus: true,
@@ -57,6 +58,7 @@ function currentRotation() {
 }
 
 afterEach(() => {
+  secrets.immich = false;
   cleanup();
   useEditorStore.setState({ config: null, selectedDisplayId: null, selectedScreenId: null });
 });
@@ -464,7 +466,7 @@ describe('BackgroundPicker — Local library', () => {
     const tiles = await findAllByTestId('local-picture');
     const grid = tiles[0].parentElement!;
     expect(grid.className).toContain('grid-cols-2');
-    expect(grid.className).toContain('gap-2');
+    expect(grid.className).toContain('gap-1.5');
     expect(grid.className).toContain('max-h-[400px]');
     expect(tiles[0].className).toContain('aspect-[9/16]');
   });
@@ -534,7 +536,7 @@ describe('BackgroundPicker — Local library', () => {
     seedStore({ sources: ['local'], query: '', intervalMinutes: 60, localMode: 'images' });
     const { container } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(container.textContent).not.toContain('None selected yet');
-    expect(container.textContent).toContain(enUSEditor.backgroundPicker.local.picturesHint);
+    expect(container.textContent).toContain(enUSEditor.backgroundPicker.picturesHint);
   });
 
   it('iCloud says it is not active until a valid album link is pasted', () => {
@@ -660,13 +662,16 @@ describe('BackgroundPicker — Immich pick mode', () => {
     }));
   }
   afterEach(() => { vi.unstubAllGlobals(); });
+  beforeEach(() => { secrets.immich = true; });
 
-  it('defaults to Filters for legacy configs and switches to Pick', async () => {
+  it('legacy configs (Immich already on, no mode) stay on Filters; Pictures is listed first and switches', async () => {
     stubImmich();
     seedStore({ sources: ['immich'], query: '', intervalMinutes: 60 } as never);
     const { getByTestId, queryByTestId, findAllByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(getByTestId('immich-mode-filters').getAttribute('aria-pressed')).toBe('true');
     expect(queryByTestId('immich-pick-picker')).toBeNull();
+    expect(getByTestId('immich-mode-pick').textContent).toBe('Pictures');
+    expect(getByTestId('immich-mode-pick').compareDocumentPosition(getByTestId('immich-mode-filters')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     fireEvent.click(getByTestId('immich-mode-pick'));
     expect(currentRotation()?.immichMode).toBe('pick');
     expect(await findAllByTestId('search-photo')).toHaveLength(9);
@@ -674,7 +679,7 @@ describe('BackgroundPicker — Immich pick mode', () => {
     expect(currentRotation()?.immichMode).toBe('filters');
   });
 
-  it('shows a 3x3 page with no search box, an album dropdown, and prev/next without totals', async () => {
+  it('shows a page of tiles with no search box, an album dropdown, and prev/next without totals', async () => {
     stubImmich();
     seedStore({ sources: ['immich'], query: '', intervalMinutes: 60, immichMode: 'pick' } as never);
     const { findAllByTestId, getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
@@ -682,7 +687,8 @@ describe('BackgroundPicker — Immich pick mode', () => {
     expect(tiles).toHaveLength(9);
     const picker = getByTestId('immich-pick-picker');
     expect(picker.querySelector('input[type="text"]')).toBeNull();
-    expect(picker.querySelector('.grid-cols-3')).not.toBeNull();
+    expect(picker.querySelector('.grid-cols-2')).not.toBeNull();
+    expect(picker.textContent).toContain(enUSEditor.backgroundPicker.picturesHint);
     expect(within(picker).queryByText(/Page \d+ of/)).toBeNull();
     const prev = within(picker).getByRole('button', { name: enUSEditor.imageBrowsers.search.prev }) as HTMLButtonElement;
     const next = within(picker).getByRole('button', { name: enUSEditor.imageBrowsers.search.next }) as HTMLButtonElement;
@@ -720,5 +726,78 @@ describe('BackgroundPicker — Immich pick mode', () => {
     fireEvent.click(tiles[2]);
     await waitFor(() => expect(currentRotation()?.immichImages).toEqual(['/api/backgrounds/serve?file=rotation-immich-pick-a5.jpg']));
     expect(calls.filter((c) => c.url === '/api/immich/pick')).toHaveLength(posts);
+  });
+});
+
+describe('BackgroundPicker — unchecked sources keep their controls', () => {
+  beforeEach(() => { secrets.immich = true; });
+  afterEach(() => { vi.unstubAllGlobals(); try { localStorage.clear(); } catch { /* ignore */ } });
+
+  function stubAll() {
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === 'HEAD') return new Response(null, { status: 200 });
+      if (url.startsWith('/api/immich/search')) return new Response(JSON.stringify({ photos: [{ id: 'a1', thumb: '/t.jpg', alt: 'a', date: '' }], hasNext: false }));
+      if (url.startsWith('/api/unsplash')) return new Response(JSON.stringify({ photos: [], totalPages: 1 }));
+      return new Response('[]');
+    }));
+  }
+
+  it('shows the real controls of every configured source while unchecked, without enabling it', async () => {
+    stubAll();
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByTestId, queryByTestId, container, findByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('unsplash-mode-query')).not.toBeNull();
+    expect(await findByTestId('unsplash-search-picker')).not.toBeNull();
+    expect(getByTestId('immich-mode-pick')).not.toBeNull();
+    expect(await findByTestId('immich-pick-picker')).not.toBeNull();
+    expect(getByTestId('local-mode-folder')).not.toBeNull();
+    expect(container.textContent).toContain(enUSEditor.backgroundPicker.nasaInfo);
+    expect(container.querySelector('input[type="url"]')).not.toBeNull();
+    expect(queryByTestId('background-source-not-set-up-immich')).toBeNull();
+    expect(currentRotation()?.sources).toEqual([]);
+  });
+
+  it('edits made while unchecked are saved with defaults and leave the source out of rotation', () => {
+    stubAll();
+    seedStore(undefined);
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    fireEvent.click(getByTestId('local-mode-images'));
+    expect(currentRotation()).toMatchObject({ sources: [], localMode: 'images', intervalMinutes: 60 });
+  });
+
+  it('an unconfigured keyed source shows only its setup hint', () => {
+    secrets.immich = false;
+    stubAll();
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByTestId, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('background-source-not-set-up-immich')).not.toBeNull();
+    expect(queryByTestId('immich-mode-pick')).toBeNull();
+  });
+
+  it('every mode toggle lists its pictures-like option first', () => {
+    stubAll();
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    for (const [first, second] of [['unsplash-mode-query', 'unsplash-mode-collections'], ['immich-mode-pick', 'immich-mode-filters'], ['local-mode-images', 'local-mode-folder']]) {
+      expect(getByTestId(first).compareDocumentPosition(getByTestId(second)) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(getByTestId(first).parentElement).toBe(getByTestId(second).parentElement);
+    }
+  });
+
+  it('new configs open Immich on Pictures and pin the mode when the source is ticked', () => {
+    stubAll();
+    seedStore({ sources: [], query: '', intervalMinutes: 60 });
+    const { getByTestId, getByRole } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('immich-mode-pick').getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(getByRole('checkbox', { name: new RegExp(enUSEditor.backgroundPicker.sources.immich) }));
+    expect(currentRotation()).toMatchObject({ sources: ['immich'], immichMode: 'pick' });
+    expect(getByTestId('immich-mode-pick').getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('a legacy config with Immich filters set stays on Filters even when unticked', () => {
+    stubAll();
+    seedStore({ sources: [], query: '', intervalMinutes: 60, immichFavoritesOnly: true });
+    const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
+    expect(getByTestId('immich-mode-filters').getAttribute('aria-pressed')).toBe('true');
   });
 });

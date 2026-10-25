@@ -5,6 +5,7 @@ import { editorFetch } from '@/lib/editor-fetch';
 import { localImageFileOf } from '@/lib/local-images';
 import { useTranslate } from '@/i18n';
 import type { BackgroundRotation } from '@/types/config';
+import { SourceHint } from './SourceModeToggle';
 import ImageSearchBrowser, { type BrowsePhoto, type SearchResult } from './ImageSearchBrowser';
 
 /** Hand-picked photos are saved under this name so they stay out of the library and are cleaned up once unchosen. */
@@ -90,7 +91,8 @@ export default function ImmichPickPicker({ rotation, onChange }: {
   );
 
   return (
-    <div data-testid="immich-pick-picker">
+    <div className="space-y-2" data-testid="immich-pick-picker">
+      <SourceHint>{t('backgroundPicker.picturesHint')}</SourceHint>
       {/* Remount per album so the pager starts again at page 1. */}
       <ImageSearchBrowser
         key={albumId}
@@ -98,7 +100,6 @@ export default function ImmichPickPicker({ rotation, onChange }: {
         hideCategories
         hideSearchBox
         pagerAbove
-        columns={3}
         headerSlot={albumSelect}
         selectedIds={selectedIds}
         initialQuery={albumId}

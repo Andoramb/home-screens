@@ -2478,6 +2478,7 @@
     "sourceLabel": "Source",
     "rotateEveryLabel": "Tourner toutes les",
     "nasaInfo": "La NASA publie une nouvelle image astronomique par jour. L'affichage vérifiera les mises à jour à l'intervalle choisi.",
+    "picturesHint": "Touchez les images à afficher. Une seule donne un fond fixe ; plusieurs tournent.",
     "sources": {
       "nasaApod": "Image du jour NASA",
       "icloud": "Album partagé iCloud",
@@ -2494,7 +2495,6 @@
       "noPhotosInFolder": "Aucune photo dans ce dossier pour le moment.",
       "modeFolder": "Dossier",
       "modePictures": "Images",
-      "picturesHint": "Touchez les images à afficher. Une seule donne un fond fixe ; plusieurs tournent.",
       "upload": "Importer des images",
       "uploading": "Import en cours…",
       "noPictures": "Aucune image dans votre bibliothèque pour l'instant. Importez-en une pour commencer.",
@@ -2518,8 +2518,8 @@
       "personMinusLabel": "Personne -",
       "personPlusHint": "Correspond aux médias contenant n'importe quelle personne sélectionnée.",
       "personMinusHint": "Rejette les médias contenant n'importe quelle personne sélectionnée.",
-      "modeFilters": "Filtres",
-      "modePick": "Choisir des photos"
+      "modePictures": "Images",
+      "modeFilters": "Filtres"
     },
     "icloud": {
       "albumLabel": "Lien de l'album",

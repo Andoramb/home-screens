@@ -5,6 +5,7 @@ import { editorFetch } from '@/lib/editor-fetch';
 import { localImageFileOf } from '@/lib/local-images';
 import { useTranslate } from '@/i18n';
 import type { BackgroundRotation } from '@/types/config';
+import { SourceHint } from './SourceModeToggle';
 import ImageSearchBrowser, { type BrowsePhoto, type SearchResult } from './ImageSearchBrowser';
 
 /** Hand-picked photos are saved under this name so they stay out of the library and are cleaned up once unchosen. */
@@ -76,7 +77,8 @@ export default function UnsplashSearchPicker({ rotation, onChange }: {
   }, [onChange, picked, selectedIds]);
 
   return (
-    <div data-testid="unsplash-search-picker">
+    <div className="space-y-2" data-testid="unsplash-search-picker">
+      <SourceHint>{t('backgroundPicker.picturesHint')}</SourceHint>
       <ImageSearchBrowser
         categories={[]}
         hideCategories

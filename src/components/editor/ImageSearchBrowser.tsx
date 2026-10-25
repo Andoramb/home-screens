@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Check } from 'lucide-react';
 import Button from '@/components/ui/Button';
 import { useTranslate } from '@/i18n';
+import { PickGrid, PickTile } from './PickTile';
 
 export interface BrowsePhoto {
   id: string;
@@ -209,29 +209,36 @@ export default function ImageSearchBrowser({
 
       {isLoading ? (
         <div className="text-xs text-hs-text-faint py-4 text-center">{tCore('loading')}</div>
+      ) : selectedIds ? (
+        <PickGrid>
+          {photos.map((photo) => (
+            <PickTile
+              key={photo.id}
+              testId="search-photo"
+              thumb={photo.thumb}
+              alt={photo.alt}
+              label={photo.overlayLabel}
+              secondary={photo.overlaySecondary}
+              chosen={selectedIds.has(photo.id)}
+              saving={isSaving === photo.id}
+              disabled={isSaving === photo.id}
+              onClick={() => handleUsePhoto(photo)}
+            />
+          ))}
+        </PickGrid>
       ) : (
-        <div className={`grid gap-1.5 ${selectedIds ? '' : 'overflow-y-auto'} ${
-          columns === 4 ? 'grid-cols-4' : columns === 3 ? 'grid-cols-3' : selectedIds ? 'grid-cols-2' : 'grid-cols-2 max-h-[300px]'
+        <div className={`grid gap-1.5 overflow-y-auto ${
+          columns === 4 ? 'grid-cols-4' : columns === 3 ? 'grid-cols-3' : 'grid-cols-2 max-h-[300px]'
         }`}>
-          {photos.map((photo) => {
-            const chosen = selectedIds?.has(photo.id) ?? false;
-            return (
+          {photos.map((photo) => (
             <button
               key={photo.id}
               onClick={() => handleUsePhoto(photo)}
               disabled={isSaving === photo.id}
-              aria-pressed={selectedIds ? chosen : undefined}
               data-testid="search-photo"
-              className={`group relative aspect-[9/16] rounded overflow-hidden border transition-colors ${
-                chosen ? 'border-hs-accent ring-1 ring-hs-accent' : 'border-hs-border-strong hover:border-hs-accent'
-              }`}
+              className="group relative aspect-[9/16] rounded overflow-hidden border border-hs-border-strong hover:border-hs-accent transition-colors"
             >
-              <img
-                src={photo.thumb}
-                alt={photo.alt}
-                className="w-full h-full object-cover"
-                loading="lazy"
-              />
+              <img src={photo.thumb} alt={photo.alt} className="w-full h-full object-cover" loading="lazy" />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
                 <span className="text-[9px] text-white/0 group-hover:text-white/80 px-1.5 pb-1 truncate w-full transition-colors">
                   {photo.overlayLabel}
@@ -240,19 +247,13 @@ export default function ImageSearchBrowser({
                   )}
                 </span>
               </div>
-              {chosen && (
-                <span className="absolute right-1 top-1 flex h-4 w-4 items-center justify-center rounded-full bg-hs-accent text-white" aria-hidden="true">
-                  <Check size={11} />
-                </span>
-              )}
               {isSaving === photo.id && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
                   <span className="text-xs text-white">{tCore('status.saving')}</span>
                 </div>
               )}
             </button>
-            );
-          })}
+          ))}
         </div>
       )}
 
