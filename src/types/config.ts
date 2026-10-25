@@ -348,7 +348,7 @@ export interface BackgroundRotation {
   enabled?: boolean;
   /** Selected sources; an empty list disables rotation. */
   sources: BackgroundRotationSourceId[];
-  /** Sources area layout: `single` picks exactly one source, `multiple` allows several. Unset = multiple when more than one source is on, else single. */
+  /** `single` = the original fixed-background picker (`sources` is kept but ignored, nothing rotates); `multiple` = rotation sources. Unset = multiple when any source is on, else single. */
   sourcesMode?: 'single' | 'multiple';
   /** Unsplash search words; other sources ignore it */
   query: string;

@@ -804,24 +804,24 @@ describe('BackgroundPicker — unchecked sources keep their controls', () => {
 });
 
 describe('BackgroundPicker — Single / Multiple sources', () => {
-  it('Single shows radios and only the selected source controls; picking one replaces the others', () => {
+  it('Single is the original picker: four tabs, no rotation source rows', () => {
     seedStore({ sources: ['local', 'immich'], query: '', intervalMinutes: 60 } as never, '', 'single');
     const { getByTestId, queryByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
     expect(getByTestId('sources-mode-single').getAttribute('aria-pressed')).toBe('true');
-    expect((getByTestId('source-radio-local') as HTMLInputElement).checked).toBe(true);
-    expect(queryByTestId('source-group-local')).toBeNull();
-    fireEvent.click(getByTestId('source-radio-nasa-apod'));
-    expect(currentRotation()?.sources).toEqual(['nasa-apod']);
-    expect(currentRotation()?.sourcesMode).toBe('single');
+    for (const tab of ['local', 'unsplash', 'nasa', 'immich']) expect(getByTestId(`background-tab-${tab}`)).toBeTruthy();
+    expect(queryByTestId('source-row-local')).toBeNull();
+    expect(queryByTestId('background-rotation-refresh')).toBeNull();
+    expect(getByTestId('background-mode').textContent).toBe('Fixed background');
   });
 
-  it('switching modes keeps the first source going to Single and all going to Multiple', () => {
+  it('switching modes never edits the saved sources', () => {
     seedStore({ sources: ['local', 'nasa-apod'], query: '', intervalMinutes: 60 } as never, '', 'multiple');
     const { getByTestId } = render(<BackgroundPicker />, { wrapper: Wrapper });
     fireEvent.click(getByTestId('sources-mode-single'));
-    expect(currentRotation()?.sources).toEqual(['local']);
+    expect(currentRotation()?.sources).toEqual(['local', 'nasa-apod']);
+    expect(currentRotation()?.sourcesMode).toBe('single');
     fireEvent.click(getByTestId('sources-mode-multiple'));
-    expect(currentRotation()?.sources).toEqual(['local']);
+    expect(currentRotation()?.sources).toEqual(['local', 'nasa-apod']);
     expect(currentRotation()?.sourcesMode).toBe('multiple');
   });
 });

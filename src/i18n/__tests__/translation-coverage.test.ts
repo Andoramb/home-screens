@@ -50,6 +50,7 @@ const SHARED_UNTRANSLATABLE: ReadonlySet<string> = new Set([
   // Brand names of the rotation sources, spelled the same everywhere.
   'editor|backgroundPicker.sources.unsplash',
   'editor|backgroundPicker.sources.immich',
+  'editor|backgroundPicker.tabs.nasa',
   // Brand names of the sidebar footer's community links, spelled the same everywhere.
   'editor|settings.sidebar.github',
   'editor|settings.sidebar.discord',
@@ -896,7 +897,7 @@ const BUDGETS: Readonly<Record<string, number>> = {
   'de-DE': 0,
   'es-ES': 0,
   'fr-FR': 0,
-  'nl-NL': 0,
+  'nl-NL': 1,
   'pt-BR': 0,
 };
 

@@ -2595,7 +2595,14 @@
     "effectsBrightnessLabel": "Luminosité",
     "effectsContrastLabel": "Contraste",
     "effectsSaturationLabel": "Saturation",
-    "effectsWarmthLabel": "Chaleur"
+    "effectsWarmthLabel": "Chaleur",
+    "tabs": {
+      "local": "Arrière-plans",
+      "nasa": "NASA"
+    },
+    "needsKey": "Nécessite une clé gratuite",
+    "starterHeading": "Les arrière-plans fournis avec Home Screens",
+    "yourPicturesHeading": "Vos propres images"
   },
   "imageBrowserModal": {
     "title": "Bibliothèque d'images",

@@ -2595,7 +2595,14 @@
     "effectsBrightnessLabel": "Brightness",
     "effectsContrastLabel": "Contrast",
     "effectsSaturationLabel": "Saturation",
-    "effectsWarmthLabel": "Warmth"
+    "effectsWarmthLabel": "Warmth",
+    "tabs": {
+      "local": "Backgrounds",
+      "nasa": "NASA"
+    },
+    "needsKey": "Needs a free key",
+    "starterHeading": "Backgrounds that come with Home Screens",
+    "yourPicturesHeading": "Your own pictures"
   },
   "imageBrowserModal": {
     "title": "Image Library",

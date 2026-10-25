@@ -2595,7 +2595,14 @@
     "effectsBrightnessLabel": "Lysstyrke",
     "effectsContrastLabel": "Kontrast",
     "effectsSaturationLabel": "Mætning",
-    "effectsWarmthLabel": "Varme"
+    "effectsWarmthLabel": "Varme",
+    "tabs": {
+      "local": "Baggrunde",
+      "nasa": "NASA"
+    },
+    "needsKey": "Kræver en gratis nøgle",
+    "starterHeading": "Baggrunde, der følger med Home Screens",
+    "yourPicturesHeading": "Dine egne billeder"
   },
   "imageBrowserModal": {
     "title": "Billedarkiv",

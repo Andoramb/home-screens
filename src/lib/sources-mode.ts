@@ -1,19 +1,18 @@
-import type { BackgroundRotation, BackgroundRotationSourceId } from '@/types/config';
+import type { BackgroundRotation } from '@/types/config';
 
 export type SourcesMode = 'single' | 'multiple';
 
 /**
- * How the Sources area presents rotation sources. An explicit `sourcesMode` wins;
- * existing configs without one are Multiple when more than one source is on, else Single.
+ * How the Sources area presents itself. An explicit `sourcesMode` wins.
+ * Without one, a config with rotation sources is Multiple (it rotates), anything
+ * else is Single (a fixed background, as the original picker saved it).
+ *
+ * Single is the original background picker: one fixed picture, no rotation.
+ * It never edits `sources`, so Multiple's selection survives a round trip.
  */
 export function effectiveSourcesMode(
   rotation: Pick<BackgroundRotation, 'sources' | 'sourcesMode'> | undefined,
 ): SourcesMode {
   if (rotation?.sourcesMode) return rotation.sourcesMode;
-  return (rotation?.sources?.length ?? 0) > 1 ? 'multiple' : 'single';
-}
-
-/** Sources to keep after switching mode: Single keeps only the first enabled one. */
-export function sourcesForMode(sources: BackgroundRotationSourceId[], mode: SourcesMode): BackgroundRotationSourceId[] {
-  return mode === 'single' ? sources.slice(0, 1) : sources;
+  return (rotation?.sources?.length ?? 0) > 0 ? 'multiple' : 'single';
 }

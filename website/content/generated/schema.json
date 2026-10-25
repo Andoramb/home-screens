@@ -8326,7 +8326,7 @@
               "multiple"
             ]
           },
-          "description": "Sources area layout: `single` picks exactly one source, `multiple` allows several. Unset = multiple when more than one source is on, else single."
+          "description": "`single` = the original fixed-background picker (`sources` is kept but ignored, nothing rotates); `multiple` = rotation sources. Unset = multiple when any source is on, else single."
         },
         {
           "name": "query",

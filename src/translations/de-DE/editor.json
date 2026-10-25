@@ -2595,7 +2595,14 @@
     "effectsBrightnessLabel": "Helligkeit",
     "effectsContrastLabel": "Kontrast",
     "effectsSaturationLabel": "Sättigung",
-    "effectsWarmthLabel": "Wärme"
+    "effectsWarmthLabel": "Wärme",
+    "tabs": {
+      "local": "Hintergründe",
+      "nasa": "NASA"
+    },
+    "needsKey": "Braucht einen kostenlosen Schlüssel",
+    "starterHeading": "Hintergründe, die bei Home Screens dabei sind",
+    "yourPicturesHeading": "Deine eigenen Bilder"
   },
   "imageBrowserModal": {
     "title": "Bildersammlung",

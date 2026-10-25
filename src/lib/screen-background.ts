@@ -19,8 +19,13 @@ export function activeRotationSources(rotation: Screen['backgroundRotation'] | u
   return (rotation?.sources ?? []).filter((source) => ROTATION_SOURCE_IDS.has(source));
 }
 
-/** A selected source activates rotation; the legacy `enabled` flag does not. */
+/**
+ * A selected source activates rotation; the legacy `enabled` flag does not.
+ * Sources mode Single is a fixed background: the saved `sources` stay in the
+ * config (so switching back to Multiple restores them) but nothing rotates.
+ */
 export function isRotationActive(rotation: Screen['backgroundRotation'] | undefined): boolean {
+  if (rotation?.sourcesMode === 'single') return false;
   return activeRotationSources(rotation).length > 0;
 }
 

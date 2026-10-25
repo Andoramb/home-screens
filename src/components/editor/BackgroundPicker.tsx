@@ -13,7 +13,7 @@ import { useSecretStatus } from '@/hooks/useSecretStatus';
 import { useTranslate } from '@/i18n';
 import { eventBus } from '@/lib/event-bus';
 import { isUnsplashCollectionsMode } from '@/lib/unsplash-rotation-mode';
-import { activeRotationSources, stopBackgroundRotation } from '@/lib/screen-background';
+import { activeRotationSources, isRotationActive, stopBackgroundRotation } from '@/lib/screen-background';
 import IntegrationSettingsLink, { type BackgroundIntegration } from './IntegrationSettingsLink';
 import { parseICloudAlbumToken, parseICloudSharedAlbumUrl } from '@/lib/icloud-parse';
 import { ImmichRotationFields, LocalRotationFields, CollectionsRotationFields } from './BackgroundRotationFields';
@@ -24,7 +24,8 @@ import UnsplashSearchPicker from './UnsplashSearchPicker';
 import ImmichPickPicker from './ImmichPickPicker';
 import SourceModeToggle, { SourceHint } from './SourceModeToggle';
 import { effectiveImmichMode } from '@/lib/immich-mode';
-import { effectiveSourcesMode, sourcesForMode, type SourcesMode } from '@/lib/sources-mode';
+import { effectiveSourcesMode, type SourcesMode } from '@/lib/sources-mode';
+import BackgroundPickerSingle from './BackgroundPickerSingle';
 
 const isICloudLinkValid = (link?: string) => !!(link && (parseICloudSharedAlbumUrl(link) || parseICloudAlbumToken(link)));
 
@@ -145,21 +146,12 @@ export default function BackgroundPicker() {
   };
 
   const sourcesMode = effectiveSourcesMode(currentScreen.backgroundRotation);
+  // Switching modes only flips the flag: Single ignores `sources` without
+  // touching them, so Multiple's selection is intact when switching back.
   const setSourcesMode = (mode: SourcesMode) => {
     if (!selectedScreenId || mode === sourcesMode) return;
     updateScreenRotation(selectedScreenId, {
       sourcesMode: mode,
-      sources: sourcesForMode(rotationSources, mode),
-      query: currentScreen.backgroundRotation?.query || 'nature landscape',
-      intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
-    });
-  };
-  const selectSingleSource = (id: BackgroundRotationSourceId) => {
-    if (!selectedScreenId) return;
-    updateScreenRotation(selectedScreenId, {
-      sourcesMode: 'single',
-      sources: [id],
-      ...(id === 'immich' ? { immichMode: effectiveImmichMode(currentScreen.backgroundRotation) } : {}),
       query: currentScreen.backgroundRotation?.query || 'nature landscape',
       intervalMinutes: currentScreen.backgroundRotation?.intervalMinutes || 60,
     });
@@ -252,15 +244,18 @@ export default function BackgroundPicker() {
   return (
     <>
     {/* A full-screen theme wall is a single fixed pick, not a media source, so it sits outside Sources. */}
-    <AccordionSection title={t('backgroundPicker.groups.theme')}>
-      <ThemeBackgrounds selectedScreenId={selectedScreenId} />
-    </AccordionSection>
+    {/* In Single the theme walls sit inside the Backgrounds tab, as in the original picker. */}
+    {sourcesMode === 'multiple' && (
+      <AccordionSection title={t('backgroundPicker.groups.theme')}>
+        <ThemeBackgrounds selectedScreenId={selectedScreenId} />
+      </AccordionSection>
+    )}
 
     <AccordionSection title={t('backgroundPicker.title')}>
       <PropertyGroup
         title={t('backgroundPicker.sourcesGroup')}
         accent={2}
-        titleExtra={
+        titleExtra={sourcesMode === 'multiple' ? (
                 <button
                   type="button"
                   onClick={refreshNow}
@@ -272,11 +267,11 @@ export default function BackgroundPicker() {
                 >
                   <RefreshCw className={`h-3 w-3 ${refreshing ? 'animate-spin' : ''}`} aria-hidden="true" />
                 </button>
-              }
+              ) : undefined}
             >
               <div className="space-y-2">
                 <p className="text-xs font-medium text-hs-text-secondary" data-testid="background-mode" title={t('backgroundPicker.modeHelp')}>
-                  {rotationSources.length > 0 ? t('backgroundPicker.modeRotating') : t('backgroundPicker.modeFixed')}
+                  {isRotationActive(currentScreen.backgroundRotation) ? t('backgroundPicker.modeRotating') : t('backgroundPicker.modeFixed')}
                 </p>
                 <SourceModeToggle
                   testIdPrefix="sources-mode"
@@ -287,48 +282,8 @@ export default function BackgroundPicker() {
                     { id: 'multiple', label: t('backgroundPicker.sourcesMode.multiple') },
                   ]}
                 />
-                <LocalBackgrounds selectedScreenId={selectedScreenId} />
-                {sourcesMode === 'single' ? (
-                  <div className="space-y-2" role="radiogroup" aria-label={t('backgroundPicker.sourcesGroup')}>
-                    {ROTATION_SOURCES.map((entry) => {
-                      const checked = rotationSources[0] === entry.id;
-                      return (
-                        <div key={entry.id} data-testid={`source-row-${entry.id}`}>
-                          <label
-                            className={`flex items-center gap-2 ${entry.locked && !checked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                            title={entry.locked ? t('backgroundPicker.sourceSetUpLink', { source: entry.label }) : undefined}
-                          >
-                            <input
-                              type="radio"
-                              name="background-source-single"
-                              checked={checked}
-                              disabled={entry.locked && !checked}
-                              onChange={() => selectSingleSource(entry.id)}
-                              data-testid={`source-radio-${entry.id}`}
-                            />
-                            <span className={`text-xs flex items-center gap-1 ${entry.locked ? 'text-hs-text-faint' : 'text-hs-text-body'}`}>
-                              {entry.locked && <Lock className="h-2.5 w-2.5" aria-hidden="true" />}
-                              {entry.label}
-                            </span>
-                          </label>
-                          {entry.locked && entry.id !== 'icloud' && !checked && (
-                            <span className="mt-0.5 block pl-5 text-[10px] leading-relaxed text-hs-text-faint">
-                              {t('backgroundPicker.sourceNotSetUp')}{' '}
-                              {entry.integration && (
-                                <IntegrationSettingsLink integration={entry.integration}>
-                                  {t('backgroundPicker.sourceSetUpLink', { source: entry.label })}
-                                </IntegrationSettingsLink>
-                              )}
-                            </span>
-                          )}
-                          {checked && (entry.locked && entry.id !== 'icloud' && entry.id !== 'nasa-apod' && entry.id !== 'local'
-                            ? <span className="mt-1 block text-[10px] leading-relaxed text-hs-warning">{t('backgroundPicker.sourceKeyMissing')}</span>
-                            : checked && sourceControls(entry))}
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
+                {sourcesMode === 'multiple' && <LocalBackgrounds selectedScreenId={selectedScreenId} />}
+                {sourcesMode === 'multiple' && (
                 <div className="space-y-2">
                   {ROTATION_SOURCES.map((entry) => {
                     const checked = rotationSources.includes(entry.id);
@@ -386,6 +341,7 @@ export default function BackgroundPicker() {
                   })}
                 </div>
                 )}
+                {sourcesMode === 'multiple' && (
                 <label className="block">
                   <span className="text-[10px] text-hs-text-faint">{t('backgroundPicker.rotateEveryLabel')}</span>
                   <select
@@ -401,10 +357,13 @@ export default function BackgroundPicker() {
                     ))}
                   </select>
                 </label>
+                )}
               </div>
       </PropertyGroup>
 
-      {missingPath && (
+      {sourcesMode === 'single' && <BackgroundPickerSingle selectedScreenId={selectedScreenId} />}
+
+      {sourcesMode === 'multiple' && missingPath && (
         <div className="rounded-md border border-hs-danger/40 bg-hs-danger/10 px-2.5 py-2 space-y-1.5" data-testid="background-missing">
           <div className="text-[10px] text-hs-text-faint">{t('backgroundPicker.missing.label')}</div>
           <div className="font-mono text-[11px] text-hs-text-body break-all">{missingPath}</div>

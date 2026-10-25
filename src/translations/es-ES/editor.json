@@ -2595,7 +2595,14 @@
     "effectsBrightnessLabel": "Brillo",
     "effectsContrastLabel": "Contraste",
     "effectsSaturationLabel": "Saturación",
-    "effectsWarmthLabel": "Calidez"
+    "effectsWarmthLabel": "Calidez",
+    "tabs": {
+      "local": "Fondos",
+      "nasa": "NASA"
+    },
+    "needsKey": "Necesita una clave gratuita",
+    "starterHeading": "Fondos que vienen con Home Screens",
+    "yourPicturesHeading": "Tus propias fotos"
   },
   "imageBrowserModal": {
     "title": "Biblioteca de imágenes",

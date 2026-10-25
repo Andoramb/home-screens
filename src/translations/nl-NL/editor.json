@@ -2595,7 +2595,14 @@
     "effectsBrightnessLabel": "Helderheid",
     "effectsContrastLabel": "Contrast",
     "effectsSaturationLabel": "Verzadiging",
-    "effectsWarmthLabel": "Warmte"
+    "effectsWarmthLabel": "Warmte",
+    "tabs": {
+      "local": "Achtergronden",
+      "nasa": "NASA"
+    },
+    "needsKey": "Heeft een gratis sleutel nodig",
+    "starterHeading": "Achtergronden die bij Home Screens zitten",
+    "yourPicturesHeading": "Je eigen foto's"
   },
   "imageBrowserModal": {
     "title": "Afbeeldingsbibliotheek",
